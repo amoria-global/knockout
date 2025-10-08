@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
-import Navbar from "./components/navbar";
 
 export const metadata: Metadata = {
   title: "Amoria Connekt",
@@ -16,7 +15,6 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased">
-        <Navbar />
         {children}
       </body>
     </html>

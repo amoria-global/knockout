@@ -61,18 +61,18 @@ export default function Footer() {
   ];
 
   return (
-    <footer style={{ position: 'relative', width: '100%', marginTop: '8rem' }}>
+    <footer style={{ position: 'relative', width: '100%', marginTop: '6.4rem' }}>
       {/* Subscribe Section */}
       <div
         style={{
           position: 'absolute',
-          top: '-2rem',
+          top: '-1.6rem',
           left: '50%',
           transform: 'translateX(-50%)',
           width: '100%',
-          maxWidth: '48rem',
-          paddingLeft: '2rem',
-          paddingRight: '2rem',
+          maxWidth: '40rem',
+          paddingLeft: '1.6rem',
+          paddingRight: '1.6rem',
           zIndex: 10,
         }}
       >
@@ -81,7 +81,7 @@ export default function Footer() {
             backgroundColor: 'white',
             borderRadius: '9999px',
             padding: '0.001rem',
-            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+            boxShadow: '0 8px 12px -2.4px rgba(0, 0, 0, 0.1)',
           }}
         >
           <form
@@ -95,15 +95,15 @@ export default function Footer() {
               placeholder="Enter Email Address"
               style={{
                 width: '100%',
-                paddingLeft: '1.5rem',
-                paddingRight: '1.5rem',
-                paddingTop: '0.55rem',
-                paddingBottom: '0.55rem',
+                paddingLeft: '1.2rem',
+                paddingRight: '1.2rem',
+                paddingTop: '0.44rem',
+                paddingBottom: '0.44rem',
                 backgroundColor: 'transparent',
                 color: '#000000',
                 border: 'none',
                 outline: 'none',
-                fontSize: '1.2rem',
+                fontSize: '0.96rem',
               }}
               required
             />
@@ -113,13 +113,13 @@ export default function Footer() {
                 backgroundColor: '#103E83',
                 color: 'white',
                 fontWeight: 600,
-                borderRadius: '2rem',
+                borderRadius: '1.6rem',
                 letterSpacing: '0.05em',
-                fontSize: '1rem',
-                paddingLeft: '2rem',
-                paddingRight: '2rem',
-                paddingTop: '0.75rem',
-                paddingBottom: '0.75rem',
+                fontSize: '0.8rem',
+                paddingLeft: '1.6rem',
+                paddingRight: '1.6rem',
+                paddingTop: '0.6rem',
+                paddingBottom: '0.6rem',
                 flexShrink: 0,
                 cursor: 'pointer',
                 border: 'none',
@@ -138,19 +138,19 @@ export default function Footer() {
       <div
         style={{
           background: 'linear-gradient(to right, #052047, #052047, #103E83)',
-          borderTopLeftRadius: '2.5rem',
-          borderTopRightRadius: '2.5rem',
+          borderTopLeftRadius: '2rem',
+          borderTopRightRadius: '2rem',
           color: 'white',
         }}
       >
         <div
           style={{
-            maxWidth: '80rem',
+            maxWidth: '64rem',
             margin: '0 auto',
-            paddingLeft: '2rem',
-            paddingRight: '2rem',
-            paddingTop: '4rem',
-            paddingBottom: '2rem',
+            paddingLeft: '1.6rem',
+            paddingRight: '1.6rem',
+            paddingTop: '3.2rem',
+            paddingBottom: '1.6rem',
           }}
         >
           {/* Main Footer Content Grid */}
@@ -158,31 +158,31 @@ export default function Footer() {
             style={{
               display: 'grid',
               gridTemplateColumns: '1.5fr 1fr 1fr 1fr 1fr',
-              gap: '2rem',
-              marginBottom: '5rem',
+              gap: '1.6rem',
+              marginBottom: '4rem',
             }}
           >
             {/* Amoria Connekt Section */}
-            <div style={{ paddingRight: '2rem' }}>
-              <h3 style={{ fontSize: '1.45rem', fontWeight: 700, marginBottom: '2rem' }}>
+            <div style={{ paddingRight: '1.6rem' }}>
+              <h3 style={{ fontSize: '1.16rem', fontWeight: 700, marginBottom: '1.6rem' }}>
                 Amoria Connekt
               </h3>
               <p
                 style={{
                   color: '#D1D5DB',
-                  fontSize: '1.2rem',
+                  fontSize: '0.96rem',
                   lineHeight: '1.625',
-                  marginBottom: '2.5rem',
+                  marginBottom: '2rem',
                 }}
               >
                 Connecting moments, creating memories. Your trusted platform for professional event
                 photography and live streaming.
               </p>
               <div>
-                <span style={{ color: '#D1D5DB', fontSize: '1.3rem', display: 'block', marginBottom: '1rem', gap: '3rem' }}>
+                <span style={{ color: '#D1D5DB', fontSize: '1.04rem', display: 'block', marginBottom: '0.8rem', gap: '2.4rem' }}>
                   Follow us on:
                 </span>
-                <div style={{ display: 'flex', gap: '2rem' }}>
+                <div style={{ display: 'flex', gap: '1.6rem' }}>
                   {socialLinks.map((social) => (
                     <a
                       key={social.label}
@@ -194,7 +194,7 @@ export default function Footer() {
                       onMouseOver={(e) => (e.currentTarget.style.color = 'white')}
                       onMouseOut={(e) => (e.currentTarget.style.color = '#0D99FF')}
                     >
-                      <social.icon style={{ height: '1.5rem', width: '1.5rem' }} />
+                      <social.icon style={{ height: '1.2rem', width: '1.2rem' }} />
                     </a>
                   ))}
                 </div>
@@ -204,17 +204,17 @@ export default function Footer() {
             {/* Footer Link Sections */}
             {footerSections.map((section) => (
               <div key={section.title}>
-                <h4 style={{ fontSize: '1.2rem', fontWeight: 600, marginBottom: '2rem', color: '#A1A1A1' }}>
+                <h4 style={{ fontSize: '0.96rem', fontWeight: 600, marginBottom: '1.6rem', color: '#A1A1A1' }}>
                   {section.title}
                 </h4>
                 <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                   {section.links.map((link, index) => (
-                    <li key={index} style={{ marginBottom: '1rem' }}>
+                    <li key={index} style={{ marginBottom: '0.8rem' }}>
                       <a
                         href={link.href}
                         style={{
                           color: '#D1D5DB',
-                          fontSize: '1.2rem',
+                          fontSize: '0.96rem',
                           textDecoration: 'none',
                           display: 'block',
                           transition: 'color 0.2s',
@@ -234,12 +234,12 @@ export default function Footer() {
           {/* Copyright Section */}
           <div
             style={{
-              borderTop: '3px solid rgba(255, 255, 255, 0.2)',
-              paddingTop: '2rem',
+              borderTop: '2.4px solid rgba(255, 255, 255, 0.2)',
+              paddingTop: '1.6rem',
               textAlign: 'center',
             }}
           >
-            <p style={{ color: '#D1D5DB', fontSize: '1.2rem' }}>
+            <p style={{ color: '#D1D5DB', fontSize: '0.96rem' }}>
               © 2025 Amoria Connekt. All rights reserved.
             </p>
           </div>
