@@ -4,248 +4,242 @@ import React, { useState } from 'react';
 import {
   FaFacebookF,
   FaLinkedinIn,
-  FaXTwitter,
+  FaTwitter,
   FaInstagram,
-} from 'react-icons/fa6';
+} from 'react-icons/fa';
 
 export default function Footer() {
   const [email, setEmail] = useState('');
 
   const handleSubscribe = (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle subscription logic here
     console.log('Subscribing email:', email);
     setEmail('');
   };
 
+  const footerSections = [
+    {
+      title: 'For Clients',
+      links: [
+        { text: 'Find A Photographer', href: '/find-photographer' },
+        { text: 'How it Works', href: '/how-it-works' },
+        { text: 'Browse Events', href: '/browse-events' },
+      ],
+    },
+    {
+      title: 'For Photographers',
+      links: [
+        { text: 'Join As Photographer', href: '/join-photographer' },
+        { text: 'Photographer Guide', href: '/photographer-guide' },
+        { text: 'Portfolio Tips', href: '/portfolio-tips' },
+      ],
+    },
+    {
+      title: 'Company',
+      links: [
+        { text: 'About Us', href: '/about' },
+        { text: 'Contact', href: '/contact' },
+        { text: 'Blog', href: '/blog' },
+      ],
+    },
+    {
+      title: 'Support',
+      links: [
+        { text: 'Help Center', href: '/help-center' },
+        { text: 'Privacy Policy', href: '/privacy-policy' },
+        { text: 'Terms of Service', href: '/terms-of-service' },
+        { text: 'Trust & Safety', href: '/trust-safety' },
+      ],
+    },
+  ];
+
+  const socialLinks = [
+    { icon: FaFacebookF, href: 'https://facebook.com', label: 'Facebook' },
+    { icon: FaLinkedinIn, href: 'https://linkedin.com', label: 'LinkedIn' },
+    { icon: FaTwitter, href: 'https://twitter.com', label: 'X (Twitter)' },
+    { icon: FaInstagram, href: 'https://instagram.com', label: 'Instagram' },
+  ];
+
   return (
-    // Use a relative container to position the subscribe form
-    <footer className="relative w-full mt-40">
-      {/* Subscribe Section - Positioned to overlap the top of the footer */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-xl px-4 z-10">
-        <form
-          onSubmit={handleSubscribe}
-          className="flex items-center bg-white rounded-full p-2 shadow-lg"
+    <footer style={{ position: 'relative', width: '100%', marginTop: '8rem' }}>
+      {/* Subscribe Section */}
+      <div
+        style={{
+          position: 'absolute',
+          top: '-2rem',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: '100%',
+          maxWidth: '48rem',
+          paddingLeft: '2rem',
+          paddingRight: '2rem',
+          zIndex: 10,
+        }}
+      >
+        <div
+          style={{
+            backgroundColor: 'white',
+            borderRadius: '9999px',
+            padding: '0.001rem',
+            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+          }}
         >
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Enter Email Address"
-            className="w-full px-5 py-2.5 bg-transparent text-gray-900 text-base font-pragati-narrow border-none focus:outline-none"
-            required
-          />
-          <button
-            type="submit"
-            className="px-8 py-4 bg-[#103E83] hover:bg-[#0d3268] text-white font-bold rounded-full transition-colors font-pragati-narrow tracking-wide text-base flex-shrink-0 cursor-pointer"
+          <form
+            onSubmit={handleSubscribe}
+            style={{ display: 'flex', alignItems: 'center', width: '100%' }}
           >
-            SUBSCRIBE
-          </button>
-        </form>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Enter Email Address"
+              style={{
+                width: '100%',
+                paddingLeft: '1.5rem',
+                paddingRight: '1.5rem',
+                paddingTop: '0.55rem',
+                paddingBottom: '0.55rem',
+                backgroundColor: 'transparent',
+                color: '#000000',
+                border: 'none',
+                outline: 'none',
+                fontSize: '1.2rem',
+              }}
+              required
+            />
+            <button
+              type="submit"
+              style={{
+                backgroundColor: '#103E83',
+                color: 'white',
+                fontWeight: 600,
+                borderRadius: '2rem',
+                letterSpacing: '0.05em',
+                fontSize: '1rem',
+                paddingLeft: '2rem',
+                paddingRight: '2rem',
+                paddingTop: '0.75rem',
+                paddingBottom: '0.75rem',
+                flexShrink: 0,
+                cursor: 'pointer',
+                border: 'none',
+                transition: 'background-color 0.2s',
+              }}
+              onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#0d3268')}
+              onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#103E83')}
+            >
+              SUBSCRIBE
+            </button>
+          </form>
+        </div>
       </div>
 
       {/* Main Footer Body */}
-      <div className="w-full bg-gradient-to-r from-[#052047] via-[#052047] to-[#103E83] rounded-t-2xl">
-        {/* Add significant top padding (pt-24) to create space for the subscribe form */}
-        <div className="max-w-7xl mx-auto px-8 pt-24 pb-10">
+      <div
+        style={{
+          background: 'linear-gradient(to right, #052047, #052047, #103E83)',
+          borderTopLeftRadius: '2.5rem',
+          borderTopRightRadius: '2.5rem',
+          color: 'white',
+        }}
+      >
+        <div
+          style={{
+            maxWidth: '80rem',
+            margin: '0 auto',
+            paddingLeft: '2rem',
+            paddingRight: '2rem',
+            paddingTop: '4rem',
+            paddingBottom: '2rem',
+          }}
+        >
           {/* Main Footer Content Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-6 gap-20">
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '1.5fr 1fr 1fr 1fr 1fr',
+              gap: '2rem',
+              marginBottom: '5rem',
+            }}
+          >
             {/* Amoria Connekt Section */}
-            <div className="lg:col-span-2">
-              <h3 className="text-white text-2xl font-bold mb-3 font-pragati-narrow">
+            <div style={{ paddingRight: '2rem' }}>
+              <h3 style={{ fontSize: '1.45rem', fontWeight: 700, marginBottom: '2rem' }}>
                 Amoria Connekt
               </h3>
-              <p className="text-gray-200 text-base mb-5 font-pragati-narrow leading-relaxed">
-                Connecting moments, creating memories. Your trusted platform for
-                professional event photography and live streaming.
+              <p
+                style={{
+                  color: '#D1D5DB',
+                  fontSize: '1.2rem',
+                  lineHeight: '1.625',
+                  marginBottom: '2.5rem',
+                }}
+              >
+                Connecting moments, creating memories. Your trusted platform for professional event
+                photography and live streaming.
               </p>
-              <div className="flex items-center gap-3">
-                <span className="text-gray-200 text-sm font-pragati-narrow">
-                  Follow us:
+              <div>
+                <span style={{ color: '#D1D5DB', fontSize: '1.3rem', display: 'block', marginBottom: '1rem', gap: '3rem' }}>
+                  Follow us on:
                 </span>
-                <a
-                  href="https://facebook.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-gray-200 hover:text-white transition-colors"
-                  aria-label="Facebook"
-                >
-                  <FaFacebookF className="text-lg" />
-                </a>
-                <a
-                  href="https://linkedin.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-gray-200 hover:text-white transition-colors"
-                  aria-label="LinkedIn"
-                >
-                  <FaLinkedinIn className="text-lg" />
-                </a>
-                <a
-                  href="https://twitter.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-gray-200 hover:text-white transition-colors"
-                  aria-label="X (Twitter)"
-                >
-                  <FaXTwitter className="text-lg" />
-                </a>
-                <a
-                  href="https://instagram.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-gray-200 hover:text-white transition-colors"
-                  aria-label="Instagram"
-                >
-                  <FaInstagram className="text-lg" />
-                </a>
+                <div style={{ display: 'flex', gap: '2rem' }}>
+                  {socialLinks.map((social) => (
+                    <a
+                      key={social.label}
+                      href={social.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={social.label}
+                      style={{ color: '#0D99FF', transition: 'color 0.2s' }}
+                      onMouseOver={(e) => (e.currentTarget.style.color = 'white')}
+                      onMouseOut={(e) => (e.currentTarget.style.color = '#0D99FF')}
+                    >
+                      <social.icon style={{ height: '1.5rem', width: '1.5rem' }} />
+                    </a>
+                  ))}
+                </div>
               </div>
             </div>
 
-            {/* For Clients Section */}
-            <div>
-              <h4 className="text-gray-400 text-xl font-bold mb-3 font-pragati-narrow">
-                For Clients
-              </h4>
-              <ul className="space-y-2">
-                <li>
-                  <a
-                    href="/find-photographer"
-                    className="text-gray-200 hover:text-white transition-colors text-lg font-pragati-narrow"
-                  >
-                    Find A Photographer
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="/how-it-works"
-                    className="text-gray-200 hover:text-white transition-colors text-lg font-pragati-narrow"
-                  >
-                    How it Works
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="/browse-events"
-                    className="text-gray-200 hover:text-white transition-colors text-lg font-pragati-narrow"
-                  >
-                    Browse Events
-                  </a>
-                </li>
-              </ul>
-            </div>
-
-            {/* For Photographers Section */}
-            <div>
-              <h4 className="text-gray-400 text-xl font-bold mb-3 font-pragati-narrow">
-                For Photographers
-              </h4>
-              <ul className="space-y-2">
-                <li>
-                  <a
-                    href="/join-photographer"
-                    className="text-gray-200 hover:text-white transition-colors text-lg font-pragati-narrow"
-                  >
-                    Join As Photographer
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="/photographer-guide"
-                    className="text-gray-200 hover:text-white transition-colors text-lg font-pragati-narrow"
-                  >
-                    Photographer Guide
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="/portfolio-tips"
-                    className="text-gray-200 hover:text-white transition-colors text-lg font-pragati-narrow"
-                  >
-                    Portfolio Tips
-                  </a>
-                </li>
-              </ul>
-            </div>
-
-            {/* Company Section */}
-            <div>
-              <h4 className="text-gray-400 text-xl font-bold mb-3 font-pragati-narrow">
-                Company
-              </h4>
-              <ul className="space-y-2">
-                <li>
-                  <a
-                    href="/about"
-                    className="text-gray-200 hover:text-white transition-colors text-lg font-pragati-narrow"
-                  >
-                    About Us
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="/contact"
-                    className="text-gray-200 hover:text-white transition-colors text-lg font-pragati-narrow"
-                  >
-                    Contact
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="/blog"
-                    className="text-gray-200 hover:text-white transition-colors text-lg font-pragati-narrow"
-                  >
-                    Blog
-                  </a>
-                </li>
-              </ul>
-            </div>
-
-            {/* Support Section */}
-            <div>
-              <h4 className="text-gray-400 text-xl font-bold mb-3 font-pragati-narrow">
-                Support
-              </h4>
-              <ul className="space-y-2">
-                <li>
-                  <a
-                    href="/help-center"
-                    className="text-gray-200 hover:text-white transition-colors text-lg font-pragati-narrow"
-                  >
-                    Help Center
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="/privacy-policy"
-                    className="text-gray-200 hover:text-white transition-colors text-lg font-pragati-narrow"
-                  >
-                    Privacy Policy
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="/terms-of-service"
-                    className="text-gray-200 hover:text-white transition-colors text-lg font-pragati-narrow"
-                  >
-                    Terms of Service
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="/trust-safety"
-                    className="text-gray-200 hover:text-white transition-colors text-lg font-pragati-narrow"
-                  >
-                    Trust & Safety
-                  </a>
-                </li>
-              </ul>
-            </div>
+            {/* Footer Link Sections */}
+            {footerSections.map((section) => (
+              <div key={section.title}>
+                <h4 style={{ fontSize: '1.2rem', fontWeight: 600, marginBottom: '2rem', color: '#A1A1A1' }}>
+                  {section.title}
+                </h4>
+                <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                  {section.links.map((link, index) => (
+                    <li key={index} style={{ marginBottom: '1rem' }}>
+                      <a
+                        href={link.href}
+                        style={{
+                          color: '#D1D5DB',
+                          fontSize: '1.2rem',
+                          textDecoration: 'none',
+                          display: 'block',
+                          transition: 'color 0.2s',
+                        }}
+                        onMouseOver={(e) => (e.currentTarget.style.color = 'white')}
+                        onMouseOut={(e) => (e.currentTarget.style.color = '#D1D5DB')}
+                      >
+                        {link.text}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
           </div>
 
           {/* Copyright Section */}
-          <div className="border-t border-white/30 mt-12 pt-8 text-center">
-            <p className="text-gray-200 text-lg font-pragati-narrow">
+          <div
+            style={{
+              borderTop: '3px solid rgba(255, 255, 255, 0.2)',
+              paddingTop: '2rem',
+              textAlign: 'center',
+            }}
+          >
+            <p style={{ color: '#D1D5DB', fontSize: '1.2rem' }}>
               © 2025 Amoria Connekt. All rights reserved.
             </p>
           </div>
@@ -254,3 +248,4 @@ export default function Footer() {
     </footer>
   );
 }
+
