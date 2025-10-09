@@ -1,5 +1,6 @@
 'use client';
 import React, { useState } from 'react';
+import Link from 'next/link';
 
 export default function LoginPage(): React.JSX.Element {
   const [showPassword, setShowPassword] = useState(false);
@@ -62,6 +63,7 @@ export default function LoginPage(): React.JSX.Element {
                   left: '-30px',
                   width: '25px',
                   height: '25px',
+                  marginTop: '2rem',
                   borderTop: '4px solid rgba(64, 64, 70, 0.9)',
                   borderLeft: '4px solid rgba(64, 64, 70, 0.9)',
                   borderRadius: '8px 0 0 0'
@@ -74,6 +76,7 @@ export default function LoginPage(): React.JSX.Element {
                   right: '-30px',
                   width: '25px',
                   height: '25px',
+                  marginTop: '2rem',
                   borderTop: '4px solid rgba(64, 64, 70, 0.9)',
                   borderRight: '4px solid rgba(64, 64, 70, 0.9)',
                   borderRadius: '0 8px 0 0'
@@ -88,7 +91,7 @@ export default function LoginPage(): React.JSX.Element {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  marginBottom: '30px'
+                  marginTop: '2rem'
                 }}>
                   <svg width="60" height="60" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M12 12C14.21 12 16 10.21 16 8C16 5.79 14.21 4 12 4C9.79 4 8 5.79 8 8C8 10.21 9.79 12 12 12ZM12 14C9.33 14 4 15.34 4 18V20H20V18C20 15.34 14.67 14 12 14Z" fill="#ffffff"/>
@@ -127,6 +130,7 @@ export default function LoginPage(): React.JSX.Element {
                   width: '100px',
                   height: '100px',
                   borderRadius: '20px',
+                  marginTop: '1rem',
                   backgroundColor: 'rgba(64, 64, 70, 0.9)',
                   display: 'flex',
                   alignItems: 'center',
@@ -151,6 +155,7 @@ export default function LoginPage(): React.JSX.Element {
                   width: '100px',
                   height: '100px',
                   borderRadius: '20px',
+                  marginTop: '1rem',
                   backgroundColor: 'rgba(64, 64, 70, 0.9)',
                   display: 'flex',
                   alignItems: 'center',
@@ -176,11 +181,11 @@ export default function LoginPage(): React.JSX.Element {
           </div>
 
           {/* Pagination Dots */}
-          <div style={{ display: 'flex', gap: '8px', marginTop: '32px', position: 'relative', zIndex: 1 }}>
+          <div style={{ display: 'flex', gap: '10px', marginTop: '180px', position: 'relative', zIndex: 1, marginBottom: '6rem' }}>
             <div style={{ width: '28px', height: '6px', backgroundColor: '#e5e7eb', borderRadius: '3px' }}></div>
             <div style={{ width: '28px', height: '6px', backgroundColor: '#3b82f6', borderRadius: '3px' }}></div>
             <div style={{ width: '6px', height: '6px', backgroundColor: '#e5e7eb', borderRadius: '50%' }}></div>
-            <div style={{ width: '6px', height: '6px', backgroundColor: '#e5e7eb', borderRadius: '50%' }}></div>
+            <div style={{ width: '28px', height: '6px', backgroundColor: '#e5e7eb', borderRadius: '3px' }}></div>
           </div>
         </div>
 
@@ -242,7 +247,7 @@ export default function LoginPage(): React.JSX.Element {
                       backgroundColor: '#ffffff'
                     }}
                   />
-                  <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '4px' }}>
+                  <p style={{ fontSize: '14px', color: '#6b7280', marginTop: '4px' }}>
                     Enter Email Address associated with your account
                   </p>
                 </div>
@@ -317,14 +322,14 @@ export default function LoginPage(): React.JSX.Element {
 
             {/* Links */}
             <div style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <a href="#" style={{ fontSize: '15px', color: '#2563eb', textDecoration: 'underline', fontWeight: '500' }}>
+              <Link href="#" style={{ fontSize: '15px', color: '#083A85', textDecoration: 'underline', fontWeight: '800' }}>
                 Forgot your password?
-              </a>
+              </Link>
               <p style={{ fontSize: '15px', color: '#6b7280' }}>
                 Not registered yet?{' '}
-                <a href="#" style={{ color: '#2563eb', textDecoration: 'underline', fontWeight: '500' }}>
+                <Link href="/all/signup" style={{ color: '#083A85', textDecoration: 'underline', fontWeight: '800' }}>
                   Create an account
-                </a>
+                </Link>
               </p>
             </div>
           </div>
