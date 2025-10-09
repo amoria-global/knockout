@@ -45,10 +45,10 @@ export default function Footer() {
     {
       title: 'Support',
       links: [
-        { text: 'Help Center', href: '/help-center' },
-        { text: 'Privacy Policy', href: '/privacy-policy' },
-        { text: 'Terms of Service', href: '/terms-of-service' },
-        { text: 'Trust & Safety', href: '/trust-safety' },
+        { text: 'Help Center', href: '/all/help-center' },
+        { text: 'Privacy Policy', href: '/all/privacy-policy' },
+        { text: 'Terms of Service', href: '/all/terms-of-service' },
+        { text: 'Trust & Safety', href: '/all/trust-safety' },
       ],
     },
   ];
