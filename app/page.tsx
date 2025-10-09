@@ -21,7 +21,7 @@ export default function Home() {
             position: 'relative',
             maxWidth: '1080px',
             margin: '0 auto',
-            padding: '30px 0 200px',
+            padding: '30px 0 140px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',

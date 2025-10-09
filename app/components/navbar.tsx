@@ -8,6 +8,7 @@ const AmoriaKNavbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
   const [selectedLang, setSelectedLang] = useState('English');
+  const [isScrolled, setIsScrolled] = useState(false);
 
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
@@ -19,6 +20,20 @@ const AmoriaKNavbar = () => {
     { code: 'es', name: 'Español' },
     {code: 'Kiny', name: 'Kinyarwanda'},
   ];
+
+  // Effect to handle scroll events
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 0) {
+        setIsScrolled(true);
+      } else {
+        setIsScrolled(false);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Effect to handle clicks outside of the mobile menu and language dropdown
   useEffect(() => {
@@ -62,8 +77,13 @@ const AmoriaKNavbar = () => {
 
   return (
     <nav
-      className="bg-[#DBDBDB] sticky top-0 z-50"
-      style={{ fontFamily: "'Pragati Narrow', sans-serif", marginLeft: '1rem', marginRight: '1rem' }}
+      className={`sticky top-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-transparent' : ''}`}
+      style={{
+        fontFamily: "'Pragati Narrow', sans-serif",
+        marginLeft: '5px',
+        marginRight: '2px',
+        backgroundColor: isScrolled ? 'transparent/1' : '#DBDBDB'
+      }}
     >
       {/* Increased horizontal padding for more space */}
       <div className="max-w-7xl px-4 sm:px-6 lg:px-8 mx-4 sm:mx-6 lg:mx-8">
