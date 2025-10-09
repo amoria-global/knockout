@@ -1,5 +1,6 @@
 'use client';
 import React, { useState } from 'react';
+import Link from 'next/link';
 
 export default function SignupPage(): React.JSX.Element {
   const [showPassword, setShowPassword] = useState(false);
@@ -33,6 +34,8 @@ export default function SignupPage(): React.JSX.Element {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+
+  const isDisabled = !firstName || !lastName || !email || !phoneNumber || !password || !confirmPassword;
 
   const validatePassword = (pwd: string): boolean => {
     const hasNumber = /\d/.test(pwd);
@@ -74,78 +77,114 @@ export default function SignupPage(): React.JSX.Element {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-4 sm:p-4">
-      <div className="w-full max-w-5xl bg-white rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col lg:flex-row">
+    <div className="h-screen overflow-hidden bg-gray-50 flex items-center justify-center px-4 py-4 sm:p-4">
+      <div className="w-full max-w-5xl h-[90vh] max-h-[800px] bg-white rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col lg:flex-row">
 
         {/* Left Side - Gradient Card (Hidden on mobile) */}
         <div
-          className="hidden lg:flex lg:w-1/2 p-8 lg:p-12 flex-col items-center justify-between min-h-[400px] lg:min-h-[600px] relative overflow-hidden"
+          className="hidden lg:flex lg:w-1/2 p-8 lg:p-12 flex-col items-center justify-between h-full"
           style={{
             position: 'relative',
-            background: 'linear-gradient(180deg, #E8D5B7 0%, #F5E6D3 15%, #FDB366 35%, #FF9A56 50%, #FF8C42 60%, #6B9FD8 80%, #4A7BC2 90%, #2D5FA8 100%)'
+            background: 'linear-gradient(180deg, rgba(8, 58, 133, 1) 0%, rgba(8, 58, 133, 0.6) 40%, rgba(217, 217, 217, 1) 55%, rgba(217, 217, 217, 0.8) 70%, rgba(227, 54, 41, 1) 100%)',
+            overflow: 'hidden'
           }}
         >
-          <div className="flex flex-col items-center" style={{ paddingTop: '30px', paddingBottom: '20px', position: 'relative', zIndex: 1, flex: 1, justifyContent: 'space-between' }}>
+          {/* Overlay gradients */}
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'linear-gradient(63deg, rgba(8, 58, 133, 1) 0%, rgba(8, 58, 133, 0) 100%)',
+            pointerEvents: 'none'
+          }}></div>
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'radial-gradient(circle at 90% 0%, rgba(137, 89, 0, 1) 0%, rgba(255, 166, 0, 1) 0%, rgba(255, 166, 0, 0) 90%)',
+            pointerEvents: 'none'
+          }}></div>
+
+          <div className="flex-1 flex flex-col items-center justify-center text-center" style={{ position: 'relative', zIndex: 1 }}>
             <div className="flex flex-col items-center" style={{ width: '100%' }}>
               {/* Video/Image Frame */}
               <div style={{
-                width: '200px',
-                height: '130px',
-                border: '5px solid #3B82F6',
-                borderRadius: '2px',
+                width: '400px',
+                height: '180px',
+                borderRadius: '20px 0 0 20px',
                 overflow: 'hidden',
-                marginBottom: '50px',
+                marginBottom: '13rem',
                 backgroundColor: '#000'
               }}>
-                <img src="https://i.pinimg.com/736x/d7/31/69/d7316922309529db5701f6c2bf63c8b8.jpg" alt="Event" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <img src="/signup.png" alt="Event" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
 
               </div>
 
-              <h2 className="font-bold text-black text-center" style={{
-                fontSize: '20px',
-                lineHeight: '1.5',
+              <h2 style={{
+                fontSize: '24px',
+                fontWeight: '700',
+                color: '#000000',
+                marginTop: '-10rem',
                 maxWidth: '280px',
-                fontWeight: '700'
+                lineHeight: '1.3',
+                textAlign: 'center'
               }}>
                 Launch your event and let it dazzle with guests from afar!
               </h2>
             </div>
+          </div>
 
-            {/* Pagination Dots */}
-            <div className="flex" style={{ marginBottom: '10px', position: 'relative', zIndex: 1, gap: '6px' }}>
-              <div style={{ width: '8px', height: '8px', backgroundColor: 'rgba(255, 255, 255, 0.6)', borderRadius: '50%' }}></div>
-              <div style={{ width: '8px', height: '8px', backgroundColor: 'rgba(255, 255, 255, 0.6)', borderRadius: '50%' }}></div>
-              <div style={{ width: '28px', height: '8px', backgroundColor: '#3B82F6', borderRadius: '4px' }}></div>
-              <div style={{ width: '8px', height: '8px', backgroundColor: 'rgba(255, 255, 255, 0.6)', borderRadius: '50%' }}></div>
-            </div>
+          {/* Pagination Dots */}
+          <div style={{ display: 'flex', gap: '10px', marginTop: '180px', position: 'relative', zIndex: 1, marginBottom: '1rem' }}>
+            <div style={{ width: '28px', height: '6px', backgroundColor: '#e5e7eb', borderRadius: '3px' }}></div>
+            <div style={{ width: '28px', height: '6px', backgroundColor: '#3b82f6', borderRadius: '3px' }}></div>
+            <div style={{ width: '28px', height: '6px', backgroundColor: '#e5e7eb', borderRadius: '3px' }}></div>
           </div>
         </div>
 
         {/* Right Side - Signup Form */}
-        <div className="w-full lg:w-1/2 flex flex-col items-center justify-center py-6 sm:py-8 min-h-[600px] lg:min-h-0">
-          <div className="w-full max-w-md px-6 sm:px-8 md:px-12">
-            <h1 className="text-xl sm:text-2xl font-bold text-center text-black mb-8 sm:mb-8">Create your account</h1>
+        <div className="w-full lg:w-1/2 flex flex-col items-center h-full overflow-y-auto" style={{ scrollBehavior: 'smooth' }}>
+          <div className="w-full max-w-md px-6 sm:px-8 md:px-12 py-4 sm:py-6">
+            <h1 style={{ fontSize: '28px', fontWeight: '700', textAlign: 'left', color: '#000000', marginBottom: '24px', letterSpacing: '0.5px' }}>
+              Create your first account
+            </h1>
 
             {/* Social Login Buttons */}
-            <h2 className="text-sm font-normal text-center text-gray-600" style={{ marginBottom: '16px' }}>or</h2>
-            <div style={{ marginBottom: '24px' }}>
+            <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
               {/* Google Button */}
-              <button
-                type="button"
-                className="w-full py-3 flex items-center justify-center rounded-lg border border-gray-300 bg-white hover:bg-gray-50 transition-all duration-300 cursor-pointer"
-                style={{ marginBottom: '20px' }}
-              >
-                <img src="https://www.svgrepo.com/show/355037/google.svg" alt="Google" className="w-5 h-5 mr-2" />
-                <span className="text-sm font-medium text-gray-700">Continue with Google</span>
+              <button style={{
+                flex: '1',
+                padding: '10px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: '20px',
+                border: '2px solid #d1d5db',
+                backgroundColor: '#ffffff',
+                cursor: 'pointer',
+                transition: 'all 0.3s'
+              }}>
+                <img src="https://www.svgrepo.com/show/355037/google.svg" alt="Google" style={{ width: '22px', height: '22px' }} />
               </button>
+            </div>
+
+            {/* Divider */}
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '16px', marginTop: '16px' }}>
+              <hr style={{ flex: '1', border: 'none', borderTop: '2px solid #d1d5db' }} />
+              <span style={{ padding: '0 12px', fontSize: '16px', color: '#6b7280', fontWeight: '600' }}>or</span>
+              <hr style={{ flex: '1', border: 'none', borderTop: '2px solid #d1d5db' }} />
             </div>
 
             {/* Signup Form */}
             <form onSubmit={handleSubmit}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 {/* First Name */}
                 <div>
-                  <label htmlFor="firstName" className="block text-sm font-medium text-gray-700" style={{ marginBottom: '8px' }}>
+                  <label htmlFor="firstName" style={{ display: 'block', fontSize: '15px', fontWeight: '500', color: '#374151', marginBottom: '6px' }}>
                     First name
                   </label>
                   <input
@@ -154,15 +193,23 @@ export default function SignupPage(): React.JSX.Element {
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
                     placeholder="Enter your First Name"
-                    className="w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-                    style={{ padding: '12px 14px', fontSize: '14px' }}
+                    style={{
+                      width: '100%',
+                      padding: '12px 14px',
+                      fontSize: '15px',
+                      border: '2px solid #d1d5db',
+                      borderRadius: '20px',
+                      outline: 'none',
+                      transition: 'all 0.3s',
+                      backgroundColor: '#ffffff'
+                    }}
                   />
-                  {errors.firstName && <p className="text-xs text-red-600" style={{ marginTop: '6px' }}>{errors.firstName}</p>}
+                  {errors.firstName && <p style={{ fontSize: '13px', color: '#dc2626', marginTop: '4px' }}>{errors.firstName}</p>}
                 </div>
 
                 {/* Last Name */}
                 <div>
-                  <label htmlFor="lastName" className="block text-sm font-medium text-gray-700" style={{ marginBottom: '8px' }}>
+                  <label htmlFor="lastName" style={{ display: 'block', fontSize: '15px', fontWeight: '500', color: '#374151', marginBottom: '6px' }}>
                     Last name
                   </label>
                   <input
@@ -171,40 +218,63 @@ export default function SignupPage(): React.JSX.Element {
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
                     placeholder="Enter your Last Name"
-                    className="w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-                    style={{ padding: '12px 14px', fontSize: '14px' }}
+                    style={{
+                      width: '100%',
+                      padding: '12px 14px',
+                      fontSize: '15px',
+                      border: '2px solid #d1d5db',
+                      borderRadius: '20px',
+                      outline: 'none',
+                      transition: 'all 0.3s',
+                      backgroundColor: '#ffffff'
+                    }}
                   />
-                  {errors.lastName && <p className="text-xs text-red-600" style={{ marginTop: '6px' }}>{errors.lastName}</p>}
+                  {errors.lastName && <p style={{ fontSize: '13px', color: '#dc2626', marginTop: '4px' }}>{errors.lastName}</p>}
                 </div>
 
                 {/* Email */}
                 <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700" style={{ marginBottom: '8px' }}>
-                    Your email
+                  <label htmlFor="email" style={{ display: 'block', fontSize: '15px', fontWeight: '500', color: '#374151', marginBottom: '6px' }}>
+                    Your Email
                   </label>
                   <input
                     type="email"
                     id="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Provide your working Email Address"
-                    className="w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-                    style={{ padding: '12px 14px', fontSize: '14px' }}
+                    placeholder="example@gmail.com"
+                    style={{
+                      width: '100%',
+                      padding: '12px 14px',
+                      fontSize: '15px',
+                      border: '2px solid #d1d5db',
+                      borderRadius: '20px',
+                      outline: 'none',
+                      transition: 'all 0.3s',
+                      backgroundColor: '#ffffff'
+                    }}
                   />
-                  {errors.email && <p className="text-xs text-red-600" style={{ marginTop: '6px' }}>{errors.email}</p>}
+                  {errors.email && <p style={{ fontSize: '13px', color: '#dc2626', marginTop: '4px' }}>{errors.email}</p>}
                 </div>
 
                 {/* Phone Number */}
                 <div>
-                  <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700" style={{ marginBottom: '8px' }}>
+                  <label htmlFor="phoneNumber" style={{ display: 'block', fontSize: '15px', fontWeight: '500', color: '#374151', marginBottom: '6px' }}>
                     Phone
                   </label>
-                  <div className="relative flex items-center border border-gray-300 rounded-lg focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent overflow-hidden">
+                  <div style={{ position: 'relative', display: 'flex', alignItems: 'center', border: '2px solid #d1d5db', borderRadius: '20px', overflow: 'hidden', backgroundColor: '#ffffff' }}>
                     <select
                       value={countryCode}
                       onChange={(e) => setCountryCode(e.target.value)}
-                      className="border-0 border-r border-gray-300 focus:ring-0 focus:outline-none bg-white cursor-pointer"
-                      style={{ padding: '12px 10px', fontSize: '14px' }}
+                      style={{
+                        border: '0',
+                        borderRight: '2px solid #d1d5db',
+                        outline: 'none',
+                        backgroundColor: '#ffffff',
+                        cursor: 'pointer',
+                        padding: '12px 10px',
+                        fontSize: '15px'
+                      }}
                     >
                       {countries.map((country) => (
                         <option key={country.code + country.name} value={country.code}>
@@ -218,93 +288,135 @@ export default function SignupPage(): React.JSX.Element {
                       value={phoneNumber}
                       onChange={(e) => setPhoneNumber(e.target.value)}
                       placeholder=""
-                      className="flex-1 border-0 focus:ring-0 focus:outline-none"
-                      style={{ padding: '12px 14px', fontSize: '14px' }}
+                      style={{
+                        flex: '1',
+                        border: '0',
+                        outline: 'none',
+                        padding: '12px 14px',
+                        fontSize: '15px'
+                      }}
                     />
                   </div>
-                  {errors.phoneNumber && <p className="text-xs text-red-600" style={{ marginTop: '6px' }}>{errors.phoneNumber}</p>}
+                  {errors.phoneNumber && <p style={{ fontSize: '13px', color: '#dc2626', marginTop: '4px' }}>{errors.phoneNumber}</p>}
                 </div>
 
                 {/* Password */}
                 <div>
-                  <label htmlFor="password" className="block text-sm font-medium text-gray-700" style={{ marginBottom: '8px' }}>
+                  <label htmlFor="password" style={{ display: 'block', fontSize: '15px', fontWeight: '500', color: '#374151', marginBottom: '6px' }}>
                     Password
                   </label>
-                  <div className="relative">
+                  <div style={{ position: 'relative' }}>
                     <input
                       type={showPassword ? 'text' : 'password'}
                       id="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Enter strong Password"
-                      className="w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-                      style={{ padding: '12px 40px 12px 14px', fontSize: '14px' }}
+                      placeholder="Enter your Password"
+                      style={{
+                        width: '100%',
+                        padding: '12px 14px',
+                        paddingRight: '44px',
+                        fontSize: '15px',
+                        border: '2px solid #d1d5db',
+                        borderRadius: '20px',
+                        outline: 'none',
+                        transition: 'all 0.3s',
+                        backgroundColor: '#ffffff'
+                      }}
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors cursor-pointer"
-                      style={{ right: '12px' }}
+                      style={{
+                        position: 'absolute',
+                        right: '12px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        color: '#6b7280',
+                        cursor: 'pointer',
+                        border: 'none',
+                        background: 'transparent',
+                        padding: '4px'
+                      }}
                     >
                       <i className={`bi ${showPassword ? 'bi-eye-slash' : 'bi-eye'}`} style={{ fontSize: '16px' }}></i>
                     </button>
                   </div>
-                  <div style={{ marginTop: '8px', fontSize: '11px', color: '#6b7280', lineHeight: '1.4' }}>
-                    <div>1 number,</div>
-                    <div>1 letter,</div>
-                    <div>1 special character (@!#$%^&*=+)</div>
-                    <div>8 characters</div>
-                  </div>
-                  {errors.password && <p className="text-xs text-red-600" style={{ marginTop: '6px' }}>{errors.password}</p>}
+                  <p style={{ fontSize: '14px', color: '#6b7280', marginTop: '4px' }}>
+                    Must contain at least 8 characters, 1 number, 1 letter, and 1 special character (@!#$%^&*=+)
+                  </p>
+                  {errors.password && <p style={{ fontSize: '13px', color: '#dc2626', marginTop: '4px' }}>{errors.password}</p>}
                 </div>
 
                 {/* Confirm Password */}
                 <div>
-                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700" style={{ marginBottom: '8px' }}>
+                  <label htmlFor="confirmPassword" style={{ display: 'block', fontSize: '15px', fontWeight: '500', color: '#374151', marginBottom: '6px' }}>
                     Confirm Password
                   </label>
-                  <div className="relative">
+                  <div style={{ position: 'relative' }}>
                     <input
                       type={showConfirmPassword ? 'text' : 'password'}
                       id="confirmPassword"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="Confirm your Password"
-                      className="w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-                      style={{ padding: '12px 40px 12px 14px', fontSize: '14px' }}
+                      style={{
+                        width: '100%',
+                        padding: '12px 14px',
+                        paddingRight: '44px',
+                        fontSize: '15px',
+                        border: '2px solid #d1d5db',
+                        borderRadius: '20px',
+                        outline: 'none',
+                        transition: 'all 0.3s',
+                        backgroundColor: '#ffffff'
+                      }}
                     />
-                    <button 
+                    <button
                       type="button"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors cursor-pointer"
-                      style={{ right: '12px' }}
+                      style={{
+                        position: 'absolute',
+                        right: '12px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        color: '#6b7280',
+                        cursor: 'pointer',
+                        border: 'none',
+                        background: 'transparent',
+                        padding: '4px'
+                      }}
                     >
                       <i className={`bi ${showConfirmPassword ? 'bi-eye-slash' : 'bi-eye'}`} style={{ fontSize: '16px' }}></i>
                     </button>
                   </div>
-                  {errors.confirmPassword && <p className="text-xs text-red-600" style={{ marginTop: '6px' }}>{errors.confirmPassword}</p>}
+                  {errors.confirmPassword && <p style={{ fontSize: '13px', color: '#dc2626', marginTop: '4px' }}>{errors.confirmPassword}</p>}
                 </div>
               </div>
 
               {/* Terms and Conditions */}
-              <div style={{ marginTop: '16px', fontSize: '11px', color: '#6b7280', textAlign: 'left' }}>
+              <div style={{ marginTop: '16px', fontSize: '15px', color: '#6b7280', textAlign: 'left', lineHeight: '1.5' }}>
                 By creating an account, you consent that you have read and agree to our{' '}
-                <a href="#" className="text-blue-600 hover:underline">Terms of Service and Privacy Policy</a>.
+                <a href="#" style={{ color: '#083A85', textDecoration: 'underline', fontWeight: '800' }}>Terms of Service and Privacy Policy</a>.
               </div>
 
               {/* Submit Button */}
-              <div style={{ marginTop: '24px' }}>
+              <div style={{ marginTop: '20px' }}>
                 <button
                   type="submit"
-                  className="w-full rounded-lg font-medium text-white cursor-pointer transition-all duration-300"
+                  disabled={isDisabled}
                   style={{
-                    padding: '14px',
-                    fontSize: '15px',
-                    backgroundColor: '#3b82f6',
+                    width: '100%',
+                    padding: '12px',
+                    fontSize: '16px',
+                    borderRadius: '30px',
+                    fontWeight: '600',
+                    transition: 'all 0.3s',
+                    cursor: isDisabled ? 'not-allowed' : 'pointer',
+                    backgroundColor: isDisabled ? '#d1d5db' : '#083A85',
+                    color: isDisabled ? '#9ca3af' : '#ffffff',
                     border: 'none'
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#2563eb'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#3b82f6'}
                 >
                   Create account
                 </button>
@@ -312,12 +424,12 @@ export default function SignupPage(): React.JSX.Element {
             </form>
 
             {/* Links */}
-            <div style={{ marginTop: '20px' }}>
-              <p className="text-sm text-gray-600 text-center">
-                Already have account?{' '}
-                <a href="#" className="text-blue-600 hover:underline font-medium">
+            <div style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <p style={{ fontSize: '15px', color: '#6b7280' }}>
+                Already have an account?{' '}
+                <Link href="/all/login" style={{ color: '#083A85', textDecoration: 'underline', fontWeight: '800' }}>
                   Log in
-                </a>
+                </Link>
               </p>
             </div>
           </div>
