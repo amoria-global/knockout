@@ -63,7 +63,7 @@ const AmoriaKNavbar = () => {
   return (
     <nav
       className="bg-[#DBDBDB] sticky top-0 z-50"
-      style={{ fontFamily: "'Pragati Narrow', sans-serif", marginLeft: '5px', marginRight: '2px' }}
+      style={{ fontFamily: "'Pragati Narrow', sans-serif", marginLeft: '1rem', marginRight: '1rem' }}
     >
       {/* Increased horizontal padding for more space */}
       <div className="max-w-7xl px-4 sm:px-6 lg:px-8 mx-4 sm:mx-6 lg:mx-8">
