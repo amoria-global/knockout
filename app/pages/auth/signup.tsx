@@ -397,7 +397,9 @@ export default function SignupPage(): React.JSX.Element {
               {/* Terms and Conditions */}
               <div style={{ marginTop: '16px', fontSize: '15px', color: '#6b7280', textAlign: 'left', lineHeight: '1.5' }}>
                 By creating an account, you consent that you have read and agree to our{' '}
-                <a href="/all/terms-of-service" style={{ color: '#083A85', textDecoration: 'underline', fontWeight: '800' }}>Terms of Service</a>.
+                <a href="/all/terms-of-service" style={{ color: '#083A85', textDecoration: 'underline', fontWeight: '800' }}>Terms of Service</a>
+                {' '}and{' '}
+                <a href="/all/privacy-policy" style={{ color: '#083A85', textDecoration: 'underline', fontWeight: '800' }}>Privacy Policy</a>.
               </div>
 
               {/* Submit Button */}
