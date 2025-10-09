@@ -80,8 +80,8 @@ const AmoriaKNavbar = () => {
       className={`sticky top-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-transparent' : ''}`}
       style={{
         fontFamily: "'Pragati Narrow', sans-serif",
-        marginLeft: '5px',
-        marginRight: '2px',
+        marginLeft: '1rem',
+        marginRight: '1rem',
         backgroundColor: isScrolled ? 'transparent/1' : '#DBDBDB'
       }}
     >
