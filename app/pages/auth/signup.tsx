@@ -175,7 +175,7 @@ export default function SignupPage(): React.JSX.Element {
             {/* Divider */}
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: '16px', marginTop: '16px' }}>
               <hr style={{ flex: '1', border: 'none', borderTop: '2px solid #d1d5db' }} />
-              <span style={{ padding: '0 12px', fontSize: '16px', color: '#6b7280', fontWeight: '600' }}>or</span>
+              <span style={{ padding: '0 12px', fontSize: '16px', color: '#6b7280', fontWeight: '600' }}>Or sign up with</span>
               <hr style={{ flex: '1', border: 'none', borderTop: '2px solid #d1d5db' }} />
             </div>
 

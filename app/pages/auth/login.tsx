@@ -218,7 +218,7 @@ export default function LoginPage(): React.JSX.Element {
             {/* Divider */}
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: '16px', marginTop: '16px' }}>
               <hr style={{ flex: '1', border: 'none', borderTop: '2px solid #d1d5db' }} />
-              <span style={{ padding: '0 12px', fontSize: '16px', color: '#6b7280', fontWeight: '600' }}>or</span>
+              <span style={{ padding: '0 12px', fontSize: '16px', color: '#6b7280', fontWeight: '600' }}>Or continue with</span>
               <hr style={{ flex: '1', border: 'none', borderTop: '2px solid #d1d5db' }} />
             </div>
 
@@ -322,7 +322,7 @@ export default function LoginPage(): React.JSX.Element {
 
             {/* Links */}
             <div style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <Link href="#" style={{ fontSize: '15px', color: '#083A85', textDecoration: 'underline', fontWeight: '800' }}>
+              <Link href="/all/forgotpswd" style={{ fontSize: '15px', color: '#083A85', textDecoration: 'underline', fontWeight: '800' }}>
                 Forgot your password?
               </Link>
               <p style={{ fontSize: '15px', color: '#6b7280' }}>
