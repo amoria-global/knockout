@@ -37,9 +37,9 @@ export default function Footer() {
     {
       title: 'Company',
       links: [
-        { text: 'About Us', href: '/about' },
+        { text: 'About Us', href: '/all/about' },
         { text: 'Contact', href: '/all/contact_us' },
-        { text: 'Blog', href: '/blog' },
+        { text: 'Blog', href: 'https://www.amoriaglobal.com/' },
       ],
     },
     {
