@@ -80,17 +80,17 @@ const AmoriaKNavbar = () => {
       className={`sticky top-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-transparent' : ''}`}
       style={{
         fontFamily: "'Pragati Narrow', sans-serif",
-        marginLeft: '1rem',
-        marginRight: '1rem',
+        marginLeft: '0',
+        marginRight: '0',
         backgroundColor: isScrolled ? 'transparent/1' : '#DBDBDB'
       }}
     >
       {/* Increased horizontal padding for more space */}
       <div className="max-w-7xl px-4 sm:px-6 lg:px-8 mx-4 sm:mx-6 lg:mx-8">
         <div className="flex items-center justify-between h-16">
-          <Link href="/" onClick={handleLinkClick} className="flex items-center space-x-2 flex-shrink-0">
-            <img src="/logo.jpg" alt="AmoriaK Logo" className="h-8 w-8 rounded-full" />
-            <span className="text-xl font-bold text-gray-900 hover:text-[#083A85]">AmoriaK</span>
+          <Link href="/" onClick={handleLinkClick} className="flex items-center flex-shrink-0">
+            <img src="/logo.png" alt="AmoriaK Logo" className="h-14 w-15 rounded-full" />
+            <span className="text-xl font-bold text-gray-900 hover:text-[#083A85]" style={{ marginLeft: '-14px' }}>onnekyt</span>
           </Link>
 
           {/* Center: Navigation Links (Desktop) */}
