@@ -38,7 +38,7 @@ export default function ForgotPasswordPage(): React.JSX.Element {
     if (!isCodeDisabled) {
       const code = verificationCode.join('');
       // Navigate to reset password page with email and code
-      router.push(`/all/resetpswd?email=${encodeURIComponent(email)}&code=${code}`);
+      router.push(`/user/auth/resetpswd?email=${encodeURIComponent(email)}&code=${code}`);
       console.log('Verification code entered:', code);
     }
   };
@@ -120,7 +120,7 @@ export default function ForgotPasswordPage(): React.JSX.Element {
           {step === 'email' ? 'Forgot Password?' : 'Verify Your Email'}
         </h1>
 
-        <p style={{ fontSize: '13px', fontWeight: '400', color: '#000000', textAlign: 'center', marginBottom: '24px', lineHeight: '1.4', opacity: '0.7' }}>
+        <p style={{ fontSize: '15px', fontWeight: '500', color: '#000000', textAlign: 'center', marginBottom: '24px', lineHeight: '1.4', opacity: '0.7' }}>
           {step === 'email'
             ? ' Enter your email address and we\'ll send you a verification code to reset your password.'
             : `We've sent a 6-digit verification code to ${email}. Please enter it below.`
@@ -139,7 +139,7 @@ export default function ForgotPasswordPage(): React.JSX.Element {
           <form onSubmit={handleEmailSubmit}>
             {/* Email Input */}
             <div style={{ marginBottom: '18px' }}>
-              <label htmlFor="email" style={{ display: 'block', fontSize: '13px', fontWeight: '500', color: '#000000', marginBottom: '6px' }}>Email Address</label>
+              <label htmlFor="email" style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#000000', marginBottom: '6px' }}>Email Address</label>
               <input
                 type="email"
                 id="email"
@@ -184,7 +184,7 @@ export default function ForgotPasswordPage(): React.JSX.Element {
 
             {/* Back to Sign In Link */}
             <div style={{ textAlign: 'center', marginBottom: '18px' }}>
-              <Link href="/all/login" style={{ fontSize: '13px', fontWeight: '400', color: '#000000', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', opacity: '0.7' }}>
+              <Link href="/user/auth/login" style={{ fontSize: '14px', fontWeight: '500', color: '#000000', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', opacity: '0.7' }}>
                 <span>←</span> Back to Sign In
               </Link>
             </div>
@@ -194,10 +194,10 @@ export default function ForgotPasswordPage(): React.JSX.Element {
 
             {/* Bottom Links */}
             <div style={{ textAlign: 'center' }}>
-              <p style={{ fontSize: '13px', fontWeight: '400', color: '#000000', marginBottom: '6px', opacity: '0.7' }}>
+              <p style={{ fontSize: '14px', fontWeight: '500', color: '#000000', marginBottom: '6px', opacity: '0.7' }}>
                 Remember your password?
               </p>
-              <Link href="/all/login" style={{fontSize: '13px',color: '#083A85',textDecoration: 'none',fontWeight: '500'}}>
+              <Link href="/user/auth/login" style={{fontSize: '14px',color: '#083A85',textDecoration: 'none', fontWeight: '510'}}>
                 Try signing in again
               </Link>
             </div>
@@ -209,12 +209,12 @@ export default function ForgotPasswordPage(): React.JSX.Element {
           <form onSubmit={handleVerificationSubmit}>
             {/* Show email (read-only) */}
             <div style={{ marginBottom: '16px' }}>
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: '500', color: '#000000', marginBottom: '6px' }}>Email Address</label>
+              <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#000000', marginBottom: '6px' }}>Email Address</label>
               <div style={{
                 width: '100%',
                 padding: '10px 14px',
-                fontSize: '13px',
-                fontWeight: '400',
+                fontSize: '15px',
+                fontWeight: '700',
                 border: '1.5px solid #d1d5db',
                 borderRadius: '12px',
                 backgroundColor: '#f9fafb',
@@ -231,7 +231,7 @@ export default function ForgotPasswordPage(): React.JSX.Element {
                     background: 'none',
                     border: 'none',
                     color: '#083A85',
-                    fontSize: '12px',
+                    fontSize: '14px',
                     cursor: 'pointer',
                     fontWeight: '500'
                   }}
@@ -243,7 +243,7 @@ export default function ForgotPasswordPage(): React.JSX.Element {
 
             {/* Verification Code Input - Individual Boxes */}
             <div style={{ marginBottom: '16px' }}>
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: '500', color: '#000000', marginBottom: '6px' }}>
+              <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#000000', marginBottom: '6px' }}>
                 Verification Code
               </label>
               <div style={{
@@ -295,8 +295,8 @@ export default function ForgotPasswordPage(): React.JSX.Element {
                 width: '100%',
                 padding: '10px',
                 fontSize: '14px',
-                borderRadius: '12px',
-                fontWeight: '500',
+                borderRadius: '14px',
+                fontWeight: '600',
                 transition: 'all 0.3s',
                 cursor: isCodeDisabled ? 'not-allowed' : 'pointer',
                 backgroundColor: isCodeDisabled ? '#d1d5db' : '#083A85',
@@ -316,8 +316,8 @@ export default function ForgotPasswordPage(): React.JSX.Element {
                 style={{
                   background: 'none',
                   border: 'none',
-                  fontSize: '12px',
-                  fontWeight: '400',
+                  fontSize: '13px',
+                  fontWeight: '600',
                   color: '#000000',
                   opacity: '0.7',
                   cursor: 'pointer',
@@ -333,10 +333,10 @@ export default function ForgotPasswordPage(): React.JSX.Element {
 
             {/* Bottom Links */}
             <div style={{ textAlign: 'center' }}>
-              <p style={{ fontSize: '12px', fontWeight: '400', color: '#000000', marginBottom: '6px', opacity: '0.7' }}>
+              <p style={{ fontSize: '14px', fontWeight: '500', color: '#000000', marginBottom: '6px', opacity: '0.7' }}>
                 Remember your password?
               </p>
-              <Link href="/all/login" style={{fontSize: '12px',color: '#083A85',textDecoration: 'none',fontWeight: '500'}}>
+              <Link href="/user/auth/login" style={{fontSize: '14px',color: '#083A85',textDecoration: 'none', fontWeight: '510'}}>
                 Try signing in again
               </Link>
             </div>

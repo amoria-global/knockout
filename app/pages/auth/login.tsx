@@ -190,10 +190,10 @@ export default function LoginPage(): React.JSX.Element {
         </div>
 
         {/* Right Side - Login Form */}
-        <div className="w-full lg:w-1/2 flex flex-col items-center justify-center py-4 sm:py-6 h-full">
+        <div className="w-full lg:w-1/2 flex flex-col items-center justify-center py-4 sm:py-6 h-full" style={{padding: '30px 40px 30px 50px'}}>
           <div className="w-full max-w-md px-6 sm:px-8 md:px-12">
-            <h1 style={{ fontSize: '28px', fontWeight: '700', textAlign: 'left', color: '#000000', marginBottom: '24px', letterSpacing: '0.5px' }}>
-              Log into your existing account
+            <h1 style={{ fontSize: '28px', fontWeight: '700', textAlign: 'left', color: '#000000', marginBottom: '24px', letterSpacing: '0.5px', marginLeft: '45px' }}>
+              Log In to your existing account
             </h1>
 
             {/* Social Login Buttons */}
@@ -322,12 +322,12 @@ export default function LoginPage(): React.JSX.Element {
 
             {/* Links */}
             <div style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <Link href="/all/forgotpswd" style={{ fontSize: '15px', color: '#083A85', textDecoration: 'underline', fontWeight: '800' }}>
+              <Link href="/user/auth/forgotpswd" style={{ fontSize: '15px', color: '#083A85', textDecoration: 'underline', fontWeight: '800' }}>
                 Forgot your password?
               </Link>
               <p style={{ fontSize: '15px', color: '#6b7280' }}>
                 Not registered yet?{' '}
-                <Link href="/all/signup" style={{ color: '#083A85', textDecoration: 'underline', fontWeight: '800' }}>
+                <Link href="/user/auth/signup" style={{ color: '#083A85', textDecoration: 'underline', fontWeight: '800' }}>
                   Create an account
                 </Link>
               </p>

@@ -147,9 +147,9 @@ export default function SignupPage(): React.JSX.Element {
         </div>
 
         {/* Right Side - Signup Form */}
-        <div className="w-full lg:w-1/2 flex flex-col items-center h-full overflow-y-auto" style={{ scrollBehavior: 'smooth' }}>
+        <div className="w-full lg:w-1/2 flex flex-col items-center h-full overflow-y-auto" style={{ scrollBehavior: 'smooth', padding: '30px 40px 30px 50px' }}>
           <div className="w-full max-w-md px-6 sm:px-8 md:px-12 py-4 sm:py-6">
-            <h1 style={{ fontSize: '28px', fontWeight: '700', textAlign: 'left', color: '#000000', marginBottom: '24px', letterSpacing: '0.5px' }}>
+            <h1 style={{ fontSize: '28px', fontWeight: '700', textAlign: 'left', color: '#000000', marginBottom: '24px', letterSpacing: '0.5px', marginLeft: '55px' }}>
               Create your first account
             </h1>
 
@@ -397,9 +397,9 @@ export default function SignupPage(): React.JSX.Element {
               {/* Terms and Conditions */}
               <div style={{ marginTop: '16px', fontSize: '15px', color: '#6b7280', textAlign: 'left', lineHeight: '1.5' }}>
                 By creating an account, you consent that you have read and agree to our{' '}
-                <a href="/all/terms-of-service" style={{ color: '#083A85', textDecoration: 'underline', fontWeight: '800' }}>Terms of Service</a>
+                <a href="/user/terms-of-service" style={{ color: '#083A85', textDecoration: 'underline', fontWeight: '800' }}>Terms of Service</a>
                 {' '}and{' '}
-                <a href="/all/privacy-policy" style={{ color: '#083A85', textDecoration: 'underline', fontWeight: '800' }}>Privacy Policy</a>.
+                <a href="/user/privacy-policy" style={{ color: '#083A85', textDecoration: 'underline', fontWeight: '800' }}>Privacy Policy</a>.
               </div>
 
               {/* Submit Button */}
@@ -429,7 +429,7 @@ export default function SignupPage(): React.JSX.Element {
             <div style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <p style={{ fontSize: '15px', color: '#6b7280' }}>
                 Already have an account?{' '}
-                <Link href="/all/login" style={{ color: '#083A85', textDecoration: 'underline', fontWeight: '800' }}>
+                <Link href="/user/auth/login" style={{ color: '#083A85', textDecoration: 'underline', fontWeight: '800' }}>
                   Log in
                 </Link>
               </p>
