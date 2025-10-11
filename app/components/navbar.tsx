@@ -170,8 +170,8 @@ const AmoriaKNavbar = () => {
               )}
             </div>
 
-            <Link href="/all/login" className="text-gray-900 text-base font-semibold hover:text-[#083A85] transition-colors duration-200 whitespace-nowrap cursor-pointer">Log In</Link>
-            <Link href="/all/signup" className="bg-[#083A85] text-white text-base font-medium rounded-full hover:bg-[#001f4d] transition-all duration-300 whitespace-nowrap cursor-pointer" style={{ paddingLeft: '1.25rem', paddingRight: '1.25rem', paddingTop: '0.375rem', paddingBottom: '0.375rem' }}>Sign Up</Link>
+            <Link href="/user/auth/login" className="text-gray-900 text-base font-semibold hover:text-[#083A85] transition-colors duration-200 whitespace-nowrap cursor-pointer">Log In</Link>
+            <Link href="/user/auth/signup" className="bg-[#083A85] text-white text-base font-medium rounded-full hover:bg-[#001f4d] transition-all duration-300 whitespace-nowrap cursor-pointer" style={{ paddingLeft: '1.25rem', paddingRight: '1.25rem', paddingTop: '0.375rem', paddingBottom: '0.375rem' }}>Sign Up</Link>
           </div>
 
           {/* Mobile Menu Button */}
@@ -261,8 +261,8 @@ const AmoriaKNavbar = () => {
 
             <div className="border-t border-gray-200 !my-3"></div>
 
-            <Link href="/all/login" onClick={handleLinkClick} className="block px-3 py-2.5 text-center rounded-md text-gray-900 hover:bg-gray-50 text-base font-medium transition-colors cursor-pointer">Log In</Link>
-            <Link href="/all/signup" onClick={handleLinkClick} className="block px-3 py-2.5 text-center bg-[#002D72] text-white rounded-full hover:bg-[#001f4d] text-base font-semibold transition-all duration-300 shadow-sm cursor-pointer">Sign Up</Link>
+            <Link href="/user/auth/login" onClick={handleLinkClick} className="block px-3 py-2.5 text-center rounded-md text-gray-900 hover:bg-gray-50 text-base font-medium transition-colors cursor-pointer">Log In</Link>
+            <Link href="/user/auth/signup" onClick={handleLinkClick} className="block px-3 py-2.5 text-center bg-[#002D72] text-white rounded-full hover:bg-[#001f4d] text-base font-semibold transition-all duration-300 shadow-sm cursor-pointer">Sign Up</Link>
           </div>
         </div>
       )}

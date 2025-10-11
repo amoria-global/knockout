@@ -37,18 +37,18 @@ export default function Footer() {
     {
       title: 'Company',
       links: [
-        { text: 'About Us', href: '/all/about' },
-        { text: 'Contact', href: '/all/contact_us' },
+        { text: 'About Us', href: '/user/about' },
+        { text: 'Contact', href: '/user/contact_us' },
         { text: 'Blog', href: 'https://www.amoriaglobal.com/' },
       ],
     },
     {
       title: 'Support',
       links: [
-        { text: 'Help Center', href: '/all/help-center' },
-        { text: 'Privacy Policy', href: '/all/privacy-policy' },
-        { text: 'Terms of Service', href: '/all/terms-of-service' },
-        { text: 'Trust & Safety', href: '/all/trust-safety' },
+        { text: 'Help Center', href: '/user/help-center' },
+        { text: 'Privacy Policy', href: '/user/privacy-policy' },
+        { text: 'Terms of Service', href: '/user/terms-of-service' },
+        { text: 'Trust & Safety', href: '/user/trust-safety' },
       ],
     },
   ];
@@ -61,7 +61,7 @@ export default function Footer() {
   ];
 
   return (
-    <footer style={{ position: 'relative', width: '100%', marginTop: '6.4rem' }}>
+    <footer style={{ position: 'relative', width: '100%', marginTop: '2.8rem' }}>
       {/* Subscribe Section */}
       <div
         style={{
@@ -145,10 +145,10 @@ export default function Footer() {
       >
         <div
           style={{
-            maxWidth: '64rem',
+            maxWidth: '90rem',
             margin: '0 auto',
-            paddingLeft: '1.6rem',
-            paddingRight: '1.6rem',
+            paddingLeft: '3rem',
+            paddingRight: '3rem',
             paddingTop: '3.2rem',
             paddingBottom: '1.6rem',
           }}
@@ -158,15 +158,18 @@ export default function Footer() {
             style={{
               display: 'grid',
               gridTemplateColumns: '1.5fr 1fr 1fr 1fr 1fr',
-              gap: '1.6rem',
+              gap: '4rem',
               marginBottom: '4rem',
             }}
           >
             {/* Amoria Connekt Section */}
             <div style={{ paddingRight: '1.6rem' }}>
-              <h3 style={{ fontSize: '1.16rem', fontWeight: 700, marginBottom: '1.6rem' }}>
-                Amoria Connekt
-              </h3>
+              <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1.9rem', marginLeft: '-1rem' }}>
+                <img src="/fav.png" alt="AmoriaK Logo" style={{ height: '3.5rem', width: '3.75rem', borderRadius: '9999px', marginTop: '-1.9rem' }} />
+                <h3 style={{ fontSize: '1.5rem', fontWeight: 700, marginLeft: '-0.7rem', marginTop: '-1.9rem' }}>
+                  onnekyt
+                </h3>
+              </div>
               <p
                 style={{
                   color: '#D1D5DB',
