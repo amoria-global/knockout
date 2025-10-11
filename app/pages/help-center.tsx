@@ -233,9 +233,9 @@ const HelpSupportCenter: React.FC = () => {
         paddingLeft: '1rem',
         paddingRight: '1rem',
         overflow: 'hidden',
-        marginLeft: '1rem',
-        marginRight: '1rem',
-        marginTop: '1rem'
+        marginLeft: '0',
+        marginRight: '0',
+        marginTop: '0rem'
       }}>
         {/* Background Image with Blur Overlay */}
         <div style={{
