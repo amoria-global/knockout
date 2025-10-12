@@ -51,7 +51,7 @@ export default function BackToTop(): React.JSX.Element {
         width: '50px',
         height: '50px',
         borderRadius: '50%',
-        backgroundColor: isHovered ? '#062d6b' : '#083A85',
+        backgroundColor: isHovered ? '#2f68bd' : '#325180',
         color: '#fff',
         border: 'none',
         cursor: 'pointer',
