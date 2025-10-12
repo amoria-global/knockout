@@ -102,7 +102,7 @@ const AmoriaKNavbar = () => {
               <i className="bi bi-chevron-down"></i>
             </button>
 
-            <Link href="" className="text-gray-700 hover:text-[#083A85] text-base font-medium transition-colors duration-200 whitespace-nowrap cursor-pointer">About</Link>
+            <Link href="/user/about" className="text-gray-700 hover:text-[#083A85] text-base font-medium transition-colors duration-200 whitespace-nowrap cursor-pointer">About</Link>
           </div>
 
           {/* Right: Language and Auth Buttons (Desktop) */}
