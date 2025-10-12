@@ -208,6 +208,32 @@ export default function ViewProfilePage(): React.JSX.Element {
           backgroundPosition: 'center',
         }}
       >
+        {/* Back Button */}
+        <button
+            onClick={() => window.history.back()}
+            style={{
+                position: 'absolute',
+                top: '20px',
+                left: '24px',
+                zIndex: 10,
+                width: '36px',
+                height: '36px',
+                borderRadius: '50%',
+                backgroundColor: 'rgba(0, 0, 0, 0.4)',
+                border: 'none',
+                color: '#fff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                transition: 'background-color 0.2s',
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.6)')}
+            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.4)')}
+            aria-label="Go back"
+            >
+            <i className="bi bi-chevron-left" style={{ fontSize: '18px' }}></i>
+        </button>
         {/* Overlay */}
         <div
           style={{
@@ -603,8 +629,7 @@ export default function ViewProfilePage(): React.JSX.Element {
                 </div>
               </div>
 
-              {/* 
-               */}
+              {/* */}
               <div>
                 <h3 style={{ fontSize: '14px', fontWeight: '700', color: '#000', marginBottom: '14px' }}>
                   Featured Projects
