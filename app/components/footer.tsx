@@ -22,8 +22,8 @@ export default function Footer() {
     {
       title: 'For Clients',
       links: [
-        { text: 'Find A Photographer', href: '/find-photographer' },
-        { text: 'How it Works', href: '/how-it-works' },
+        { text: 'Find A Photographer', href: '/user/photographers' },
+        { text: 'How it Works', href: '/#how-it-works' },
         { text: 'Browse Events', href: '/browse-events' },
       ],
     },

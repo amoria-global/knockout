@@ -95,7 +95,7 @@ const AmoriaKNavbar = () => {
 
           {/* Center: Navigation Links (Desktop) */}
           <div className="hidden md:flex items-center gap-12 absolute left-1/3 transform -translate-x-1/2">
-            <Link href="" className="text-gray-700 hover:text-[#083A85] text-base font-medium transition-colors duration-200 whitespace-nowrap cursor-pointer">Photographers</Link>
+            <Link href="/user/photographers" className="text-gray-700 hover:text-[#083A85] text-base font-medium transition-colors duration-200 whitespace-nowrap cursor-pointer">Photographers</Link>
 
             <button className="flex items-center gap-1 text-gray-700 hover:text-[#083A85] text-base font-medium transition-colors duration-200 whitespace-nowrap cursor-pointer">
               <span>Events</span>
