@@ -1,12 +1,13 @@
 'use client';
+import Link from 'next/link';
 
 import React, { useState } from 'react';
 import {
   FaFacebookF,
   FaLinkedinIn,
-  FaTwitter,
+  FaXTwitter,
   FaInstagram,
-} from 'react-icons/fa';
+} from 'react-icons/fa6';
 
 export default function Footer() {
   const [email, setEmail] = useState('');
@@ -56,7 +57,7 @@ export default function Footer() {
   const socialLinks = [
     { icon: FaFacebookF, href: 'https://facebook.com', label: 'Facebook' },
     { icon: FaLinkedinIn, href: 'https://linkedin.com', label: 'LinkedIn' },
-    { icon: FaTwitter, href: 'https://twitter.com', label: 'X (Twitter)' },
+    { icon: FaXTwitter, href: 'https://x.com', label: 'X (Twitter)' },
     { icon: FaInstagram, href: 'https://instagram.com', label: 'Instagram' },
   ];
 
@@ -78,7 +79,7 @@ export default function Footer() {
       >
         <div
           style={{
-            backgroundColor: 'white',
+            backgroundColor: '#d6d6d6',
             borderRadius: '9999px',
             padding: '0.001rem',
             boxShadow: '0 8px 12px -2.4px rgba(0, 0, 0, 0.1)',
@@ -104,6 +105,7 @@ export default function Footer() {
                 border: 'none',
                 outline: 'none',
                 fontSize: '0.96rem',
+                fontWeight: 500
               }}
               required
             />
@@ -164,12 +166,12 @@ export default function Footer() {
           >
             {/* Amoria Connekt Section */}
             <div style={{ paddingRight: '1.6rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1.9rem', marginLeft: '-1rem' }}>
+              <Link href="/" style={{ display: 'flex', alignItems: 'center', marginBottom: '1.9rem', marginLeft: '-1rem', cursor: 'pointer', textDecoration: 'none', color: 'inherit' }}>
                 <img src="/fav.png" alt="AmoriaK Logo" style={{ height: '3.5rem', width: '3.75rem', borderRadius: '9999px', marginTop: '-1.9rem' }} />
-                <h3 style={{ fontSize: '1.5rem', fontWeight: 700, marginLeft: '-0.7rem', marginTop: '-1.9rem' }}>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: 700, marginLeft: '-0.7rem', marginTop: '-1.9rem' }}>
                   onnekyt
                 </h3>
-              </div>
+              </Link>
               <p
                 style={{
                   color: '#D1D5DB',
@@ -181,7 +183,7 @@ export default function Footer() {
                 Connecting moments, creating memories. Your trusted platform for professional event
                 photography and live streaming.
               </p>
-              <div>
+              <div style={{ marginTop: '5.4rem', marginBottom: '-2.2rem' }}>
                 <span style={{ color: '#D1D5DB', fontSize: '1.04rem', display: 'block', marginBottom: '0.8rem', gap: '2.4rem' }}>
                   Follow us on:
                 </span>
@@ -197,7 +199,7 @@ export default function Footer() {
                       onMouseOver={(e) => (e.currentTarget.style.color = 'white')}
                       onMouseOut={(e) => (e.currentTarget.style.color = '#0D99FF')}
                     >
-                      <social.icon style={{ height: '1.2rem', width: '1.2rem' }} />
+                      <social.icon style={{ height: '1.3rem', width: '1.3rem' }} />
                     </a>
                   ))}
                 </div>

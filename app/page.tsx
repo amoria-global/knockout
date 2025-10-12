@@ -1,5 +1,6 @@
 import Footer from "./components/footer";
 import Navbar from "./components/navbar";
+import GlobalNetwork from "./components/GlobalNetwork";
 
 export default function Home() {
   return (
@@ -13,18 +14,17 @@ export default function Home() {
           position: 'relative',
           backgroundColor: '#DBDBDB',
           overflow: 'hidden',
-          minHeight: '75vh'
         }}>
           {/* Hero Content Container */}
           <div style={{
             position: 'relative',
             maxWidth: '1080px',
             margin: '0 auto',
-            padding: '30px 0 140px',
+            padding: '40px 20px 128px', // Standardized padding
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            minHeight: 'calc(75vh - 64px)'
+            minHeight: 'calc(80vh - 64px)'
           }}>
 
             {/* Left Content */}
@@ -73,7 +73,7 @@ export default function Home() {
                 marginBottom: '19.5px',
                 letterSpacing: '-0.02em'
               }}>
-                <div style={{ color: '#083A85', marginBottom: '3px' }}>Connekt</div>
+                <div style={{ color: '#083A85', marginBottom: '3px' }}>Connekyt</div>
                 <div style={{ color: '#000', marginBottom: '3px' }}>With Professional</div>
                 <div style={{ color: '#000' }}>Photographers</div>
               </h1>
@@ -116,7 +116,7 @@ export default function Home() {
                   cursor: 'pointer',
                   transition: 'all 0.3s ease'
                 }}>
-                  Join As Photographer
+                  Join As A Photographer
                 </button>
               </div>
             </div>
@@ -439,19 +439,19 @@ export default function Home() {
         {/* How it works Section */}
         <section style={{
           backgroundColor: '#fff',
-          padding: '20px 0',
+          padding: '80px 0', // Increased vertical padding
         }}>
           <div style={{
             maxWidth: '1080px',
             margin: '0 auto',
-            padding: '0 10px'
+            padding: '0 20px' // Horizontal padding for smaller screens
           }}>
             {/* Section Title */}
             <h2 style={{
               fontSize: '50px',
               fontWeight: 1000,
               textAlign: 'center',
-              marginBottom: '70px',
+              marginBottom: '100px', // Standardized margin
               color: '#000',
               letterSpacing: '-0.02em'
             }}>
@@ -613,13 +613,13 @@ export default function Home() {
               marginTop: '40px',
               background: 'linear-gradient(90deg, #083A85 19%, #4675AA 100%)',
               borderRadius: '24px',
-              padding: '25px ',       
+              padding: '25px ',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
               gap: '60px',
               position: 'relative',
-              
+
             }}>
               {/* Left Content */}
               <div style={{
@@ -716,7 +716,7 @@ export default function Home() {
         {/* Mockups Section */}
         <section style={{
           background: 'linear-gradient(180deg, #B3B7BA 0%, #083A85 100%)',
-          padding: '160px 0',
+          padding: '158px 0', // Standardized vertical padding
           position: 'relative',
           overflow: 'hidden'
         }}>
@@ -819,7 +819,7 @@ export default function Home() {
 
                 {/* Screen Content */}
                 <div style={{
-                  position: 'absolute',                
+                  position: 'absolute',
                   top: '44px',
                   left: '12px',
                   right: '12px',
@@ -895,7 +895,7 @@ export default function Home() {
             {/* Tablet Mockup - Middle Layer */}
             <div style={{
               position: 'absolute',
-              left: '52%',
+              left: '50%',
               top: '58%',
               transform: 'translate(-50%, -50%)',
               width: '580px',
@@ -1134,7 +1134,7 @@ export default function Home() {
             {/* Phone Mockup - Foreground Layer */}
             <div style={{
               position: 'absolute',
-              left: '45%',
+              left: '43.3%',
               top: '55%',
               transform: 'translate(-15%, -50%)',
               width: '250px',
@@ -1331,7 +1331,7 @@ export default function Home() {
                     gap: '30px',
                     marginBottom: '12px',
                     alignItems: 'center'
-                  }}>                  
+                  }}>
                     {/* Capture Button */}
                     <div style={{
                       width: '50px',
@@ -1340,7 +1340,7 @@ export default function Home() {
                       backgroundColor: 'rgba(255, 255, 255, 0.9)',
                       border: '4px solid rgba(255, 255, 255, 0.5)',
                       boxShadow: '0 4px 16px rgba(0,0,0,0.3)'
-                    }} />                
+                    }} />
                   </div>
                 </div>
               </div>
@@ -1351,281 +1351,382 @@ export default function Home() {
         {/* Why Amoria Connekt Only Section */}
         <section style={{
           backgroundColor: '#fff',
-          padding: '240px 0 0',
+          padding: '90px 0', // Standardized vertical padding
         }}>
           <div style={{
             maxWidth: '1080px',
             margin: '0 auto',
-            padding: '0 1px',
+            padding: '0 20px',
+          }}>
+             {/* Section Header */}
+            <div style={{
+              maxWidth: '780px',
+              margin: '0 auto 80px', // Center align header and add bottom margin
+              textAlign: 'center'
+            }}>
+              <h2 style={{
+                fontSize: '50px',
+                fontWeight: 1000,
+                marginBottom: '24px',
+                color: '#000',
+                letterSpacing: '-0.02em'
+              }}>
+                  Why Amoria Connekyt Only?
+              </h2>
+              <p style={{
+                fontSize: '18px',
+                fontWeight: 500,
+                color: '#1f1d1d',
+                lineHeight: '1.7',
+              }}>
+                The Amoria Connekyt Photographer Partnership Program is designed to build a strong, engaged, and motivated network of professional photographers who contribute to the creation of unforgettable and meaningful video stories.
+              </p>
+            </div>
+
+            {/* Main Content Layout */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '64px' // Increased gap
+            }}>
+              {/* Left Content */}
+              <div style={{
+                flex: 1,
+                maxWidth: '500px'
+              }}>
+                {/* Info Cards */}
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '20px'
+                }}>
+                  {/* Rated Photographers */}
+                  <div style={{
+                    background: 'linear-gradient(100deg, rgba(194, 194, 194, 1) 0%, rgba(194, 194, 194, 1) 25%, rgba(194, 194, 194, 1) 40%, rgba(194, 194, 194, 1) 55%, rgba(194, 194, 194, 1) 70%, rgba(124, 124, 124, 1) 100%)',
+                    borderRadius: '16px',
+                    padding: '20px',
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '16px'
+                  }}>
+                    <div style={{
+                      width: '48px',
+                      height: '48px',
+                      backgroundColor: '#fff',
+                      borderRadius: '12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0
+                    }}>
+                      <svg width="24" height="24" viewBox="0 0 16 16" fill="#FFD700">
+                        <path d="M8 0l2.163 4.382 4.837.703-3.5 3.411.826 4.818L8 11.09l-4.326 2.224.826-4.818-3.5-3.411 4.837-.703L8 0z"/>
+                      </svg>
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <h3 style={{
+                        fontSize: '20px',
+                        fontWeight: 700,
+                        color: '#083A85',
+                        marginBottom: '8px'
+                      }}>
+                        Rated Photographers
+                      </h3>
+                      <p style={{
+                        fontSize: '16px',
+                        fontWeight: 400,
+                        color: '#000',
+                        lineHeight: '1.5'
+                      }}>
+                        Work with trusted photographers reviewed by the community and backed by platform verification
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Live Streaming */}
+                  <div style={{
+                    background: 'linear-gradient(-100deg, rgba(194, 194, 194, 1) 0%, rgba(194, 194, 194, 1) 25%, rgba(194, 194, 194, 1) 40%, rgba(194, 194, 194, 1) 55%, rgba(194, 194, 194, 1) 70%, rgba(124, 124, 124, 1) 100%)',
+                    borderRadius: '16px',
+                    padding: '20px',
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '16px'
+                  }}>
+                    <div style={{
+                      width: '48px',
+                      height: '48px',
+                      backgroundColor: '#fff',
+                      borderRadius: '12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0
+                    }}>
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="3" fill="#FF0000"/>
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" fill="#FF0000" opacity="0.3"/>
+                        <path d="M16.5 8.5c1.5 1.5 1.5 3.5 1.5 3.5s0 2-1.5 3.5M7.5 8.5C6 10 6 12 6 12s0 2 1.5 3.5" stroke="#FF0000" strokeWidth="1.5" strokeLinecap="round"/>
+                      </svg>
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <h3 style={{
+                        fontSize: '20px',
+                        fontWeight: 700,
+                        color: '#083A85',
+                        marginBottom: '8px'
+                      }}>
+                        Live Streaming
+                      </h3>
+                      <p style={{
+                        fontSize: '16px',
+                        fontWeight: 400,
+                        color: '#000',
+                        lineHeight: '1.5'
+                      }}>
+                        Go beyond memories—host and share your event live with real-time reactions and over dual-event split-screen streaming!
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Secure Payments */}
+                  <div style={{
+                    background: 'linear-gradient(100deg, rgba(194, 194, 194, 1) 0%, rgba(194, 194, 194, 1) 25%, rgba(194, 194, 194, 1) 40%, rgba(194, 194, 194, 1) 55%, rgba(194, 194, 194, 1) 70%, rgba(124, 124, 124, 1) 100%)',
+                    borderRadius: '16px',
+                    padding: '20px',
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '16px'
+                  }}>
+                    <div style={{
+                      width: '48px',
+                      height: '48px',
+                      backgroundColor: '#fff',
+                      borderRadius: '12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0
+                    }}>
+                      <svg width="24" height="24" viewBox="0 0 16 16" fill="none">
+                        <path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v1H0zm0 3v5a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z" fill="#4CAF50"/>
+                        <path d="M3 9h1a1 1 0 0 1 1 1v1a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1v-1a1 1 0 0 1 1-1" fill="#2E7D32"/>
+                      </svg>
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <h3 style={{
+                        fontSize: '20px',
+                        fontWeight: 700,
+                        color: '#083A85',
+                        marginBottom: '8px'
+                      }}>
+                        Secure Payments
+                      </h3>
+                      <p style={{
+                        fontSize: '16px',
+                        fontWeight: 400,
+                        color: '#000',
+                        lineHeight: '1.5'
+                      }}>
+                        Set your price, get offers, and pay safely through our secure platform. Your payment is protected until you're satisfied with the results
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Full Event Gallery */}
+                  <div style={{
+                    background: 'linear-gradient(-100deg, rgba(194, 194, 194, 1) 0%, rgba(194, 194, 194, 1) 25%, rgba(194, 194, 194, 1) 40%, rgba(194, 194, 194, 1) 55%, rgba(194, 194, 194, 1) 70%, rgba(124, 124, 124, 1) 100%)',
+                    borderRadius: '16px',
+                    padding: '20px',
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '16px'
+                  }}>
+                    <div style={{
+                      width: '48px',
+                      height: '48px',
+                      backgroundColor: '#fff',
+                      borderRadius: '12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0
+                    }}>
+                      <svg width="24" height="24" viewBox="0 0 16 16" fill="none">
+                        <path d="M2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4z" fill="#2196F3"/>
+                        <path d="M10.5 8.5a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0" fill="#03405e"/>
+                        <circle cx="2.5" cy="6" r="0.5" fill="#FFF"/>
+                      </svg>
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <h3 style={{
+                        fontSize: '20px',
+                        fontWeight: 700,
+                        color: '#083A85',
+                        marginBottom: '8px'
+                      }}>
+                        Full Event Gallery
+                      </h3>
+                      <p style={{
+                        fontSize: '16px',
+                        fontWeight: 400,
+                        color: '#000',
+                        lineHeight: '1.5'
+                      }}>
+                        Receive a beautifully curated gallery from your hired photographer and relive the memories anytime
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Image Container */}
+              <div style={{
+                position: 'relative',
+                flex: 1,
+                maxWidth: '500px',
+                height: '600px'
+              }}>
+                {/* Background Gradient Container */}
+                <div style={{
+                  position: 'absolute',
+                  top: 0,
+                  right: 0,
+                  width: '490px',
+                  height: '580px',
+                  background: 'linear-gradient(0deg,rgba(255, 99, 99, 1) 0%, rgba(180, 110, 180, 1) 9%, rgba(99, 120, 255, 1) 30%, rgba(150, 110, 200, 1) 56%, rgba(255, 99, 99, 1) 75%, rgba(180, 110, 180, 1) 89%, rgba(99, 120, 255, 1) 100%)',
+                  borderRadius: '120px 20px 120px 20px',
+                  zIndex: 1
+                }} />
+
+                {/* Front Image Container */}
+                <div style={{
+                  position: 'absolute',
+                  top: 16,
+                  right: '15px',
+                  width: '480px',
+                  height: '580px',
+                  borderRadius: '120px 20px 120px 20px',
+                  overflow: 'hidden',
+                  zIndex: 2,
+                  boxShadow: '0 20px 60px rgba(0,0,0,0.2)'
+                }}>
+                  <img
+                    src="/agree.png"
+                    alt="Photographer Agreement"
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover'
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Global Network Section */}
+        <section style={{
+          background: 'linear-gradient(135deg, #001a33 0%, #002b4d 50%, #001a33 100%)',
+          padding: '130px 0', // Increased vertical padding
+          position: 'relative',
+          overflow: 'hidden'
+        }}>
+          <div style={{
+            maxWidth: '1280px', // Slightly wider for this specific section
+            margin: '0 auto',
+            padding: '0 20px', // Standard horizontal padding
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: '30px'
+            gap: '80px', // Increased gap
+            minHeight: '450px'
           }}>
             {/* Left Content */}
             <div style={{
-              flex: 1,
-              maxWidth: '500px'
+              flex: '0 0 30%', // Adjusted flex basis
+              maxWidth: '400px',
+              color: '#fff',
+              zIndex: 2
             }}>
-              {/* Section Title */}
-            <h2 style={{
-              position: 'absolute',
-              left: '420px',
-              top: '2600px',
-              fontSize: '50px',
-              fontWeight: 1000,
-              textAlign: 'center',
-              marginBottom: '70px',
-              color: '#000',
-              letterSpacing: '-0.02em'
-            }}>
-                Why Amoria Connekyt Only?
+              {/* Title */}
+              <h2 style={{
+                fontSize: '50px',
+                fontWeight: 1000,
+                lineHeight: '1.1',
+                marginBottom: '24px',
+                color: '#fff',
+                letterSpacing: '-0.02em'
+              }}>
+                Connecting Photographers & Videographers with Clients Worldwide
               </h2>
 
               {/* Description */}
               <p style={{
-                position: 'absolute',
-                left: '260px',
-                top: '2690px',
-                fontSize: '18px',
-                textAlign: 'center',
-                fontWeight: 500,
-                color: '#1f1d1d',
-                lineHeight: '1.7',
-                maxWidth: '780px',
-                marginBottom: '40px'
+                fontSize: '17px',
+                lineHeight: '1.65',
+                color: '#fff',
+                opacity: 0.9,
+                fontWeight: 400
               }}>
-                The Amoria Connekyt Photographer Partnership Program is designed to build a strong, engaged, and motivated network of professional photographers who contribute to the creation of unforgettable and meaningful video stories.
+                Amoria Connekyt brings together photographers and clients across continents. From live streaming events to secure digital vaults, we're building a global community that captures and preserves life's most precious moments.
               </p>
-
-              {/* Info Cards */}
-              <div style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '20px'
-              }}>
-                {/* Rated Photographers */}
-                <div style={{
-                  background: 'linear-gradient(100deg, rgba(194, 194, 194, 1) 0%, rgba(194, 194, 194, 1) 25%, rgba(194, 194, 194, 1) 40%, rgba(194, 194, 194, 1) 55%, rgba(194, 194, 194, 1) 70%, rgba(124, 124, 124, 1) 100%)',
-                  borderRadius: '16px',
-                  padding: '20px',
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: '16px'
+              <div style={{ display: 'flex', gap: '13.5px', flexWrap: 'wrap' }}>
+                <button style={{
+                  position: 'absolute',
+                  bottom: '100px',
+                  backgroundColor: 'transparent',
+                  color: '#FFFFFF',
+                  padding: '11.25px 25.5px',
+                  borderRadius: '37.5px',
+                  border: '1.5px solid #FFFFFF',
+                  fontSize: '17px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  boxShadow: '0 3px 9px rgba(8, 58, 133, 0.2)'
                 }}>
-                  <div style={{
-                    width: '48px',
-                    height: '48px',
-                    backgroundColor: '#fff',
-                    borderRadius: '12px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0
-                  }}>
-                    <svg width="24" height="24" viewBox="0 0 16 16" fill="#FFD700">
-                      <path d="M8 0l2.163 4.382 4.837.703-3.5 3.411.826 4.818L8 11.09l-4.326 2.224.826-4.818-3.5-3.411 4.837-.703L8 0z"/>
-                    </svg>
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <h3 style={{
-                      fontSize: '20px',
-                      fontWeight: 700,
-                      color: '#083A85',
-                      marginBottom: '8px'
-                    }}>
-                      Rated Photographers
-                    </h3>
-                    <p style={{
-                      fontSize: '16px',
-                      fontWeight: 400,
-                      color: '#000',
-                      lineHeight: '1.5'
-                    }}>
-                      Work with trusted photographers reviewed by the community and backed by platform verification
-                    </p>
-                  </div>
+                  Connect Now
+                </button>
                 </div>
 
-                {/* Live Streaming */}
-                <div style={{
-                  background: 'linear-gradient(-100deg, rgba(194, 194, 194, 1) 0%, rgba(194, 194, 194, 1) 25%, rgba(194, 194, 194, 1) 40%, rgba(194, 194, 194, 1) 55%, rgba(194, 194, 194, 1) 70%, rgba(124, 124, 124, 1) 100%)',
-                  borderRadius: '16px',
-                  padding: '20px',
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: '16px'
-                }}>
-                  <div style={{
-                    width: '48px',
-                    height: '48px',
-                    backgroundColor: '#fff',
-                    borderRadius: '12px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0
-                  }}>
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                      <circle cx="12" cy="12" r="3" fill="#FF0000"/>
-                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" fill="#FF0000" opacity="0.3"/>
-                      <path d="M16.5 8.5c1.5 1.5 1.5 3.5 1.5 3.5s0 2-1.5 3.5M7.5 8.5C6 10 6 12 6 12s0 2 1.5 3.5" stroke="#FF0000" strokeWidth="1.5" strokeLinecap="round"/>
-                    </svg>
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <h3 style={{
-                      fontSize: '20px',
-                      fontWeight: 700,
-                      color: '#083A85',
-                      marginBottom: '8px'
-                    }}>
-                      Live Streaming
-                    </h3>
-                    <p style={{
-                      fontSize: '16px',
-                      fontWeight: 400,
-                      color: '#000',
-                      lineHeight: '1.5'
-                    }}>
-                      Go beyond memories—host and share your event live with real-time reactions and over dual-event split-screen streaming!
-                    </p>
-                  </div>
-                </div>
-
-                {/* Secure Payments */}
-                <div style={{
-                  background: 'linear-gradient(100deg, rgba(194, 194, 194, 1) 0%, rgba(194, 194, 194, 1) 25%, rgba(194, 194, 194, 1) 40%, rgba(194, 194, 194, 1) 55%, rgba(194, 194, 194, 1) 70%, rgba(124, 124, 124, 1) 100%)',
-                  borderRadius: '16px',
-                  padding: '20px',
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: '16px'
-                }}>
-                  <div style={{
-                    width: '48px',
-                    height: '48px',
-                    backgroundColor: '#fff',
-                    borderRadius: '12px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0
-                  }}>
-                    <svg width="24" height="24" viewBox="0 0 16 16" fill="none">
-                      <path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v1H0zm0 3v5a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z" fill="#4CAF50"/>
-                      <path d="M3 9h1a1 1 0 0 1 1 1v1a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1v-1a1 1 0 0 1 1-1" fill="#2E7D32"/>
-                    </svg>
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <h3 style={{
-                      fontSize: '20px',
-                      fontWeight: 700,
-                      color: '#083A85',
-                      marginBottom: '8px'
-                    }}>
-                      Secure Payments
-                    </h3>
-                    <p style={{
-                      fontSize: '16px',
-                      fontWeight: 400,
-                      color: '#000',
-                      lineHeight: '1.5'
-                    }}>
-                      Set your price, get offers, and pay safely through our secure platform. Your payment is protected until you're satisfied with the results
-                    </p>
-                  </div>
-                </div>
-
-                {/* Full Event Gallery */}
-                <div style={{
-                  background: 'linear-gradient(-100deg, rgba(194, 194, 194, 1) 0%, rgba(194, 194, 194, 1) 25%, rgba(194, 194, 194, 1) 40%, rgba(194, 194, 194, 1) 55%, rgba(194, 194, 194, 1) 70%, rgba(124, 124, 124, 1) 100%)',
-                  borderRadius: '16px',
-                  padding: '20px',
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: '16px'
-                }}>
-                  <div style={{
-                    width: '48px',
-                    height: '48px',
-                    backgroundColor: '#fff',
-                    borderRadius: '12px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0
-                  }}>
-                    <svg width="24" height="24" viewBox="0 0 16 16" fill="none">
-                      <path d="M2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4z" fill="#2196F3"/>
-                      <path d="M10.5 8.5a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0" fill="#03405e"/>
-                      <circle cx="2.5" cy="6" r="0.5" fill="#FFF"/>
-                    </svg>
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <h3 style={{
-                      fontSize: '20px',
-                      fontWeight: 700,
-                      color: '#083A85',
-                      marginBottom: '8px'
-                    }}>
-                      Full Event Gallery
-                    </h3>
-                    <p style={{
-                      fontSize: '16px',
-                      fontWeight: 400,
-                      color: '#000',
-                      lineHeight: '1.5'
-                    }}>
-                      Receive a beautifully curated gallery from your hired photographer and relive the memories anytime
-                    </p>
-                  </div>
-                </div>
-              </div>
             </div>
-
-            {/* Right Image Container */}
+          
+            {/* Right Content - for the network visualization */}
             <div style={{
-              position: 'relative',
-              flex: 1,
-              maxWidth: '500px',
-              height: '600px'
+              flex: '1',
+              height: '450px',
+              position: 'relative'
             }}>
-              {/* Background Gradient Container */}
-              <div style={{
-                position: 'absolute',
-                top: 0,
-                right: 0,
-                width: '490px',
-                height: '580px',
-                background: 'linear-gradient(0deg,rgba(255, 99, 99, 1) 0%, rgba(180, 110, 180, 1) 9%, rgba(99, 120, 255, 1) 30%, rgba(150, 110, 200, 1) 56%, rgba(255, 99, 99, 1) 75%, rgba(180, 110, 180, 1) 89%, rgba(99, 120, 255, 1) 100%)',
-                borderRadius: '120px 20px 120px 20px',
-                zIndex: 1
-              }} />
-
-              {/* Front Image Container */}
-              <div style={{
-                position: 'absolute',
-                top: 16,
-                right: '15px',
-                width: '480px',
-                height: '580px',              
-                borderRadius: '120px 20px 120px 20px',
-                overflow: 'hidden',
-                zIndex: 2,
-                boxShadow: '0 20px 60px rgba(0,0,0,0.2)'
-              }}>
-                <img
-                  src="/agree.png"
-                  alt="Photographer Agreement"
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover'
-                  }}
-                />
-              </div>
+              <GlobalNetwork />
             </div>
           </div>
+
+          {/* Additional ambient glow effects */}
+          <div style={{
+            position: 'absolute',
+            top: '20%',
+            left: '10%',
+            width: '400px',
+            height: '400px',
+            background: 'radial-gradient(circle, rgba(0, 212, 255, 0.15) 0%, transparent 70%)',
+            borderRadius: '50%',
+            filter: 'blur(60px)',
+            pointerEvents: 'none',
+            zIndex: 1
+          }} />
+          <div style={{
+            position: 'absolute',
+            bottom: '10%',
+            right: '15%',
+            width: '500px',
+            height: '500px',
+            background: 'radial-gradient(circle, rgba(0, 168, 204, 0.12) 0%, transparent 70%)',
+            borderRadius: '50%',
+            filter: 'blur(80px)',
+            pointerEvents: 'none',
+            zIndex: 1
+          }} />
         </section>
       </main>
       <Footer />
