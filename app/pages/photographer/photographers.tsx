@@ -12,6 +12,8 @@ const Photographers: React.FC = () => {
   const [priceRange, setPriceRange] = useState<string>('all');
   const [selectedRating, setSelectedRating] = useState<string>('all');
   const [bookmarkedPhotographers, setBookmarkedPhotographers] = useState<number[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 12;
 
   // Mock photographer data
   const featuredPhotographers = [
@@ -182,7 +184,7 @@ const Photographers: React.FC = () => {
     },
     {
       id: 12,
-      name: 'Sanchez Goalkeeper',
+      name: 'Robert Sanchez',
       image: 'https://i.pinimg.com/736x/2a/61/2d/2a612dd46f350c345caa4e36a9db9f93.jpg',
       bannerImage: 'https://i.pinimg.com/736x/2a/61/2d/2a612dd46f350c345caa4e36a9db9f93.jpg',
       verified: true,
@@ -194,6 +196,126 @@ const Photographers: React.FC = () => {
       completedJobs: 59,
       accuracy: 95,
       responseTime: '2h'
+    },
+    {
+      id: 13,
+      name: 'James Maddison',
+      image: 'https://i.pinimg.com/1200x/44/1a/bb/441abbf59cee7bf34891180e25f241dd.jpg',
+      bannerImage: 'https://i.pinimg.com/1200x/44/1a/bb/441abbf59cee7bf34891180e25f241dd.jpg',
+      verified: true,
+      location: 'Kigali - Rwanda, Gasabo',
+      specialty: 'Photographer',
+      categories: ['Weddings', 'Lifestyle', 'Portraits'],
+      rating: 4.8,
+      reviews: 142,
+      completedJobs: 73,
+      accuracy: 97,
+      responseTime: '2h'
+    },
+    {
+      id: 14,
+      name: 'Dejan Kulusevski',
+      image: 'https://i.pinimg.com/1200x/29/aa/49/29aa4967c90b6694814729ae5786c40c.jpg',
+      bannerImage: 'https://i.pinimg.com/1200x/29/aa/49/29aa4967c90b6694814729ae5786c40c.jpg',
+      verified: true,
+      location: 'Musanze - Rwanda, Musanze',
+      specialty: 'Videographer',
+      categories: ['Sports', 'Events', 'Action'],
+      rating: 4.9,
+      reviews: 158,
+      completedJobs: 84,
+      accuracy: 98,
+      responseTime: '1h'
+    },
+    {
+      id: 15,
+      name: 'Pape Sarr',
+      image: 'https://i.pinimg.com/1200x/7c/85/39/7c8539e01282b4f5d555f9182a4acf44.jpg',
+      bannerImage: 'https://i.pinimg.com/1200x/7c/85/39/7c8539e01282b4f5d555f9182a4acf44.jpg',
+      verified: true,
+      location: 'Huye - Rwanda, Huye',
+      specialty: 'Photographer',
+      categories: ['Fashion', 'Editorial', 'Portraits'],
+      rating: 4.7,
+      reviews: 125,
+      completedJobs: 67,
+      accuracy: 96,
+      responseTime: '3h'
+    },
+    {
+      id: 16,
+      name: 'Yves Bissouma',
+      image: 'https://i.pinimg.com/1200x/8e/5e/69/8e5e6976723a4d5f4e0999a9dd5ac8c6.jpg',
+      bannerImage: 'https://i.pinimg.com/1200x/8e/5e/69/8e5e6976723a4d5f4e0999a9dd5ac8c6.jpg',
+      verified: true,
+      location: 'Kigali - Rwanda, Kicukiro',
+      specialty: 'Videographer',
+      categories: ['Corporate', 'Conferences', 'Commercial'],
+      rating: 4.8,
+      reviews: 136,
+      completedJobs: 71,
+      accuracy: 97,
+      responseTime: '2h'
+    },
+    {
+      id: 17,
+      name: 'Son Heung-min',
+      image: 'https://i.pinimg.com/736x/0f/22/d0/0f22d09fadd8a310fa484d1e94c8c55f.jpg',
+      bannerImage: 'https://i.pinimg.com/736x/0f/22/d0/0f22d09fadd8a310fa484d1e94c8c55f.jpg',
+      verified: true,
+      location: 'Rubavu - Rwanda, Rubavu',
+      specialty: 'Photographer',
+      categories: ['Sports', 'Action', 'Events'],
+      rating: 4.9,
+      reviews: 189,
+      completedJobs: 95,
+      accuracy: 99,
+      responseTime: '1h'
+    },
+    {
+      id: 18,
+      name: 'Cristian Romero',
+      image: 'https://i.pinimg.com/1200x/84/1b/a6/841ba626d4bb44b8906d8c25400e261f.jpg',
+      bannerImage: 'https://i.pinimg.com/1200x/84/1b/a6/841ba626d4bb44b8906d8c25400e261f.jpg',
+      verified: true,
+      location: 'Nyanza - Rwanda, Nyanza',
+      specialty: 'Videographer',
+      categories: ['Weddings', 'Cinematic', 'Events'],
+      rating: 4.8,
+      reviews: 147,
+      completedJobs: 76,
+      accuracy: 97,
+      responseTime: '2h'
+    },
+    {
+      id: 19,
+      name: 'Guglielmo Vicario',
+      image: 'https://i.pinimg.com/736x/e2/a6/5d/e2a65d23bea44eae43bd4c5965e4ff56.jpg',
+      bannerImage: 'https://i.pinimg.com/736x/e2/a6/5d/e2a65d23bea44eae43bd4c5965e4ff56.jpg',
+      verified: true,
+      location: 'Kigali - Rwanda, Nyarugenge',
+      specialty: 'Photographer',
+      categories: ['Portraits', 'Headshots', 'Professional'],
+      rating: 4.7,
+      reviews: 114,
+      completedJobs: 63,
+      accuracy: 95,
+      responseTime: '3h'
+    },
+    {
+      id: 20,
+      name: 'Destiny Udogie',
+      image: 'https://i.pinimg.com/1200x/e9/1f/59/e91f59ed85a702d7252f2b0c8e02c7d2.jpg',
+      bannerImage: 'https://i.pinimg.com/736x/8b/89/70/8b8970fb8745252e4d36f60305967d37.jpg',
+      verified: true,
+      location: 'Musanze - Rwanda, Musanze',
+      specialty: 'Videographer',
+      categories: ['Music Videos', 'Concerts', 'Entertainment'],
+      rating: 4.9,
+      reviews: 171,
+      completedJobs: 87,
+      accuracy: 98,
+      responseTime: '1h'
     }
   ];
 
@@ -211,25 +333,53 @@ const Photographers: React.FC = () => {
     );
   };
 
+  // Pagination logic
+  const totalPages = Math.ceil(featuredPhotographers.length / itemsPerPage);
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentPhotographers = featuredPhotographers.slice(indexOfFirstItem, indexOfLastItem);
+
+  const goToNextPage = () => {
+    setCurrentPage(prev => Math.min(prev + 1, totalPages));
+  };
+
+  const goToPreviousPage = () => {
+    setCurrentPage(prev => Math.max(prev - 1, 1));
+  };
+
+  const goToPage = (pageNumber: number) => {
+    setCurrentPage(pageNumber);
+  };
+
   return (
     <div className="min-h-screen" style={{ background: 'linear-gradient(to bottom, #f9fafb 0%, #f3f4f6 50%, #e5e7eb 100%)' }}>
       <style>{`
-        .profile-image-left {
+        .profile-image-container {
           position: absolute;
-          top: 60px;
-          left: 16px;
-          transform: translateY(-50%);
+          top: 105px;
+          left: 20px;
           width: 70px;
           height: 70px;
+          z-index: 10;
+        }
+        .verification-badge {
+          position: absolute;
+          bottom: 0px;
+          right: 0px;
+          background: white;
           border-radius: 50%;
-          border: 4px solid white;
-          object-fit: cover;
-          background-color: #f3f4f6;
+          width: 24px;
+          height: 24px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+          z-index: 5;
         }
         .card-content-left-align {
           text-align: left;
-          padding-top: 8px;
-          padding-left: 100px;
+          padding-top: 38px;
+          padding-left: 16px;
           padding-right: 16px;
           padding-bottom: 8px;
         }
@@ -282,7 +432,7 @@ const Photographers: React.FC = () => {
             marginBottom: '0.5rem',
             fontFamily: "'Pragati Narrow', sans-serif"
           }}>
-            Find Your Perfect Photographer
+            Find Your Perfect Photographer & Videographer
           </h1>
           <p style={{
             fontSize: 'clamp(0.875rem, 1.5vw, 1rem)',
@@ -292,11 +442,11 @@ const Photographers: React.FC = () => {
             margin: '0 auto 1.5rem',
             fontFamily: "'Pragati Narrow', sans-serif"
           }}>
-            Browse through our network of verified professional photographers
+            Browse through our network of verified professional photographers & videographers
           </p>
 
           {/* Search Bar */}
-          <form onSubmit={handleSearch} style={{ maxWidth: '48rem', margin: '0 auto 1.25rem' }}>
+          <form onSubmit={handleSearch} style={{ maxWidth: '43rem', margin: '0 auto 1.25rem' }}>
             <div style={{ position: 'relative' }}>
               <input
                 type="text"
@@ -305,13 +455,13 @@ const Photographers: React.FC = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 style={{
                   width: '100%',
-                  padding: '1rem 3rem 1rem 1.5rem',
+                  padding: '0.8rem 3rem 0.8rem 1.5rem',
                   borderRadius: '0.5rem',
                   boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
                   border: 'none',
                   fontSize: '1rem',
                   outline: 'none',
-                  backgroundColor: '#cacacaff',
+                  backgroundColor: '#d4d4d4',
                   color: '#000000'
                 }}
               />
@@ -339,7 +489,7 @@ const Photographers: React.FC = () => {
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
             gap: '1rem',
-            maxWidth: '60rem',
+            maxWidth: '70rem',
             margin: '0 auto'
           }}>
             {/* Category Filter */}
@@ -349,12 +499,12 @@ const Photographers: React.FC = () => {
                 onChange={(e) => setSelectedCategory(e.target.value)}
                 style={{
                   width: '100%',
-                  padding: '0.875rem 1rem',
+                  padding: '0.275rem 1rem',
                   borderRadius: '0.5rem',
                   border: '2px solid rgba(255, 255, 255, 0.3)',
                   backgroundColor: 'rgba(255, 255, 255, 0.95)',
                   color: '#111827',
-                  fontSize: '0.95rem',
+                  fontSize: '0.9rem',
                   fontWeight: '500',
                   cursor: 'pointer',
                   outline: 'none',
@@ -378,12 +528,12 @@ const Photographers: React.FC = () => {
                 onChange={(e) => setSelectedLocation(e.target.value)}
                 style={{
                   width: '100%',
-                  padding: '0.875rem 1rem',
+                  padding: '0.275rem 1rem',
                   borderRadius: '0.5rem',
                   border: '2px solid rgba(255, 255, 255, 0.3)',
                   backgroundColor: 'rgba(255, 255, 255, 0.95)',
                   color: '#111827',
-                  fontSize: '0.95rem',
+                  fontSize: '0.9rem',
                   fontWeight: '500',
                   cursor: 'pointer',
                   outline: 'none',
@@ -406,12 +556,12 @@ const Photographers: React.FC = () => {
                 onChange={(e) => setPriceRange(e.target.value)}
                 style={{
                   width: '100%',
-                  padding: '0.875rem 1rem',
+                  padding: '0.275rem 1rem',
                   borderRadius: '0.5rem',
                   border: '2px solid rgba(255, 255, 255, 0.3)',
                   backgroundColor: 'rgba(255, 255, 255, 0.95)',
                   color: '#111827',
-                  fontSize: '0.95rem',
+                  fontSize: '0.9rem',
                   fontWeight: '500',
                   cursor: 'pointer',
                   outline: 'none',
@@ -433,12 +583,12 @@ const Photographers: React.FC = () => {
                 onChange={(e) => setSelectedRating(e.target.value)}
                 style={{
                   width: '100%',
-                  padding: '0.875rem 1rem',
+                  padding: '0.275rem 1rem',
                   borderRadius: '0.5rem',
                   border: '2px solid rgba(255, 255, 255, 0.3)',
                   backgroundColor: 'rgba(255, 255, 255, 0.95)',
                   color: '#111827',
-                  fontSize: '0.95rem',
+                  fontSize: '0.9rem',
                   fontWeight: '500',
                   cursor: 'pointer',
                   outline: 'none',
@@ -458,55 +608,28 @@ const Photographers: React.FC = () => {
 
       {/* Main Content */}
       <main className="flex-grow" style={{ marginTop: '-2rem' }}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
-          {/* Section Header */}
-          <div style={{
-            textAlign: 'center',
-            marginBottom: '2.5rem',
-            background: 'rgba(255, 255, 255, 0.95)',
-            backdropFilter: 'blur(12px)',
-            borderRadius: '20px',
-            padding: '2rem',
-            boxShadow: '0 8px 32px rgba(8, 58, 133, 0.1)',
-            border: '1px solid rgba(8, 58, 133, 0.08)'
-          }}>
-            <h2 style={{
-              fontSize: 'clamp(1.75rem, 3vw, 2.25rem)',
-              fontWeight: 'bold',
-              color: '#083A85',
-              marginBottom: '0.5rem',
-              fontFamily: "'Pragati Narrow', sans-serif"
-            }}>
-              Featured Photographers
-            </h2>
-            <p style={{
-              color: '#6B7280',
-              fontSize: '1rem',
-              fontFamily: "'Pragati Narrow', sans-serif"
-            }}>
-              Connect with our top-rated professional photographers
-            </p>
-          </div>
-
+        <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '5rem 1rem 4rem 1rem' }}>
           {/* Photographer Cards Grid */}
           <div style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
             gap: '2.5rem 1.5rem'
           }}>
-            {featuredPhotographers.map((photographer) => {
+            {currentPhotographers.map((photographer) => {
               const isBookmarked = bookmarkedPhotographers.includes(photographer.id);
               return (
               <div
                 key={photographer.id}
                 style={{
                   backgroundColor: '#ffffff',
-                  borderRadius: '16px',
-                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-                  border: '1px solid #e5e7eb',
+                  borderRadius: '20px',
+                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+                  border: '3px solid #bab8b8',
                   position: 'relative',
-                  paddingTop: '60px',
+                  overflow: 'hidden',
                   transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
+                  display: 'flex',
+                  flexDirection: 'column',
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.transform = 'translateY(-5px)';
@@ -517,95 +640,115 @@ const Photographers: React.FC = () => {
                   e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)';
                 }}
               >
-                {/* Banner Header with Image */}
+                {/* Banner Header with Image - 40% of card */}
                 <div style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  height: '60px',
+                  position: 'relative',
+                  width: '100%',
+                  height: '140px',
                   backgroundImage: `url(${photographer.bannerImage})`,
                   backgroundSize: 'cover',
                   backgroundPosition: 'center',
-                  borderTopLeftRadius: '16px',
-                  borderTopRightRadius: '16px'
+                  borderTopLeftRadius: '17px',
+                  borderTopRightRadius: '17px',
+                  borderBottomRightRadius: '17px',
+                  borderBottomLeftRadius: '17px',
+                  flexShrink: 0
                 }}>
                   <div style={{
                     position: 'absolute',
                     inset: 0,
                     backgroundColor: 'rgba(13, 27, 42, 0.3)',
-                    borderTopLeftRadius: '16px',
-                    borderTopRightRadius: '16px'
+                    borderTopLeftRadius: '17px',
+                    borderBottomRightRadius: '17px',
+                    borderBottomLeftRadius: '17px',
+                    borderTopRightRadius: '17px'
                   }}></div>
                 </div>
 
-                {/* Profile Image */}
-                <img
-                  src={photographer.image}
-                  alt={photographer.name}
-                  className="profile-image-left"
-                />
+                {/* Profile Image Container with Verification Badge */}
+                <div className="profile-image-container">
+                  <img
+                    src={photographer.image}
+                    alt={photographer.name}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      borderRadius: '50%',
+                      border: '2px solid white',
+                      objectFit: 'cover',
+                      objectPosition: 'center',
+                      display: 'block'
+                    }}
+                  />
+                  {photographer.verified && (
+                    <div className="verification-badge">
+                      <i className="bi bi-patch-check-fill" style={{ color: '#3b82f6', fontSize: '1rem' }}></i>
+                    </div>
+                  )}
+                </div>
 
                 {/* Card Content */}
                 <div className="card-content-left-align">
-                  {/* Profile Information */}
+                  {/* Bookmark Button - Top Right */}
                   <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'flex-start',
-                    marginBottom: '0.1rem'
+                    position: 'absolute',
+                    top: '150px',
+                    right: '16px',
+                    zIndex: 10
                   }}>
-                    <div>
-                      <h3 style={{
-                        fontSize: '1.125rem',
-                        fontWeight: 'bold',
-                        color: '#111827',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.5rem',
-                      }}>
-                        {photographer.name}
-                        {photographer.verified && (
-                          <i className="bi bi-patch-check-fill" style={{ color: '#3b82f6', fontSize: '1rem' }}></i>
-                        )}
-                      </h3>
-                       <p style={{ 
-                        color: '#6b7280', 
-                        fontSize: '0.875rem'
-                      }}>
-                        {photographer.specialty}
-                      </p>
-                    </div>
-                     <button 
+                    <button
                       style={{
                         background: '#ffffff',
-                        border: '1px solid #e5e7eb',
+                        border: '1.5px solid #9e9d9d',
                         cursor: 'pointer',
                         padding: '0',
                         color: isBookmarked ? '#3b82f6' : '#6b7280',
-                        fontSize: '1.1rem',
-                        width: '36px',
-                        height: '36px',
+                        fontSize: '1.05rem',
+                        width: '34px',
+                        height: '34px',
                         borderRadius: '50%',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        flexShrink: 0
+                        flexShrink: 0,
+                        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
                       }}
                       onClick={() => toggleBookmark(photographer.id)}
                     >
                       <i className={isBookmarked ? "bi bi-bookmark-fill" : "bi bi-bookmark"}></i>
                     </button>
                   </div>
-                 
+
+                  {/* Profile Information */}
+                  <div style={{
+                    marginBottom: '0.1rem',
+                    marginTop: '0px'
+                  }}>
+                    <h3 style={{
+                      fontSize: '1.125rem',
+                      fontWeight: '700',
+                      color: '#111827',
+                      marginBottom: '0.03rem'
+                    }}>
+                      {photographer.name}
+                    </h3>
+                    <p style={{
+                      color: '#40444d',
+                      fontSize: '0.85rem',
+                      marginBottom: '0.15rem'
+                    }}>
+                      {photographer.specialty}
+                    </p>
+                  </div>
+
                   <div style={{
                     display: 'flex',
                     justifyContent: 'flex-start',
                     alignItems: 'center',
                     gap: '0.25rem',
-                    color: '#6b7280',
-                    fontSize: '0.75rem',
-                    marginBottom: '0.5rem'
+                    color: '#40444d',
+                    fontSize: '0.78rem',
+                    marginBottom: '0.3rem'
                   }}>
                     <i className="bi bi-geo-alt-fill" style={{ fontSize: '0.8rem' }}></i>
                     <span>{photographer.location}</span>
@@ -615,32 +758,32 @@ const Photographers: React.FC = () => {
                   <div style={{
                     display: 'flex',
                     justifyContent: 'flex-start',
-                    gap: '0.5rem',
+                    gap: '0.3rem',
                     flexWrap: 'wrap',
-                    marginBottom: '0.75rem'
+                    marginBottom: '0.4rem'
                   }}>
                     {photographer.categories.slice(0, 3).map((cat, i) => (
                       <span key={i} style={{
-                        backgroundColor: '#f3f4f6',
-                        color: '#374151',
-                        padding: '0.25rem 0.75rem',
+                        backgroundColor: '#f9fafb',
+                        color: '#40444d',
+                        padding: '0.25rem 0.7rem',
                         borderRadius: '9999px',
-                        fontSize: '0.7rem',
+                        fontSize: '0.8rem',
                         fontWeight: '500',
-                        border: '1px solid #e5e7eb'
+                        border: '0.001px solid #adadad'
                       }}>
                         {cat}
                       </span>
                     ))}
                     {photographer.categories.length > 3 && (
                       <span style={{
-                        backgroundColor: '#f3f4f6',
+                        backgroundColor: '#f9fafb',
                         color: '#6b7280',
-                        padding: '0.25rem 0.75rem',
+                        padding: '0.25rem 0.7rem',
                         borderRadius: '9999px',
-                        fontSize: '0.7rem',
+                        fontSize: '0.8rem',
                         fontWeight: '600',
-                        border: '1px solid #e5e7eb',
+                        border: '1px solid #bab8b8',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center'
@@ -655,63 +798,63 @@ const Photographers: React.FC = () => {
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
-                    padding: '0.5rem 0',
-                    margin: '0.5rem 0',
-                    borderTop: '1px solid #e5e7eb',
+                    padding: '0.3rem 0.2rem',
+                    margin: '0.3rem 0 0.35rem 0',
+                    borderTop: '1px solid #bab8b8',
                     borderBottom: '1px solid #e5e7eb',
                     textAlign: 'center'
                   }}>
-                    <div>
+                    <div style={{ flex: 1 }}>
                       <p style={{
-                        fontSize: '0.9rem',
-                        fontWeight: 'bold',
+                        fontSize: '1.1rem',
+                        fontWeight: '700',
                         color: '#111827',
                         display: 'flex',
                         alignItems: 'center',
                         gap: '0.25rem',
                         justifyContent: 'center',
-                        marginBottom: '0.1rem'
+                        marginBottom: '0.15rem'
                       }}>
-                        <i className="bi bi-star-fill" style={{ color: '#000000', fontSize: '0.8rem' }}></i>
+                        <i className="bi bi-star-fill" style={{ color: '#000000', fontSize: '0.77rem' }}></i>
                         {photographer.rating}
                       </p>
-                      <p style={{ fontSize: '0.7rem', color: '#9ca3af', fontWeight: '500' }}>
+                      <p style={{ fontSize: '0.8rem', color: '#40444d', fontWeight: '500' }}>
                         Rating
                       </p>
                     </div>
-                    <div>
+                    <div style={{ flex: 1 }}>
                       <p style={{
-                        fontSize: '0.9rem',
-                        fontWeight: 'bold',
+                        fontSize: '1.1rem',
+                        fontWeight: '700',
                         color: '#111827',
                         display: 'flex',
                         alignItems: 'center',
                         gap: '0.25rem',
                         justifyContent: 'center',
-                        marginBottom: '0.1rem'
+                        marginBottom: '0.15rem'
                       }}>
-                        <i className="bi bi-people-fill" style={{ fontSize: '0.8rem' }}></i>
+                        <i className="bi bi-people-fill" style={{ fontSize: '0.77rem' }}></i>
                         {photographer.completedJobs}+
                       </p>
-                      <p style={{ fontSize: '0.7rem', color: '#9ca3af', fontWeight: '500' }}>
+                      <p style={{ fontSize: '0.8rem', color: '#40444d', fontWeight: '500' }}>
                         Events
                       </p>
                     </div>
-                    <div>
+                    <div style={{ flex: 1 }}>
                       <p style={{
-                        fontSize: '0.9rem',
-                        fontWeight: 'bold',
+                        fontSize: '1.1rem',
+                        fontWeight: '700',
                         color: '#111827',
                         display: 'flex',
                         alignItems: 'center',
                         gap: '0.25rem',
                         justifyContent: 'center',
-                        marginBottom: '0.1rem'
+                        marginBottom: '0.15rem'
                       }}>
-                        <i className="bi bi-clock" style={{ fontSize: '0.8rem' }}></i>
+                        <i className="bi bi-clock" style={{ fontSize: '0.77rem' }}></i>
                         {photographer.accuracy}%
                       </p>
-                      <p style={{ fontSize: '0.7rem', color: '#9ca3af', fontWeight: '500' }}>
+                      <p style={{ fontSize: '0.8rem', color: '#40444d', fontWeight: '500' }}>
                         Accuracy
                       </p>
                     </div>
@@ -721,28 +864,29 @@ const Photographers: React.FC = () => {
                   <button
                     style={{
                         width: '100%',
-                        padding: '0.6rem',
-                        backgroundColor: '#000000',
+                        padding: '0.65rem 1rem',
+                        backgroundColor: '#1a1a1a',
                         color: 'white',
-                        border: '2px solid #3b82f6',
-                        borderRadius: '9999px',
+                        border: 'none',
+                        borderRadius: '100px',
                         fontWeight: '600',
-                        fontSize: '0.875rem',
+                        fontSize: '0.9rem',
                         cursor: 'pointer',
                         transition: 'all 0.3s ease',
-                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
-                        marginTop: '0.5rem',
+                        boxShadow: '0 2px 6px rgba(0, 0, 0, 0.12)',
+                        marginTop: '0',
+                        letterSpacing: '0.01em'
                     }}
                     onClick={() => window.location.href = `/user/view-profile`}
                     onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = '#1f2937';
+                        e.currentTarget.style.backgroundColor = '#2d2d2d';
                         e.currentTarget.style.transform = 'translateY(-1px)';
-                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.2)';
+                        e.currentTarget.style.boxShadow = '0 4px 10px rgba(0, 0, 0, 0.18)';
                     }}
                     onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = '#000000';
+                        e.currentTarget.style.backgroundColor = '#1a1a1a';
                         e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.15)';
+                        e.currentTarget.style.boxShadow = '0 2px 6px rgba(0, 0, 0, 0.12)';
                     }}
                     >
                     Get In Touch
@@ -753,6 +897,124 @@ const Photographers: React.FC = () => {
               )
             })}
           </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div style={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              gap: '0.5rem',
+              marginTop: '3rem',
+              flexWrap: 'wrap'
+            }}>
+              {/* Previous Button */}
+              <button
+                onClick={goToPreviousPage}
+                disabled={currentPage === 1}
+                style={{
+                  padding: '0.5rem 1rem',
+                  borderRadius: '0.5rem',
+                  border: '1px solid #bab8b8',
+                  backgroundColor: currentPage === 1 ? '#f3f4f6' : '#ffffff',
+                  color: currentPage === 1 ? '#9ca3af' : '#111827',
+                  cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                  fontWeight: '500',
+                  fontSize: '0.9rem',
+                  transition: 'all 0.2s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.25rem'
+                }}
+                onMouseEnter={(e) => {
+                  if (currentPage !== 1) {
+                    e.currentTarget.style.backgroundColor = '#f9fafb';
+                    e.currentTarget.style.borderColor = '#083A85';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (currentPage !== 1) {
+                    e.currentTarget.style.backgroundColor = '#ffffff';
+                    e.currentTarget.style.borderColor = '#bab8b8';
+                  }
+                }}
+              >
+                <i className="bi bi-chevron-left"></i>
+                Previous
+              </button>
+
+              {/* Page Numbers */}
+              <div style={{ display: 'flex', gap: '0.25rem' }}>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                  <button
+                    key={pageNum}
+                    onClick={() => goToPage(pageNum)}
+                    style={{
+                      padding: '0.5rem 0.75rem',
+                      borderRadius: '0.5rem',
+                      border: currentPage === pageNum ? '2px solid #083A85' : '1px solid #bab8b8',
+                      backgroundColor: currentPage === pageNum ? '#083A85' : '#ffffff',
+                      color: currentPage === pageNum ? '#ffffff' : '#111827',
+                      cursor: 'pointer',
+                      fontWeight: currentPage === pageNum ? '600' : '500',
+                      fontSize: '0.9rem',
+                      minWidth: '2.5rem',
+                      transition: 'all 0.2s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (currentPage !== pageNum) {
+                        e.currentTarget.style.backgroundColor = '#f9fafb';
+                        e.currentTarget.style.borderColor = '#083A85';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (currentPage !== pageNum) {
+                        e.currentTarget.style.backgroundColor = '#ffffff';
+                        e.currentTarget.style.borderColor = '#bab8b8';
+                      }
+                    }}
+                  >
+                    {pageNum}
+                  </button>
+                ))}
+              </div>
+
+              {/* Next Button */}
+              <button
+                onClick={goToNextPage}
+                disabled={currentPage === totalPages}
+                style={{
+                  padding: '0.5rem 1rem',
+                  borderRadius: '0.5rem',
+                  border: '1px solid #bab8b8',
+                  backgroundColor: currentPage === totalPages ? '#f3f4f6' : '#ffffff',
+                  color: currentPage === totalPages ? '#9ca3af' : '#111827',
+                  cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+                  fontWeight: '500',
+                  fontSize: '0.9rem',
+                  transition: 'all 0.2s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.25rem'
+                }}
+                onMouseEnter={(e) => {
+                  if (currentPage !== totalPages) {
+                    e.currentTarget.style.backgroundColor = '#f9fafb';
+                    e.currentTarget.style.borderColor = '#083A85';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (currentPage !== totalPages) {
+                    e.currentTarget.style.backgroundColor = '#ffffff';
+                    e.currentTarget.style.borderColor = '#bab8b8';
+                  }
+                }}
+              >
+                Next
+                <i className="bi bi-chevron-right"></i>
+              </button>
+            </div>
+          )}
         </div>
       </main>
 

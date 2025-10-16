@@ -277,13 +277,13 @@ const HelpSupportCenter: React.FC = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 style={{
                   width: '100%',
-                  padding: '1rem 3rem 1rem 1.5rem',
+                  padding: '0.8rem 3rem 0.8rem 1.5rem',
                   borderRadius: '0.5rem',
                   boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
                   border: 'none',
                   fontSize: '1rem',
                   outline: 'none',
-                  backgroundColor: '#cacacaff',
+                  backgroundColor: '#d4d4d4',
                   color: '#000000'
                 }}
               />

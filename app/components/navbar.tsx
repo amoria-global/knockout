@@ -89,8 +89,9 @@ const AmoriaKNavbar = () => {
       <div className="max-w-7xl px-4 sm:px-6 lg:px-8 mx-4 sm:mx-6 lg:mx-8">
         <div className="flex items-center justify-between h-16">
           <Link href="/" onClick={handleLinkClick} className="flex items-center flex-shrink-0">
-            <img src="/logo.png" alt="AmoriaK Logo" className="h-14 w-15 rounded-full" />
-            <span className="text-xl font-bold text-gray-900 hover:text-[#083A85]" style={{ marginLeft: '-14px' }}>onnekyt</span>
+          <span className="text-xl font-bold text-gray-900 hover:text-[#083A85]" style={{ marginLeft: '38px' }}>Conne</span>
+            <img src="/logo.png" alt="AmoriaK Logo" className="h-11 w-11 rounded-full" style={{ marginLeft: '-10px' }} />   
+            <span className="text-xl font-bold text-gray-900 hover:text-[#083A85]" style={{ marginLeft: '-10px' }}>yt</span>      
           </Link>
 
           {/* Center: Navigation Links (Desktop) */}
