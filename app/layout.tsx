@@ -6,6 +6,12 @@ import BackToTop from "./components/BackToTop";
 export const metadata: Metadata = {
   title: "Amoria Connekt",
   description: "Connecting moments, creating memories. Your trusted platform for professional event photography and live streaming.",
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 5,
+    userScalable: true,
+  },
 };
 
 export default function RootLayout({
