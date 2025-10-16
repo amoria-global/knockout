@@ -17,6 +17,18 @@ export default function ContactUsPage(): React.JSX.Element {
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
 
+  // Check if form is complete (all fields filled)
+  const isFormComplete = () => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return (
+      formData.fullName.trim() !== '' &&
+      formData.email.trim() !== '' &&
+      emailRegex.test(formData.email) &&
+      formData.phone.trim() !== '' &&
+      formData.message.trim() !== ''
+    );
+  };
+
   // Form validation
   const validateForm = () => {
     if (!formData.fullName.trim()) {
@@ -174,7 +186,7 @@ export default function ContactUsPage(): React.JSX.Element {
                 gap: '1rem' // Increased gap for better spacing
               }}>
                 <h2 style={{
-                  fontSize: '1rem',
+                  fontSize: '2rem',
                   fontWeight: '700',
                   color: '#000000',
                   marginBottom: '1rem',
@@ -185,32 +197,32 @@ export default function ContactUsPage(): React.JSX.Element {
 
                 {/* Phone Number */}
                 <div style={{display: 'flex', alignItems: 'center', gap: '0.75rem'}}>
-                  <i className="bi bi-telephone" style={{fontSize: '1rem', color: '#000000'}}></i>
-                  <div style={{fontSize: '0.8rem', fontWeight: '500', color: '#000000'}}>
+                  <i className="bi bi-telephone" style={{fontSize: '1.2rem', color: '#000000'}}></i>
+                  <div style={{fontSize: '1.1rem', fontWeight: '700', color: '#000000'}}>
                     +250 788 437 347
                   </div>
                 </div>
 
                 {/* Email */}
                 <div style={{display: 'flex', alignItems: 'center', gap: '0.75rem'}}>
-                  <i className="bi bi-envelope" style={{fontSize: '1rem', color: '#000000'}}></i>
-                  <div style={{fontSize: '0.8rem', fontWeight: '500', color: '#000000'}}>
+                  <i className="bi bi-envelope" style={{fontSize: '1.2rem', color: '#000000'}}></i>
+                  <div style={{fontSize: '1.1rem', fontWeight: '700', color: '#000000'}}>
                     info@amoriaconnekt.com
                   </div>
                 </div>
 
                 {/* Address */}
                 <div style={{display: 'flex', alignItems: 'flex-start', gap: '0.75rem'}}>
-                  <i className="bi bi-geo-alt" style={{fontSize: '1rem', color: '#000000'}}></i>
-                  <div style={{fontSize: '0.8rem', fontWeight: '500', color: '#000000', lineHeight: '1.4'}}>
+                  <i className="bi bi-geo-alt" style={{fontSize: '1.2rem', color: '#000000'}}></i>
+                  <div style={{fontSize: '1.1rem', fontWeight: '700', color: '#000000', lineHeight: '1.4'}}>
                     Norrsken House Kigali - 1 KN 78 St, Kigali
                   </div>
                 </div>
 
                 {/* Business Hours */}
                 <div style={{display: 'flex', alignItems: 'flex-start', gap: '0.75rem'}}>
-                  <i className="bi bi-clock" style={{fontSize: '1rem', color: '#000000'}}></i>
-                  <div style={{fontSize: '0.8rem', fontWeight: '500', color: '#000000', lineHeight: '1.4'}}>
+                  <i className="bi bi-clock" style={{fontSize: '1.2rem', color: '#000000'}}></i>
+                  <div style={{fontSize: '1.1rem', fontWeight: '700', color: '#000000', lineHeight: '1.4'}}>
                     <div>Monday - Sunday</div>
                     <div>9:00 AM - 6:00 PM EAT</div>
                   </div>
@@ -218,9 +230,9 @@ export default function ContactUsPage(): React.JSX.Element {
               </div>
 
               {/* Bottom Section - Image */}
-              <div style={{width: '100%', display: 'flex', justifyContent: 'flex-start', marginTop: '1rem'}}>
+              <div style={{width: '100%', display: 'flex', justifyContent: 'flex-start', marginTop: '1rem', position: 'absolute', bottom: '0.1rem', left: '150px'}}>
                 <img
-                  src="/contakt.png" // Assuming this path is correct
+                  src="/contakt.png"
                   alt="Contact Us Illustration"
                   style={{width: '120px', height: 'auto'}}
                 />
@@ -252,10 +264,10 @@ export default function ContactUsPage(): React.JSX.Element {
             }}>
               {/* Heading Section */}
               <div style={{marginBottom: '1.5rem', textAlign: 'left'}}>
-                <h1 style={{fontSize: '1.25rem', fontWeight: '700', color: '#000000', marginBottom: '0.5rem'}}>
+                <h1 style={{fontSize: '2rem', fontWeight: '700', color: '#000000', marginBottom: '0.5rem'}}>
                   Send us a message
                 </h1>
-                <p style={{fontSize: '0.8rem', color: '#4A4A4A'}}>
+                <p style={{fontSize: '1rem', color: '#262626'}}>
                   Feel free to ask any question below!
                 </p>
               </div>
@@ -269,7 +281,7 @@ export default function ContactUsPage(): React.JSX.Element {
                     borderRadius: '0.75rem',
                     backgroundColor: '#10b981',
                     color: '#ffffff',
-                    fontSize: '0.8rem',
+                    fontSize: '1rem',
                     textAlign: 'center',
                     fontWeight: '500'
                   }}>
@@ -306,12 +318,12 @@ export default function ContactUsPage(): React.JSX.Element {
                       width: '100%',
                       padding: '0.75rem',
                       fontSize: '0.85rem',
-                      border: 'none',
+                      border: '2px solid #C4C4C4',
                       borderRadius: '0.75rem',
                       outline: 'none',
-                      backgroundColor: isSubmitting ? '#B0B0B0' : '#C4C4C4',
+                      backgroundColor: isSubmitting ? '#B0B0B0' : '#FFFFFF',
                       boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)',
-                      color: '#000',
+                      color: '#000000',
                       cursor: isSubmitting ? 'not-allowed' : 'text'
                     }}
                   />
@@ -332,10 +344,10 @@ export default function ContactUsPage(): React.JSX.Element {
                       width: '100%',
                       padding: '0.75rem',
                       fontSize: '0.85rem',
-                      border: 'none',
+                      border: '2px solid #C4C4C4',
                       borderRadius: '0.75rem',
                       outline: 'none',
-                      backgroundColor: isSubmitting ? '#B0B0B0' : '#C4C4C4',
+                      backgroundColor: isSubmitting ? '#B0B0B0' : '#FFFFFF',
                       boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)',
                       color: '#000',
                       cursor: isSubmitting ? 'not-allowed' : 'text'
@@ -358,10 +370,10 @@ export default function ContactUsPage(): React.JSX.Element {
                       width: '100%',
                       padding: '0.75rem',
                       fontSize: '0.85rem',
-                      border: 'none',
+                      border: '2px solid #C4C4C4',
                       borderRadius: '0.75rem',
                       outline: 'none',
-                      backgroundColor: isSubmitting ? '#B0B0B0' : '#C4C4C4',
+                      backgroundColor: isSubmitting ? '#B0B0B0' : '#FFFFFF',
                       boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)',
                       color: '#000',
                       cursor: isSubmitting ? 'not-allowed' : 'text'
@@ -384,10 +396,10 @@ export default function ContactUsPage(): React.JSX.Element {
                       width: '100%',
                       padding: '0.75rem',
                       fontSize: '0.85rem',
-                      border: 'none',
+                      border: '2px solid #C4C4C4',
                       borderRadius: '0.75rem',
                       outline: 'none',
-                      backgroundColor: isSubmitting ? '#B0B0B0' : '#C4C4C4',
+                      backgroundColor: isSubmitting ? '#B0B0B0' : '#FFFFFF',
                       boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)',
                       resize: 'none',
                       fontFamily: 'inherit',
@@ -398,23 +410,24 @@ export default function ContactUsPage(): React.JSX.Element {
                 </div>
                 <button
                   type="submit"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || !isFormComplete()}
                   style={{
                     width: '100%',
                     padding: '0.75rem',
                     fontSize: '0.9rem',
                     fontWeight: '600',
                     borderRadius: '0.75rem',
-                    backgroundColor: isSubmitting ? '#6b7280' : '#083A85',
+                    backgroundColor: isSubmitting || !isFormComplete() ? '#6b7280' : '#083A85',
                     color: '#ffffff',
                     border: 'none',
-                    cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                    cursor: isSubmitting || !isFormComplete() ? 'not-allowed' : 'pointer',
                     marginTop: '0.5rem',
                     transition: 'all 0.3s',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: '0.5rem'
+                    gap: '0.5rem',
+                    opacity: isSubmitting || !isFormComplete() ? 0.6 : 1
                   }}
                 >
                   {isSubmitting ? (

@@ -18,12 +18,20 @@ export default function Footer() {
     setEmail('');
   };
 
+  const handleScrollToSection = (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
+    e.preventDefault();
+    const element = document.getElementById(id);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
   const footerSections = [
     {
       title: 'For Clients',
       links: [
         { text: 'Find A Photographer', href: '/user/photographers' },
-        { text: 'How it Works', href: '/#how-it-works' },
+        { text: 'How it Works', href: '/#how-it-works', onClick: (e: React.MouseEvent<HTMLAnchorElement>) => handleScrollToSection(e, 'how-it-works') },
         { text: 'Browse Events', href: '/browse-events' },
       ],
     },
@@ -166,11 +174,11 @@ export default function Footer() {
           >
             {/* Amoria Connekt Section */}
             <div style={{ paddingRight: '1.6rem' }}>
-              <Link href="/" style={{ display: 'flex', alignItems: 'center', marginBottom: '1.9rem', marginLeft: '-1rem', cursor: 'pointer', textDecoration: 'none', color: 'inherit' }}>
-                <img src="/fav.png" alt="AmoriaK Logo" style={{ height: '3.5rem', width: '3.75rem', borderRadius: '9999px', marginTop: '-1.9rem' }} />
-                <h3 style={{ fontSize: '1.2rem', fontWeight: 700, marginLeft: '-0.7rem', marginTop: '-1.9rem' }}>
-                  onnekyt
+              <Link href="/" style={{ display: 'flex', alignItems: 'center', marginBottom: '1.9rem', marginLeft: '-1rem', cursor: 'pointer', textDecoration: 'none', color: 'inherit' }}>             
+                <h3 style={{ fontSize: '1.2rem', fontWeight: 700, marginLeft: '16px', marginTop: '-1.9rem' }}>
+                  Amoria
                 </h3>
+                <img src="/fav.png" alt="AmoriaK Logo" style={{ height: '3rem', width: '3.25rem', borderRadius: '9999px', marginTop: '-1.9rem', marginLeft: '-8px' }} />
               </Link>
               <p
                 style={{
@@ -217,6 +225,7 @@ export default function Footer() {
                     <li key={index} style={{ marginBottom: '0.8rem' }}>
                       <a
                         href={link.href}
+                        onClick={link.onClick}
                         style={{
                           color: '#D1D5DB',
                           fontSize: '0.96rem',

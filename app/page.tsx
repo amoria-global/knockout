@@ -1,8 +1,69 @@
+'use client'
+
+import { useState, useEffect } from 'react'
 import Footer from "./components/footer";
 import Navbar from "./components/navbar";
 import GlobalNetwork from "./components/GlobalNetwork";
 
 export default function Home() {
+  const [activeDevice, setActiveDevice] = useState(0) // 0: phone, 1: tablet, 2: laptop
+  const [isPaused, setIsPaused] = useState(false)
+  const [activeCard, setActiveCard] = useState(0) // 0: rated, 1: live, 2: pay, 3: gallery
+
+  // Auto-rotation effect - rotate every 3 seconds
+  useEffect(() => {
+    if (!isPaused) {
+      const interval = setInterval(() => {
+        setActiveDevice((prev) => (prev + 1) % 3)
+      }, 3000)
+
+      return () => clearInterval(interval)
+    }
+  }, [isPaused])
+
+  // Calculate circular positions for each device based on activeDevice
+  const getDevicePosition = (deviceIndex: number) => {
+    // Calculate relative position (0 = center/front, 1 = right, 2 = left)
+    const relativePosition = (deviceIndex - activeDevice + 3) % 3
+
+    const positions = [
+      // Center/Front position
+      {
+        left: '50%',
+        top: '50%',
+        translateX: '-50%',
+        translateY: '-50%',
+        scale: 1,
+        zIndex: 10,
+        opacity: 1,
+        rotate: 0
+      },
+      // Right position (visible on right side)
+      {
+        left: '75%',
+        top: '50%',
+        translateX: '-50%',
+        translateY: '-50%',
+        scale: 0.5,
+        zIndex: 2,
+        opacity: 0.6,
+        rotate: 15
+      },
+      // Left position (visible on left side)
+      {
+        left: '15%',
+        top: '50%',
+        translateX: '-50%',
+        translateY: '-50%',
+        scale: 0.5,
+        zIndex: 2,
+        opacity: 0.6,
+        rotate: -15
+      }
+    ]
+
+    return positions[relativePosition]
+  }
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       {/* Navbar - Outside sections to stay fixed */}
@@ -91,18 +152,21 @@ export default function Home() {
 
               {/* CTA Buttons */}
               <div style={{ display: 'flex', gap: '13.5px', flexWrap: 'wrap' }}>
-                <button style={{
-                  backgroundColor: '#083A85',
-                  color: '#fff',
-                  padding: '11.25px 25.5px',
-                  borderRadius: '37.5px',
-                  border: 'none',
-                  fontSize: '15px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease',
-                  boxShadow: '0 3px 9px rgba(8, 58, 133, 0.2)'
-                }}>
+                <button
+                  onClick={() => window.location.href = '/user/photographers'}
+                  style={{
+                    backgroundColor: '#083A85',
+                    color: '#fff',
+                    padding: '11.25px 25.5px',
+                    borderRadius: '37.5px',
+                    border: 'none',
+                    fontSize: '15px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    boxShadow: '0 3px 9px rgba(8, 58, 133, 0.2)'
+                  }}
+                >
                   Find A Photographer
                 </button>
                 <button style={{
@@ -437,7 +501,7 @@ export default function Home() {
         </section>
 
         {/* How it works Section */}
-        <section style={{
+        <section id="how-it-works" style={{
           backgroundColor: '#fff',
           padding: '80px 0', // Increased vertical padding
         }}>
@@ -633,40 +697,44 @@ export default function Home() {
                   fontSize: '48px',
                   fontWeight: 700,
                   color: '#FFFFFF',
-                  marginBottom: '30px',
-                  lineHeight: '1.2'
+                  marginBottom: '20px',
+                  maxWidth: '350px',                
+                  lineHeight: '1'
                 }}>
-                  For Photographers
+                  Photographers & Videographers
                 </h2>
                 <p style={{
                   position: 'inherit',
                   top: '120px',
                   fontSize: '18px',
-                  lineHeight: '1.7',
-                  marginBottom: '40px',
+                  lineHeight: '1.5',
+                  marginBottom: '-50px',
                   opacity: 0.95
                 }}>
                   Whether you're a photographer looking to grow your business
                   or a client seeking to capture life's most important moments,
                   our platform is built for you
                 </p>
-                <button style={{
-                  background: 'linear-gradient(90deg, #041DC0 0%, #FF6363 0%, #7763FF 100%)',
-                  color: '#000',
-                  position: 'absolute',
-                  left: '150px',
-                  top: '290px',
-                  fontSize: '20px',
-                  fontWeight: 600,
-                  padding: '8.25px 5.5px',
-                  width: '180px',
-                  height: '12%',
-                  borderRadius: '50px',
-                  border: 'none',
-                  cursor: 'pointer',
-                  transition: 'transform 0.2s ease',
-                  boxShadow: '0 4px 15px rgba(0,0,0,0.2)'
-                }}>
+                <button
+                  onClick={() => window.location.href = '/user/auth/signup'}
+                  style={{
+                    background: 'linear-gradient(90deg, #041DC0 0%, #FF6363 0%, #7763FF 100%)',
+                    color: '#000',
+                    position: 'absolute',
+                    left: '150px',
+                    top: '290px',
+                    fontSize: '20px',
+                    fontWeight: 600,
+                    padding: '8.25px 5.5px',
+                    width: '180px',
+                    height: '12%',
+                    borderRadius: '50px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    transition: 'transform 0.2s ease',
+                    boxShadow: '0 4px 15px rgba(0,0,0,0.2)'
+                  }}
+                >
                   Get Started
                 </button>
               </div>
@@ -716,7 +784,7 @@ export default function Home() {
         {/* Mockups Section */}
         <section style={{
           background: 'linear-gradient(180deg, #B3B7BA 0%, #083A85 100%)',
-          padding: '158px 0', // Standardized vertical padding
+          padding: '130px 220px 130px 250px', // Standardized vertical padding
           position: 'relative',
           overflow: 'hidden'
         }}>
@@ -728,15 +796,27 @@ export default function Home() {
             height: '500px',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center'
+            justifyContent: 'center',
+            perspective: '2000px',
+            perspectiveOrigin: 'center center'
           }}>
             {/* Laptop Mockup - Background Layer */}
-            <div style={{
+            <div
+              onMouseEnter={() => {
+                setActiveDevice(2)
+                setIsPaused(true)
+              }}
+              onMouseLeave={() => setIsPaused(false)}
+              style={{
                 position: 'absolute',
-              left: '67%',
-              top: '74%',
-              transform: 'translate(-70%, -50%)',
-              zIndex: 1
+                left: getDevicePosition(2).left,
+                top: getDevicePosition(2).top,
+                transform: `translate(${getDevicePosition(2).translateX}, ${getDevicePosition(2).translateY}) scale(${getDevicePosition(2).scale}) rotateY(${getDevicePosition(2).rotate}deg)`,
+                zIndex: getDevicePosition(2).zIndex,
+                opacity: getDevicePosition(2).opacity,
+                filter: getDevicePosition(2).zIndex > 5 ? 'none' : 'blur(1px)',
+                transition: 'all 0.7s ease-out',
+                cursor: 'pointer'
             }}>
               {/* Laptop Screen */}
               <div style={{
@@ -893,20 +973,30 @@ export default function Home() {
             </div>
 
             {/* Tablet Mockup - Middle Layer */}
-            <div style={{
-              position: 'absolute',
-              left: '50%',
-              top: '58%',
-              transform: 'translate(-50%, -50%)',
-              width: '580px',
-              height: '700px',
-              backgroundColor: '#fff',
-              borderRadius: '30px',
-              border: '2px solid #e8e8e8',
-              borderBottom: 'none',
-              boxShadow: '0 15px 7px rgba(0,0,0,0.3)',
-              overflow: 'visible',
-              zIndex: 2
+            <div
+              onMouseEnter={() => {
+                setActiveDevice(1)
+                setIsPaused(true)
+              }}
+              onMouseLeave={() => setIsPaused(false)}
+              style={{
+                position: 'absolute',
+                left: getDevicePosition(1).left,
+                top: getDevicePosition(1).top,
+                transform: `translate(${getDevicePosition(1).translateX}, ${getDevicePosition(1).translateY}) scale(${getDevicePosition(1).scale}) rotateY(${getDevicePosition(1).rotate}deg)`,
+                width: '580px',
+                height: '700px',
+                backgroundColor: '#fff',
+                borderRadius: '30px',
+                border: '2px solid #e8e8e8',
+                borderBottom: 'none',
+                boxShadow: getDevicePosition(1).zIndex > 5 ? '0 25px 80px rgba(0,0,0,0.4)' : '0 15px 40px rgba(0,0,0,0.25)',
+                overflow: 'visible',
+                zIndex: getDevicePosition(1).zIndex,
+                opacity: getDevicePosition(1).opacity,
+                filter: getDevicePosition(1).zIndex > 5 ? 'none' : 'blur(1px)',
+                transition: 'all 0.7s ease-out',
+                cursor: 'pointer'
             }}>
               {/* Power Button (Top Right) */}
               <div style={{
@@ -1132,19 +1222,29 @@ export default function Home() {
             </div>
 
             {/* Phone Mockup - Foreground Layer */}
-            <div style={{
-              position: 'absolute',
-              left: '43.3%',
-              top: '55%',
-              transform: 'translate(-15%, -50%)',
-              width: '250px',
-              height: '500px',
-              backgroundColor: '#fff',
-              borderRadius: '36px',
-              border: '1px solid #e8e8e8',
-              boxShadow: '0 30px 7px rgba(0,0,0,0.35)',
-              overflow: 'visible',
-              zIndex: 3
+            <div
+              onMouseEnter={() => {
+                setActiveDevice(0)
+                setIsPaused(true)
+              }}
+              onMouseLeave={() => setIsPaused(false)}
+              style={{
+                position: 'absolute',
+                left: getDevicePosition(0).left,
+                top: getDevicePosition(0).top,
+                transform: `translate(${getDevicePosition(0).translateX}, ${getDevicePosition(0).translateY}) scale(${getDevicePosition(0).scale}) rotateY(${getDevicePosition(0).rotate}deg)`,
+                width: '250px',
+                height: '500px',
+                backgroundColor: '#fff',
+                borderRadius: '36px',
+                border: '1px solid #e8e8e8',
+                boxShadow: getDevicePosition(0).zIndex > 5 ? '0 40px 100px rgba(0,0,0,0.5)' : '0 20px 50px rgba(0,0,0,0.3)',
+                overflow: 'visible',
+                zIndex: getDevicePosition(0).zIndex,
+                opacity: getDevicePosition(0).opacity,
+                filter: getDevicePosition(0).zIndex > 5 ? 'none' : 'blur(1px)',
+                transition: 'all 0.7s ease-out',
+                cursor: 'pointer'
             }}>
               {/* Power Button (Right Side) */}
               <div style={{
@@ -1345,6 +1445,41 @@ export default function Home() {
                 </div>
               </div>
             </div>
+
+            {/* Step Indicators */}
+            <div style={{
+              position: 'absolute',
+              bottom: '40px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              display: 'flex',
+              gap: '12px',
+              zIndex: 5
+            }}>
+              {['Phone', 'Tablet', 'Laptop'].map((device, index) => (
+                <button
+                  key={index}
+                  onClick={() => {
+                    setActiveDevice(index)
+                    setIsPaused(true)
+                    setTimeout(() => setIsPaused(false), 3000) // Resume auto-rotation after 3 seconds
+                  }}
+                  onMouseEnter={() => setIsPaused(true)}
+                  onMouseLeave={() => setIsPaused(false)}
+                  style={{
+                    width: activeDevice === index ? '40px' : '12px',
+                    height: '12px',
+                    borderRadius: '6px',
+                    backgroundColor: activeDevice === index ? '#fff' : 'rgba(255, 255, 255, 0.4)',
+                    border: 'none',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    boxShadow: activeDevice === index ? '0 2px 8px rgba(0,0,0,0.3)' : 'none'
+                  }}
+                  aria-label={device}
+                />
+              ))}
+            </div>
           </div>
         </section>
 
@@ -1402,14 +1537,20 @@ export default function Home() {
                   gap: '20px'
                 }}>
                   {/* Rated Photographers */}
-                  <div style={{
-                    background: 'linear-gradient(100deg, rgba(194, 194, 194, 1) 0%, rgba(194, 194, 194, 1) 25%, rgba(194, 194, 194, 1) 40%, rgba(194, 194, 194, 1) 55%, rgba(194, 194, 194, 1) 70%, rgba(124, 124, 124, 1) 100%)',
-                    borderRadius: '16px',
-                    padding: '20px',
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    gap: '16px'
-                  }}>
+                  <div
+                    onMouseEnter={() => setActiveCard(0)}
+                    style={{
+                      background: 'linear-gradient(100deg, rgba(194, 194, 194, 1) 0%, rgba(194, 194, 194, 1) 25%, rgba(194, 194, 194, 1) 40%, rgba(194, 194, 194, 1) 55%, rgba(194, 194, 194, 1) 70%, rgba(124, 124, 124, 1) 100%)',
+                      borderRadius: '16px',
+                      padding: '20px',
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: '16px',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                      transform: activeCard === 0 ? 'scale(1.02)' : 'scale(1)',
+                      boxShadow: activeCard === 0 ? '0 8px 24px rgba(0,0,0,0.15)' : '0 4px 12px rgba(0,0,0,0.08)'
+                    }}>
                     <div style={{
                       width: '48px',
                       height: '48px',
@@ -1445,14 +1586,20 @@ export default function Home() {
                   </div>
 
                   {/* Live Streaming */}
-                  <div style={{
-                    background: 'linear-gradient(-100deg, rgba(194, 194, 194, 1) 0%, rgba(194, 194, 194, 1) 25%, rgba(194, 194, 194, 1) 40%, rgba(194, 194, 194, 1) 55%, rgba(194, 194, 194, 1) 70%, rgba(124, 124, 124, 1) 100%)',
-                    borderRadius: '16px',
-                    padding: '20px',
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    gap: '16px'
-                  }}>
+                  <div
+                    onMouseEnter={() => setActiveCard(1)}
+                    style={{
+                      background: 'linear-gradient(-100deg, rgba(194, 194, 194, 1) 0%, rgba(194, 194, 194, 1) 25%, rgba(194, 194, 194, 1) 40%, rgba(194, 194, 194, 1) 55%, rgba(194, 194, 194, 1) 70%, rgba(124, 124, 124, 1) 100%)',
+                      borderRadius: '16px',
+                      padding: '20px',
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: '16px',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                      transform: activeCard === 1 ? 'scale(1.02)' : 'scale(1)',
+                      boxShadow: activeCard === 1 ? '0 8px 24px rgba(0,0,0,0.15)' : '0 4px 12px rgba(0,0,0,0.08)'
+                    }}>
                     <div style={{
                       width: '48px',
                       height: '48px',
@@ -1490,14 +1637,20 @@ export default function Home() {
                   </div>
 
                   {/* Secure Payments */}
-                  <div style={{
-                    background: 'linear-gradient(100deg, rgba(194, 194, 194, 1) 0%, rgba(194, 194, 194, 1) 25%, rgba(194, 194, 194, 1) 40%, rgba(194, 194, 194, 1) 55%, rgba(194, 194, 194, 1) 70%, rgba(124, 124, 124, 1) 100%)',
-                    borderRadius: '16px',
-                    padding: '20px',
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    gap: '16px'
-                  }}>
+                  <div
+                    onMouseEnter={() => setActiveCard(2)}
+                    style={{
+                      background: 'linear-gradient(100deg, rgba(194, 194, 194, 1) 0%, rgba(194, 194, 194, 1) 25%, rgba(194, 194, 194, 1) 40%, rgba(194, 194, 194, 1) 55%, rgba(194, 194, 194, 1) 70%, rgba(124, 124, 124, 1) 100%)',
+                      borderRadius: '16px',
+                      padding: '20px',
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: '16px',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                      transform: activeCard === 2 ? 'scale(1.02)' : 'scale(1)',
+                      boxShadow: activeCard === 2 ? '0 8px 24px rgba(0,0,0,0.15)' : '0 4px 12px rgba(0,0,0,0.08)'
+                    }}>
                     <div style={{
                       width: '48px',
                       height: '48px',
@@ -1534,14 +1687,20 @@ export default function Home() {
                   </div>
 
                   {/* Full Event Gallery */}
-                  <div style={{
-                    background: 'linear-gradient(-100deg, rgba(194, 194, 194, 1) 0%, rgba(194, 194, 194, 1) 25%, rgba(194, 194, 194, 1) 40%, rgba(194, 194, 194, 1) 55%, rgba(194, 194, 194, 1) 70%, rgba(124, 124, 124, 1) 100%)',
-                    borderRadius: '16px',
-                    padding: '20px',
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    gap: '16px'
-                  }}>
+                  <div
+                    onMouseEnter={() => setActiveCard(3)}
+                    style={{
+                      background: 'linear-gradient(-100deg, rgba(194, 194, 194, 1) 0%, rgba(194, 194, 194, 1) 25%, rgba(194, 194, 194, 1) 40%, rgba(194, 194, 194, 1) 55%, rgba(194, 194, 194, 1) 70%, rgba(124, 124, 124, 1) 100%)',
+                      borderRadius: '16px',
+                      padding: '20px',
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: '16px',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                      transform: activeCard === 3 ? 'scale(1.02)' : 'scale(1)',
+                      boxShadow: activeCard === 3 ? '0 8px 24px rgba(0,0,0,0.15)' : '0 4px 12px rgba(0,0,0,0.08)'
+                    }}>
                     <div style={{
                       width: '48px',
                       height: '48px',
@@ -1580,7 +1739,7 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Right Image Container */}
+              {/* Right Image Container with Transitions */}
               <div style={{
                 position: 'relative',
                 flex: 1,
@@ -1599,7 +1758,7 @@ export default function Home() {
                   zIndex: 1
                 }} />
 
-                {/* Front Image Container */}
+                {/* Image Transition Container */}
                 <div style={{
                   position: 'absolute',
                   top: 16,
@@ -1611,15 +1770,81 @@ export default function Home() {
                   zIndex: 2,
                   boxShadow: '0 20px 60px rgba(0,0,0,0.2)'
                 }}>
-                  <img
-                    src="/agree.png"
-                    alt="Photographer Agreement"
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'cover'
-                    }}
-                  />
+                  {/* Rated Image - Card 0 */}
+                  <div style={{
+                    position: 'absolute',
+                    inset: 0,
+                    opacity: activeCard === 0 ? 1 : 0,
+                    transition: 'opacity 0.7s ease-out',
+                    zIndex: activeCard === 0 ? 2 : 1
+                  }}>
+                    <img
+                      src="/rated.png"
+                      alt="Rated Photographers"
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover'
+                      }}
+                    />
+                  </div>
+
+                  {/* Live Streaming Image - Card 1 */}
+                  <div style={{
+                    position: 'absolute',
+                    inset: 0,
+                    opacity: activeCard === 1 ? 1 : 0,
+                    transition: 'opacity 0.7s ease-out',
+                    zIndex: activeCard === 1 ? 2 : 1
+                  }}>
+                    <img
+                      src="/live.png"
+                      alt="Live Streaming"
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover'
+                      }}
+                    />
+                  </div>
+
+                  {/* Secure Payments Image - Card 2 */}
+                  <div style={{
+                    position: 'absolute',
+                    inset: 0,
+                    opacity: activeCard === 2 ? 1 : 0,
+                    transition: 'opacity 0.7s ease-out',
+                    zIndex: activeCard === 2 ? 2 : 1
+                  }}>
+                    <img
+                      src="/pay.png"
+                      alt="Secure Payments"
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover'
+                      }}
+                    />
+                  </div>
+
+                  {/* Full Event Gallery Image - Card 3 */}
+                  <div style={{
+                    position: 'absolute',
+                    inset: 0,
+                    opacity: activeCard === 3 ? 1 : 0,
+                    transition: 'opacity 0.7s ease-out',
+                    zIndex: activeCard === 3 ? 2 : 1
+                  }}>
+                    <img
+                      src="/gallery.png"
+                      alt="Full Event Gallery"
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover'
+                      }}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -1671,10 +1896,25 @@ export default function Home() {
               }}>
                 Amoria Connekyt brings together photographers and clients across continents. From live streaming events to secure digital vaults, we're building a global community that captures and preserves life's most precious moments.
               </p>
-              <div style={{ display: 'flex', gap: '13.5px', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', gap: '13.5px', flexWrap: 'wrap', position: 'absolute', bottom: '100px' }}>
+                <button
+                  onClick={() => window.location.href = '/user/photographers'}
+                  style={{
+                    backgroundColor: 'white',
+                    color: '#000000',
+                    padding: '11.25px 25.5px',
+                    borderRadius: '37.5px',
+                    border: '1.5px solid #FFFFFF',
+                    fontSize: '17px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    boxShadow: '0 3px 9px rgba(8, 58, 133, 0.2)'
+                  }}
+                >
+                  Connect Now
+                </button>
                 <button style={{
-                  position: 'absolute',
-                  bottom: '100px',
                   backgroundColor: 'transparent',
                   color: '#FFFFFF',
                   padding: '11.25px 25.5px',
@@ -1686,7 +1926,7 @@ export default function Home() {
                   transition: 'all 0.3s ease',
                   boxShadow: '0 3px 9px rgba(8, 58, 133, 0.2)'
                 }}>
-                  Connect Now
+                  Find Events
                 </button>
                 </div>
 

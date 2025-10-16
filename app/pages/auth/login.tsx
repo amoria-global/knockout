@@ -181,7 +181,7 @@ export default function LoginPage(): React.JSX.Element {
           </div>
 
           {/* Pagination Dots */}
-          <div style={{ display: 'flex', gap: '10px', marginTop: '180px', position: 'relative', zIndex: 1, marginBottom: '6rem' }}>
+          <div style={{ display: 'flex', gap: '10px', marginTop: '160px', position: 'relative', zIndex: 1, marginBottom: '6rem' }}>
             <div style={{ width: '28px', height: '6px', backgroundColor: '#e5e7eb', borderRadius: '3px' }}></div>
             <div style={{ width: '28px', height: '6px', backgroundColor: '#3b82f6', borderRadius: '3px' }}></div>
             <div style={{ width: '6px', height: '6px', backgroundColor: '#e5e7eb', borderRadius: '50%' }}></div>
