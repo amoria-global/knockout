@@ -9,9 +9,23 @@ const App = () => {
     {
       id: 1,
       sender: "Moise caicedo",
-      text: "Hey, I want to wish you a beautiful wedding day filled with love, grace, and blessings — your lovely friend.",
+      text: "Hey, I want to wish you a beautiful wedding day filled with love, grace, and blessings your lovely friend.",
       time: "8:30 PM",
       delivered: true,
+    },
+    {
+      id:2,
+      sender:"cole palmer", 
+      text:"Hey, may your wedding day mark the start of a lifetime of love and blessings your lovely friend.",
+      time:"2:00 PM",
+      delivered:true,
+    },
+    {
+      id:3,
+      sender:"Enzo fernandez", 
+      text:"Hey, congratulations on your wedding day; may your union be surrounded by joy, peace, and grace",
+      time:"11:00 AM",
+      delivered:true,
     },
   ]);
   // State for the new message input
