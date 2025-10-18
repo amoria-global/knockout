@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import Navbar from '../../components/navbar';
-import Footer from '../../components/footer';
 
 export default function JoinEvent() {
   const [eventLink, setEventLink] = useState('');
@@ -30,6 +29,7 @@ export default function JoinEvent() {
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
+          filter: 'brightness(0.2)',
         }}
       ></div>
 
@@ -111,13 +111,13 @@ export default function JoinEvent() {
                 onChange={(e) => setEventLink(e.target.value)}
                 style={{
                   width: '100%',
-                  padding: '16px 20px',
-                  borderRadius: '6px',
-                  color: '#1f2937',
+                  padding: '12px 20px',
+                  borderRadius: '16px',
+                  color: '#000000',
                   backgroundColor: 'rgba(255, 255, 255, 0.95)',
                   border: 'none',
                   textAlign: 'center',
-                  fontSize: '0.95rem',
+                  fontSize: '1.1rem',
                   marginBottom: '16px',
                   boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
                   outline: 'none',
@@ -128,7 +128,7 @@ export default function JoinEvent() {
               <p
                 style={{
                   color: 'white',
-                  fontSize: '0.875rem',
+                  fontSize: '0.9rem',
                   paddingTop: '8px',
                   paddingBottom: '8px',
                   marginBottom: '16px',
@@ -164,28 +164,37 @@ export default function JoinEvent() {
                   maxWidth: '384px',
                   margin: '0 auto',
                   display: 'block',
-                  backgroundColor: 'white',
-                  color: '#374151',
+                  backgroundColor: eventLink ? '#039130' : 'white',
+                  color: eventLink ? '#FFFFFF' : '#374151',
                   fontWeight: '600',
-                  padding: '16px 32px',
-                  borderRadius: '6px',
+                  padding: '12px 32px',
+                  borderRadius: '16px',
                   border: 'none',
                   cursor: 'pointer',
                   fontSize: '1rem',
                   boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-                  transition: 'background-color 0.2s',
+                  transition: 'all 0.3s ease',
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f3f4f6')}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'white')}
+                onMouseEnter={(e) => {
+                  if (eventLink) {
+                    e.currentTarget.style.backgroundColor = '#039130';
+                  } else {
+                    e.currentTarget.style.backgroundColor = '#f3f4f6';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (eventLink) {
+                    e.currentTarget.style.backgroundColor = '#039130';
+                  } else {
+                    e.currentTarget.style.backgroundColor = 'white';
+                  }
+                }}
               >
                 Join
               </button>
             </div>
           </div>
         </div>
-
-        {/* Footer */}
-        <Footer />
       </div>
     </div>
   );

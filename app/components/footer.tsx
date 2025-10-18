@@ -32,13 +32,13 @@ export default function Footer() {
       links: [
         { text: 'Find A Photographer', href: '/user/photographers' },
         { text: 'How it Works', href: '/#how-it-works', onClick: (e: React.MouseEvent<HTMLAnchorElement>) => handleScrollToSection(e, 'how-it-works') },
-        { text: 'Browse Events', href: '/browse-events' },
+        { text: 'Browse Events', href: '/user/events' },
       ],
     },
     {
       title: 'For Photographers',
       links: [
-        { text: 'Join As Photographer', href: '/join-photographer' },
+        { text: 'Join As A Photographer', href: '/user/auth/signup-type?type=photographer' },
         { text: 'Photographer Guide', href: '/photographer-guide' },
         { text: 'Portfolio Tips', href: '/portfolio-tips' },
       ],
@@ -175,10 +175,10 @@ export default function Footer() {
             {/* Amoria Connekt Section */}
             <div style={{ paddingRight: '1.6rem' }}>
               <Link href="/" style={{ display: 'flex', alignItems: 'center', marginBottom: '1.9rem', marginLeft: '-1rem', cursor: 'pointer', textDecoration: 'none', color: 'inherit' }}>             
-                <h3 style={{ fontSize: '1.2rem', fontWeight: 700, marginLeft: '16px', marginTop: '-1.9rem' }}>
+                <h3 style={{ fontSize: '1.6rem', fontWeight: 700, marginLeft: '16px', marginTop: '-1.9rem' }}>
                   Amoria
                 </h3>
-                <img src="/fav.png" alt="AmoriaK Logo" style={{ height: '3rem', width: '3.25rem', borderRadius: '9999px', marginTop: '-1.9rem', marginLeft: '-8px' }} />
+                <img src="/fav.png" alt="AmoriaK Logo" style={{ height: '40px', width: '40px', borderRadius: '9999px', marginTop: '-1.9rem', marginLeft: '-5px' }} />
               </Link>
               <p
                 style={{
@@ -254,7 +254,7 @@ export default function Footer() {
             }}
           >
             <p style={{ color: '#D1D5DB', fontSize: '0.96rem' }}>
-              © 2025 Amoria Connekt. All rights reserved.
+              © 2025 Amoria Connekyt. All rights reserved.
             </p>
           </div>
         </div>
