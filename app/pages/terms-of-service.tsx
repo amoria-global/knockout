@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import Navbar from '../components/navbar';
-import Footer from '../components/footer';
 
 const TermsAndConditionsPage = () => {
   const [selectedSection, setSelectedSection] = useState('terms-of-use');
@@ -558,8 +557,6 @@ Special bonus rewards may be offered during promotional periods for additional r
           </div>
         </div>
       </div>
-
-      <Footer />
     </div>
   );
 };
