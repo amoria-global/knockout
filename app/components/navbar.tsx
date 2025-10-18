@@ -9,16 +9,38 @@ const AmoriaKNavbar = () => {
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
   const [selectedLang, setSelectedLang] = useState('English');
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isPhotographersDropdownOpen, setIsPhotographersDropdownOpen] = useState(false);
+  const [isEventsDropdownOpen, setIsEventsDropdownOpen] = useState(false);
 
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
   const langMenuRef = useRef<HTMLDivElement>(null);
+  const photographersDropdownRef = useRef<HTMLDivElement>(null);
+  const eventsDropdownRef = useRef<HTMLDivElement>(null);
 
   const languages = [
     { code: 'en', name: 'English' },
     { code: 'fr', name: 'French' },
     { code: 'es', name: 'Español' },
     {code: 'Kiny', name: 'Kinyarwanda'},
+  ];
+
+  const photographerCategories = [
+    { value: 'wedding', label: 'For Wedding', icon: 'bi-heart-fill' },
+    { value: 'portrait', label: 'For Portrait', icon: 'bi-person-fill' },
+    { value: 'event', label: 'For Event', icon: 'bi-calendar-event-fill' },
+    { value: 'commercial', label: 'For Commercial', icon: 'bi-briefcase-fill' },
+    { value: 'fashion', label: 'For Fashion', icon: 'bi-camera-fill' },
+    { value: 'product', label: 'For Product', icon: 'bi-box-fill' },
+  ];
+
+  const eventCategories = [
+    { value: 'wedding', label: 'Weddings', icon: 'bi-heart-fill' },
+    { value: 'concert', label: 'Concerts', icon: 'bi-music-note-beamed' },
+    { value: 'corporate', label: 'Corporate', icon: 'bi-briefcase-fill' },
+    { value: 'sports', label: 'Sports', icon: 'bi-trophy-fill' },
+    { value: 'cultural', label: 'Cultural', icon: 'bi-globe' },
+    { value: 'conference', label: 'Conferences', icon: 'bi-people-fill' },
   ];
 
   // Effect to handle scroll events
@@ -89,21 +111,304 @@ const AmoriaKNavbar = () => {
       <div className="max-w-7xl px-4 sm:px-6 lg:px-8 mx-4 sm:mx-6 lg:mx-8">
         <div className="flex items-center justify-between h-16">
           <Link href="/" onClick={handleLinkClick} className="flex items-center flex-shrink-0">
-          <span className="text-xl font-bold text-gray-900 hover:text-[#083A85]" style={{ marginLeft: '38px' }}>Conne</span>
-            <img src="/logo.png" alt="AmoriaK Logo" className="h-11 w-11 rounded-full" style={{ marginLeft: '-10px' }} />   
-            <span className="text-xl font-bold text-gray-900 hover:text-[#083A85]" style={{ marginLeft: '-10px' }}>yt</span>      
+          <span className="text-2xl font-bold text-gray-900 hover:text-[#083A85]" style={{ marginLeft: '38px' }}>Amoria</span>
+            <img src="/logo.png" alt="AmoriaK Logo" className="h-10 w-10 rounded-full" style={{ marginLeft: '-7px' }} />                 
           </Link>
 
           {/* Center: Navigation Links (Desktop) */}
           <div className="hidden md:flex items-center gap-12 absolute left-1/3 transform -translate-x-1/2">
-            <Link href="/user/photographers" className="text-gray-700 hover:text-[#083A85] text-base font-medium transition-colors duration-200 whitespace-nowrap cursor-pointer">Photographers</Link>
+            {/* Photographers Dropdown */}
+            <div
+              ref={photographersDropdownRef}
+              className="relative"
+              onMouseEnter={() => setIsPhotographersDropdownOpen(true)}
+              onMouseLeave={() => setIsPhotographersDropdownOpen(false)}
+            >
+              <Link
+                href="/user/photographers"
+                className="flex items-center gap-1 text-gray-700 hover:text-[#083A85] text-base font-semibold transition-colors duration-200 whitespace-nowrap cursor-pointer"
+              >
+                <span>Photographers</span>
+                <i className={`bi bi-chevron-down transition-transform duration-200 ${isPhotographersDropdownOpen ? 'rotate-180' : ''}`}></i>
+              </Link>
 
-            <button className="flex items-center gap-1 text-gray-700 hover:text-[#083A85] text-base font-medium transition-colors duration-200 whitespace-nowrap cursor-pointer">
-              <span>Events</span>
-              <i className="bi bi-chevron-down"></i>
-            </button>
+              {isPhotographersDropdownOpen && (
+                <>
+                  {/* Invisible hover bridge */}
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: '100%',
+                      left: '-50px',
+                      right: '-50px',
+                      height: '40px',
+                      zIndex: 9998
+                    }}
+                  />
+                  <div
+                    className="absolute"
+                    style={{
+                      top: 'calc(100% + 20px)',
+                      left: '0',
+                      width: '55vw',
+                      height: '555px',
+                      background: 'rgba(255, 255, 255, 0.70)',
+                      backdropFilter: 'blur(25px)',
+                      WebkitBackdropFilter: 'blur(25px)',
+                      boxShadow: '0 15px 50px rgba(0, 0, 0, 0.12)',
+                      borderBottom: '2px solid rgba(8, 58, 133, 0.15)',
+                      zIndex: 9999,
+                      overflow: 'hidden',
+                      marginLeft: 'calc(-50vw + 50%)',
+                      transform: 'translateX(calc(-50% + 50vw))'
+                    }}
+                  >
+                  <div style={{
+                    width: '100%',
+                    height: '100%',
+                    padding: '4rem 5rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    maxWidth: '1400px',
+                    margin: '0 auto'
+                  }}>
+                    <div style={{ marginBottom: '0.5rem', flexShrink: 0 }}>
+                      <h3 style={{
+                        fontSize: '32px',
+                        fontWeight: '800',
+                        color: '#083A85',
+                        letterSpacing: '0.5px',
+                        marginBottom: '0.75rem',
+                        lineHeight: '1.2'
+                      }}>
+                        Browse Photographers
+                      </h3>
+                      <p style={{
+                        fontSize: '17px',
+                        color: '#6b7280',
+                        fontWeight: '600',
+                        marginBottom: '2.75rem',
+                        lineHeight: '1.5'
+                      }}>
+                        Find the perfect photographer for your special moments
+                      </p>
+                    </div>
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(3, 1fr)',
+                      gap: '1.75rem',
+                      flex: 1,
+                      alignContent: 'start'
+                    }}>
+                      {photographerCategories.map((category) => (
+                        <Link
+                          key={category.value}
+                          href={`/user/photographers?category=${category.value}`}
+                          onClick={() => setIsPhotographersDropdownOpen(false)}
+                          className="block cursor-pointer group"
+                          style={{
+                            padding: '1rem 1.5rem',
+                            fontSize: '17px',
+                            fontWeight: '600',
+                            color: '#1f2937',
+                            backgroundColor: 'rgba(255, 255, 255, 0.90)',
+                            borderRadius: '20px',
+                            transition: 'all 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'flex-start',
+                            gap: '1rem',
+                            border: '1px solid rgba(8, 58, 133, 0.12)',
+                            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
+                            height: 'fit-content',
+                            position: 'relative',
+                            overflow: 'hidden'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.98)';
+                            e.currentTarget.style.color = '#083A85';
+                            e.currentTarget.style.transform = 'translateY(-8px)';
+                            e.currentTarget.style.boxShadow = '0 12px 28px rgba(8, 58, 133, 0.18)';
+                            e.currentTarget.style.borderColor = 'rgba(8, 58, 133, 0.25)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.90)';
+                            e.currentTarget.style.color = '#1f2937';
+                            e.currentTarget.style.transform = 'translateY(0)';
+                            e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.04)';
+                            e.currentTarget.style.borderColor = 'rgba(8, 58, 133, 0.12)';
+                          }}
+                        >
+                          <div style={{
+                            width: '56px',
+                            height: '56px',
+                            borderRadius: '16px',
+                            background: 'linear-gradient(135deg, #083A85 0%, #0d4ea8 50%, #1059bd 100%)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0,
+                            boxShadow: '0 6px 16px rgba(8, 58, 133, 0.25)',
+                            transition: 'transform 0.3s ease'
+                          }}>
+                            <i className={`bi ${category.icon}`} style={{ fontSize: '22px', color: 'white' }}></i>
+                          </div>
+                          <span style={{ lineHeight: '1.4' }}>{category.label}</span>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                </>
+              )}
+            </div>
 
-            <Link href="/user/about" className="text-gray-700 hover:text-[#083A85] text-base font-medium transition-colors duration-200 whitespace-nowrap cursor-pointer">About</Link>
+            {/* Events Dropdown */}
+            <div
+              ref={eventsDropdownRef}
+              className="relative"
+              onMouseEnter={() => setIsEventsDropdownOpen(true)}
+              onMouseLeave={() => setIsEventsDropdownOpen(false)}
+            >
+              <Link
+                href="/user/events"
+                className="flex items-center gap-1 text-gray-700 hover:text-[#083A85] text-base font-semibold transition-colors duration-200 whitespace-nowrap cursor-pointer"
+              >
+                <span>Events</span>
+                <i className={`bi bi-chevron-down transition-transform duration-200 ${isEventsDropdownOpen ? 'rotate-180' : ''}`}></i>
+              </Link>
+
+              {isEventsDropdownOpen && (
+                <>
+                  {/* Invisible hover bridge */}
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: '100%',
+                      left: '-50px',
+                      right: '-50px',
+                      height: '40px',
+                      zIndex: 9998
+                    }}
+                  />
+                  <div
+                    className="absolute"
+                    style={{
+                      top: 'calc(100% + 20px)',
+                      left: '-200%',
+                      width: '55vw',
+                      height: '555px',
+                      background: 'rgba(255, 255, 255, 0.70)',
+                      backdropFilter: 'blur(25px)',
+                      WebkitBackdropFilter: 'blur(25px)',
+                      boxShadow: '0 15px 50px rgba(0, 0, 0, 0.12)',
+                      borderBottom: '2px solid rgba(8, 58, 133, 0.15)',
+                      zIndex: 9999,
+                      overflow: 'hidden',
+                      marginLeft: 'calc(-50vw + 50%)',
+                      transform: 'translateX(calc(-50% + 50vw))'
+                    }}
+                  >
+                  <div style={{
+                    width: '100%',
+                    height: '100%',
+                    padding: '4rem 5rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    maxWidth: '1400px',
+                    margin: '0 auto'
+                  }}>
+                    <div style={{ marginBottom: '3.5rem', flexShrink: 0 }}>
+                      <h3 style={{
+                        fontSize: '32px',
+                        fontWeight: '800',
+                        color: '#083A85',
+                        letterSpacing: '0.5px',
+                        marginBottom: '0.75rem',
+                        lineHeight: '1.2'
+                      }}>
+                        Browse Events
+                      </h3>
+                      <p style={{
+                        fontSize: '17px',
+                        color: '#6b7280',
+                        fontWeight: '600',
+                        lineHeight: '1.5'
+                      }}>
+                        Discover amazing events happening near you
+                      </p>
+                    </div>
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(3, 1fr)',
+                      gap: '1.75rem',
+                      flex: 1,
+                      alignContent: 'start'
+                    }}>
+                      {eventCategories.map((category) => (
+                        <Link
+                          key={category.value}
+                          href={`/user/events?category=${category.value}`}
+                          onClick={() => setIsEventsDropdownOpen(false)}
+                          className="block cursor-pointer group"
+                          style={{
+                            padding: '1rem 1.5rem',
+                            fontSize: '17px',
+                            fontWeight: '600',
+                            color: '#1f2937',
+                            backgroundColor: 'rgba(255, 255, 255, 0.90)',
+                            borderRadius: '20px',
+                            transition: 'all 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'flex-start',
+                            gap: '1rem',
+                            border: '1px solid rgba(8, 58, 133, 0.12)',
+                            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
+                            height: 'fit-content',
+                            position: 'relative',
+                            overflow: 'hidden'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.98)';
+                            e.currentTarget.style.color = '#083A85';
+                            e.currentTarget.style.transform = 'translateY(-8px)';
+                            e.currentTarget.style.boxShadow = '0 12px 28px rgba(8, 58, 133, 0.18)';
+                            e.currentTarget.style.borderColor = 'rgba(8, 58, 133, 0.25)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.90)';
+                            e.currentTarget.style.color = '#1f2937';
+                            e.currentTarget.style.transform = 'translateY(0)';
+                            e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.04)';
+                            e.currentTarget.style.borderColor = 'rgba(8, 58, 133, 0.12)';
+                          }}
+                        >
+                          <div style={{
+                            width: '56px',
+                            height: '56px',
+                            borderRadius: '16px',
+                            background: 'linear-gradient(135deg, #083A85 0%, #0d4ea8 50%, #1059bd 100%)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0,
+                            boxShadow: '0 6px 16px rgba(8, 58, 133, 0.25)',
+                            transition: 'transform 0.3s ease'
+                          }}>
+                            <i className={`bi ${category.icon}`} style={{ fontSize: '22px', color: 'white' }}></i>
+                          </div>
+                          <span style={{ lineHeight: '1.4' }}>{category.label}</span>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                </>
+              )}
+            </div>
+
+            <Link href="/user/about" className="text-gray-700 hover:text-[#083A85] text-base font-semibold transition-colors duration-200 whitespace-nowrap cursor-pointer">About</Link>
           </div>
 
           {/* Right: Language and Auth Buttons (Desktop) */}
@@ -172,7 +477,7 @@ const AmoriaKNavbar = () => {
             </div>
 
             <Link href="/user/auth/login" className="text-gray-900 text-base font-semibold hover:text-[#083A85] transition-colors duration-200 whitespace-nowrap cursor-pointer">Log In</Link>
-            <Link href="/user/auth/signup" className="bg-[#083A85] text-white text-base font-medium rounded-full hover:bg-[#001f4d] transition-all duration-300 whitespace-nowrap cursor-pointer" style={{ paddingLeft: '1.25rem', paddingRight: '1.25rem', paddingTop: '0.375rem', paddingBottom: '0.375rem' }}>Sign Up</Link>
+            <Link href="/user/auth/signup-type" className="bg-[#083A85] text-white text-base font-medium rounded-full hover:bg-[#001f4d] transition-all duration-300 whitespace-nowrap cursor-pointer" style={{ paddingLeft: '1.25rem', paddingRight: '1.25rem', paddingTop: '0.375rem', paddingBottom: '0.375rem' }}>Sign Up</Link>
           </div>
 
           {/* Mobile Menu Button */}
@@ -191,12 +496,129 @@ const AmoriaKNavbar = () => {
       {isMobileMenuOpen && (
         <div ref={mobileMenuRef} className="md:hidden bg-white/95 backdrop-blur-sm border-t border-gray-100/20 shadow-lg">
           <div className="px-4 pt-2 pb-4 space-y-1">
-            <Link href="" onClick={handleLinkClick} className="block px-3 py-2 rounded-md text-gray-700 hover:bg-gray-50 hover:text-gray-900 text-base font-medium transition-colors cursor-pointer">Photographers</Link>
-            <button onClick={handleLinkClick} className="w-full text-left px-3 py-2 rounded-md text-gray-700 hover:bg-gray-50 hover:text-gray-900 text-base font-medium transition-colors flex items-center justify-between cursor-pointer">
-              <span>Events</span>
-              <i className="bi bi-chevron-down"></i>
-            </button>
-            <Link href="" onClick={handleLinkClick} className="block px-3 py-2 rounded-md text-gray-700 hover:bg-gray-50 hover:text-gray-900 text-base font-medium transition-colors cursor-pointer">About</Link>
+            {/* Photographers Dropdown - Mobile */}
+            <div>
+              <button
+                onClick={() => setIsPhotographersDropdownOpen(prev => !prev)}
+                className="w-full text-left px-3 py-2 rounded-md text-gray-700 hover:bg-gray-50 hover:text-gray-900 text-base font-medium transition-colors flex items-center justify-between cursor-pointer"
+              >
+                <span>Photographers</span>
+                <i className={`bi bi-chevron-down transform transition-transform ${isPhotographersDropdownOpen ? 'rotate-180' : ''}`}></i>
+              </button>
+              {isPhotographersDropdownOpen && (
+                <div
+                  className="mt-2 pl-4"
+                  style={{
+                    padding: '8px',
+                    background: 'rgba(255, 255, 255, 0.6)',
+                    backdropFilter: 'blur(8px)',
+                    WebkitBackdropFilter: 'blur(8px)',
+                    borderRadius: '10px',
+                    border: '1px solid rgba(8, 58, 133, 0.1)',
+                    marginLeft: '12px'
+                  }}
+                >
+                  {photographerCategories.map((category) => (
+                    <Link
+                      key={category.value}
+                      href={`/user/photographers?category=${category.value}`}
+                      onClick={() => {
+                        setIsPhotographersDropdownOpen(false);
+                        handleLinkClick();
+                      }}
+                      className="block cursor-pointer"
+                      style={{
+                        padding: '10px 12px',
+                        borderRadius: '8px',
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        color: '#374151',
+                        backgroundColor: 'transparent',
+                        transition: 'all 0.2s ease',
+                        marginBottom: '4px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = 'rgba(8, 58, 133, 0.1)';
+                        e.currentTarget.style.color = '#083A85';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                        e.currentTarget.style.color = '#374151';
+                      }}
+                    >
+                      <i className={`bi ${category.icon}`} style={{ fontSize: '14px' }}></i>
+                      <span>{category.label}</span>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Events Dropdown - Mobile */}
+            <div>
+              <button
+                onClick={() => setIsEventsDropdownOpen(prev => !prev)}
+                className="w-full text-left px-3 py-2 rounded-md text-gray-700 hover:bg-gray-50 hover:text-gray-900 text-base font-medium transition-colors flex items-center justify-between cursor-pointer"
+              >
+                <span>Events</span>
+                <i className={`bi bi-chevron-down transform transition-transform ${isEventsDropdownOpen ? 'rotate-180' : ''}`}></i>
+              </button>
+              {isEventsDropdownOpen && (
+                <div
+                  className="mt-2 pl-4"
+                  style={{
+                    padding: '8px',
+                    background: 'rgba(255, 255, 255, 0.6)',
+                    backdropFilter: 'blur(8px)',
+                    WebkitBackdropFilter: 'blur(8px)',
+                    borderRadius: '10px',
+                    border: '1px solid rgba(8, 58, 133, 0.1)',
+                    marginLeft: '12px'
+                  }}
+                >
+                  {eventCategories.map((category) => (
+                    <Link
+                      key={category.value}
+                      href={`/user/events?category=${category.value}`}
+                      onClick={() => {
+                        setIsEventsDropdownOpen(false);
+                        handleLinkClick();
+                      }}
+                      className="block cursor-pointer"
+                      style={{
+                        padding: '10px 12px',
+                        borderRadius: '8px',
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        color: '#374151',
+                        backgroundColor: 'transparent',
+                        transition: 'all 0.2s ease',
+                        marginBottom: '4px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = 'rgba(8, 58, 133, 0.1)';
+                        e.currentTarget.style.color = '#083A85';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                        e.currentTarget.style.color = '#374151';
+                      }}
+                    >
+                      <i className={`bi ${category.icon}`} style={{ fontSize: '14px' }}></i>
+                      <span>{category.label}</span>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <Link href="/user/about" onClick={handleLinkClick} className="block px-3 py-2 rounded-md text-gray-700 hover:bg-gray-50 hover:text-gray-900 text-base font-medium transition-colors cursor-pointer">About</Link>
             
             {/* Language Dropdown (Mobile) */}
             <div className="border-t border-gray-200 !my-3"></div>
@@ -263,7 +685,7 @@ const AmoriaKNavbar = () => {
             <div className="border-t border-gray-200 !my-3"></div>
 
             <Link href="/user/auth/login" onClick={handleLinkClick} className="block px-3 py-2.5 text-center rounded-md text-gray-900 hover:bg-gray-50 text-base font-medium transition-colors cursor-pointer">Log In</Link>
-            <Link href="/user/auth/signup" onClick={handleLinkClick} className="block px-3 py-2.5 text-center bg-[#002D72] text-white rounded-full hover:bg-[#001f4d] text-base font-semibold transition-all duration-300 shadow-sm cursor-pointer">Sign Up</Link>
+            <Link href="/user/auth/signup-type" onClick={handleLinkClick} className="block px-3 py-2.5 text-center bg-[#002D72] text-white rounded-full hover:bg-[#001f4d] text-base font-semibold transition-all duration-300 shadow-sm cursor-pointer">Sign Up</Link>
           </div>
         </div>
       )}

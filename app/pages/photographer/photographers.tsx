@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import AmoriaKNavbar from '../../components/navbar';
-import Footer from '../../components/footer';
 
 const Photographers: React.FC = () => {
   // States
@@ -413,8 +412,8 @@ const Photographers: React.FC = () => {
           <div style={{
             position: 'absolute',
             inset: 0,
-            backgroundColor: 'rgba(8, 58, 133, 0.9)',
-            backdropFilter: 'blur(1px)'
+            backgroundColor: 'llinear-gradient(135deg, #ec4899 0%, #f97316 50%, #8b5cf6 100%)',
+            backdropFilter: 'blur(20px)'
           }}></div>
         </div>
 
@@ -877,7 +876,7 @@ const Photographers: React.FC = () => {
                         marginTop: '0',
                         letterSpacing: '0.01em'
                     }}
-                    onClick={() => window.location.href = `/user/view-profile`}
+                    onClick={() => window.location.href = `/user/photographers/view-profile?id=${photographer.id}`}
                     onMouseEnter={(e) => {
                         e.currentTarget.style.backgroundColor = '#2d2d2d';
                         e.currentTarget.style.transform = 'translateY(-1px)';
@@ -1017,8 +1016,6 @@ const Photographers: React.FC = () => {
           )}
         </div>
       </main>
-
-      <Footer />
     </div>
   );
 };

@@ -2,7 +2,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import Navbar from '../components/navbar';
-import Footer from '../components/footer';
 
 const TrustSafetyPage = () => {
   const [selectedSection, setSelectedSection] = useState('privacy-policy');
@@ -841,8 +840,6 @@ Our Trust & Safety team will investigate and respond within 72 hours. Urgent mat
           </div>
         </div>
       </div>
-
-      <Footer />
     </div>
   );
 };

@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import Navbar from '../components/navbar';
 import Footer from '../components/footer';
+import { useRouter } from 'next/navigation';
 
 // Local types (no backend imports)
 type FAQ = {
@@ -148,6 +149,8 @@ const categories = [
 
 
 const HelpSupportCenter: React.FC = () => {
+  const router = useRouter();
+
   // States
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -218,6 +221,23 @@ const HelpSupportCenter: React.FC = () => {
       setSuccessMessage('Message sent successfully! We\'ll get back to you soon.');
       setTimeout(() => setSuccessMessage(null), 3000);
     }, 1000);
+  };
+
+  const handleCategoryClick = (categoryId: string) => {
+    // Map category IDs to help page routes
+    const routeMap: Record<string, string> = {
+      'account': '/user/help/my-account',
+      'payment': '/user/help/payment',
+      'security': '/user/help/security',
+      'payment-methods': '/user/help/payment-methods',
+      'booking': '/user/help/booking',
+      'technical': '/user/help/technical-support'
+    };
+
+    const route = routeMap[categoryId];
+    if (route) {
+      router.push(route);
+    }
   };
 
 
@@ -333,6 +353,7 @@ const HelpSupportCenter: React.FC = () => {
           {categories.map((category) => (
             <div
               key={category.id}
+              onClick={() => handleCategoryClick(category.id)}
               style={{
                 background: 'rgba(255, 255, 255, 0.98)',
                 backdropFilter: 'blur(12px)',

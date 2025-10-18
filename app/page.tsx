@@ -169,7 +169,9 @@ export default function Home() {
                 >
                   Find A Photographer
                 </button>
-                <button style={{
+                <button
+                  onClick={() => window.location.href = '/user/auth/signup-type?type=photographer'}
+                  style={{
                   backgroundColor: 'transparent',
                   color: '#083A85',
                   padding: '11.25px 25.5px',
@@ -716,7 +718,7 @@ export default function Home() {
                   our platform is built for you
                 </p>
                 <button
-                  onClick={() => window.location.href = '/user/auth/signup'}
+                  onClick={() => window.location.href = '/user/auth/signup-type'}
                   style={{
                     background: 'linear-gradient(90deg, #041DC0 0%, #FF6363 0%, #7763FF 100%)',
                     color: '#000',
@@ -783,7 +785,8 @@ export default function Home() {
 
         {/* Mockups Section */}
         <section style={{
-          background: 'linear-gradient(180deg, #B3B7BA 0%, #083A85 100%)',
+          background: 'linear-gradient(90deg, #ec4899 0%, #f97316 50%, #8b5cf6 100%)',
+          backdropFilter: 'blur(1000px)',
           padding: '130px 220px 130px 250px', // Standardized vertical padding
           position: 'relative',
           overflow: 'hidden'
@@ -821,7 +824,7 @@ export default function Home() {
               {/* Laptop Screen */}
               <div style={{
                 width: '950px',
-                height: '520px',
+                height: '500px',
                 backgroundColor: '#e8e8e8',
                 borderRadius: '30px 30px 0 0',
                 border: '4px solid #d0d0d0',
@@ -984,8 +987,8 @@ export default function Home() {
                 left: getDevicePosition(1).left,
                 top: getDevicePosition(1).top,
                 transform: `translate(${getDevicePosition(1).translateX}, ${getDevicePosition(1).translateY}) scale(${getDevicePosition(1).scale}) rotateY(${getDevicePosition(1).rotate}deg)`,
-                width: '580px',
-                height: '700px',
+                width: '450px',
+                height: '580px',
                 backgroundColor: '#fff',
                 borderRadius: '30px',
                 border: '2px solid #e8e8e8',
@@ -1914,18 +1917,21 @@ export default function Home() {
                 >
                   Connect Now
                 </button>
-                <button style={{
-                  backgroundColor: 'transparent',
-                  color: '#FFFFFF',
-                  padding: '11.25px 25.5px',
-                  borderRadius: '37.5px',
-                  border: '1.5px solid #FFFFFF',
-                  fontSize: '17px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease',
-                  boxShadow: '0 3px 9px rgba(8, 58, 133, 0.2)'
-                }}>
+                <button
+                  onClick={() => window.location.href = '/user/events'}
+                  style={{
+                    backgroundColor: 'transparent',
+                    color: '#FFFFFF',
+                    padding: '11.25px 25.5px',
+                    borderRadius: '37.5px',
+                    border: '1.5px solid #FFFFFF',
+                    fontSize: '17px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    boxShadow: '0 3px 9px rgba(8, 58, 133, 0.2)'
+                  }}
+                >
                   Find Events
                 </button>
                 </div>

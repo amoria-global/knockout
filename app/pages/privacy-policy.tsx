@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import Navbar from '../components/navbar';
-import Footer from '../components/footer';
 
 const PrivacyPolicyPage = () => {
   const [selectedSection, setSelectedSection] = useState('privacy-policy');
@@ -664,8 +663,6 @@ Material changes affecting your rights will require explicit consent or the oppo
           </div>
         </div>
       </div>
-
-      <Footer />
     </div>
   );
 };

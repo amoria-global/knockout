@@ -42,19 +42,19 @@ export default function PhotographerInfoPage(): React.JSX.Element {
   };
 
   return (
-    <div className="h-screen overflow-hidden bg-gray-50 flex items-center justify-center px-4 py-4 sm:p-4">
-      <div className="w-full max-w-md h-[90vh] max-h-[800px] bg-white rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col items-center justify-center">
-        <div style={{ width: '100%', maxWidth: '420px', padding: '20px 36px' }}>
+    <div className="h-screen overflow-hidden flex items-center justify-center px-4 py-4 sm:p-4" style={{ backgroundColor: '#f8f9fa' }}>
+      <div className="w-full max-w-md h-[90vh] max-h-[800px] bg-white overflow-hidden flex flex-col items-center justify-center" style={{ borderRadius: '24px', boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)', border: '1px solid #e5e7eb' }}>
+        <div style={{ width: '100%', maxWidth: '420px', padding: '24px 40px' }}>
           {/* Title */}
-          <h1 style={{ fontSize: '20px', fontWeight: '600', textAlign: 'center', color: '#000000', marginBottom: '24px', letterSpacing: '0.3px' }}>
+          <h1 style={{ fontSize: '22px', fontWeight: '700', textAlign: 'center', color: '#111827', marginBottom: '32px', letterSpacing: '0.3px', lineHeight: '1.3' }}>
             Help Us Find Your Perfect Fit
           </h1>
 
           {/* Form */}
           <form onSubmit={handleContinue}>
             {/* Country Select */}
-            <div style={{ marginBottom: '16px' }}>
-              <label htmlFor="country" style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#000000', marginBottom: '6px' }}>
+            <div style={{ marginBottom: '20px' }}>
+              <label htmlFor="country" style={{ display: 'block', fontSize: '15px', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>
                 Country:
               </label>
               <div style={{ position: 'relative' }}>
@@ -64,17 +64,25 @@ export default function PhotographerInfoPage(): React.JSX.Element {
                   onChange={(e) => setCountry(e.target.value)}
                   style={{
                     width: '100%',
-                    padding: '12px 40px 12px 14px',
-                    fontSize: '14px',
+                    padding: '14px 44px 14px 16px',
+                    fontSize: '15px',
                     fontWeight: '400',
-                    border: '1.5px solid #d1d5db',
+                    border: '2px solid #e5e7eb',
                     borderRadius: '12px',
                     outline: 'none',
-                    transition: 'all 0.3s',
+                    transition: 'all 0.3s ease',
                     backgroundColor: '#ffffff',
-                    color: country ? '#000000' : '#9ca3af',
+                    color: country ? '#111827' : '#9ca3af',
                     appearance: 'none',
                     cursor: 'pointer',
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = '#083A85';
+                    e.currentTarget.style.boxShadow = '0 0 0 3px rgba(8, 58, 133, 0.1)';
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = '#e5e7eb';
+                    e.currentTarget.style.boxShadow = 'none';
                   }}
                 >
                   <option value="" disabled>Select Your Country</option>
@@ -87,10 +95,10 @@ export default function PhotographerInfoPage(): React.JSX.Element {
                 </select>
                 <i className="bi bi-chevron-down" style={{
                   position: 'absolute',
-                  right: '14px',
+                  right: '16px',
                   top: '50%',
                   transform: 'translateY(-50%)',
-                  fontSize: '14px',
+                  fontSize: '16px',
                   color: '#6b7280',
                   pointerEvents: 'none',
                 }}></i>
@@ -99,8 +107,8 @@ export default function PhotographerInfoPage(): React.JSX.Element {
 
             {/* Custom Country Input (shown when "Other" is selected) */}
             {country === 'other' && (
-              <div style={{ marginBottom: '16px' }}>
-                <label htmlFor="customCountry" style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#000000', marginBottom: '6px' }}>
+              <div style={{ marginBottom: '20px' }}>
+                <label htmlFor="customCountry" style={{ display: 'block', fontSize: '15px', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>
                   Please specify your country:
                 </label>
                 <input
@@ -111,15 +119,23 @@ export default function PhotographerInfoPage(): React.JSX.Element {
                   placeholder="Enter your country"
                   style={{
                     width: '100%',
-                    padding: '12px 14px',
-                    fontSize: '14px',
+                    padding: '14px 16px',
+                    fontSize: '15px',
                     fontWeight: '400',
-                    border: '1.5px solid #d1d5db',
+                    border: '2px solid #e5e7eb',
                     borderRadius: '12px',
                     outline: 'none',
-                    transition: 'all 0.3s',
+                    transition: 'all 0.3s ease',
                     backgroundColor: '#ffffff',
-                    color: '#000000',
+                    color: '#111827',
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = '#083A85';
+                    e.currentTarget.style.boxShadow = '0 0 0 3px rgba(8, 58, 133, 0.1)';
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = '#e5e7eb';
+                    e.currentTarget.style.boxShadow = 'none';
                   }}
                 />
               </div>
@@ -286,21 +302,30 @@ export default function PhotographerInfoPage(): React.JSX.Element {
                 type="button"
                 onClick={handleBack}
                 style={{
-                  padding: '12px 24px',
+                  padding: '14px 26px',
                   fontSize: '14px',
                   borderRadius: '12px',
-                  fontWeight: '500',
-                  transition: 'all 0.3s',
+                  fontWeight: '600',
+                  transition: 'all 0.3s ease',
                   cursor: 'pointer',
                   backgroundColor: '#ffffff',
                   color: '#083A85',
-                  border: '1.5px solid #d1d5db',
+                  border: '2px solid #083A85',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '6px',
+                  gap: '8px',
+                  letterSpacing: '0.5px',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#f0f7ff';
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '#ffffff';
+                  e.currentTarget.style.transform = 'translateY(0)';
                 }}
               >
-                <i className="bi bi-chevron-left" style={{ fontSize: '14px' }}></i>
+                <i className="bi bi-chevron-left" style={{ fontSize: '16px' }}></i>
                 BACK
               </button>
 
@@ -310,15 +335,31 @@ export default function PhotographerInfoPage(): React.JSX.Element {
                 disabled={isDisabled}
                 style={{
                   flex: 1,
-                  padding: '12px',
+                  padding: '14px',
                   fontSize: '14px',
                   borderRadius: '12px',
-                  fontWeight: '500',
-                  transition: 'all 0.3s',
+                  fontWeight: '600',
+                  transition: 'all 0.3s ease',
                   cursor: isDisabled ? 'not-allowed' : 'pointer',
                   backgroundColor: isDisabled ? '#d1d5db' : '#083A85',
                   color: isDisabled ? '#9ca3af' : '#ffffff',
                   border: 'none',
+                  letterSpacing: '0.5px',
+                  boxShadow: isDisabled ? 'none' : '0 4px 12px rgba(8, 58, 133, 0.25)',
+                }}
+                onMouseEnter={(e) => {
+                  if (!isDisabled) {
+                    e.currentTarget.style.backgroundColor = '#062d6b';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 6px 16px rgba(8, 58, 133, 0.35)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isDisabled) {
+                    e.currentTarget.style.backgroundColor = '#083A85';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(8, 58, 133, 0.25)';
+                  }
                 }}
               >
                 CONTINUE

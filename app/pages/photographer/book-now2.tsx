@@ -1,7 +1,6 @@
 'use client';
 import React, { useState } from 'react';
 import AmoriaKNavbar from '../../components/navbar';
-import Footer from '../../components/footer';
 
 export default function BookNowPage(): React.JSX.Element {
   // State for the new form fields
@@ -14,7 +13,7 @@ export default function BookNowPage(): React.JSX.Element {
 
   // Sample photographer data
   const photographerData = {
-    name: 'cole palmer',
+    name: 'Cole Palmer',
     profileImage: 'https://i.pinimg.com/1200x/85/c5/96/85c596eec98acf0645c5c231f3f8b870.jpg',
     availability: 'Monday - Sunday',
     hours: '08:00 AM - 11:50 PM',
@@ -63,225 +62,318 @@ export default function BookNowPage(): React.JSX.Element {
   return (
     <>
       <AmoriaKNavbar />
-      <div className="min-h-screen bg-gray-100">
+      <div className="min-h-screen" style={{ backgroundColor: '#f8f9fa', position: 'relative' }}>
+        {/* Back Button - Overlay at top left */}
+        <button
+          onClick={() => window.history.back()}
+          style={{
+            position: 'absolute',
+            top: '20px',
+            left: '0',
+            background: 'none',
+            border: 'none',
+            fontSize: '16px',
+            color: '#8b8b8c',
+            cursor: 'pointer',
+            padding: '10px 24px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            transition: 'all 0.3s ease',
+            fontWeight: '600',
+            borderRadius: '0',
+            zIndex: 10,
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = '#083A85';
+            e.currentTarget.style.backgroundColor = '#f0f7ff';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = '#8b8b8c';
+            e.currentTarget.style.backgroundColor = 'transparent';
+          }}
+        >
+          <i className="bi bi-chevron-left" style={{ fontSize: '20px' }}></i>
+          <span>Back</span>
+        </button>
+
         {/* Main Content Container */}
         <div
           style={{
-            maxWidth: '1100px',
-            margin: '24px auto',
-            padding: '0 20px',
+            maxWidth: '1400px',
+            margin: '0 auto',
+            padding: '20px 24px 40px',
           }}
         >
-          {/* Grid Layout: Left (Photographer Info) and Right (Package Selection) */}
+          {/* New Layout: Photographer Info at Top, Contact Form Below */}
           <div
             style={{
-              display: 'grid',
-              gridTemplateColumns: '340px 1fr',
-              gap: '20px',
-              alignItems: 'start',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '28px',
             }}
           >
-            {/* Left Section: Photographer Information (Unchanged) */}
+            {/* Top Section: Photographer Information - Horizontal Layout */}
             <div
               style={{
                 backgroundColor: '#fff',
-                borderRadius: '8px',
-                padding: '20px',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                borderRadius: '17px',
+                padding: '40px 32px 40px 140px',
+                boxShadow: '0 4px 16px rgba(0, 0, 0, 0.08)',
+                border: '1px solid #e5e7eb',
+                transition: 'all 0.3s ease',
+                minHeight: '180px',
               }}
             >
-              {/* Profile Image */}
-              <div
-                style={{
-                  width: '90px',
-                  height: '90px',
-                  borderRadius: '50%',
-                  overflow: 'hidden',
-                  margin: '0 auto 14px',
-                  border: '2.5px solid #083A85',
-                }}
-              >
-                <img
-                  src={photographerData.profileImage}
-                  alt={photographerData.name}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '32px' }}>
+                {/* Profile Image */}
+                <div
                   style={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover',
+                    width: '90px',
+                    height: '90px',
+                    borderRadius: '50%',
+                    overflow: 'hidden',
+                    border: '3px solid #083A85',
+                    boxShadow: '0 4px 12px rgba(8, 58, 133, 0.2)',
+                    flexShrink: 0,
                   }}
-                />
-              </div>
-
-              {/* Photographer Name */}
-              <h2
-                style={{
-                  fontSize: '13px',
-                  fontWeight: '700',
-                  color: '#000',
-                  marginBottom: '18px',
-                  textAlign: 'center',
-                  lineHeight: '1.3',
-                }}
-              >
-                Book session with {photographerData.name}
-              </h2>
-
-              {/* Information Section */}
-              <div
-                style={{
-                  backgroundColor: '#f3f4f6',
-                  padding: '12px',
-                  borderRadius: '5px',
-                }}
-              >
-                {/* Availability */}
-                <div style={{ marginBottom: '12px' }}>
-                  <div
+                >
+                  <img
+                    src={photographerData.profileImage}
+                    alt={photographerData.name}
                     style={{
-                      fontSize: '10px',
-                      fontWeight: '600',
-                      color: '#000',
-                      marginBottom: '4px',
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
                     }}
-                  >
-                    Availability:
-                  </div>
-                  <div
-                    style={{
-                      fontSize: '11px',
-                      color: '#4b5563',
-                      fontWeight: '500',
-                    }}
-                  >
-                    {photographerData.availability}
-                  </div>
+                  />
                 </div>
 
-                {/* Hours */}
-                <div style={{ marginBottom: '12px' }}>
-                  <div
-                    style={{
-                      fontSize: '12px',
-                      fontWeight: '700',
-                      color: '#000',
-                    }}
-                  >
-                    {photographerData.hours}
-                  </div>
-                </div>
-
-                {/* Location */}
-                <div style={{ marginBottom: '12px' }}>
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '5px',
-                    }}
-                  >
-                    <i
-                      className="bi bi-globe"
-                      style={{ color: '#083A85', fontSize: '13px' }}
-                    ></i>
-                    <span
+                {/* Photographer Info - Horizontal */}
+                <div style={{ flex: 1, display: 'flex', gap: '40px', alignItems: 'center' }}>
+                  {/* Name */}
+                  <div>
+                    <h2
                       style={{
-                        fontSize: '11px',
-                        color: '#4b5563',
-                        fontWeight: '500',
+                        fontSize: '22px',
+                        fontWeight: '900',
+                        color: '#111827',
+                        marginBottom: '4px',
+                        lineHeight: '1.3',
                       }}
                     >
-                      {photographerData.location}
-                    </span>
+                      {photographerData.name}
+                    </h2>
+                    <p style={{ fontSize: '15px', color: '#6b7280', fontWeight: '500' }}>
+                      Professional Photographer
+                    </p>
                   </div>
-                </div>
 
-                {/* Minimum Earnings/Payments */}
-                <div style={{ borderTop: '1px solid #d1d5db', paddingTop: '12px' }}>
-                  <div
-                    style={{
-                      fontSize: '10px',
-                      fontWeight: '600',
-                      color: '#000',
-                      marginBottom: '4px',
-                    }}
-                  >
-                    Minimum Earnings/Payments:
-                  </div>
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '5px',
-                    }}
-                  >
-                    <i
-                      className="bi bi-tag-fill"
-                      style={{ color: '#083A85', fontSize: '12px' }}
-                    ></i>
-                    <span
-                      style={{
-                        fontSize: '11px',
-                        color: '#4b5563',
-                        fontWeight: '600',
-                      }}
-                    >
-                      {photographerData.minimumEarnings}
-                    </span>
+                  {/* Details Grid */}
+                  <div style={{ display: 'flex', gap: '32px', flex: 1 }}>
+                    {/* Availability */}
+                    <div>
+                      <div
+                        style={{
+                          fontSize: '11px',
+                          fontWeight: '600',
+                          color: '#083A85',
+                          marginBottom: '4px',
+                          letterSpacing: '0.3px',
+                          textTransform: 'uppercase',
+                        }}
+                      >
+                        Availability
+                      </div>
+                      <div
+                        style={{
+                          fontSize: '14px',
+                          color: '#111827',
+                          fontWeight: '600',
+                        }}
+                      >
+                        {photographerData.availability}
+                      </div>
+                    </div>
+
+                    {/* Hours */}
+                    <div>
+                      <div
+                        style={{
+                          fontSize: '11px',
+                          fontWeight: '600',
+                          color: '#083A85',
+                          marginBottom: '4px',
+                          letterSpacing: '0.3px',
+                          textTransform: 'uppercase',
+                        }}
+                      >
+                        Working Hours
+                      </div>
+                      <div
+                        style={{
+                          fontSize: '14px',
+                          fontWeight: '600',
+                          color: '#111827',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                        }}
+                      >
+                        <i className="bi bi-clock-fill" style={{ color: '#083A85', fontSize: '14px' }}></i>
+                        {photographerData.hours}
+                      </div>
+                    </div>
+
+                    {/* Location */}
+                    <div>
+                      <div
+                        style={{
+                          fontSize: '11px',
+                          fontWeight: '600',
+                          color: '#083A85',
+                          marginBottom: '4px',
+                          letterSpacing: '0.3px',
+                          textTransform: 'uppercase',
+                        }}
+                      >
+                        Location
+                      </div>
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                        }}
+                      >
+                        <i
+                          className="bi bi-geo-alt-fill"
+                          style={{ color: '#083A85', fontSize: '14px' }}
+                        ></i>
+                        <span
+                          style={{
+                            fontSize: '14px',
+                            color: '#111827',
+                            fontWeight: '600',
+                          }}
+                        >
+                          {photographerData.location}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Minimum Earnings */}
+                    <div>
+                      <div
+                        style={{
+                          fontSize: '11px',
+                          fontWeight: '600',
+                          color: '#083A85',
+                          marginBottom: '4px',
+                          letterSpacing: '0.3px',
+                          textTransform: 'uppercase',
+                        }}
+                      >
+                        Starting Price
+                      </div>
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                        }}
+                      >
+                        <i
+                          className="bi bi-tag-fill"
+                          style={{ color: '#10b981', fontSize: '14px' }}
+                        ></i>
+                        <span
+                          style={{
+                            fontSize: '16px',
+                            color: '#10b981',
+                            fontWeight: '700',
+                          }}
+                        >
+                          {photographerData.minimumEarnings}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Right Section: Contact Information (Updated as per your image) */}
-            <div
-              style={{
-                backgroundColor: '#fff',
-                borderRadius: '8px',
-                padding: '24px',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-              }}
-            >
+            {/* Bottom Section: Contact Information */}
+            <div>
               {/* Header */}
               <h1
                 style={{
-                  fontSize: '18px',
+                  fontSize: '22px',
                   fontWeight: '700',
-                  color: '#000',
-                  marginBottom: '24px',
-                  textAlign: 'center',
+                  color: '#111827',
+                  marginBottom: '20px',
+                  letterSpacing: '0.3px',
                 }}
               >
                 Contact Information
               </h1>
 
+              {/* Contact Form Card */}
+              <div
+                style={{
+                  backgroundColor: '#fff',
+                  borderRadius: '17px',
+                  padding: '32px 28px',
+                  boxShadow: '0 4px 16px rgba(0, 0, 0, 0.08)',
+                  border: '1px solid #e5e7eb',
+                  transition: 'all 0.3s ease',
+                }}
+              >
+
               {/* Form Fields */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div style={{ display: 'flex', gap: '16px' }}>
+                <div style={{ display: 'flex', gap: '12px' }}>
                   <div style={{ flex: 1 }}>
-                    <label style={{ fontSize: '14px', display: 'block', marginBottom: '6px' }}>
+                    <label style={{ fontSize: '16px', fontWeight: '600', color: '#374151', display: 'block', marginBottom: '6px' }}>
                       First Name (Required):
                     </label>
                     <input
                       type="text"
                       value={firstName}
                       onChange={(e) => setFirstName(e.target.value)}
-                      style={{ width: '100%', padding: '8px 12px', border: '1px solid #ccc', borderRadius: '4px' }}
+                      style={{ width: '100%', padding: '10px 12px', border: '2px solid #e5e7eb', borderRadius: '8px', fontSize: '16px', transition: 'all 0.3s ease' }}
+                      onFocus={(e) => {
+                        e.currentTarget.style.borderColor = '#083A85';
+                        e.currentTarget.style.boxShadow = '0 0 0 3px rgba(8, 58, 133, 0.1)';
+                      }}
+                      onBlur={(e) => {
+                        e.currentTarget.style.borderColor = '#e5e7eb';
+                        e.currentTarget.style.boxShadow = 'none';
+                      }}
                     />
                   </div>
                   <div style={{ flex: 1 }}>
-                    <label style={{ fontSize: '14px', display: 'block', marginBottom: '6px' }}>
+                    <label style={{ fontSize: '16px', fontWeight: '600', color: '#374151', display: 'block', marginBottom: '6px' }}>
                       Last Name (Required):
                     </label>
                     <input
                       type="text"
                       value={lastName}
                       onChange={(e) => setLastName(e.target.value)}
-                      style={{ width: '100%', padding: '8px 12px', border: '1px solid #ccc', borderRadius: '4px' }}
+                      style={{ width: '100%', padding: '10px 12px', border: '2px solid #e5e7eb', borderRadius: '8px', fontSize: '16px', transition: 'all 0.3s ease' }}
+                      onFocus={(e) => {
+                        e.currentTarget.style.borderColor = '#083A85';
+                        e.currentTarget.style.boxShadow = '0 0 0 3px rgba(8, 58, 133, 0.1)';
+                      }}
+                      onBlur={(e) => {
+                        e.currentTarget.style.borderColor = '#e5e7eb';
+                        e.currentTarget.style.boxShadow = 'none';
+                      }}
                     />
                   </div>
                 </div>
                 <div>
-                  <label style={{ fontSize: '14px', display: 'block', marginBottom: '6px' }}>
+                  <label style={{ fontSize: '16px', fontWeight: '600', color: '#374151', display: 'block', marginBottom: '6px' }}>
                     Email Address (Required):
                   </label>
                   <input
@@ -289,18 +381,34 @@ export default function BookNowPage(): React.JSX.Element {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="example@gmail.com"
-                    style={{ width: '100%', padding: '8px 12px', border: '1px solid #ccc', borderRadius: '4px' }}
+                    style={{ width: '100%', padding: '10px 12px', border: '2px solid #e5e7eb', borderRadius: '8px', fontSize: '16px', transition: 'all 0.3s ease' }}
+                    onFocus={(e) => {
+                      e.currentTarget.style.borderColor = '#083A85';
+                      e.currentTarget.style.boxShadow = '0 0 0 3px rgba(8, 58, 133, 0.1)';
+                    }}
+                    onBlur={(e) => {
+                      e.currentTarget.style.borderColor = '#e5e7eb';
+                      e.currentTarget.style.boxShadow = 'none';
+                    }}
                   />
                 </div>
                 <div>
-                  <label style={{ fontSize: '14px', display: 'block', marginBottom: '6px' }}>
+                  <label style={{ fontSize: '16px', fontWeight: '600', color: '#374151', display: 'block', marginBottom: '6px' }}>
                     Phone Number (Required):
                   </label>
-                  <div style={{ display: 'flex' }}>
+                  <div style={{ display: 'flex', gap: '8px' }}>
                     <select
                       value={phoneCode}
                       onChange={(e) => setPhoneCode(e.target.value)}
-                      style={{ padding: '8px', border: '1px solid #ccc', borderRadius: '4px 0 0 4px', borderRight: 'none' }}
+                      style={{ padding: '10px 12px', border: '2px solid #e5e7eb', borderRadius: '8px', fontSize: '16px', fontWeight: '600', cursor: 'pointer', backgroundColor: '#fff', transition: 'all 0.3s ease', minWidth: '90px' }}
+                      onFocus={(e) => {
+                        e.currentTarget.style.borderColor = '#083A85';
+                        e.currentTarget.style.boxShadow = '0 0 0 3px rgba(8, 58, 133, 0.1)';
+                      }}
+                      onBlur={(e) => {
+                        e.currentTarget.style.borderColor = '#e5e7eb';
+                        e.currentTarget.style.boxShadow = 'none';
+                      }}
                     >
                       <option value="+250">+250</option>
                       <option value="+1">+1</option>
@@ -311,23 +419,32 @@ export default function BookNowPage(): React.JSX.Element {
                       type="tel"
                       value={phoneNumber}
                       onChange={(e) => setPhoneNumber(e.target.value)}
-                      style={{ width: '100%', padding: '8px 12px', border: '1px solid #ccc', borderRadius: '0 4px 4px 0' }}
+                      placeholder="123 456 789"
+                      style={{ flex: 1, padding: '10px 12px', border: '2px solid #e5e7eb', borderRadius: '8px', fontSize: '14px', transition: 'all 0.3s ease' }}
+                      onFocus={(e) => {
+                        e.currentTarget.style.borderColor = '#083A85';
+                        e.currentTarget.style.boxShadow = '0 0 0 3px rgba(8, 58, 133, 0.1)';
+                      }}
+                      onBlur={(e) => {
+                        e.currentTarget.style.borderColor = '#e5e7eb';
+                        e.currentTarget.style.boxShadow = 'none';
+                      }}
                     />
                   </div>
                 </div>
               </div>
 
               {/* Booking Summary */}
-              <div style={{ marginTop: '24px', padding: '16px', backgroundColor: '#f3f4f6', borderRadius: '6px' }}>
-                <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px' }}>
+              <div style={{ marginTop: '28px', padding: '20px', backgroundColor: '#f9fafb', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
+                <h3 style={{ fontSize: '17px', fontWeight: '700', color: '#083A85', marginBottom: '16px', letterSpacing: '0.3px' }}>
                   Booking Summary:
                 </h3>
-                <div style={{ fontSize: '14px', color: '#374151', display: 'grid', gap: '8px' }}>
-                  <p><b>Package:</b> {bookingSummary.package}</p>
-                  <p><b>Event Date:</b> {bookingSummary.eventDate}</p>
-                  <p><b>Event Time:</b> {bookingSummary.eventTime}</p>
-                  <p><b>Location:</b> {bookingSummary.location}</p>
-                  <p><b>Event Type:</b> {bookingSummary.eventType}</p>
+                <div style={{ fontSize: '15px', color: '#374151', display: 'grid', gap: '12px' }}>
+                  <p style={{ margin: 0 }}><strong style={{ color: '#111827' }}>Package:</strong> {bookingSummary.package}</p>
+                  <p style={{ margin: 0 }}><strong style={{ color: '#111827' }}>Event Date:</strong> {bookingSummary.eventDate}</p>
+                  <p style={{ margin: 0 }}><strong style={{ color: '#111827' }}>Event Time:</strong> {bookingSummary.eventTime}</p>
+                  <p style={{ margin: 0 }}><strong style={{ color: '#111827' }}>Location:</strong> {bookingSummary.location}</p>
+                  <p style={{ margin: 0 }}><strong style={{ color: '#111827' }}>Event Type:</strong> {bookingSummary.eventType}</p>
                 </div>
               </div>
 
@@ -363,43 +480,65 @@ export default function BookNowPage(): React.JSX.Element {
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
-                  gap: '10px',
-                  marginTop: '24px',
+                  gap: '12px',
+                  marginTop: '28px',
                   borderTop: '1px solid #e5e7eb',
-                  paddingTop: '20px'
+                  paddingTop: '24px'
                 }}
               >
                 <button
-                   onClick={() => (window.location.href = '/user/book-now1')}
+                   onClick={() => (window.location.href = '/user/photographers/book-now1')}
                   style={{
-                    padding: '9px 20px',
+                    padding: '12px 24px',
                     backgroundColor: '#fff',
                     color: '#083A85',
-                    border: '1.5px solid #083A85',
-                    borderRadius: '20px',
-                    fontSize: '12px',
+                    border: '2px solid #083A85',
+                    borderRadius: '10px',
+                    fontSize: '14px',
                     fontWeight: '600',
                     cursor: 'pointer',
+                    transition: 'all 0.3s ease',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '6px',
+                    gap: '8px',
+                    letterSpacing: '0.5px',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#f0f7ff';
+                    e.currentTarget.style.transform = 'translateY(-1px)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = '#fff';
+                    e.currentTarget.style.transform = 'translateY(0)';
                   }}
                 >
                   <i className="bi bi-chevron-left"></i>
                   PREVIOUS
                 </button>
-                <div style={{ display: 'flex', gap: '10px' }}>
+                <div style={{ display: 'flex', gap: '12px' }}>
                   <button
                     onClick={handleCancel}
                     style={{
-                      padding: '9px 24px',
+                      padding: '12px 28px',
                       backgroundColor: '#fff',
                       color: '#374151',
-                      border: '1.5px solid #d1d5db',
-                      borderRadius: '20px',
-                      fontSize: '12px',
+                      border: '2px solid #d1d5db',
+                      borderRadius: '10px',
+                      fontSize: '14px',
                       fontWeight: '600',
                       cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                      letterSpacing: '0.5px',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#f9fafb';
+                      e.currentTarget.style.borderColor = '#9ca3af';
+                      e.currentTarget.style.transform = 'translateY(-1px)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = '#fff';
+                      e.currentTarget.style.borderColor = '#d1d5db';
+                      e.currentTarget.style.transform = 'translateY(0)';
                     }}
                   >
                     CANCEL
@@ -408,14 +547,31 @@ export default function BookNowPage(): React.JSX.Element {
                      onClick={() => (window.location.href = '')}
                     disabled={!isFormValid()}
                     style={{
-                      padding: '9px 24px',
-                      backgroundColor: isFormValid() ? '#083A85' : '#9ca3af',
+                      padding: '12px 32px',
+                      backgroundColor: isFormValid() ? '#083A85' : '#d1d5db',
                       color: '#fff',
                       border: 'none',
-                      borderRadius: '20px',
-                      fontSize: '12px',
+                      borderRadius: '10px',
+                      fontSize: '14px',
                       fontWeight: '600',
                       cursor: isFormValid() ? 'pointer' : 'not-allowed',
+                      transition: 'all 0.3s ease',
+                      letterSpacing: '0.5px',
+                      boxShadow: isFormValid() ? '0 4px 12px rgba(8, 58, 133, 0.25)' : 'none',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (isFormValid()) {
+                        e.currentTarget.style.backgroundColor = '#062d6b';
+                        e.currentTarget.style.transform = 'translateY(-2px)';
+                        e.currentTarget.style.boxShadow = '0 6px 16px rgba(8, 58, 133, 0.35)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (isFormValid()) {
+                        e.currentTarget.style.backgroundColor = '#083A85';
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(8, 58, 133, 0.25)';
+                      }
                     }}
                   >
                     BOOK NOW
@@ -426,7 +582,7 @@ export default function BookNowPage(): React.JSX.Element {
           </div>
         </div>
       </div>
-      <Footer />
+      </div>
     </>
   );
 }
