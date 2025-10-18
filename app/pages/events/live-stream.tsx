@@ -375,6 +375,12 @@ const App = () => {
             gap: 8px !important;
           }
 
+          .cards-wrapper {
+            grid-template-columns: 1fr !important;
+            padding: 12px !important;
+            gap: 12px !important;
+          }
+
           .video-section {
             width: 100% !important;
             min-height: 50vh !important;
@@ -559,9 +565,20 @@ const App = () => {
           gap: '12px'
         }}>
 
+            {/* Wrapper for Video and Chat Cards */}
+            <div style={{
+              backgroundColor: '#1e3a8a',
+              borderRadius: '16px',
+              padding: '20px',
+              display: 'grid',
+              gridTemplateColumns: '1fr auto',
+              gap: '20px',
+              width: '100%',
+              boxShadow: '0 10px 40px rgba(0, 0, 0, 0.3)'
+            }} className="cards-wrapper">
+
             {/* Video Section */}
             <div className="video-section" style={{
-              flex: 1,
               display: 'flex',
               flexDirection: 'column',
               gap: '12px',
@@ -1031,6 +1048,8 @@ const App = () => {
                     </div>
                 </div>
             </div>
+
+            </div> {/* End Wrapper for Video and Chat Cards */}
 
         </div>
 
