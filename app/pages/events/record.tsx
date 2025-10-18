@@ -20,12 +20,15 @@ export default function RecordPage() {
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [recordedTime, setRecordedTime] = useState(0);
-  const [maxTime] = useState(90);
+  const [maxTime] = useState(60); // Changed to 60 seconds (1 minute)
   const [isMicEnabled, setIsMicEnabled] = useState(true);
   const [videoId] = useState('vwx-jcwv-sfg');
   const [currentTime, setCurrentTime] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState(VIDEO_FILTERS[0]);
+  const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
+  const [isPlayingBack, setIsPlayingBack] = useState(false);
+  const [currentFilterIndex, setCurrentFilterIndex] = useState(0);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -131,11 +134,20 @@ export default function RecordPage() {
         }
       };
 
+      mediaRecorder.onstop = () => {
+        // Create blob from recorded chunks
+        const blob = new Blob(chunksRef.current, { type: 'video/webm' });
+        setRecordedBlob(blob);
+        console.log('Recording saved, size:', blob.size);
+      };
+
       mediaRecorder.start();
       setIsRecording(true);
       setRecordedTime(0);
+      setRecordedBlob(null); // Clear previous recording
     } catch (err) {
       console.error('Error starting recording:', err);
+      alert('Unable to start recording. Please check your camera and microphone permissions.');
     }
   };
 
@@ -176,15 +188,76 @@ export default function RecordPage() {
   };
 
   const handleDelete = () => {
-    if (confirm('Are you sure you want to delete this recording?')) {
-      setRecordedTime(0);
-      chunksRef.current = [];
+    if (recordedBlob || recordedTime > 0) {
+      if (confirm('Are you sure you want to delete this recording?')) {
+        // Stop recording if currently recording
+        if (isRecording) {
+          stopRecording();
+        }
+
+        // Clear all recording data
+        setRecordedTime(0);
+        setRecordedBlob(null);
+        chunksRef.current = [];
+        setIsPlayingBack(false);
+
+        // Restart camera stream if needed
+        if (videoRef.current && streamRef.current) {
+          videoRef.current.srcObject = streamRef.current;
+        }
+
+        alert('Recording deleted successfully!');
+      }
+    } else {
+      alert('No recording to delete.');
+    }
+  };
+
+  const handlePlayback = () => {
+    if (recordedBlob && videoRef.current) {
+      // Switch to playback mode
+      const url = URL.createObjectURL(recordedBlob);
+      videoRef.current.srcObject = null;
+      videoRef.current.src = url;
+      videoRef.current.controls = true;
+      videoRef.current.muted = false;
+      videoRef.current.play();
+      setIsPlayingBack(true);
+    } else {
+      alert('No recording available to preview!');
+    }
+  };
+
+  const handleBackToCamera = () => {
+    if (videoRef.current && streamRef.current) {
+      // Return to live camera view
+      videoRef.current.src = '';
+      videoRef.current.srcObject = streamRef.current;
+      videoRef.current.controls = false;
+      videoRef.current.muted = true;
+      setIsPlayingBack(false);
     }
   };
 
   const handleSubmitVideo = () => {
+    if (!recordedBlob) {
+      alert('Please record a video first!');
+      return;
+    }
+
+    if (recordedTime < 5) {
+      alert('Your video is too short. Please record at least 5 seconds.');
+      return;
+    }
+
+    // For now, just log and show success
+    // Later this will upload to your backend API
     console.log('Submitting video...');
-    alert('Video submitted successfully!');
+    console.log('Video size:', recordedBlob.size);
+    console.log('Video duration:', recordedTime, 'seconds');
+    console.log('Event ID:', videoId);
+
+    alert(`Thank you for sharing your memory! Your ${recordedTime}-second video has been recorded successfully. (Backend integration pending)`);
   };
 
   const handleAddFilter = () => {
@@ -193,12 +266,26 @@ export default function RecordPage() {
 
   const applyFilter = (filter: typeof VIDEO_FILTERS[0]) => {
     setSelectedFilter(filter);
+    const index = VIDEO_FILTERS.findIndex(f => f.id === filter.id);
+    setCurrentFilterIndex(index);
+  };
+
+  const nextFilter = () => {
+    const nextIndex = (currentFilterIndex + 1) % VIDEO_FILTERS.length;
+    setCurrentFilterIndex(nextIndex);
+    setSelectedFilter(VIDEO_FILTERS[nextIndex]);
+  };
+
+  const prevFilter = () => {
+    const prevIndex = (currentFilterIndex - 1 + VIDEO_FILTERS.length) % VIDEO_FILTERS.length;
+    setCurrentFilterIndex(prevIndex);
+    setSelectedFilter(VIDEO_FILTERS[prevIndex]);
   };
 
   return (
     <div style={{
       minHeight: '100vh',
-      backgroundColor: '#5a6f9e',
+      backgroundColor: '#e5e7eb',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -207,7 +294,7 @@ export default function RecordPage() {
       <div style={{
         width: '100%',
         maxWidth: '800px',
-        backgroundColor: '#4a5f8f',
+        background: 'linear-gradient(180deg, #5E799F 0%, #083A85 47%, #335992 100%)',
         borderRadius: '12px',
         overflow: 'hidden',
         boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
@@ -286,7 +373,8 @@ export default function RecordPage() {
             </div>
           )}
 
-          {/* Control Buttons Overlay */}
+          {/* Control Buttons Overlay - Hidden during playback */}
+          {!isPlayingBack && (
           <div style={{
             position: 'absolute',
             bottom: '16px',
@@ -400,11 +488,12 @@ export default function RecordPage() {
               </button>
             </div>
           </div>
+          )}
         </div>
 
         {/* Bottom Action Bar */}
         <div style={{
-          backgroundColor: '#4a5f8f',
+          backgroundColor: 'transparent',
           padding: '16px 20px',
           display: 'flex',
           alignItems: 'center',
@@ -465,22 +554,169 @@ export default function RecordPage() {
             alignItems: 'center',
             gap: '10px'
           }}>
-            <button
-              onClick={handleAddFilter}
-              style={{
-                padding: '10px 20px',
-                backgroundColor: '#fff',
-                color: '#000',
-                border: 'none',
-                borderRadius: '6px',
-                fontWeight: '600',
-                fontSize: '14px',
-                cursor: 'pointer',
-                transition: 'all 0.2s'
-              }}
-            >
-              Add Filter
-            </button>
+            {/* Filter Controls - Inline when showing */}
+            {!isPlayingBack && showFilters && (
+              <>
+                <button
+                  onClick={prevFilter}
+                  style={{
+                    width: '44px',
+                    height: '44px',
+                    borderRadius: '6px',
+                    border: '2px solid rgba(255, 255, 255, 0.6)',
+                    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+                    color: '#000',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '18px',
+                    fontWeight: 'bold',
+                    transition: 'all 0.2s ease',
+                    backdropFilter: 'blur(10px)'
+                  }}
+                  title="Previous filter"
+                >
+                  ←
+                </button>
+
+                <div style={{
+                  width: '44px',
+                  height: '44px',
+                  borderRadius: '6px',
+                  backgroundColor: '#ffffff',
+                  border: '2px solid #ffffff',
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  position: 'relative'
+                }}>
+                  <div style={{
+                    fontSize: '24px',
+                    filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.1))'
+                  }}>
+                    {selectedFilter.icon}
+                  </div>
+                </div>
+
+                <button
+                  onClick={nextFilter}
+                  style={{
+                    width: '44px',
+                    height: '44px',
+                    borderRadius: '6px',
+                    border: '2px solid rgba(255, 255, 255, 0.6)',
+                    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+                    color: '#000',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '18px',
+                    fontWeight: 'bold',
+                    transition: 'all 0.2s ease',
+                    backdropFilter: 'blur(10px)'
+                  }}
+                  title="Next filter"
+                >
+                  →
+                </button>
+
+                <div style={{
+                  padding: '10px 16px',
+                  height: '44px',
+                  backgroundColor: 'rgba(255, 255, 255, 0.3)',
+                  borderRadius: '6px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  backdropFilter: 'blur(10px)',
+                  border: '2px solid rgba(255, 255, 255, 0.4)'
+                }}>
+                  <span style={{
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    color: '#000',
+                    whiteSpace: 'nowrap'
+                  }}>
+                    {selectedFilter.name}
+                  </span>
+                </div>
+              </>
+            )}
+
+            {!isPlayingBack && (
+              <button
+                onClick={handleAddFilter}
+                style={{
+                  padding: '10px 20px',
+                  height: '44px',
+                  backgroundColor: '#fff',
+                  color: '#000',
+                  border: 'none',
+                  borderRadius: '6px',
+                  fontWeight: '600',
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                {showFilters ? 'Close' : 'Add Filter'}
+              </button>
+            )}
+
+            {/* Preview Button - Shows when recording exists and not currently playing back */}
+            {recordedBlob && !isPlayingBack && (
+              <button
+                onClick={handlePlayback}
+                style={{
+                  padding: '10px 20px',
+                  height: '44px',
+                  backgroundColor: '#10b981',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '6px',
+                  fontWeight: '600',
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+                title="Preview your recording"
+              >
+                Preview
+              </button>
+            )}
+
+            {/* Back to Camera Button - Shows when in playback mode */}
+            {isPlayingBack && (
+              <button
+                onClick={handleBackToCamera}
+                style={{
+                  padding: '10px 20px',
+                  height: '44px',
+                  backgroundColor: '#6b7280',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '6px',
+                  fontWeight: '600',
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+                title="Return to camera view"
+              >
+                Back to Camera
+              </button>
+            )}
 
             <button
               onClick={handleDelete}
@@ -506,6 +742,7 @@ export default function RecordPage() {
               onClick={handleSubmitVideo}
               style={{
                 padding: '10px 24px',
+                height: '44px',
                 backgroundColor: '#2563eb',
                 color: '#fff',
                 border: '2px solid #1e40af',
@@ -513,7 +750,10 @@ export default function RecordPage() {
                 fontWeight: '600',
                 fontSize: '14px',
                 cursor: 'pointer',
-                transition: 'all 0.2s'
+                transition: 'all 0.2s',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
               }}
             >
               Submit Video
@@ -521,91 +761,6 @@ export default function RecordPage() {
           </div>
         </div>
       </div>
-
-      {/* Filter Selection Panel - Horizontal Emoji Bar Style */}
-      {showFilters && (
-        <div style={{
-          position: 'fixed',
-          bottom: '100px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          zIndex: 1000,
-          width: '90%',
-          maxWidth: '700px'
-        }}>
-          <div style={{
-            backgroundColor: '#fff',
-            borderRadius: '50px',
-            padding: '12px 16px',
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            overflowX: 'auto',
-            overflowY: 'hidden',
-            position: 'relative'
-          }}>
-            {/* Filter Items */}
-            {VIDEO_FILTERS.map((filter) => (
-              <div
-                key={filter.id}
-                onClick={() => applyFilter(filter)}
-                style={{
-                  cursor: 'pointer',
-                  textAlign: 'center',
-                  minWidth: '60px',
-                  padding: '8px',
-                  borderRadius: '16px',
-                  backgroundColor: selectedFilter.id === filter.id ? '#e0f2fe' : 'transparent',
-                  transition: 'all 0.2s',
-                  border: selectedFilter.id === filter.id ? '2px solid #2563eb' : '2px solid transparent'
-                }}
-              >
-                {/* Filter Icon */}
-                <div style={{
-                  fontSize: '32px',
-                  marginBottom: '4px'
-                }}>
-                  {filter.icon}
-                </div>
-                {/* Filter Name */}
-                <p style={{
-                  margin: 0,
-                  fontSize: '9px',
-                  fontWeight: '600',
-                  color: selectedFilter.id === filter.id ? '#2563eb' : '#666',
-                  whiteSpace: 'nowrap'
-                }}>
-                  {filter.name}
-                </p>
-              </div>
-            ))}
-
-            {/* Close Button */}
-            <button
-              onClick={() => setShowFilters(false)}
-              style={{
-                minWidth: '50px',
-                height: '50px',
-                borderRadius: '50%',
-                border: 'none',
-                backgroundColor: '#f3f4f6',
-                color: '#666',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginLeft: '8px',
-                flexShrink: 0,
-                transition: 'all 0.2s'
-              }}
-              title="Close"
-            >
-              <FaTimes size={20} />
-            </button>
-          </div>
-        </div>
-      )}
 
       <style jsx>{`
         @keyframes pulse {
@@ -615,6 +770,11 @@ export default function RecordPage() {
           50% {
             opacity: 0.7;
           }
+        }
+
+        /* Hide scrollbar for filter panel */
+        .filter-scroll::-webkit-scrollbar {
+          display: none;
         }
       `}</style>
     </div>

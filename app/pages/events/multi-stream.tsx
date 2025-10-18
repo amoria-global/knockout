@@ -119,14 +119,13 @@ const MultiStream = () => {
   const [chatInputs, setChatInputs] = useState<{ [key: string]: string }>({});
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  // Message modal state
-  const [selectedMessage, setSelectedMessage] = useState<{
-    id: number;
-    sender: string;
-    text: string;
-    time: string;
-    delivered: boolean;
-  } | null>(null);
+  // Message emoji reactions state
+  const [messageEmojiPicker, setMessageEmojiPicker] = useState<{ streamId: string; messageId: number } | null>(null);
+  const [messageReactions, setMessageReactions] = useState<{
+    [streamId: string]: {
+      [messageId: number]: Array<{ emoji: string; count: number }>
+    }
+  }>({});
 
   // Get current time
   const getCurrentTime = () => {
@@ -1569,7 +1568,7 @@ const MultiStream = () => {
               position: 'fixed',
               bottom: '20px',
               [isLeftPanel ? 'left' : 'right']: '20px',
-              width: '360px',
+              width: '300px',
               height: '75vh',
               maxHeight: '680px',
               background: 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)',
@@ -1598,7 +1597,7 @@ const MultiStream = () => {
               {/* Chat Header */}
               <div style={{
                 background: `linear-gradient(135deg, ${isLeftPanel ? '#083A85' : '#0267FF'} 0%, ${isLeftPanel ? '#0267FF' : '#1890ff'} 100%)`,
-                padding: '20px 24px',
+                padding: '12px 16px',
                 borderBottom: 'none',
                 display: 'flex',
                 justifyContent: 'space-between',
@@ -1606,56 +1605,36 @@ const MultiStream = () => {
                 position: 'relative',
                 overflow: 'hidden'
               }}>
-                {/* Decorative background elements */}
-                <div style={{
-                  position: 'absolute',
-                  top: '-20px',
-                  right: '-20px',
-                  width: '120px',
-                  height: '120px',
-                  background: 'radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%)',
-                  borderRadius: '50%'
-                }}></div>
-                <div style={{
-                  position: 'absolute',
-                  bottom: '-30px',
-                  left: '-30px',
-                  width: '100px',
-                  height: '100px',
-                  background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)',
-                  borderRadius: '50%'
-                }}></div>
-
                 <div style={{ position: 'relative', zIndex: 1, flex: 1 }}>
                   <div style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '10px',
-                    marginBottom: '6px'
+                    gap: '8px'
                   }}>
                     <div style={{
-                      width: '8px',
-                      height: '8px',
+                      width: '6px',
+                      height: '6px',
                       borderRadius: '50%',
                       backgroundColor: '#10b981',
-                      boxShadow: '0 0 10px rgba(16, 185, 129, 0.8)',
+                      boxShadow: '0 0 8px rgba(16, 185, 129, 0.8)',
                       animation: 'pulse 2s ease-in-out infinite'
                     }}></div>
                     <h3 style={{
                       fontWeight: '700',
                       color: '#fff',
-                      fontSize: '19px',
+                      fontSize: '15px',
                       margin: 0,
-                      letterSpacing: '-0.3px'
+                      letterSpacing: '-0.2px'
                     }}>Leave A Message</h3>
+                    <span style={{
+                      fontSize: '11px',
+                      color: 'rgba(255, 255, 255, 0.75)',
+                      fontWeight: '600',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.3px',
+                      marginLeft: '4px'
+                    }}>Stream {streamIndex + 1}</span>
                   </div>
-                  <span style={{
-                    fontSize: '13px',
-                    color: 'rgba(255, 255, 255, 0.85)',
-                    fontWeight: '600',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.5px'
-                  }}>Stream {streamIndex + 1}</span>
                 </div>
               <button
                 onClick={() => {
@@ -1670,25 +1649,23 @@ const MultiStream = () => {
                   background: 'rgba(255, 255, 255, 0.2)',
                   backdropFilter: 'blur(10px)',
                   border: '1px solid rgba(255, 255, 255, 0.3)',
-                  borderRadius: '12px',
-                  width: '38px',
-                  height: '38px',
+                  borderRadius: '8px',
+                  width: '28px',
+                  height: '28px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   color: '#fff',
                   cursor: 'pointer',
-                  fontSize: '16px',
+                  fontSize: '14px',
                   padding: 0,
-                  transition: 'all 0.3s ease'
+                  transition: 'all 0.2s ease'
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)';
-                  e.currentTarget.style.transform = 'rotate(90deg)';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
-                  e.currentTarget.style.transform = 'rotate(0deg)';
                 }}
               >
                 <i className="bi bi-x-lg"></i>
@@ -1723,155 +1700,286 @@ const MultiStream = () => {
               {(streamMessages[stream.id] || []).map((message, idx) => (
                 <div
                   key={message.id}
-                  onClick={() => setSelectedMessage(message)}
                   style={{
-                    background: '#ffffff',
-                    padding: '10px 12px',
-                    borderRadius: '10px',
-                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                    border: `1.5px solid ${isLeftPanel ? 'rgba(8, 58, 133, 0.1)' : 'rgba(2, 103, 255, 0.1)'}`,
-                    position: 'relative',
-                    overflow: 'hidden',
-                    maxWidth: '85%',
-                    animation: `messageSlideIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) ${idx * 0.1}s backwards`
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.boxShadow = `0 8px 20px ${isLeftPanel ? 'rgba(8, 58, 133, 0.18)' : 'rgba(2, 103, 255, 0.18)'}`;
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.borderColor = isLeftPanel ? 'rgba(8, 58, 133, 0.25)' : 'rgba(2, 103, 255, 0.25)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.08)';
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.borderColor = isLeftPanel ? 'rgba(8, 58, 133, 0.1)' : 'rgba(2, 103, 255, 0.1)';
+                    position: 'relative'
                   }}
                 >
-                  <style>{`
-                    @keyframes messageSlideIn {
-                      from {
-                        opacity: 0;
-                        transform: translateX(-20px);
+                  <div
+                    className="message-container"
+                    style={{
+                      display: 'flex',
+                      gap: '10px',
+                      padding: '8px 12px',
+                      transition: 'background 0.2s ease',
+                      borderRadius: '4px',
+                      animation: `messageSlideIn 0.3s ease ${idx * 0.05}s backwards`
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = 'rgba(0, 0, 0, 0.03)';
+                      const reactionBtn = e.currentTarget.querySelector('.reaction-btn') as HTMLElement;
+                      if (reactionBtn) reactionBtn.style.opacity = '1';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'transparent';
+                      const reactionBtn = e.currentTarget.querySelector('.reaction-btn') as HTMLElement;
+                      if (reactionBtn) reactionBtn.style.opacity = '0';
+                    }}
+                  >
+                    <style>{`
+                      @keyframes messageSlideIn {
+                        from {
+                          opacity: 0;
+                          transform: translateY(10px);
+                        }
+                        to {
+                          opacity: 1;
+                          transform: translateY(0);
+                        }
                       }
-                      to {
-                        opacity: 1;
-                        transform: translateX(0);
-                      }
-                    }
-                  `}</style>
+                    `}</style>
 
-                  {/* Colored accent bar */}
-                  <div style={{
-                    position: 'absolute',
-                    left: 0,
-                    top: 0,
-                    bottom: 0,
-                    width: '3px',
-                    background: `linear-gradient(180deg, ${isLeftPanel ? '#083A85' : '#0267FF'} 0%, ${isLeftPanel ? '#0267FF' : '#1890ff'} 100%)`,
-                    borderRadius: '12px 0 0 12px'
-                  }}></div>
+                    {/* Avatar */}
+                    <div style={{
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '50%',
+                      background: `linear-gradient(135deg, ${isLeftPanel ? '#083A85' : '#0267FF'} 0%, ${isLeftPanel ? '#0267FF' : '#1890ff'} 100%)`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#fff',
+                      fontSize: '13px',
+                      fontWeight: '700',
+                      flexShrink: 0,
+                      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+                    }}>
+                      {message.sender.charAt(0).toUpperCase()}
+                    </div>
 
-                  {/* Message text */}
-                  <p className="message-text" style={{
-                    fontSize: '13px',
-                    color: '#2d3748',
-                    lineHeight: '1.45',
-                    margin: '0 0 8px 0',
-                    fontWeight: '500',
-                    position: 'relative',
-                    zIndex: 1,
-                    paddingLeft: '5px'
-                  }}>
-                    {message.text}
-                  </p>
-
-                  {/* Sender info bar */}
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    paddingTop: '7px',
-                    paddingLeft: '5px',
-                    borderTop: `1px solid ${isLeftPanel ? 'rgba(8, 58, 133, 0.08)' : 'rgba(2, 103, 255, 0.08)'}`
-                  }}>
+                    {/* Message content */}
+                    <div style={{
+                      flex: 1,
+                      minWidth: 0
+                    }}>
+                      {/* Username and time */}
                       <div style={{
                         display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px'
+                        alignItems: 'baseline',
+                        gap: '8px',
+                        marginBottom: '2px',
+                        flexWrap: 'wrap'
                       }}>
-                        {/* Avatar */}
-                        <div style={{
-                          width: '28px',
-                          height: '28px',
-                          borderRadius: '8px',
-                          background: `linear-gradient(135deg, ${isLeftPanel ? '#083A85' : '#0267FF'} 0%, ${isLeftPanel ? '#0267FF' : '#1890ff'} 100%)`,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          color: '#fff',
-                          fontSize: '12px',
+                        <span style={{
+                          fontSize: '13px',
                           fontWeight: '700',
-                          boxShadow: `0 3px 10px ${isLeftPanel ? 'rgba(8, 58, 133, 0.25)' : 'rgba(2, 103, 255, 0.25)'}`,
-                          border: '2px solid #ffffff',
-                          flexShrink: 0
+                          color: isLeftPanel ? '#083A85' : '#0267FF',
+                          letterSpacing: '-0.2px'
                         }}>
-                          {message.sender.charAt(0).toUpperCase()}
-                        </div>
-                        <div style={{ minWidth: 0 }}>
-                          <div style={{
-                            fontSize: '12px',
-                            fontWeight: '700',
-                            color: '#083A85',
-                            marginBottom: '1px',
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis'
-                          }}>
-                            {message.sender}
-                          </div>
-                          <div style={{
-                            fontSize: '10px',
-                            color: '#9ca3af',
-                            fontWeight: '600',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '3px'
-                          }}>
-                            <i className="bi bi-clock" style={{ fontSize: '9px' }}></i>
-                            {message.time}
-                          </div>
-                        </div>
+                          {message.sender}
+                        </span>
+                        <span style={{
+                          fontSize: '11px',
+                          color: '#999',
+                          fontWeight: '500'
+                        }}>
+                          {message.time}
+                        </span>
                       </div>
 
-                      {/* Status badge */}
-                      {message.delivered && (
+                      {/* Message text */}
+                      <div style={{
+                        fontSize: '14px',
+                        color: '#0f0f0f',
+                        lineHeight: '1.4',
+                        wordWrap: 'break-word',
+                        fontWeight: '400',
+                        marginBottom: '4px'
+                      }}>
+                        {message.text}
+                      </div>
+
+                      {/* Message reactions display */}
+                      {messageReactions[stream.id]?.[message.id] && messageReactions[stream.id][message.id].length > 0 && (
                         <div style={{
                           display: 'flex',
-                          alignItems: 'center',
+                          flexWrap: 'wrap',
                           gap: '4px',
-                          background: 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)',
-                          padding: '4px 8px',
-                          borderRadius: '8px',
-                          border: '1.5px solid #a7f3d0',
-                          boxShadow: '0 2px 6px rgba(16, 185, 129, 0.12)',
-                          flexShrink: 0
+                          marginTop: '6px'
                         }}>
-                          <i className="bi bi-check2-all" style={{
-                            color: '#10b981',
-                            fontSize: '12px',
-                            fontWeight: 'bold'
-                          }}></i>
-                          <span style={{
-                            fontSize: '9px',
-                            color: '#059669',
-                            fontWeight: '700',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.3px'
-                          }}>Sent</span>
+                          {messageReactions[stream.id][message.id].map((reaction, ridx) => (
+                            <button
+                              key={ridx}
+                              onClick={() => {
+                                // Toggle reaction
+                                setMessageReactions(prev => {
+                                  const streamReactions = prev[stream.id] || {};
+                                  const msgReactions = streamReactions[message.id] || [];
+                                  const existingReaction = msgReactions.find(r => r.emoji === reaction.emoji);
+
+                                  if (existingReaction) {
+                                    const newCount = existingReaction.count - 1;
+                                    const updatedReactions = newCount > 0
+                                      ? msgReactions.map(r => r.emoji === reaction.emoji ? { ...r, count: newCount } : r)
+                                      : msgReactions.filter(r => r.emoji !== reaction.emoji);
+
+                                    return {
+                                      ...prev,
+                                      [stream.id]: {
+                                        ...streamReactions,
+                                        [message.id]: updatedReactions
+                                      }
+                                    };
+                                  }
+                                  return prev;
+                                });
+                              }}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                padding: '2px 8px',
+                                background: 'rgba(0, 0, 0, 0.05)',
+                                border: '1px solid rgba(0, 0, 0, 0.1)',
+                                borderRadius: '12px',
+                                fontSize: '12px',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s ease'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.background = 'rgba(0, 0, 0, 0.1)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.background = 'rgba(0, 0, 0, 0.05)';
+                              }}
+                            >
+                              <span>{reaction.emoji}</span>
+                              <span style={{ fontSize: '11px', color: '#606060', fontWeight: '600' }}>{reaction.count}</span>
+                            </button>
+                          ))}
                         </div>
                       )}
                     </div>
+
+                    {/* Reaction button (appears on hover) */}
+                    <button
+                      className="reaction-btn"
+                      onClick={(e) => {
+                        e.stopPropagation(); // Prevent event bubbling
+
+                        // Close input emoji picker if open
+                        setShowEmojiPicker(prev => ({
+                          ...prev,
+                          [stream.id]: false
+                        }));
+
+                        // Toggle message emoji picker
+                        setMessageEmojiPicker(
+                          messageEmojiPicker?.streamId === stream.id && messageEmojiPicker?.messageId === message.id
+                            ? null
+                            : { streamId: stream.id, messageId: message.id }
+                        );
+                      }}
+                      style={{
+                        opacity: '0',
+                        position: 'absolute',
+                        top: '8px',
+                        right: '12px',
+                        background: '#fff',
+                        border: '1px solid #e0e0e0',
+                        borderRadius: '12px',
+                        padding: '4px 8px',
+                        fontSize: '14px',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+                        zIndex: 10
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = '#f5f5f5';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = '#fff';
+                      }}
+                    >
+                      😊
+                    </button>
+                  </div>
+
+                  {/* Message-specific emoji picker */}
+                  {messageEmojiPicker?.streamId === stream.id && messageEmojiPicker?.messageId === message.id && (
+                    <div
+                      onClick={(e) => e.stopPropagation()}
+                      style={{
+                        position: 'absolute',
+                        top: '0',
+                        right: '50px',
+                        background: '#fff',
+                        borderRadius: '12px',
+                        padding: '8px',
+                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                        border: '1px solid #e0e0e0',
+                        zIndex: 1001,
+                        width: '240px'
+                      }}>
+                      <div style={{
+                        fontSize: '11px',
+                        fontWeight: '600',
+                        color: '#606060',
+                        marginBottom: '6px'
+                      }}>React to message</div>
+                      <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(6, 1fr)',
+                        gap: '4px'
+                      }}>
+                        {['👍', '❤️', '😂', '😮', '😢', '😡', '🎉', '🔥', '👏', '🙌', '💯', '✨', '⭐', '💪', '🙏', '👀', '🤔', '😍'].map((emoji) => (
+                          <button
+                            key={emoji}
+                            onClick={(e) => {
+                              e.stopPropagation(); // Prevent event bubbling
+
+                              // Add reaction
+                              setMessageReactions(prev => {
+                                const streamReactions = prev[stream.id] || {};
+                                const msgReactions = streamReactions[message.id] || [];
+                                const existingReaction = msgReactions.find(r => r.emoji === emoji);
+
+                                const updatedReactions = existingReaction
+                                  ? msgReactions.map(r => r.emoji === emoji ? { ...r, count: r.count + 1 } : r)
+                                  : [...msgReactions, { emoji, count: 1 }];
+
+                                return {
+                                  ...prev,
+                                  [stream.id]: {
+                                    ...streamReactions,
+                                    [message.id]: updatedReactions
+                                  }
+                                };
+                              });
+                              setMessageEmojiPicker(null);
+                            }}
+                            style={{
+                              fontSize: '20px',
+                              padding: '6px',
+                              border: 'none',
+                              background: 'transparent',
+                              cursor: 'pointer',
+                              borderRadius: '6px',
+                              transition: 'background 0.2s ease'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.background = '#f0f0f0';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.background = 'transparent';
+                            }}
+                          >
+                            {emoji}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
               <div ref={chatEndRef}></div>
@@ -1879,73 +1987,21 @@ const MultiStream = () => {
 
             {/* Chat Input */}
             <div style={{
-              padding: '20px',
-              background: 'linear-gradient(180deg, #ffffff 0%, #fafbfc 100%)',
-              borderTop: `2px solid ${isLeftPanel ? 'rgba(8, 58, 133, 0.08)' : 'rgba(2, 103, 255, 0.08)'}`,
-              boxShadow: '0 -8px 24px rgba(0, 0, 0, 0.06)',
+              padding: '8px 12px',
+              background: '#f9f9f9',
+              borderTop: '1px solid #e0e0e0',
               position: 'relative'
             }}>
-              {/* Decorative top glow */}
               <div style={{
-                position: 'absolute',
-                top: 0,
-                left: '50%',
-                transform: 'translateX(-50%)',
-                width: '60%',
-                height: '2px',
-                background: `linear-gradient(90deg, transparent 0%, ${isLeftPanel ? '#083A85' : '#0267FF'} 50%, transparent 100%)`,
-                opacity: 0.3
-              }}></div>
-
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  background: '#ffffff',
-                  borderRadius: '16px',
-                  padding: '14px 16px',
-                  border: `2px solid ${isLeftPanel ? 'rgba(8, 58, 133, 0.12)' : 'rgba(2, 103, 255, 0.12)'}`,
-                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                  boxShadow: '0 4px 16px rgba(0, 0, 0, 0.06)',
-                  position: 'relative',
-                  overflow: 'hidden'
-                }}
-                onFocus={(e) => {
-                  e.currentTarget.style.borderColor = isLeftPanel ? '#083A85' : '#0267FF';
-                  e.currentTarget.style.boxShadow = `0 8px 24px ${isLeftPanel ? 'rgba(8, 58, 133, 0.25)' : 'rgba(2, 103, 255, 0.25)'}`;
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                }}
-                onBlur={(e) => {
-                  e.currentTarget.style.borderColor = isLeftPanel ? 'rgba(8, 58, 133, 0.12)' : 'rgba(2, 103, 255, 0.12)';
-                  e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.06)';
-                  e.currentTarget.style.transform = 'translateY(0)';
-                }}
-              >
-                <button style={{
-                  color: '#9ca3af',
-                  marginRight: '10px',
-                  background: 'transparent',
-                  border: 'none',
-                  cursor: 'pointer',
-                  padding: '6px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  flexShrink: 0,
-                  fontSize: '22px',
-                  borderRadius: '10px',
-                  transition: 'all 0.2s ease'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#f3f4f6';
-                  e.currentTarget.style.transform = 'scale(1.1)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                  e.currentTarget.style.transform = 'scale(1)';
-                }}
-                >
-                  <i className="bi bi-emoji-smile"></i>
-                </button>
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                background: '#ffffff',
+                borderRadius: '20px',
+                padding: '6px 10px',
+                border: '1px solid #ccc',
+                transition: 'border-color 0.2s ease'
+              }}>
                 <input
                   type="text"
                   value={chatInputs[stream.id] || ""}
@@ -1977,15 +2033,15 @@ const MultiStream = () => {
                       }));
                     }
                   }}
-                  placeholder="Write your message..."
+                  placeholder="Say something..."
                   style={{
                     flex: 1,
                     backgroundColor: 'transparent',
                     border: 'none',
                     outline: 'none',
-                    fontSize: '14.5px',
-                    color: '#1f2937',
-                    fontWeight: '500'
+                    fontSize: '13px',
+                    color: '#030303',
+                    fontWeight: '400'
                   }}
                 />
                 <button
@@ -2013,64 +2069,40 @@ const MultiStream = () => {
                       }));
                     }
                   }}
+                  disabled={!(chatInputs[stream.id] || "").trim()}
                   style={{
-                    background: `linear-gradient(135deg, ${isLeftPanel ? '#083A85' : '#0267FF'} 0%, ${isLeftPanel ? '#0267FF' : '#1890ff'} 100%)`,
-                    marginLeft: '12px',
+                    background: (chatInputs[stream.id] || "").trim()
+                      ? `linear-gradient(135deg, ${isLeftPanel ? '#083A85' : '#0267FF'} 0%, ${isLeftPanel ? '#0267FF' : '#1890ff'} 100%)`
+                      : '#f2f2f2',
                     border: 'none',
-                    cursor: 'pointer',
-                    padding: '12px 20px',
+                    cursor: (chatInputs[stream.id] || "").trim() ? 'pointer' : 'not-allowed',
+                    padding: '6px 12px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: '8px',
+                    gap: '4px',
                     flexShrink: 0,
-                    fontSize: '15px',
-                    borderRadius: '12px',
-                    color: '#ffffff',
-                    fontWeight: '700',
-                    boxShadow: `0 6px 20px ${isLeftPanel ? 'rgba(8, 58, 133, 0.35)' : 'rgba(2, 103, 255, 0.35)'}`,
-                    transition: 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                    position: 'relative',
-                    overflow: 'hidden'
+                    fontSize: '13px',
+                    borderRadius: '16px',
+                    color: (chatInputs[stream.id] || "").trim() ? '#ffffff' : '#aaa',
+                    fontWeight: '600',
+                    transition: 'all 0.2s ease'
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-3px) scale(1.08)';
-                    e.currentTarget.style.boxShadow = `0 12px 30px ${isLeftPanel ? 'rgba(8, 58, 133, 0.5)' : 'rgba(2, 103, 255, 0.5)'}`;
+                    if ((chatInputs[stream.id] || "").trim()) {
+                      e.currentTarget.style.opacity = '0.9';
+                    }
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                    e.currentTarget.style.boxShadow = `0 6px 20px ${isLeftPanel ? 'rgba(8, 58, 133, 0.35)' : 'rgba(2, 103, 255, 0.35)'}`;
+                    e.currentTarget.style.opacity = '1';
                   }}
                 >
-                  {/* Button shine effect */}
-                  <div style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: '-100%',
-                    width: '100%',
-                    height: '100%',
-                    background: 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent)',
-                    animation: 'buttonShine 3s infinite',
-                    pointerEvents: 'none'
-                  }}></div>
-                  <style>{`
-                    @keyframes buttonShine {
-                      0%, 100% { left: -100%; }
-                      50% { left: 100%; }
-                    }
-                  `}</style>
-
                   <i className="bi bi-send-fill" style={{
-                    fontSize: '16px',
-                    position: 'relative',
-                    zIndex: 1
+                    fontSize: '12px'
                   }}></i>
                   <span style={{
-                    fontSize: '14px',
-                    fontWeight: '700',
-                    letterSpacing: '0.3px',
-                    position: 'relative',
-                    zIndex: 1
+                    fontSize: '13px',
+                    fontWeight: '600'
                   }}>Send</span>
                 </button>
               </div>
@@ -2078,461 +2110,6 @@ const MultiStream = () => {
           </div>
           );
         })}
-
-        {/* Message Modal - Single centered overlay */}
-        {selectedMessage && (
-          <div
-            style={{
-              position: 'fixed',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              background: '#ffffff',
-              borderRadius: '24px',
-              padding: '0',
-              width: '560px',
-              maxWidth: '94vw',
-              maxHeight: '90vh',
-              overflowY: 'auto',
-              overflowX: 'hidden',
-              boxShadow: '0 30px 60px -15px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(8, 58, 133, 0.1)',
-              zIndex: 1100,
-              animation: 'modalBounceIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)',
-              border: 'none'
-            }}
-          >
-            <style>{`
-              @keyframes modalBounceIn {
-                0% {
-                  opacity: 0;
-                  transform: translate(-50%, -50%) scale(0.8) rotateX(20deg);
-                }
-                60% {
-                  transform: translate(-50%, -50%) scale(1.03) rotateX(-5deg);
-                }
-                100% {
-                  opacity: 1;
-                  transform: translate(-50%, -50%) scale(1) rotateX(0deg);
-                }
-              }
-            `}</style>
-
-            {/* Modal Header */}
-            <div style={{
-              background: 'linear-gradient(135deg, #083A85 0%, #0558D6 50%, #0267FF 100%)',
-              padding: '20px 24px',
-              borderRadius: '24px 24px 0 0',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              position: 'relative',
-              overflow: 'hidden'
-            }}>
-              {/* Animated gradient orbs */}
-              <div style={{
-                position: 'absolute',
-                top: '-50px',
-                right: '-50px',
-                width: '180px',
-                height: '180px',
-                background: 'radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%)',
-                borderRadius: '50%',
-                animation: 'float 6s ease-in-out infinite'
-              }}></div>
-              <div style={{
-                position: 'absolute',
-                bottom: '-40px',
-                left: '-40px',
-                width: '140px',
-                height: '140px',
-                background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)',
-                borderRadius: '50%',
-                animation: 'float 8s ease-in-out infinite reverse'
-              }}></div>
-
-              <style>{`
-                @keyframes float {
-                  0%, 100% { transform: translate(0, 0); }
-                  50% { transform: translate(20px, 20px); }
-                }
-              `}</style>
-
-              <div style={{ position: 'relative', zIndex: 1, flex: 1 }}>
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px'
-                }}>
-                  <div style={{
-                    width: '36px',
-                    height: '36px',
-                    borderRadius: '10px',
-                    background: 'rgba(255, 255, 255, 0.2)',
-                    backdropFilter: 'blur(10px)',
-                    border: '2px solid rgba(255, 255, 255, 0.3)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
-                  }}>
-                    <i className="bi bi-chat-square-text-fill" style={{
-                      color: '#ffffff',
-                      fontSize: '16px'
-                    }}></i>
-                  </div>
-                  <div>
-                    <h3 style={{
-                      fontSize: '20px',
-                      fontWeight: '800',
-                      color: '#ffffff',
-                      margin: 0,
-                      letterSpacing: '-0.5px',
-                      textShadow: '0 2px 8px rgba(0, 0, 0, 0.15)'
-                    }}>Message Details</h3>
-                    <p style={{
-                      fontSize: '12px',
-                      color: 'rgba(255, 255, 255, 0.85)',
-                      margin: 0,
-                      fontWeight: '600',
-                      marginTop: '1px'
-                    }}>Complete information</p>
-                  </div>
-                </div>
-              </div>
-
-              <button
-                onClick={() => setSelectedMessage(null)}
-                style={{
-                  position: 'relative',
-                  zIndex: 1,
-                  background: 'rgba(255, 255, 255, 0.18)',
-                  backdropFilter: 'blur(12px)',
-                  border: '2px solid rgba(255, 255, 255, 0.25)',
-                  borderRadius: '14px',
-                  width: '44px',
-                  height: '44px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#ffffff',
-                  cursor: 'pointer',
-                  fontSize: '17px',
-                  padding: 0,
-                  transition: 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.28)';
-                  e.currentTarget.style.transform = 'rotate(90deg) scale(1.1)';
-                  e.currentTarget.style.boxShadow = '0 6px 16px rgba(0, 0, 0, 0.25)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.18)';
-                  e.currentTarget.style.transform = 'rotate(0deg) scale(1)';
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
-                }}
-              >
-                <i className="bi bi-x-lg"></i>
-              </button>
-            </div>
-
-            {/* Message Content */}
-            <div style={{
-              padding: '20px 24px',
-              background: '#ffffff'
-            }}>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                marginBottom: '16px'
-              }}>
-                <div style={{
-                  width: '48px',
-                  height: '48px',
-                  borderRadius: '14px',
-                  background: 'linear-gradient(135deg, #083A85 0%, #0267FF 100%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#fff',
-                  fontWeight: '700',
-                  fontSize: '20px',
-                  boxShadow: '0 6px 14px rgba(8, 58, 133, 0.25)',
-                  flexShrink: 0,
-                  border: '3px solid #ffffff',
-                  position: 'relative'
-                }}>
-                  {selectedMessage.sender.charAt(0).toUpperCase()}
-                  <div style={{
-                    position: 'absolute',
-                    bottom: '-3px',
-                    right: '-3px',
-                    width: '16px',
-                    height: '16px',
-                    borderRadius: '50%',
-                    backgroundColor: '#10b981',
-                    border: '3px solid #ffffff',
-                    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
-                  }}></div>
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{
-                    fontSize: '16px',
-                    fontWeight: '700',
-                    color: '#1f2937',
-                    marginBottom: '3px',
-                    letterSpacing: '-0.3px'
-                  }}>
-                    {selectedMessage.sender}
-                  </div>
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px'
-                  }}>
-                    <i className="bi bi-clock" style={{
-                      fontSize: '12px',
-                      color: '#6b7280'
-                    }}></i>
-                    <span style={{
-                      fontSize: '13px',
-                      color: '#6b7280',
-                      fontWeight: '500'
-                    }}>
-                      {selectedMessage.time}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div style={{
-                backgroundColor: '#f8f9fa',
-                padding: '16px 18px',
-                borderRadius: '14px',
-                borderLeft: '4px solid #0267FF',
-                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
-                position: 'relative',
-                overflow: 'hidden'
-              }}>
-                <div style={{
-                  position: 'absolute',
-                  top: 0,
-                  right: 0,
-                  fontSize: '60px',
-                  color: 'rgba(2, 103, 255, 0.03)',
-                  transform: 'rotate(15deg) translate(5px, -15px)',
-                  pointerEvents: 'none'
-                }}>
-                  <i className="bi bi-chat-quote"></i>
-                </div>
-                <p style={{
-                  fontSize: '14.5px',
-                  color: '#374151',
-                  lineHeight: '1.6',
-                  margin: 0,
-                  fontWeight: '500',
-                  position: 'relative',
-                  zIndex: 1
-                }}>
-                  {selectedMessage.text}
-                </p>
-              </div>
-            </div>
-
-            {/* Message Status */}
-            <div style={{
-              padding: '0 24px 18px 24px'
-            }}>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '14px 16px',
-                background: selectedMessage.delivered
-                  ? 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)'
-                  : 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)',
-                borderRadius: '12px',
-                border: selectedMessage.delivered
-                  ? '2px solid #bbf7d0'
-                  : '2px solid #fde68a',
-                boxShadow: selectedMessage.delivered
-                  ? '0 3px 10px rgba(16, 185, 129, 0.1)'
-                  : '0 3px 10px rgba(245, 158, 11, 0.1)'
-              }}>
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px'
-                }}>
-                  <div style={{
-                    width: '36px',
-                    height: '36px',
-                    borderRadius: '10px',
-                    backgroundColor: selectedMessage.delivered ? '#10b981' : '#f59e0b',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    boxShadow: selectedMessage.delivered
-                      ? '0 3px 10px rgba(16, 185, 129, 0.3)'
-                      : '0 3px 10px rgba(245, 158, 11, 0.3)'
-                  }}>
-                    <i className={selectedMessage.delivered ? "bi bi-check2-all" : "bi bi-clock"} style={{
-                      color: '#ffffff',
-                      fontSize: '18px',
-                      fontWeight: 'bold'
-                    }}></i>
-                  </div>
-                  <div>
-                    <div style={{
-                      fontSize: '11px',
-                      color: selectedMessage.delivered ? '#15803d' : '#b45309',
-                      fontWeight: '600',
-                      marginBottom: '2px',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.5px'
-                    }}>
-                      Status
-                    </div>
-                    <div style={{
-                      fontSize: '14px',
-                      color: selectedMessage.delivered ? '#166534' : '#92400e',
-                      fontWeight: '700'
-                    }}>
-                      {selectedMessage.delivered ? 'Delivered' : 'Pending'}
-                    </div>
-                  </div>
-                </div>
-                {selectedMessage.delivered && (
-                  <div style={{
-                    padding: '6px 12px',
-                    borderRadius: '8px',
-                    backgroundColor: 'rgba(16, 185, 129, 0.15)',
-                    border: '1px solid rgba(16, 185, 129, 0.25)'
-                  }}>
-                    <i className="bi bi-check-circle-fill" style={{
-                      color: '#10b981',
-                      fontSize: '12px',
-                      marginRight: '5px'
-                    }}></i>
-                    <span style={{
-                      fontSize: '11px',
-                      color: '#15803d',
-                      fontWeight: '700'
-                    }}>Confirmed</span>
-                  </div>
-                )}
-              </div>
-            </div>
-            {/* Action Buttons */}
-            <div style={{
-              padding: '0 24px 20px 24px',
-              display: 'flex',
-              gap: '10px'
-            }}>
-              <button
-                onClick={() => {
-                  navigator.clipboard.writeText(selectedMessage.text);
-                }}
-                style={{
-                  flex: 1,
-                  padding: '12px 16px',
-                  borderRadius: '12px',
-                  border: '2px solid #0267FF',
-                  background: 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)',
-                  color: '#0267FF',
-                  fontSize: '14px',
-                  fontWeight: '700',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '6px',
-                  boxShadow: '0 2px 8px rgba(2, 103, 255, 0.15)'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'linear-gradient(135deg, #0267FF 0%, #083A85 100%)';
-                  e.currentTarget.style.color = '#fff';
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 6px 16px rgba(2, 103, 255, 0.3)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)';
-                  e.currentTarget.style.color = '#0267FF';
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(2, 103, 255, 0.15)';
-                }}
-              >
-                <i className="bi bi-clipboard" style={{ fontSize: '15px' }}></i>
-                Copy Message
-              </button>
-              <button
-                onClick={() => setSelectedMessage(null)}
-                style={{
-                  flex: 1,
-                  padding: '12px 16px',
-                  borderRadius: '12px',
-                  border: 'none',
-                  background: 'linear-gradient(135deg, #083A85 0%, #0267FF 100%)',
-                  color: '#fff',
-                  fontSize: '14px',
-                  fontWeight: '700',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '6px',
-                  boxShadow: '0 3px 10px rgba(8, 58, 133, 0.25)'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 6px 16px rgba(8, 58, 133, 0.4)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 3px 10px rgba(8, 58, 133, 0.25)';
-                }}
-              >
-                <i className="bi bi-x-circle" style={{ fontSize: '15px' }}></i>
-                Close
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Backdrop for modals */}
-        {selectedMessage && (
-          <div
-            onClick={() => setSelectedMessage(null)}
-            style={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: 'radial-gradient(circle at center, rgba(2, 103, 255, 0.15) 0%, rgba(0, 0, 0, 0.7) 100%)',
-              backdropFilter: 'blur(8px)',
-              WebkitBackdropFilter: 'blur(8px)',
-              zIndex: 1099,
-              animation: 'backdropFadeIn 0.3s ease-out'
-            }}
-          >
-            <style>{`
-              @keyframes backdropFadeIn {
-                from {
-                  opacity: 0;
-                  backdrop-filter: blur(0px);
-                }
-                to {
-                  opacity: 1;
-                  backdrop-filter: blur(8px);
-                }
-              }
-            `}</style>
-          </div>
-        )}
 
         {/* Volume Warning Modal */}
         {showVolumeWarning && (
@@ -2767,7 +2344,7 @@ const MultiStream = () => {
               <div style={{
                 marginTop: '24px',
                 padding: '16px',
-                backgroundColor: '#f9fafb',
+                backgroundColor: ' #f9fafb',
                 borderRadius: '8px',
                 fontSize: '14px',
                 color: '#6b7280',

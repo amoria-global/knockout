@@ -36,6 +36,9 @@ const App = () => {
   const [isMuted, setIsMuted] = useState(false);
   // State for video progress
   const [progress, setProgress] = useState(0);
+  // State for volume
+  const [volume, setVolume] = useState(100);
+  const [showVolumeSlider, setShowVolumeSlider] = useState(false);
   // Ref for the video element
   const videoRef = useRef<HTMLVideoElement>(null);
   // State for modals
@@ -122,6 +125,21 @@ const App = () => {
     if (videoRef.current) {
       videoRef.current.muted = !isMuted;
       setIsMuted(!isMuted);
+    }
+  };
+
+  // Handle volume change
+  const handleVolumeChange = (newVolume: number) => {
+    setVolume(newVolume);
+    if (videoRef.current) {
+      videoRef.current.volume = newVolume / 100;
+      if (newVolume === 0) {
+        setIsMuted(true);
+        videoRef.current.muted = true;
+      } else if (isMuted) {
+        setIsMuted(false);
+        videoRef.current.muted = false;
+      }
     }
   };
 
@@ -261,6 +279,60 @@ const App = () => {
     };
   }, []);
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      // Ignore if user is typing in an input field
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      switch (e.key.toLowerCase()) {
+        case ' ':
+        case 'k':
+          e.preventDefault();
+          togglePlay();
+          break;
+        case 'm':
+          e.preventDefault();
+          toggleMute();
+          break;
+        case 'f':
+          e.preventDefault();
+          toggleFullscreen();
+          break;
+        case 'arrowup':
+          e.preventDefault();
+          handleVolumeChange(Math.min(volume + 10, 100));
+          break;
+        case 'arrowdown':
+          e.preventDefault();
+          handleVolumeChange(Math.max(volume - 10, 0));
+          break;
+        case 'arrowleft':
+          e.preventDefault();
+          if (videoRef.current) {
+            videoRef.current.currentTime = Math.max(videoRef.current.currentTime - 5, 0);
+          }
+          break;
+        case 'arrowright':
+          e.preventDefault();
+          if (videoRef.current) {
+            videoRef.current.currentTime = Math.min(
+              videoRef.current.currentTime + 5,
+              videoRef.current.duration
+            );
+          }
+          break;
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyPress);
+    return () => {
+      document.removeEventListener('keydown', handleKeyPress);
+    };
+  }, [isPlaying, volume]);
+
   // Start/Stop Recording
   const toggleRecording = async () => {
     if (!isRecording) {
@@ -362,6 +434,55 @@ const App = () => {
           -webkit-touch-callout: none;
           -webkit-user-select: none;
           user-select: none;
+        }
+
+        /* Volume Slider Styling */
+        input[type="range"].volume-slider {
+          -webkit-appearance: none;
+          appearance: none;
+          background: transparent;
+          cursor: pointer;
+        }
+
+        input[type="range"].volume-slider::-webkit-slider-track {
+          height: 2px;
+          border-radius: 2px;
+        }
+
+        input[type="range"].volume-slider::-moz-range-track {
+          height: 2px;
+          border-radius: 2px;
+          background: rgba(255, 255, 255, 0.3);
+        }
+
+        input[type="range"].volume-slider::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          appearance: none;
+          width: 10px;
+          height: 10px;
+          border-radius: 50%;
+          background: #fff;
+          cursor: pointer;
+          margin-top: -4px;
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+        }
+
+        input[type="range"].volume-slider::-moz-range-thumb {
+          width: 10px;
+          height: 10px;
+          border-radius: 50%;
+          background: #fff;
+          cursor: pointer;
+          border: none;
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+        }
+
+        input[type="range"].volume-slider::-webkit-slider-thumb:hover {
+          transform: scale(1.2);
+        }
+
+        input[type="range"].volume-slider::-moz-range-thumb:hover {
+          transform: scale(1.2);
         }
 
         /* Mobile Responsive Styles */
@@ -548,11 +669,53 @@ const App = () => {
       alignItems: 'center',
       justifyContent: 'center',
       width: '100%',
-      minHeight: '100vh',
+      height: '100vh',
       backgroundColor: '#083A85',
       fontFamily: 'Pragati Narrow, sans-serif',
-      padding: '16px'
+      padding: '16px',
+      overflow: 'hidden'
     }}>
+        {/* Back Button - Top Left */}
+        <button
+          onClick={() => window.history.back()}
+          className="back-button"
+          style={{
+            position: 'fixed',
+            top: '20px',
+            left: '20px',
+            backgroundColor: 'transparent',
+            border: '2px solid rgba(255, 255, 255, 0.5)',
+            borderRadius: '50px',
+            padding: '6px 16px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '6px',
+            cursor: 'pointer',
+            fontSize: '14px',
+            color: '#fff',
+            transition: 'all 0.3s ease',
+            zIndex: 1000,
+            fontWeight: '600',
+            fontFamily: 'Pragati Narrow, sans-serif',
+            backdropFilter: 'blur(10px)'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.15)';
+            e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.8)';
+            e.currentTarget.style.transform = 'scale(1.05)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'transparent';
+            e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.5)';
+            e.currentTarget.style.transform = 'scale(1)';
+          }}
+          title="Go back to previous page"
+        >
+          <i className="bi bi-chevron-left" style={{ fontSize: '16px', fontWeight: 'bold' }}></i>
+          <span>Back</span>
+        </button>
+
         <div className="main-container" style={{
           width: '100%',
           maxWidth: '1280px',
@@ -561,8 +724,10 @@ const App = () => {
           borderRadius: '12px',
           boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
           padding: '12px',
+          paddingTop: '55px',
           display: 'flex',
-          gap: '12px'
+          gap: '12px',
+          overflow: 'hidden'
         }}>
 
             {/* Wrapper for Video and Chat Cards */}
@@ -574,7 +739,9 @@ const App = () => {
               gridTemplateColumns: '1fr auto',
               gap: '20px',
               width: '100%',
-              boxShadow: '0 10px 40px rgba(0, 0, 0, 0.3)'
+              height: '100%',
+              boxShadow: '0 10px 40px rgba(0, 0, 0, 0.3)',
+              overflow: 'hidden'
             }} className="cards-wrapper">
 
             {/* Video Section */}
@@ -582,47 +749,10 @@ const App = () => {
               display: 'flex',
               flexDirection: 'column',
               gap: '12px',
-              position: 'relative'
+              position: 'relative',
+              height: '100%',
+              overflow: 'hidden'
             }}>
-                {/* Back Button - Above Video */}
-                <button
-                  onClick={() => window.history.back()}
-                  className="back-button"
-                  style={{
-                    position: 'absolute',
-                    top: '-50px',
-                    left: '0px',
-                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                    border: '1px solid rgba(255, 255, 255, 0.2)',
-                    borderRadius: '20px',
-                    padding: '6px 12px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '6px',
-                    cursor: 'pointer',
-                    fontSize: '14px',
-                    color: '#fff',
-                    transition: 'all 0.2s ease',
-                    zIndex: 50,
-                    fontWeight: '500',
-                    fontFamily: 'Pragati Narrow, sans-serif'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
-                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)';
-                    e.currentTarget.style.transform = 'translateX(-2px)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
-                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
-                    e.currentTarget.style.transform = 'translateX(0)';
-                  }}
-                  title="Go back to previous page"
-                >
-                  <i className="bi bi-chevron-left"></i>
-                  <span>Back</span>
-                </button>
 
                 <div style={{
                   flex: 1,
@@ -746,18 +876,54 @@ const App = () => {
                             }}>
                                 <i className={isPlaying ? "bi bi-pause-fill" : "bi bi-play-fill"}></i>
                             </button>
-                            <button onClick={toggleMute} style={{
-                              background: 'transparent',
-                              border: 'none',
-                              color: '#fff',
-                              cursor: 'pointer',
-                              padding: 0,
-                              display: 'flex',
-                              alignItems: 'center',
-                              fontSize: '24px'
-                            }}>
-                                <i className={isMuted ? "bi bi-volume-mute-fill" : "bi bi-volume-up-fill"}></i>
-                            </button>
+                            <div
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px'
+                              }}
+                              onMouseEnter={() => setShowVolumeSlider(true)}
+                              onMouseLeave={() => setShowVolumeSlider(false)}
+                            >
+                              <button onClick={toggleMute} style={{
+                                background: 'transparent',
+                                border: 'none',
+                                color: '#fff',
+                                cursor: 'pointer',
+                                padding: 0,
+                                display: 'flex',
+                                alignItems: 'center',
+                                fontSize: '24px'
+                              }}>
+                                  <i className={isMuted || volume === 0 ? "bi bi-volume-mute-fill" : volume < 50 ? "bi bi-volume-down-fill" : "bi bi-volume-up-fill"}></i>
+                              </button>
+                              {showVolumeSlider && (
+                                <div style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '8px'
+                                }}>
+                                  <input
+                                    type="range"
+                                    className="volume-slider"
+                                    min="0"
+                                    max="100"
+                                    value={volume}
+                                    onChange={(e) => handleVolumeChange(Number(e.target.value))}
+                                    style={{
+                                      width: '100px',
+                                      background: `linear-gradient(to right, #f35959ff ${volume}%, rgba(255, 255, 255, 0.3) ${volume}%)`
+                                    }}
+                                  />
+                                  <span style={{
+                                    color: '#fff',
+                                    fontSize: '14px',
+                                    fontWeight: '600',
+                                    minWidth: '35px'
+                                  }}>{Math.round(volume)}%</span>
+                                </div>
+                              )}
+                            </div>
                             <button
                               onClick={() => setShowParticipants(!showParticipants)}
                               style={{
@@ -926,6 +1092,7 @@ const App = () => {
               borderRadius: '8px',
               display: 'flex',
               flexDirection: 'column',
+              height: '100%',
               overflow: 'hidden',
               boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
             }}>
