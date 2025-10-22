@@ -1,9 +1,10 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-export default function ResetPasswordPage(): React.JSX.Element {
+// Component that uses useSearchParams - needs to be wrapped in Suspense
+function ResetPasswordContent(): React.JSX.Element {
   const router = useRouter();
   const searchParams = useSearchParams();
   const emailFromQuery = searchParams.get('email') || '';
@@ -237,6 +238,39 @@ export default function ResetPasswordPage(): React.JSX.Element {
         </div>
       </div>
     </div>
+  );
+}
+
+// Main page component with Suspense boundary
+export default function ResetPasswordPage(): React.JSX.Element {
+  return (
+    <Suspense fallback={
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#f9fafb'
+      }}>
+        <div style={{
+          textAlign: 'center',
+          color: '#083A85'
+        }}>
+          <div style={{
+            fontSize: '48px',
+            marginBottom: '16px'
+          }}>
+            <i className="bi bi-hourglass-split"></i>
+          </div>
+          <p style={{
+            fontSize: '18px',
+            fontWeight: '600'
+          }}>Loading...</p>
+        </div>
+      </div>
+    }>
+      <ResetPasswordContent />
+    </Suspense>
   );
 }
 
