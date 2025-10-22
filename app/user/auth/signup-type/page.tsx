@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
-export default function SignupTypePage() {
+// Component that uses useSearchParams - needs to be wrapped in Suspense
+function SignupTypeContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [selectedType, setSelectedType] = useState<string>('');
@@ -282,5 +283,38 @@ export default function SignupTypePage() {
         </p>
       </div>
     </div>
+  );
+}
+
+// Main page component with Suspense boundary
+export default function SignupTypePage() {
+  return (
+    <Suspense fallback={
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#DBDBDB'
+      }}>
+        <div style={{
+          textAlign: 'center',
+          color: '#083A85'
+        }}>
+          <div style={{
+            fontSize: '48px',
+            marginBottom: '16px'
+          }}>
+            <i className="bi bi-hourglass-split"></i>
+          </div>
+          <p style={{
+            fontSize: '18px',
+            fontWeight: '600'
+          }}>Loading...</p>
+        </div>
+      </div>
+    }>
+      <SignupTypeContent />
+    </Suspense>
   );
 }

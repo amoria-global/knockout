@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import AmoriaKNavbar from '../../../components/navbar';
 
@@ -392,7 +392,8 @@ const eventsData = [
   },
 ];
 
-export default function ViewEventPage(): React.JSX.Element {
+// Component that uses useSearchParams - needs to be wrapped in Suspense
+function ViewEventContent(): React.JSX.Element {
   const searchParams = useSearchParams();
   const eventId = searchParams.get('id');
 
@@ -1226,5 +1227,38 @@ export default function ViewEventPage(): React.JSX.Element {
         }
       `}</style>
     </>
+  );
+}
+
+// Main page component with Suspense boundary
+export default function ViewEventPage(): React.JSX.Element {
+  return (
+    <Suspense fallback={
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#fff'
+      }}>
+        <div style={{
+          textAlign: 'center',
+          color: '#083A85'
+        }}>
+          <div style={{
+            fontSize: '48px',
+            marginBottom: '16px'
+          }}>
+            <i className="bi bi-hourglass-split"></i>
+          </div>
+          <p style={{
+            fontSize: '18px',
+            fontWeight: '600'
+          }}>Loading event details...</p>
+        </div>
+      </div>
+    }>
+      <ViewEventContent />
+    </Suspense>
   );
 }

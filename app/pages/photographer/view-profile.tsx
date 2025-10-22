@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import AmoriaKNavbar from '../../components/navbar';
 import ReviewModal from '../../components/ReviewModal';
@@ -268,7 +268,8 @@ const photographersData = [
   }
 ];
 
-export default function ViewProfilePage(): React.JSX.Element {
+// Component that uses useSearchParams - needs to be wrapped in Suspense
+function ViewProfileContent(): React.JSX.Element {
   const searchParams = useSearchParams();
   const photographerId = searchParams.get('id');
 
@@ -1905,5 +1906,38 @@ export default function ViewProfilePage(): React.JSX.Element {
       }
     `}</style>
     </>
+  );
+}
+
+// Main page component with Suspense boundary
+export default function ViewProfilePage(): React.JSX.Element {
+  return (
+    <Suspense fallback={
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#fff'
+      }}>
+        <div style={{
+          textAlign: 'center',
+          color: '#083A85'
+        }}>
+          <div style={{
+            fontSize: '48px',
+            marginBottom: '16px'
+          }}>
+            <i className="bi bi-hourglass-split"></i>
+          </div>
+          <p style={{
+            fontSize: '18px',
+            fontWeight: '600'
+          }}>Loading profile...</p>
+        </div>
+      </div>
+    }>
+      <ViewProfileContent />
+    </Suspense>
   );
 }
