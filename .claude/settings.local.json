@@ -8,7 +8,10 @@
       "Bash(if not exist .vscode mkdir .vscode)",
       "Bash(cmd /c \"if not exist .vscode mkdir .vscode\")",
       "Bash(npm install:*)",
-      "Bash(npm uninstall:*)"
+      "Bash(npm uninstall:*)",
+      "Bash(git checkout:*)",
+      "Bash(yarn install:*)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []
