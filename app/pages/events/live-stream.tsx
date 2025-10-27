@@ -672,7 +672,7 @@ const App = () => {
         photographer: "Guest Photographer",
         viewers: 1250,
         category: "Live Events",
-        videoSrc: events.length === 1 ? "/live-stream-2.mp4" : "/bak",
+        videoSrc: events.length === 1 ? "/live-stream-2.mp4" : "/bako.mp4",
         streamId: newEventId.trim(),
         startTime: "Just started",
         messages: []
