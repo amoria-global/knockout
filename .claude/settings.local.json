@@ -11,7 +11,9 @@
       "Bash(npm uninstall:*)",
       "Bash(git checkout:*)",
       "Bash(yarn install:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nMerge branch ''main'' into landing-8\n\nResolved conflicts by:\n- Keeping local permissions in .claude/settings.local.json\n- Preserving custom path generation logic in GlobalNetwork.tsx\n- Maintaining router navigation in join-event.tsx\n- Merging all dependencies from both branches in package.json\n- Regenerating yarn.lock to include all merged dependencies\n\nGenerated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []
