@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
 import BackToTop from "./components/BackToTop";
+import { LanguageProvider } from "./providers/LanguageProvider";
 
 export const metadata: Metadata = {
   title: "Amoria Connekt",
@@ -23,8 +24,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased">
-        {children}
-        <BackToTop />
+        <LanguageProvider>
+          {children}
+          <BackToTop />
+        </LanguageProvider>
       </body>
     </html>
   );

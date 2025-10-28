@@ -3,9 +3,11 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 
 // Component that uses useSearchParams - needs to be wrapped in Suspense
 function SignupTypeContent() {
+  const t = useTranslations('auth.signupType');
   const router = useRouter();
   const searchParams = useSearchParams();
   const [selectedType, setSelectedType] = useState<string>('');
@@ -23,8 +25,8 @@ function SignupTypeContent() {
           <circle cx="12" cy="7" r="4" />
         </svg>
       ),
-      title: "I'm a client, hiring for a job",
-      description: 'Find and hire professional photographers for your events'
+      title: t('clientTitle'),
+      description: t('clientDescription')
     },
     {
       id: 'hired-photographer',
@@ -35,8 +37,8 @@ function SignupTypeContent() {
           <path d="M18 8h.01" />
         </svg>
       ),
-      title: "I'm a hired photographer",
-      description: 'Work with clients through the platform and grow your business'
+      title: t('hiredPhotographerTitle'),
+      description: t('hiredPhotographerDescription')
     },
     {
       id: 'freelancer',
@@ -48,8 +50,8 @@ function SignupTypeContent() {
           <path d="M22 11h-4" />
         </svg>
       ),
-      title: "I'm a freelancer/self-employed photographer",
-      description: 'Showcase your portfolio and connect with potential clients'
+      title: t('freelancerTitle'),
+      description: t('freelancerDescription')
     }
   ];
 
@@ -122,7 +124,7 @@ function SignupTypeContent() {
           marginBottom: '16px',
           letterSpacing: '-0.02em'
         }}>
-          Join as a {isPhotographerFlow ? ' Photographer' : ' Client or Photographer'}
+          {t('title')} {isPhotographerFlow ? t('titlePhotographer') : t('titleClient')}
         </h1>
 
         {/* Selection Cards */}
@@ -255,8 +257,8 @@ function SignupTypeContent() {
           }}
         >
           {selectedType
-            ? `Continue as ${displayOptions.find(opt => opt.id === selectedType)?.id === 'client' ? 'Client' : 'Photographer'}`
-            : 'Select an option to continue'
+            ? (displayOptions.find(opt => opt.id === selectedType)?.id === 'client' ? t('continueAsClient') : t('continueAsPhotographer'))
+            : t('selectOption')
           }
         </button>
 
@@ -266,7 +268,7 @@ function SignupTypeContent() {
           color: '#3d3d3d',
           fontWeight: 600
         }}>
-          Already have an account?{' '}
+          {t('alreadyHaveAccount')}{' '}
           <Link
             href="/user/auth/login"
             style={{
@@ -278,9 +280,39 @@ function SignupTypeContent() {
             onMouseEnter={(e) => e.currentTarget.style.color = '#083A85'}
             onMouseLeave={(e) => e.currentTarget.style.color = 'blue'}
           >
-            Log In
+            {t('login')}
           </Link>
         </p>
+      </div>
+    </div>
+  );
+}
+
+// Loading component with translations
+function LoadingFallback() {
+  const t = useTranslations('auth.signupType');
+  return (
+    <div style={{
+      minHeight: '100vh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: '#DBDBDB'
+    }}>
+      <div style={{
+        textAlign: 'center',
+        color: '#083A85'
+      }}>
+        <div style={{
+          fontSize: '48px',
+          marginBottom: '16px'
+        }}>
+          <i className="bi bi-hourglass-split"></i>
+        </div>
+        <p style={{
+          fontSize: '18px',
+          fontWeight: '600'
+        }}>{t('loading')}</p>
       </div>
     </div>
   );
@@ -289,31 +321,7 @@ function SignupTypeContent() {
 // Main page component with Suspense boundary
 export default function SignupTypePage() {
   return (
-    <Suspense fallback={
-      <div style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: '#DBDBDB'
-      }}>
-        <div style={{
-          textAlign: 'center',
-          color: '#083A85'
-        }}>
-          <div style={{
-            fontSize: '48px',
-            marginBottom: '16px'
-          }}>
-            <i className="bi bi-hourglass-split"></i>
-          </div>
-          <p style={{
-            fontSize: '18px',
-            fontWeight: '600'
-          }}>Loading...</p>
-        </div>
-      </div>
-    }>
+    <Suspense fallback={<LoadingFallback />}>
       <SignupTypeContent />
     </Suspense>
   );

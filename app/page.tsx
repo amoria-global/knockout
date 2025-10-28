@@ -1,14 +1,30 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useTranslations } from 'next-intl'
 import Footer from "./components/footer";
 import Navbar from "./components/navbar";
 import GlobalNetwork from "./components/GlobalNetwork";
+import Preloader from "./components/Preloader";
 
 export default function Home() {
+  const t = useTranslations();
   const [activeDevice, setActiveDevice] = useState(0) // 0: phone, 1: tablet, 2: laptop
   const [isPaused, setIsPaused] = useState(false)
   const [activeCard, setActiveCard] = useState(0) // 0: rated, 1: live, 2: pay, 3: gallery
+  // Check if preloader should show on initial load
+  const [showPreloader, setShowPreloader] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const hasShownPreloader = sessionStorage.getItem('hasShownPreloader');
+      return hasShownPreloader !== 'true';
+    }
+    return true; // Default to true on server-side rendering
+  })
+
+  // Handle preloader completion
+  const handlePreloaderComplete = () => {
+    setShowPreloader(false)
+  }
 
   // Auto-rotation effect - rotate every 3 seconds
   useEffect(() => {
@@ -65,11 +81,17 @@ export default function Home() {
     return positions[relativePosition]
   }
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      {/* Navbar - Outside sections to stay fixed */}
-      <Navbar />
+    <>
+      {/* Show preloader only on first visit */}
+      {showPreloader && <Preloader onComplete={handlePreloaderComplete} />}
 
-      <main style={{ flex: 1 }}>
+      {/* Show main content only after preloader is complete */}
+      {!showPreloader && (
+        <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+          {/* Navbar - Outside sections to stay fixed */}
+          <Navbar />
+
+        <main style={{ flex: 1 }}>
         {/* Hero Section */}
         <section style={{
           position: 'relative',
@@ -123,7 +145,7 @@ export default function Home() {
                 <svg width="13.5" height="13.5" viewBox="0 0 24 24" fill="none">
                   <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" fill="currentColor"/>
                 </svg>
-                <button style={{ fontWeight: 600, fontSize: '15px', color: '#000', cursor: 'pointer' }}>@AmoriaConnekyt</button>
+                <button style={{ fontWeight: 600, fontSize: '15px', color: '#000', cursor: 'pointer' }}>{t('hero.twitter')}</button>
               </div>
 
               {/* Main Heading */}
@@ -134,9 +156,9 @@ export default function Home() {
                 marginBottom: '19.5px',
                 letterSpacing: '-0.02em'
               }}>
-                <div style={{ color: '#083A85', marginBottom: '3px' }}>Connekyt</div>
-                <div style={{ color: '#000', marginBottom: '3px' }}>With Professional</div>
-                <div style={{ color: '#000' }}>Photographers</div>
+                <div style={{ color: '#083A85', marginBottom: '3px' }}>{t('hero.title1')}</div>
+                <div style={{ color: '#000', marginBottom: '3px' }}>{t('hero.title2')}</div>
+                <div style={{ color: '#000' }}>{t('hero.title3')}</div>
               </h1>
 
               {/* Description */}
@@ -147,7 +169,7 @@ export default function Home() {
                 marginBottom: '30px',
                 maxWidth: '390px'
               }}>
-                An all-in-one photography platform that allows photographers and their clients to connect for live sessions and safely archives their visual narratives in protected digital vaults.
+                {t('hero.description')}
               </p>
 
               {/* CTA Buttons */}
@@ -167,7 +189,7 @@ export default function Home() {
                     boxShadow: '0 3px 9px rgba(8, 58, 133, 0.2)'
                   }}
                 >
-                  Find A Photographer
+                  {t('hero.findPhotographer')}
                 </button>
                 <button
                   onClick={() => window.location.href = '/user/auth/signup-type?type=photographer'}
@@ -182,7 +204,7 @@ export default function Home() {
                   cursor: 'pointer',
                   transition: 'all 0.3s ease'
                 }}>
-                  Join As A Photographer
+                  {t('hero.joinPhotographer')}
                 </button>
               </div>
             </div>
@@ -292,7 +314,7 @@ export default function Home() {
                     whiteSpace: 'nowrap',
                     boxShadow: '0 3.75px 11.25px rgba(0,0,0,0.18)'
                   }}>
-                    Oooh! Wow! 😍
+                    {t('hero.ohWow')}
                   </div>
                   {/* Triangular polygon pointer for speech bubble */}
                   <svg
@@ -461,7 +483,8 @@ export default function Home() {
                   position: 'absolute',
                   left: '225px',
                   bottom: '210px',
-                  width: '140px',
+                  minWidth: '140px',
+                  width: 'fit-content',
                   background: 'linear-gradient(180deg, #8C82FF 0%, #14008E 100%)',
                   padding: '9.75px 21px',
                   borderRadius: '24px',
@@ -473,7 +496,7 @@ export default function Home() {
                   boxShadow: '0 3.75px 13.5px rgba(140,130,255,0.35)',
                   whiteSpace: 'nowrap'
                 }}>
-                  Smile Please 🤩
+                  {t('hero.smilePlease')}
                 </div>
                 {/* Triangular polygon pointer for Smile Please bubble */}
                 <svg
@@ -521,7 +544,7 @@ export default function Home() {
               color: '#000',
               letterSpacing: '-0.02em'
             }}>
-              How it works
+              {t('howItWorks.title')}
             </h2>
 
             {/* Three Steps Container */}
@@ -582,7 +605,7 @@ export default function Home() {
                   color: '#000',
                   marginBottom: '16px'
                 }}>
-                  Get Started
+                  {t('howItWorks.getStarted.title')}
                 </h3>
                 <p style={{
                   fontSize: '17px',
@@ -591,7 +614,7 @@ export default function Home() {
                   lineHeight: '1.65',
                   maxWidth: '280px'
                 }}>
-                  Describe your event and details. Get reviewed and recognized globally. Capture moments. Let every one come to you
+                  {t('howItWorks.getStarted.description')}
                 </p>
               </div>
 
@@ -621,7 +644,7 @@ export default function Home() {
                   color: '#000',
                   marginBottom: '16px'
                 }}>
-                  Photography
+                  {t('howItWorks.photography.title')}
                 </h3>
                 <p style={{
                   fontSize: '17px',
@@ -630,7 +653,7 @@ export default function Home() {
                   lineHeight: '1.65',
                   maxWidth: '280px'
                 }}>
-                  Connect with photographers, capture memories and their visual narratives in protected digital vaults
+                  {t('howItWorks.photography.description')}
                 </p>
               </div>
 
@@ -660,7 +683,7 @@ export default function Home() {
                   color: '#000',
                   marginBottom: '16px'
                 }}>
-                  Go Live
+                  {t('howItWorks.goLive.title')}
                 </h3>
                 <p style={{
                   fontSize: '17px',
@@ -669,7 +692,7 @@ export default function Home() {
                   lineHeight: '1.65',
                   maxWidth: '280px'
                 }}>
-                  Live stream your event, get connected to far attendance, share moments and memories
+                  {t('howItWorks.goLive.description')}
                 </p>
               </div>
             </div>
@@ -700,10 +723,10 @@ export default function Home() {
                   fontWeight: 700,
                   color: '#FFFFFF',
                   marginBottom: '20px',
-                  maxWidth: '350px',                
+                  maxWidth: '350px',
                   lineHeight: '1'
                 }}>
-                  Photographers & Videographers
+                  {t('howItWorks.forPhotographers.title')}
                 </h2>
                 <p style={{
                   position: 'inherit',
@@ -713,9 +736,7 @@ export default function Home() {
                   marginBottom: '-50px',
                   opacity: 0.95
                 }}>
-                  Whether you're a photographer looking to grow your business
-                  or a client seeking to capture life's most important moments,
-                  our platform is built for you
+                  {t('howItWorks.forPhotographers.description')}
                 </p>
                 <button
                   onClick={() => window.location.href = '/user/auth/signup-type'}
@@ -737,7 +758,7 @@ export default function Home() {
                     boxShadow: '0 4px 15px rgba(0,0,0,0.2)'
                   }}
                 >
-                  Get Started
+                  {t('howItWorks.forPhotographers.cta')}
                 </button>
               </div>
 
@@ -935,7 +956,7 @@ export default function Home() {
                     whiteSpace: 'nowrap',
                     letterSpacing: '0.02em'
                   }}>
-                    Concerts
+                    {t('devices.concerts')}
                   </div>
                 </div>
               </div>
@@ -1124,7 +1145,7 @@ export default function Home() {
                   zIndex: 3,
                   letterSpacing: '0.02em'
                 }}>
-                  Weddings
+                  {t('devices.weddings')}
                 </div>
                 {/* Left Ring */}
                 <img
@@ -1459,7 +1480,7 @@ export default function Home() {
               gap: '12px',
               zIndex: 5
             }}>
-              {['Phone', 'Tablet', 'Laptop'].map((device, index) => (
+              {[t('devices.phone'), t('devices.tablet'), t('devices.laptop')].map((device, index) => (
                 <button
                   key={index}
                   onClick={() => {
@@ -1509,7 +1530,7 @@ export default function Home() {
                 color: '#000',
                 letterSpacing: '-0.02em'
               }}>
-                  Why Amoria Connekyt Only?
+                  {t('whyAmoria.title')}
               </h2>
               <p style={{
                 fontSize: '18px',
@@ -1517,7 +1538,7 @@ export default function Home() {
                 color: '#1f1d1d',
                 lineHeight: '1.7',
               }}>
-                The Amoria Connekyt Photographer Partnership Program is designed to build a strong, engaged, and motivated network of professional photographers who contribute to the creation of unforgettable and meaningful video stories.
+                {t('whyAmoria.subtitle')}
               </p>
             </div>
 
@@ -1575,7 +1596,7 @@ export default function Home() {
                         color: '#083A85',
                         marginBottom: '8px'
                       }}>
-                        Rated Photographers
+                        {t('whyAmoria.ratedPhotographers.title')}
                       </h3>
                       <p style={{
                         fontSize: '16px',
@@ -1583,7 +1604,7 @@ export default function Home() {
                         color: '#000',
                         lineHeight: '1.5'
                       }}>
-                        Work with trusted photographers reviewed by the community and backed by platform verification
+                        {t('whyAmoria.ratedPhotographers.description')}
                       </p>
                     </div>
                   </div>
@@ -1626,7 +1647,7 @@ export default function Home() {
                         color: '#083A85',
                         marginBottom: '8px'
                       }}>
-                        Live Streaming
+                        {t('whyAmoria.liveStreaming.title')}
                       </h3>
                       <p style={{
                         fontSize: '16px',
@@ -1634,7 +1655,7 @@ export default function Home() {
                         color: '#000',
                         lineHeight: '1.5'
                       }}>
-                        Go beyond memories—host and share your event live with real-time reactions and over dual-event split-screen streaming!
+                        {t('whyAmoria.liveStreaming.description')}
                       </p>
                     </div>
                   </div>
@@ -1676,7 +1697,7 @@ export default function Home() {
                         color: '#083A85',
                         marginBottom: '8px'
                       }}>
-                        Secure Payments
+                        {t('whyAmoria.securePayments.title')}
                       </h3>
                       <p style={{
                         fontSize: '16px',
@@ -1684,7 +1705,7 @@ export default function Home() {
                         color: '#000',
                         lineHeight: '1.5'
                       }}>
-                        Set your price, get offers, and pay safely through our secure platform. Your payment is protected until you're satisfied with the results
+                        {t('whyAmoria.securePayments.description')}
                       </p>
                     </div>
                   </div>
@@ -1727,7 +1748,7 @@ export default function Home() {
                         color: '#083A85',
                         marginBottom: '8px'
                       }}>
-                        Full Event Gallery
+                        {t('whyAmoria.fullEventGallery.title')}
                       </h3>
                       <p style={{
                         fontSize: '16px',
@@ -1735,7 +1756,7 @@ export default function Home() {
                         color: '#000',
                         lineHeight: '1.5'
                       }}>
-                        Receive a beautifully curated gallery from your hired photographer and relive the memories anytime
+                        {t('whyAmoria.fullEventGallery.description')}
                       </p>
                     </div>
                   </div>
@@ -1872,8 +1893,8 @@ export default function Home() {
           }}>
             {/* Left Content */}
             <div style={{
-              flex: '0 0 30%', // Adjusted flex basis
-              maxWidth: '400px',
+              flex: '0 0 35%', // Increased flex basis to accommodate longer text
+              maxWidth: '500px', // Increased from 400px to 500px
               color: '#fff',
               zIndex: 2
             }}>
@@ -1886,7 +1907,7 @@ export default function Home() {
                 color: '#fff',
                 letterSpacing: '-0.02em'
               }}>
-                Connecting Photographers & Videographers with Clients Worldwide
+                {t('globalNetwork.title')}
               </h2>
 
               {/* Description */}
@@ -1895,44 +1916,63 @@ export default function Home() {
                 lineHeight: '1.65',
                 color: '#fff',
                 opacity: 0.9,
-                fontWeight: 400
+                fontWeight: 400,
+                marginBottom: '32px'
               }}>
-                Amoria Connekyt brings together photographers and clients across continents. From live streaming events to secure digital vaults, we're building a global community that captures and preserves life's most precious moments.
+                {t('globalNetwork.description')}
               </p>
-              <div style={{ display: 'flex', gap: '13.5px', flexWrap: 'wrap', position: 'absolute', bottom: '100px' }}>
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'nowrap' }}>
                 <button
                   onClick={() => window.location.href = '/user/photographers'}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                    e.currentTarget.style.color = '#FFFFFF';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'white';
+                    e.currentTarget.style.color = '#000000';
+                  }}
                   style={{
                     backgroundColor: 'white',
                     color: '#000000',
-                    padding: '11.25px 25.5px',
+                    padding: '11.25px 20px',
                     borderRadius: '37.5px',
                     border: '1.5px solid #FFFFFF',
-                    fontSize: '17px',
+                    fontSize: '15px',
                     fontWeight: 600,
                     cursor: 'pointer',
                     transition: 'all 0.3s ease',
-                    boxShadow: '0 3px 9px rgba(8, 58, 133, 0.2)'
+                    boxShadow: '0 3px 9px rgba(8, 58, 133, 0.2)',
+                    whiteSpace: 'nowrap'
                   }}
                 >
-                  Connect Now
+                  {t('globalNetwork.connectNow')}
                 </button>
                 <button
                   onClick={() => window.location.href = '/user/events'}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = 'white';
+                    e.currentTarget.style.color = '#000000';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                    e.currentTarget.style.color = '#FFFFFF';
+                  }}
                   style={{
                     backgroundColor: 'transparent',
                     color: '#FFFFFF',
-                    padding: '11.25px 25.5px',
+                    padding: '11.25px 20px',
                     borderRadius: '37.5px',
                     border: '1.5px solid #FFFFFF',
-                    fontSize: '17px',
+                    fontSize: '15px',
                     fontWeight: 600,
                     cursor: 'pointer',
                     transition: 'all 0.3s ease',
-                    boxShadow: '0 3px 9px rgba(8, 58, 133, 0.2)'
+                    boxShadow: '0 3px 9px rgba(8, 58, 133, 0.2)',
+                    whiteSpace: 'nowrap'
                   }}
                 >
-                  Find Events
+                  {t('globalNetwork.findEvents')}
                 </button>
                 </div>
 
@@ -1976,6 +2016,8 @@ export default function Home() {
         </section>
       </main>
       <Footer />
-    </div>
+      </div>
+      )}
+    </>
   );
 }

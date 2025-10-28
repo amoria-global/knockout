@@ -1,8 +1,11 @@
 'use client';
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 
 export default function SignupPage(): React.JSX.Element {
+  const t = useTranslations('auth.signupPage');
+  const tAuth = useTranslations('auth');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [firstName, setFirstName] = useState('');
@@ -15,6 +18,10 @@ export default function SignupPage(): React.JSX.Element {
     { name: 'Kenya', code: '+254', flag: '🇰🇪' },
     { name: 'Uganda', code: '+256', flag: '🇺🇬' },
     { name: 'Tanzania', code: '+255', flag: '🇹🇿' },
+    { name: 'Burundi', code: '+257', flag: '🇧🇮' },
+    { name: 'Democratic Republic of the Congo', code: '+243', flag: '🇨🇩' },
+    { name: 'South Sudan', code: '+211', flag: '🇸🇸' },
+    { name: 'Mozambique', code: '+258', flag: '🇲🇿' },
     { name: 'United States', code: '+1', flag: '🇺🇸' },
     { name: 'United Kingdom', code: '+44', flag: '🇬🇧' },
     { name: 'Canada', code: '+1', flag: '🇨🇦' },
@@ -51,15 +58,15 @@ export default function SignupPage(): React.JSX.Element {
     const newErrors: { [key: string]: string } = {};
 
     // Validation
-    if (!firstName.trim()) newErrors.firstName = 'First name is required';
-    if (!lastName.trim()) newErrors.lastName = 'Last name is required';
-    if (!phoneNumber.trim()) newErrors.phoneNumber = 'Phone number is required';
-    if (!email.trim()) newErrors.email = 'Email is required';
+    if (!firstName.trim()) newErrors.firstName = t('firstNameRequired');
+    if (!lastName.trim()) newErrors.lastName = t('lastNameRequired');
+    if (!phoneNumber.trim()) newErrors.phoneNumber = t('phoneRequired');
+    if (!email.trim()) newErrors.email = t('emailRequired');
     if (!validatePassword(password)) {
-      newErrors.password = 'Password must contain at least 8 characters, 1 number, 1 letter, and 1 special character (@!#$%^&*=+)';
+      newErrors.password = t('passwordInvalid');
     }
     if (password !== confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
+      newErrors.confirmPassword = t('passwordsNotMatch');
     }
 
     setErrors(newErrors);
@@ -133,7 +140,7 @@ export default function SignupPage(): React.JSX.Element {
                 lineHeight: '1.3',
                 textAlign: 'center'
               }}>
-                Launch your event and let it dazzle with guests from afar!
+                {t('launchEvent')}
               </h2>
             </div>
           </div>
@@ -150,7 +157,7 @@ export default function SignupPage(): React.JSX.Element {
         <div className="w-full lg:w-1/2 flex flex-col items-center h-full overflow-y-auto" style={{ scrollBehavior: 'smooth', padding: '30px 40px 30px 50px' }}>
           <div className="w-full max-w-md px-6 sm:px-8 md:px-12 py-4 sm:py-6">
             <h1 style={{ fontSize: '28px', fontWeight: '700', textAlign: 'left', color: '#000000', marginBottom: '24px', letterSpacing: '0.5px', marginLeft: '55px' }}>
-              Create your first account
+              {t('title')}
             </h1>
 
             {/* Social Login Buttons */}
@@ -175,7 +182,7 @@ export default function SignupPage(): React.JSX.Element {
             {/* Divider */}
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: '16px', marginTop: '16px' }}>
               <hr style={{ flex: '1', border: 'none', borderTop: '2px solid #d1d5db' }} />
-              <span style={{ padding: '0 12px', fontSize: '16px', color: '#6b7280', fontWeight: '600' }}>Or sign up with</span>
+              <span style={{ padding: '0 12px', fontSize: '16px', color: '#6b7280', fontWeight: '600' }}>{t('orSignUpWith')}</span>
               <hr style={{ flex: '1', border: 'none', borderTop: '2px solid #d1d5db' }} />
             </div>
 
@@ -185,14 +192,14 @@ export default function SignupPage(): React.JSX.Element {
                 {/* First Name */}
                 <div>
                   <label htmlFor="firstName" style={{ display: 'block', fontSize: '15px', fontWeight: '500', color: '#374151', marginBottom: '6px' }}>
-                    First name
+                    {t('firstName')}
                   </label>
                   <input
                     type="text"
                     id="firstName"
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
-                    placeholder="Enter your First Name"
+                    placeholder={t('firstNamePlaceholder')}
                     style={{
                       width: '100%',
                       padding: '12px 14px',
@@ -210,14 +217,14 @@ export default function SignupPage(): React.JSX.Element {
                 {/* Last Name */}
                 <div>
                   <label htmlFor="lastName" style={{ display: 'block', fontSize: '15px', fontWeight: '500', color: '#374151', marginBottom: '6px' }}>
-                    Last name
+                    {t('lastName')}
                   </label>
                   <input
                     type="text"
                     id="lastName"
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
-                    placeholder="Enter your Last Name"
+                    placeholder={t('lastNamePlaceholder')}
                     style={{
                       width: '100%',
                       padding: '12px 14px',
@@ -235,14 +242,14 @@ export default function SignupPage(): React.JSX.Element {
                 {/* Email */}
                 <div>
                   <label htmlFor="email" style={{ display: 'block', fontSize: '15px', fontWeight: '500', color: '#374151', marginBottom: '6px' }}>
-                    Your Email
+                    {t('yourEmail')}
                   </label>
                   <input
                     type="email"
                     id="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="example@gmail.com"
+                    placeholder={t('emailPlaceholder')}
                     style={{
                       width: '100%',
                       padding: '12px 14px',
@@ -260,7 +267,7 @@ export default function SignupPage(): React.JSX.Element {
                 {/* Phone Number */}
                 <div>
                   <label htmlFor="phoneNumber" style={{ display: 'block', fontSize: '15px', fontWeight: '500', color: '#374151', marginBottom: '6px' }}>
-                    Phone
+                    {t('phone')}
                   </label>
                   <div style={{ position: 'relative', display: 'flex', alignItems: 'center', border: '2px solid #d1d5db', borderRadius: '20px', overflow: 'hidden', backgroundColor: '#ffffff' }}>
                     <select
@@ -303,7 +310,7 @@ export default function SignupPage(): React.JSX.Element {
                 {/* Password */}
                 <div>
                   <label htmlFor="password" style={{ display: 'block', fontSize: '15px', fontWeight: '500', color: '#374151', marginBottom: '6px' }}>
-                    Password
+                    {tAuth('password')}
                   </label>
                   <div style={{ position: 'relative' }}>
                     <input
@@ -311,7 +318,7 @@ export default function SignupPage(): React.JSX.Element {
                       id="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Enter your Password"
+                      placeholder={t('passwordPlaceholder')}
                       style={{
                         width: '100%',
                         padding: '12px 14px',
@@ -343,7 +350,7 @@ export default function SignupPage(): React.JSX.Element {
                     </button>
                   </div>
                   <p style={{ fontSize: '14px', color: '#6b7280', marginTop: '4px' }}>
-                    Must contain at least 8 characters, 1 number, 1 letter, and 1 special character (@!#$%^&*=+)
+                    {t('passwordHelper')}
                   </p>
                   {errors.password && <p style={{ fontSize: '13px', color: '#dc2626', marginTop: '4px' }}>{errors.password}</p>}
                 </div>
@@ -351,7 +358,7 @@ export default function SignupPage(): React.JSX.Element {
                 {/* Confirm Password */}
                 <div>
                   <label htmlFor="confirmPassword" style={{ display: 'block', fontSize: '15px', fontWeight: '500', color: '#374151', marginBottom: '6px' }}>
-                    Confirm Password
+                    {t('confirmPasswordLabel')}
                   </label>
                   <div style={{ position: 'relative' }}>
                     <input
@@ -359,7 +366,7 @@ export default function SignupPage(): React.JSX.Element {
                       id="confirmPassword"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      placeholder="Confirm your Password"
+                      placeholder={t('confirmPasswordPlaceholder')}
                       style={{
                         width: '100%',
                         padding: '12px 14px',
@@ -396,10 +403,10 @@ export default function SignupPage(): React.JSX.Element {
 
               {/* Terms and Conditions */}
               <div style={{ marginTop: '16px', fontSize: '15px', color: '#6b7280', textAlign: 'left', lineHeight: '1.5' }}>
-                By creating an account, you consent that you have read and agree to our{' '}
-                <a href="/user/terms-of-service" style={{ color: '#083A85', textDecoration: 'underline', fontWeight: '800' }}>Terms of Service</a>
-                {' '}and{' '}
-                <a href="/user/privacy-policy" style={{ color: '#083A85', textDecoration: 'underline', fontWeight: '800' }}>Privacy Policy</a>.
+                {t('termsText')}{' '}
+                <a href="/user/terms-of-service" style={{ color: '#083A85', textDecoration: 'underline', fontWeight: '800' }}>{t('termsOfService')}</a>
+                {' '}{t('and')}{' '}
+                <a href="/user/privacy-policy" style={{ color: '#083A85', textDecoration: 'underline', fontWeight: '800' }}>{t('privacyPolicy')}</a>.
               </div>
 
               {/* Submit Button */}
@@ -420,7 +427,7 @@ export default function SignupPage(): React.JSX.Element {
                     border: 'none'
                   }}
                 >
-                  Create account
+                  {t('createAccountButton')}
                 </button>
               </div>
             </form>
@@ -428,9 +435,9 @@ export default function SignupPage(): React.JSX.Element {
             {/* Links */}
             <div style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <p style={{ fontSize: '15px', color: '#6b7280' }}>
-                Already have an account?{' '}
+                {t('alreadyHaveAccountText')}{' '}
                 <Link href="/user/auth/login" style={{ color: '#083A85', textDecoration: 'underline', fontWeight: '800' }}>
-                  Log in
+                  {t('loginLink')}
                 </Link>
               </p>
             </div>
