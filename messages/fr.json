@@ -1,0 +1,212 @@
+{
+  "nav": {
+    "photographers": "Photographes",
+    "events": "Événements",
+    "about": "À propos",
+    "login": "Se connecter",
+    "signup": "S'inscrire",
+    "language": "Langue",
+    "photographerCategories": {
+      "wedding": "Pour Mariage",
+      "portrait": "Pour Portrait",
+      "event": "Pour Événement",
+      "commercial": "Pour Commercial",
+      "fashion": "Pour Mode",
+      "product": "Pour Produit",
+      "browseTitle": "Parcourir les Photographes",
+      "browseSubtitle": "Trouvez le photographe parfait pour vos moments spéciaux"
+    },
+    "eventCategories": {
+      "weddings": "Mariages",
+      "concerts": "Concerts",
+      "corporate": "Entreprise",
+      "sports": "Sports",
+      "cultural": "Culturel",
+      "conferences": "Conférences",
+      "browseTitle": "Parcourir les Événements",
+      "browseSubtitle": "Découvrez des événements incroyables près de chez vous"
+    }
+  },
+  "hero": {
+    "twitter": "@AmoriaConnekyt",
+    "title1": "Connectez-vous",
+    "title2": "Avec des Photographes",
+    "title3": "Professionnels",
+    "description": "Une plateforme de photographie tout-en-un qui permet aux photographes et à leurs clients de se connecter pour des séances en direct et archive en toute sécurité leurs récits visuels dans des coffres numériques protégés.",
+    "findPhotographer": "Trouver un Photographe",
+    "joinPhotographer": "Rejoindre en tant que Photographe",
+    "ohWow": "Ooh! Wow! 😍",
+    "smilePlease": "Souriez S'il Vous Plaît 🤩"
+  },
+  "howItWorks": {
+    "title": "Comment ça marche",
+    "getStarted": {
+      "title": "Commencer",
+      "description": "Décrivez votre événement et ses détails. Soyez évalué et reconnu mondialement. Capturez des moments. Laissez tout le monde venir à vous"
+    },
+    "photography": {
+      "title": "Photographie",
+      "description": "Connectez-vous avec des photographes, capturez des souvenirs et leurs récits visuels dans des coffres numériques protégés"
+    },
+    "goLive": {
+      "title": "En Direct",
+      "description": "Diffusez votre événement en direct, connectez-vous à une audience éloignée, partagez des moments et des souvenirs"
+    },
+    "forPhotographers": {
+      "title": "Photographes & Vidéastes",
+      "description": "Que vous soyez photographe cherchant à développer votre entreprise ou client cherchant à capturer les moments les plus importants de la vie, notre plateforme est faite pour vous",
+      "cta": "Commencer"
+    }
+  },
+  "devices": {
+    "phone": "Téléphone",
+    "tablet": "Tablette",
+    "laptop": "Ordinateur",
+    "concerts": "Concerts",
+    "weddings": "Mariages"
+  },
+  "whyAmoria": {
+    "title": "Pourquoi Uniquement Amoria Connekyt?",
+    "subtitle": "Le Programme de Partenariat Photographe Amoria Connekyt est conçu pour construire un réseau solide, engagé et motivé de photographes professionnels qui contribuent à la création d'histoires vidéo inoubliables et significatives.",
+    "ratedPhotographers": {
+      "title": "Photographes Évalués",
+      "description": "Travaillez avec des photographes de confiance évalués par la communauté et soutenus par la vérification de la plateforme"
+    },
+    "liveStreaming": {
+      "title": "Diffusion en Direct",
+      "description": "Allez au-delà des souvenirs—organisez et partagez votre événement en direct avec des réactions en temps réel et une diffusion en écran partagé double événement!"
+    },
+    "securePayments": {
+      "title": "Paiements Sécurisés",
+      "description": "Fixez votre prix, recevez des offres et payez en toute sécurité via notre plateforme sécurisée. Votre paiement est protégé jusqu'à ce que vous soyez satisfait des résultats"
+    },
+    "fullEventGallery": {
+      "title": "Galerie d'Événement Complète",
+      "description": "Recevez une galerie magnifiquement organisée de votre photographe engagé et revivez les souvenirs à tout moment"
+    }
+  },
+  "globalNetwork": {
+    "title": "Connecter Photographes & Vidéastes avec des Clients dans le Monde Entier",
+    "description": "Amoria Connekyt rassemble photographes et clients à travers les continents. Des événements en streaming en direct aux coffres numériques sécurisés, nous construisons une communauté mondiale qui capture et préserve les moments les plus précieux de la vie.",
+    "connectNow": "Se Connecter Maintenant",
+    "findEvents": "Trouver des Événements"
+  },
+  "footer": {
+    "emailPlaceholder": "Entrez l'Adresse Email",
+    "subscribe": "S'ABONNER",
+    "description": "Connecter des moments, créer des souvenirs. Votre plateforme de confiance pour la photographie d'événements professionnels et la diffusion en direct.",
+    "followUs": "Suivez-nous sur:",
+    "forClients": "Pour les Clients",
+    "forPhotographers": "Pour les Photographes",
+    "company": "Entreprise",
+    "support": "Assistance",
+    "links": {
+      "findPhotographer": "Trouver un Photographe",
+      "howItWorks": "Comment ça Marche",
+      "browseEvents": "Parcourir les Événements",
+      "joinPhotographer": "Rejoindre en tant que Photographe",
+      "photographerGuide": "Guide du Photographe",
+      "portfolioTips": "Conseils de Portfolio",
+      "aboutUs": "À Propos de Nous",
+      "contact": "Contact",
+      "blog": "Blog",
+      "helpCenter": "Centre d'Aide",
+      "privacyPolicy": "Politique de Confidentialité",
+      "termsOfService": "Conditions d'Utilisation",
+      "trustSafety": "Confiance & Sécurité"
+    },
+    "copyright": "© 2025 Amoria Connekyt. Tous droits réservés."
+  },
+  "auth": {
+    "email": "Email",
+    "password": "Mot de passe",
+    "confirmPassword": "Confirmer le Mot de passe",
+    "fullName": "Nom Complet",
+    "phoneNumber": "Numéro de Téléphone",
+    "login": "Se Connecter",
+    "signup": "S'inscrire",
+    "forgotPassword": "Mot de passe Oublié",
+    "resetPassword": "Réinitialiser le Mot de passe",
+    "dontHaveAccount": "Vous n'avez pas de compte?",
+    "alreadyHaveAccount": "Vous avez déjà un compte?",
+    "signupType": {
+      "title": "Choisir le Type de Compte",
+      "client": "Je suis un Client",
+      "photographer": "Je suis un Photographe",
+      "clientDesc": "Réserver des photographes pour vos événements",
+      "photographerDesc": "Offrir vos services de photographie"
+    },
+    "loginPage": {
+      "title": "Connectez-vous à votre compte existant",
+      "connectWith": "Connectez-vous avec un photographe ou vidéaste",
+      "orContinueWith": "Ou continuer avec",
+      "yourEmail": "Votre Email",
+      "emailPlaceholder": "exemple@gmail.com",
+      "emailHelper": "Entrez l'adresse email associée à votre compte",
+      "passwordPlaceholder": "Entrez votre Mot de passe",
+      "loginButton": "Se connecter",
+      "forgotPasswordLink": "Mot de passe oublié?",
+      "notRegistered": "Pas encore inscrit?",
+      "createAccount": "Créer un compte"
+    },
+    "signupPage": {
+      "title": "Créez votre premier compte",
+      "orSignUpWith": "Ou s'inscrire avec",
+      "firstName": "Prénom",
+      "firstNamePlaceholder": "Entrez votre Prénom",
+      "lastName": "Nom de famille",
+      "lastNamePlaceholder": "Entrez votre Nom de famille",
+      "yourEmail": "Votre Email",
+      "emailPlaceholder": "exemple@gmail.com",
+      "phone": "Téléphone",
+      "passwordPlaceholder": "Entrez votre Mot de passe",
+      "confirmPasswordLabel": "Confirmer le Mot de passe",
+      "confirmPasswordPlaceholder": "Confirmez votre Mot de passe",
+      "passwordHelper": "Doit contenir au moins 8 caractères, 1 chiffre, 1 lettre et 1 caractère spécial (@!#$%^&*=+)",
+      "termsText": "En créant un compte, vous consentez à avoir lu et accepté nos",
+      "termsOfService": "Conditions d'Utilisation",
+      "and": "et",
+      "privacyPolicy": "Politique de Confidentialité",
+      "createAccountButton": "Créer un compte",
+      "alreadyHaveAccountText": "Vous avez déjà un compte?",
+      "loginLink": "Se connecter",
+      "launchEvent": "Lancez votre événement et laissez-le éblouir avec des invités de loin!",
+      "firstNameRequired": "Le prénom est requis",
+      "lastNameRequired": "Le nom de famille est requis",
+      "phoneRequired": "Le numéro de téléphone est requis",
+      "emailRequired": "L'email est requis",
+      "passwordInvalid": "Le mot de passe doit contenir au moins 8 caractères, 1 chiffre, 1 lettre et 1 caractère spécial (@!#$%^&*=+)",
+      "passwordsNotMatch": "Les mots de passe ne correspondent pas"
+    },
+    "signupType": {
+      "title": "Rejoindre en tant que",
+      "titleClient": "Client ou Photographe",
+      "titlePhotographer": "Photographe",
+      "clientTitle": "Je suis un client, j'embauche pour un travail",
+      "clientDescription": "Trouvez et engagez des photographes professionnels pour vos événements",
+      "hiredPhotographerTitle": "Je suis un photographe embauché",
+      "hiredPhotographerDescription": "Travaillez avec des clients via la plateforme et développez votre entreprise",
+      "freelancerTitle": "Je suis un photographe indépendant/travailleur autonome",
+      "freelancerDescription": "Présentez votre portfolio et connectez-vous avec des clients potentiels",
+      "continueAsClient": "Continuer en tant que Client",
+      "continueAsPhotographer": "Continuer en tant que Photographe",
+      "selectOption": "Sélectionnez une option pour continuer",
+      "alreadyHaveAccount": "Vous avez déjà un compte?",
+      "login": "Se connecter",
+      "loading": "Chargement..."
+    }
+  },
+  "common": {
+    "loading": "Chargement...",
+    "error": "Erreur",
+    "success": "Succès",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "search": "Rechercher",
+    "filter": "Filtrer",
+    "viewMore": "Voir Plus",
+    "backToTop": "Retour en Haut"
+  }
+}

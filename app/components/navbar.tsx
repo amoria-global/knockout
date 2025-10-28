@@ -2,12 +2,21 @@
 
 import Link from 'next/link';
 import { useState, useEffect, useRef } from 'react';
+import { useTranslations } from 'next-intl';
+import { useRouter, usePathname } from 'next/navigation';
+import { useLanguage } from '../providers/LanguageProvider';
+import { locales, languageNames, type Locale } from '../../i18n';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 
 const AmoriaKNavbar = () => {
+  const { locale, setLocale } = useLanguage();
+  const t = useTranslations('nav');
+  const router = useRouter();
+  const pathname = usePathname();
+
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
-  const [selectedLang, setSelectedLang] = useState('English');
+  const [selectedLang, setSelectedLang] = useState(languageNames[locale as Locale]);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isPhotographersDropdownOpen, setIsPhotographersDropdownOpen] = useState(false);
   const [isEventsDropdownOpen, setIsEventsDropdownOpen] = useState(false);
@@ -18,29 +27,32 @@ const AmoriaKNavbar = () => {
   const photographersDropdownRef = useRef<HTMLDivElement>(null);
   const eventsDropdownRef = useRef<HTMLDivElement>(null);
 
-  const languages = [
-    { code: 'en', name: 'English' },
-    { code: 'fr', name: 'French' },
-    { code: 'es', name: 'Español' },
-    {code: 'Kiny', name: 'Kinyarwanda'},
-  ];
+  const languages = locales.map((code) => ({
+    code,
+    name: languageNames[code],
+  }));
+
+  // Helper function - no locale prefix needed now
+  const getLocalePath = (path: string) => {
+    return path;
+  };
 
   const photographerCategories = [
-    { value: 'wedding', label: 'For Wedding', icon: 'bi-heart-fill' },
-    { value: 'portrait', label: 'For Portrait', icon: 'bi-person-fill' },
-    { value: 'event', label: 'For Event', icon: 'bi-calendar-event-fill' },
-    { value: 'commercial', label: 'For Commercial', icon: 'bi-briefcase-fill' },
-    { value: 'fashion', label: 'For Fashion', icon: 'bi-camera-fill' },
-    { value: 'product', label: 'For Product', icon: 'bi-box-fill' },
+    { value: 'wedding', label: t('photographerCategories.wedding'), icon: 'bi-heart-fill' },
+    { value: 'portrait', label: t('photographerCategories.portrait'), icon: 'bi-person-fill' },
+    { value: 'event', label: t('photographerCategories.event'), icon: 'bi-calendar-event-fill' },
+    { value: 'commercial', label: t('photographerCategories.commercial'), icon: 'bi-briefcase-fill' },
+    { value: 'fashion', label: t('photographerCategories.fashion'), icon: 'bi-camera-fill' },
+    { value: 'product', label: t('photographerCategories.product'), icon: 'bi-box-fill' },
   ];
 
   const eventCategories = [
-    { value: 'wedding', label: 'Weddings', icon: 'bi-heart-fill' },
-    { value: 'concert', label: 'Concerts', icon: 'bi-music-note-beamed' },
-    { value: 'corporate', label: 'Corporate', icon: 'bi-briefcase-fill' },
-    { value: 'sports', label: 'Sports', icon: 'bi-trophy-fill' },
-    { value: 'cultural', label: 'Cultural', icon: 'bi-globe' },
-    { value: 'conference', label: 'Conferences', icon: 'bi-people-fill' },
+    { value: 'wedding', label: t('eventCategories.weddings'), icon: 'bi-heart-fill' },
+    { value: 'concert', label: t('eventCategories.concerts'), icon: 'bi-music-note-beamed' },
+    { value: 'corporate', label: t('eventCategories.corporate'), icon: 'bi-briefcase-fill' },
+    { value: 'sports', label: t('eventCategories.sports'), icon: 'bi-trophy-fill' },
+    { value: 'cultural', label: t('eventCategories.cultural'), icon: 'bi-globe' },
+    { value: 'conference', label: t('eventCategories.conferences'), icon: 'bi-people-fill' },
   ];
 
   // Effect to handle scroll events
@@ -86,11 +98,13 @@ const AmoriaKNavbar = () => {
   const toggleLangMenu = () => {
     setIsLangMenuOpen(prev => !prev);
   };
-  
-  const handleLangSelect = (langName: string) => {
+
+  const handleLangSelect = (langCode: string, langName: string) => {
     setSelectedLang(langName);
     setIsLangMenuOpen(false);
-    // You can add language-switching logic here (e.g., using i18next)
+
+    // Update locale using our context
+    setLocale(langCode as Locale);
   };
 
   const handleLinkClick = () => {
@@ -125,10 +139,10 @@ const AmoriaKNavbar = () => {
               onMouseLeave={() => setIsPhotographersDropdownOpen(false)}
             >
               <Link
-                href="/user/photographers"
+                href={getLocalePath('/user/photographers')}
                 className="flex items-center gap-1 text-gray-700 hover:text-[#083A85] text-base font-semibold transition-colors duration-200 whitespace-nowrap cursor-pointer"
               >
-                <span>Photographers</span>
+                <span>{t('photographers')}</span>
                 <i className={`bi bi-chevron-down transition-transform duration-200 ${isPhotographersDropdownOpen ? 'rotate-180' : ''}`}></i>
               </Link>
 
@@ -181,7 +195,7 @@ const AmoriaKNavbar = () => {
                         marginBottom: '0.75rem',
                         lineHeight: '1.2'
                       }}>
-                        Browse Photographers
+                        {t('photographerCategories.browseTitle')}
                       </h3>
                       <p style={{
                         fontSize: '17px',
@@ -190,7 +204,7 @@ const AmoriaKNavbar = () => {
                         marginBottom: '2.75rem',
                         lineHeight: '1.5'
                       }}>
-                        Find the perfect photographer for your special moments
+                        {t('photographerCategories.browseSubtitle')}
                       </p>
                     </div>
                     <div style={{
@@ -203,7 +217,7 @@ const AmoriaKNavbar = () => {
                       {photographerCategories.map((category) => (
                         <Link
                           key={category.value}
-                          href={`/user/photographers?category=${category.value}`}
+                          href={getLocalePath(`/user/photographers?category=${category.value}`)}
                           onClick={() => setIsPhotographersDropdownOpen(false)}
                           className="block cursor-pointer group"
                           style={{
@@ -271,10 +285,10 @@ const AmoriaKNavbar = () => {
               onMouseLeave={() => setIsEventsDropdownOpen(false)}
             >
               <Link
-                href="/user/events"
+                href={getLocalePath('/user/events')}
                 className="flex items-center gap-1 text-gray-700 hover:text-[#083A85] text-base font-semibold transition-colors duration-200 whitespace-nowrap cursor-pointer"
               >
-                <span>Events</span>
+                <span>{t('events')}</span>
                 <i className={`bi bi-chevron-down transition-transform duration-200 ${isEventsDropdownOpen ? 'rotate-180' : ''}`}></i>
               </Link>
 
@@ -327,7 +341,7 @@ const AmoriaKNavbar = () => {
                         marginBottom: '0.75rem',
                         lineHeight: '1.2'
                       }}>
-                        Browse Events
+                        {t('eventCategories.browseTitle')}
                       </h3>
                       <p style={{
                         fontSize: '17px',
@@ -335,7 +349,7 @@ const AmoriaKNavbar = () => {
                         fontWeight: '600',
                         lineHeight: '1.5'
                       }}>
-                        Discover amazing events happening near you
+                        {t('eventCategories.browseSubtitle')}
                       </p>
                     </div>
                     <div style={{
@@ -348,7 +362,7 @@ const AmoriaKNavbar = () => {
                       {eventCategories.map((category) => (
                         <Link
                           key={category.value}
-                          href={`/user/events?category=${category.value}`}
+                          href={getLocalePath(`/user/events?category=${category.value}`)}
                           onClick={() => setIsEventsDropdownOpen(false)}
                           className="block cursor-pointer group"
                           style={{
@@ -408,7 +422,7 @@ const AmoriaKNavbar = () => {
               )}
             </div>
 
-            <Link href="/user/about" className="text-gray-700 hover:text-[#083A85] text-base font-semibold transition-colors duration-200 whitespace-nowrap cursor-pointer">About</Link>
+            <Link href={getLocalePath('/user/about')} className="text-gray-700 hover:text-[#083A85] text-base font-semibold transition-colors duration-200 whitespace-nowrap cursor-pointer">{t('about')}</Link>
           </div>
 
           {/* Right: Language and Auth Buttons (Desktop) */}
@@ -443,7 +457,7 @@ const AmoriaKNavbar = () => {
                       href="#"
                       onClick={(e) => {
                         e.preventDefault();
-                        handleLangSelect(lang.name);
+                        handleLangSelect(lang.code, lang.name);
                       }}
                       className="block cursor-pointer"
                       style={{
@@ -476,8 +490,8 @@ const AmoriaKNavbar = () => {
               )}
             </div>
 
-            <Link href="/user/auth/login" className="text-gray-900 text-base font-semibold hover:text-[#083A85] transition-colors duration-200 whitespace-nowrap cursor-pointer">Log In</Link>
-            <Link href="/user/auth/signup-type" className="bg-[#083A85] text-white text-base font-medium rounded-full hover:bg-[#001f4d] transition-all duration-300 whitespace-nowrap cursor-pointer" style={{ paddingLeft: '1.25rem', paddingRight: '1.25rem', paddingTop: '0.375rem', paddingBottom: '0.375rem' }}>Sign Up</Link>
+            <Link href={getLocalePath('/user/auth/login')} className="text-gray-900 text-base font-semibold hover:text-[#083A85] transition-colors duration-200 whitespace-nowrap cursor-pointer">{t('login')}</Link>
+            <Link href={getLocalePath('/user/auth/signup-type')} className="bg-[#083A85] text-white text-base font-medium rounded-full hover:bg-[#001f4d] transition-all duration-300 whitespace-nowrap cursor-pointer" style={{ paddingLeft: '1.25rem', paddingRight: '1.25rem', paddingTop: '0.375rem', paddingBottom: '0.375rem' }}>{t('signup')}</Link>
           </div>
 
           {/* Mobile Menu Button */}
@@ -502,7 +516,7 @@ const AmoriaKNavbar = () => {
                 onClick={() => setIsPhotographersDropdownOpen(prev => !prev)}
                 className="w-full text-left px-3 py-2 rounded-md text-gray-700 hover:bg-gray-50 hover:text-gray-900 text-base font-medium transition-colors flex items-center justify-between cursor-pointer"
               >
-                <span>Photographers</span>
+                <span>{t('photographers')}</span>
                 <i className={`bi bi-chevron-down transform transition-transform ${isPhotographersDropdownOpen ? 'rotate-180' : ''}`}></i>
               </button>
               {isPhotographersDropdownOpen && (
@@ -521,7 +535,7 @@ const AmoriaKNavbar = () => {
                   {photographerCategories.map((category) => (
                     <Link
                       key={category.value}
-                      href={`/user/photographers?category=${category.value}`}
+                      href={getLocalePath(`/user/photographers?category=${category.value}`)}
                       onClick={() => {
                         setIsPhotographersDropdownOpen(false);
                         handleLinkClick();
@@ -563,7 +577,7 @@ const AmoriaKNavbar = () => {
                 onClick={() => setIsEventsDropdownOpen(prev => !prev)}
                 className="w-full text-left px-3 py-2 rounded-md text-gray-700 hover:bg-gray-50 hover:text-gray-900 text-base font-medium transition-colors flex items-center justify-between cursor-pointer"
               >
-                <span>Events</span>
+                <span>{t('events')}</span>
                 <i className={`bi bi-chevron-down transform transition-transform ${isEventsDropdownOpen ? 'rotate-180' : ''}`}></i>
               </button>
               {isEventsDropdownOpen && (
@@ -582,7 +596,7 @@ const AmoriaKNavbar = () => {
                   {eventCategories.map((category) => (
                     <Link
                       key={category.value}
-                      href={`/user/events?category=${category.value}`}
+                      href={getLocalePath(`/user/events?category=${category.value}`)}
                       onClick={() => {
                         setIsEventsDropdownOpen(false);
                         handleLinkClick();
@@ -618,8 +632,8 @@ const AmoriaKNavbar = () => {
               )}
             </div>
 
-            <Link href="/user/about" onClick={handleLinkClick} className="block px-3 py-2 rounded-md text-gray-700 hover:bg-gray-50 hover:text-gray-900 text-base font-medium transition-colors cursor-pointer">About</Link>
-            
+            <Link href={getLocalePath('/user/about')} onClick={handleLinkClick} className="block px-3 py-2 rounded-md text-gray-700 hover:bg-gray-50 hover:text-gray-900 text-base font-medium transition-colors cursor-pointer">{t('about')}</Link>
+
             {/* Language Dropdown (Mobile) */}
             <div className="border-t border-gray-200 !my-3"></div>
              <div ref={langMenuRef} className="relative">
@@ -627,7 +641,7 @@ const AmoriaKNavbar = () => {
                 onClick={toggleLangMenu}
                 className="w-full text-left px-3 py-2 rounded-md text-gray-700 hover:bg-gray-50 text-base font-medium flex items-center justify-between cursor-pointer"
               >
-                <span>Language: {selectedLang}</span>
+                <span>{t('language')}: {selectedLang}</span>
                  <i className={`bi bi-chevron-down transform transition-transform ${isLangMenuOpen ? 'rotate-180' : ''}`}></i>
               </button>
               {isLangMenuOpen && (
@@ -649,7 +663,7 @@ const AmoriaKNavbar = () => {
                             href="#"
                             onClick={(e) => {
                                 e.preventDefault();
-                                handleLangSelect(lang.name);
+                                handleLangSelect(lang.code, lang.name);
                             }}
                             className="block cursor-pointer"
                             style={{
@@ -684,8 +698,8 @@ const AmoriaKNavbar = () => {
 
             <div className="border-t border-gray-200 !my-3"></div>
 
-            <Link href="/user/auth/login" onClick={handleLinkClick} className="block px-3 py-2.5 text-center rounded-md text-gray-900 hover:bg-gray-50 text-base font-medium transition-colors cursor-pointer">Log In</Link>
-            <Link href="/user/auth/signup-type" onClick={handleLinkClick} className="block px-3 py-2.5 text-center bg-[#002D72] text-white rounded-full hover:bg-[#001f4d] text-base font-semibold transition-all duration-300 shadow-sm cursor-pointer">Sign Up</Link>
+            <Link href={getLocalePath('/user/auth/login')} onClick={handleLinkClick} className="block px-3 py-2.5 text-center rounded-md text-gray-900 hover:bg-gray-50 text-base font-medium transition-colors cursor-pointer">{t('login')}</Link>
+            <Link href={getLocalePath('/user/auth/signup-type')} onClick={handleLinkClick} className="block px-3 py-2.5 text-center bg-[#002D72] text-white rounded-full hover:bg-[#001f4d] text-base font-semibold transition-all duration-300 shadow-sm cursor-pointer">{t('signup')}</Link>
           </div>
         </div>
       )}

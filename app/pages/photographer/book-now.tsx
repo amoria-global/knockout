@@ -348,7 +348,7 @@ export default function BookNowPage(): React.JSX.Element {
                     key={pkg.id}
                     onClick={() => setSelectedPackage(pkg.id)}
                     style={{
-                      backgroundColor: selectedPackage === pkg.id ? '#083A85' : '#8b8b8c',
+                      backgroundColor: selectedPackage === pkg.id ? '#083A85' : '#35354a',
                       borderRadius: '20px',
                       padding: '24px 20px',
                       cursor: 'pointer',
@@ -377,7 +377,7 @@ export default function BookNowPage(): React.JSX.Element {
                       if (selectedPackage !== pkg.id) {
                         e.currentTarget.style.transform = 'translateY(0)';
                         e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)';
-                        e.currentTarget.style.backgroundColor = '#8b8b8c';
+                        e.currentTarget.style.backgroundColor = '#35354a';
                       }
                     }}
                   >

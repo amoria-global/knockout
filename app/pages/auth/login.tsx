@@ -1,8 +1,11 @@
 'use client';
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 
 export default function LoginPage(): React.JSX.Element {
+  const t = useTranslations('auth.loginPage');
+  const tAuth = useTranslations('auth');
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -176,7 +179,7 @@ export default function LoginPage(): React.JSX.Element {
               lineHeight: '1.3',
               textAlign: 'center'
             }}>
-              Connect with photographer or videographer
+              {t('connectWith')}
             </h2>
           </div>
 
@@ -190,18 +193,18 @@ export default function LoginPage(): React.JSX.Element {
         </div>
 
         {/* Right Side - Login Form */}
-        <div className="w-full lg:w-1/2 flex flex-col items-center justify-center py-4 sm:py-6 h-full" style={{padding: '30px 40px 30px 50px'}}>
-          <div className="w-full max-w-md px-6 sm:px-8 md:px-12">
-            <h1 style={{ fontSize: '28px', fontWeight: '700', textAlign: 'left', color: '#000000', marginBottom: '24px', letterSpacing: '0.5px', marginLeft: '45px' }}>
-              Log In to your existing account
+        <div className="w-full lg:w-1/2 flex flex-col items-center justify-center py-3 sm:py-4 h-full overflow-y-auto" style={{padding: '20px 30px'}}>
+          <div className="w-full max-w-md px-4 sm:px-6 md:px-8">
+            <h1 style={{ fontSize: '26px', fontWeight: '700', textAlign: 'left', color: '#000000', marginBottom: '20px', letterSpacing: '0.5px' }}>
+              {t('title')}
             </h1>
 
             {/* Social Login Buttons */}
-            <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
               {/* Google Button */}
               <button style={{
                 flex: '1',
-                padding: '12px',
+                padding: '10px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -211,35 +214,35 @@ export default function LoginPage(): React.JSX.Element {
                 cursor: 'pointer',
                 transition: 'all 0.3s'
               }}>
-                <img src="https://www.svgrepo.com/show/355037/google.svg" alt="Google" style={{ width: '22px', height: '22px' }} />
+                <img src="https://www.svgrepo.com/show/355037/google.svg" alt="Google" style={{ width: '20px', height: '20px' }} />
               </button>
             </div>
 
             {/* Divider */}
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '16px', marginTop: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '12px', marginTop: '12px' }}>
               <hr style={{ flex: '1', border: 'none', borderTop: '2px solid #d1d5db' }} />
-              <span style={{ padding: '0 12px', fontSize: '16px', color: '#6b7280', fontWeight: '600' }}>Or continue with</span>
+              <span style={{ padding: '0 10px', fontSize: '14px', color: '#6b7280', fontWeight: '600' }}>{t('orContinueWith')}</span>
               <hr style={{ flex: '1', border: 'none', borderTop: '2px solid #d1d5db' }} />
             </div>
 
             {/* Login Form */}
             <form onSubmit={handleSubmit}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {/* Email Input */}
                 <div>
-                  <label htmlFor="email" style={{ display: 'block', fontSize: '15px', fontWeight: '500', color: '#374151', marginBottom: '6px' }}>
-                    Your Email
+                  <label htmlFor="email" style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '5px' }}>
+                    {t('yourEmail')}
                   </label>
                   <input
                     type="email"
                     id="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="example@gmail.com"
+                    placeholder={t('emailPlaceholder')}
                     style={{
                       width: '100%',
-                      padding: '12px 14px',
-                      fontSize: '15px',
+                      padding: '10px 12px',
+                      fontSize: '14px',
                       border: '2px solid #d1d5db',
                       borderRadius: '20px',
                       outline: 'none',
@@ -247,15 +250,15 @@ export default function LoginPage(): React.JSX.Element {
                       backgroundColor: '#ffffff'
                     }}
                   />
-                  <p style={{ fontSize: '14px', color: '#6b7280', marginTop: '4px' }}>
-                    Enter Email Address associated with your account
+                  <p style={{ fontSize: '12px', color: '#6b7280', marginTop: '3px' }}>
+                    {t('emailHelper')}
                   </p>
                 </div>
 
                 {/* Password Input */}
                 <div>
-                  <label htmlFor="password" style={{ display: 'block', fontSize: '15px', fontWeight: '500', color: '#374151', marginBottom: '6px' }}>
-                    Password
+                  <label htmlFor="password" style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '5px' }}>
+                    {tAuth('password')}
                   </label>
                   <div style={{ position: 'relative' }}>
                     <input
@@ -263,12 +266,12 @@ export default function LoginPage(): React.JSX.Element {
                       id="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Enter your Password"
+                      placeholder={t('passwordPlaceholder')}
                       style={{
                         width: '100%',
-                        padding: '12px 14px',
-                        paddingRight: '44px',
-                        fontSize: '15px',
+                        padding: '10px 12px',
+                        paddingRight: '40px',
+                        fontSize: '14px',
                         border: '2px solid #d1d5db',
                         borderRadius: '20px',
                         outline: 'none',
@@ -281,7 +284,7 @@ export default function LoginPage(): React.JSX.Element {
                       onClick={() => setShowPassword(!showPassword)}
                       style={{
                         position: 'absolute',
-                        right: '12px',
+                        right: '10px',
                         top: '50%',
                         transform: 'translateY(-50%)',
                         color: '#6b7280',
@@ -291,21 +294,21 @@ export default function LoginPage(): React.JSX.Element {
                         padding: '4px'
                       }}
                     >
-                      <i className={`bi ${showPassword ? 'bi-eye-slash' : 'bi-eye'}`} style={{ fontSize: '16px' }}></i>
+                      <i className={`bi ${showPassword ? 'bi-eye-slash' : 'bi-eye'}`} style={{ fontSize: '14px' }}></i>
                     </button>
                   </div>
                 </div>
               </div>
 
               {/* Submit Button */}
-              <div style={{ marginTop: '20px' }}>
+              <div style={{ marginTop: '16px' }}>
                 <button
                   type="submit"
                   disabled={isDisabled}
                   style={{
                     width: '100%',
-                    padding: '12px',
-                    fontSize: '16px',
+                    padding: '11px',
+                    fontSize: '15px',
                     borderRadius: '30px',
                     fontWeight: '600',
                     transition: 'all 0.3s',
@@ -315,20 +318,20 @@ export default function LoginPage(): React.JSX.Element {
                     border: 'none'
                   }}
                 >
-                  Log in
+                  {t('loginButton')}
                 </button>
               </div>
             </form>
 
             {/* Links */}
-            <div style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <Link href="/user/auth/forgotpswd" style={{ fontSize: '15px', color: '#083A85', textDecoration: 'underline', fontWeight: '800' }}>
-                Forgot your password?
+            <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              <Link href="/user/auth/forgotpswd" style={{ fontSize: '14px', color: '#083A85', textDecoration: 'underline', fontWeight: '800' }}>
+                {t('forgotPasswordLink')}
               </Link>
-              <p style={{ fontSize: '15px', color: '#6b7280' }}>
-                Not registered yet?{' '}
+              <p style={{ fontSize: '14px', color: '#6b7280' }}>
+                {t('notRegistered')}{' '}
                 <Link href="/user/auth/signup" style={{ color: '#083A85', textDecoration: 'underline', fontWeight: '800' }}>
-                  Create an account
+                  {t('createAccount')}
                 </Link>
               </p>
             </div>

@@ -1,0 +1,212 @@
+{
+  "nav": {
+    "photographers": "Photographers",
+    "events": "Events",
+    "about": "About",
+    "login": "Log In",
+    "signup": "Sign Up",
+    "language": "Language",
+    "photographerCategories": {
+      "wedding": "For Wedding",
+      "portrait": "For Portrait",
+      "event": "For Event",
+      "commercial": "For Commercial",
+      "fashion": "For Fashion",
+      "product": "For Product",
+      "browseTitle": "Browse Photographers",
+      "browseSubtitle": "Find the perfect photographer for your special moments"
+    },
+    "eventCategories": {
+      "weddings": "Weddings",
+      "concerts": "Concerts",
+      "corporate": "Corporate",
+      "sports": "Sports",
+      "cultural": "Cultural",
+      "conferences": "Conferences",
+      "browseTitle": "Browse Events",
+      "browseSubtitle": "Discover amazing events happening near you"
+    }
+  },
+  "hero": {
+    "twitter": "@AmoriaConnekyt",
+    "title1": "Connekyt",
+    "title2": "With Professional",
+    "title3": "Photographers",
+    "description": "An all-in-one photography platform that allows photographers and their clients to connect for live sessions and safely archives their visual narratives in protected digital vaults.",
+    "findPhotographer": "Find A Photographer",
+    "joinPhotographer": "Join As A Photographer",
+    "ohWow": "Oooh! Wow! 😍",
+    "smilePlease": "Smile Please 🤩"
+  },
+  "howItWorks": {
+    "title": "How it works",
+    "getStarted": {
+      "title": "Get Started",
+      "description": "Describe your event and details. Get reviewed and recognized globally. Capture moments. Let every one come to you"
+    },
+    "photography": {
+      "title": "Photography",
+      "description": "Connect with photographers, capture memories and their visual narratives in protected digital vaults"
+    },
+    "goLive": {
+      "title": "Go Live",
+      "description": "Live stream your event, get connected to far attendance, share moments and memories"
+    },
+    "forPhotographers": {
+      "title": "Photographers & Videographers",
+      "description": "Whether you're a photographer looking to grow your business or a client seeking to capture life's most important moments, our platform is built for you",
+      "cta": "Get Started"
+    }
+  },
+  "devices": {
+    "phone": "Phone",
+    "tablet": "Tablet",
+    "laptop": "Laptop",
+    "concerts": "Concerts",
+    "weddings": "Weddings"
+  },
+  "whyAmoria": {
+    "title": "Why Amoria Connekyt Only?",
+    "subtitle": "The Amoria Connekyt Photographer Partnership Program is designed to build a strong, engaged, and motivated network of professional photographers who contribute to the creation of unforgettable and meaningful video stories.",
+    "ratedPhotographers": {
+      "title": "Rated Photographers",
+      "description": "Work with trusted photographers reviewed by the community and backed by platform verification"
+    },
+    "liveStreaming": {
+      "title": "Live Streaming",
+      "description": "Go beyond memories—host and share your event live with real-time reactions and over dual-event split-screen streaming!"
+    },
+    "securePayments": {
+      "title": "Secure Payments",
+      "description": "Set your price, get offers, and pay safely through our secure platform. Your payment is protected until you're satisfied with the results"
+    },
+    "fullEventGallery": {
+      "title": "Full Event Gallery",
+      "description": "Receive a beautifully curated gallery from your hired photographer and relive the memories anytime"
+    }
+  },
+  "globalNetwork": {
+    "title": "Connecting Photographers & Videographers with Clients Worldwide",
+    "description": "Amoria Connekyt brings together photographers and clients across continents. From live streaming events to secure digital vaults, we're building a global community that captures and preserves life's most precious moments.",
+    "connectNow": "Connect Now",
+    "findEvents": "Find Events"
+  },
+  "footer": {
+    "emailPlaceholder": "Enter Email Address",
+    "subscribe": "SUBSCRIBE",
+    "description": "Connecting moments, creating memories. Your trusted platform for professional event photography and live streaming.",
+    "followUs": "Follow us on:",
+    "forClients": "For Clients",
+    "forPhotographers": "For Photographers",
+    "company": "Company",
+    "support": "Support",
+    "links": {
+      "findPhotographer": "Find A Photographer",
+      "howItWorks": "How it Works",
+      "browseEvents": "Browse Events",
+      "joinPhotographer": "Join As A Photographer",
+      "photographerGuide": "Photographer Guide",
+      "portfolioTips": "Portfolio Tips",
+      "aboutUs": "About Us",
+      "contact": "Contact",
+      "blog": "Blog",
+      "helpCenter": "Help Center",
+      "privacyPolicy": "Privacy Policy",
+      "termsOfService": "Terms of Service",
+      "trustSafety": "Trust & Safety"
+    },
+    "copyright": "© 2025 Amoria Connekyt. All rights reserved."
+  },
+  "auth": {
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "fullName": "Full Name",
+    "phoneNumber": "Phone Number",
+    "login": "Login",
+    "signup": "Sign Up",
+    "forgotPassword": "Forgot Password",
+    "resetPassword": "Reset Password",
+    "dontHaveAccount": "Don't have an account?",
+    "alreadyHaveAccount": "Already have an account?",
+    "signupType": {
+      "title": "Choose Account Type",
+      "client": "I'm a Client",
+      "photographer": "I'm a Photographer",
+      "clientDesc": "Book photographers for your events",
+      "photographerDesc": "Offer your photography services"
+    },
+    "loginPage": {
+      "title": "Log In to your existing account",
+      "connectWith": "Connect with photographer or videographer",
+      "orContinueWith": "Or continue with",
+      "yourEmail": "Your Email",
+      "emailPlaceholder": "example@gmail.com",
+      "emailHelper": "Enter Email Address associated with your account",
+      "passwordPlaceholder": "Enter your Password",
+      "loginButton": "Log in",
+      "forgotPasswordLink": "Forgot your password?",
+      "notRegistered": "Not registered yet?",
+      "createAccount": "Create an account"
+    },
+    "signupPage": {
+      "title": "Create your first account",
+      "orSignUpWith": "Or sign up with",
+      "firstName": "First name",
+      "firstNamePlaceholder": "Enter your First Name",
+      "lastName": "Last name",
+      "lastNamePlaceholder": "Enter your Last Name",
+      "yourEmail": "Your Email",
+      "emailPlaceholder": "example@gmail.com",
+      "phone": "Phone",
+      "passwordPlaceholder": "Enter your Password",
+      "confirmPasswordLabel": "Confirm Password",
+      "confirmPasswordPlaceholder": "Confirm your Password",
+      "passwordHelper": "Must contain at least 8 characters, 1 number, 1 letter, and 1 special character (@!#$%^&*=+)",
+      "termsText": "By creating an account, you consent that you have read and agree to our",
+      "termsOfService": "Terms of Service",
+      "and": "and",
+      "privacyPolicy": "Privacy Policy",
+      "createAccountButton": "Create account",
+      "alreadyHaveAccountText": "Already have an account?",
+      "loginLink": "Log in",
+      "launchEvent": "Launch your event and let it dazzle with guests from afar!",
+      "firstNameRequired": "First name is required",
+      "lastNameRequired": "Last name is required",
+      "phoneRequired": "Phone number is required",
+      "emailRequired": "Email is required",
+      "passwordInvalid": "Password must contain at least 8 characters, 1 number, 1 letter, and 1 special character (@!#$%^&*=+)",
+      "passwordsNotMatch": "Passwords do not match"
+    },
+    "signupType": {
+      "title": "Join as a",
+      "titleClient": "Client or Photographer",
+      "titlePhotographer": "Photographer",
+      "clientTitle": "I'm a client, hiring for a job",
+      "clientDescription": "Find and hire professional photographers for your events",
+      "hiredPhotographerTitle": "I'm a hired photographer",
+      "hiredPhotographerDescription": "Work with clients through the platform and grow your business",
+      "freelancerTitle": "I'm a freelancer/self-employed photographer",
+      "freelancerDescription": "Showcase your portfolio and connect with potential clients",
+      "continueAsClient": "Continue as Client",
+      "continueAsPhotographer": "Continue as Photographer",
+      "selectOption": "Select an option to continue",
+      "alreadyHaveAccount": "Already have an account?",
+      "login": "Log In",
+      "loading": "Loading..."
+    }
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "search": "Search",
+    "filter": "Filter",
+    "viewMore": "View More",
+    "backToTop": "Back to Top"
+  }
+}

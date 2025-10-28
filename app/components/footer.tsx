@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-
+import { useTranslations } from 'next-intl';
 import React, { useState } from 'react';
 import {
   FaFacebookF,
@@ -10,6 +10,7 @@ import {
 } from 'react-icons/fa6';
 
 export default function Footer() {
+  const t = useTranslations('footer');
   const [email, setEmail] = useState('');
 
   const handleSubscribe = (e: React.FormEvent) => {
@@ -28,36 +29,36 @@ export default function Footer() {
 
   const footerSections = [
     {
-      title: 'For Clients',
+      title: t('forClients'),
       links: [
-        { text: 'Find A Photographer', href: '/user/photographers' },
-        { text: 'How it Works', href: '/#how-it-works', onClick: (e: React.MouseEvent<HTMLAnchorElement>) => handleScrollToSection(e, 'how-it-works') },
-        { text: 'Browse Events', href: '/user/events' },
+        { text: t('links.findPhotographer'), href: '/user/photographers' },
+        { text: t('links.howItWorks'), href: '/#how-it-works', onClick: (e: React.MouseEvent<HTMLAnchorElement>) => handleScrollToSection(e, 'how-it-works') },
+        { text: t('links.browseEvents'), href: '/user/events' },
       ],
     },
     {
-      title: 'For Photographers',
+      title: t('forPhotographers'),
       links: [
-        { text: 'Join As A Photographer', href: '/user/auth/signup-type?type=photographer' },
-        { text: 'Photographer Guide', href: '/photographer-guide' },
-        { text: 'Portfolio Tips', href: '/portfolio-tips' },
+        { text: t('links.joinPhotographer'), href: '/user/auth/signup-type?type=photographer' },
+        { text: t('links.photographerGuide'), href: '/photographer-guide' },
+        { text: t('links.portfolioTips'), href: '/portfolio-tips' },
       ],
     },
     {
-      title: 'Company',
+      title: t('company'),
       links: [
-        { text: 'About Us', href: '/user/about' },
-        { text: 'Contact', href: '/user/contact_us' },
-        { text: 'Blog', href: 'https://www.amoriaglobal.com/' },
+        { text: t('links.aboutUs'), href: '/user/about' },
+        { text: t('links.contact'), href: '/user/contact_us' },
+        { text: t('links.blog'), href: 'https://www.amoriaglobal.com/' },
       ],
     },
     {
-      title: 'Support',
+      title: t('support'),
       links: [
-        { text: 'Help Center', href: '/user/help-center' },
-        { text: 'Privacy Policy', href: '/user/privacy-policy' },
-        { text: 'Terms of Service', href: '/user/terms-of-service' },
-        { text: 'Trust & Safety', href: '/user/trust-safety' },
+        { text: t('links.helpCenter'), href: '/user/help-center' },
+        { text: t('links.privacyPolicy'), href: '/user/privacy-policy' },
+        { text: t('links.termsOfService'), href: '/user/terms-of-service' },
+        { text: t('links.trustSafety'), href: '/user/trust-safety' },
       ],
     },
   ];
@@ -101,7 +102,7 @@ export default function Footer() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="Enter Email Address"
+              placeholder={t('emailPlaceholder')}
               style={{
                 width: '100%',
                 paddingLeft: '1.2rem',
@@ -125,7 +126,7 @@ export default function Footer() {
                 fontWeight: 600,
                 borderRadius: '1.6rem',
                 letterSpacing: '0.05em',
-                fontSize: '0.8rem',
+                fontSize: '0.9rem',
                 paddingLeft: '1.6rem',
                 paddingRight: '1.6rem',
                 paddingTop: '0.6rem',
@@ -138,7 +139,7 @@ export default function Footer() {
               onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#0d3268')}
               onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#103E83')}
             >
-              SUBSCRIBE
+              {t('subscribe')}
             </button>
           </form>
         </div>
@@ -188,12 +189,11 @@ export default function Footer() {
                   marginBottom: '2rem',
                 }}
               >
-                Connecting moments, creating memories. Your trusted platform for professional event
-                photography and live streaming.
+                {t('description')}
               </p>
               <div style={{ marginTop: '5.4rem', marginBottom: '-2.2rem' }}>
                 <span style={{ color: '#D1D5DB', fontSize: '1.04rem', display: 'block', marginBottom: '0.8rem', gap: '2.4rem' }}>
-                  Follow us on:
+                  {t('followUs')}
                 </span>
                 <div style={{ display: 'flex', gap: '1.6rem' }}>
                   {socialLinks.map((social) => (
@@ -254,7 +254,7 @@ export default function Footer() {
             }}
           >
             <p style={{ color: '#D1D5DB', fontSize: '0.96rem' }}>
-              © 2025 Amoria Connekyt. All rights reserved.
+              {t('copyright')}
             </p>
           </div>
         </div>
