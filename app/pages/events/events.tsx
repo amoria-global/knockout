@@ -2,8 +2,10 @@
 
 import React, { useState } from 'react';
 import AmoriaKNavbar from '../../components/navbar';
+import { useTranslations } from 'next-intl';
 
 const Events: React.FC = () => {
+  const t = useTranslations('events');
   // States
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -451,7 +453,7 @@ const Events: React.FC = () => {
             marginBottom: '0.5rem',
             fontFamily: "'Pragati Narrow', sans-serif"
           }}>
-            Discover Amazing Events Near You
+            {t('title')}
           </h1>
           <p style={{
             fontSize: 'clamp(0.875rem, 1.5vw, 1rem)',
@@ -461,7 +463,7 @@ const Events: React.FC = () => {
             margin: '0 auto 1.5rem',
             fontFamily: "'Pragati Narrow', sans-serif"
           }}>
-            Browse through upcoming events, concerts, weddings, and gatherings
+            {t('subtitle')}
           </p>
 
           {/* Search Bar */}
@@ -469,7 +471,7 @@ const Events: React.FC = () => {
             <div style={{ position: 'relative' }}>
               <input
                 type="text"
-                placeholder="Search events by name, category, or location..."
+                placeholder={t('searchPlaceholder')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 style={{
@@ -530,13 +532,13 @@ const Events: React.FC = () => {
                   boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
                 }}
               >
-                <option value="all">All Categories</option>
-                <option value="wedding">Weddings</option>
-                <option value="concert">Concerts</option>
-                <option value="corporate">Corporate</option>
-                <option value="sports">Sports</option>
-                <option value="cultural">Cultural</option>
-                <option value="conference">Conferences</option>
+                <option value="all">{t('allCategories')}</option>
+                <option value="wedding">{t('categories.weddings')}</option>
+                <option value="concert">{t('categories.concerts')}</option>
+                <option value="corporate">{t('categories.corporate')}</option>
+                <option value="sports">{t('categories.sports')}</option>
+                <option value="cultural">{t('categories.cultural')}</option>
+                <option value="conference">{t('categories.conferences')}</option>
               </select>
             </div>
 
@@ -559,7 +561,7 @@ const Events: React.FC = () => {
                   boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
                 }}
               >
-                <option value="all">All Locations</option>
+                <option value="all">{t('allLocations')}</option>
                 <option value="kigali">Kigali</option>
                 <option value="musanze">Musanze</option>
                 <option value="huye">Huye</option>
@@ -587,7 +589,7 @@ const Events: React.FC = () => {
                   boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
                 }}
               >
-                <option value="all">All Dates</option>
+                <option value="all">{t('allDates')}</option>
                 <option value="today">Today</option>
                 <option value="tomorrow">Tomorrow</option>
                 <option value="this-week">This Week</option>
@@ -615,9 +617,9 @@ const Events: React.FC = () => {
                   boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
                 }}
               >
-                <option value="all">All Status</option>
-                <option value="upcoming">Upcoming</option>
-                <option value="live">Live Now</option>
+                <option value="all">{t('allStatuses')}</option>
+                <option value="upcoming">{t('status.upcoming')}</option>
+                <option value="live">{t('liveNow')}</option>
                 <option value="past">Past Events</option>
               </select>
             </div>
@@ -671,7 +673,7 @@ const Events: React.FC = () => {
             position: 'relative',
             zIndex: 2
           }}>
-            Hot Live Trends 🔥
+            {t('hotLiveTrends')}
           </div>
 
           {/* Trending Events Circles */}
@@ -813,7 +815,7 @@ const Events: React.FC = () => {
                         }}
                       >
                         <i className="bi bi-camera-video-fill live-badge-icon" style={{ fontSize: '0.9rem' }}></i>
-                        LIVE NOW
+                        {t('status.live')}
                       </div>
                     ) : (
                       <div
@@ -834,7 +836,7 @@ const Events: React.FC = () => {
                         }}
                       >
                         <i className="bi bi-broadcast" style={{ fontSize: '0.9rem' }}></i>
-                        UPCOMING
+                        {t('status.upcoming')}
                       </div>
                     )}
 
@@ -908,7 +910,7 @@ const Events: React.FC = () => {
                         <circle cx="12" cy="12" r="2" fill="currentColor" />
                         <path d="M8 8c1-1 2-1 2-1M16 8c-1-1-2-1-2-1M8 16c1 1 2 1 2 1M16 16c-1 1-2 1-2 1" strokeLinecap="round" />
                       </svg>
-                      {event.status === 'LIVE' ? 'STREAM NOW' : 'VIEW EVENT'}
+                      {event.status === 'LIVE' ? t('joinEvent').toUpperCase() : t('viewDetails').toUpperCase()}
                     </button>
                   </div>
                 </div>

@@ -309,7 +309,7 @@ const AmoriaKNavbar = () => {
                     className="absolute"
                     style={{
                       top: 'calc(100% + 20px)',
-                      left: '-200%',
+                      left: '-160%',
                       width: '55vw',
                       height: '555px',
                       background: 'rgba(255, 255, 255, 0.70)',
@@ -332,7 +332,7 @@ const AmoriaKNavbar = () => {
                     maxWidth: '1400px',
                     margin: '0 auto'
                   }}>
-                    <div style={{ marginBottom: '3.5rem', flexShrink: 0 }}>
+                    <div style={{ marginBottom: '0.5rem', flexShrink: 0 }}>
                       <h3 style={{
                         fontSize: '32px',
                         fontWeight: '800',
@@ -347,6 +347,7 @@ const AmoriaKNavbar = () => {
                         fontSize: '17px',
                         color: '#6b7280',
                         fontWeight: '600',
+                        marginBottom: '2.75rem',
                         lineHeight: '1.5'
                       }}>
                         {t('eventCategories.browseSubtitle')}

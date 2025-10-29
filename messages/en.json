@@ -196,6 +196,266 @@
       "loading": "Loading..."
     }
   },
+  "events": {
+    "title": "Discover Amazing Events Near You",
+    "subtitle": "Browse through upcoming events, concerts, weddings, and gatherings",
+    "searchPlaceholder": "Search events by name, category, or location...",
+    "allCategories": "All Categories",
+    "allLocations": "All Locations",
+    "allDates": "All Dates",
+    "allStatuses": "All Statuses",
+    "categories": {
+      "weddings": "Weddings",
+      "concerts": "Concerts",
+      "corporate": "Corporate",
+      "sports": "Sports",
+      "cultural": "Cultural",
+      "conferences": "Conferences",
+      "fashion": "Fashion",
+      "religious": "Religious",
+      "academic": "Academic",
+      "entertainment": "Entertainment",
+      "gathering": "Gathering"
+    },
+    "status": {
+      "upcoming": "UPCOMING",
+      "live": "LIVE",
+      "ended": "ENDED"
+    },
+    "liveNow": "Live Now",
+    "trending": "Trending Events",
+    "viewDetails": "View Details",
+    "joinEvent": "Join Event",
+    "noEvents": "No events found",
+    "pagination": {
+      "page": "Page",
+      "of": "of",
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "joinEventPage": {
+      "title": "Join Live Event",
+      "mainTitle": "Live Moments, Shared Instantly",
+      "subtitle1": "Stream Your Event In Real-Time And Let Remote Guests Celebrate With You",
+      "subtitle2": "Through Reactions, Wishes, And Gifts — No Matter Where They Are.",
+      "enterCode": "Enter Event Code",
+      "codePlaceholder": "Enter Event Link or Host ID from your event host",
+      "join": "Join",
+      "invalidCode": "Invalid event code",
+      "loading": "Joining event..."
+    },
+    "hotLiveTrends": "Hot Live Trends 🔥",
+    "liveStream": {
+      "title": "Live Stream",
+      "viewers": "Viewers",
+      "chat": "Live Chat",
+      "sendMessage": "Send message",
+      "share": "Share",
+      "fullscreen": "Fullscreen",
+      "settings": "Settings",
+      "leave": "Leave Stream",
+      "connecting": "Connecting to stream...",
+      "error": "Failed to load stream"
+    },
+    "multiStream": {
+      "title": "Multi-Stream View",
+      "selectStreams": "Select Streams to Watch",
+      "layout": "Layout",
+      "grid": "Grid",
+      "sideBySide": "Side by Side",
+      "picInPic": "Picture in Picture",
+      "noStreams": "No active streams available"
+    },
+    "record": {
+      "title": "Record Event",
+      "startRecording": "Start Recording",
+      "stopRecording": "Stop Recording",
+      "pauseRecording": "Pause Recording",
+      "resumeRecording": "Resume Recording",
+      "recording": "Recording",
+      "paused": "Paused",
+      "duration": "Duration",
+      "save": "Save Recording",
+      "discard": "Discard",
+      "settings": "Recording Settings",
+      "quality": "Quality",
+      "format": "Format"
+    },
+    "viewEvent": {
+      "viewFull": "View Full",
+      "eventDate": "Event Date",
+      "eventTime": "Event Time",
+      "location": "Location",
+      "entryFee": "Entry Fee",
+      "expectedAttendees": "Expected Attendees",
+      "people": "People",
+      "organizedBy": "Organized By",
+      "aboutThisEvent": "About This Event",
+      "eventTags": "Event Tags",
+      "joinLiveStream": "Join Live Stream",
+      "eventBanner": "Event Banner",
+      "closeInstructions": "Press ESC or click outside to close",
+      "loadingEventDetails": "Loading event details..."
+    }
+  },
+  "photographers": {
+    "title": "Find Your Perfect Photographer",
+    "subtitle": "Browse through professional photographers and videographers",
+    "searchPlaceholder": "Search by name, specialty, or location...",
+    "allCategories": "All Categories",
+    "allLocations": "All Locations",
+    "allPrices": "All Prices",
+    "allRatings": "All Ratings",
+    "categories": {
+      "weddings": "Weddings",
+      "events": "Events",
+      "portraits": "Portraits",
+      "commercial": "Commercial",
+      "fashion": "Fashion",
+      "product": "Product"
+    },
+    "priceRanges": {
+      "budget": "Budget (< 50k RWF)",
+      "standard": "Standard (50k - 100k RWF)",
+      "premium": "Premium (> 100k RWF)"
+    },
+    "verified": "Verified",
+    "rating": "Rating",
+    "reviews": "Reviews",
+    "completedJobs": "Completed Jobs",
+    "accuracy": "Accuracy",
+    "responseTime": "Response Time",
+    "getInTouch": "Get In Touch",
+    "bookNow": "Book Now",
+    "noPhotographers": "No photographers found",
+    "loading": "Loading photographers..."
+  },
+  "viewProfile": {
+    "events": "Events",
+    "bookNow": "BOOK NOW",
+    "startChat": "START CHAT",
+    "viewFull": "View Full",
+    "tabs": {
+      "overview": "Overview",
+      "portfolio": "Portfolio",
+      "reviews": "Reviews",
+      "workingExperience": "Working Experience"
+    },
+    "overview": {
+      "about": "About",
+      "specialties": "Specialties",
+      "equipment": "Equipment",
+      "noEquipment": "No equipment listed"
+    },
+    "portfolio": {
+      "professionalSkills": "Professional Skills",
+      "education": "Education",
+      "qualifications": "Qualifications & Certifications"
+    },
+    "reviews": {
+      "reviewsCount": "reviews",
+      "writeReview": "Write a Review"
+    },
+    "workingExperience": {
+      "title": "Professional Experience"
+    },
+    "loadingProfile": "Loading profile..."
+  },
+  "booking": {
+    "step1": {
+      "title": "Choose Your Preferred Package",
+      "back": "Back",
+      "professionalPhotographer": "Professional Photographer",
+      "availability": "Availability",
+      "workingHours": "Working Hours",
+      "location": "Location",
+      "startingPrice": "Starting Price",
+      "cancel": "CANCEL",
+      "next": "NEXT",
+      "packages": {
+        "essential": {
+          "name": "Essential Package",
+          "hours": "3 Hours",
+          "description": "Great for small events and birthdays"
+        },
+        "custom": {
+          "name": "Custom Package",
+          "hours": "4 Hours",
+          "description": "Great for corporate events and parties"
+        },
+        "premium": {
+          "name": "Premium Package",
+          "hours": "5 Hours",
+          "description": "Great for large events, concerts, and weddings"
+        },
+        "features": {
+          "coverage3h": "3 hours coverage",
+          "coverage4h": "4 hours coverage",
+          "coverage5h": "5 hours coverage",
+          "unlimitedPhotos": "Unlimited photos & videos",
+          "onlineGallery": "Online gallery storage",
+          "sameDayPreview": "Same-day preview",
+          "professionalEditing": "Professional editing",
+          "printedAlbum": "Printed photo album",
+          "liveStreaming": "Live-streaming",
+          "dronePhotography": "Drone photography"
+        }
+      }
+    },
+    "step2": {
+      "title": "Event Details",
+      "back": "Back",
+      "professionalPhotographer": "Professional Photographer",
+      "availability": "Availability",
+      "workingHours": "Working Hours",
+      "location": "Location",
+      "startingPrice": "Starting Price",
+      "specialRequestsLabel": "Any Special Requests:",
+      "specialRequestsPlaceholder": "Any specific shots, requirements or preferences...",
+      "previous": "PREVIOUS",
+      "cancel": "CANCEL",
+      "next": "NEXT"
+    },
+    "step3": {
+      "title": "Contact Information",
+      "back": "Back",
+      "professionalPhotographer": "Professional Photographer",
+      "availability": "Availability",
+      "workingHours": "Working Hours",
+      "location": "Location",
+      "startingPrice": "Starting Price",
+      "emailLabel": "Email Address (Required)",
+      "phoneLabel": "Phone Number (Required)",
+      "bookingSummary": "Booking Summary",
+      "package": "Package",
+      "eventDate": "Event Date",
+      "eventTime": "Event Time",
+      "eventType": "Event Type",
+      "termsText": "I have read and agree to the",
+      "previous": "PREVIOUS",
+      "cancel": "CANCEL",
+      "bookNow": "BOOK NOW"
+    }
+  },
+  "chat": {
+    "title": "Chats",
+    "searchPlaceholder": "Search for Messages",
+    "filterChats": "Filter Chats",
+    "allChats": "All Chats",
+    "unreadChats": "Unread",
+    "onlineChats": "Online",
+    "archivedChats": "Archived",
+    "noChatsFound": "No chats found",
+    "today": "Today",
+    "noMessagesYet": "No messages yet. Start the conversation!",
+    "typeMessage": "Type a message...",
+    "selectChat": "Select a chat to start messaging",
+    "send": "Send",
+    "online": "Online",
+    "offline": "Offline",
+    "typing": "typing...",
+    "loadingMessages": "Loading messages..."
+  },
   "common": {
     "loading": "Loading...",
     "error": "Error",

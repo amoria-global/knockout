@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useRef, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 
 interface Message {
   id: string;
@@ -22,6 +23,7 @@ interface Chat {
 }
 
 export default function ChatPage(): React.JSX.Element {
+  const t = useTranslations('chat');
   const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
   const [messageText, setMessageText] = useState('');
   const [searchText, setSearchText] = useState('');
@@ -444,7 +446,7 @@ export default function ChatPage(): React.JSX.Element {
             onMouseLeave={(e) => e.currentTarget.style.color = '#666'}
           >
             <i className="bi bi-chevron-left" style={{ fontSize: '20px' }}></i>
-            <span>Chats</span>
+            <span>{t('title')}</span>
           </button>
           <button style={{
             background: 'none',
@@ -472,7 +474,7 @@ export default function ChatPage(): React.JSX.Element {
           <i className="bi bi-search" style={{ fontSize: '16px', color: '#666' }}></i>
           <input
             type="text"
-            placeholder="Search for Messages"
+            placeholder={t('searchPlaceholder')}
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
             style={{
@@ -535,13 +537,13 @@ export default function ChatPage(): React.JSX.Element {
                 padding: '8px 12px',
                 textTransform: 'uppercase',
                 letterSpacing: '0.5px'
-              }}>Filter Chats</div>
+              }}>{t('filterChats')}</div>
 
               {[
-                { key: 'all', label: 'All Chats', icon: 'bi-chat-dots' },
-                { key: 'unread', label: 'Unread', icon: 'bi-envelope-fill' },
-                { key: 'online', label: 'Online', icon: 'bi-circle-fill' },
-                { key: 'archived', label: 'Archived', icon: 'bi-archive-fill' }
+                { key: 'all', label: t('allChats'), icon: 'bi-chat-dots' },
+                { key: 'unread', label: t('unreadChats'), icon: 'bi-envelope-fill' },
+                { key: 'online', label: t('onlineChats'), icon: 'bi-circle-fill' },
+                { key: 'archived', label: t('archivedChats'), icon: 'bi-archive-fill' }
               ].map((filter) => (
                 <button
                   key={filter.key}
@@ -732,7 +734,7 @@ export default function ChatPage(): React.JSX.Element {
               textAlign: 'center',
               color: '#888'
             }}>
-              No chats found
+              {t('noChatsFound')}
             </div>
           )}
         </div>
@@ -832,7 +834,7 @@ export default function ChatPage(): React.JSX.Element {
                 backgroundColor: '#fff',
                 padding: '4px 12px',
                 borderRadius: '12px'
-              }}>Today</span>
+              }}>{t('today')}</span>
             </div>
 
             {/* Messages */}
@@ -1003,7 +1005,7 @@ export default function ChatPage(): React.JSX.Element {
                 }}>
                   <i className="bi bi-chat-heart" style={{ fontSize: '48px', color: '#d1d5db' }}></i>
                   <p style={{ fontSize: '16px', color: '#888', fontWeight: '500' }}>
-                    No messages yet. Start the conversation!
+                    {t('noMessagesYet')}
                   </p>
                 </div>
               )}
@@ -1097,7 +1099,7 @@ export default function ChatPage(): React.JSX.Element {
               />
               <input
                 type="text"
-                placeholder="Type a message..."
+                placeholder={t('typeMessage')}
                 value={messageText}
                 onChange={(e) => setMessageText(e.target.value)}
                 onKeyDown={handleKeyDown}
@@ -1170,7 +1172,7 @@ export default function ChatPage(): React.JSX.Element {
               fontSize: '18px',
               color: '#888',
               fontWeight: '500'
-            }}>Select a chat to start messaging</p>
+            }}>{t('selectChat')}</p>
           </div>
         )}
       </div>

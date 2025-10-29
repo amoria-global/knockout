@@ -3,6 +3,7 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import AmoriaKNavbar from '../../../components/navbar';
+import { useTranslations } from 'next-intl';
 
 // Event data matching the events.tsx page
 const eventsData = [
@@ -394,6 +395,8 @@ const eventsData = [
 
 // Component that uses useSearchParams - needs to be wrapped in Suspense
 function ViewEventContent(): React.JSX.Element {
+  const t = useTranslations('events.viewEvent');
+  const tStatus = useTranslations('events.status');
   const searchParams = useSearchParams();
   const eventId = searchParams.get('id');
 
@@ -538,7 +541,7 @@ function ViewEventContent(): React.JSX.Element {
                 }}
               >
                 <i className="bi bi-camera-video-fill live-badge-icon" style={{ fontSize: '16px' }}></i>
-                LIVE NOW
+                {tStatus('live')}
               </div>
             ) : (
               <div
@@ -563,7 +566,7 @@ function ViewEventContent(): React.JSX.Element {
                 }}
               >
                 <i className="bi bi-broadcast" style={{ fontSize: '16px' }}></i>
-                UPCOMING
+                {tStatus('upcoming')}
               </div>
             )}
 
@@ -590,7 +593,7 @@ function ViewEventContent(): React.JSX.Element {
               }}
             >
               <i className="bi bi-arrows-fullscreen" style={{ fontSize: '14px' }}></i>
-              View Full
+              {t('viewFull')}
             </div>
 
             {/* Overlay */}
@@ -680,7 +683,7 @@ function ViewEventContent(): React.JSX.Element {
               </div>
               <div>
                 <p style={{ fontSize: '12px', color: '#6b7280', fontWeight: '600', margin: 0, marginBottom: '4px' }}>
-                  Event Date
+                  {t('eventDate')}
                 </p>
                 <p style={{ fontSize: '15px', color: '#111827', fontWeight: '700', margin: 0 }}>
                   {new Date(selectedEvent.date).toLocaleDateString('en-US', {
@@ -711,7 +714,7 @@ function ViewEventContent(): React.JSX.Element {
               </div>
               <div>
                 <p style={{ fontSize: '12px', color: '#6b7280', fontWeight: '600', margin: 0, marginBottom: '4px' }}>
-                  Event Time
+                  {t('eventTime')}
                 </p>
                 <p style={{ fontSize: '15px', color: '#111827', fontWeight: '700', margin: 0 }}>
                   {selectedEvent.time}
@@ -737,7 +740,7 @@ function ViewEventContent(): React.JSX.Element {
               </div>
               <div>
                 <p style={{ fontSize: '12px', color: '#6b7280', fontWeight: '600', margin: 0, marginBottom: '4px' }}>
-                  Location
+                  {t('location')}
                 </p>
                 <p style={{ fontSize: '15px', color: '#111827', fontWeight: '700', margin: 0 }}>
                   {selectedEvent.location}
@@ -763,7 +766,7 @@ function ViewEventContent(): React.JSX.Element {
               </div>
               <div>
                 <p style={{ fontSize: '12px', color: '#6b7280', fontWeight: '600', margin: 0, marginBottom: '4px' }}>
-                  Entry Fee
+                  {t('entryFee')}
                 </p>
                 <p style={{ fontSize: '15px', color: '#111827', fontWeight: '700', margin: 0 }}>
                   {selectedEvent.price}
@@ -789,10 +792,10 @@ function ViewEventContent(): React.JSX.Element {
               </div>
               <div>
                 <p style={{ fontSize: '12px', color: '#6b7280', fontWeight: '600', margin: 0, marginBottom: '4px' }}>
-                  Expected Attendees
+                  {t('expectedAttendees')}
                 </p>
                 <p style={{ fontSize: '15px', color: '#111827', fontWeight: '700', margin: 0 }}>
-                  {selectedEvent.attendees.toLocaleString()} People
+                  {selectedEvent.attendees.toLocaleString()} {t('people')}
                 </p>
               </div>
             </div>
@@ -815,7 +818,7 @@ function ViewEventContent(): React.JSX.Element {
               </div>
               <div>
                 <p style={{ fontSize: '12px', color: '#6b7280', fontWeight: '600', margin: 0, marginBottom: '4px' }}>
-                  Organized By
+                  {t('organizedBy')}
                 </p>
                 <p style={{ fontSize: '15px', color: '#111827', fontWeight: '700', margin: 0 }}>
                   {selectedEvent.organizer}
@@ -836,7 +839,7 @@ function ViewEventContent(): React.JSX.Element {
                 }}
               ></div>
               <h2 style={{ fontSize: '22px', fontWeight: '700', color: '#111827', margin: 0 }}>
-                About This Event
+                {t('aboutThisEvent')}
               </h2>
             </div>
             <p
@@ -867,7 +870,7 @@ function ViewEventContent(): React.JSX.Element {
                 }}
               ></div>
               <h2 style={{ fontSize: '22px', fontWeight: '700', color: '#111827', margin: 0 }}>
-                Event Tags
+                {t('eventTags')}
               </h2>
             </div>
             <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
@@ -948,7 +951,7 @@ function ViewEventContent(): React.JSX.Element {
                 }}
               >
                 <i className="bi bi-camera-video-fill live-badge-icon" style={{ fontSize: '15px' }}></i>
-                Join Live Stream
+                {t('joinLiveStream')}
               </button>
             </div>
           )}
@@ -1032,7 +1035,7 @@ function ViewEventContent(): React.JSX.Element {
             }}
           >
             <i className="bi bi-image" style={{ fontSize: '18px' }}></i>
-            Event Banner
+            {t('eventBanner')}
           </div>
 
           {/* Image Container */}
@@ -1079,7 +1082,7 @@ function ViewEventContent(): React.JSX.Element {
             }}
           >
             <i className="bi bi-info-circle"></i>
-            <span>Press ESC or click outside to close</span>
+            <span>{t('closeInstructions')}</span>
           </div>
         </div>
       )}
@@ -1230,34 +1233,40 @@ function ViewEventContent(): React.JSX.Element {
   );
 }
 
+// Loading component
+function LoadingFallback() {
+  const t = useTranslations('events.viewEvent');
+  return (
+    <div style={{
+      minHeight: '100vh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: '#fff'
+    }}>
+      <div style={{
+        textAlign: 'center',
+        color: '#083A85'
+      }}>
+        <div style={{
+          fontSize: '48px',
+          marginBottom: '16px'
+        }}>
+          <i className="bi bi-hourglass-split"></i>
+        </div>
+        <p style={{
+          fontSize: '18px',
+          fontWeight: '600'
+        }}>{t('loadingEventDetails')}</p>
+      </div>
+    </div>
+  );
+}
+
 // Main page component with Suspense boundary
 export default function ViewEventPage(): React.JSX.Element {
   return (
-    <Suspense fallback={
-      <div style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: '#fff'
-      }}>
-        <div style={{
-          textAlign: 'center',
-          color: '#083A85'
-        }}>
-          <div style={{
-            fontSize: '48px',
-            marginBottom: '16px'
-          }}>
-            <i className="bi bi-hourglass-split"></i>
-          </div>
-          <p style={{
-            fontSize: '18px',
-            fontWeight: '600'
-          }}>Loading event details...</p>
-        </div>
-      </div>
-    }>
+    <Suspense fallback={<LoadingFallback />}>
       <ViewEventContent />
     </Suspense>
   );

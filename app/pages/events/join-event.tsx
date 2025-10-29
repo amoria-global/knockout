@@ -3,8 +3,11 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Navbar from '../../components/navbar';
+import { useTranslations } from 'next-intl';
 
 export default function JoinEvent() {
+  const t = useTranslations('events.joinEventPage');
+  const tAuth = useTranslations('auth.signupPage');
   const [eventLink, setEventLink] = useState('');
   const router = useRouter();
 
@@ -77,7 +80,7 @@ export default function JoinEvent() {
                 lineHeight: '1.2',
               }}
             >
-              Live Moments, Shared Instantly
+              {t('mainTitle')}
             </h1>
 
             {/* Description */}
@@ -89,9 +92,9 @@ export default function JoinEvent() {
               }}
             >
               <p style={{ marginBottom: '4px' }}>
-                Stream Your Event In Real-Time And Let Remote Guests Celebrate With You
+                {t('subtitle1')}
               </p>
-              <p>Through Reactions, Wishes, And Gifts — No Matter Where They Are.</p>
+              <p>{t('subtitle2')}</p>
             </div>
 
             {/* Join section */}
@@ -104,13 +107,13 @@ export default function JoinEvent() {
                   marginBottom: '24px',
                 }}
               >
-                Join Live Now
+                {t('title')}
               </h2>
 
               {/* Input field */}
               <input
                 type="text"
-                placeholder="Enter Event Link or Host ID from your event host"
+                placeholder={t('codePlaceholder')}
                 value={eventLink}
                 onChange={(e) => setEventLink(e.target.value)}
                 style={{
@@ -138,7 +141,7 @@ export default function JoinEvent() {
                   marginBottom: '16px',
                 }}
               >
-                By clicking "Join", you agree to our{' '}
+                {tAuth('termsText')}{' '}
                 <a
                   href="/user/terms-of-service"
                   style={{
@@ -146,9 +149,9 @@ export default function JoinEvent() {
                     color: 'white',
                   }}
                 >
-                  Terms of Service
+                  {tAuth('termsOfService')}
                 </a>
-                {' '}and{' '}
+                {' '}{tAuth('and')}{' '}
                 <a
                   href="/user/privacy-policy"
                   style={{
@@ -156,7 +159,7 @@ export default function JoinEvent() {
                     color: 'white',
                   }}
                 >
-                  Privacy Statement
+                  {tAuth('privacyPolicy')}
                 </a>
               </p>
 
@@ -194,7 +197,7 @@ export default function JoinEvent() {
                   }
                 }}
               >
-                Join
+                {t('join')}
               </button>
             </div>
           </div>
