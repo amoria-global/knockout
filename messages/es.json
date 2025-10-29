@@ -196,6 +196,266 @@
       "loading": "Cargando..."
     }
   },
+  "events": {
+    "title": "Descubre Eventos Increíbles Cerca de Ti",
+    "subtitle": "Explora eventos próximos, conciertos, bodas y reuniones",
+    "searchPlaceholder": "Buscar eventos por nombre, categoría o ubicación...",
+    "allCategories": "Todas las Categorías",
+    "allLocations": "Todas las Ubicaciones",
+    "allDates": "Todas las Fechas",
+    "allStatuses": "Todos los Estados",
+    "categories": {
+      "weddings": "Bodas",
+      "concerts": "Conciertos",
+      "corporate": "Corporativo",
+      "sports": "Deportes",
+      "cultural": "Cultural",
+      "conferences": "Conferencias",
+      "fashion": "Moda",
+      "religious": "Religioso",
+      "academic": "Académico",
+      "entertainment": "Entretenimiento",
+      "gathering": "Reunión"
+    },
+    "status": {
+      "upcoming": "PRÓXIMO",
+      "live": "EN VIVO",
+      "ended": "FINALIZADO"
+    },
+    "liveNow": "En Vivo Ahora",
+    "trending": "Eventos Populares",
+    "viewDetails": "Ver Detalles",
+    "joinEvent": "Unirse al Evento",
+    "noEvents": "No se encontraron eventos",
+    "pagination": {
+      "page": "Página",
+      "of": "de",
+      "previous": "Anterior",
+      "next": "Siguiente"
+    },
+    "joinEventPage": {
+      "title": "Unirse a Evento en Vivo",
+      "mainTitle": "Momentos En Vivo, Compartidos Instantáneamente",
+      "subtitle1": "Transmite Tu Evento En Tiempo Real Y Deja Que Los Invitados Remotos Celebren Contigo",
+      "subtitle2": "A Través De Reacciones, Deseos Y Regalos — Sin Importar Dónde Estén.",
+      "enterCode": "Ingresar Código del Evento",
+      "codePlaceholder": "Ingresa el enlace del evento o ID del anfitrión",
+      "join": "Unirse",
+      "invalidCode": "Código de evento inválido",
+      "loading": "Uniéndose al evento..."
+    },
+    "hotLiveTrends": "Tendencias En Vivo 🔥",
+    "liveStream": {
+      "title": "Transmisión en Vivo",
+      "viewers": "Espectadores",
+      "chat": "Chat en Vivo",
+      "sendMessage": "Enviar mensaje",
+      "share": "Compartir",
+      "fullscreen": "Pantalla Completa",
+      "settings": "Configuración",
+      "leave": "Salir de la Transmisión",
+      "connecting": "Conectando a la transmisión...",
+      "error": "Error al cargar la transmisión"
+    },
+    "multiStream": {
+      "title": "Vista Multi-Transmisión",
+      "selectStreams": "Seleccionar Transmisiones para Ver",
+      "layout": "Diseño",
+      "grid": "Cuadrícula",
+      "sideBySide": "Lado a Lado",
+      "picInPic": "Imagen en Imagen",
+      "noStreams": "No hay transmisiones activas disponibles"
+    },
+    "record": {
+      "title": "Grabar Evento",
+      "startRecording": "Iniciar Grabación",
+      "stopRecording": "Detener Grabación",
+      "pauseRecording": "Pausar Grabación",
+      "resumeRecording": "Reanudar Grabación",
+      "recording": "Grabando",
+      "paused": "Pausado",
+      "duration": "Duración",
+      "save": "Guardar Grabación",
+      "discard": "Descartar",
+      "settings": "Configuración de Grabación",
+      "quality": "Calidad",
+      "format": "Formato"
+    },
+    "viewEvent": {
+      "viewFull": "Ver Completo",
+      "eventDate": "Fecha del Evento",
+      "eventTime": "Hora del Evento",
+      "location": "Ubicación",
+      "entryFee": "Tarifa de Entrada",
+      "expectedAttendees": "Asistentes Esperados",
+      "people": "Personas",
+      "organizedBy": "Organizado Por",
+      "aboutThisEvent": "Acerca de Este Evento",
+      "eventTags": "Etiquetas del Evento",
+      "joinLiveStream": "Unirse a la Transmisión en Vivo",
+      "eventBanner": "Banner del Evento",
+      "closeInstructions": "Presione ESC o haga clic afuera para cerrar",
+      "loadingEventDetails": "Cargando detalles del evento..."
+    }
+  },
+  "photographers": {
+    "title": "Encuentra Tu Fotógrafo Perfecto",
+    "subtitle": "Explora fotógrafos y videógrafos profesionales",
+    "searchPlaceholder": "Buscar por nombre, especialidad o ubicación...",
+    "allCategories": "Todas las Categorías",
+    "allLocations": "Todas las Ubicaciones",
+    "allPrices": "Todos los Precios",
+    "allRatings": "Todas las Calificaciones",
+    "categories": {
+      "weddings": "Bodas",
+      "events": "Eventos",
+      "portraits": "Retratos",
+      "commercial": "Comercial",
+      "fashion": "Moda",
+      "product": "Producto"
+    },
+    "priceRanges": {
+      "budget": "Económico (< 50k RWF)",
+      "standard": "Estándar (50k - 100k RWF)",
+      "premium": "Premium (> 100k RWF)"
+    },
+    "verified": "Verificado",
+    "rating": "Calificación",
+    "reviews": "Reseñas",
+    "completedJobs": "Trabajos Completados",
+    "accuracy": "Precisión",
+    "responseTime": "Tiempo de Respuesta",
+    "getInTouch": "Ponerse en Contacto",
+    "bookNow": "Reservar Ahora",
+    "noPhotographers": "No se encontraron fotógrafos",
+    "loading": "Cargando fotógrafos..."
+  },
+  "viewProfile": {
+    "events": "Eventos",
+    "bookNow": "RESERVAR AHORA",
+    "startChat": "INICIAR CHAT",
+    "viewFull": "Ver Completo",
+    "tabs": {
+      "overview": "Descripción General",
+      "portfolio": "Portafolio",
+      "reviews": "Reseñas",
+      "workingExperience": "Experiencia Laboral"
+    },
+    "overview": {
+      "about": "Acerca de",
+      "specialties": "Especialidades",
+      "equipment": "Equipo",
+      "noEquipment": "No hay equipo listado"
+    },
+    "portfolio": {
+      "professionalSkills": "Habilidades Profesionales",
+      "education": "Educación",
+      "qualifications": "Calificaciones y Certificaciones"
+    },
+    "reviews": {
+      "reviewsCount": "reseñas",
+      "writeReview": "Escribir una Reseña"
+    },
+    "workingExperience": {
+      "title": "Experiencia Profesional"
+    },
+    "loadingProfile": "Cargando perfil..."
+  },
+  "booking": {
+    "step1": {
+      "title": "Elige Tu Paquete Preferido",
+      "back": "Atrás",
+      "professionalPhotographer": "Fotógrafo Profesional",
+      "availability": "Disponibilidad",
+      "workingHours": "Horario de Trabajo",
+      "location": "Ubicación",
+      "startingPrice": "Precio Inicial",
+      "cancel": "CANCELAR",
+      "next": "SIGUIENTE",
+      "packages": {
+        "essential": {
+          "name": "Paquete Esencial",
+          "hours": "3 Horas",
+          "description": "Ideal para eventos pequeños y cumpleaños"
+        },
+        "custom": {
+          "name": "Paquete Personalizado",
+          "hours": "4 Horas",
+          "description": "Ideal para eventos corporativos y fiestas"
+        },
+        "premium": {
+          "name": "Paquete Premium",
+          "hours": "5 Horas",
+          "description": "Ideal para grandes eventos, conciertos y bodas"
+        },
+        "features": {
+          "coverage3h": "Cobertura de 3 horas",
+          "coverage4h": "Cobertura de 4 horas",
+          "coverage5h": "Cobertura de 5 horas",
+          "unlimitedPhotos": "Fotos y videos ilimitados",
+          "onlineGallery": "Almacenamiento de galería en línea",
+          "sameDayPreview": "Vista previa el mismo día",
+          "professionalEditing": "Edición profesional",
+          "printedAlbum": "Álbum de fotos impreso",
+          "liveStreaming": "Transmisión en vivo",
+          "dronePhotography": "Fotografía con dron"
+        }
+      }
+    },
+    "step2": {
+      "title": "Detalles del Evento",
+      "back": "Atrás",
+      "professionalPhotographer": "Fotógrafo Profesional",
+      "availability": "Disponibilidad",
+      "workingHours": "Horario de Trabajo",
+      "location": "Ubicación",
+      "startingPrice": "Precio Inicial",
+      "specialRequestsLabel": "Solicitudes Especiales:",
+      "specialRequestsPlaceholder": "Tomas específicas, requisitos o preferencias...",
+      "previous": "ANTERIOR",
+      "cancel": "CANCELAR",
+      "next": "SIGUIENTE"
+    },
+    "step3": {
+      "title": "Información de Contacto",
+      "back": "Atrás",
+      "professionalPhotographer": "Fotógrafo Profesional",
+      "availability": "Disponibilidad",
+      "workingHours": "Horario de Trabajo",
+      "location": "Ubicación",
+      "startingPrice": "Precio Inicial",
+      "emailLabel": "Dirección de Correo Electrónico (Requerido)",
+      "phoneLabel": "Número de Teléfono (Requerido)",
+      "bookingSummary": "Resumen de Reserva",
+      "package": "Paquete",
+      "eventDate": "Fecha del Evento",
+      "eventTime": "Hora del Evento",
+      "eventType": "Tipo de Evento",
+      "termsText": "He leído y acepto los",
+      "previous": "ANTERIOR",
+      "cancel": "CANCELAR",
+      "bookNow": "RESERVAR AHORA"
+    }
+  },
+  "chat": {
+    "title": "Chats",
+    "searchPlaceholder": "Buscar Mensajes",
+    "filterChats": "Filtrar Chats",
+    "allChats": "Todos los Chats",
+    "unreadChats": "No Leídos",
+    "onlineChats": "En Línea",
+    "archivedChats": "Archivados",
+    "noChatsFound": "No se encontraron chats",
+    "today": "Hoy",
+    "noMessagesYet": "Aún no hay mensajes. ¡Comienza la conversación!",
+    "typeMessage": "Escribe un mensaje...",
+    "selectChat": "Selecciona un chat para comenzar a enviar mensajes",
+    "send": "Enviar",
+    "online": "En Línea",
+    "offline": "Desconectado",
+    "typing": "escribiendo...",
+    "loadingMessages": "Cargando mensajes..."
+  },
   "common": {
     "loading": "Cargando...",
     "error": "Error",

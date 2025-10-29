@@ -1,8 +1,11 @@
 'use client';
 import React, { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import AmoriaKNavbar from '../../components/navbar';
 
 export default function BookNowPage(): React.JSX.Element {
+  const t = useTranslations('booking.step3');
+  const tAuth = useTranslations('auth.signupPage');
   // State for the new form fields
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -94,7 +97,7 @@ export default function BookNowPage(): React.JSX.Element {
           }}
         >
           <i className="bi bi-chevron-left" style={{ fontSize: '20px' }}></i>
-          <span>Back</span>
+          <span>{t('back')}</span>
         </button>
 
         {/* Main Content Container */}
@@ -165,7 +168,7 @@ export default function BookNowPage(): React.JSX.Element {
                       {photographerData.name}
                     </h2>
                     <p style={{ fontSize: '15px', color: '#6b7280', fontWeight: '500' }}>
-                      Professional Photographer
+                      {t('professionalPhotographer')}
                     </p>
                   </div>
 
@@ -183,7 +186,7 @@ export default function BookNowPage(): React.JSX.Element {
                           textTransform: 'uppercase',
                         }}
                       >
-                        Availability
+                        {t('availability')}
                       </div>
                       <div
                         style={{
@@ -208,7 +211,7 @@ export default function BookNowPage(): React.JSX.Element {
                           textTransform: 'uppercase',
                         }}
                       >
-                        Working Hours
+                        {t('workingHours')}
                       </div>
                       <div
                         style={{
@@ -237,7 +240,7 @@ export default function BookNowPage(): React.JSX.Element {
                           textTransform: 'uppercase',
                         }}
                       >
-                        Location
+                        {t('location')}
                       </div>
                       <div
                         style={{
@@ -274,7 +277,7 @@ export default function BookNowPage(): React.JSX.Element {
                           textTransform: 'uppercase',
                         }}
                       >
-                        Starting Price
+                        {t('startingPrice')}
                       </div>
                       <div
                         style={{
@@ -315,7 +318,7 @@ export default function BookNowPage(): React.JSX.Element {
                   letterSpacing: '0.3px',
                 }}
               >
-                Contact Information
+                {t('title')}
               </h1>
 
               {/* Contact Form Card */}
@@ -335,7 +338,7 @@ export default function BookNowPage(): React.JSX.Element {
                 <div style={{ display: 'flex', gap: '12px' }}>
                   <div style={{ flex: 1 }}>
                     <label style={{ fontSize: '16px', fontWeight: '600', color: '#374151', display: 'block', marginBottom: '6px' }}>
-                      First Name (Required):
+                      {tAuth('firstName')}:
                     </label>
                     <input
                       type="text"
@@ -354,7 +357,7 @@ export default function BookNowPage(): React.JSX.Element {
                   </div>
                   <div style={{ flex: 1 }}>
                     <label style={{ fontSize: '16px', fontWeight: '600', color: '#374151', display: 'block', marginBottom: '6px' }}>
-                      Last Name (Required):
+                      {tAuth('lastName')}:
                     </label>
                     <input
                       type="text"
@@ -374,13 +377,13 @@ export default function BookNowPage(): React.JSX.Element {
                 </div>
                 <div>
                   <label style={{ fontSize: '16px', fontWeight: '600', color: '#374151', display: 'block', marginBottom: '6px' }}>
-                    Email Address (Required):
+                    {t('emailLabel')}:
                   </label>
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="example@gmail.com"
+                    placeholder={tAuth('emailPlaceholder')}
                     style={{ width: '100%', padding: '10px 12px', border: '2px solid #e5e7eb', borderRadius: '8px', fontSize: '16px', transition: 'all 0.3s ease' }}
                     onFocus={(e) => {
                       e.currentTarget.style.borderColor = '#083A85';
@@ -394,7 +397,7 @@ export default function BookNowPage(): React.JSX.Element {
                 </div>
                 <div>
                   <label style={{ fontSize: '16px', fontWeight: '600', color: '#374151', display: 'block', marginBottom: '6px' }}>
-                    Phone Number (Required):
+                    {t('phoneLabel')}:
                   </label>
                   <div style={{ display: 'flex', gap: '8px' }}>
                     <select
@@ -437,14 +440,14 @@ export default function BookNowPage(): React.JSX.Element {
               {/* Booking Summary */}
               <div style={{ marginTop: '28px', padding: '20px', backgroundColor: '#f9fafb', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
                 <h3 style={{ fontSize: '17px', fontWeight: '700', color: '#083A85', marginBottom: '16px', letterSpacing: '0.3px' }}>
-                  Booking Summary:
+                  {t('bookingSummary')}:
                 </h3>
                 <div style={{ fontSize: '15px', color: '#374151', display: 'grid', gap: '12px' }}>
-                  <p style={{ margin: 0 }}><strong style={{ color: '#111827' }}>Package:</strong> {bookingSummary.package}</p>
-                  <p style={{ margin: 0 }}><strong style={{ color: '#111827' }}>Event Date:</strong> {bookingSummary.eventDate}</p>
-                  <p style={{ margin: 0 }}><strong style={{ color: '#111827' }}>Event Time:</strong> {bookingSummary.eventTime}</p>
-                  <p style={{ margin: 0 }}><strong style={{ color: '#111827' }}>Location:</strong> {bookingSummary.location}</p>
-                  <p style={{ margin: 0 }}><strong style={{ color: '#111827' }}>Event Type:</strong> {bookingSummary.eventType}</p>
+                  <p style={{ margin: 0 }}><strong style={{ color: '#111827' }}>{t('package')}:</strong> {bookingSummary.package}</p>
+                  <p style={{ margin: 0 }}><strong style={{ color: '#111827' }}>{t('eventDate')}:</strong> {bookingSummary.eventDate}</p>
+                  <p style={{ margin: 0 }}><strong style={{ color: '#111827' }}>{t('eventTime')}:</strong> {bookingSummary.eventTime}</p>
+                  <p style={{ margin: 0 }}><strong style={{ color: '#111827' }}>{t('location')}:</strong> {bookingSummary.location}</p>
+                  <p style={{ margin: 0 }}><strong style={{ color: '#111827' }}>{t('eventType')}:</strong> {bookingSummary.eventType}</p>
                 </div>
               </div>
 
@@ -458,7 +461,7 @@ export default function BookNowPage(): React.JSX.Element {
     style={{ marginRight: '8px', width: '16px', height: '16px' }}
   />
   <label htmlFor="terms" style={{ fontSize: '14px' }}>
-    I have read and agree to the{' '}
+    {t('termsText')}{' '}
     <a
       href="/user/terms-of-service"
       style={{
@@ -467,9 +470,8 @@ export default function BookNowPage(): React.JSX.Element {
         textDecoration: 'underline',
       }}
     >
-      Terms and Conditions
-    </a>{' '}
-    of Amoria Connekt.
+      {tAuth('termsOfService')}
+    </a>.
   </label>
 </div>
 
@@ -513,7 +515,7 @@ export default function BookNowPage(): React.JSX.Element {
                   }}
                 >
                   <i className="bi bi-chevron-left"></i>
-                  PREVIOUS
+                  {t('previous')}
                 </button>
                 <div style={{ display: 'flex', gap: '12px' }}>
                   <button
@@ -541,7 +543,7 @@ export default function BookNowPage(): React.JSX.Element {
                       e.currentTarget.style.transform = 'translateY(0)';
                     }}
                   >
-                    CANCEL
+                    {t('cancel')}
                   </button>
                   <button
                      onClick={() => (window.location.href = '')}
@@ -574,7 +576,7 @@ export default function BookNowPage(): React.JSX.Element {
                       }
                     }}
                   >
-                    BOOK NOW
+                    {t('bookNow')}
                   </button>
                 </div>
               </div>

@@ -2,8 +2,10 @@
 
 import React, { useState } from 'react';
 import AmoriaKNavbar from '../../components/navbar';
+import { useTranslations } from 'next-intl';
 
 const Photographers: React.FC = () => {
+  const t = useTranslations('photographers');
   // States
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -431,7 +433,7 @@ const Photographers: React.FC = () => {
             marginBottom: '0.5rem',
             fontFamily: "'Pragati Narrow', sans-serif"
           }}>
-            Find Your Perfect Photographer & Videographer
+            {t('title')}
           </h1>
           <p style={{
             fontSize: 'clamp(0.875rem, 1.5vw, 1rem)',
@@ -441,7 +443,7 @@ const Photographers: React.FC = () => {
             margin: '0 auto 1.5rem',
             fontFamily: "'Pragati Narrow', sans-serif"
           }}>
-            Browse through our network of verified professional photographers & videographers
+            {t('subtitle')}
           </p>
 
           {/* Search Bar */}
@@ -449,7 +451,7 @@ const Photographers: React.FC = () => {
             <div style={{ position: 'relative' }}>
               <input
                 type="text"
-                placeholder="Search photographers by name, style, or location..."
+                placeholder={t('searchPlaceholder')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 style={{
@@ -510,13 +512,13 @@ const Photographers: React.FC = () => {
                   boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
                 }}
               >
-                <option value="all">All Categories</option>
-                <option value="wedding">Wedding</option>
-                <option value="portrait">Portrait</option>
-                <option value="event">Event</option>
-                <option value="commercial">Commercial</option>
-                <option value="fashion">Fashion</option>
-                <option value="product">Product</option>
+                <option value="all">{t('allCategories')}</option>
+                <option value="wedding">{t('categories.weddings')}</option>
+                <option value="portrait">{t('categories.portraits')}</option>
+                <option value="event">{t('categories.events')}</option>
+                <option value="commercial">{t('categories.commercial')}</option>
+                <option value="fashion">{t('categories.fashion')}</option>
+                <option value="product">{t('categories.product')}</option>
               </select>
             </div>
 
@@ -539,7 +541,7 @@ const Photographers: React.FC = () => {
                   boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
                 }}
               >
-                <option value="all">All Locations</option>
+                <option value="all">{t('allLocations')}</option>
                 <option value="kigali">Kigali</option>
                 <option value="musanze">Musanze</option>
                 <option value="huye">Huye</option>
@@ -567,7 +569,7 @@ const Photographers: React.FC = () => {
                   boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
                 }}
               >
-                <option value="all">All Prices</option>
+                <option value="all">{t('allPrices')}</option>
                 <option value="budget">Budget (Under 50k RWF)</option>
                 <option value="moderate">Moderate (50k-150k RWF)</option>
                 <option value="premium">Premium (150k-300k RWF)</option>
@@ -594,7 +596,7 @@ const Photographers: React.FC = () => {
                   boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
                 }}
               >
-                <option value="all">All Ratings</option>
+                <option value="all">{t('allRatings')}</option>
                 <option value="5">⭐ 5 Stars</option>
                 <option value="4">⭐ 4+ Stars</option>
                 <option value="3">⭐ 3+ Stars</option>
@@ -818,7 +820,7 @@ const Photographers: React.FC = () => {
                         {photographer.rating}
                       </p>
                       <p style={{ fontSize: '0.8rem', color: '#40444d', fontWeight: '500' }}>
-                        Rating
+                        {t('rating')}
                       </p>
                     </div>
                     <div style={{ flex: 1 }}>
@@ -836,7 +838,7 @@ const Photographers: React.FC = () => {
                         {photographer.completedJobs}+
                       </p>
                       <p style={{ fontSize: '0.8rem', color: '#40444d', fontWeight: '500' }}>
-                        Events
+                        {t('completedJobs')}
                       </p>
                     </div>
                     <div style={{ flex: 1 }}>
@@ -854,7 +856,7 @@ const Photographers: React.FC = () => {
                         {photographer.accuracy}%
                       </p>
                       <p style={{ fontSize: '0.8rem', color: '#40444d', fontWeight: '500' }}>
-                        Accuracy
+                        {t('accuracy')}
                       </p>
                     </div>
                   </div>
@@ -888,7 +890,7 @@ const Photographers: React.FC = () => {
                         e.currentTarget.style.boxShadow = '0 2px 6px rgba(0, 0, 0, 0.12)';
                     }}
                     >
-                    Get In Touch
+                    {t('getInTouch')}
                 </button>
 
                 </div>

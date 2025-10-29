@@ -196,6 +196,266 @@
       "loading": "Chargement..."
     }
   },
+  "events": {
+    "title": "Découvrez des Événements Incroyables Près de Chez Vous",
+    "subtitle": "Parcourez les événements à venir, concerts, mariages et rassemblements",
+    "searchPlaceholder": "Rechercher des événements par nom, catégorie ou lieu...",
+    "allCategories": "Toutes les Catégories",
+    "allLocations": "Tous les Lieux",
+    "allDates": "Toutes les Dates",
+    "allStatuses": "Tous les Statuts",
+    "categories": {
+      "weddings": "Mariages",
+      "concerts": "Concerts",
+      "corporate": "Entreprise",
+      "sports": "Sports",
+      "cultural": "Culturel",
+      "conferences": "Conférences",
+      "fashion": "Mode",
+      "religious": "Religieux",
+      "academic": "Académique",
+      "entertainment": "Divertissement",
+      "gathering": "Rassemblement"
+    },
+    "status": {
+      "upcoming": "À VENIR",
+      "live": "EN DIRECT",
+      "ended": "TERMINÉ"
+    },
+    "liveNow": "En Direct Maintenant",
+    "trending": "Événements Tendance",
+    "viewDetails": "Voir les Détails",
+    "joinEvent": "Rejoindre l'Événement",
+    "noEvents": "Aucun événement trouvé",
+    "pagination": {
+      "page": "Page",
+      "of": "sur",
+      "previous": "Précédent",
+      "next": "Suivant"
+    },
+    "joinEventPage": {
+      "title": "Rejoindre un Événement en Direct",
+      "mainTitle": "Moments En Direct, Partagés Instantanément",
+      "subtitle1": "Diffusez Votre Événement En Temps Réel Et Laissez Les Invités À Distance Célébrer Avec Vous",
+      "subtitle2": "À Travers Des Réactions, Des Souhaits Et Des Cadeaux — Peu Importe Où Ils Sont.",
+      "enterCode": "Entrer le Code de l'Événement",
+      "codePlaceholder": "Entrez le lien de l'événement ou l'ID de l'hôte",
+      "join": "Rejoindre",
+      "invalidCode": "Code d'événement invalide",
+      "loading": "Connexion à l'événement..."
+    },
+    "hotLiveTrends": "Tendances En Direct 🔥",
+    "liveStream": {
+      "title": "Diffusion en Direct",
+      "viewers": "Spectateurs",
+      "chat": "Chat en Direct",
+      "sendMessage": "Envoyer un message",
+      "share": "Partager",
+      "fullscreen": "Plein Écran",
+      "settings": "Paramètres",
+      "leave": "Quitter la Diffusion",
+      "connecting": "Connexion à la diffusion...",
+      "error": "Échec du chargement de la diffusion"
+    },
+    "multiStream": {
+      "title": "Vue Multi-Diffusion",
+      "selectStreams": "Sélectionner les Diffusions à Regarder",
+      "layout": "Disposition",
+      "grid": "Grille",
+      "sideBySide": "Côte à Côte",
+      "picInPic": "Image dans l'Image",
+      "noStreams": "Aucune diffusion active disponible"
+    },
+    "record": {
+      "title": "Enregistrer l'Événement",
+      "startRecording": "Démarrer l'Enregistrement",
+      "stopRecording": "Arrêter l'Enregistrement",
+      "pauseRecording": "Mettre en Pause",
+      "resumeRecording": "Reprendre l'Enregistrement",
+      "recording": "Enregistrement en Cours",
+      "paused": "En Pause",
+      "duration": "Durée",
+      "save": "Sauvegarder l'Enregistrement",
+      "discard": "Supprimer",
+      "settings": "Paramètres d'Enregistrement",
+      "quality": "Qualité",
+      "format": "Format"
+    },
+    "viewEvent": {
+      "viewFull": "Voir en Entier",
+      "eventDate": "Date de l'Événement",
+      "eventTime": "Heure de l'Événement",
+      "location": "Lieu",
+      "entryFee": "Frais d'Entrée",
+      "expectedAttendees": "Participants Attendus",
+      "people": "Personnes",
+      "organizedBy": "Organisé Par",
+      "aboutThisEvent": "À Propos de Cet Événement",
+      "eventTags": "Étiquettes de l'Événement",
+      "joinLiveStream": "Rejoindre la Diffusion en Direct",
+      "eventBanner": "Bannière de l'Événement",
+      "closeInstructions": "Appuyez sur ESC ou cliquez à l'extérieur pour fermer",
+      "loadingEventDetails": "Chargement des détails de l'événement..."
+    }
+  },
+  "photographers": {
+    "title": "Trouvez Votre Photographe Parfait",
+    "subtitle": "Parcourez les photographes et vidéastes professionnels",
+    "searchPlaceholder": "Rechercher par nom, spécialité ou lieu...",
+    "allCategories": "Toutes les Catégories",
+    "allLocations": "Tous les Lieux",
+    "allPrices": "Tous les Prix",
+    "allRatings": "Toutes les Notes",
+    "categories": {
+      "weddings": "Mariages",
+      "events": "Événements",
+      "portraits": "Portraits",
+      "commercial": "Commercial",
+      "fashion": "Mode",
+      "product": "Produit"
+    },
+    "priceRanges": {
+      "budget": "Budget (< 50k RWF)",
+      "standard": "Standard (50k - 100k RWF)",
+      "premium": "Premium (> 100k RWF)"
+    },
+    "verified": "Vérifié",
+    "rating": "Note",
+    "reviews": "Avis",
+    "completedJobs": "Travaux Terminés",
+    "accuracy": "Précision",
+    "responseTime": "Temps de Réponse",
+    "getInTouch": "Entrer en Contact",
+    "bookNow": "Réserver Maintenant",
+    "noPhotographers": "Aucun photographe trouvé",
+    "loading": "Chargement des photographes..."
+  },
+  "viewProfile": {
+    "events": "Événements",
+    "bookNow": "RÉSERVER",
+    "startChat": "DÉMARRER LA DISCUSSION",
+    "viewFull": "Voir en Entier",
+    "tabs": {
+      "overview": "Aperçu",
+      "portfolio": "Portfolio",
+      "reviews": "Avis",
+      "workingExperience": "Expérience Professionnelle"
+    },
+    "overview": {
+      "about": "À Propos",
+      "specialties": "Spécialités",
+      "equipment": "Équipement",
+      "noEquipment": "Aucun équipement listé"
+    },
+    "portfolio": {
+      "professionalSkills": "Compétences Professionnelles",
+      "education": "Éducation",
+      "qualifications": "Qualifications et Certifications"
+    },
+    "reviews": {
+      "reviewsCount": "avis",
+      "writeReview": "Écrire un Avis"
+    },
+    "workingExperience": {
+      "title": "Expérience Professionnelle"
+    },
+    "loadingProfile": "Chargement du profil..."
+  },
+  "booking": {
+    "step1": {
+      "title": "Choisissez Votre Forfait Préféré",
+      "back": "Retour",
+      "professionalPhotographer": "Photographe Professionnel",
+      "availability": "Disponibilité",
+      "workingHours": "Heures de Travail",
+      "location": "Lieu",
+      "startingPrice": "Prix de Départ",
+      "cancel": "ANNULER",
+      "next": "SUIVANT",
+      "packages": {
+        "essential": {
+          "name": "Forfait Essentiel",
+          "hours": "3 Heures",
+          "description": "Idéal pour les petits événements et anniversaires"
+        },
+        "custom": {
+          "name": "Forfait Personnalisé",
+          "hours": "4 Heures",
+          "description": "Idéal pour les événements d'entreprise et fêtes"
+        },
+        "premium": {
+          "name": "Forfait Premium",
+          "hours": "5 Heures",
+          "description": "Idéal pour les grands événements, concerts et mariages"
+        },
+        "features": {
+          "coverage3h": "Couverture de 3 heures",
+          "coverage4h": "Couverture de 4 heures",
+          "coverage5h": "Couverture de 5 heures",
+          "unlimitedPhotos": "Photos et vidéos illimitées",
+          "onlineGallery": "Stockage de galerie en ligne",
+          "sameDayPreview": "Aperçu le jour même",
+          "professionalEditing": "Montage professionnel",
+          "printedAlbum": "Album photo imprimé",
+          "liveStreaming": "Diffusion en direct",
+          "dronePhotography": "Photographie par drone"
+        }
+      }
+    },
+    "step2": {
+      "title": "Détails de l'Événement",
+      "back": "Retour",
+      "professionalPhotographer": "Photographe Professionnel",
+      "availability": "Disponibilité",
+      "workingHours": "Heures de Travail",
+      "location": "Lieu",
+      "startingPrice": "Prix de Départ",
+      "specialRequestsLabel": "Demandes Spéciales:",
+      "specialRequestsPlaceholder": "Des prises de vue spécifiques, exigences ou préférences...",
+      "previous": "PRÉCÉDENT",
+      "cancel": "ANNULER",
+      "next": "SUIVANT"
+    },
+    "step3": {
+      "title": "Informations de Contact",
+      "back": "Retour",
+      "professionalPhotographer": "Photographe Professionnel",
+      "availability": "Disponibilité",
+      "workingHours": "Heures de Travail",
+      "location": "Lieu",
+      "startingPrice": "Prix de Départ",
+      "emailLabel": "Adresse E-mail (Requis)",
+      "phoneLabel": "Numéro de Téléphone (Requis)",
+      "bookingSummary": "Résumé de la Réservation",
+      "package": "Forfait",
+      "eventDate": "Date de l'Événement",
+      "eventTime": "Heure de l'Événement",
+      "eventType": "Type d'Événement",
+      "termsText": "J'ai lu et j'accepte les",
+      "previous": "PRÉCÉDENT",
+      "cancel": "ANNULER",
+      "bookNow": "RÉSERVER"
+    }
+  },
+  "chat": {
+    "title": "Discussions",
+    "searchPlaceholder": "Rechercher des Messages",
+    "filterChats": "Filtrer les Discussions",
+    "allChats": "Toutes les Discussions",
+    "unreadChats": "Non Lus",
+    "onlineChats": "En Ligne",
+    "archivedChats": "Archivés",
+    "noChatsFound": "Aucune discussion trouvée",
+    "today": "Aujourd'hui",
+    "noMessagesYet": "Pas encore de messages. Commencez la conversation!",
+    "typeMessage": "Tapez un message...",
+    "selectChat": "Sélectionnez une discussion pour commencer à envoyer des messages",
+    "send": "Envoyer",
+    "online": "En Ligne",
+    "offline": "Hors Ligne",
+    "typing": "en train d'écrire...",
+    "loadingMessages": "Chargement des messages..."
+  },
   "common": {
     "loading": "Chargement...",
     "error": "Erreur",

@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import AmoriaKNavbar from '../../components/navbar';
 import ReviewModal from '../../components/ReviewModal';
 
@@ -270,6 +271,7 @@ const photographersData = [
 
 // Component that uses useSearchParams - needs to be wrapped in Suspense
 function ViewProfileContent(): React.JSX.Element {
+  const t = useTranslations('viewProfile');
   const searchParams = useSearchParams();
   const photographerId = searchParams.get('id');
 
@@ -600,7 +602,7 @@ function ViewProfileContent(): React.JSX.Element {
             }}
           >
             <i className="bi bi-arrows-fullscreen" style={{ fontSize: '14px' }}></i>
-            View Full
+            {t('viewFull')}
           </div>
 
           {/* Overlay - Matching photographers.tsx */}
@@ -799,7 +801,7 @@ function ViewProfileContent(): React.JSX.Element {
                   color: '#6b7280',
                   fontWeight: '500',
                 }}>
-                  Events
+                  {t('events')}
                 </span>
               </div>
             </div>
@@ -841,7 +843,7 @@ function ViewProfileContent(): React.JSX.Element {
               }}
             >
               <i className="bi bi-calendar-check" style={{ fontSize: '16px' }}></i>
-              BOOK NOW
+              {t('bookNow')}
             </button>
 
             <button
@@ -873,7 +875,7 @@ function ViewProfileContent(): React.JSX.Element {
               }}
             >
               <i className="bi bi-chat-dots" style={{ fontSize: '16px' }}></i>
-              START CHAT
+              {t('startChat')}
             </button>
           </div>
         </div>
@@ -889,12 +891,17 @@ function ViewProfileContent(): React.JSX.Element {
             boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.06)',
           }}
         >
-          {['Overview', 'Portfolio', 'Reviews', 'Working Experience'].map((tab) => {
-            const isActive = activeTab === tab.toLowerCase().replace(' ', '-');
+          {[
+            { key: 'overview', label: t('tabs.overview') },
+            { key: 'portfolio', label: t('tabs.portfolio') },
+            { key: 'reviews', label: t('tabs.reviews') },
+            { key: 'working-experience', label: t('tabs.workingExperience') }
+          ].map((tab) => {
+            const isActive = activeTab === tab.key;
             return (
               <button
-                key={tab}
-                onClick={() => setActiveTab(tab.toLowerCase().replace(' ', '-'))}
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
                 style={{
                   flex: 1,
                   padding: '16px 12px',
@@ -922,7 +929,7 @@ function ViewProfileContent(): React.JSX.Element {
                   }
                 }}
               >
-                {tab}
+                {tab.label}
               </button>
             );
           })}
@@ -950,7 +957,7 @@ function ViewProfileContent(): React.JSX.Element {
                     borderRadius: '2px',
                   }}></div>
                   <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#000', margin: 0 }}>
-                    About
+                    {t('overview.about')}
                   </h3>
                 </div>
                 <p style={{
@@ -976,7 +983,7 @@ function ViewProfileContent(): React.JSX.Element {
                     borderRadius: '2px',
                   }}></div>
                   <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#000', margin: 0 }}>
-                    Specialties
+                    {t('overview.specialties')}
                   </h3>
                 </div>
                 <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
@@ -1027,7 +1034,7 @@ function ViewProfileContent(): React.JSX.Element {
                     borderRadius: '2px',
                   }}></div>
                   <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#000', margin: 0 }}>
-                    Equipment
+                    {t('overview.equipment')}
                   </h3>
                 </div>
                 {photographerData.equipments.length > 0 ? (
@@ -1066,7 +1073,7 @@ function ViewProfileContent(): React.JSX.Element {
                     ))}
                   </div>
                 ) : (
-                  <p style={{ fontSize: '14px', color: '#9ca3af', fontStyle: 'italic' }}>No equipment listed</p>
+                  <p style={{ fontSize: '14px', color: '#9ca3af', fontStyle: 'italic' }}>{t('overview.noEquipment')}</p>
                 )}
               </div>
             </div>
@@ -1126,7 +1133,7 @@ function ViewProfileContent(): React.JSX.Element {
                     borderRadius: '2px',
                   }}></div>
                   <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#000', margin: 0 }}>
-                    Professional Skills
+                    {t('portfolio.professionalSkills')}
                   </h3>
                 </div>
                 <div style={{ display: 'grid', gap: '16px' }}>
@@ -1191,7 +1198,7 @@ function ViewProfileContent(): React.JSX.Element {
               {/* Education */}
               <div style={{ marginBottom: '28px' }}>
                 <h3 style={{ fontSize: '19px', fontWeight: '700', color: '#000', marginBottom: '14px' }}>
-                  Education
+                  {t('portfolio.education')}
                 </h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   {photographerData.portfolio.education.map((edu) => (
@@ -1226,7 +1233,7 @@ function ViewProfileContent(): React.JSX.Element {
               {/* Qualifications & Certifications */}
               <div style={{ marginBottom: '28px' }}>
                 <h3 style={{ fontSize: '19px', fontWeight: '700', color: '#000', marginBottom: '14px' }}>
-                  Qualifications & Certifications
+                  {t('portfolio.qualifications')}
                 </h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   {photographerData.portfolio.qualifications.map((qual) => (
@@ -1444,7 +1451,7 @@ function ViewProfileContent(): React.JSX.Element {
                         fontWeight: '500',
                         margin: 0,
                       }}>
-                        {photographerData.reviews.length} reviews
+                        {photographerData.reviews.length} {t('reviews.reviewsCount')}
                       </p>
                     </div>
                   </div>
@@ -1477,7 +1484,7 @@ function ViewProfileContent(): React.JSX.Element {
                     }}
                   >
                     <i className="bi bi-pencil-square" style={{ fontSize: '16px' }}></i>
-                    Write a Review
+                    {t('reviews.writeReview')}
                   </button>
                 </div>
               </div>
@@ -1580,7 +1587,7 @@ function ViewProfileContent(): React.JSX.Element {
           {activeTab === 'working-experience' && (
             <div>
               <h3 style={{ fontSize: '22px', fontWeight: '700', color: '#000', marginBottom: '18px' }}>
-                Professional Experience
+                {t('workingExperience.title')}
               </h3>
 
               {/* Timeline */}
@@ -1911,6 +1918,8 @@ function ViewProfileContent(): React.JSX.Element {
 
 // Main page component with Suspense boundary
 export default function ViewProfilePage(): React.JSX.Element {
+  const t = useTranslations('viewProfile');
+
   return (
     <Suspense fallback={
       <div style={{
@@ -1933,7 +1942,7 @@ export default function ViewProfilePage(): React.JSX.Element {
           <p style={{
             fontSize: '18px',
             fontWeight: '600'
-          }}>Loading profile...</p>
+          }}>{t('loadingProfile')}</p>
         </div>
       </div>
     }>

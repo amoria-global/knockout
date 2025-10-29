@@ -1,8 +1,10 @@
 'use client';
 import React, { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import AmoriaKNavbar from '../../components/navbar';
 
 export default function BookNowPage(): React.JSX.Element {
+  const t = useTranslations('booking.step1');
   const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
 
   // Sample photographer data - this would normally come from props or API
@@ -18,52 +20,52 @@ export default function BookNowPage(): React.JSX.Element {
   const packages = [
     {
       id: 'essential',
-      name: 'Essential Package',
-      hours: '3 Hours',
-      description: 'Great for small events and birthdays',
+      name: t('packages.essential.name'),
+      hours: t('packages.essential.hours'),
+      description: t('packages.essential.description'),
       features: [
-        { text: '3 hours coverage', available: true },
-        { text: 'Unlimited photos & videos', available: true },
-        { text: 'Online gallery storage', available: true },
-        { text: 'Same-day preview', available: true },
-        { text: 'Professional editing', available: false },
-        { text: 'Printed photo album', available: false },
-        { text: 'Live-streaming', available: false },
-        { text: 'Drone photography', available: false },
+        { text: t('packages.features.coverage3h'), available: true },
+        { text: t('packages.features.unlimitedPhotos'), available: true },
+        { text: t('packages.features.onlineGallery'), available: true },
+        { text: t('packages.features.sameDayPreview'), available: true },
+        { text: t('packages.features.professionalEditing'), available: false },
+        { text: t('packages.features.printedAlbum'), available: false },
+        { text: t('packages.features.liveStreaming'), available: false },
+        { text: t('packages.features.dronePhotography'), available: false },
       ],
       color: '#083A85',
     },
     {
       id: 'custom',
-      name: 'Custom Package',
-      hours: '4 Hours',
-      description: 'Great for corporate events and parties',
+      name: t('packages.custom.name'),
+      hours: t('packages.custom.hours'),
+      description: t('packages.custom.description'),
       features: [
-        { text: '4 hours coverage', available: true },
-        { text: 'Unlimited photos & videos', available: true },
-        { text: 'Online gallery storage', available: true },
-        { text: 'Same-day preview', available: true },
-        { text: 'Professional editing', available: true },
-        { text: 'Printed photo album', available: true },
-        { text: 'Live-streaming', available: false },
-        { text: 'Drone photography', available: false },
+        { text: t('packages.features.coverage4h'), available: true },
+        { text: t('packages.features.unlimitedPhotos'), available: true },
+        { text: t('packages.features.onlineGallery'), available: true },
+        { text: t('packages.features.sameDayPreview'), available: true },
+        { text: t('packages.features.professionalEditing'), available: true },
+        { text: t('packages.features.printedAlbum'), available: true },
+        { text: t('packages.features.liveStreaming'), available: false },
+        { text: t('packages.features.dronePhotography'), available: false },
       ],
       color: '#083A85',
     },
     {
       id: 'premium',
-      name: 'Premium Package',
-      hours: '5 Hours',
-      description: 'Great for large events, concerts, and weddings',
+      name: t('packages.premium.name'),
+      hours: t('packages.premium.hours'),
+      description: t('packages.premium.description'),
       features: [
-        { text: '5 hours coverage', available: true },
-        { text: 'Unlimited photos & videos', available: true },
-        { text: 'Online gallery storage', available: true },
-        { text: 'Same-day preview', available: true },
-        { text: 'Professional editing', available: true },
-        { text: 'Printed photo album', available: true },
-        { text: 'Live-streaming', available: true },
-        { text: 'Drone photography', available: true },
+        { text: t('packages.features.coverage5h'), available: true },
+        { text: t('packages.features.unlimitedPhotos'), available: true },
+        { text: t('packages.features.onlineGallery'), available: true },
+        { text: t('packages.features.sameDayPreview'), available: true },
+        { text: t('packages.features.professionalEditing'), available: true },
+        { text: t('packages.features.printedAlbum'), available: true },
+        { text: t('packages.features.liveStreaming'), available: true },
+        { text: t('packages.features.dronePhotography'), available: true },
       ],
       color: '#083A85',
     },
@@ -117,7 +119,7 @@ export default function BookNowPage(): React.JSX.Element {
           }}
         >
           <i className="bi bi-chevron-left" style={{ fontSize: '20px' }}></i>
-          <span>Back</span>
+          <span>{t('back')}</span>
         </button>
 
         {/* Main Content Container */}
@@ -188,7 +190,7 @@ export default function BookNowPage(): React.JSX.Element {
                       {photographerData.name}
                     </h2>
                     <p style={{ fontSize: '15px', color: '#6b7280', fontWeight: '500' }}>
-                      Professional Photographer
+                      {t('professionalPhotographer')}
                     </p>
                   </div>
 
@@ -206,7 +208,7 @@ export default function BookNowPage(): React.JSX.Element {
                           textTransform: 'uppercase',
                         }}
                       >
-                        Availability
+                        {t('availability')}
                       </div>
                       <div
                         style={{
@@ -231,7 +233,7 @@ export default function BookNowPage(): React.JSX.Element {
                           textTransform: 'uppercase',
                         }}
                       >
-                        Working Hours
+                        {t('workingHours')}
                       </div>
                       <div
                         style={{
@@ -260,7 +262,7 @@ export default function BookNowPage(): React.JSX.Element {
                           textTransform: 'uppercase',
                         }}
                       >
-                        Location
+                        {t('location')}
                       </div>
                       <div
                         style={{
@@ -297,7 +299,7 @@ export default function BookNowPage(): React.JSX.Element {
                           textTransform: 'uppercase',
                         }}
                       >
-                        Starting Price
+                        {t('startingPrice')}
                       </div>
                       <div
                         style={{
@@ -338,7 +340,7 @@ export default function BookNowPage(): React.JSX.Element {
                   letterSpacing: '0.3px',
                 }}
               >
-                Choose Your Preferred Package
+                {t('title')}
               </h1>
 
               {/* Package Cards - Horizontal Grid */}
@@ -491,7 +493,7 @@ export default function BookNowPage(): React.JSX.Element {
                     e.currentTarget.style.transform = 'translateY(0)';
                   }}
                 >
-                  CANCEL
+                  {t('cancel')}
                 </button>
                 <button
                    onClick={() => (window.location.href = '/user/photographers/book-now1')}
@@ -524,7 +526,7 @@ export default function BookNowPage(): React.JSX.Element {
                     }
                   }}
                 >
-                  NEXT
+                  {t('next')}
                 </button>
               </div>
           </div>

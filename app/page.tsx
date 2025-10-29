@@ -92,6 +92,58 @@ export default function Home() {
           <Navbar />
 
         <main style={{ flex: 1 }}>
+        <style jsx>{`
+          @media (max-width: 768px) {
+            .hero-content { flex-direction: column !important; padding: 20px 15px 60px !important; }
+            .hero-left { width: 100% !important; max-width: 100% !important; text-align: center; }
+            .hero-right { width: 100% !important; height: 350px !important; margin-top: 30px; }
+            .hero-title { font-size: 36px !important; }
+            .hero-description { max-width: 100% !important; }
+            .hero-buttons { justify-content: center !important; }
+            .twitter-badge { margin-left: auto; margin-right: auto; }
+            .hero-image-container { left: 50% !important; transform: translateX(-50%) !important; width: 100% !important; }
+            .hero-image { width: 100% !important; height: auto !important; }
+            .hero-overlay { width: 100% !important; height: 100% !important; }
+
+            .how-it-works-title { font-size: 36px !important; margin-bottom: 40px !important; }
+            .how-it-works-steps { flex-direction: column !important; gap: 30px !important; }
+            .how-it-works-svg { display: none !important; }
+            .step-img { width: 180px !important; height: 180px !important; }
+
+            .photographer-container { flex-direction: column !important; padding: 20px !important; gap: 20px !important; }
+            .photographer-title { font-size: 32px !important; position: relative !important; top: 0 !important; }
+            .photographer-description { position: relative !important; top: 0 !important; margin-bottom: 20px !important; }
+            .photographer-button { position: relative !important; left: 0 !important; top: 0 !important; width: 100% !important; max-width: 250px !important; margin: 0 auto !important; }
+            .photographer-video-container { max-width: 100% !important; }
+
+            .mockups-section { padding: 60px 20px !important; }
+            .mockups-container { height: 400px !important; }
+            .device-laptop { display: none !important; }
+            .device-tablet { width: 300px !important; height: 400px !important; }
+            .device-phone { width: 200px !important; height: 400px !important; }
+
+            .why-amoria-title { font-size: 36px !important; }
+            .why-amoria-content { flex-direction: column !important; gap: 30px !important; }
+            .why-amoria-image-container { height: 400px !important; max-width: 100% !important; }
+
+            .global-network-section { padding: 60px 20px !important; }
+            .global-network-content { flex-direction: column !important; gap: 40px !important; }
+            .global-network-left { flex: 1 !important; max-width: 100% !important; text-align: center; }
+            .global-network-title { font-size: 36px !important; }
+            .global-network-buttons { justify-content: center !important; flex-wrap: wrap !important; }
+            .global-network-right { height: 300px !important; }
+          }
+
+          @media (min-width: 769px) and (max-width: 1024px) {
+            .hero-title { font-size: 42px !important; }
+            .hero-content { padding: 30px 20px 80px !important; }
+            .mockups-section { padding: 80px 40px !important; }
+            .mockups-container { height: 450px !important; }
+            .how-it-works-title { font-size: 42px !important; }
+            .why-amoria-title { font-size: 42px !important; }
+            .global-network-title { font-size: 42px !important; }
+          }
+        `}</style>
         {/* Hero Section */}
         <section style={{
           position: 'relative',
@@ -99,11 +151,11 @@ export default function Home() {
           overflow: 'hidden',
         }}>
           {/* Hero Content Container */}
-          <div style={{
+          <div className="hero-content" style={{
             position: 'relative',
             maxWidth: '1080px',
             margin: '0 auto',
-            padding: '40px 20px 128px', // Standardized padding
+            padding: '40px 20px 128px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -111,7 +163,7 @@ export default function Home() {
           }}>
 
             {/* Left Content */}
-            <div style={{
+            <div className="hero-left" style={{
               position: 'relative',
               width: '48%',
               maxWidth: '450px',
@@ -132,7 +184,7 @@ export default function Home() {
               }} />
 
               {/* Twitter Handle Badge */}
-              <div style={{
+              <div className="twitter-badge" style={{
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '7.5px',
@@ -149,7 +201,7 @@ export default function Home() {
               </div>
 
               {/* Main Heading */}
-              <h1 style={{
+              <h1 className="hero-title" style={{
                 fontSize: '57px',
                 fontWeight: 700,
                 lineHeight: '1.05',
@@ -162,7 +214,7 @@ export default function Home() {
               </h1>
 
               {/* Description */}
-              <p style={{
+              <p className="hero-description" style={{
                 fontSize: '15px',
                 color: '#1f1d1d',
                 lineHeight: '1.65',
@@ -173,7 +225,7 @@ export default function Home() {
               </p>
 
               {/* CTA Buttons */}
-              <div style={{ display: 'flex', gap: '13.5px', flexWrap: 'wrap' }}>
+              <div className="hero-buttons" style={{ display: 'flex', gap: '13.5px', flexWrap: 'wrap' }}>
                 <button
                   onClick={() => window.location.href = '/user/photographers'}
                   style={{
@@ -210,7 +262,7 @@ export default function Home() {
             </div>
 
             {/* Right Content - Image Section */}
-            <div style={{
+            <div className="hero-right" style={{
               position: 'relative',
               width: '52%',
               height: '525px',
@@ -243,7 +295,7 @@ export default function Home() {
               }} />
 
               {/* Photographer Image Container */}
-              <div style={{
+              <div className="hero-image-container" style={{
                 position: 'absolute',
                 left: '75px',
                 top: '0',
@@ -253,6 +305,7 @@ export default function Home() {
               }}>
                 {/* Main Image */}
                 <img
+                  className="hero-image"
                   src="/camman.png"
                   alt="Photographer with camera"
                   style={{
@@ -536,11 +589,11 @@ export default function Home() {
             padding: '0 20px' // Horizontal padding for smaller screens
           }}>
             {/* Section Title */}
-            <h2 style={{
+            <h2 className="how-it-works-title" style={{
               fontSize: '50px',
               fontWeight: 1000,
               textAlign: 'center',
-              marginBottom: '100px', // Standardized margin
+              marginBottom: '100px',
               color: '#000',
               letterSpacing: '-0.02em'
             }}>
@@ -548,7 +601,7 @@ export default function Home() {
             </h2>
 
             {/* Three Steps Container */}
-            <div style={{
+            <div className="how-it-works-steps" style={{
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'flex-start',
@@ -557,6 +610,7 @@ export default function Home() {
             }}>
               {/* Dotted Line Connector */}
               <svg
+                className="how-it-works-svg"
                 style={{
                   position: 'absolute',
                   top: '-360px',
@@ -590,6 +644,7 @@ export default function Home() {
                 zIndex: 2
               }}>
                 <img
+                  className="step-img"
                   src="/ava1.png"
                   alt="Get Started"
                   style={{
@@ -629,6 +684,7 @@ export default function Home() {
                 zIndex: 2
               }}>
                 <img
+                  className="step-img"
                   src="/ava2.png"
                   alt="Photography"
                   style={{
@@ -668,6 +724,7 @@ export default function Home() {
                 zIndex: 2
               }}>
                 <img
+                  className="step-img"
                   src="/ava3.png"
                   alt="Go Live"
                   style={{
@@ -698,17 +755,16 @@ export default function Home() {
             </div>
 
             {/* For Photographers Container */}
-            <div style={{
+            <div className="photographer-container" style={{
               marginTop: '40px',
               background: 'linear-gradient(90deg, #083A85 19%, #4675AA 100%)',
               borderRadius: '24px',
-              padding: '25px ',
+              padding: '25px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
               gap: '60px',
-              position: 'relative',
-
+              position: 'relative'
             }}>
               {/* Left Content */}
               <div style={{
@@ -716,7 +772,7 @@ export default function Home() {
                 color: '#fff',
                 maxWidth: '400px'
               }}>
-                <h2 style={{
+                <h2 className="photographer-title" style={{
                   position: 'absolute',
                   top: '40px',
                   fontSize: '48px',
@@ -728,7 +784,7 @@ export default function Home() {
                 }}>
                   {t('howItWorks.forPhotographers.title')}
                 </h2>
-                <p style={{
+                <p className="photographer-description" style={{
                   position: 'inherit',
                   top: '120px',
                   fontSize: '18px',
@@ -739,6 +795,7 @@ export default function Home() {
                   {t('howItWorks.forPhotographers.description')}
                 </p>
                 <button
+                  className="photographer-button"
                   onClick={() => window.location.href = '/user/auth/signup-type'}
                   style={{
                     background: 'linear-gradient(90deg, #041DC0 0%, #FF6363 0%, #7763FF 100%)',
@@ -763,7 +820,7 @@ export default function Home() {
               </div>
 
               {/* Right Video Container */}
-              <div style={{
+              <div className="photographer-video-container" style={{
                 flex: 1,
                 maxWidth: '580px',
                 maxHeight: '1000px',
@@ -805,14 +862,14 @@ export default function Home() {
         </section>
 
         {/* Mockups Section */}
-        <section style={{
+        <section className="mockups-section" style={{
           background: 'linear-gradient(90deg, #ec4899 0%, #f97316 50%, #8b5cf6 100%)',
           backdropFilter: 'blur(1000px)',
-          padding: '130px 220px 130px 250px', // Standardized vertical padding
+          padding: '130px 220px 130px 250px',
           position: 'relative',
           overflow: 'hidden'
         }}>
-          <div style={{
+          <div className="mockups-container" style={{
             maxWidth: '1400px',
             margin: '0 auto',
             padding: '0 20px',
@@ -826,6 +883,7 @@ export default function Home() {
           }}>
             {/* Laptop Mockup - Background Layer */}
             <div
+              className="device-laptop"
               onMouseEnter={() => {
                 setActiveDevice(2)
                 setIsPaused(true)
@@ -998,6 +1056,7 @@ export default function Home() {
 
             {/* Tablet Mockup - Middle Layer */}
             <div
+              className="device-tablet"
               onMouseEnter={() => {
                 setActiveDevice(1)
                 setIsPaused(true)
@@ -1247,6 +1306,7 @@ export default function Home() {
 
             {/* Phone Mockup - Foreground Layer */}
             <div
+              className="device-phone"
               onMouseEnter={() => {
                 setActiveDevice(0)
                 setIsPaused(true)
@@ -1520,10 +1580,10 @@ export default function Home() {
              {/* Section Header */}
             <div style={{
               maxWidth: '780px',
-              margin: '0 auto 80px', // Center align header and add bottom margin
+              margin: '0 auto 80px',
               textAlign: 'center'
             }}>
-              <h2 style={{
+              <h2 className="why-amoria-title" style={{
                 fontSize: '50px',
                 fontWeight: 1000,
                 marginBottom: '24px',
@@ -1543,11 +1603,11 @@ export default function Home() {
             </div>
 
             {/* Main Content Layout */}
-            <div style={{
+            <div className="why-amoria-content" style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              gap: '64px' // Increased gap
+              gap: '64px'
             }}>
               {/* Left Content */}
               <div style={{
@@ -1764,7 +1824,7 @@ export default function Home() {
               </div>
 
               {/* Right Image Container with Transitions */}
-              <div style={{
+              <div className="why-amoria-image-container" style={{
                 position: 'relative',
                 flex: 1,
                 maxWidth: '500px',
@@ -1876,30 +1936,30 @@ export default function Home() {
         </section>
 
         {/* Global Network Section */}
-        <section style={{
+        <section className="global-network-section" style={{
           background: 'linear-gradient(135deg, #001a33 0%, #002b4d 50%, #001a33 100%)',
-          padding: '130px 0', // Increased vertical padding
+          padding: '130px 0',
           position: 'relative',
           overflow: 'hidden'
         }}>
-          <div style={{
-            maxWidth: '1280px', // Slightly wider for this specific section
+          <div className="global-network-content" style={{
+            maxWidth: '1280px',
             margin: '0 auto',
-            padding: '0 20px', // Standard horizontal padding
+            padding: '0 20px',
             display: 'flex',
             alignItems: 'center',
-            gap: '80px', // Increased gap
+            gap: '80px',
             minHeight: '450px'
           }}>
             {/* Left Content */}
-            <div style={{
-              flex: '0 0 35%', // Increased flex basis to accommodate longer text
-              maxWidth: '500px', // Increased from 400px to 500px
+            <div className="global-network-left" style={{
+              flex: '0 0 35%',
+              maxWidth: '500px',
               color: '#fff',
               zIndex: 2
             }}>
               {/* Title */}
-              <h2 style={{
+              <h2 className="global-network-title" style={{
                 fontSize: '50px',
                 fontWeight: 1000,
                 lineHeight: '1.1',
@@ -1921,7 +1981,7 @@ export default function Home() {
               }}>
                 {t('globalNetwork.description')}
               </p>
-              <div style={{ display: 'flex', gap: '12px', flexWrap: 'nowrap' }}>
+              <div className="global-network-buttons" style={{ display: 'flex', gap: '12px', flexWrap: 'nowrap' }}>
                 <button
                   onClick={() => window.location.href = '/user/photographers'}
                   onMouseEnter={(e) => {
@@ -1979,7 +2039,7 @@ export default function Home() {
             </div>
           
             {/* Right Content - for the network visualization */}
-            <div style={{
+            <div className="global-network-right" style={{
               flex: '1',
               height: '450px',
               position: 'relative'

@@ -1,8 +1,10 @@
 'use client';
 import React, { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import AmoriaKNavbar from '../../components/navbar';
 
 export default function BookNowPage(): React.JSX.Element {
+  const t = useTranslations('booking.step2');
   // State for the new text area
   const [specialRequests, setSpecialRequests] = useState('');
 
@@ -67,7 +69,7 @@ export default function BookNowPage(): React.JSX.Element {
           }}
         >
           <i className="bi bi-chevron-left" style={{ fontSize: '20px' }}></i>
-          <span>Back</span>
+          <span>{t('back')}</span>
         </button>
 
         {/* Main Content Container */}
@@ -138,7 +140,7 @@ export default function BookNowPage(): React.JSX.Element {
                       {photographerData.name}
                     </h2>
                     <p style={{ fontSize: '15px', color: '#6b7280', fontWeight: '500' }}>
-                      Professional Photographer
+                      {t('professionalPhotographer')}
                     </p>
                   </div>
 
@@ -156,7 +158,7 @@ export default function BookNowPage(): React.JSX.Element {
                           textTransform: 'uppercase',
                         }}
                       >
-                        Availability
+                        {t('availability')}
                       </div>
                       <div
                         style={{
@@ -181,7 +183,7 @@ export default function BookNowPage(): React.JSX.Element {
                           textTransform: 'uppercase',
                         }}
                       >
-                        Working Hours
+                        {t('workingHours')}
                       </div>
                       <div
                         style={{
@@ -210,7 +212,7 @@ export default function BookNowPage(): React.JSX.Element {
                           textTransform: 'uppercase',
                         }}
                       >
-                        Location
+                        {t('location')}
                       </div>
                       <div
                         style={{
@@ -247,7 +249,7 @@ export default function BookNowPage(): React.JSX.Element {
                           textTransform: 'uppercase',
                         }}
                       >
-                        Starting Price
+                        {t('startingPrice')}
                       </div>
                       <div
                         style={{
@@ -288,7 +290,7 @@ export default function BookNowPage(): React.JSX.Element {
                   letterSpacing: '0.3px',
                 }}
               >
-                Event Details
+                {t('title')}
               </h1>
 
               {/* Event Details Form Card */}
@@ -316,13 +318,13 @@ export default function BookNowPage(): React.JSX.Element {
                       marginBottom: '8px',
                     }}
                   >
-                    Any Special Requests:
+                    {t('specialRequestsLabel')}
                   </label>
                   <textarea
                     id="specialRequests"
                     value={specialRequests}
                     onChange={(e) => setSpecialRequests(e.target.value)}
-                    placeholder="Any specific shots, requirements or preferences..."
+                    placeholder={t('specialRequestsPlaceholder')}
                     style={{
                       width: '100%',
                       height: '120px',
@@ -386,7 +388,7 @@ export default function BookNowPage(): React.JSX.Element {
                   }}
                 >
                   <i className="bi bi-chevron-left"></i>
-                  PREVIOUS
+                  {t('previous')}
                 </button>
                 <div style={{ display: 'flex', gap: '12px' }}>
                   <button
@@ -414,7 +416,7 @@ export default function BookNowPage(): React.JSX.Element {
                       e.currentTarget.style.transform = 'translateY(0)';
                     }}
                   >
-                    CANCEL
+                    {t('cancel')}
                   </button>
                   <button
                    onClick={() => (window.location.href = '/user/photographers/book-now2')}
@@ -442,7 +444,7 @@ export default function BookNowPage(): React.JSX.Element {
                       e.currentTarget.style.boxShadow = '0 4px 12px rgba(8, 58, 133, 0.25)';
                     }}
                   >
-                    NEXT
+                    {t('next')}
                   </button>
                 </div>
               </div>
