@@ -9,7 +9,7 @@ import Preloader from "./components/Preloader";
 
 export default function Home() {
   const t = useTranslations();
-  const [activeDevice, setActiveDevice] = useState(0) // 0: phone, 1: tablet, 2: laptop
+  const [activeDevice, setActiveDevice] = useState(0) //  phone, 1: tablet, 2: laptop
   const [isPaused, setIsPaused] = useState(false)
   const [activeCard, setActiveCard] = useState(0) // 0: rated, 1: live, 2: pay, 3: gallery
   // Check if preloader should show on initial load
