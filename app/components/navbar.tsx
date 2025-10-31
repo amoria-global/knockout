@@ -20,6 +20,7 @@ const AmoriaKNavbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isPhotographersDropdownOpen, setIsPhotographersDropdownOpen] = useState(false);
   const [isEventsDropdownOpen, setIsEventsDropdownOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
@@ -54,6 +55,17 @@ const AmoriaKNavbar = () => {
     { value: 'cultural', label: t('eventCategories.cultural'), icon: 'bi-globe' },
     { value: 'conference', label: t('eventCategories.conferences'), icon: 'bi-people-fill' },
   ];
+
+  // Effect to detect screen size
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    handleResize(); // Initial check
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Effect to handle scroll events
   useEffect(() => {
@@ -122,11 +134,11 @@ const AmoriaKNavbar = () => {
       }}
     >
       {/* Increased horizontal padding for more space */}
-      <div className="max-w-7xl px-4 sm:px-6 lg:px-8 mx-4 sm:mx-6 lg:mx-8">
+      <div className="max-w-7xl mx-4 sm:mx-6 lg:mx-8" style={{ paddingLeft: isMobile ? '0.5rem' : '1rem', paddingRight: isMobile ? '0.5rem' : '1rem' }}>
         <div className="flex items-center justify-between h-16">
           <Link href="/" onClick={handleLinkClick} className="flex items-center flex-shrink-0">
-          <span className="text-2xl font-bold text-gray-900 hover:text-[#083A85]" style={{ marginLeft: '38px' }}>Amoria</span>
-            <img src="/logo.png" alt="AmoriaK Logo" className="h-10 w-10 rounded-full" style={{ marginLeft: '-7px' }} />                 
+          <span className="font-bold text-gray-900 hover:text-[#083A85]" style={{ marginLeft: isMobile ? '0' : '38px', fontSize: isMobile ? '1.25rem' : '1.5rem' }}>Amoria</span>
+            <img src="/logo.png" alt="AmoriaK Logo" className="rounded-full" style={{ marginLeft: '-7px', width: isMobile ? '32px' : '40px', height: isMobile ? '32px' : '40px' }} />
           </Link>
 
           {/* Center: Navigation Links (Desktop) */}
@@ -499,10 +511,11 @@ const AmoriaKNavbar = () => {
           <button
             ref={mobileMenuButtonRef}
             onClick={toggleMobileMenu}
-            className="md:hidden inline-flex items-center justify-center p-2 rounded-md text-gray-700 hover:bg-gray-100 focus:outline-none transition-colors cursor-pointer"
+            className="md:hidden inline-flex items-center justify-center rounded-md text-gray-700 hover:bg-gray-100 focus:outline-none transition-colors cursor-pointer"
+            style={{ padding: isMobile ? '0.375rem' : '0.5rem' }}
             aria-label="Toggle menu"
           >
-            <i className={`bi ${isMobileMenuOpen ? 'bi-x-lg' : 'bi-list'} text-2xl`}></i>
+            <i className={`bi ${isMobileMenuOpen ? 'bi-x-lg' : 'bi-list'}`} style={{ fontSize: isMobile ? '1.5rem' : '1.75rem' }}></i>
           </button>
         </div>
       </div>
@@ -510,27 +523,28 @@ const AmoriaKNavbar = () => {
       {/* Mobile Menu */}
       {isMobileMenuOpen && (
         <div ref={mobileMenuRef} className="md:hidden bg-white/95 backdrop-blur-sm border-t border-gray-100/20 shadow-lg">
-          <div className="px-4 pt-2 pb-4 space-y-1">
+          <div style={{ paddingLeft: isMobile ? '0.75rem' : '1rem', paddingRight: isMobile ? '0.75rem' : '1rem', paddingTop: '0.5rem', paddingBottom: isMobile ? '0.75rem' : '1rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
             {/* Photographers Dropdown - Mobile */}
             <div>
               <button
                 onClick={() => setIsPhotographersDropdownOpen(prev => !prev)}
-                className="w-full text-left px-3 py-2 rounded-md text-gray-700 hover:bg-gray-50 hover:text-gray-900 text-base font-medium transition-colors flex items-center justify-between cursor-pointer"
+                className="w-full text-left rounded-md text-gray-700 hover:bg-gray-50 hover:text-gray-900 font-medium transition-colors flex items-center justify-between cursor-pointer"
+                style={{ padding: isMobile ? '0.5rem 0.75rem' : '0.5rem 0.75rem', fontSize: isMobile ? '0.9375rem' : '1rem' }}
               >
                 <span>{t('photographers')}</span>
-                <i className={`bi bi-chevron-down transform transition-transform ${isPhotographersDropdownOpen ? 'rotate-180' : ''}`}></i>
+                <i className={`bi bi-chevron-down transform transition-transform ${isPhotographersDropdownOpen ? 'rotate-180' : ''}`} style={{ fontSize: isMobile ? '0.75rem' : '0.875rem' }}></i>
               </button>
               {isPhotographersDropdownOpen && (
                 <div
-                  className="mt-2 pl-4"
                   style={{
-                    padding: '8px',
+                    padding: isMobile ? '6px' : '8px',
                     background: 'rgba(255, 255, 255, 0.6)',
                     backdropFilter: 'blur(8px)',
                     WebkitBackdropFilter: 'blur(8px)',
-                    borderRadius: '10px',
+                    borderRadius: isMobile ? '8px' : '10px',
                     border: '1px solid rgba(8, 58, 133, 0.1)',
-                    marginLeft: '12px'
+                    marginLeft: isMobile ? '8px' : '12px',
+                    marginTop: '0.5rem'
                   }}
                 >
                   {photographerCategories.map((category) => (
@@ -543,17 +557,17 @@ const AmoriaKNavbar = () => {
                       }}
                       className="block cursor-pointer"
                       style={{
-                        padding: '10px 12px',
-                        borderRadius: '8px',
-                        fontSize: '14px',
+                        padding: isMobile ? '8px 10px' : '10px 12px',
+                        borderRadius: isMobile ? '6px' : '8px',
+                        fontSize: isMobile ? '0.8125rem' : '0.875rem',
                         fontWeight: '500',
                         color: '#374151',
                         backgroundColor: 'transparent',
                         transition: 'all 0.2s ease',
-                        marginBottom: '4px',
+                        marginBottom: isMobile ? '2px' : '4px',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '8px'
+                        gap: isMobile ? '6px' : '8px'
                       }}
                       onMouseEnter={(e) => {
                         e.currentTarget.style.backgroundColor = 'rgba(8, 58, 133, 0.1)';
@@ -564,7 +578,7 @@ const AmoriaKNavbar = () => {
                         e.currentTarget.style.color = '#374151';
                       }}
                     >
-                      <i className={`bi ${category.icon}`} style={{ fontSize: '14px' }}></i>
+                      <i className={`bi ${category.icon}`} style={{ fontSize: isMobile ? '0.8125rem' : '0.875rem' }}></i>
                       <span>{category.label}</span>
                     </Link>
                   ))}
@@ -576,22 +590,23 @@ const AmoriaKNavbar = () => {
             <div>
               <button
                 onClick={() => setIsEventsDropdownOpen(prev => !prev)}
-                className="w-full text-left px-3 py-2 rounded-md text-gray-700 hover:bg-gray-50 hover:text-gray-900 text-base font-medium transition-colors flex items-center justify-between cursor-pointer"
+                className="w-full text-left rounded-md text-gray-700 hover:bg-gray-50 hover:text-gray-900 font-medium transition-colors flex items-center justify-between cursor-pointer"
+                style={{ padding: isMobile ? '0.5rem 0.75rem' : '0.5rem 0.75rem', fontSize: isMobile ? '0.9375rem' : '1rem' }}
               >
                 <span>{t('events')}</span>
-                <i className={`bi bi-chevron-down transform transition-transform ${isEventsDropdownOpen ? 'rotate-180' : ''}`}></i>
+                <i className={`bi bi-chevron-down transform transition-transform ${isEventsDropdownOpen ? 'rotate-180' : ''}`} style={{ fontSize: isMobile ? '0.75rem' : '0.875rem' }}></i>
               </button>
               {isEventsDropdownOpen && (
                 <div
-                  className="mt-2 pl-4"
                   style={{
-                    padding: '8px',
+                    padding: isMobile ? '6px' : '8px',
                     background: 'rgba(255, 255, 255, 0.6)',
                     backdropFilter: 'blur(8px)',
                     WebkitBackdropFilter: 'blur(8px)',
-                    borderRadius: '10px',
+                    borderRadius: isMobile ? '8px' : '10px',
                     border: '1px solid rgba(8, 58, 133, 0.1)',
-                    marginLeft: '12px'
+                    marginLeft: isMobile ? '8px' : '12px',
+                    marginTop: '0.5rem'
                   }}
                 >
                   {eventCategories.map((category) => (
@@ -604,17 +619,17 @@ const AmoriaKNavbar = () => {
                       }}
                       className="block cursor-pointer"
                       style={{
-                        padding: '10px 12px',
-                        borderRadius: '8px',
-                        fontSize: '14px',
+                        padding: isMobile ? '8px 10px' : '10px 12px',
+                        borderRadius: isMobile ? '6px' : '8px',
+                        fontSize: isMobile ? '0.8125rem' : '0.875rem',
                         fontWeight: '500',
                         color: '#374151',
                         backgroundColor: 'transparent',
                         transition: 'all 0.2s ease',
-                        marginBottom: '4px',
+                        marginBottom: isMobile ? '2px' : '4px',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '8px'
+                        gap: isMobile ? '6px' : '8px'
                       }}
                       onMouseEnter={(e) => {
                         e.currentTarget.style.backgroundColor = 'rgba(8, 58, 133, 0.1)';
@@ -625,7 +640,7 @@ const AmoriaKNavbar = () => {
                         e.currentTarget.style.color = '#374151';
                       }}
                     >
-                      <i className={`bi ${category.icon}`} style={{ fontSize: '14px' }}></i>
+                      <i className={`bi ${category.icon}`} style={{ fontSize: isMobile ? '0.8125rem' : '0.875rem' }}></i>
                       <span>{category.label}</span>
                     </Link>
                   ))}
@@ -633,29 +648,30 @@ const AmoriaKNavbar = () => {
               )}
             </div>
 
-            <Link href={getLocalePath('/user/about')} onClick={handleLinkClick} className="block px-3 py-2 rounded-md text-gray-700 hover:bg-gray-50 hover:text-gray-900 text-base font-medium transition-colors cursor-pointer">{t('about')}</Link>
+            <Link href={getLocalePath('/user/about')} onClick={handleLinkClick} className="block rounded-md text-gray-700 hover:bg-gray-50 hover:text-gray-900 font-medium transition-colors cursor-pointer" style={{ padding: isMobile ? '0.5rem 0.75rem' : '0.5rem 0.75rem', fontSize: isMobile ? '0.9375rem' : '1rem' }}>{t('about')}</Link>
 
             {/* Language Dropdown (Mobile) */}
-            <div className="border-t border-gray-200 !my-3"></div>
+            <div className="border-t border-gray-200" style={{ marginTop: isMobile ? '0.5rem' : '0.75rem', marginBottom: isMobile ? '0.5rem' : '0.75rem' }}></div>
              <div ref={langMenuRef} className="relative">
               <button
                 onClick={toggleLangMenu}
-                className="w-full text-left px-3 py-2 rounded-md text-gray-700 hover:bg-gray-50 text-base font-medium flex items-center justify-between cursor-pointer"
+                className="w-full text-left rounded-md text-gray-700 hover:bg-gray-50 font-medium flex items-center justify-between cursor-pointer"
+                style={{ padding: isMobile ? '0.5rem 0.75rem' : '0.5rem 0.75rem', fontSize: isMobile ? '0.9375rem' : '1rem' }}
               >
                 <span>{t('language')}: {selectedLang}</span>
-                 <i className={`bi bi-chevron-down transform transition-transform ${isLangMenuOpen ? 'rotate-180' : ''}`}></i>
+                 <i className={`bi bi-chevron-down transform transition-transform ${isLangMenuOpen ? 'rotate-180' : ''}`} style={{ fontSize: isMobile ? '0.75rem' : '0.875rem' }}></i>
               </button>
               {isLangMenuOpen && (
                  <div
-                   className="mt-2 pl-6"
                    style={{
-                     padding: '6px',
+                     padding: isMobile ? '6px' : '8px',
                      background: 'rgba(255, 255, 255, 0.5)',
                      backdropFilter: 'blur(8px)',
                      WebkitBackdropFilter: 'blur(8px)',
-                     borderRadius: '10px',
+                     borderRadius: isMobile ? '8px' : '10px',
                      border: '1px solid rgba(8, 58, 133, 0.1)',
-                     marginLeft: '12px'
+                     marginLeft: isMobile ? '8px' : '12px',
+                     marginTop: '0.5rem'
                    }}
                  >
                     {languages.map((lang) => (
@@ -668,9 +684,9 @@ const AmoriaKNavbar = () => {
                             }}
                             className="block cursor-pointer"
                             style={{
-                              padding: '8px 12px',
-                              borderRadius: '8px',
-                              fontSize: '14px',
+                              padding: isMobile ? '8px 10px' : '8px 12px',
+                              borderRadius: isMobile ? '6px' : '8px',
+                              fontSize: isMobile ? '0.8125rem' : '0.875rem',
                               fontWeight: '500',
                               color: lang.name === selectedLang ? '#083A85' : '#374151',
                               backgroundColor: lang.name === selectedLang ? 'rgba(8, 58, 133, 0.1)' : 'transparent',
@@ -697,10 +713,10 @@ const AmoriaKNavbar = () => {
               )}
             </div>
 
-            <div className="border-t border-gray-200 !my-3"></div>
+            <div className="border-t border-gray-200" style={{ marginTop: isMobile ? '0.5rem' : '0.75rem', marginBottom: isMobile ? '0.5rem' : '0.75rem' }}></div>
 
-            <Link href={getLocalePath('/user/auth/login')} onClick={handleLinkClick} className="block px-3 py-2.5 text-center rounded-md text-gray-900 hover:bg-gray-50 text-base font-medium transition-colors cursor-pointer">{t('login')}</Link>
-            <Link href={getLocalePath('/user/auth/signup-type')} onClick={handleLinkClick} className="block px-3 py-2.5 text-center bg-[#002D72] text-white rounded-full hover:bg-[#001f4d] text-base font-semibold transition-all duration-300 shadow-sm cursor-pointer">{t('signup')}</Link>
+            <Link href={getLocalePath('/user/auth/login')} onClick={handleLinkClick} className="block text-center rounded-md text-gray-900 hover:bg-gray-50 font-medium transition-colors cursor-pointer" style={{ padding: isMobile ? '0.5rem 0.75rem' : '0.625rem 0.75rem', fontSize: isMobile ? '0.9375rem' : '1rem' }}>{t('login')}</Link>
+            <Link href={getLocalePath('/user/auth/signup-type')} onClick={handleLinkClick} className="block text-center bg-[#002D72] text-white rounded-full hover:bg-[#001f4d] font-semibold transition-all duration-300 shadow-sm cursor-pointer" style={{ padding: isMobile ? '0.5rem 0.75rem' : '0.625rem 0.75rem', fontSize: isMobile ? '0.9375rem' : '1rem' }}>{t('signup')}</Link>
           </div>
         </div>
       )}

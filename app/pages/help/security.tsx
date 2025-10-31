@@ -16,7 +16,7 @@ const SecurityHelp: React.FC = () => {
         paddingTop: '8rem',
         paddingBottom: '6rem',
         overflow: 'hidden'
-      }}>
+      }} className="!pt-24 md:!pt-32">
         <div style={{
           position: 'absolute',
           inset: 0
@@ -40,7 +40,7 @@ const SecurityHelp: React.FC = () => {
           margin: '0 auto',
           padding: '0 2rem',
           textAlign: 'center'
-        }}>
+        }} className="!px-4 md:!px-8">
           <div style={{
             display: 'inline-block',
             marginBottom: '2rem'
@@ -101,11 +101,11 @@ const SecurityHelp: React.FC = () => {
       </div>
 
       {/* Main Content */}
-      <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 2rem' }}>
-        <div style={{ paddingTop: '4rem', paddingBottom: '6rem' }}>
+      <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 2rem' }} className="!px-4 md:!px-8">
+        <div style={{ paddingTop: '4rem', paddingBottom: '6rem' }} className="!pt-8 !pb-12 md:!pt-16 md:!pb-24">
 
           {/* Quick Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8" style={{ marginBottom: '3rem' }}>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-8" style={{ marginBottom: '3rem' }}>
             <div style={{
               background: 'white',
               borderRadius: '20px',
@@ -113,7 +113,7 @@ const SecurityHelp: React.FC = () => {
               textAlign: 'center',
               boxShadow: '0 4px 20px rgba(8, 58, 133, 0.08)',
               border: '1px solid rgba(8, 58, 133, 0.08)'
-            }}>
+            }} className="!p-6 md:!p-10">
               <div style={{
                 width: '64px',
                 height: '64px',
@@ -138,7 +138,7 @@ const SecurityHelp: React.FC = () => {
               textAlign: 'center',
               boxShadow: '0 4px 20px rgba(8, 58, 133, 0.08)',
               border: '1px solid rgba(8, 58, 133, 0.08)'
-            }}>
+            }} className="!p-6 md:!p-10">
               <div style={{
                 width: '64px',
                 height: '64px',
@@ -163,7 +163,7 @@ const SecurityHelp: React.FC = () => {
               textAlign: 'center',
               boxShadow: '0 4px 20px rgba(8, 58, 133, 0.08)',
               border: '1px solid rgba(8, 58, 133, 0.08)'
-            }}>
+            }} className="!p-6 md:!p-10">
               <div style={{
                 width: '64px',
                 height: '64px',
@@ -195,7 +195,7 @@ const SecurityHelp: React.FC = () => {
             <div style={{
               padding: '3rem',
               borderBottom: '1px solid #E5E7EB'
-            }}>
+            }} className="!p-6 md:!p-12">
               <h2 style={{
                 fontSize: 'clamp(1.75rem, 3vw, 2.25rem)',
                 fontWeight: '700',
@@ -241,7 +241,7 @@ const SecurityHelp: React.FC = () => {
             </div>
 
             {/* Section 1: Account Security Best Practices */}
-            <section id="best-practices" style={{ padding: '4rem 3rem', borderBottom: '1px solid #E5E7EB' }}>
+            <section id="best-practices" style={{ padding: '4rem 3rem', borderBottom: '1px solid #E5E7EB' }} className="!p-6 md:!p-12">
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '2rem' }}>
                 <div style={{
                   width: '56px',
@@ -278,7 +278,7 @@ const SecurityHelp: React.FC = () => {
                   border: '1px solid rgba(8, 58, 133, 0.15)',
                   borderRadius: '16px',
                   padding: '2rem'
-                }}>
+                }} className="!p-4 md:!p-8">
                   <h4 style={{ fontSize: '1.1rem', fontWeight: '600', color: '#083A85', marginBottom: '1.25rem' }}>Password Guidelines:</h4>
                   <ul style={{ paddingLeft: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                     <li style={{ fontSize: '1.05rem', lineHeight: '1.7', color: '#374151' }}>
@@ -332,7 +332,7 @@ const SecurityHelp: React.FC = () => {
                   border: '1px solid rgba(16, 185, 129, 0.15)',
                   borderRadius: '16px',
                   padding: '2rem'
-                }}>
+                }} className="!p-4 md:!p-8">
                   <h4 style={{ fontSize: '1.1rem', fontWeight: '600', color: '#059669', marginBottom: '1.25rem' }}>How to Enable 2FA:</h4>
                   <ol style={{ paddingLeft: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                     <li style={{ fontSize: '1.05rem', lineHeight: '1.7', color: '#374151' }}>
@@ -361,7 +361,7 @@ const SecurityHelp: React.FC = () => {
                 <p style={{ fontSize: '1.05rem', lineHeight: '1.8', color: '#4B5563', marginBottom: '1.5rem' }}>
                   Being vigilant about unusual account activity can help you detect unauthorized access early and prevent potential damage. Watch for these warning signs:
                 </p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                   {[
                     { icon: 'bi-geo-alt-fill', title: 'Unfamiliar Locations', desc: 'Login notifications from locations or devices you don\'t recognize' },
                     { icon: 'bi-pencil-fill', title: 'Unauthorized Changes', desc: 'Changes to your profile, email, password, or settings you didn\'t make' },
@@ -377,7 +377,7 @@ const SecurityHelp: React.FC = () => {
                       background: 'white',
                       border: '1px solid #E5E7EB',
                       borderRadius: '12px'
-                    }}>
+                    }} className="!p-4 md:!p-6">
                       <div style={{
                         width: '48px',
                         height: '48px',
@@ -401,7 +401,7 @@ const SecurityHelp: React.FC = () => {
             </section>
 
             {/* Section 2: Data Privacy & Protection */}
-            <section id="privacy" style={{ padding: '4rem 3rem', borderBottom: '1px solid #E5E7EB' }}>
+            <section id="privacy" style={{ padding: '4rem 3rem', borderBottom: '1px solid #E5E7EB' }} className="!p-6 md:!p-12">
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '2rem' }}>
                 <div style={{
                   width: '56px',
@@ -559,7 +559,7 @@ const SecurityHelp: React.FC = () => {
             </section>
 
             {/* Section 3: Safe Transactions */}
-            <section id="transactions" style={{ padding: '4rem 3rem', borderBottom: '1px solid #E5E7EB' }}>
+            <section id="transactions" style={{ padding: '4rem 3rem', borderBottom: '1px solid #E5E7EB' }} className="!p-6 md:!p-12">
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '2rem' }}>
                 <div style={{
                   width: '56px',
@@ -699,7 +699,7 @@ const SecurityHelp: React.FC = () => {
             </section>
 
             {/* Section 4: Managing Privacy Settings */}
-            <section id="settings" style={{ padding: '4rem 3rem', borderBottom: '1px solid #E5E7EB' }}>
+            <section id="settings" style={{ padding: '4rem 3rem', borderBottom: '1px solid #E5E7EB' }} className="!p-6 md:!p-12">
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '2rem' }}>
                 <div style={{
                   width: '56px',
@@ -843,7 +843,7 @@ const SecurityHelp: React.FC = () => {
             </section>
 
             {/* Section 5: Data Breach Response */}
-            <section id="breach" style={{ padding: '4rem 3rem', borderBottom: '1px solid #E5E7EB' }}>
+            <section id="breach" style={{ padding: '4rem 3rem', borderBottom: '1px solid #E5E7EB' }} className="!p-6 md:!p-12">
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '2rem' }}>
                 <div style={{
                   width: '56px',
@@ -972,7 +972,7 @@ const SecurityHelp: React.FC = () => {
             </section>
 
             {/* Section 6: Content Moderation */}
-            <section id="moderation" style={{ padding: '4rem 3rem' }}>
+            <section id="moderation" style={{ padding: '4rem 3rem' }} className="!p-6 md:!p-12">
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '2rem' }}>
                 <div style={{
                   width: '56px',
@@ -1138,7 +1138,7 @@ const SecurityHelp: React.FC = () => {
             textAlign: 'center',
             boxShadow: '0 10px 40px rgba(8, 58, 133, 0.25)',
             marginTop: '4rem'
-          }}>
+          }} className="!p-6 md:!p-12 !mt-8 md:!mt-16">
             <div style={{
               width: '72px',
               height: '72px',

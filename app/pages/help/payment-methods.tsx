@@ -16,7 +16,7 @@ const PaymentMethodsHelp: React.FC = () => {
         paddingTop: '8rem',
         paddingBottom: '6rem',
         overflow: 'hidden'
-      }}>
+      }} className="!pt-24 md:!pt-32">
         <div style={{
           position: 'absolute',
           inset: 0
@@ -40,7 +40,7 @@ const PaymentMethodsHelp: React.FC = () => {
           margin: '0 auto',
           padding: '0 2rem',
           textAlign: 'center'
-        }}>
+        }} className="!px-4 md:!px-8">
           <div style={{
             display: 'inline-block',
             marginBottom: '2rem'
@@ -101,11 +101,11 @@ const PaymentMethodsHelp: React.FC = () => {
       </div>
 
       {/* Main Content */}
-      <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 2rem' }}>
-        <div style={{ paddingTop: '4rem', paddingBottom: '6rem' }}>
+      <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 2rem' }} className="!px-4 md:!px-8">
+        <div style={{ paddingTop: '4rem', paddingBottom: '6rem' }} className="!pt-8 !pb-12 md:!pt-16 md:!pb-24">
 
           {/* Quick Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8" style={{ marginBottom: '3rem' }}>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-8" style={{ marginBottom: '3rem' }}>
             <div style={{
               background: 'white',
               borderRadius: '20px',
@@ -113,7 +113,7 @@ const PaymentMethodsHelp: React.FC = () => {
               textAlign: 'center',
               boxShadow: '0 4px 20px rgba(8, 58, 133, 0.08)',
               border: '1px solid rgba(8, 58, 133, 0.08)'
-            }}>
+            }} className="!p-6 md:!p-10">
               <div style={{
                 width: '64px',
                 height: '64px',
@@ -138,7 +138,7 @@ const PaymentMethodsHelp: React.FC = () => {
               textAlign: 'center',
               boxShadow: '0 4px 20px rgba(8, 58, 133, 0.08)',
               border: '1px solid rgba(8, 58, 133, 0.08)'
-            }}>
+            }} className="!p-6 md:!p-10">
               <div style={{
                 width: '64px',
                 height: '64px',
@@ -163,7 +163,7 @@ const PaymentMethodsHelp: React.FC = () => {
               textAlign: 'center',
               boxShadow: '0 4px 20px rgba(8, 58, 133, 0.08)',
               border: '1px solid rgba(8, 58, 133, 0.08)'
-            }}>
+            }} className="!p-6 md:!p-10">
               <div style={{
                 width: '64px',
                 height: '64px',
@@ -195,7 +195,7 @@ const PaymentMethodsHelp: React.FC = () => {
             <div style={{
               padding: '3rem',
               borderBottom: '1px solid #E5E7EB'
-            }}>
+            }} className="!p-6 md:!p-12">
               <h2 style={{
                 fontSize: 'clamp(1.75rem, 3vw, 2.25rem)',
                 fontWeight: '700',
@@ -241,7 +241,7 @@ const PaymentMethodsHelp: React.FC = () => {
             </div>
 
             {/* Section 1: Credit & Debit Cards */}
-            <section id="cards" style={{ padding: '4rem 3rem', borderBottom: '1px solid #E5E7EB' }}>
+            <section id="cards" style={{ padding: '4rem 3rem', borderBottom: '1px solid #E5E7EB' }} className="!p-6 md:!p-12">
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '2rem' }}>
                 <div style={{
                   width: '56px',
@@ -280,8 +280,8 @@ const PaymentMethodsHelp: React.FC = () => {
                   borderRadius: '16px',
                   padding: '2.5rem',
                   marginBottom: '2rem'
-                }}>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                }} className="!p-4 md:!p-10">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                     {[
                       { icon: 'bi-credit-card-2-front', name: 'Visa', desc: 'All Visa credit and debit cards globally' },
                       { icon: 'bi-credit-card-2-back', name: 'Mastercard', desc: 'Mastercard credit and debit cards worldwide' },
@@ -297,7 +297,7 @@ const PaymentMethodsHelp: React.FC = () => {
                         background: 'white',
                         border: '1px solid #E5E7EB',
                         borderRadius: '12px'
-                      }}>
+                      }} className="!p-4 md:!p-6">
                         <div style={{
                           width: '48px',
                           height: '48px',
@@ -329,7 +329,7 @@ const PaymentMethodsHelp: React.FC = () => {
                   border: '1px solid rgba(16, 185, 129, 0.15)',
                   borderRadius: '16px',
                   padding: '2rem'
-                }}>
+                }} className="!p-4 md:!p-8">
                   <ol style={{ paddingLeft: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                     <li style={{ fontSize: '1.05rem', lineHeight: '1.7', color: '#374151' }}>
                       Select your photographer and proceed to checkout after confirming booking details
@@ -421,7 +421,7 @@ const PaymentMethodsHelp: React.FC = () => {
                       background: 'rgba(239, 68, 68, 0.05)',
                       border: '1px solid rgba(239, 68, 68, 0.2)',
                       borderRadius: '12px'
-                    }}>
+                    }} className="!p-4 md:!p-6">
                       <h4 style={{ fontSize: '1rem', fontWeight: '600', color: '#dc2626', marginBottom: '0.75rem' }}>
                         <i className="bi bi-exclamation-circle-fill" style={{ marginRight: '8px' }}></i>
                         {item.issue}
@@ -445,7 +445,7 @@ const PaymentMethodsHelp: React.FC = () => {
             textAlign: 'center',
             boxShadow: '0 10px 40px rgba(8, 58, 133, 0.25)',
             marginTop: '4rem'
-          }}>
+          }} className="!p-6 md:!p-12 !mt-8 md:!mt-16">
             <div style={{
               width: '72px',
               height: '72px',

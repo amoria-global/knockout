@@ -16,7 +16,7 @@ const PaymentHelp: React.FC = () => {
         paddingTop: '8rem',
         paddingBottom: '6rem',
         overflow: 'hidden'
-      }}>
+      }} className="!pt-24 md:!pt-32">
         <div style={{
           position: 'absolute',
           inset: 0
@@ -40,7 +40,7 @@ const PaymentHelp: React.FC = () => {
           margin: '0 auto',
           padding: '0 2rem',
           textAlign: 'center'
-        }}>
+        }} className="!px-4 md:!px-8">
           <div style={{
             display: 'inline-block',
             marginBottom: '2rem'
@@ -101,11 +101,11 @@ const PaymentHelp: React.FC = () => {
       </div>
 
       {/* Main Content */}
-      <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 2rem' }}>
-        <div style={{ paddingTop: '4rem', paddingBottom: '6rem' }}>
+      <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 2rem' }} className="!px-4 md:!px-8">
+        <div style={{ paddingTop: '4rem', paddingBottom: '6rem' }} className="!pt-8 !pb-12 md:!pt-16 md:!pb-24">
 
           {/* Quick Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8" style={{ marginBottom: '3rem' }}>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-8" style={{ marginBottom: '3rem' }}>
             <div style={{
               background: 'white',
               borderRadius: '20px',
@@ -113,7 +113,7 @@ const PaymentHelp: React.FC = () => {
               textAlign: 'center',
               boxShadow: '0 4px 20px rgba(8, 58, 133, 0.08)',
               border: '1px solid rgba(8, 58, 133, 0.08)'
-            }}>
+            }} className="!p-6 md:!p-10">
               <div style={{
                 width: '64px',
                 height: '64px',
@@ -138,7 +138,7 @@ const PaymentHelp: React.FC = () => {
               textAlign: 'center',
               boxShadow: '0 4px 20px rgba(8, 58, 133, 0.08)',
               border: '1px solid rgba(8, 58, 133, 0.08)'
-            }}>
+            }} className="!p-6 md:!p-10">
               <div style={{
                 width: '64px',
                 height: '64px',
@@ -163,7 +163,7 @@ const PaymentHelp: React.FC = () => {
               textAlign: 'center',
               boxShadow: '0 4px 20px rgba(8, 58, 133, 0.08)',
               border: '1px solid rgba(8, 58, 133, 0.08)'
-            }}>
+            }} className="!p-6 md:!p-10">
               <div style={{
                 width: '64px',
                 height: '64px',
@@ -195,7 +195,7 @@ const PaymentHelp: React.FC = () => {
             <div style={{
               padding: '3rem',
               borderBottom: '1px solid #E5E7EB'
-            }}>
+            }} className="!p-6 md:!p-12">
               <h2 style={{
                 fontSize: 'clamp(1.75rem, 3vw, 2.25rem)',
                 fontWeight: '700',
@@ -241,7 +241,7 @@ const PaymentHelp: React.FC = () => {
             </div>
 
             {/* Section 1: How Escrow Works */}
-            <section id="escrow" style={{ padding: '4rem 3rem', borderBottom: '1px solid #E5E7EB' }}>
+            <section id="escrow" style={{ padding: '4rem 3rem', borderBottom: '1px solid #E5E7EB' }} className="!p-6 md:!p-12">
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '2rem' }}>
                 <div style={{
                   width: '56px',
@@ -276,7 +276,7 @@ const PaymentHelp: React.FC = () => {
                 borderRadius: '16px',
                 padding: '2.5rem',
                 marginBottom: '2rem'
-              }}>
+              }} className="!p-4 md:!p-10">
                 <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#083A85', marginBottom: '1.5rem' }}>
                   The Escrow Process
                 </h3>
@@ -329,7 +329,7 @@ const PaymentHelp: React.FC = () => {
               <h3 style={{ fontSize: '1.35rem', fontWeight: '600', color: '#111827', marginBottom: '1.5rem' }}>
                 Benefits of Escrow Protection
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                 {[
                   { icon: 'bi-person-check', title: 'Client Protection', desc: 'Pay with confidence knowing funds are held until you\'re satisfied with the photos' },
                   { icon: 'bi-camera-fill', title: 'Photographer Security', desc: 'Guaranteed payment once work is delivered and approved by the client' },
@@ -345,7 +345,7 @@ const PaymentHelp: React.FC = () => {
                     background: 'white',
                     border: '1px solid #E5E7EB',
                     borderRadius: '12px'
-                  }}>
+                  }} className="!p-4 md:!p-6">
                     <div style={{
                       width: '48px',
                       height: '48px',
@@ -368,7 +368,7 @@ const PaymentHelp: React.FC = () => {
             </section>
 
             {/* Section 2: Making Payments */}
-            <section id="making" style={{ padding: '4rem 3rem', borderBottom: '1px solid #E5E7EB' }}>
+            <section id="making" style={{ padding: '4rem 3rem', borderBottom: '1px solid #E5E7EB' }} className="!p-6 md:!p-12">
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '2rem' }}>
                 <div style={{
                   width: '56px',
@@ -401,7 +401,7 @@ const PaymentHelp: React.FC = () => {
                 <h3 style={{ fontSize: '1.35rem', fontWeight: '600', color: '#111827', marginBottom: '1rem' }}>
                   Accepted Payment Methods
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
                   {[
                     {
                       icon: 'bi-credit-card',
@@ -428,7 +428,7 @@ const PaymentHelp: React.FC = () => {
                       border: '1px solid rgba(16, 185, 129, 0.2)',
                       borderRadius: '16px',
                       textAlign: 'center'
-                    }}>
+                    }} className="!p-4 md:!p-8">
                       <i className={method.icon} style={{ fontSize: '2.5rem', color: '#059669', marginBottom: '1rem' }}></i>
                       <h4 style={{ fontSize: '1.1rem', fontWeight: '600', color: '#111827', marginBottom: '0.75rem' }}>{method.title}</h4>
                       <p style={{ fontSize: '0.9rem', lineHeight: '1.6', color: '#4B5563', marginBottom: '1rem' }}>{method.desc}</p>
@@ -447,7 +447,7 @@ const PaymentHelp: React.FC = () => {
                   border: '1px solid rgba(8, 58, 133, 0.15)',
                   borderRadius: '16px',
                   padding: '2.5rem'
-                }}>
+                }} className="!p-4 md:!p-10">
                   <ol style={{ paddingLeft: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                     {[
                       'Select your preferred photographer and review their portfolio and pricing',
@@ -494,7 +494,7 @@ const PaymentHelp: React.FC = () => {
             </section>
 
             {/* Section 3: Payment History */}
-            <section id="history" style={{ padding: '4rem 3rem', borderBottom: '1px solid #E5E7EB' }}>
+            <section id="history" style={{ padding: '4rem 3rem', borderBottom: '1px solid #E5E7EB' }} className="!p-6 md:!p-12">
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '2rem' }}>
                 <div style={{
                   width: '56px',
@@ -623,7 +623,7 @@ const PaymentHelp: React.FC = () => {
             </section>
 
             {/* Section 4: Refunds & Cancellations */}
-            <section id="refunds" style={{ padding: '4rem 3rem', borderBottom: '1px solid #E5E7EB' }}>
+            <section id="refunds" style={{ padding: '4rem 3rem', borderBottom: '1px solid #E5E7EB' }} className="!p-6 md:!p-12">
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '2rem' }}>
                 <div style={{
                   width: '56px',
@@ -661,7 +661,7 @@ const PaymentHelp: React.FC = () => {
                   border: '1px solid rgba(239, 68, 68, 0.2)',
                   borderRadius: '16px',
                   padding: '2.5rem'
-                }}>
+                }} className="!p-4 md:!p-10">
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
                     {[
                       {
@@ -758,7 +758,7 @@ const PaymentHelp: React.FC = () => {
             </section>
 
             {/* Section 5: Photographer Earnings */}
-            <section id="earnings" style={{ padding: '4rem 3rem', borderBottom: '1px solid #E5E7EB' }}>
+            <section id="earnings" style={{ padding: '4rem 3rem', borderBottom: '1px solid #E5E7EB' }} className="!p-6 md:!p-12">
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '2rem' }}>
                 <div style={{
                   width: '56px',
@@ -791,7 +791,7 @@ const PaymentHelp: React.FC = () => {
                 <h3 style={{ fontSize: '1.35rem', fontWeight: '600', color: '#111827', marginBottom: '1rem' }}>
                   Earnings Breakdown
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
                   {[
                     {
                       title: 'Your Listing Price',
@@ -818,7 +818,7 @@ const PaymentHelp: React.FC = () => {
                       border: `2px solid ${item.color}`,
                       borderRadius: '16px',
                       textAlign: 'center'
-                    }}>
+                    }} className="!p-4 md:!p-8">
                       <h4 style={{ fontSize: '3rem', fontWeight: '700', color: item.color, marginBottom: '0.5rem' }}>{item.amount}</h4>
                       <p style={{ fontSize: '1.05rem', fontWeight: '600', color: '#111827', marginBottom: '0.75rem' }}>{item.title}</p>
                       <p style={{ fontSize: '0.9rem', lineHeight: '1.6', color: '#6B7280' }}>{item.desc}</p>
@@ -836,7 +836,7 @@ const PaymentHelp: React.FC = () => {
                   border: '1px solid rgba(139, 92, 246, 0.2)',
                   borderRadius: '16px',
                   padding: '2.5rem'
-                }}>
+                }} className="!p-4 md:!p-10">
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
                     <div>
                       <h4 style={{ fontSize: '1.1rem', fontWeight: '600', color: '#7c3aed', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -917,7 +917,7 @@ const PaymentHelp: React.FC = () => {
             </section>
 
             {/* Section 6: Payment Security */}
-            <section id="security" style={{ padding: '4rem 3rem' }}>
+            <section id="security" style={{ padding: '4rem 3rem' }} className="!p-6 md:!p-12">
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '2rem' }}>
                 <div style={{
                   width: '56px',
@@ -995,7 +995,7 @@ const PaymentHelp: React.FC = () => {
                       border: '1px solid #E5E7EB',
                       borderRadius: '16px',
                       boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)'
-                    }}>
+                    }} className="!p-4 md:!p-8">
                       <div style={{
                         width: '48px',
                         height: '48px',
@@ -1024,7 +1024,7 @@ const PaymentHelp: React.FC = () => {
                   border: '1px solid rgba(220, 38, 38, 0.2)',
                   borderRadius: '16px',
                   padding: '2.5rem'
-                }}>
+                }} className="!p-4 md:!p-10">
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                     {[
                       {
@@ -1109,7 +1109,7 @@ const PaymentHelp: React.FC = () => {
             textAlign: 'center',
             boxShadow: '0 10px 40px rgba(8, 58, 133, 0.25)',
             marginTop: '4rem'
-          }}>
+          }} className="!p-6 md:!p-12 !mt-8 md:!mt-16">
             <div style={{
               width: '72px',
               height: '72px',

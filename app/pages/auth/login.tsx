@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 
@@ -9,6 +9,24 @@ export default function LoginPage(): React.JSX.Element {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+
+  // Screen size detection for responsive design
+  const [screenSize, setScreenSize] = useState<'mobile' | 'tablet' | 'desktop' | 'large' | 'xlarge'>('desktop');
+
+  useEffect(() => {
+    const handleResize = () => {
+      const width = window.innerWidth;
+      if (width < 768) setScreenSize('mobile');
+      else if (width < 1025) setScreenSize('tablet');
+      else if (width < 1441) setScreenSize('desktop');
+      else if (width < 1921) setScreenSize('large');
+      else setScreenSize('xlarge');
+    };
+
+    handleResize(); // Initial check
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const isDisabled = !email || !password;
 
@@ -20,9 +38,57 @@ export default function LoginPage(): React.JSX.Element {
     }
   };
 
+  const isMobile = screenSize === 'mobile';
+
+  // Responsive styles for form inputs (mobile-only responsiveness, desktop keeps original)
+  const inputStyle = {
+    width: '100%',
+    padding: isMobile ? '12px 14px' : '10px 12px',
+    fontSize: isMobile ? '16px' : '14px', // 16px on mobile prevents iOS zoom
+    border: '2px solid #d1d5db',
+    borderRadius: isMobile ? '16px' : '20px',
+    outline: 'none',
+    transition: 'all 0.3s',
+    backgroundColor: '#ffffff',
+    minHeight: isMobile ? '44px' : 'auto', // Minimum touch target on mobile only
+    boxSizing: 'border-box' as const
+  };
+
+  const labelStyle = {
+    display: 'block',
+    fontSize: isMobile ? '13px' : '14px',
+    fontWeight: '500',
+    color: '#374151',
+    marginBottom: isMobile ? '4px' : '5px'
+  };
+
   return (
-    <div className="h-screen overflow-hidden bg-gray-50 flex items-center justify-center px-4 py-4 sm:p-4">
-      <div className="w-full max-w-5xl h-[90vh] max-h-[800px] bg-white rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col lg:flex-row">
+    <>
+      <style>{`
+        /* Safe area insets for mobile devices with notches */
+        @supports (padding: env(safe-area-inset-top)) {
+          .mobile-safe-area {
+            padding-top: max(1.5rem, env(safe-area-inset-top)) !important;
+            padding-bottom: max(1.5rem, env(safe-area-inset-bottom)) !important;
+          }
+        }
+      `}</style>
+
+      <div
+        className="h-screen overflow-hidden bg-gray-50 flex items-center justify-center"
+        style={{
+          padding: isMobile ? '0.5rem' : '1rem'
+        }}
+      >
+        <div
+          className="w-full bg-white shadow-2xl overflow-hidden flex flex-col lg:flex-row"
+          style={{
+            maxWidth: isMobile ? '100%' : '80rem',
+            height: isMobile ? '100vh' : '90vh',
+            maxHeight: isMobile ? '100vh' : '800px',
+            borderRadius: isMobile ? '0' : '1.5rem'
+          }}
+        >
 
         {/* Left Side - Gradient Card (Hidden on mobile) */}
         <div
@@ -193,14 +259,34 @@ export default function LoginPage(): React.JSX.Element {
         </div>
 
         {/* Right Side - Login Form */}
-        <div className="w-full lg:w-1/2 flex flex-col items-center justify-center py-3 sm:py-4 h-full overflow-y-auto" style={{padding: '20px 30px'}}>
-          <div className="w-full max-w-md px-4 sm:px-6 md:px-8">
-            <h1 style={{ fontSize: '26px', fontWeight: '700', textAlign: 'left', color: '#000000', marginBottom: '20px', letterSpacing: '0.5px' }}>
+        <div
+          className={`w-full lg:w-1/2 flex flex-col items-center h-full overflow-y-auto ${isMobile ? 'mobile-safe-area' : ''}`}
+          style={{
+            padding: isMobile ? '1rem 1rem' : '20px 30px',
+            paddingTop: isMobile ? '1.5rem' : '20px',
+            paddingBottom: isMobile ? '1.5rem' : '20px',
+            justifyContent: isMobile ? 'flex-start' : 'center'
+          }}
+        >
+          <div
+            className="w-full max-w-md"
+            style={{
+              padding: isMobile ? '0 0.25rem' : '0 2rem'
+            }}
+          >
+            <h1 style={{
+              fontSize: isMobile ? '20px' : '26px',
+              fontWeight: '700',
+              textAlign: 'left',
+              color: '#000000',
+              marginBottom: isMobile ? '10px' : '20px',
+              letterSpacing: '0.5px'
+            }}>
               {t('title')}
             </h1>
 
             {/* Social Login Buttons */}
-            <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
+            <div style={{ display: 'flex', gap: '12px', marginBottom: isMobile ? '8px' : '12px' }}>
               {/* Google Button */}
               <button style={{
                 flex: '1',
@@ -219,18 +305,23 @@ export default function LoginPage(): React.JSX.Element {
             </div>
 
             {/* Divider */}
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '12px', marginTop: '12px' }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              marginBottom: isMobile ? '8px' : '12px',
+              marginTop: isMobile ? '8px' : '12px'
+            }}>
               <hr style={{ flex: '1', border: 'none', borderTop: '2px solid #d1d5db' }} />
-              <span style={{ padding: '0 10px', fontSize: '14px', color: '#6b7280', fontWeight: '600' }}>{t('orContinueWith')}</span>
+              <span style={{ padding: '0 10px', fontSize: isMobile ? '13px' : '14px', color: '#6b7280', fontWeight: '600' }}>{t('orContinueWith')}</span>
               <hr style={{ flex: '1', border: 'none', borderTop: '2px solid #d1d5db' }} />
             </div>
 
             {/* Login Form */}
             <form onSubmit={handleSubmit}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '8px' : '12px' }}>
                 {/* Email Input */}
                 <div>
-                  <label htmlFor="email" style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '5px' }}>
+                  <label htmlFor="email" style={labelStyle}>
                     {t('yourEmail')}
                   </label>
                   <input
@@ -239,25 +330,21 @@ export default function LoginPage(): React.JSX.Element {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder={t('emailPlaceholder')}
-                    style={{
-                      width: '100%',
-                      padding: '10px 12px',
-                      fontSize: '14px',
-                      border: '2px solid #d1d5db',
-                      borderRadius: '20px',
-                      outline: 'none',
-                      transition: 'all 0.3s',
-                      backgroundColor: '#ffffff'
-                    }}
+                    style={inputStyle}
                   />
-                  <p style={{ fontSize: '12px', color: '#6b7280', marginTop: '3px' }}>
+                  <p style={{
+                    fontSize: '12px',
+                    color: '#6b7280',
+                    marginTop: isMobile ? '2px' : '3px',
+                    marginBottom: isMobile ? '0' : '0'
+                  }}>
                     {t('emailHelper')}
                   </p>
                 </div>
 
                 {/* Password Input */}
                 <div>
-                  <label htmlFor="password" style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '5px' }}>
+                  <label htmlFor="password" style={labelStyle}>
                     {tAuth('password')}
                   </label>
                   <div style={{ position: 'relative' }}>
@@ -268,15 +355,8 @@ export default function LoginPage(): React.JSX.Element {
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder={t('passwordPlaceholder')}
                       style={{
-                        width: '100%',
-                        padding: '10px 12px',
-                        paddingRight: '40px',
-                        fontSize: '14px',
-                        border: '2px solid #d1d5db',
-                        borderRadius: '20px',
-                        outline: 'none',
-                        transition: 'all 0.3s',
-                        backgroundColor: '#ffffff'
+                        ...inputStyle,
+                        paddingRight: '40px'
                       }}
                     />
                     <button
@@ -301,13 +381,13 @@ export default function LoginPage(): React.JSX.Element {
               </div>
 
               {/* Submit Button */}
-              <div style={{ marginTop: '16px' }}>
+              <div style={{ marginTop: isMobile ? '10px' : '16px' }}>
                 <button
                   type="submit"
                   disabled={isDisabled}
                   style={{
                     width: '100%',
-                    padding: '11px',
+                    padding: isMobile ? '10px' : '11px',
                     fontSize: '15px',
                     borderRadius: '30px',
                     fontWeight: '600',
@@ -324,11 +404,22 @@ export default function LoginPage(): React.JSX.Element {
             </form>
 
             {/* Links */}
-            <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '5px' }}>
-              <Link href="/user/auth/forgotpswd" style={{ fontSize: '14px', color: '#083A85', textDecoration: 'underline', fontWeight: '800' }}>
+            <div style={{
+              marginTop: isMobile ? '10px' : '16px',
+              marginBottom: isMobile ? '1rem' : '0',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: isMobile ? '4px' : '5px'
+            }}>
+              <Link href="/user/auth/forgotpswd" style={{
+                fontSize: isMobile ? '13px' : '14px',
+                color: '#083A85',
+                textDecoration: 'underline',
+                fontWeight: '800'
+              }}>
                 {t('forgotPasswordLink')}
               </Link>
-              <p style={{ fontSize: '14px', color: '#6b7280' }}>
+              <p style={{ fontSize: isMobile ? '13px' : '14px', color: '#6b7280', margin: 0 }}>
                 {t('notRegistered')}{' '}
                 <Link href="/user/auth/signup" style={{ color: '#083A85', textDecoration: 'underline', fontWeight: '800' }}>
                   {t('createAccount')}
@@ -339,5 +430,6 @@ export default function LoginPage(): React.JSX.Element {
         </div>
       </div>
     </div>
+    </>
   );
 }
