@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Navbar from '../components/navbar';
 import Footer from '../components/footer';
 import { useRouter } from 'next/navigation';
@@ -156,9 +156,21 @@ const HelpSupportCenter: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [openFAQ, setOpenFAQ] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
 
   // Data states
   const [FAQS, setFAQS] = useState<FAQ[]>(mockFAQs);
+
+  // Detect screen size
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    handleResize(); // Initial check
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Contact form state
   const [contactForm, setContactForm] = useState({
@@ -248,10 +260,10 @@ const HelpSupportCenter: React.FC = () => {
       {/* Hero Section with Search */}
       <div style={{
         position: 'relative',
-        paddingTop: '6rem',
-        paddingBottom: '8rem',
-        paddingLeft: '1rem',
-        paddingRight: '1rem',
+        paddingTop: isMobile ? 'clamp(3rem, 8vw, 6rem)' : '6rem',
+        paddingBottom: isMobile ? 'clamp(4rem, 10vw, 8rem)' : '8rem',
+        paddingLeft: isMobile ? 'clamp(1rem, 4vw, 1.5rem)' : '1rem',
+        paddingRight: isMobile ? 'clamp(1rem, 4vw, 1.5rem)' : '1rem',
         overflow: 'hidden',
         marginLeft: '0',
         marginRight: '0',
@@ -275,33 +287,36 @@ const HelpSupportCenter: React.FC = () => {
           position: 'relative',
           maxWidth: '56rem',
           margin: '0 auto',
-          padding: '0 1rem',
+          padding: isMobile ? '0 0.5rem' : '0 1rem',
           textAlign: 'center'
         }}>
           <h1 style={{
-            fontSize: 'clamp(1.875rem, 5vw, 3rem)',
+            fontSize: isMobile ? 'clamp(1.5rem, 7vw, 2.5rem)' : 'clamp(1.875rem, 5vw, 3rem)',
             fontWeight: 'bold',
             color: 'white',
-            marginBottom: '2rem'
+            marginBottom: isMobile ? 'clamp(1.25rem, 5vw, 2rem)' : '2rem',
+            lineHeight: '1.2'
           }}>
             How can we help you?
           </h1>
 
           {/* Search Bar */}
-          <form onSubmit={handleSearch} style={{ maxWidth: '42rem', margin: '0 auto' }}>
+          <form onSubmit={handleSearch} style={{ maxWidth: '42rem', margin: '0 auto', width: '100%' }}>
             <div style={{ position: 'relative' }}>
               <input
                 type="text"
-                placeholder="Search for articles..."
+                placeholder={isMobile ? "Search..." : "Search for articles..."}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 style={{
                   width: '100%',
-                  padding: '0.8rem 3rem 0.8rem 1.5rem',
-                  borderRadius: '0.5rem',
+                  padding: isMobile
+                    ? '0.75rem 2.5rem 0.75rem 1rem'
+                    : '0.8rem 3rem 0.8rem 1.5rem',
+                  borderRadius: isMobile ? '0.5rem' : '0.5rem',
                   boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
                   border: 'none',
-                  fontSize: '1rem',
+                  fontSize: isMobile ? '0.875rem' : '1rem',
                   outline: 'none',
                   backgroundColor: '#d4d4d4',
                   color: '#000000'
@@ -311,14 +326,14 @@ const HelpSupportCenter: React.FC = () => {
                 type="submit"
                 style={{
                   position: 'absolute',
-                  right: '1rem',
+                  right: isMobile ? '0.75rem' : '1rem',
                   top: '50%',
                   transform: 'translateY(-50%)',
                   background: 'none',
                   border: 'none',
                   color: '#9ca3af',
                   cursor: 'pointer',
-                  fontSize: '1.25rem'
+                  fontSize: isMobile ? '1rem' : '1.25rem'
                 }}
               >
                 <i className="bi bi-search"></i>
@@ -329,8 +344,8 @@ const HelpSupportCenter: React.FC = () => {
       </div>
 
       {/* Main Content */}
-      <div style={{ marginLeft: '1rem', marginRight: '1rem' }}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-16 pb-16">
+      <div style={{ marginLeft: isMobile ? '0.5rem' : '1rem', marginRight: isMobile ? '0.5rem' : '1rem' }}>
+        <div className="max-w-7xl mx-auto -mt-16 pb-16" style={{ paddingLeft: isMobile ? '0.5rem' : '1rem', paddingRight: isMobile ? '0.5rem' : '1rem' }}>
 
         {/* Success Message */}
         {successMessage && (
@@ -349,7 +364,11 @@ const HelpSupportCenter: React.FC = () => {
         )}
 
         {/* Category Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 mb-16" style={{ gap: '2rem', marginBottom: '4rem', paddingTop: '3rem' }}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 mb-16" style={{
+          gap: isMobile ? '1rem' : '2rem',
+          marginBottom: isMobile ? '2.5rem' : '4rem',
+          paddingTop: isMobile ? '2rem' : '3rem'
+        }}>
           {categories.map((category) => (
             <div
               key={category.id}
@@ -358,13 +377,13 @@ const HelpSupportCenter: React.FC = () => {
                 background: 'rgba(255, 255, 255, 0.98)',
                 backdropFilter: 'blur(12px)',
                 WebkitBackdropFilter: 'blur(12px)',
-                borderRadius: '20px',
+                borderRadius: isMobile ? '16px' : '20px',
                 boxShadow: '0 6px 24px rgba(8, 58, 133, 0.08), 0 2px 8px rgba(0, 0, 0, 0.05)',
                 border: '1px solid rgba(8, 58, 133, 0.1)',
-                padding: '2rem',
+                padding: isMobile ? '1.5rem 1rem' : '2rem',
                 textAlign: 'center',
                 cursor: 'pointer',
-                minHeight: '240px',
+                minHeight: isMobile ? 'auto' : '240px',
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'center',
@@ -375,14 +394,18 @@ const HelpSupportCenter: React.FC = () => {
               }}
               className="group"
               onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-8px)';
-                e.currentTarget.style.boxShadow = '0 20px 40px rgba(8, 58, 133, 0.2), 0 8px 16px rgba(0, 0, 0, 0.1)';
-                e.currentTarget.style.borderColor = 'rgba(8, 58, 133, 0.3)';
+                if (!isMobile) {
+                  e.currentTarget.style.transform = 'translateY(-8px)';
+                  e.currentTarget.style.boxShadow = '0 20px 40px rgba(8, 58, 133, 0.2), 0 8px 16px rgba(0, 0, 0, 0.1)';
+                  e.currentTarget.style.borderColor = 'rgba(8, 58, 133, 0.3)';
+                }
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 6px 24px rgba(8, 58, 133, 0.08), 0 2px 8px rgba(0, 0, 0, 0.05)';
-                e.currentTarget.style.borderColor = 'rgba(8, 58, 133, 0.1)';
+                if (!isMobile) {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 6px 24px rgba(8, 58, 133, 0.08), 0 2px 8px rgba(0, 0, 0, 0.05)';
+                  e.currentTarget.style.borderColor = 'rgba(8, 58, 133, 0.1)';
+                }
               }}
             >
               <div
@@ -390,27 +413,27 @@ const HelpSupportCenter: React.FC = () => {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  width: '72px',
-                  height: '72px',
-                  borderRadius: '18px',
-                  marginBottom: '1.5rem',
+                  width: isMobile ? '56px' : '72px',
+                  height: isMobile ? '56px' : '72px',
+                  borderRadius: isMobile ? '14px' : '18px',
+                  marginBottom: isMobile ? '1rem' : '1.5rem',
                   background: 'linear-gradient(135deg, rgba(8, 58, 133, 0.1) 0%, rgba(8, 58, 133, 0.05) 100%)',
                   color: '#083A85',
                   transition: 'all 0.3s ease'
                 }}
                 className="group-hover:bg-gradient-to-br group-hover:from-[#083A85] group-hover:to-[#062d65] group-hover:text-white group-hover:shadow-lg"
               >
-                <i className={`${category.icon} text-3xl`}></i>
+                <i className={`${category.icon}`} style={{ fontSize: isMobile ? '1.75rem' : '1.875rem' }}></i>
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2" style={{ letterSpacing: '-0.01em' }}>
+              <h3 className="font-bold text-gray-900 mb-2" style={{ letterSpacing: '-0.01em', fontSize: isMobile ? '1rem' : '1.25rem' }}>
                 {category.name}
               </h3>
-              <p className="text-sm text-gray-600 mb-4 leading-relaxed">
+              <p className="text-gray-600 mb-3 leading-relaxed" style={{ fontSize: isMobile ? '0.8125rem' : '0.875rem' }}>
                 {category.description}
               </p>
               <p
                 style={{
-                  fontSize: '14px',
+                  fontSize: isMobile ? '0.8125rem' : '0.875rem',
                   color: '#083A85',
                   fontWeight: '600',
                   display: 'flex',
@@ -419,7 +442,7 @@ const HelpSupportCenter: React.FC = () => {
                 }}
               >
                 {category.articles} articles
-                <i className="bi bi-arrow-right" style={{ transition: 'transform 0.3s ease' }}></i>
+                <i className="bi bi-arrow-right" style={{ transition: 'transform 0.3s ease', fontSize: isMobile ? '0.75rem' : '0.875rem' }}></i>
               </p>
             </div>
           ))}
@@ -450,22 +473,22 @@ const HelpSupportCenter: React.FC = () => {
             background: 'rgba(255, 255, 255, 0.98)',
             backdropFilter: 'blur(12px)',
             WebkitBackdropFilter: 'blur(12px)',
-            borderRadius: '24px',
+            borderRadius: isMobile ? '20px' : '24px',
             boxShadow: '0 12px 48px rgba(8, 58, 133, 0.12), 0 4px 16px rgba(0, 0, 0, 0.08)',
             border: '1px solid rgba(8, 58, 133, 0.1)',
-            padding: '3rem 2.5rem',
-            marginTop: '4rem',
+            padding: isMobile ? '2rem 1rem' : '3rem 2.5rem',
+            marginTop: isMobile ? '2.5rem' : '4rem',
             marginBottom: '1rem'
           }}
         >
-          <div className="text-center mb-12">
-            <div className="inline-block mb-5">
+          <div className="text-center" style={{ marginBottom: isMobile ? '2rem' : '3rem' }}>
+            <div className="inline-block" style={{ marginBottom: isMobile ? '1rem' : '1.25rem' }}>
               <div
                 style={{
-                  width: '64px',
-                  height: '64px',
+                  width: isMobile ? '48px' : '64px',
+                  height: isMobile ? '48px' : '64px',
                   background: 'linear-gradient(135deg, #083A85 0%, #062d65 100%)',
-                  borderRadius: '20px',
+                  borderRadius: isMobile ? '16px' : '20px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -474,15 +497,15 @@ const HelpSupportCenter: React.FC = () => {
                   transform: 'rotate(-5deg)'
                 }}
               >
-                <i className="bi bi-question-circle text-2xl text-white" style={{ transform: 'rotate(5deg)' }}></i>
+                <i className="bi bi-question-circle text-white" style={{ fontSize: isMobile ? '1.5rem' : '1.75rem', transform: 'rotate(5deg)' }}></i>
               </div>
             </div>
             <h2
               style={{
-                fontSize: 'clamp(1.75rem, 4vw, 2.5rem)',
+                fontSize: isMobile ? '1.5rem' : 'clamp(1.75rem, 4vw, 2.5rem)',
                 fontWeight: 'bold',
                 color: '#111827',
-                marginBottom: '1rem',
+                marginBottom: isMobile ? '0.75rem' : '1rem',
                 letterSpacing: '-0.02em'
               }}
             >
@@ -491,10 +514,11 @@ const HelpSupportCenter: React.FC = () => {
             <p
               style={{
                 color: '#6B7280',
-                fontSize: '1.125rem',
+                fontSize: isMobile ? '0.9375rem' : '1.125rem',
                 lineHeight: '1.7',
                 maxWidth: '600px',
-                margin: '0 auto'
+                margin: '0 auto',
+                padding: isMobile ? '0 0.5rem' : '0'
               }}
             >
               {selectedCategory
@@ -534,14 +558,17 @@ const HelpSupportCenter: React.FC = () => {
                   <button
                     onClick={() => handleFAQClick(faq.id)}
                     className="w-full text-left flex items-center justify-between gap-4 hover:bg-blue-50/30 transition-all duration-200"
-                    style={{ cursor: 'pointer', padding: '1.25rem 1.75rem' }}
+                    style={{
+                      cursor: 'pointer',
+                      padding: isMobile ? '1rem 1rem' : '1.25rem 1.75rem'
+                    }}
                   >
-                    <div className="flex items-start gap-4 flex-1">
+                    <div className="flex items-start flex-1" style={{ gap: isMobile ? '0.75rem' : '1rem' }}>
                       <div
                         style={{
                           flexShrink: 0,
-                          width: '36px',
-                          height: '36px',
+                          width: isMobile ? '32px' : '36px',
+                          height: isMobile ? '32px' : '36px',
                           borderRadius: '10px',
                           display: 'flex',
                           alignItems: 'center',
@@ -552,22 +579,22 @@ const HelpSupportCenter: React.FC = () => {
                           boxShadow: openFAQ === faq.id ? '0 4px 12px rgba(8, 58, 133, 0.3)' : 'none'
                         }}
                       >
-                        <i className={`bi bi-chevron-${openFAQ === faq.id ? 'down' : 'right'} text-base`}></i>
+                        <i className={`bi bi-chevron-${openFAQ === faq.id ? 'down' : 'right'}`} style={{ fontSize: isMobile ? '0.875rem' : '1rem' }}></i>
                       </div>
-                      <span className="text-gray-900 font-semibold text-base sm:text-lg" style={{ lineHeight: '1.5' }}>{faq.question}</span>
+                      <span className="text-gray-900 font-semibold" style={{ fontSize: isMobile ? '0.9375rem' : '1.125rem', lineHeight: '1.5' }}>{faq.question}</span>
                     </div>
                     <span
                       style={{
-                        fontSize: '12px',
+                        fontSize: isMobile ? '0.6875rem' : '0.75rem',
                         fontWeight: '600',
                         color: '#083A85',
                         backgroundColor: 'rgba(8, 58, 133, 0.1)',
-                        padding: '6px 14px',
+                        padding: isMobile ? '4px 10px' : '6px 14px',
                         borderRadius: '20px',
                         border: '1px solid rgba(8, 58, 133, 0.2)',
-                        whiteSpace: 'nowrap'
+                        whiteSpace: 'nowrap',
+                        display: isMobile ? 'none' : 'block'
                       }}
-                      className="hidden sm:block"
                     >
                       {faq.category}
                     </span>
@@ -576,24 +603,24 @@ const HelpSupportCenter: React.FC = () => {
                   {openFAQ === faq.id && (
                     <div
                       style={{
-                        padding: '0 1.75rem 1.5rem 1.75rem',
+                        padding: isMobile ? '0 1rem 1.25rem 1rem' : '0 1.75rem 1.5rem 1.75rem',
                         background: 'linear-gradient(to bottom, rgba(8, 58, 133, 0.02) 0%, rgba(8, 58, 133, 0.05) 100%)',
                         borderTop: '1px solid rgba(8, 58, 133, 0.1)'
                       }}
                     >
-                      <div style={{ paddingTop: '1.25rem' }}>
-                        <p className="text-gray-700 leading-relaxed mb-6 text-base" style={{ lineHeight: '1.7' }}>
+                      <div style={{ paddingTop: isMobile ? '1rem' : '1.25rem' }}>
+                        <p className="text-gray-700 leading-relaxed" style={{ lineHeight: '1.7', fontSize: isMobile ? '0.875rem' : '1rem', marginBottom: isMobile ? '1.25rem' : '1.5rem' }}>
                           {faq.answer}
                         </p>
-                        <div className="flex flex-wrap gap-2 mb-6">
+                        <div className="flex flex-wrap" style={{ gap: isMobile ? '0.5rem' : '0.5rem', marginBottom: isMobile ? '1.25rem' : '1.5rem' }}>
                           {faq.tags.map(tag => (
                             <span
                               key={tag}
                               style={{
-                                padding: '8px 14px',
+                                padding: isMobile ? '6px 12px' : '8px 14px',
                                 background: 'rgba(8, 58, 133, 0.08)',
                                 color: '#083A85',
-                                fontSize: '13px',
+                                fontSize: isMobile ? '0.75rem' : '0.8125rem',
                                 fontWeight: '600',
                                 borderRadius: '20px',
                                 border: '1px solid rgba(8, 58, 133, 0.15)',
@@ -608,13 +635,13 @@ const HelpSupportCenter: React.FC = () => {
                           style={{
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '12px',
-                            paddingTop: '1rem',
+                            gap: isMobile ? '8px' : '12px',
+                            paddingTop: isMobile ? '0.75rem' : '1rem',
                             borderTop: '1px solid rgba(8, 58, 133, 0.1)',
                             flexWrap: 'wrap'
                           }}
                         >
-                          <span className="text-gray-700 font-semibold text-sm">Was this helpful?</span>
+                          <span className="text-gray-700 font-semibold" style={{ fontSize: isMobile ? '0.8125rem' : '0.875rem' }}>Was this helpful?</span>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -623,15 +650,15 @@ const HelpSupportCenter: React.FC = () => {
                             style={{
                               display: 'flex',
                               alignItems: 'center',
-                              gap: '8px',
-                              padding: '10px 18px',
+                              gap: isMobile ? '6px' : '8px',
+                              padding: isMobile ? '8px 14px' : '10px 18px',
                               color: '#083A85',
                               backgroundColor: 'rgba(8, 58, 133, 0.08)',
                               border: '1px solid rgba(8, 58, 133, 0.2)',
                               borderRadius: '10px',
                               transition: 'all 0.2s ease',
                               fontWeight: '600',
-                              fontSize: '14px',
+                              fontSize: isMobile ? '0.8125rem' : '0.875rem',
                               cursor: 'pointer'
                             }}
                             onMouseEnter={(e) => {
@@ -652,15 +679,15 @@ const HelpSupportCenter: React.FC = () => {
                             style={{
                               display: 'flex',
                               alignItems: 'center',
-                              gap: '8px',
-                              padding: '10px 18px',
+                              gap: isMobile ? '6px' : '8px',
+                              padding: isMobile ? '8px 14px' : '10px 18px',
                               color: '#6B7280',
                               backgroundColor: 'rgba(107, 114, 128, 0.08)',
                               border: '1px solid rgba(107, 114, 128, 0.2)',
                               borderRadius: '10px',
                               transition: 'all 0.2s ease',
                               fontWeight: '600',
-                              fontSize: '14px',
+                              fontSize: isMobile ? '0.8125rem' : '0.875rem',
                               cursor: 'pointer'
                             }}
                             onMouseEnter={(e) => {
@@ -688,54 +715,61 @@ const HelpSupportCenter: React.FC = () => {
         </div>
 
         {/* Contact & Support Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 mb-16" style={{ marginTop: '4rem' }}>
+        <div className="grid grid-cols-1 lg:grid-cols-2 mb-16" style={{
+          marginTop: isMobile ? '2.5rem' : '4rem',
+          gap: isMobile ? '1.5rem' : '2.5rem'
+        }}>
           {/* Contact Form */}
           <div
             style={{
               background: 'rgba(255, 255, 255, 0.98)',
               backdropFilter: 'blur(12px)',
               WebkitBackdropFilter: 'blur(12px)',
-              borderRadius: '24px',
+              borderRadius: isMobile ? '20px' : '24px',
               boxShadow: '0 10px 40px rgba(8, 58, 133, 0.12), 0 4px 12px rgba(0, 0, 0, 0.08)',
               border: '1px solid rgba(8, 58, 133, 0.1)',
-              padding: '2.5rem',
+              padding: isMobile ? '1.5rem 1rem' : '2.5rem',
               transition: 'all 0.3s ease'
             }}
             className="hover:shadow-2xl"
           >
-            <div style={{ marginBottom: '1.5rem' }}>
+            <div style={{ marginBottom: isMobile ? '1.25rem' : '1.5rem' }}>
               <div
                 style={{
-                  width: '56px',
-                  height: '56px',
+                  width: isMobile ? '48px' : '56px',
+                  height: isMobile ? '48px' : '56px',
                   background: 'linear-gradient(135deg, #083A85 0%, #0a4aa3 100%)',
-                  borderRadius: '16px',
+                  borderRadius: isMobile ? '14px' : '16px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  marginBottom: '1.25rem',
+                  marginBottom: isMobile ? '1rem' : '1.25rem',
                   boxShadow: '0 8px 20px rgba(8, 58, 133, 0.25)'
                 }}
               >
-                <i className="bi bi-envelope-fill text-xl text-white"></i>
+                <i className="bi bi-envelope-fill text-white" style={{ fontSize: isMobile ? '1.125rem' : '1.25rem' }}></i>
               </div>
-              <h2 className="text-2xl sm:text-3xl font-bold text-gray-900" style={{ marginBottom: '0.75rem' }}>Contact Support</h2>
-              <p className="text-gray-600 text-base leading-relaxed">Can't find what you're looking for? Send us a message and we'll get back to you within 24 hours.</p>
+              <h2 className="font-bold text-gray-900" style={{ fontSize: isMobile ? '1.5rem' : '1.875rem', marginBottom: '0.75rem' }}>Contact Support</h2>
+              <p className="text-gray-600 leading-relaxed" style={{ fontSize: isMobile ? '0.875rem' : '1rem' }}>Can't find what you're looking for? Send us a message and we'll get back to you within 24 hours.</p>
             </div>
 
-            <form onSubmit={handleContactSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
+            <form onSubmit={handleContactSubmit} style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: isMobile ? '1.25rem' : '1.75rem'
+            }}>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-3">Name *</label>
+                <label className="block font-semibold text-gray-700" style={{ fontSize: isMobile ? '0.8125rem' : '0.875rem', marginBottom: isMobile ? '0.5rem' : '0.75rem' }}>Name *</label>
                 <input
                   type="text"
                   value={contactForm.name}
                   onChange={(e) => setContactForm(prev => ({ ...prev, name: e.target.value }))}
                   style={{
                     width: '100%',
-                    padding: '14px 16px',
+                    padding: isMobile ? '12px 14px' : '14px 16px',
                     border: '2px solid rgba(8, 58, 133, 0.15)',
-                    borderRadius: '12px',
-                    fontSize: '15px',
+                    borderRadius: isMobile ? '10px' : '12px',
+                    fontSize: isMobile ? '0.875rem' : '0.9375rem',
                     transition: 'all 0.2s ease',
                     backgroundColor: 'rgba(8, 58, 133, 0.02)'
                   }}
@@ -746,17 +780,17 @@ const HelpSupportCenter: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-3">Email *</label>
+                <label className="block font-semibold text-gray-700" style={{ fontSize: isMobile ? '0.8125rem' : '0.875rem', marginBottom: isMobile ? '0.5rem' : '0.75rem' }}>Email *</label>
                 <input
                   type="email"
                   value={contactForm.email}
                   onChange={(e) => setContactForm(prev => ({ ...prev, email: e.target.value }))}
                   style={{
                     width: '100%',
-                    padding: '14px 16px',
+                    padding: isMobile ? '12px 14px' : '14px 16px',
                     border: '2px solid rgba(8, 58, 133, 0.15)',
-                    borderRadius: '12px',
-                    fontSize: '15px',
+                    borderRadius: isMobile ? '10px' : '12px',
+                    fontSize: isMobile ? '0.875rem' : '0.9375rem',
                     transition: 'all 0.2s ease',
                     backgroundColor: 'rgba(8, 58, 133, 0.02)'
                   }}
@@ -767,17 +801,17 @@ const HelpSupportCenter: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-3">Subject</label>
+                <label className="block font-semibold text-gray-700" style={{ fontSize: isMobile ? '0.8125rem' : '0.875rem', marginBottom: isMobile ? '0.5rem' : '0.75rem' }}>Subject</label>
                 <input
                   type="text"
                   value={contactForm.subject}
                   onChange={(e) => setContactForm(prev => ({ ...prev, subject: e.target.value }))}
                   style={{
                     width: '100%',
-                    padding: '14px 16px',
+                    padding: isMobile ? '12px 14px' : '14px 16px',
                     border: '2px solid rgba(8, 58, 133, 0.15)',
-                    borderRadius: '12px',
-                    fontSize: '15px',
+                    borderRadius: isMobile ? '10px' : '12px',
+                    fontSize: isMobile ? '0.875rem' : '0.9375rem',
                     transition: 'all 0.2s ease',
                     backgroundColor: 'rgba(8, 58, 133, 0.02)'
                   }}
@@ -787,17 +821,17 @@ const HelpSupportCenter: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-3">Message *</label>
+                <label className="block font-semibold text-gray-700" style={{ fontSize: isMobile ? '0.8125rem' : '0.875rem', marginBottom: isMobile ? '0.5rem' : '0.75rem' }}>Message *</label>
                 <textarea
-                  rows={5}
+                  rows={isMobile ? 4 : 5}
                   value={contactForm.message}
                   onChange={(e) => setContactForm(prev => ({ ...prev, message: e.target.value }))}
                   style={{
                     width: '100%',
-                    padding: '14px 16px',
+                    padding: isMobile ? '12px 14px' : '14px 16px',
                     border: '2px solid rgba(8, 58, 133, 0.15)',
-                    borderRadius: '12px',
-                    fontSize: '15px',
+                    borderRadius: isMobile ? '10px' : '12px',
+                    fontSize: isMobile ? '0.875rem' : '0.9375rem',
                     transition: 'all 0.2s ease',
                     backgroundColor: 'rgba(8, 58, 133, 0.02)',
                     resize: 'none'
@@ -813,13 +847,13 @@ const HelpSupportCenter: React.FC = () => {
                 disabled={contactForm.loading}
                 style={{
                   width: '100%',
-                  padding: '16px 24px',
+                  padding: isMobile ? '14px 20px' : '16px 24px',
                   background: 'linear-gradient(135deg, #083A85 0%, #0a4aa3 100%)',
                   color: '#ffffff',
                   fontWeight: '600',
-                  borderRadius: '12px',
+                  borderRadius: isMobile ? '10px' : '12px',
                   border: 'none',
-                  fontSize: '16px',
+                  fontSize: isMobile ? '0.9375rem' : '1rem',
                   cursor: contactForm.loading ? 'not-allowed' : 'pointer',
                   transition: 'all 0.3s ease',
                   boxShadow: '0 4px 16px rgba(8, 58, 133, 0.3)',
@@ -848,43 +882,43 @@ const HelpSupportCenter: React.FC = () => {
               background: 'rgba(255, 255, 255, 0.98)',
               backdropFilter: 'blur(12px)',
               WebkitBackdropFilter: 'blur(12px)',
-              borderRadius: '24px',
+              borderRadius: isMobile ? '20px' : '24px',
               boxShadow: '0 10px 40px rgba(8, 58, 133, 0.12), 0 4px 12px rgba(0, 0, 0, 0.08)',
               border: '1px solid rgba(8, 58, 133, 0.1)',
-              padding: '2.5rem',
+              padding: isMobile ? '1.5rem 1rem' : '2.5rem',
               transition: 'all 0.3s ease'
             }}
             className="hover:shadow-2xl"
           >
-            <div style={{ marginBottom: '1.5rem' }}>
+            <div style={{ marginBottom: isMobile ? '1.25rem' : '1.5rem' }}>
               <div
                 style={{
-                  width: '56px',
-                  height: '56px',
+                  width: isMobile ? '48px' : '56px',
+                  height: isMobile ? '48px' : '56px',
                   background: 'linear-gradient(135deg, #083A85 0%, #0a4aa3 100%)',
-                  borderRadius: '16px',
+                  borderRadius: isMobile ? '14px' : '16px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  marginBottom: '1.25rem',
+                  marginBottom: isMobile ? '1rem' : '1.25rem',
                   boxShadow: '0 8px 20px rgba(8, 58, 133, 0.25)'
                 }}
               >
-                <i className="bi bi-headset text-xl text-white"></i>
+                <i className="bi bi-headset text-white" style={{ fontSize: isMobile ? '1.125rem' : '1.25rem' }}></i>
               </div>
-              <h2 className="text-2xl sm:text-3xl font-bold text-gray-900" style={{ marginBottom: '0.75rem' }}>Get in Touch</h2>
-              <p className="text-gray-600 text-base leading-relaxed">Multiple ways to reach our dedicated support team</p>
+              <h2 className="font-bold text-gray-900" style={{ fontSize: isMobile ? '1.5rem' : '1.875rem', marginBottom: '0.75rem' }}>Get in Touch</h2>
+              <p className="text-gray-600 leading-relaxed" style={{ fontSize: isMobile ? '0.875rem' : '1rem' }}>Multiple ways to reach our dedicated support team</p>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '1rem' : '1.25rem' }}>
               <div
                 style={{
                   display: 'flex',
                   alignItems: 'flex-start',
-                  gap: '1rem',
-                  padding: '1.25rem',
+                  gap: isMobile ? '0.75rem' : '1rem',
+                  padding: isMobile ? '1rem' : '1.25rem',
                   background: 'linear-gradient(135deg, rgba(8, 58, 133, 0.04) 0%, rgba(8, 58, 133, 0.08) 100%)',
-                  borderRadius: '16px',
+                  borderRadius: isMobile ? '14px' : '16px',
                   border: '1px solid rgba(8, 58, 133, 0.15)',
                   transition: 'all 0.2s ease'
                 }}
@@ -893,22 +927,22 @@ const HelpSupportCenter: React.FC = () => {
                 <div
                   style={{
                     flexShrink: 0,
-                    width: '48px',
-                    height: '48px',
+                    width: isMobile ? '40px' : '48px',
+                    height: isMobile ? '40px' : '48px',
                     background: 'linear-gradient(135deg, #083A85 0%, #0a4aa3 100%)',
-                    borderRadius: '12px',
+                    borderRadius: isMobile ? '10px' : '12px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     boxShadow: '0 6px 16px rgba(8, 58, 133, 0.3)'
                   }}
                 >
-                  <i className="bi bi-envelope-fill text-white text-base"></i>
+                  <i className="bi bi-envelope-fill text-white" style={{ fontSize: isMobile ? '0.875rem' : '1rem' }}></i>
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-bold text-gray-900 text-lg mb-2">Email Support</h3>
-                  <p className="text-base text-[#083A85] font-semibold mb-2">support@amoriaconnekt.com</p>
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <h3 className="font-bold text-gray-900 mb-2" style={{ fontSize: isMobile ? '1rem' : '1.125rem' }}>Email Support</h3>
+                  <p className="text-[#083A85] font-semibold mb-2" style={{ fontSize: isMobile ? '0.875rem' : '1rem' }}>support@amoriaconnekt.com</p>
+                  <div className="flex items-center gap-2 text-gray-600" style={{ fontSize: isMobile ? '0.8125rem' : '0.875rem' }}>
                     <i className="bi bi-clock-fill"></i>
                     <span>Response within 24 hours</span>
                   </div>
@@ -919,10 +953,10 @@ const HelpSupportCenter: React.FC = () => {
                 style={{
                   display: 'flex',
                   alignItems: 'flex-start',
-                  gap: '1rem',
-                  padding: '1.25rem',
+                  gap: isMobile ? '0.75rem' : '1rem',
+                  padding: isMobile ? '1rem' : '1.25rem',
                   background: 'linear-gradient(135deg, rgba(8, 58, 133, 0.04) 0%, rgba(8, 58, 133, 0.08) 100%)',
-                  borderRadius: '16px',
+                  borderRadius: isMobile ? '14px' : '16px',
                   border: '1px solid rgba(8, 58, 133, 0.15)',
                   transition: 'all 0.2s ease'
                 }}
@@ -931,22 +965,22 @@ const HelpSupportCenter: React.FC = () => {
                 <div
                   style={{
                     flexShrink: 0,
-                    width: '48px',
-                    height: '48px',
+                    width: isMobile ? '40px' : '48px',
+                    height: isMobile ? '40px' : '48px',
                     background: 'linear-gradient(135deg, #083A85 0%, #0a4aa3 100%)',
-                    borderRadius: '12px',
+                    borderRadius: isMobile ? '10px' : '12px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     boxShadow: '0 6px 16px rgba(8, 58, 133, 0.3)'
                   }}
                 >
-                  <i className="bi bi-telephone-fill text-white text-base"></i>
+                  <i className="bi bi-telephone-fill text-white" style={{ fontSize: isMobile ? '0.875rem' : '1rem' }}></i>
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-bold text-gray-900 text-lg mb-2">Phone Support</h3>
-                  <p className="text-base text-[#083A85] font-semibold mb-2">+250 788 437 347</p>
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <h3 className="font-bold text-gray-900 mb-2" style={{ fontSize: isMobile ? '1rem' : '1.125rem' }}>Phone Support</h3>
+                  <p className="text-[#083A85] font-semibold mb-2" style={{ fontSize: isMobile ? '0.875rem' : '1rem' }}>+250 788 437 347</p>
+                  <div className="flex items-center gap-2 text-gray-600" style={{ fontSize: isMobile ? '0.8125rem' : '0.875rem' }}>
                     <i className="bi bi-clock-fill"></i>
                     <span>Mon-Fri, 9 AM - 6 PM EAT</span>
                   </div>
@@ -957,10 +991,10 @@ const HelpSupportCenter: React.FC = () => {
                 style={{
                   display: 'flex',
                   alignItems: 'flex-start',
-                  gap: '1rem',
-                  padding: '1.25rem',
+                  gap: isMobile ? '0.75rem' : '1rem',
+                  padding: isMobile ? '1rem' : '1.25rem',
                   background: 'linear-gradient(135deg, rgba(8, 58, 133, 0.04) 0%, rgba(8, 58, 133, 0.08) 100%)',
-                  borderRadius: '16px',
+                  borderRadius: isMobile ? '14px' : '16px',
                   border: '1px solid rgba(8, 58, 133, 0.15)',
                   transition: 'all 0.2s ease'
                 }}
@@ -969,22 +1003,22 @@ const HelpSupportCenter: React.FC = () => {
                 <div
                   style={{
                     flexShrink: 0,
-                    width: '48px',
-                    height: '48px',
+                    width: isMobile ? '40px' : '48px',
+                    height: isMobile ? '40px' : '48px',
                     background: 'linear-gradient(135deg, #083A85 0%, #0a4aa3 100%)',
-                    borderRadius: '12px',
+                    borderRadius: isMobile ? '10px' : '12px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     boxShadow: '0 6px 16px rgba(8, 58, 133, 0.3)'
                   }}
                 >
-                  <i className="bi bi-chat-dots-fill text-white text-base"></i>
+                  <i className="bi bi-chat-dots-fill text-white" style={{ fontSize: isMobile ? '0.875rem' : '1rem' }}></i>
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-bold text-gray-900 text-lg mb-2">Live Chat</h3>
-                  <p className="text-base text-[#083A85] font-semibold mb-2">Available on website</p>
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <h3 className="font-bold text-gray-900 mb-2" style={{ fontSize: isMobile ? '1rem' : '1.125rem' }}>Live Chat</h3>
+                  <p className="text-[#083A85] font-semibold mb-2" style={{ fontSize: isMobile ? '0.875rem' : '1rem' }}>Available on website</p>
+                  <div className="flex items-center gap-2 text-gray-600" style={{ fontSize: isMobile ? '0.8125rem' : '0.875rem' }}>
                     <i className="bi bi-clock-fill"></i>
                     <span>Mon-Fri, 9 AM - 6 PM EAT</span>
                   </div>

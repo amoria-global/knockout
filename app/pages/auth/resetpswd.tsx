@@ -55,18 +55,18 @@ function ResetPasswordContent(): React.JSX.Element {
 
   if (success) {
     return (
-      <div className="h-screen overflow-hidden bg-gray-50 flex items-center justify-center px-4 py-4 sm:p-4">
-        <div className="w-full max-w-md h-[90vh] max-h-[800px] bg-white rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col items-center justify-center">
-          <div style={{width: '100%',maxWidth: '420px',padding: '40px 36px'}}>
+      <div className="h-screen overflow-hidden bg-gray-50 flex items-center justify-center px-3 py-3 sm:px-4 sm:py-4">
+        <div className="w-full max-w-md h-[90vh] max-h-[800px] bg-white rounded-xl sm:rounded-2xl md:rounded-3xl shadow-2xl overflow-hidden flex flex-col items-center justify-center">
+          <div style={{width: '100%',maxWidth: '420px',padding: window.innerWidth < 640 ? '24px 20px' : '32px 36px'}}>
             {/* Success Icon */}
-            <div style={{display: 'flex',justifyContent: 'center',marginBottom: '20px'}}>
-              <div style={{ width: '60px', height: '60px', borderRadius: '50%', backgroundColor: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <i className="bi bi-check-circle" style={{ fontSize: '28px', color: '#ffffff' }}></i>
+            <div style={{display: 'flex',justifyContent: 'center',marginBottom: window.innerWidth < 640 ? '16px' : '16px'}}>
+              <div style={{ width: window.innerWidth < 640 ? '50px' : '56px', height: window.innerWidth < 640 ? '50px' : '56px', borderRadius: '50%', backgroundColor: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <i className="bi bi-check-circle" style={{ fontSize: window.innerWidth < 640 ? '24px' : '26px', color: '#ffffff' }}></i>
               </div>
             </div>
 
-            <h1 style={{ fontSize: '24px', fontWeight: '600', textAlign: 'center', color: '#000000', marginBottom: '8px', letterSpacing: '0.3px' }}>Password Reset Successful!</h1>
-            <p style={{ fontSize: '15px', fontWeight: '500', color: '#000000', textAlign: 'center', marginBottom: '24px', lineHeight: '1.4', opacity: '0.7' }}>
+            <h1 style={{ fontSize: window.innerWidth < 640 ? '20px' : '22px', fontWeight: '600', textAlign: 'center', color: '#000000', marginBottom: '6px', letterSpacing: '0.3px' }}>Password Reset Successful!</h1>
+            <p style={{ fontSize: window.innerWidth < 640 ? '14px' : '14px', fontWeight: '500', color: '#000000', textAlign: 'center', marginBottom: window.innerWidth < 640 ? '20px' : '20px', lineHeight: '1.4', opacity: '0.7' }}>
               Your password has been successfully reset. Redirecting to login...
             </p>
           </div>
@@ -76,36 +76,36 @@ function ResetPasswordContent(): React.JSX.Element {
   }
 
   return (
-    <div className="h-screen overflow-hidden bg-gray-50 flex items-center justify-center px-4 py-4 sm:p-4">
-      <div className="w-full max-w-md h-[90vh] max-h-[800px] bg-white rounded-2xl sm:rounded-3xl shadow-2xl overflow-y-auto flex flex-col">
-        <div style={{width: '100%',maxWidth: '420px',padding: '40px 36px', margin: '0 auto'}}>
+    <div className="h-screen overflow-hidden bg-gray-50 flex items-center justify-center px-3 py-3 sm:px-4 sm:py-4">
+      <div className="w-full max-w-md h-[90vh] max-h-[800px] bg-white rounded-xl sm:rounded-2xl md:rounded-3xl shadow-2xl overflow-y-auto flex flex-col">
+        <div style={{width: '100%',maxWidth: '420px',padding: window.innerWidth < 640 ? '12px 18px 24px 18px' : '24px 36px', margin: '0 auto'}}>
           {/* Lock and Key Icon */}
-          <div style={{display: 'flex',justifyContent: 'center',marginBottom: '20px'}}>
-            <div style={{ width: '60px', height: '60px', borderRadius: '50%', backgroundColor: '#083A85', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-              <i className="bi bi-lock" style={{ fontSize: '24px', color: '#ffffff', position: 'absolute', left: '12px' }}></i>
-              <i className="bi bi-key" style={{ fontSize: '24px', color: '#ffffff', position: 'absolute', right: '12px' }}></i>
+          <div style={{display: 'flex',justifyContent: 'center',marginBottom: window.innerWidth < 640 ? '8px' : '10px'}}>
+            <div style={{ width: window.innerWidth < 640 ? '40px' : '48px', height: window.innerWidth < 640 ? '40px' : '48px', borderRadius: '50%', backgroundColor: '#083A85', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+              <i className="bi bi-lock" style={{ fontSize: window.innerWidth < 640 ? '17px' : '20px', color: '#ffffff', position: 'absolute', left: window.innerWidth < 640 ? '8px' : '10px' }}></i>
+              <i className="bi bi-key" style={{ fontSize: window.innerWidth < 640 ? '17px' : '20px', color: '#ffffff', position: 'absolute', right: window.innerWidth < 640 ? '8px' : '10px' }}></i>
             </div>
           </div>
 
           {/* Title and Description */}
-          <h1 style={{ fontSize: '24px', fontWeight: '600', textAlign: 'center', color: '#000000', marginBottom: '8px', letterSpacing: '0.3px' }}>Create New Password</h1>
+          <h1 style={{ fontSize: window.innerWidth < 640 ? '17px' : '20px', fontWeight: '600', textAlign: 'center', color: '#000000', marginBottom: window.innerWidth < 640 ? '3px' : '4px', letterSpacing: '0.3px' }}>Create New Password</h1>
 
-          <p style={{ fontSize: '15px', fontWeight: '500', color: '#000000', textAlign: 'center', marginBottom: '24px', lineHeight: '1.4', opacity: '0.7' }}>
+          <p style={{ fontSize: window.innerWidth < 640 ? '12px' : '13px', fontWeight: '500', color: '#000000', textAlign: 'center', marginBottom: window.innerWidth < 640 ? '12px' : '14px', lineHeight: '1.3', opacity: '0.7' }}>
             Your identity has been verified. Please create a new secure password for your account.
           </p>
 
           {/* Error Message */}
           {error && (
-            <div style={{ backgroundColor: '#fee2e2', border: '1px solid #fecaca', borderRadius: '8px', padding: '12px', marginBottom: '16px' }}>
-              <p style={{ fontSize: '13px', color: '#991b1b', margin: 0 }}>{error}</p>
+            <div style={{ backgroundColor: '#fee2e2', border: '1px solid #fecaca', borderRadius: '8px', padding: window.innerWidth < 640 ? '7px' : '8px', marginBottom: window.innerWidth < 640 ? '8px' : '10px' }}>
+              <p style={{ fontSize: window.innerWidth < 640 ? '11px' : '12px', color: '#991b1b', margin: 0 }}>{error}</p>
             </div>
           )}
 
           {/* Reset Password Form */}
           <form onSubmit={handleSubmit}>
             {/* New Password Input */}
-            <div style={{ marginBottom: '18px' }}>
-              <label htmlFor="newPassword" style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#000000', marginBottom: '6px' }}>
+            <div style={{ marginBottom: window.innerWidth < 640 ? '10px' : '12px' }}>
+              <label htmlFor="newPassword" style={{ display: 'block', fontSize: window.innerWidth < 640 ? '12px' : '13px', fontWeight: '500', color: '#000000', marginBottom: window.innerWidth < 640 ? '3px' : '4px' }}>
                 New Password
               </label>
               <div style={{ position: 'relative' }}>
@@ -117,11 +117,11 @@ function ResetPasswordContent(): React.JSX.Element {
                   placeholder="Enter new password"
                   style={{
                     width: '100%',
-                    padding: '10px 40px 10px 14px',
-                    fontSize: '14px',
+                    padding: window.innerWidth < 640 ? '10px 40px 10px 12px' : '10px 40px 10px 14px',
+                    fontSize: window.innerWidth < 640 ? '15px' : '14px',
                     fontWeight: '400',
                     border: '1.5px solid #d1d5db',
-                    borderRadius: '12px',
+                    borderRadius: window.innerWidth < 640 ? '10px' : '12px',
                     outline: 'none',
                     transition: 'all 0.3s',
                     backgroundColor: '#ffffff',
@@ -140,16 +140,17 @@ function ResetPasswordContent(): React.JSX.Element {
                     border: 'none',
                     cursor: 'pointer',
                     color: '#6b7280',
+                    padding: window.innerWidth < 640 ? '8px' : '4px',
                   }}
                 >
-                  <i className={`bi ${showPassword ? 'bi-eye-slash' : 'bi-eye'}`} style={{ fontSize: '16px' }}></i>
+                  <i className={`bi ${showPassword ? 'bi-eye-slash' : 'bi-eye'}`} style={{ fontSize: window.innerWidth < 640 ? '18px' : '16px' }}></i>
                 </button>
               </div>
             </div>
 
             {/* Confirm Password Input */}
-            <div style={{ marginBottom: '18px' }}>
-              <label htmlFor="confirmPassword" style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#000000', marginBottom: '6px' }}>
+            <div style={{ marginBottom: window.innerWidth < 640 ? '10px' : '12px' }}>
+              <label htmlFor="confirmPassword" style={{ display: 'block', fontSize: window.innerWidth < 640 ? '12px' : '13px', fontWeight: '500', color: '#000000', marginBottom: window.innerWidth < 640 ? '3px' : '4px' }}>
                 Confirm Password
               </label>
               <div style={{ position: 'relative' }}>
@@ -161,11 +162,11 @@ function ResetPasswordContent(): React.JSX.Element {
                   placeholder="Confirm new password"
                   style={{
                     width: '100%',
-                    padding: '10px 40px 10px 14px',
-                    fontSize: '14px',
+                    padding: window.innerWidth < 640 ? '10px 40px 10px 12px' : '10px 40px 10px 14px',
+                    fontSize: window.innerWidth < 640 ? '15px' : '14px',
                     fontWeight: '400',
                     border: '1.5px solid #d1d5db',
-                    borderRadius: '12px',
+                    borderRadius: window.innerWidth < 640 ? '10px' : '12px',
                     outline: 'none',
                     transition: 'all 0.3s',
                     backgroundColor: '#ffffff',
@@ -184,16 +185,17 @@ function ResetPasswordContent(): React.JSX.Element {
                     border: 'none',
                     cursor: 'pointer',
                     color: '#6b7280',
+                    padding: window.innerWidth < 640 ? '8px' : '4px',
                   }}
                 >
-                  <i className={`bi ${showConfirmPassword ? 'bi-eye-slash' : 'bi-eye'}`} style={{ fontSize: '16px' }}></i>
+                  <i className={`bi ${showConfirmPassword ? 'bi-eye-slash' : 'bi-eye'}`} style={{ fontSize: window.innerWidth < 640 ? '18px' : '16px' }}></i>
                 </button>
               </div>
             </div>
 
             {/* Password Requirements */}
-            <div style={{ marginBottom: '18px', padding: '8px 12px', backgroundColor: '#f3f4f6', borderRadius: '8px' }}>
-              <p style={{ fontSize: '13px', color: '#6b7280', margin: 0 }}>
+            <div style={{ marginBottom: window.innerWidth < 640 ? '10px' : '12px', padding: window.innerWidth < 640 ? '5px 10px' : '6px 10px', backgroundColor: '#f3f4f6', borderRadius: '8px' }}>
+              <p style={{ fontSize: window.innerWidth < 640 ? '10.5px' : '11.5px', color: '#6b7280', margin: 0 }}>
                 Password must contain: <span style={{ fontWeight: '500' }}>At least 8 characters</span>
               </p>
             </div>
@@ -204,35 +206,35 @@ function ResetPasswordContent(): React.JSX.Element {
               disabled={isDisabled}
               style={{
                 width: '100%',
-                padding: '10px',
-                fontSize: '14px',
-                borderRadius: '12px',
+                padding: window.innerWidth < 640 ? '10px' : '9px',
+                fontSize: window.innerWidth < 640 ? '15px' : '14px',
+                borderRadius: window.innerWidth < 640 ? '10px' : '12px',
                 fontWeight: '500',
                 transition: 'all 0.3s',
                 cursor: isDisabled ? 'not-allowed' : 'pointer',
                 backgroundColor: isDisabled ? '#d1d5db' : '#083A85',
                 color: isDisabled ? '#9ca3af' : '#ffffff',
                 border: 'none',
-                marginBottom: '16px'
+                marginBottom: window.innerWidth < 640 ? '8px' : '10px'
               }}
             >
               Reset Password
             </button>
 
             {/* Back to Sign In Link */}
-            <div style={{ textAlign: 'center', marginBottom: '18px' }}>
-              <Link href="/user/auth/login" style={{ fontSize: '14px', fontWeight: '500', color: '#000000', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', opacity: '0.7' }}>
+            <div style={{ textAlign: 'center', marginBottom: window.innerWidth < 640 ? '8px' : '10px' }}>
+              <Link href="/user/auth/login" style={{ fontSize: window.innerWidth < 640 ? '12px' : '13px', fontWeight: '500', color: '#000000', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', opacity: '0.7' }}>
                 <span>←</span> Back to Sign In
               </Link>
             </div>
 
             {/* Divider */}
-            <div style={{borderTop: '2px solid #9a9a9cff',marginBottom: '16px'}}></div>
+            <div style={{borderTop: '1.5px solid #9a9a9cff',marginBottom: window.innerWidth < 640 ? '8px' : '10px'}}></div>
 
             {/* Bottom Links */}
-            <div style={{ textAlign: 'center' }}>
-              <p style={{ fontSize: '14px', fontWeight: '500', color: '#000000', marginBottom: '6px', opacity: '0.7' }}>Need help?</p>
-              <Link href="/user/help-center" style={{fontSize: '14px',color: '#083A85',textDecoration: 'none', fontWeight: '510'}}>Contact Support</Link>
+            <div style={{ textAlign: 'center', paddingBottom: window.innerWidth < 640 ? '0px' : '0px' }}>
+              <p style={{ fontSize: window.innerWidth < 640 ? '11px' : '12px', fontWeight: '500', color: '#000000', marginBottom: window.innerWidth < 640 ? '3px' : '3px', opacity: '0.7' }}>Need help?</p>
+              <Link href="/user/help-center" style={{fontSize: window.innerWidth < 640 ? '12px' : '13px',color: '#083A85',textDecoration: 'none', fontWeight: '510'}}>Contact Support</Link>
             </div>
           </form>
         </div>

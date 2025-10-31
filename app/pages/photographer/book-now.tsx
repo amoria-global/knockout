@@ -1,11 +1,23 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import AmoriaKNavbar from '../../components/navbar';
 
 export default function BookNowPage(): React.JSX.Element {
   const t = useTranslations('booking.step1');
   const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Sample photographer data - this would normally come from props or API
   const photographerData = {
@@ -93,14 +105,14 @@ export default function BookNowPage(): React.JSX.Element {
           onClick={() => window.history.back()}
           style={{
             position: 'absolute',
-            top: '20px',
+            top: isMobile ? '10px' : '20px',
             left: '0',
             background: 'none',
             border: 'none',
-            fontSize: '16px',
+            fontSize: isMobile ? '14px' : '16px',
             color: '#8b8b8c',
             cursor: 'pointer',
-            padding: '10px 24px',
+            padding: isMobile ? '8px 16px' : '10px 24px',
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
@@ -118,7 +130,7 @@ export default function BookNowPage(): React.JSX.Element {
             e.currentTarget.style.backgroundColor = 'transparent';
           }}
         >
-          <i className="bi bi-chevron-left" style={{ fontSize: '20px' }}></i>
+          <i className="bi bi-chevron-left" style={{ fontSize: isMobile ? '18px' : '20px' }}></i>
           <span>{t('back')}</span>
         </button>
 
@@ -127,7 +139,7 @@ export default function BookNowPage(): React.JSX.Element {
           style={{
             maxWidth: '1400px',
             margin: '0 auto',
-            padding: '20px 24px 40px',
+            padding: isMobile ? '20px 16px 40px' : '20px 24px 40px',
           }}
         >
           {/* New Layout: Photographer Info at Top, Packages Below Horizontally */}
@@ -143,19 +155,19 @@ export default function BookNowPage(): React.JSX.Element {
               style={{
                 backgroundColor: '#fff',
                 borderRadius: '17px',
-                padding: '40px 32px 40px 140px',
+                padding: isMobile ? '24px 16px' : '40px 32px 40px 140px',
                 boxShadow: '0 4px 16px rgba(0, 0, 0, 0.08)',
                 border: '1px solid #e5e7eb',
                 transition: 'all 0.3s ease',
-                minHeight: '180px',
+                minHeight: isMobile ? 'auto' : '180px',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '32px' }}>
+              <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'flex-start' : 'center', gap: isMobile ? '20px' : '32px' }}>
                 {/* Profile Image */}
                 <div
                   style={{
-                    width: '90px',
-                    height: '90px',
+                    width: isMobile ? '70px' : '90px',
+                    height: isMobile ? '70px' : '90px',
                     borderRadius: '50%',
                     overflow: 'hidden',
                     border: '3px solid #083A85',
@@ -175,12 +187,12 @@ export default function BookNowPage(): React.JSX.Element {
                 </div>
 
                 {/* Photographer Info - Horizontal */}
-                <div style={{ flex: 1, display: 'flex', gap: '40px', alignItems: 'center' }}>
+                <div style={{ flex: 1, display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? '16px' : '40px', alignItems: isMobile ? 'flex-start' : 'center', width: '100%' }}>
                   {/* Name */}
                   <div>
                     <h2
                       style={{
-                        fontSize: '22px',
+                        fontSize: isMobile ? '18px' : '22px',
                         fontWeight: '900',
                         color: '#111827',
                         marginBottom: '4px',
@@ -189,13 +201,13 @@ export default function BookNowPage(): React.JSX.Element {
                     >
                       {photographerData.name}
                     </h2>
-                    <p style={{ fontSize: '15px', color: '#6b7280', fontWeight: '500' }}>
+                    <p style={{ fontSize: isMobile ? '13px' : '15px', color: '#6b7280', fontWeight: '500' }}>
                       {t('professionalPhotographer')}
                     </p>
                   </div>
 
                   {/* Details Grid */}
-                  <div style={{ display: 'flex', gap: '32px', flex: 1 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: isMobile ? '16px' : '32px', flex: 1, width: '100%' }}>
                     {/* Availability */}
                     <div>
                       <div
@@ -212,7 +224,7 @@ export default function BookNowPage(): React.JSX.Element {
                       </div>
                       <div
                         style={{
-                          fontSize: '14px',
+                          fontSize: isMobile ? '12px' : '14px',
                           color: '#111827',
                           fontWeight: '600',
                         }}
@@ -237,7 +249,7 @@ export default function BookNowPage(): React.JSX.Element {
                       </div>
                       <div
                         style={{
-                          fontSize: '14px',
+                          fontSize: isMobile ? '12px' : '14px',
                           fontWeight: '600',
                           color: '#111827',
                           display: 'flex',
@@ -277,7 +289,7 @@ export default function BookNowPage(): React.JSX.Element {
                         ></i>
                         <span
                           style={{
-                            fontSize: '14px',
+                            fontSize: isMobile ? '12px' : '14px',
                             color: '#111827',
                             fontWeight: '600',
                           }}
@@ -314,7 +326,7 @@ export default function BookNowPage(): React.JSX.Element {
                         ></i>
                         <span
                           style={{
-                            fontSize: '16px',
+                            fontSize: isMobile ? '14px' : '16px',
                             color: '#10b981',
                             fontWeight: '700',
                           }}
@@ -344,7 +356,7 @@ export default function BookNowPage(): React.JSX.Element {
               </h1>
 
               {/* Package Cards - Horizontal Grid */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: '20px' }}>
                 {packages.map((pkg) => (
                   <div
                     key={pkg.id}
@@ -463,6 +475,7 @@ export default function BookNowPage(): React.JSX.Element {
             <div
               style={{
                 display: 'flex',
+                flexDirection: isMobile ? 'column' : 'row',
                 justifyContent: 'flex-end',
                 gap: '12px',
                 paddingTop: '8px',
@@ -471,7 +484,7 @@ export default function BookNowPage(): React.JSX.Element {
                 <button
                   onClick={handleCancel}
                   style={{
-                    padding: '12px 28px',
+                    padding: isMobile ? '12px 20px' : '12px 28px',
                     backgroundColor: '#fff',
                     color: '#374151',
                     border: '2px solid #d1d5db',
@@ -481,6 +494,7 @@ export default function BookNowPage(): React.JSX.Element {
                     cursor: 'pointer',
                     transition: 'all 0.3s ease',
                     letterSpacing: '0.5px',
+                    width: isMobile ? '100%' : 'auto',
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.backgroundColor = '#f9fafb';
@@ -499,7 +513,7 @@ export default function BookNowPage(): React.JSX.Element {
                    onClick={() => (window.location.href = '/user/photographers/book-now1')}
                   disabled={!selectedPackage}
                   style={{
-                    padding: '12px 32px',
+                    padding: isMobile ? '12px 20px' : '12px 32px',
                     backgroundColor: selectedPackage ? '#083A85' : '#d1d5db',
                     color: '#fff',
                     border: 'none',
@@ -510,6 +524,7 @@ export default function BookNowPage(): React.JSX.Element {
                     transition: 'all 0.3s ease',
                     letterSpacing: '0.5px',
                     boxShadow: selectedPackage ? '0 4px 12px rgba(8, 58, 133, 0.25)' : 'none',
+                    width: isMobile ? '100%' : 'auto',
                   }}
                   onMouseEnter={(e) => {
                     if (selectedPackage) {
