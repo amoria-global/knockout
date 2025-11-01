@@ -16,7 +16,7 @@ const MyAccountHelp: React.FC = () => {
         paddingTop: '8rem',
         paddingBottom: '6rem',
         overflow: 'hidden'
-      }}>
+      }} className="!pt-24 md:!pt-32">
         <div style={{
           position: 'absolute',
           inset: 0
@@ -40,7 +40,7 @@ const MyAccountHelp: React.FC = () => {
           margin: '0 auto',
           padding: '0 2rem',
           textAlign: 'center'
-        }}>
+        }} className="!px-4 md:!px-8">
           <div style={{
             display: 'inline-block',
             marginBottom: '2rem'
@@ -101,11 +101,11 @@ const MyAccountHelp: React.FC = () => {
       </div>
 
       {/* Main Content */}
-      <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 2rem' }}>
-        <div style={{ paddingTop: '4rem', paddingBottom: '6rem' }}>
+      <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 2rem' }} className="!px-4 md:!px-8">
+        <div style={{ paddingTop: '4rem', paddingBottom: '6rem' }} className="!pt-8 !pb-12 md:!pt-16 md:!pb-24">
 
           {/* Quick Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8" style={{ marginBottom: '3rem' }}>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-8" style={{ marginBottom: '3rem' }}>
             <div style={{
               background: 'white',
               borderRadius: '20px',
@@ -113,7 +113,7 @@ const MyAccountHelp: React.FC = () => {
               textAlign: 'center',
               boxShadow: '0 4px 20px rgba(8, 58, 133, 0.08)',
               border: '1px solid rgba(8, 58, 133, 0.08)'
-            }}>
+            }} className="!p-6 md:!p-10">
               <div style={{
                 width: '64px',
                 height: '64px',
@@ -138,7 +138,7 @@ const MyAccountHelp: React.FC = () => {
               textAlign: 'center',
               boxShadow: '0 4px 20px rgba(8, 58, 133, 0.08)',
               border: '1px solid rgba(8, 58, 133, 0.08)'
-            }}>
+            }} className="!p-6 md:!p-10">
               <div style={{
                 width: '64px',
                 height: '64px',
@@ -163,7 +163,7 @@ const MyAccountHelp: React.FC = () => {
               textAlign: 'center',
               boxShadow: '0 4px 20px rgba(8, 58, 133, 0.08)',
               border: '1px solid rgba(8, 58, 133, 0.08)'
-            }}>
+            }} className="!p-6 md:!p-10">
               <div style={{
                 width: '64px',
                 height: '64px',
@@ -195,7 +195,7 @@ const MyAccountHelp: React.FC = () => {
             <div style={{
               padding: '3rem',
               borderBottom: '1px solid #E5E7EB'
-            }}>
+            }} className="!p-6 md:!p-12">
               <h2 style={{
                 fontSize: 'clamp(1.75rem, 3vw, 2.25rem)',
                 fontWeight: '700',
@@ -241,7 +241,7 @@ const MyAccountHelp: React.FC = () => {
             </div>
 
             {/* Section 1: Creating Your Account */}
-            <section id="create" style={{ padding: '4rem 3rem', borderBottom: '1px solid #E5E7EB' }}>
+            <section id="create" style={{ padding: '4rem 3rem', borderBottom: '1px solid #E5E7EB' }} className="!p-6 md:!p-12">
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '2rem' }}>
                 <div style={{
                   width: '56px',
@@ -279,7 +279,7 @@ const MyAccountHelp: React.FC = () => {
                   borderRadius: '16px',
                   padding: '2rem',
                   marginTop: '1.5rem'
-                }}>
+                }} className="!p-4 md:!p-8">
                   <h4 style={{ fontSize: '1.1rem', fontWeight: '600', color: '#083A85', marginBottom: '1.25rem' }}>Registration Steps:</h4>
                   <ol style={{ paddingLeft: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                     <li style={{ fontSize: '1.05rem', lineHeight: '1.7', color: '#374151' }}>
@@ -311,13 +311,13 @@ const MyAccountHelp: React.FC = () => {
                 <p style={{ fontSize: '1.05rem', lineHeight: '1.8', color: '#4B5563', marginBottom: '1.5rem' }}>
                   Amoria Connekt offers two distinct account types, each tailored to specific user needs. You can switch between account types at any time from your account settings without losing your data.
                 </p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                   <div style={{
                     background: 'white',
                     border: '2px solid #083A85',
                     borderRadius: '16px',
                     padding: '2rem'
-                  }}>
+                  }} className="!p-4 md:!p-8">
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '1rem' }}>
                       <i className="bi bi-person-circle" style={{ fontSize: '2rem', color: '#083A85' }}></i>
                       <h4 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#083A85', margin: 0 }}>Client Account</h4>
@@ -338,7 +338,7 @@ const MyAccountHelp: React.FC = () => {
                     border: '2px solid #10b981',
                     borderRadius: '16px',
                     padding: '2rem'
-                  }}>
+                  }} className="!p-4 md:!p-8">
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '1rem' }}>
                       <i className="bi bi-camera-fill" style={{ fontSize: '2rem', color: '#10b981' }}></i>
                       <h4 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#10b981', margin: 0 }}>Photographer Account</h4>
@@ -359,7 +359,7 @@ const MyAccountHelp: React.FC = () => {
             </section>
 
             {/* Section 2: Managing Your Profile */}
-            <section id="manage" style={{ padding: '4rem 3rem', borderBottom: '1px solid #E5E7EB' }}>
+            <section id="manage" style={{ padding: '4rem 3rem', borderBottom: '1px solid #E5E7EB' }} className="!p-6 md:!p-12">
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '2rem' }}>
                 <div style={{
                   width: '56px',
@@ -396,7 +396,7 @@ const MyAccountHelp: React.FC = () => {
                   border: '1px solid rgba(16, 185, 129, 0.15)',
                   borderRadius: '16px',
                   padding: '2rem'
-                }}>
+                }} className="!p-4 md:!p-8">
                   <h4 style={{ fontSize: '1.1rem', fontWeight: '600', color: '#059669', marginBottom: '1.25rem' }}>Updating Your Profile:</h4>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                     <div>
@@ -464,7 +464,7 @@ const MyAccountHelp: React.FC = () => {
             </section>
 
             {/* Section 3: Account Verification */}
-            <section id="verify" style={{ padding: '4rem 3rem', borderBottom: '1px solid #E5E7EB' }}>
+            <section id="verify" style={{ padding: '4rem 3rem', borderBottom: '1px solid #E5E7EB' }} className="!p-6 md:!p-12">
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '2rem' }}>
                 <div style={{
                   width: '56px',
@@ -499,7 +499,7 @@ const MyAccountHelp: React.FC = () => {
                 borderRadius: '16px',
                 padding: '2.5rem',
                 marginBottom: '2rem'
-              }}>
+              }} className="!p-4 md:!p-10">
                 <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#1E40AF', marginBottom: '1.5rem' }}>
                   Verification Requirements
                 </h3>
@@ -615,7 +615,7 @@ const MyAccountHelp: React.FC = () => {
               <h3 style={{ fontSize: '1.35rem', fontWeight: '600', color: '#111827', marginBottom: '1.5rem' }}>
                 Verification Benefits
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                 {[
                   { icon: 'bi-search', title: 'Higher Search Ranking', desc: 'Verified profiles appear at the top of search results with a blue badge' },
                   { icon: 'bi-star-fill', title: 'Premium Features', desc: 'Access advanced booking tools, analytics, and priority customer support' },
@@ -631,7 +631,7 @@ const MyAccountHelp: React.FC = () => {
                     background: 'white',
                     border: '1px solid #E5E7EB',
                     borderRadius: '12px'
-                  }}>
+                  }} className="!p-4 md:!p-6">
                     <div style={{
                       width: '48px',
                       height: '48px',
@@ -654,7 +654,7 @@ const MyAccountHelp: React.FC = () => {
             </section>
 
             {/* Section 4: Notification Preferences */}
-            <section id="notifications" style={{ padding: '4rem 3rem', borderBottom: '1px solid #E5E7EB' }}>
+            <section id="notifications" style={{ padding: '4rem 3rem', borderBottom: '1px solid #E5E7EB' }} className="!p-6 md:!p-12">
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '2rem' }}>
                 <div style={{
                   width: '56px',
@@ -693,8 +693,8 @@ const MyAccountHelp: React.FC = () => {
                   borderRadius: '16px',
                   padding: '2rem',
                   marginBottom: '2rem'
-                }}>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                }} className="!p-4 md:!p-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                     {[
                       { icon: 'bi-envelope-fill', title: 'Email Notifications', desc: 'Receive detailed updates and summaries directly to your inbox. Best for non-urgent information and daily digests.' },
                       { icon: 'bi-phone-fill', title: 'SMS Alerts', desc: 'Get instant text notifications for time-sensitive events like booking confirmations, payment updates, and urgent messages.' },
@@ -708,7 +708,7 @@ const MyAccountHelp: React.FC = () => {
                         background: 'white',
                         border: '1px solid #E5E7EB',
                         borderRadius: '12px'
-                      }}>
+                      }} className="!p-4 md:!p-6">
                         <div style={{
                           width: '48px',
                           height: '48px',
@@ -740,7 +740,7 @@ const MyAccountHelp: React.FC = () => {
                   border: '1px solid rgba(16, 185, 129, 0.15)',
                   borderRadius: '16px',
                   padding: '2rem'
-                }}>
+                }} className="!p-4 md:!p-8">
                   <h4 style={{ fontSize: '1.1rem', fontWeight: '600', color: '#059669', marginBottom: '1.25rem' }}>How to Manage Notifications:</h4>
                   <ol style={{ paddingLeft: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                     <li style={{ fontSize: '1.05rem', lineHeight: '1.7', color: '#374151' }}>
@@ -770,7 +770,7 @@ const MyAccountHelp: React.FC = () => {
             </section>
 
             {/* Section 5: Account Settings & Privacy */}
-            <section id="settings" style={{ padding: '4rem 3rem', borderBottom: '1px solid #E5E7EB' }}>
+            <section id="settings" style={{ padding: '4rem 3rem', borderBottom: '1px solid #E5E7EB' }} className="!p-6 md:!p-12">
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '2rem' }}>
                 <div style={{
                   width: '56px',
@@ -809,7 +809,7 @@ const MyAccountHelp: React.FC = () => {
                   borderRadius: '16px',
                   padding: '2.5rem',
                   marginBottom: '2rem'
-                }}>
+                }} className="!p-4 md:!p-10">
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
                     {[
                       {
@@ -853,7 +853,7 @@ const MyAccountHelp: React.FC = () => {
                 <p style={{ fontSize: '1.05rem', lineHeight: '1.8', color: '#4B5563', marginBottom: '1.5rem' }}>
                   You have complete control over your personal data stored on Amoria Connekt. Access these features from Account Settings - Privacy & Data:
                 </p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                   {[
                     { icon: 'bi-download', title: 'Download Your Data', desc: 'Request a complete export of all your account data, photos, messages, and transaction history in standard formats' },
                     { icon: 'bi-trash', title: 'Delete Account', desc: 'Permanently delete your account and all associated data. This action is irreversible after 30-day grace period' },
@@ -869,7 +869,7 @@ const MyAccountHelp: React.FC = () => {
                       background: 'white',
                       border: '1px solid #E5E7EB',
                       borderRadius: '12px'
-                    }}>
+                    }} className="!p-4 md:!p-6">
                       <div style={{
                         width: '48px',
                         height: '48px',
@@ -893,7 +893,7 @@ const MyAccountHelp: React.FC = () => {
             </section>
 
             {/* Section 6: Common Account Issues */}
-            <section id="issues" style={{ padding: '4rem 3rem', borderBottom: '1px solid #E5E7EB' }}>
+            <section id="issues" style={{ padding: '4rem 3rem', borderBottom: '1px solid #E5E7EB' }} className="!p-6 md:!p-12">
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '2rem' }}>
                 <div style={{
                   width: '56px',
@@ -1006,7 +1006,7 @@ const MyAccountHelp: React.FC = () => {
                       border: '1px solid rgba(245, 158, 11, 0.2)',
                       borderRadius: '16px',
                       padding: '2rem'
-                    }}>
+                    }} className="!p-4 md:!p-8">
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '1.25rem' }}>
                         <div style={{
                           width: '40px',
@@ -1064,7 +1064,7 @@ const MyAccountHelp: React.FC = () => {
             textAlign: 'center',
             boxShadow: '0 10px 40px rgba(8, 58, 133, 0.25)',
             marginTop: '4rem'
-          }}>
+          }} className="!p-6 md:!p-12 !mt-8 md:!mt-16">
             <div style={{
               width: '72px',
               height: '72px',

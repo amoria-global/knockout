@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import AmoriaKNavbar from '../../components/navbar';
 import { useTranslations } from 'next-intl';
 
@@ -14,7 +14,19 @@ const Photographers: React.FC = () => {
   const [selectedRating, setSelectedRating] = useState<string>('all');
   const [bookmarkedPhotographers, setBookmarkedPhotographers] = useState<number[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [isMobile, setIsMobile] = useState(false);
   const itemsPerPage = 12;
+
+  // Detect screen size
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+
+    handleResize(); // Initial check
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Mock photographer data
   const featuredPhotographers = [
@@ -391,10 +403,10 @@ const Photographers: React.FC = () => {
       {/* Hero Section with Search and Filters */}
       <div style={{
         position: 'relative',
-        paddingTop: '2.5rem',
-        paddingBottom: '2.5rem',
-        paddingLeft: '1rem',
-        paddingRight: '1rem',
+        paddingTop: 'clamp(1.5rem, 4vw, 2.5rem)',
+        paddingBottom: 'clamp(1.5rem, 4vw, 2.5rem)',
+        paddingLeft: 'clamp(0.75rem, 2vw, 1rem)',
+        paddingRight: 'clamp(0.75rem, 2vw, 1rem)',
         overflow: 'hidden',
         marginLeft: '0',
         marginRight: '0',
@@ -408,13 +420,14 @@ const Photographers: React.FC = () => {
             style={{
               width: '100%',
               height: '100%',
-              objectFit: 'cover'
+              objectFit: 'cover',
+              objectPosition: 'center'
             }}
           />
           <div style={{
             position: 'absolute',
             inset: 0,
-            backgroundColor: 'llinear-gradient(135deg, #ec4899 0%, #f97316 50%, #8b5cf6 100%)',
+            backgroundColor: 'linear-gradient(135deg, #ec4899 0%, #f97316 50%, #8b5cf6 100%)',
             backdropFilter: 'blur(20px)'
           }}></div>
         </div>
@@ -423,31 +436,36 @@ const Photographers: React.FC = () => {
           position: 'relative',
           maxWidth: '72rem',
           margin: '0 auto',
-          padding: '0 1rem',
+          padding: '0 clamp(0.5rem, 2vw, 1rem)',
           textAlign: 'center'
         }}>
           <h1 style={{
-            fontSize: 'clamp(1.5rem, 4vw, 2.25rem)',
+            fontSize: 'clamp(1.875rem, 7vw, 3rem)',
             fontWeight: 'bold',
             color: 'white',
-            marginBottom: '0.5rem',
-            fontFamily: "'Pragati Narrow', sans-serif"
+            marginBottom: 'clamp(0.5rem, 1.5vw, 0.75rem)',
+            fontFamily: "'Pragati Narrow', sans-serif",
+            lineHeight: '1.2'
           }}>
             {t('title')}
           </h1>
           <p style={{
-            fontSize: 'clamp(0.875rem, 1.5vw, 1rem)',
+            fontSize: 'clamp(1.125rem, 3.5vw, 1.375rem)',
             color: 'rgba(255, 255, 255, 0.9)',
-            marginBottom: '1.5rem',
             maxWidth: '42rem',
-            margin: '0 auto 1.5rem',
-            fontFamily: "'Pragati Narrow', sans-serif"
+            margin: '0 auto clamp(1rem, 2vw, 1.5rem)',
+            fontFamily: "'Pragati Narrow', sans-serif",
+            display: isMobile && window.innerWidth < 375 ? 'none' : 'block'
           }}>
             {t('subtitle')}
           </p>
 
           {/* Search Bar */}
-          <form onSubmit={handleSearch} style={{ maxWidth: '43rem', margin: '0 auto 1.25rem' }}>
+          <form onSubmit={handleSearch} style={{
+            maxWidth: '43rem',
+            margin: '0 auto',
+            marginBottom: 'clamp(0.75rem, 2vw, 1.25rem)'
+          }}>
             <div style={{ position: 'relative' }}>
               <input
                 type="text"
@@ -456,11 +474,11 @@ const Photographers: React.FC = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 style={{
                   width: '100%',
-                  padding: '0.8rem 3rem 0.8rem 1.5rem',
+                  padding: 'clamp(0.875rem, 2.5vw, 1rem) clamp(3rem, 8vw, 3.5rem) clamp(0.875rem, 2.5vw, 1rem) clamp(1.25rem, 3vw, 1.5rem)',
                   borderRadius: '0.5rem',
                   boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
                   border: 'none',
-                  fontSize: '1rem',
+                  fontSize: 'clamp(1.125rem, 3.5vw, 1.25rem)',
                   outline: 'none',
                   backgroundColor: '#d4d4d4',
                   color: '#000000'
@@ -470,14 +488,14 @@ const Photographers: React.FC = () => {
                 type="submit"
                 style={{
                   position: 'absolute',
-                  right: '1rem',
+                  right: 'clamp(0.75rem, 2vw, 1rem)',
                   top: '50%',
                   transform: 'translateY(-50%)',
                   background: 'none',
                   border: 'none',
                   color: '#9ca3af',
                   cursor: 'pointer',
-                  fontSize: '1.25rem'
+                  fontSize: 'clamp(1rem, 3vw, 1.25rem)'
                 }}
               >
                 <i className="bi bi-search"></i>
@@ -488,8 +506,10 @@ const Photographers: React.FC = () => {
           {/* Filters Row */}
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-            gap: '1rem',
+            gridTemplateColumns: isMobile
+              ? 'repeat(2, 1fr)'
+              : 'repeat(auto-fit, minmax(min(160px, 100%), 1fr))',
+            gap: 'clamp(0.5rem, 2vw, 1rem)',
             maxWidth: '70rem',
             margin: '0 auto'
           }}>
@@ -500,12 +520,12 @@ const Photographers: React.FC = () => {
                 onChange={(e) => setSelectedCategory(e.target.value)}
                 style={{
                   width: '100%',
-                  padding: '0.275rem 1rem',
+                  padding: 'clamp(0.5rem, 2vw, 0.625rem) clamp(0.75rem, 2.5vw, 1rem)',
                   borderRadius: '0.5rem',
                   border: '2px solid rgba(255, 255, 255, 0.3)',
                   backgroundColor: 'rgba(255, 255, 255, 0.95)',
                   color: '#111827',
-                  fontSize: '0.9rem',
+                  fontSize: 'clamp(1rem, 3.5vw, 1.125rem)',
                   fontWeight: '500',
                   cursor: 'pointer',
                   outline: 'none',
@@ -529,12 +549,12 @@ const Photographers: React.FC = () => {
                 onChange={(e) => setSelectedLocation(e.target.value)}
                 style={{
                   width: '100%',
-                  padding: '0.275rem 1rem',
+                  padding: 'clamp(0.5rem, 2vw, 0.625rem) clamp(0.75rem, 2.5vw, 1rem)',
                   borderRadius: '0.5rem',
                   border: '2px solid rgba(255, 255, 255, 0.3)',
                   backgroundColor: 'rgba(255, 255, 255, 0.95)',
                   color: '#111827',
-                  fontSize: '0.9rem',
+                  fontSize: 'clamp(1rem, 3.5vw, 1.125rem)',
                   fontWeight: '500',
                   cursor: 'pointer',
                   outline: 'none',
@@ -557,12 +577,12 @@ const Photographers: React.FC = () => {
                 onChange={(e) => setPriceRange(e.target.value)}
                 style={{
                   width: '100%',
-                  padding: '0.275rem 1rem',
+                  padding: 'clamp(0.5rem, 2vw, 0.625rem) clamp(0.75rem, 2.5vw, 1rem)',
                   borderRadius: '0.5rem',
                   border: '2px solid rgba(255, 255, 255, 0.3)',
                   backgroundColor: 'rgba(255, 255, 255, 0.95)',
                   color: '#111827',
-                  fontSize: '0.9rem',
+                  fontSize: 'clamp(1rem, 3.5vw, 1.125rem)',
                   fontWeight: '500',
                   cursor: 'pointer',
                   outline: 'none',
@@ -584,12 +604,12 @@ const Photographers: React.FC = () => {
                 onChange={(e) => setSelectedRating(e.target.value)}
                 style={{
                   width: '100%',
-                  padding: '0.275rem 1rem',
+                  padding: 'clamp(0.5rem, 2vw, 0.625rem) clamp(0.75rem, 2.5vw, 1rem)',
                   borderRadius: '0.5rem',
                   border: '2px solid rgba(255, 255, 255, 0.3)',
                   backgroundColor: 'rgba(255, 255, 255, 0.95)',
                   color: '#111827',
-                  fontSize: '0.9rem',
+                  fontSize: 'clamp(1rem, 3.5vw, 1.125rem)',
                   fontWeight: '500',
                   cursor: 'pointer',
                   outline: 'none',
@@ -608,13 +628,23 @@ const Photographers: React.FC = () => {
       </div>
 
       {/* Main Content */}
-      <main className="flex-grow" style={{ marginTop: '-2rem' }}>
-        <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '5rem 1rem 4rem 1rem' }}>
+      <main style={{
+        flexGrow: 1,
+        marginTop: 'clamp(-2rem, -3vw, -1rem)'
+      }}>
+        <div style={{
+          maxWidth: '1280px',
+          margin: '0 auto',
+          padding: 'clamp(3rem, 8vw, 5rem) clamp(0.5rem, 2vw, 1rem) 4rem clamp(0.5rem, 2vw, 1rem)'
+        }}>
           {/* Photographer Cards Grid */}
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-            gap: '2.5rem 1.5rem'
+            gridTemplateColumns: isMobile
+              ? 'repeat(auto-fill, minmax(min(280px, 100%), 1fr))'
+              : 'repeat(auto-fill, minmax(300px, 1fr))',
+            gap: isMobile ? 'clamp(1.5rem, 4vw, 2.5rem) clamp(0.75rem, 2vw, 1.5rem)' : '2.5rem 1.5rem',
+            width: '100%'
           }}>
             {currentPhotographers.map((photographer) => {
               const isBookmarked = bookmarkedPhotographers.includes(photographer.id);
@@ -905,27 +935,29 @@ const Photographers: React.FC = () => {
               display: 'flex',
               justifyContent: 'center',
               alignItems: 'center',
-              gap: '0.5rem',
+              gap: 'clamp(0.25rem, 1vw, 0.5rem)',
               marginTop: '3rem',
-              flexWrap: 'wrap'
+              flexWrap: 'wrap',
+              width: '100%'
             }}>
               {/* Previous Button */}
               <button
                 onClick={goToPreviousPage}
                 disabled={currentPage === 1}
                 style={{
-                  padding: '0.5rem 1rem',
+                  padding: 'clamp(0.4rem, 1.5vw, 0.5rem) clamp(0.75rem, 2vw, 1rem)',
                   borderRadius: '0.5rem',
                   border: '1px solid #bab8b8',
                   backgroundColor: currentPage === 1 ? '#f3f4f6' : '#ffffff',
                   color: currentPage === 1 ? '#9ca3af' : '#111827',
                   cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
                   fontWeight: '500',
-                  fontSize: '0.9rem',
+                  fontSize: 'clamp(1rem, 3vw, 1.125rem)',
                   transition: 'all 0.2s ease',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '0.25rem'
+                  gap: '0.25rem',
+                  whiteSpace: 'nowrap'
                 }}
                 onMouseEnter={(e) => {
                   if (currentPage !== 1) {
@@ -941,25 +973,30 @@ const Photographers: React.FC = () => {
                 }}
               >
                 <i className="bi bi-chevron-left"></i>
-                Previous
+                <span style={{ display: 'inline' }}>Previous</span>
               </button>
 
               {/* Page Numbers */}
-              <div style={{ display: 'flex', gap: '0.25rem' }}>
+              <div style={{
+                display: 'flex',
+                gap: 'clamp(0.2rem, 0.5vw, 0.25rem)',
+                flexWrap: 'wrap',
+                justifyContent: 'center'
+              }}>
                 {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
                   <button
                     key={pageNum}
                     onClick={() => goToPage(pageNum)}
                     style={{
-                      padding: '0.5rem 0.75rem',
+                      padding: 'clamp(0.4rem, 1.5vw, 0.5rem) clamp(0.6rem, 1.5vw, 0.75rem)',
                       borderRadius: '0.5rem',
                       border: currentPage === pageNum ? '2px solid #083A85' : '1px solid #bab8b8',
                       backgroundColor: currentPage === pageNum ? '#083A85' : '#ffffff',
                       color: currentPage === pageNum ? '#ffffff' : '#111827',
                       cursor: 'pointer',
                       fontWeight: currentPage === pageNum ? '600' : '500',
-                      fontSize: '0.9rem',
-                      minWidth: '2.5rem',
+                      fontSize: 'clamp(1rem, 3vw, 1.125rem)',
+                      minWidth: 'clamp(2.25rem, 6vw, 2.75rem)',
                       transition: 'all 0.2s ease'
                     }}
                     onMouseEnter={(e) => {
@@ -985,18 +1022,19 @@ const Photographers: React.FC = () => {
                 onClick={goToNextPage}
                 disabled={currentPage === totalPages}
                 style={{
-                  padding: '0.5rem 1rem',
+                  padding: 'clamp(0.4rem, 1.5vw, 0.5rem) clamp(0.75rem, 2vw, 1rem)',
                   borderRadius: '0.5rem',
                   border: '1px solid #bab8b8',
                   backgroundColor: currentPage === totalPages ? '#f3f4f6' : '#ffffff',
                   color: currentPage === totalPages ? '#9ca3af' : '#111827',
                   cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
                   fontWeight: '500',
-                  fontSize: '0.9rem',
+                  fontSize: 'clamp(1rem, 3vw, 1.125rem)',
                   transition: 'all 0.2s ease',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '0.25rem'
+                  gap: '0.25rem',
+                  whiteSpace: 'nowrap'
                 }}
                 onMouseEnter={(e) => {
                   if (currentPage !== totalPages) {
@@ -1011,7 +1049,7 @@ const Photographers: React.FC = () => {
                   }
                 }}
               >
-                Next
+                <span style={{ display: 'inline' }}>Next</span>
                 <i className="bi bi-chevron-right"></i>
               </button>
             </div>

@@ -404,15 +404,51 @@ export default function ChatPage(): React.JSX.Element {
           transform: translateY(-2px);
           transition: transform 0.2s ease;
         }
+
+        @media (max-width: 768px) {
+          .chat-container {
+            flex-direction: column !important;
+          }
+          .chat-list-panel {
+            width: 100% !important;
+            display: ${selectedChat ? 'none' : 'flex'} !important;
+          }
+          .conversation-panel {
+            display: ${selectedChat ? 'flex' : 'none'} !important;
+          }
+          .message-bubble {
+            max-width: 85% !important;
+          }
+          .emoji-picker {
+            left: 20px !important;
+            right: 20px !important;
+            width: auto !important;
+          }
+          .mobile-back-button {
+            display: flex !important;
+          }
+          .desktop-back-button {
+            display: none !important;
+          }
+        }
+
+        @media (min-width: 769px) {
+          .mobile-back-button {
+            display: none !important;
+          }
+          .desktop-back-button {
+            display: flex !important;
+          }
+        }
       `}</style>
-      <div style={{
+      <div className="chat-container" style={{
         display: 'flex',
         height: '100vh',
         backgroundColor: '#f5f5f5',
         fontFamily: "'Pragati Narrow', sans-serif"
       }}>
       {/* Left Panel - Chat List */}
-      <div style={{
+      <div className="chat-list-panel" style={{
         width: '320px',
         backgroundColor: '#ffffff',
         borderRight: '1px solid #e0e0e0',
@@ -429,6 +465,7 @@ export default function ChatPage(): React.JSX.Element {
         }}>
           <button
             onClick={() => window.history.back()}
+            className="desktop-back-button"
             style={{
               background: 'none',
               border: 'none',
@@ -741,7 +778,7 @@ export default function ChatPage(): React.JSX.Element {
       </div>
 
       {/* Right Panel - Conversation */}
-      <div style={{
+      <div className="conversation-panel" style={{
         flex: 1,
         backgroundColor: '#e8e8e8',
         display: 'flex',
@@ -758,7 +795,23 @@ export default function ChatPage(): React.JSX.Element {
               backgroundColor: '#fff',
               borderBottom: '1px solid #e0e0e0'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {/* Mobile back button */}
+                <button
+                  onClick={() => setSelectedChat(null)}
+                  className="mobile-back-button"
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    fontSize: '20px',
+                    color: '#666',
+                    cursor: 'pointer',
+                    padding: '4px',
+                    display: 'none'
+                  }}
+                >
+                  <i className="bi bi-chevron-left"></i>
+                </button>
                 <div style={{ position: 'relative', marginRight: '12px' }}>
                   <img
                     src={selectedChat.avatar}
@@ -880,7 +933,7 @@ export default function ChatPage(): React.JSX.Element {
                             )}
                           </div>
                         )}
-                        <div style={{
+                        <div className="message-bubble" style={{
                           maxWidth: '65%',
                           display: 'flex',
                           flexDirection: 'column',
@@ -1013,7 +1066,7 @@ export default function ChatPage(): React.JSX.Element {
 
             {/* Emoji Picker */}
             {showEmojiPicker && (
-              <div style={{
+              <div className="emoji-picker" style={{
                 position: 'absolute',
                 bottom: '80px',
                 left: '340px',

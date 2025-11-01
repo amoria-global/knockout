@@ -280,6 +280,18 @@ function ViewProfileContent(): React.JSX.Element {
   const [isLoading, setIsLoading] = useState(true);
   const [imageViewerOpen, setImageViewerOpen] = useState(false);
   const [currentImageType, setCurrentImageType] = useState<'profile' | 'cover' | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detect screen size
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    handleResize(); // Initial check
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     // Simulate loading
@@ -512,32 +524,36 @@ function ViewProfileContent(): React.JSX.Element {
       <div
         style={{
           position: 'relative',
-          margin: '0 24px',
-          marginTop: '20px',
+          margin: isMobile ? '0 clamp(12px, 3vw, 24px)' : '0 24px',
+          marginTop: isMobile ? 'clamp(12px, 3vw, 20px)' : '20px',
         }}
       >
         {/* Banner Container with Border - 50% Taller */}
         <div
           style={{
             position: 'relative',
-            height: '270px',
+            height: isMobile ? 'clamp(180px, 35vw, 270px)' : '270px',
             backgroundImage: `url(${photographerData.backgroundImage})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
-            borderRadius: '17px',
-            border: '3px solid #bab8b8',
+            borderRadius: isMobile ? 'clamp(12px, 3vw, 17px)' : '17px',
+            border: isMobile ? '2px solid #bab8b8' : '3px solid #bab8b8',
             overflow: 'hidden',
             cursor: 'pointer',
             transition: 'all 0.3s ease',
           }}
           onClick={() => openImageViewer('cover')}
           onMouseEnter={(e) => {
-            e.currentTarget.style.transform = 'scale(1.01)';
-            e.currentTarget.style.boxShadow = '0 8px 20px rgba(0, 0, 0, 0.15)';
+            if (!isMobile) {
+              e.currentTarget.style.transform = 'scale(1.01)';
+              e.currentTarget.style.boxShadow = '0 8px 20px rgba(0, 0, 0, 0.15)';
+            }
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.transform = 'scale(1)';
-            e.currentTarget.style.boxShadow = 'none';
+            if (!isMobile) {
+              e.currentTarget.style.transform = 'scale(1)';
+              e.currentTarget.style.boxShadow = 'none';
+            }
           }}
         >
           {/* Back Button - Glassmorphism */}
@@ -548,11 +564,11 @@ function ViewProfileContent(): React.JSX.Element {
               }}
               style={{
                   position: 'absolute',
-                  top: '20px',
-                  left: '20px',
+                  top: isMobile ? 'clamp(12px, 3vw, 20px)' : '20px',
+                  left: isMobile ? 'clamp(12px, 3vw, 20px)' : '20px',
                   zIndex: 10,
-                  width: '40px',
-                  height: '40px',
+                  width: isMobile ? 'clamp(36px, 8vw, 40px)' : '40px',
+                  height: isMobile ? 'clamp(36px, 8vw, 40px)' : '40px',
                   borderRadius: '50%',
                   backgroundColor: 'rgba(255, 255, 255, 0.15)',
                   backdropFilter: 'blur(10px)',
@@ -567,16 +583,20 @@ function ViewProfileContent(): React.JSX.Element {
                   boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)',
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.25)';
-                e.currentTarget.style.transform = 'scale(1.05)';
+                if (!isMobile) {
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.25)';
+                  e.currentTarget.style.transform = 'scale(1.05)';
+                }
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.15)';
-                e.currentTarget.style.transform = 'scale(1)';
+                if (!isMobile) {
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.15)';
+                  e.currentTarget.style.transform = 'scale(1)';
+                }
               }}
               aria-label="Go back"
               >
-              <i className="bi bi-chevron-left" style={{ fontSize: '20px', fontWeight: 'bold' }}></i>
+              <i className="bi bi-chevron-left" style={{ fontSize: isMobile ? 'clamp(16px, 4vw, 20px)' : '20px', fontWeight: 'bold' }}></i>
           </button>
 
           {/* View Full Size Indicator */}
@@ -620,10 +640,10 @@ function ViewProfileContent(): React.JSX.Element {
         <div
           style={{
             position: 'absolute',
-            top: '230px',
-            left: '20px',
-            width: '70px',
-            height: '70px',
+            top: isMobile ? 'clamp(150px, 28vw, 230px)' : '230px',
+            left: isMobile ? 'clamp(12px, 3vw, 20px)' : '20px',
+            width: isMobile ? 'clamp(60px, 12vw, 70px)' : '70px',
+            height: isMobile ? 'clamp(60px, 12vw, 70px)' : '70px',
             zIndex: 10,
             cursor: 'pointer',
           }}
@@ -705,26 +725,27 @@ function ViewProfileContent(): React.JSX.Element {
           backgroundColor: '#fff',
           position: 'relative',
           zIndex: 5,
-          paddingBottom: '24px',
-          margin: '0 24px',
+          paddingBottom: isMobile ? 'clamp(16px, 4vw, 24px)' : '24px',
+          margin: isMobile ? '0 clamp(12px, 3vw, 24px)' : '0 24px',
           marginTop: '0',
           boxShadow: '0 2px 10px rgba(0, 0, 0, 0.05)',
-          borderRadius: '0 0 17px 17px',
-          border: '3px solid #bab8b8',
+          borderRadius: isMobile ? '0 0 clamp(12px, 3vw, 17px) clamp(12px, 3vw, 17px)' : '0 0 17px 17px',
+          border: isMobile ? '2px solid #bab8b8' : '3px solid #bab8b8',
           borderTop: 'none',
         }}
       >
         {/* Profile Content - Hybrid Layout */}
         <div
           style={{
-            paddingTop: '38px',
-            paddingLeft: '16px',
-            paddingRight: '16px',
-            paddingBottom: '16px',
+            paddingTop: isMobile ? 'clamp(32px, 7vw, 38px)' : '38px',
+            paddingLeft: isMobile ? 'clamp(12px, 3vw, 16px)' : '16px',
+            paddingRight: isMobile ? 'clamp(12px, 3vw, 16px)' : '16px',
+            paddingBottom: isMobile ? 'clamp(12px, 3vw, 16px)' : '16px',
             display: 'flex',
+            flexDirection: isMobile ? 'column' : 'row',
             justifyContent: 'space-between',
-            alignItems: 'flex-start',
-            gap: '20px',
+            alignItems: isMobile ? 'stretch' : 'flex-start',
+            gap: isMobile ? 'clamp(16px, 4vw, 20px)' : '20px',
           }}
         >
           {/* Left Side - Name, Location, and Stats under profile photo */}
@@ -810,71 +831,83 @@ function ViewProfileContent(): React.JSX.Element {
           {/* Right Side - Modern Action Buttons */}
           <div style={{
             display: 'flex',
-            gap: '12px',
-            alignItems: 'center',
+            flexDirection: isMobile ? 'column' : 'row',
+            gap: isMobile ? 'clamp(10px, 2.5vw, 12px)' : '12px',
+            alignItems: 'stretch',
+            width: isMobile ? '100%' : 'auto',
           }}>
             <button
               onClick={() => (window.location.href = '/user/photographers/book-now')}
               style={{
-                padding: '12px 24px',
+                padding: isMobile ? 'clamp(12px, 3vw, 14px) clamp(20px, 5vw, 24px)' : '12px 24px',
                 backgroundColor: '#083A85',
                 color: 'white',
                 border: 'none',
-                borderRadius: '8px',
-                fontSize: '15px',
+                borderRadius: isMobile ? 'clamp(6px, 1.5vw, 8px)' : '8px',
+                fontSize: isMobile ? 'clamp(14px, 3.5vw, 15px)' : '15px',
                 fontWeight: '600',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '8px',
+                justifyContent: 'center',
+                gap: isMobile ? 'clamp(6px, 1.5vw, 8px)' : '8px',
                 boxShadow: '0 4px 12px rgba(8, 58, 133, 0.25)',
                 transition: 'all 0.3s ease',
                 whiteSpace: 'nowrap',
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#062d6b';
-                e.currentTarget.style.transform = 'translateY(-2px)';
-                e.currentTarget.style.boxShadow = '0 6px 16px rgba(8, 58, 133, 0.35)';
+                if (!isMobile) {
+                  e.currentTarget.style.backgroundColor = '#062d6b';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 6px 16px rgba(8, 58, 133, 0.35)';
+                }
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = '#083A85';
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(8, 58, 133, 0.25)';
+                if (!isMobile) {
+                  e.currentTarget.style.backgroundColor = '#083A85';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(8, 58, 133, 0.25)';
+                }
               }}
             >
-              <i className="bi bi-calendar-check" style={{ fontSize: '16px' }}></i>
+              <i className="bi bi-calendar-check" style={{ fontSize: isMobile ? 'clamp(14px, 3.5vw, 16px)' : '16px' }}></i>
               {t('bookNow')}
             </button>
 
             <button
               onClick={() => (window.location.href = '/user/chat')}
               style={{
-                padding: '12px 24px',
+                padding: isMobile ? 'clamp(12px, 3vw, 14px) clamp(20px, 5vw, 24px)' : '12px 24px',
                 backgroundColor: '#fff',
                 color: '#083A85',
                 border: '2px solid #083A85',
-                borderRadius: '8px',
-                fontSize: '15px',
+                borderRadius: isMobile ? 'clamp(6px, 1.5vw, 8px)' : '8px',
+                fontSize: isMobile ? 'clamp(14px, 3.5vw, 15px)' : '15px',
                 fontWeight: '600',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '8px',
+                justifyContent: 'center',
+                gap: isMobile ? 'clamp(6px, 1.5vw, 8px)' : '8px',
                 transition: 'all 0.3s ease',
                 whiteSpace: 'nowrap',
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#f0f9ff';
-                e.currentTarget.style.transform = 'translateY(-2px)';
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(8, 58, 133, 0.2)';
+                if (!isMobile) {
+                  e.currentTarget.style.backgroundColor = '#f0f9ff';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(8, 58, 133, 0.2)';
+                }
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = '#fff';
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = 'none';
+                if (!isMobile) {
+                  e.currentTarget.style.backgroundColor = '#fff';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = 'none';
+                }
               }}
             >
-              <i className="bi bi-chat-dots" style={{ fontSize: '16px' }}></i>
+              <i className="bi bi-chat-dots" style={{ fontSize: isMobile ? 'clamp(14px, 3.5vw, 16px)' : '16px' }}></i>
               {t('startChat')}
             </button>
           </div>
@@ -883,11 +916,12 @@ function ViewProfileContent(): React.JSX.Element {
         {/* Tabs - Modernized with Better Transitions */}
         <div
           style={{
-            display: 'flex',
+            display: isMobile ? 'grid' : 'flex',
+            gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : undefined,
             backgroundColor: '#f9fafb',
             padding: '0',
             gap: '0',
-            overflow: 'hidden',
+            overflow: isMobile ? 'visible' : 'hidden',
             boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.06)',
           }}
         >
@@ -903,11 +937,11 @@ function ViewProfileContent(): React.JSX.Element {
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
                 style={{
-                  flex: 1,
-                  padding: '16px 12px',
+                  flex: isMobile ? undefined : 1,
+                  padding: isMobile ? 'clamp(12px, 3vw, 16px) clamp(8px, 2vw, 12px)' : '16px 12px',
                   border: 'none',
                   backgroundColor: isActive ? '#fff' : 'transparent',
-                  fontSize: '15px',
+                  fontSize: isMobile ? 'clamp(13px, 3.2vw, 15px)' : '15px',
                   fontWeight: isActive ? '700' : '600',
                   color: isActive ? '#083A85' : '#6b7280',
                   cursor: 'pointer',
@@ -917,13 +951,13 @@ function ViewProfileContent(): React.JSX.Element {
                   boxShadow: isActive ? '0 2px 8px rgba(8, 58, 133, 0.1)' : 'none',
                 }}
                 onMouseEnter={(e) => {
-                  if (!isActive) {
+                  if (!isActive && !isMobile) {
                     e.currentTarget.style.color = '#083A85';
                     e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.5)';
                   }
                 }}
                 onMouseLeave={(e) => {
-                  if (!isActive) {
+                  if (!isActive && !isMobile) {
                     e.currentTarget.style.color = '#6b7280';
                     e.currentTarget.style.backgroundColor = 'transparent';
                   }
@@ -937,11 +971,15 @@ function ViewProfileContent(): React.JSX.Element {
       </div>
 
       {/* Tab Content Area with Gray Background */}
-      <div style={{ backgroundColor: '#f0f4f8', padding: '24px', minHeight: '400px' }}>
+      <div style={{
+        backgroundColor: '#f0f4f8',
+        padding: isMobile ? 'clamp(16px, 4vw, 24px)' : '24px',
+        minHeight: isMobile ? '300px' : '400px'
+      }}>
         <div style={{
-          padding: '32px',
+          padding: isMobile ? 'clamp(20px, 5vw, 32px)' : '32px',
           backgroundColor: '#fff',
-          borderRadius: '16px',
+          borderRadius: isMobile ? 'clamp(12px, 3vw, 16px)' : '16px',
           boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
           transition: 'all 0.3s ease',
         }}>
@@ -1038,7 +1076,13 @@ function ViewProfileContent(): React.JSX.Element {
                   </h3>
                 </div>
                 {photographerData.equipments.length > 0 ? (
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '12px' }}>
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: isMobile
+                      ? 'repeat(auto-fill, minmax(min(180px, 100%), 1fr))'
+                      : 'repeat(auto-fill, minmax(220px, 1fr))',
+                    gap: isMobile ? 'clamp(10px, 2.5vw, 12px)' : '12px'
+                  }}>
                     {photographerData.equipments.map((equipment, index) => (
                       <div
                         key={index}
@@ -1277,7 +1321,13 @@ function ViewProfileContent(): React.JSX.Element {
                 <h3 style={{ fontSize: '19px', fontWeight: '700', color: '#000', marginBottom: '14px' }}>
                   Professional Training
                 </h3>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '10px' }}>
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: isMobile
+                    ? 'repeat(auto-fill, minmax(min(180px, 100%), 1fr))'
+                    : 'repeat(auto-fill, minmax(200px, 1fr))',
+                  gap: isMobile ? 'clamp(8px, 2vw, 10px)' : '10px'
+                }}>
                   {photographerData.portfolio.training.map((training, index) => (
                     <div
                       key={index}
@@ -1313,7 +1363,13 @@ function ViewProfileContent(): React.JSX.Element {
                     Featured Projects
                   </h3>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '20px' }}>
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: isMobile
+                    ? 'repeat(auto-fill, minmax(min(240px, 100%), 1fr))'
+                    : 'repeat(auto-fill, minmax(250px, 1fr))',
+                  gap: isMobile ? 'clamp(16px, 4vw, 20px)' : '20px'
+                }}>
                   {photographerData.portfolio.projects.map((project) => (
                     <div
                       key={project.id}
@@ -1880,7 +1936,14 @@ function ViewProfileContent(): React.JSX.Element {
 
       /* Responsive improvements */
       @media (max-width: 768px) {
-        [style*="gridTemplateColumns"] {
+        .profile-stats {
+          flex-direction: column;
+          align-items: flex-start !important;
+        }
+      }
+
+      @media (max-width: 480px) {
+        [style*="gridTemplateColumns"]:not([style*="repeat(2"]) {
           grid-template-columns: 1fr !important;
         }
       }

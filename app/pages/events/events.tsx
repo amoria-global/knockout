@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import AmoriaKNavbar from '../../components/navbar';
 import { useTranslations } from 'next-intl';
 
@@ -13,7 +13,19 @@ const Events: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
+  const [isMobile, setIsMobile] = useState(false);
   const itemsPerPage = 12;
+
+  // Detect screen size
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+
+    handleResize(); // Initial check
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Mock events data
   const eventsData = [
@@ -308,11 +320,14 @@ const Events: React.FC = () => {
   ];
 
   // Trending Events Data - Filter only LIVE events
-  const trendingEvents = eventsData.filter(event => event.status === 'LIVE').map(event => ({
+  const allTrendingEvents = eventsData.filter(event => event.status === 'LIVE').map(event => ({
     id: event.id,
     name: event.title,
     image: event.image
   }));
+
+  // Limit trending events on mobile for better UX
+  const trendingEvents = isMobile ? allTrendingEvents.slice(0, 5) : allTrendingEvents;
 
   // Handlers
   const handleSearch = (e: React.FormEvent) => {
@@ -338,8 +353,32 @@ const Events: React.FC = () => {
     setCurrentPage(pageNumber);
   };
 
+  // Get page numbers to display (with ellipsis for mobile)
+  const getPageNumbers = () => {
+    const pages: (number | string)[] = [];
+
+    if (totalPages <= 5 || !isMobile) {
+      // Show all pages if 5 or less, or on desktop
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+
+    // Mobile: Show first, last, current, and neighbors
+    if (currentPage <= 3) {
+      pages.push(1, 2, 3, '...', totalPages);
+    } else if (currentPage >= totalPages - 2) {
+      pages.push(1, '...', totalPages - 2, totalPages - 1, totalPages);
+    } else {
+      pages.push(1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages);
+    }
+
+    return pages;
+  };
+
   return (
-    <div className="min-h-screen" style={{ background: 'linear-gradient(to bottom, #f9fafb 0%, #f3f4f6 50%, #e5e7eb 100%)' }}>
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(to bottom, #f9fafb 0%, #f3f4f6 50%, #e5e7eb 100%)'
+    }}>
       <style>{`
         .event-card {
           transition: transform 0.3s ease, box-shadow 0.3s ease;
@@ -411,10 +450,10 @@ const Events: React.FC = () => {
       {/* Hero Section with Search and Filters */}
       <div style={{
         position: 'relative',
-        paddingTop: '2.5rem',
-        paddingBottom: '2.5rem',
-        paddingLeft: '1rem',
-        paddingRight: '1rem',
+        paddingTop: 'clamp(1.5rem, 4vw, 2.5rem)',
+        paddingBottom: 'clamp(1.5rem, 4vw, 2.5rem)',
+        paddingLeft: 'clamp(0.75rem, 2vw, 1rem)',
+        paddingRight: 'clamp(0.75rem, 2vw, 1rem)',
         overflow: 'hidden',
         marginLeft: '0',
         marginRight: '0',
@@ -428,7 +467,8 @@ const Events: React.FC = () => {
             style={{
               width: '100%',
               height: '100%',
-              objectFit: 'cover'
+              objectFit: 'cover',
+              objectPosition: 'center'
             }}
           />
           <div style={{
@@ -443,31 +483,36 @@ const Events: React.FC = () => {
           position: 'relative',
           maxWidth: '72rem',
           margin: '0 auto',
-          padding: '0 1rem',
+          padding: '0 clamp(0.5rem, 2vw, 1rem)',
           textAlign: 'center'
         }}>
           <h1 style={{
-            fontSize: 'clamp(1.5rem, 4vw, 2.25rem)',
+            fontSize: 'clamp(1.875rem, 7vw, 3rem)',
             fontWeight: 'bold',
             color: 'white',
-            marginBottom: '0.5rem',
-            fontFamily: "'Pragati Narrow', sans-serif"
+            marginBottom: 'clamp(0.5rem, 1.5vw, 0.75rem)',
+            fontFamily: "'Pragati Narrow', sans-serif",
+            lineHeight: '1.2'
           }}>
             {t('title')}
           </h1>
           <p style={{
-            fontSize: 'clamp(0.875rem, 1.5vw, 1rem)',
+            fontSize: 'clamp(1.125rem, 3.5vw, 1.375rem)',
             color: 'rgba(255, 255, 255, 0.9)',
-            marginBottom: '1.5rem',
             maxWidth: '42rem',
-            margin: '0 auto 1.5rem',
-            fontFamily: "'Pragati Narrow', sans-serif"
+            margin: '0 auto clamp(1rem, 2vw, 1.5rem)',
+            fontFamily: "'Pragati Narrow', sans-serif",
+            display: isMobile && window.innerWidth < 375 ? 'none' : 'block'
           }}>
             {t('subtitle')}
           </p>
 
           {/* Search Bar */}
-          <form onSubmit={handleSearch} style={{ maxWidth: '43rem', margin: '0 auto 1.25rem' }}>
+          <form onSubmit={handleSearch} style={{
+            maxWidth: '43rem',
+            margin: '0 auto',
+            marginBottom: 'clamp(0.75rem, 2vw, 1.25rem)'
+          }}>
             <div style={{ position: 'relative' }}>
               <input
                 type="text"
@@ -476,11 +521,11 @@ const Events: React.FC = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 style={{
                   width: '100%',
-                  padding: '0.8rem 3rem 0.8rem 1.5rem',
+                  padding: 'clamp(0.875rem, 2.5vw, 1rem) clamp(3rem, 8vw, 3.5rem) clamp(0.875rem, 2.5vw, 1rem) clamp(1.25rem, 3vw, 1.5rem)',
                   borderRadius: '0.5rem',
                   boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
                   border: 'none',
-                  fontSize: '1rem',
+                  fontSize: 'clamp(1.125rem, 3.5vw, 1.25rem)',
                   outline: 'none',
                   backgroundColor: '#d4d4d4',
                   color: '#000000'
@@ -490,14 +535,14 @@ const Events: React.FC = () => {
                 type="submit"
                 style={{
                   position: 'absolute',
-                  right: '1rem',
+                  right: 'clamp(0.75rem, 2vw, 1rem)',
                   top: '50%',
                   transform: 'translateY(-50%)',
                   background: 'none',
                   border: 'none',
                   color: '#9ca3af',
                   cursor: 'pointer',
-                  fontSize: '1.25rem'
+                  fontSize: 'clamp(1rem, 3vw, 1.25rem)'
                 }}
               >
                 <i className="bi bi-search"></i>
@@ -508,8 +553,10 @@ const Events: React.FC = () => {
           {/* Filters Row */}
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-            gap: '1rem',
+            gridTemplateColumns: isMobile
+              ? 'repeat(2, 1fr)'
+              : 'repeat(auto-fit, minmax(min(160px, 100%), 1fr))',
+            gap: 'clamp(0.5rem, 2vw, 1rem)',
             maxWidth: '70rem',
             margin: '0 auto'
           }}>
@@ -520,12 +567,12 @@ const Events: React.FC = () => {
                 onChange={(e) => setSelectedCategory(e.target.value)}
                 style={{
                   width: '100%',
-                  padding: '0.275rem 1rem',
+                  padding: 'clamp(0.5rem, 2vw, 0.625rem) clamp(0.75rem, 2.5vw, 1rem)',
                   borderRadius: '0.5rem',
                   border: '2px solid rgba(255, 255, 255, 0.3)',
                   backgroundColor: 'rgba(255, 255, 255, 0.95)',
                   color: '#111827',
-                  fontSize: '0.9rem',
+                  fontSize: 'clamp(1rem, 3.5vw, 1.125rem)',
                   fontWeight: '500',
                   cursor: 'pointer',
                   outline: 'none',
@@ -549,12 +596,12 @@ const Events: React.FC = () => {
                 onChange={(e) => setSelectedLocation(e.target.value)}
                 style={{
                   width: '100%',
-                  padding: '0.275rem 1rem',
+                  padding: 'clamp(0.5rem, 2vw, 0.625rem) clamp(0.75rem, 2.5vw, 1rem)',
                   borderRadius: '0.5rem',
                   border: '2px solid rgba(255, 255, 255, 0.3)',
                   backgroundColor: 'rgba(255, 255, 255, 0.95)',
                   color: '#111827',
-                  fontSize: '0.9rem',
+                  fontSize: 'clamp(1rem, 3.5vw, 1.125rem)',
                   fontWeight: '500',
                   cursor: 'pointer',
                   outline: 'none',
@@ -562,11 +609,12 @@ const Events: React.FC = () => {
                 }}
               >
                 <option value="all">{t('allLocations')}</option>
-                <option value="kigali">Kigali</option>
-                <option value="musanze">Musanze</option>
-                <option value="huye">Huye</option>
-                <option value="rubavu">Rubavu</option>
-                <option value="nyanza">Nyanza</option>
+                <option value ="Rwanda">Rwanda</option>
+                <option value="Uganda">Uganda</option>
+                <option value="Kenya">Kenya</option>
+                <option value="Tanzania">Tanzania</option>
+                <option value="Burundi">Burundi</option>
+                <option value="DRC">DRC</option>
               </select>
             </div>
 
@@ -577,12 +625,12 @@ const Events: React.FC = () => {
                 onChange={(e) => setSelectedDate(e.target.value)}
                 style={{
                   width: '100%',
-                  padding: '0.275rem 1rem',
+                  padding: 'clamp(0.5rem, 2vw, 0.625rem) clamp(0.75rem, 2.5vw, 1rem)',
                   borderRadius: '0.5rem',
                   border: '2px solid rgba(255, 255, 255, 0.3)',
                   backgroundColor: 'rgba(255, 255, 255, 0.95)',
                   color: '#111827',
-                  fontSize: '0.9rem',
+                  fontSize: 'clamp(1rem, 3.5vw, 1.125rem)',
                   fontWeight: '500',
                   cursor: 'pointer',
                   outline: 'none',
@@ -605,12 +653,12 @@ const Events: React.FC = () => {
                 onChange={(e) => setSelectedStatus(e.target.value)}
                 style={{
                   width: '100%',
-                  padding: '0.275rem 1rem',
+                  padding: 'clamp(0.5rem, 2vw, 0.625rem) clamp(0.75rem, 2.5vw, 1rem)',
                   borderRadius: '0.5rem',
                   border: '2px solid rgba(255, 255, 255, 0.3)',
                   backgroundColor: 'rgba(255, 255, 255, 0.95)',
                   color: '#111827',
-                  fontSize: '0.9rem',
+                  fontSize: 'clamp(1rem, 3.5vw, 1.125rem)',
                   fontWeight: '500',
                   cursor: 'pointer',
                   outline: 'none',
@@ -638,10 +686,13 @@ const Events: React.FC = () => {
           display: 'flex',
           alignItems: 'center',
           marginBottom: '2rem',
-          overflowX: 'hidden',
+          overflowX: 'auto',
+          overflowY: 'hidden',
           paddingTop: '1rem',
           paddingBottom: '1rem',
-          position: 'relative'
+          position: 'relative',
+          WebkitOverflowScrolling: 'touch',
+          scrollbarWidth: 'thin'
         }}>
           {/* Connector Line - Full Width (attached to badge) */}
           <div style={{
@@ -652,24 +703,25 @@ const Events: React.FC = () => {
             height: '3px',
             background: 'linear-gradient(90deg, #ec4899 0%, #f97316 50%, #8b5cf6 100%)',
             transform: 'translateY(-50%)',
-            zIndex: 0
+            zIndex: 0,
+            minWidth: '100%'
           }}></div>
 
           {/* Hot Live Trends Badge */}
           <div style={{
             background: 'linear-gradient(135deg, #ec4899 0%, #f97316 50%, #8b5cf6 100%)',
-            padding: '0.75rem 1.5rem',
+            padding: 'clamp(0.5rem, 2vw, 0.75rem) clamp(1rem, 3vw, 1.5rem)',
             borderRadius: '50px',
             display: 'flex',
             alignItems: 'center',
             gap: '0.5rem',
             fontWeight: 'bold',
-            fontSize: '1.1rem',
+            fontSize: 'clamp(1.25rem, 3.5vw, 1.5rem)',
             color: 'white',
             whiteSpace: 'nowrap',
             boxShadow: '0 4px 15px rgba(236, 72, 153, 0.4)',
             flexShrink: 0,
-            marginRight: '1.5rem',
+            marginRight: 'clamp(0.75rem, 2vw, 1.5rem)',
             position: 'relative',
             zIndex: 2
           }}>
@@ -680,12 +732,13 @@ const Events: React.FC = () => {
           <div style={{
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'space-between',
+            justifyContent: 'flex-start',
             flex: 1,
             position: 'relative',
             zIndex: 1,
-            gap: '0.5rem',
-            paddingRight: '1.5rem'
+            gap: 'clamp(0.5rem, 2vw, 1rem)',
+            paddingRight: 'clamp(0.75rem, 2vw, 1.5rem)',
+            minWidth: 'max-content'
           }}>
             {trendingEvents.map((event) => (
               <div
@@ -706,8 +759,8 @@ const Events: React.FC = () => {
                 }}
               >
                 <div style={{
-                  width: '70px',
-                  height: '70px',
+                  width: 'clamp(50px, 10vw, 70px)',
+                  height: 'clamp(50px, 10vw, 70px)',
                   borderRadius: '50%',
                   overflow: 'hidden',
                   border: '3px solid #cf5704',
@@ -731,13 +784,23 @@ const Events: React.FC = () => {
       </div>
 
       {/* Main Content */}
-      <main className="flex-grow" style={{ marginTop: '1rem' }}>
-        <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '2rem 1rem 4rem 1rem' }}>
+      <main style={{
+        flexGrow: 1,
+        marginTop: '1rem'
+      }}>
+        <div style={{
+          maxWidth: '1280px',
+          margin: '0 auto',
+          padding: '2rem clamp(0.5rem, 2vw, 1rem) 4rem clamp(0.5rem, 2vw, 1rem)'
+        }}>
           {/* Event Cards Grid */}
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-            gap: '2rem'
+            gridTemplateColumns: isMobile
+              ? 'repeat(auto-fill, minmax(min(280px, 100%), 1fr))'
+              : 'repeat(auto-fill, minmax(300px, 1fr))',
+            gap: isMobile ? 'clamp(1rem, 3vw, 1.5rem)' : '1.5rem',
+            width: '100%'
           }}>
             {currentEvents.map((event) => (
                 <div
@@ -745,21 +808,23 @@ const Events: React.FC = () => {
                   className="event-card"
                   style={{
                     backgroundColor: '#ffffff',
-                    borderRadius: '28px',
+                    borderRadius: 'clamp(20px, 4vw, 28px)',
                     boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
                     border: '4px solid #000000',
                     padding: '3px',
                     position: 'relative',
-                    transition: 'transform 0.3s ease, box-shadow 0.3s ease'
+                    transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+                    maxWidth: '100%',
+                    minWidth: '0'
                   }}
                 >
                   {/* Event Image */}
                   <div style={{
                     position: 'relative',
                     width: '100%',
-                    height: '320px',
+                    height: isMobile ? 'clamp(180px, 35vw, 250px)' : '200px',
                     overflow: 'hidden',
-                    borderRadius: '20px',
+                    borderRadius: 'clamp(16px, 3vw, 20px)',
                     marginBottom: '1rem'
                   }}>
                     <img
@@ -774,7 +839,7 @@ const Events: React.FC = () => {
                   </div>
 
                   {/* Event Details */}
-                  <div style={{ padding: '0 0.5rem 0.5rem' }}>
+                  <div style={{ padding: '0 clamp(0.25rem, 1vw, 0.5rem) clamp(0.25rem, 1vw, 0.5rem)' }}>
                     {/* Event Title */}
                     <div style={{
                       display: 'flex',
@@ -783,12 +848,14 @@ const Events: React.FC = () => {
                       marginBottom: '0.6rem'
                     }}>
                       <h3 style={{
-                        fontSize: '1.2rem',
+                        fontSize: 'clamp(1.375rem, 4vw, 1.625rem)',
                         fontWeight: '700',
                         color: '#111827',
                         lineHeight: '1.2',
                         margin: 0,
-                        textAlign: 'center'
+                        textAlign: 'center',
+                        wordBreak: 'break-word',
+                        hyphens: 'auto'
                       }}>
                         {event.title}
                       </h3>
@@ -806,15 +873,18 @@ const Events: React.FC = () => {
                           background: 'transparent',
                           border: '2px solid #039130',
                           color: '#039130',
-                          padding: '0.35rem 0.75rem',
+                          padding: 'clamp(0.5rem, 2vw, 0.625rem) clamp(0.75rem, 2.5vw, 1rem)',
                           borderRadius: '20px',
-                          fontSize: '0.9rem',
+                          fontSize: 'clamp(1.125rem, 3.5vw, 1.25rem)',
                           fontWeight: '700',
                           textTransform: 'uppercase',
-                          marginBottom: '0.5rem'
+                          marginBottom: '0.5rem',
+                          width: '100%',
+                          maxWidth: '100%',
+                          boxSizing: 'border-box'
                         }}
                       >
-                        <i className="bi bi-camera-video-fill live-badge-icon" style={{ fontSize: '0.9rem' }}></i>
+                        <i className="bi bi-camera-video-fill live-badge-icon" style={{ fontSize: 'clamp(1.125rem, 3.5vw, 1.25rem)' }}></i>
                         {t('status.live')}
                       </div>
                     ) : (
@@ -827,15 +897,18 @@ const Events: React.FC = () => {
                           background: 'transparent',
                           border: '2px solid #3b82f6',
                           color: '#3b82f6',
-                          padding: '0.35rem 0.75rem',
+                          padding: 'clamp(0.5rem, 2vw, 0.625rem) clamp(0.75rem, 2.5vw, 1rem)',
                           borderRadius: '20px',
-                          fontSize: '0.9rem',
+                          fontSize: 'clamp(1.125rem, 3.5vw, 1.25rem)',
                           fontWeight: '700',
                           textTransform: 'uppercase',
-                          marginBottom: '0.5rem'
+                          marginBottom: '0.5rem',
+                          width: '100%',
+                          maxWidth: '100%',
+                          boxSizing: 'border-box'
                         }}
                       >
-                        <i className="bi bi-broadcast" style={{ fontSize: '0.9rem' }}></i>
+                        <i className="bi bi-broadcast" style={{ fontSize: 'clamp(1.125rem, 3.5vw, 1.25rem)' }}></i>
                         {t('status.upcoming')}
                       </div>
                     )}
@@ -847,15 +920,20 @@ const Events: React.FC = () => {
                       justifyContent: 'center',
                       gap: '0.4rem',
                       color: '#374151',
-                      fontSize: '0.9rem',
+                      fontSize: 'clamp(1.0625rem, 3vw, 1.1875rem)',
                       marginBottom: '0.4rem',
-                      fontWeight: '500'
+                      fontWeight: '500',
+                      width: '100%',
+                      minWidth: '0'
                     }}>
-                      <i className="bi bi-geo-alt-fill" style={{ fontSize: '0.85rem', color: '#3b82f6' }}></i>
+                      <i className="bi bi-geo-alt-fill" style={{ fontSize: 'clamp(1rem, 2.8vw, 1.125rem)', color: '#3b82f6', flexShrink: 0 }}></i>
                       <span style={{
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap'
+                        whiteSpace: 'nowrap',
+                        minWidth: '0',
+                        flex: 1,
+                        textAlign: 'center'
                       }}>{event.location}</span>
                     </div>
 
@@ -866,12 +944,13 @@ const Events: React.FC = () => {
                       justifyContent: 'center',
                       gap: '0.4rem',
                       color: '#374151',
-                      fontSize: '0.9rem',
+                      fontSize: 'clamp(1.0625rem, 3vw, 1.1875rem)',
                       marginBottom: '0.75rem',
-                      fontWeight: '500'
+                      fontWeight: '500',
+                      width: '100%'
                     }}>
-                      <i className="bi bi-clock-fill" style={{ fontSize: '0.85rem', color: '#3b82f6' }}></i>
-                      <span>{event.time}</span>
+                      <i className="bi bi-clock-fill" style={{ fontSize: 'clamp(1rem, 2.8vw, 1.125rem)', color: '#3b82f6', flexShrink: 0 }}></i>
+                      <span style={{ textAlign: 'center' }}>{event.time}</span>
                     </div>
 
                     {/* Stream Now Button */}
@@ -885,14 +964,16 @@ const Events: React.FC = () => {
                         background: event.status === 'LIVE' ? '#039130' : '#083A85',
                         border: `2.5px solid ${event.status === 'LIVE' ? '#059669' : '#083A85'}`,
                         color: '#FFFFFF',
-                        padding: '0.5rem 1rem',
+                        padding: 'clamp(0.625rem, 2.5vw, 0.75rem) clamp(1rem, 3vw, 1.25rem)',
                         borderRadius: '20px',
-                        fontSize: '0.8rem',
+                        fontSize: 'clamp(1.0625rem, 3vw, 1.1875rem)',
                         fontWeight: '700',
                         textTransform: 'uppercase',
                         cursor: 'pointer',
                         transition: 'all 0.3s ease',
-                        letterSpacing: '0.5px'
+                        letterSpacing: '0.5px',
+                        maxWidth: '100%',
+                        boxSizing: 'border-box'
                       }}
                       onClick={() => window.location.href = `/user/events/view-event?id=${event.id}`}
                       onMouseEnter={(e) => {
@@ -904,13 +985,23 @@ const Events: React.FC = () => {
                         e.currentTarget.style.boxShadow = 'none';
                       }}
                     >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ flexShrink: 0 }}>
                         <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" />
                         <path d="M12 6v6l4 2" strokeLinecap="round" />
                         <circle cx="12" cy="12" r="2" fill="currentColor" />
                         <path d="M8 8c1-1 2-1 2-1M16 8c-1-1-2-1-2-1M8 16c1 1 2 1 2 1M16 16c-1 1-2 1-2 1" strokeLinecap="round" />
                       </svg>
-                      {event.status === 'LIVE' ? t('joinEvent').toUpperCase() : t('viewDetails').toUpperCase()}
+                      <span style={{
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        minWidth: '0'
+                      }}>
+                        {event.status === 'LIVE'
+                          ? (isMobile ? 'JOIN' : t('joinEvent').toUpperCase())
+                          : (isMobile ? 'DETAILS' : t('viewDetails').toUpperCase())
+                        }
+                      </span>
                     </button>
                   </div>
                 </div>
@@ -923,27 +1014,29 @@ const Events: React.FC = () => {
               display: 'flex',
               justifyContent: 'center',
               alignItems: 'center',
-              gap: '0.5rem',
+              gap: 'clamp(0.25rem, 1vw, 0.5rem)',
               marginTop: '3rem',
-              flexWrap: 'wrap'
+              flexWrap: 'wrap',
+              width: '100%'
             }}>
               {/* Previous Button */}
               <button
                 onClick={goToPreviousPage}
                 disabled={currentPage === 1}
                 style={{
-                  padding: '0.5rem 1rem',
+                  padding: 'clamp(0.4rem, 1.5vw, 0.5rem) clamp(0.75rem, 2vw, 1rem)',
                   borderRadius: '0.5rem',
                   border: '1px solid #bab8b8',
                   backgroundColor: currentPage === 1 ? '#f3f4f6' : '#ffffff',
                   color: currentPage === 1 ? '#9ca3af' : '#111827',
                   cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
                   fontWeight: '500',
-                  fontSize: '0.9rem',
+                  fontSize: 'clamp(1.0625rem, 3vw, 1.1875rem)',
                   transition: 'all 0.2s ease',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '0.25rem'
+                  gap: '0.25rem',
+                  whiteSpace: 'nowrap'
                 }}
                 onMouseEnter={(e) => {
                   if (currentPage !== 1) {
@@ -959,43 +1052,68 @@ const Events: React.FC = () => {
                 }}
               >
                 <i className="bi bi-chevron-left"></i>
-                Previous
+                <span style={{ display: 'inline' }}>Previous</span>
               </button>
 
               {/* Page Numbers */}
-              <div style={{ display: 'flex', gap: '0.25rem' }}>
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
-                  <button
-                    key={pageNum}
-                    onClick={() => goToPage(pageNum)}
-                    style={{
-                      padding: '0.5rem 0.75rem',
-                      borderRadius: '0.5rem',
-                      border: currentPage === pageNum ? '2px solid #083A85' : '1px solid #bab8b8',
-                      backgroundColor: currentPage === pageNum ? '#083A85' : '#ffffff',
-                      color: currentPage === pageNum ? '#ffffff' : '#111827',
-                      cursor: 'pointer',
-                      fontWeight: currentPage === pageNum ? '600' : '500',
-                      fontSize: '0.9rem',
-                      minWidth: '2.5rem',
-                      transition: 'all 0.2s ease'
-                    }}
-                    onMouseEnter={(e) => {
-                      if (currentPage !== pageNum) {
-                        e.currentTarget.style.backgroundColor = '#f9fafb';
-                        e.currentTarget.style.borderColor = '#083A85';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (currentPage !== pageNum) {
-                        e.currentTarget.style.backgroundColor = '#ffffff';
-                        e.currentTarget.style.borderColor = '#bab8b8';
-                      }
-                    }}
-                  >
-                    {pageNum}
-                  </button>
-                ))}
+              <div style={{
+                display: 'flex',
+                gap: 'clamp(0.2rem, 0.5vw, 0.25rem)',
+                flexWrap: 'wrap',
+                justifyContent: 'center'
+              }}>
+                {getPageNumbers().map((pageNum, index) => {
+                  if (pageNum === '...') {
+                    return (
+                      <span
+                        key={`ellipsis-${index}`}
+                        style={{
+                          padding: 'clamp(0.4rem, 1.5vw, 0.5rem) clamp(0.3rem, 1vw, 0.5rem)',
+                          color: '#9ca3af',
+                          fontSize: 'clamp(1.0625rem, 3vw, 1.1875rem)',
+                          display: 'flex',
+                          alignItems: 'center'
+                        }}
+                      >
+                        ...
+                      </span>
+                    );
+                  }
+
+                  const page = pageNum as number;
+                  return (
+                    <button
+                      key={page}
+                      onClick={() => goToPage(page)}
+                      style={{
+                        padding: 'clamp(0.4rem, 1.5vw, 0.5rem) clamp(0.6rem, 1.5vw, 0.75rem)',
+                        borderRadius: '0.5rem',
+                        border: currentPage === page ? '2px solid #083A85' : '1px solid #bab8b8',
+                        backgroundColor: currentPage === page ? '#083A85' : '#ffffff',
+                        color: currentPage === page ? '#ffffff' : '#111827',
+                        cursor: 'pointer',
+                        fontWeight: currentPage === page ? '600' : '500',
+                        fontSize: 'clamp(1.0625rem, 3vw, 1.1875rem)',
+                        minWidth: 'clamp(2.25rem, 6vw, 2.75rem)',
+                        transition: 'all 0.2s ease'
+                      }}
+                      onMouseEnter={(e) => {
+                        if (currentPage !== page) {
+                          e.currentTarget.style.backgroundColor = '#f9fafb';
+                          e.currentTarget.style.borderColor = '#083A85';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (currentPage !== page) {
+                          e.currentTarget.style.backgroundColor = '#ffffff';
+                          e.currentTarget.style.borderColor = '#bab8b8';
+                        }
+                      }}
+                    >
+                      {page}
+                    </button>
+                  );
+                })}
               </div>
 
               {/* Next Button */}
@@ -1003,18 +1121,19 @@ const Events: React.FC = () => {
                 onClick={goToNextPage}
                 disabled={currentPage === totalPages}
                 style={{
-                  padding: '0.5rem 1rem',
+                  padding: 'clamp(0.4rem, 1.5vw, 0.5rem) clamp(0.75rem, 2vw, 1rem)',
                   borderRadius: '0.5rem',
                   border: '1px solid #bab8b8',
                   backgroundColor: currentPage === totalPages ? '#f3f4f6' : '#ffffff',
                   color: currentPage === totalPages ? '#9ca3af' : '#111827',
                   cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
                   fontWeight: '500',
-                  fontSize: '0.9rem',
+                  fontSize: 'clamp(1.0625rem, 3vw, 1.1875rem)',
                   transition: 'all 0.2s ease',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '0.25rem'
+                  gap: '0.25rem',
+                  whiteSpace: 'nowrap'
                 }}
                 onMouseEnter={(e) => {
                   if (currentPage !== totalPages) {
@@ -1029,7 +1148,7 @@ const Events: React.FC = () => {
                   }
                 }}
               >
-                Next
+                <span style={{ display: 'inline' }}>Next</span>
                 <i className="bi bi-chevron-right"></i>
               </button>
             </div>

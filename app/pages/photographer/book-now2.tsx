@@ -64,11 +64,66 @@ export default function BookNowPage(): React.JSX.Element {
 
   return (
     <>
+      <style jsx>{`
+        @media (max-width: 768px) {
+          .photographer-card {
+            padding: 24px 16px !important;
+            flex-direction: column !important;
+          }
+          .photographer-info {
+            flex-direction: column !important;
+            gap: 16px !important;
+            align-items: flex-start !important;
+          }
+          .details-grid {
+            flex-direction: column !important;
+            gap: 16px !important;
+          }
+          .profile-image {
+            width: 70px !important;
+            height: 70px !important;
+          }
+          .form-row {
+            flex-direction: column !important;
+          }
+          .phone-input-container {
+            flex-direction: column !important;
+          }
+          .phone-code-select {
+            width: 100% !important;
+            min-width: 100% !important;
+          }
+          .action-buttons {
+            flex-direction: column !important;
+          }
+          .button-group {
+            width: 100%;
+            flex-direction: column !important;
+          }
+          .button-group button {
+            width: 100%;
+          }
+          .previous-button {
+            width: 100% !important;
+          }
+          .main-container {
+            padding: 20px 16px 40px !important;
+          }
+          .back-button {
+            padding: 8px 16px !important;
+            font-size: 14px !important;
+          }
+          .contact-form-card {
+            padding: 24px 16px !important;
+          }
+        }
+      `}</style>
       <AmoriaKNavbar />
       <div className="min-h-screen" style={{ backgroundColor: '#f8f9fa', position: 'relative' }}>
         {/* Back Button - Overlay at top left */}
         <button
           onClick={() => window.history.back()}
+          className="back-button"
           style={{
             position: 'absolute',
             top: '20px',
@@ -102,6 +157,7 @@ export default function BookNowPage(): React.JSX.Element {
 
         {/* Main Content Container */}
         <div
+          className="main-container"
           style={{
             maxWidth: '1400px',
             margin: '0 auto',
@@ -118,6 +174,7 @@ export default function BookNowPage(): React.JSX.Element {
           >
             {/* Top Section: Photographer Information - Horizontal Layout */}
             <div
+              className="photographer-card"
               style={{
                 backgroundColor: '#fff',
                 borderRadius: '17px',
@@ -131,6 +188,7 @@ export default function BookNowPage(): React.JSX.Element {
               <div style={{ display: 'flex', alignItems: 'center', gap: '32px' }}>
                 {/* Profile Image */}
                 <div
+                  className="profile-image"
                   style={{
                     width: '90px',
                     height: '90px',
@@ -153,7 +211,7 @@ export default function BookNowPage(): React.JSX.Element {
                 </div>
 
                 {/* Photographer Info - Horizontal */}
-                <div style={{ flex: 1, display: 'flex', gap: '40px', alignItems: 'center' }}>
+                <div className="photographer-info" style={{ flex: 1, display: 'flex', gap: '40px', alignItems: 'center' }}>
                   {/* Name */}
                   <div>
                     <h2
@@ -173,7 +231,7 @@ export default function BookNowPage(): React.JSX.Element {
                   </div>
 
                   {/* Details Grid */}
-                  <div style={{ display: 'flex', gap: '32px', flex: 1 }}>
+                  <div className="details-grid" style={{ display: 'flex', gap: '32px', flex: 1 }}>
                     {/* Availability */}
                     <div>
                       <div
@@ -323,6 +381,7 @@ export default function BookNowPage(): React.JSX.Element {
 
               {/* Contact Form Card */}
               <div
+                className="contact-form-card"
                 style={{
                   backgroundColor: '#fff',
                   borderRadius: '17px',
@@ -335,7 +394,7 @@ export default function BookNowPage(): React.JSX.Element {
 
               {/* Form Fields */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div style={{ display: 'flex', gap: '12px' }}>
+                <div className="form-row" style={{ display: 'flex', gap: '12px' }}>
                   <div style={{ flex: 1 }}>
                     <label style={{ fontSize: '16px', fontWeight: '600', color: '#374151', display: 'block', marginBottom: '6px' }}>
                       {tAuth('firstName')}:
@@ -399,10 +458,11 @@ export default function BookNowPage(): React.JSX.Element {
                   <label style={{ fontSize: '16px', fontWeight: '600', color: '#374151', display: 'block', marginBottom: '6px' }}>
                     {t('phoneLabel')}:
                   </label>
-                  <div style={{ display: 'flex', gap: '8px' }}>
+                  <div className="phone-input-container" style={{ display: 'flex', gap: '8px' }}>
                     <select
                       value={phoneCode}
                       onChange={(e) => setPhoneCode(e.target.value)}
+                      className="phone-code-select"
                       style={{ padding: '10px 12px', border: '2px solid #e5e7eb', borderRadius: '8px', fontSize: '16px', fontWeight: '600', cursor: 'pointer', backgroundColor: '#fff', transition: 'all 0.3s ease', minWidth: '90px' }}
                       onFocus={(e) => {
                         e.currentTarget.style.borderColor = '#083A85';
@@ -478,6 +538,7 @@ export default function BookNowPage(): React.JSX.Element {
 
               {/* Action Buttons */}
               <div
+                className="action-buttons"
                 style={{
                   display: 'flex',
                   justifyContent: 'space-between',
@@ -490,6 +551,7 @@ export default function BookNowPage(): React.JSX.Element {
               >
                 <button
                    onClick={() => (window.location.href = '/user/photographers/book-now1')}
+                   className="previous-button"
                   style={{
                     padding: '12px 24px',
                     backgroundColor: '#fff',
@@ -517,7 +579,7 @@ export default function BookNowPage(): React.JSX.Element {
                   <i className="bi bi-chevron-left"></i>
                   {t('previous')}
                 </button>
-                <div style={{ display: 'flex', gap: '12px' }}>
+                <div className="button-group" style={{ display: 'flex', gap: '12px' }}>
                   <button
                     onClick={handleCancel}
                     style={{

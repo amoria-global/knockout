@@ -159,6 +159,8 @@ const App = () => {
   // Video controls visibility state
   const [showControls, setShowControls] = useState(true);
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // Mobile chat visibility state
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   // Get current time
   const getCurrentTime = () => {
@@ -864,30 +866,50 @@ const App = () => {
       clearTimeout(controlsTimeoutRef.current);
     }
 
-    // Set new timeout to hide controls after 2 seconds of inactivity
-    controlsTimeoutRef.current = setTimeout(() => {
-      setShowControls(false);
-      // Also close any open popups when hiding controls
-      setShowEmojiPicker(false);
-      setShowSettings(false);
-      setShowParticipants(false);
-    }, 1000);
+    // Check if any modal or menu is open
+    const hasOpenModal = showSettings || showEmojiPicker || showParticipants || showRatingModal || showAddEventModal;
+
+    // Only auto-hide if no modals/menus are open (YouTube-like behavior)
+    if (!hasOpenModal) {
+      controlsTimeoutRef.current = setTimeout(() => {
+        setShowControls(false);
+      }, 3000); // 3 seconds like YouTube
+    }
   };
 
-  // Handle mouse leaving video player - hide controls
+  // Handle mouse leaving video player
   const handleMouseLeave = () => {
-    // Only hide if not in fullscreen (in fullscreen, keep auto-hide behavior)
-    if (!isFullscreen) {
-      setShowControls(false);
-      // Also close any open popups
-      setShowEmojiPicker(false);
-      setShowSettings(false);
-      setShowParticipants(false);
-    }
-
     // Clear timeout when mouse leaves
     if (controlsTimeoutRef.current) {
       clearTimeout(controlsTimeoutRef.current);
+    }
+
+    // Check if any modal or menu is open
+    const hasOpenModal = showSettings || showEmojiPicker || showParticipants || showRatingModal || showAddEventModal;
+
+    // Only hide controls if no modals/menus are open and not in fullscreen
+    if (!hasOpenModal && !isFullscreen) {
+      setShowControls(false);
+    }
+  };
+
+  // Handle touch on video player (for mobile devices) - same logic as mouse
+  const handleTouch = () => {
+    setShowControls(true);
+
+    // Clear existing timeout
+    if (controlsTimeoutRef.current) {
+      clearTimeout(controlsTimeoutRef.current);
+    }
+
+    // Check if any modal or menu is open
+    const hasOpenModal = showSettings || showEmojiPicker || showParticipants || showRatingModal || showAddEventModal;
+
+    // Only auto-hide if no modals/menus are open (YouTube-like behavior)
+    if (!hasOpenModal) {
+      controlsTimeoutRef.current = setTimeout(() => {
+        setShowControls(false);
+      }, 3000); // 3 seconds like YouTube
     }
   };
 
@@ -1003,19 +1025,20 @@ const App = () => {
       );
       setIsFullscreen(isCurrentlyFullscreen);
 
-      // Show controls when entering fullscreen, let auto-hide take over
+      // Show controls when entering/exiting fullscreen
+      setShowControls(true);
+
+      // If entering fullscreen and no modals are open, start auto-hide timer
       if (isCurrentlyFullscreen) {
-        setShowControls(true);
-        // Start the auto-hide timer
-        if (controlsTimeoutRef.current) {
-          clearTimeout(controlsTimeoutRef.current);
+        const hasOpenModal = showSettings || showEmojiPicker || showParticipants || showRatingModal || showAddEventModal;
+        if (!hasOpenModal) {
+          if (controlsTimeoutRef.current) {
+            clearTimeout(controlsTimeoutRef.current);
+          }
+          controlsTimeoutRef.current = setTimeout(() => {
+            setShowControls(false);
+          }, 3000);
         }
-        controlsTimeoutRef.current = setTimeout(() => {
-          setShowControls(false);
-        }, 10);
-      } else {
-        // Show controls when exiting fullscreen
-        setShowControls(true);
       }
     };
 
@@ -1703,54 +1726,165 @@ const App = () => {
 
         /* Mobile Responsive Styles */
         @media (max-width: 1024px) {
+          /* Prevent horizontal scrolling */
+          html, body {
+            overflow-x: hidden !important;
+            width: 100% !important;
+            max-width: 100vw !important;
+          }
+
           .main-container {
             flex-direction: column !important;
             height: auto !important;
             min-height: 100vh !important;
             padding: 0 !important;
             gap: 0 !important;
+            overflow-x: hidden !important;
+            width: 100% !important;
           }
 
           .layout-wrapper {
             flex-direction: column !important;
+            position: relative !important;
+            overflow-x: hidden !important;
+            width: 100% !important;
+            height: auto !important;
+            min-height: 100vh !important;
           }
 
           .video-section {
             width: 100% !important;
+            min-height: 100vh !important;
+            max-width: 100vw !important;
+            overflow-x: hidden !important;
+          }
+
+          /* Video player container mobile adjustments */
+          .video-player-container {
+            height: 50vh !important;
+            min-height: 300px !important;
+            max-height: 50vh !important;
+            width: 100% !important;
           }
 
           .chat-section {
+            position: fixed !important;
+            bottom: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
             width: 100% !important;
-            height: 50vh !important;
+            height: 70vh !important;
+            max-height: 70vh !important;
             border-left: none !important;
             border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+            transform: translateY(100%) !important;
+            transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1) !important;
+            z-index: 1000 !important;
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5) !important;
+            overflow-y: auto !important;
+          }
+
+          .chat-section.chat-open {
+            transform: translateY(0) !important;
           }
 
           .stream-info-section {
             padding: 12px !important;
+            padding-bottom: 80px !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+            overflow-x: hidden !important;
           }
 
           .mini-players-container {
             flex-direction: column !important;
+            overflow-x: auto !important;
+            -webkit-overflow-scrolling: touch !important;
+            width: 100% !important;
+          }
+
+          /* Floating chat toggle button */
+          .mobile-chat-toggle {
+            position: fixed !important;
+            bottom: 20px !important;
+            right: 20px !important;
+            width: 60px !important;
+            height: 60px !important;
+            border-radius: 50% !important;
+            background: linear-gradient(135deg, #03969c 0%, #016a6e 100%) !important;
+            border: none !important;
+            color: #fff !important;
+            font-size: 24px !important;
+            cursor: pointer !important;
+            box-shadow: 0 4px 20px rgba(3, 150, 156, 0.4), 0 0 0 0 rgba(3, 150, 156, 0.6) !important;
+            z-index: 999 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            transition: all 0.3s ease !important;
+            animation: pulse-ring 2s infinite !important;
+          }
+
+          @keyframes pulse-ring {
+            0% {
+              box-shadow: 0 4px 20px rgba(3, 150, 156, 0.4), 0 0 0 0 rgba(3, 150, 156, 0.6);
+            }
+            50% {
+              box-shadow: 0 4px 20px rgba(3, 150, 156, 0.4), 0 0 0 10px rgba(3, 150, 156, 0);
+            }
+            100% {
+              box-shadow: 0 4px 20px rgba(3, 150, 156, 0.4), 0 0 0 0 rgba(3, 150, 156, 0);
+            }
+          }
+
+          .mobile-chat-toggle:active {
+            transform: scale(0.95) !important;
+          }
+
+          .mobile-chat-toggle .unread-badge {
+            position: absolute !important;
+            top: -5px !important;
+            right: -5px !important;
+            background: #ef4444 !important;
+            color: #fff !important;
+            font-size: 12px !important;
+            font-weight: 700 !important;
+            padding: 4px 8px !important;
+            border-radius: 12px !important;
+            min-width: 24px !important;
+            text-align: center !important;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+          }
+
+          /* Show mobile close button on mobile only */
+          .mobile-chat-close {
+            display: flex !important;
+          }
+
+          /* Hide mobile chat toggle when chat is open */
+          .chat-open ~ .mobile-chat-toggle {
+            display: none !important;
           }
         }
 
         @media (max-width: 768px) {
           .stream-title {
-            font-size: 16px !important;
+            font-size: clamp(14px, 4vw, 16px) !important;
           }
 
           .photographer-name {
-            font-size: 13px !important;
+            font-size: clamp(12px, 3.5vw, 13px) !important;
           }
 
           .stat-item {
-            font-size: 12px !important;
+            font-size: clamp(11px, 3vw, 12px) !important;
           }
 
           .control-btn {
             font-size: 18px !important;
-            padding: 6px !important;
+            padding: 8px !important;
+            min-width: 44px !important;
+            min-height: 44px !important;
           }
 
           .emoji-picker-bar {
@@ -1763,6 +1897,448 @@ const App = () => {
             max-width: 300px !important;
             left: 50% !important;
             transform: translate(-50%, -50%) !important;
+          }
+        }
+
+        /* iPhone SE and small phones (320px - 375px) */
+        @media (max-width: 375px) {
+          .video-player-container {
+            height: 45vh !important;
+            min-height: 250px !important;
+          }
+
+          .stream-title {
+            font-size: clamp(13px, 4vw, 15px) !important;
+            line-height: 1.3 !important;
+          }
+
+          .photographer-name {
+            font-size: clamp(11px, 3.5vw, 12px) !important;
+          }
+
+          .stat-item {
+            font-size: clamp(10px, 2.8vw, 11px) !important;
+            padding: 4px 6px !important;
+          }
+
+          .control-btn {
+            font-size: 16px !important;
+            padding: 6px !important;
+            min-width: 40px !important;
+            min-height: 40px !important;
+          }
+
+          .stream-info-section {
+            padding: 8px !important;
+            padding-bottom: 70px !important;
+          }
+
+          .mobile-chat-toggle {
+            width: 52px !important;
+            height: 52px !important;
+            font-size: 20px !important;
+            bottom: 16px !important;
+            right: 16px !important;
+          }
+
+          .chat-section {
+            height: 75vh !important;
+            max-height: 75vh !important;
+          }
+
+          /* Smaller buttons and inputs */
+          input, textarea, button {
+            font-size: 14px !important;
+          }
+
+          /* Reduce modal padding */
+          .participants-modal {
+            width: 95% !important;
+            max-width: 280px !important;
+            padding: 16px !important;
+          }
+
+          /* Optimize emoji picker for small screens */
+          .emoji-picker-bar {
+            bottom: 55px !important;
+            padding: 4px !important;
+            gap: 4px !important;
+          }
+
+          .emoji-picker-bar button {
+            width: 36px !important;
+            height: 36px !important;
+            font-size: 18px !important;
+          }
+
+          /* Mini players stack better on small screens */
+          .mini-players-container {
+            gap: 8px !important;
+            padding: 8px !important;
+          }
+
+          /* Settings menu optimization */
+          .settings-menu {
+            min-width: 200px !important;
+            max-width: 90vw !important;
+            font-size: 13px !important;
+          }
+
+          /* Progress bar larger touch target */
+          .progress-bar-container {
+            height: 8px !important;
+            margin: 8px 0 !important;
+          }
+
+          .progress-thumb {
+            width: 14px !important;
+            height: 14px !important;
+          }
+        }
+
+        /* Medium phones and phablets (376px - 640px) */
+        @media (min-width: 376px) and (max-width: 640px) {
+          .video-player-container {
+            height: 48vh !important;
+            min-height: 280px !important;
+          }
+
+          .stream-title {
+            font-size: clamp(14px, 3.8vw, 16px) !important;
+          }
+
+          .photographer-name {
+            font-size: clamp(12px, 3.2vw, 14px) !important;
+          }
+
+          .control-btn {
+            min-width: 46px !important;
+            min-height: 46px !important;
+          }
+
+          .mobile-chat-toggle {
+            width: 56px !important;
+            height: 56px !important;
+            font-size: 22px !important;
+          }
+
+          .emoji-picker-bar button {
+            width: 40px !important;
+            height: 40px !important;
+            font-size: 20px !important;
+          }
+        }
+
+        /* Tablets and iPad (641px - 1024px) */
+        @media (min-width: 641px) and (max-width: 1024px) {
+          .video-player-container {
+            height: 55vh !important;
+            min-height: 350px !important;
+            max-height: 60vh !important;
+          }
+
+          .stream-title {
+            font-size: clamp(16px, 2.5vw, 18px) !important;
+          }
+
+          .photographer-name {
+            font-size: clamp(13px, 2.2vw, 15px) !important;
+          }
+
+          .chat-section {
+            height: 65vh !important;
+            max-height: 65vh !important;
+          }
+
+          .mobile-chat-toggle {
+            width: 64px !important;
+            height: 64px !important;
+            font-size: 26px !important;
+            bottom: 24px !important;
+            right: 24px !important;
+          }
+
+          /* Two-column layout for mini players on tablet */
+          .mini-players-container {
+            display: grid !important;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)) !important;
+            gap: 12px !important;
+          }
+
+          /* Larger touch targets for tablet */
+          .control-btn {
+            min-width: 48px !important;
+            min-height: 48px !important;
+            font-size: 20px !important;
+          }
+
+          .emoji-picker-bar button {
+            width: 44px !important;
+            height: 44px !important;
+            font-size: 22px !important;
+          }
+
+          /* Better spacing for tablet */
+          .stream-info-section {
+            padding: 16px !important;
+            padding-bottom: 90px !important;
+          }
+        }
+
+        /* Landscape orientation handling for phones */
+        @media (max-width: 896px) and (orientation: landscape) {
+          .video-player-container {
+            height: 85vh !important;
+            min-height: 85vh !important;
+            max-height: 85vh !important;
+          }
+
+          .stream-info-section {
+            padding: 8px 12px !important;
+            padding-bottom: 60px !important;
+          }
+
+          .mobile-chat-toggle {
+            width: 48px !important;
+            height: 48px !important;
+            font-size: 20px !important;
+            bottom: 12px !important;
+            right: 12px !important;
+          }
+
+          .chat-section {
+            height: 90vh !important;
+            max-height: 90vh !important;
+          }
+
+          /* Hide mini players in landscape to save space */
+          .mini-players-container {
+            display: none !important;
+          }
+
+          .control-btn {
+            min-width: 40px !important;
+            min-height: 40px !important;
+            font-size: 16px !important;
+            padding: 6px !important;
+          }
+
+          /* Compact emoji picker */
+          .emoji-picker-bar {
+            bottom: 45px !important;
+            padding: 3px !important;
+            gap: 2px !important;
+          }
+
+          .emoji-picker-bar button {
+            width: 32px !important;
+            height: 32px !important;
+            font-size: 16px !important;
+          }
+        }
+
+        /* Safe area insets for notched devices (iPhone X+) */
+        @supports (padding: env(safe-area-inset-bottom)) {
+          @media (max-width: 1024px) {
+            .mobile-chat-toggle {
+              bottom: calc(20px + env(safe-area-inset-bottom)) !important;
+            }
+
+            .stream-info-section {
+              padding-bottom: calc(80px + env(safe-area-inset-bottom)) !important;
+            }
+
+            .chat-section {
+              padding-bottom: env(safe-area-inset-bottom) !important;
+            }
+
+            .emoji-picker-bar {
+              bottom: calc(60px + env(safe-area-inset-bottom)) !important;
+            }
+          }
+
+          @media (max-width: 375px) {
+            .mobile-chat-toggle {
+              bottom: calc(16px + env(safe-area-inset-bottom)) !important;
+            }
+
+            .stream-info-section {
+              padding-bottom: calc(70px + env(safe-area-inset-bottom)) !important;
+            }
+          }
+        }
+
+        /* High DPI / Retina displays optimization */
+        @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+          .progress-bar-container {
+            height: 6px !important;
+          }
+
+          .progress-thumb {
+            width: 16px !important;
+            height: 16px !important;
+          }
+
+          @media (max-width: 375px) {
+            .progress-bar-container {
+              height: 8px !important;
+            }
+
+            .progress-thumb {
+              width: 18px !important;
+              height: 18px !important;
+            }
+          }
+        }
+
+        /* Desktop-specific styles (maintain unchanged) */
+        @media (min-width: 1025px) {
+          .mobile-chat-toggle {
+            display: none !important;
+          }
+
+          .mobile-chat-close {
+            display: none !important;
+          }
+
+          .chat-section {
+            position: static !important;
+            transform: none !important;
+            height: 100vh !important;
+            width: 340px !important;
+            max-height: 100vh !important;
+          }
+
+          .layout-wrapper {
+            flex-direction: row !important;
+          }
+
+          .video-section {
+            flex: 1 !important;
+            min-height: 100vh !important;
+          }
+
+          .video-player-container {
+            height: calc(100vh - 450px) !important;
+            min-height: 400px !important;
+          }
+
+          /* Larger control buttons for desktop */
+          .control-btn {
+            min-width: 52px !important;
+            min-height: 52px !important;
+            font-size: 24px !important;
+            padding: 12px !important;
+          }
+
+          /* Make progress bar more visible on desktop */
+          .progress-bar-container {
+            height: 6px !important;
+            margin-bottom: 12px !important;
+          }
+
+          .progress-bar-container:hover {
+            height: 8px !important;
+          }
+
+          /* Larger volume slider on desktop */
+          .volume-slider {
+            width: 120px !important;
+          }
+        }
+
+        /* Modal responsive improvements */
+        .modal-content,
+        .add-event-modal,
+        .rating-modal,
+        .participants-modal {
+          max-width: 90vw !important;
+          max-height: 90vh !important;
+          overflow-y: auto !important;
+        }
+
+        @media (max-width: 640px) {
+          .modal-content,
+          .add-event-modal,
+          .rating-modal {
+            width: 95vw !important;
+            max-width: 95vw !important;
+            margin: 16px !important;
+          }
+
+          .modal-content h2,
+          .add-event-modal h2,
+          .rating-modal h2 {
+            font-size: clamp(18px, 5vw, 22px) !important;
+          }
+
+          .modal-content input,
+          .modal-content textarea,
+          .add-event-modal input,
+          .add-event-modal textarea,
+          .rating-modal input,
+          .rating-modal textarea {
+            font-size: 16px !important; /* Prevents iOS zoom on focus */
+          }
+
+          .participants-modal {
+            width: calc(100vw - 32px) !important;
+            max-width: calc(100vw - 32px) !important;
+          }
+        }
+
+        /* Safe area insets for modals on notched devices */
+        @supports (padding: env(safe-area-inset-bottom)) {
+          .add-event-modal,
+          .rating-modal,
+          .participants-modal {
+            padding-bottom: calc(clamp(20px, 5vw, 32px) + env(safe-area-inset-bottom)) !important;
+          }
+
+          @media (max-width: 768px) {
+            .modal-content,
+            .add-event-modal,
+            .rating-modal,
+            .participants-modal {
+              margin-bottom: env(safe-area-inset-bottom) !important;
+            }
+
+            .settings-menu {
+              bottom: calc(clamp(50px, 12vw, 60px) + env(safe-area-inset-bottom)) !important;
+            }
+          }
+        }
+
+        /* Performance optimizations */
+        * {
+          -webkit-font-smoothing: antialiased;
+          -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Smooth scrolling for all containers */
+        .chat-section,
+        .messages-container,
+        .mini-players-container {
+          -webkit-overflow-scrolling: touch;
+          scroll-behavior: smooth;
+        }
+
+        /* Reduce motion for accessibility */
+        @media (prefers-reduced-motion: reduce) {
+          *,
+          *::before,
+          *::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+            scroll-behavior: auto !important;
+          }
+        }
+
+        /* Dark mode optimization (already dark, but future-proof) */
+        @media (prefers-color-scheme: dark) {
+          body {
+            color-scheme: dark;
           }
         }
       `}</style>
@@ -1813,6 +2389,8 @@ const App = () => {
               onClick={() => !isSwapping && togglePlay(mainEvent.id)}
               onMouseMove={handleMouseMove}
               onMouseLeave={handleMouseLeave}
+              onTouchStart={handleTouch}
+              onTouchMove={handleTouch}
               className={`video-player-container ${!showControls ? 'hide-cursor' : ''} ${isSwapping && swappingFromIndex === mainEventIndex ? 'swapping-main-to-mini' : ''}`}
               style={{
                 height: events.length > 1 ? 'calc(100vh - 450px)' : 'calc(100vh - 200px)',
@@ -2083,6 +2661,7 @@ const App = () => {
                 onClick={(e) => e.stopPropagation()}
                 onMouseEnter={() => {
                   setShowControls(true);
+                  // Clear auto-hide timeout when hovering over controls
                   if (controlsTimeoutRef.current) {
                     clearTimeout(controlsTimeoutRef.current);
                   }
@@ -2107,19 +2686,19 @@ const App = () => {
                   className="progress-bar-container"
                   style={{
                     width: '100%',
-                    height: '4px',
+                    height: 'clamp(4px, 0.5vw, 6px)',
                     backgroundColor: 'rgba(255, 255, 255, 0.3)',
                     borderRadius: '2px',
                     cursor: 'pointer',
-                    marginBottom: '8px',
+                    marginBottom: 'clamp(8px, 1vw, 12px)',
                     position: 'relative',
                     transition: 'height 0.2s'
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.height = '6px';
+                    e.currentTarget.style.height = 'clamp(6px, 0.7vw, 8px)';
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.height = '4px';
+                    e.currentTarget.style.height = 'clamp(4px, 0.5vw, 6px)';
                   }}
                 >
                   <div style={{
@@ -2158,11 +2737,13 @@ const App = () => {
                     border: 'none',
                     color: '#fff',
                     cursor: 'pointer',
-                    padding: '8px',
+                    padding: 'clamp(8px, 1vw, 12px)',
                     display: 'flex',
                     alignItems: 'center',
-                    fontSize: '20px',
-                    transition: 'transform 0.2s'
+                    fontSize: 'clamp(20px, 2vw, 28px)',
+                    transition: 'transform 0.2s',
+                    minWidth: 'clamp(40px, 4vw, 56px)',
+                    minHeight: 'clamp(40px, 4vw, 56px)'
                   }} onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
                      onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}>
                     <i className={mainState.isPlaying ? "bi bi-pause-fill" : "bi bi-play-fill"}></i>
@@ -2183,13 +2764,15 @@ const App = () => {
                       border: 'none',
                       color: '#fff',
                       cursor: 'pointer',
-                      padding: '8px',
+                      padding: 'clamp(8px, 1vw, 12px)',
                       display: 'flex',
                       alignItems: 'center',
-                      fontSize: '20px',
+                      fontSize: 'clamp(20px, 2vw, 28px)',
                       transition: 'transform 0.2s',
                       position: 'relative',
-                      zIndex: 1
+                      zIndex: 1,
+                      minWidth: 'clamp(40px, 4vw, 56px)',
+                      minHeight: 'clamp(40px, 4vw, 56px)'
                     }} onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
                        onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}>
                       <i className={mainState.isMuted || mainState.volume === 0 ? "bi bi-volume-mute-fill" : mainState.volume < 50 ? "bi bi-volume-down-fill" : "bi bi-volume-up-fill"}></i>
@@ -2280,11 +2863,13 @@ const App = () => {
                       border: 'none',
                       color: '#fff',
                       cursor: 'pointer',
-                      padding: '8px',
+                      padding: 'clamp(8px, 1vw, 12px)',
                       display: 'flex',
                       alignItems: 'center',
-                      fontSize: '20px',
-                      transition: 'transform 0.2s'
+                      fontSize: 'clamp(20px, 2vw, 28px)',
+                      transition: 'transform 0.2s',
+                      minWidth: 'clamp(40px, 4vw, 56px)',
+                      minHeight: 'clamp(40px, 4vw, 56px)'
                     }} onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
                        onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
                     title="Emoji reactions"
@@ -2300,12 +2885,14 @@ const App = () => {
                       border: 'none',
                       color: isRecording ? '#ef4444' : '#fff',
                       cursor: 'pointer',
-                      padding: '8px',
+                      padding: 'clamp(8px, 1vw, 12px)',
                       display: 'flex',
                       alignItems: 'center',
-                      fontSize: '20px',
+                      fontSize: 'clamp(20px, 2vw, 28px)',
                       borderRadius: '4px',
-                      transition: 'all 0.2s'
+                      transition: 'all 0.2s',
+                      minWidth: 'clamp(40px, 4vw, 56px)',
+                      minHeight: 'clamp(40px, 4vw, 56px)'
                     }} onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
                        onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
                     title={isRecording ? "Stop recording" : "Start recording"}
@@ -2321,11 +2908,13 @@ const App = () => {
                       border: 'none',
                       color: '#fff',
                       cursor: 'pointer',
-                      padding: '8px',
+                      padding: 'clamp(8px, 1vw, 12px)',
                       display: 'flex',
                       alignItems: 'center',
-                      fontSize: '20px',
-                      transition: 'transform 0.2s'
+                      fontSize: 'clamp(20px, 2vw, 28px)',
+                      transition: 'transform 0.2s',
+                      minWidth: 'clamp(40px, 4vw, 56px)',
+                      minHeight: 'clamp(40px, 4vw, 56px)'
                     }} onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
                        onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
                     title="View participants"
@@ -2342,12 +2931,14 @@ const App = () => {
                         border: 'none',
                         color: '#fff',
                         cursor: 'pointer',
-                        padding: '8px',
+                        padding: 'clamp(8px, 1vw, 12px)',
                         display: 'flex',
                         alignItems: 'center',
-                        fontSize: '20px',
+                        fontSize: 'clamp(20px, 2vw, 28px)',
                         borderRadius: '4px',
-                        transition: 'all 0.2s'
+                        transition: 'all 0.2s',
+                        minWidth: 'clamp(40px, 4vw, 56px)',
+                        minHeight: 'clamp(40px, 4vw, 56px)'
                       }} onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
                          onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
                       title="Settings"
@@ -2359,21 +2950,23 @@ const App = () => {
                     {showSettings && !showReportIssues && (
                       <div className="settings-menu" style={{
                         position: 'absolute',
-                        bottom: '60px',
+                        bottom: 'clamp(50px, 12vw, 60px)',
                         right: '0',
                         backgroundColor: '#18181b',
-                        borderRadius: '8px',
-                        padding: '8px',
-                        minWidth: '240px',
-                        maxHeight: '400px',
+                        borderRadius: 'clamp(6px, 2vw, 8px)',
+                        padding: 'clamp(6px, 2vw, 8px)',
+                        minWidth: 'clamp(200px, 50vw, 240px)',
+                        maxWidth: 'min(90vw, 280px)',
+                        maxHeight: 'min(60vh, 400px)',
                         boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)',
                         border: '1px solid rgba(255, 255, 255, 0.1)',
-                        zIndex: 100
+                        zIndex: 100,
+                        overflowY: 'auto'
                       }}>
                         {/* Quality Settings */}
-                        <div style={{ padding: '8px' }}>
+                        <div style={{ padding: 'clamp(6px, 2vw, 8px)' }}>
                           <div style={{
-                            fontSize: '12px',
+                            fontSize: 'clamp(11px, 2.5vw, 12px)',
                             fontWeight: '600',
                             color: '#adadb8',
                             textTransform: 'uppercase',
@@ -2381,7 +2974,7 @@ const App = () => {
                             marginBottom: '8px'
                           }}>Quality</div>
                           <div className="custom-scrollbar" style={{
-                            maxHeight: '180px',
+                            maxHeight: 'clamp(140px, 30vh, 180px)',
                             overflowY: 'auto',
                             marginRight: '-4px',
                             paddingRight: '4px'
@@ -2392,19 +2985,20 @@ const App = () => {
                                 onClick={() => handleQualityChange(quality)}
                                 style={{
                                   width: '100%',
-                                  padding: '10px 12px',
+                                  padding: 'clamp(8px, 2.5vw, 10px) clamp(10px, 3vw, 12px)',
                                   backgroundColor: videoQuality === quality ? 'rgba(3, 150, 156, 0.2)' : 'transparent',
                                   border: 'none',
                                   borderRadius: '4px',
                                   color: videoQuality === quality ? '#03969c' : '#efeff1',
-                                  fontSize: '14px',
+                                  fontSize: 'clamp(13px, 3vw, 14px)',
                                   cursor: 'pointer',
                                   textAlign: 'left',
                                   display: 'flex',
                                   alignItems: 'center',
                                   justifyContent: 'space-between',
                                   marginBottom: '2px',
-                                  transition: 'all 0.2s'
+                                  transition: 'all 0.2s',
+                                  minHeight: '40px'
                                 }}
                                 onMouseEnter={(e) => {
                                   if (videoQuality !== quality) {
@@ -2419,7 +3013,7 @@ const App = () => {
                               >
                                 <span style={{ textTransform: 'capitalize' }}>{quality}</span>
                                 {videoQuality === quality && (
-                                  <i className="bi bi-check-lg" style={{ fontSize: '16px' }}></i>
+                                  <i className="bi bi-check-lg" style={{ fontSize: 'clamp(14px, 3.5vw, 16px)' }}></i>
                                 )}
                               </button>
                             ))}
@@ -2627,11 +3221,13 @@ const App = () => {
                       border: 'none',
                       color: '#fff',
                       cursor: 'pointer',
-                      padding: '8px',
+                      padding: 'clamp(8px, 1vw, 12px)',
                       display: 'flex',
                       alignItems: 'center',
-                      fontSize: '20px',
-                      transition: 'transform 0.2s'
+                      fontSize: 'clamp(20px, 2vw, 28px)',
+                      transition: 'transform 0.2s',
+                      minWidth: 'clamp(40px, 4vw, 56px)',
+                      minHeight: 'clamp(40px, 4vw, 56px)'
                     }} onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
                        onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
                   >
@@ -2732,39 +3328,61 @@ const App = () => {
 
               {/* Participants Viewer */}
               {showParticipants && (
-                <div
-                  onClick={(e) => e.stopPropagation()}
-                  className="participants-modal"
-                  style={{
-                    position: 'absolute',
-                    top: '50%',
-                    left: '20px',
-                    transform: 'translateY(-50%)',
-                    backgroundColor: '#18181b',
-                    borderRadius: '8px',
-                    padding: '20px',
-                    width: '320px',
-                    maxHeight: '500px',
-                    boxShadow: '0 10px 40px rgba(0, 0, 0, 0.5)',
-                    zIndex: 25,
-                    border: '1px solid rgba(255, 255, 255, 0.1)'
-                  }}>
+                <>
+                  {/* Backdrop overlay */}
+                  <div
+                    onMouseDown={(e) => {
+                      // Only close if clicking directly on backdrop
+                      if (e.target === e.currentTarget) {
+                        setShowParticipants(false);
+                      }
+                    }}
+                    style={{
+                      position: 'fixed',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      backgroundColor: 'rgba(0, 0, 0, 0.6)',
+                      zIndex: 1999,
+                      backdropFilter: 'blur(2px)'
+                    }}
+                  />
+                  <div
+                    onMouseDown={(e) => e.stopPropagation()}
+                    className="participants-modal"
+                    style={{
+                      position: 'fixed',
+                      top: '50%',
+                      left: '50%',
+                      transform: 'translate(-50%, -50%)',
+                      backgroundColor: '#18181b',
+                      borderRadius: 'clamp(8px, 2vw, 12px)',
+                      padding: 'clamp(16px, 4vw, 20px)',
+                      width: 'min(calc(100vw - 32px), 320px)',
+                      maxHeight: 'min(80vh, 500px)',
+                      boxShadow: '0 10px 40px rgba(0, 0, 0, 0.5)',
+                      zIndex: 2000,
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      overflowY: 'auto',
+                      pointerEvents: 'auto'
+                    }}>
                   <div style={{
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
-                    marginBottom: '16px'
+                    marginBottom: 'clamp(12px, 3vw, 16px)'
                   }}>
                     <h3 style={{
-                      fontSize: '16px',
+                      fontSize: 'clamp(14px, 3.5vw, 16px)',
                       fontWeight: '600',
                       color: '#efeff1',
                       margin: 0,
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '8px'
+                      gap: 'clamp(6px, 2vw, 8px)'
                     }}>
-                      <i className="bi bi-people-fill" style={{ color: '#03969c' }}></i>
+                      <i className="bi bi-people-fill" style={{ color: '#03969c', fontSize: 'clamp(14px, 3.5vw, 16px)' }}></i>
                       Viewers ({participants.length})
                     </h3>
                     <button
@@ -2774,12 +3392,24 @@ const App = () => {
                         border: 'none',
                         color: '#adadb8',
                         cursor: 'pointer',
-                        fontSize: '18px',
-                        padding: '4px',
-                        transition: 'color 0.2s'
+                        fontSize: 'clamp(16px, 4vw, 18px)',
+                        padding: '8px',
+                        transition: 'all 0.2s',
+                        minWidth: '44px',
+                        minHeight: '44px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        borderRadius: '50%'
                       }}
-                      onMouseEnter={(e) => e.currentTarget.style.color = '#efeff1'}
-                      onMouseLeave={(e) => e.currentTarget.style.color = '#adadb8'}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.color = '#efeff1';
+                        e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.color = '#adadb8';
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                      }}
                     >
                       <i className="bi bi-x-lg"></i>
                     </button>
@@ -2787,8 +3417,8 @@ const App = () => {
                   <div className="custom-scrollbar" style={{
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '8px',
-                    maxHeight: '400px',
+                    gap: 'clamp(6px, 2vw, 8px)',
+                    maxHeight: 'min(60vh, 400px)',
                     overflowY: 'auto'
                   }}>
                     {participants.map((participant) => (
@@ -2847,6 +3477,7 @@ const App = () => {
                     ))}
                   </div>
                 </div>
+                </>
               )}
             </div>
 
@@ -3006,30 +3637,33 @@ const App = () => {
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '12px',
-                marginBottom: '12px'
+                gap: 'clamp(8px, 2.5vw, 12px)',
+                marginBottom: '12px',
+                flexWrap: 'wrap'
               }}>
                 <img
                   src="https://i.pravatar.cc/150?img=68"
                   alt="Photographer"
                   style={{
-                    width: '48px',
-                    height: '48px',
+                    width: 'clamp(40px, 10vw, 48px)',
+                    height: 'clamp(40px, 10vw, 48px)',
                     borderRadius: '50%',
                     objectFit: 'cover',
-                    border: '2px solid #03969c'
+                    border: '2px solid #03969c',
+                    flexShrink: 0
                   }}
                 />
-                <div style={{ flex: 1 }}>
+                <div style={{ flex: 1, minWidth: '150px' }}>
                   <h3 className="photographer-name" style={{
-                    fontSize: '15px',
+                    fontSize: 'clamp(13px, 3.5vw, 15px)',
                     fontWeight: '600',
                     color: '#efeff1',
                     margin: 0,
-                    marginBottom: '4px'
+                    marginBottom: '4px',
+                    lineHeight: '1.3'
                   }}>{mainEvent.photographer}</h3>
                   <p style={{
-                    fontSize: '13px',
+                    fontSize: 'clamp(11px, 3vw, 13px)',
                     color: '#adadb8',
                     margin: 0
                   }}>{mainEvent.category}</p>
@@ -3040,20 +3674,22 @@ const App = () => {
                     backgroundColor: '#03969c',
                     color: '#fff',
                     fontWeight: '600',
-                    padding: '8px 24px',
-                    borderRadius: '4px',
-                    fontSize: '13px',
+                    padding: '10px 24px',
+                    borderRadius: '6px',
+                    fontSize: 'clamp(12px, 2.5vw, 13px)',
                     border: 'none',
                     cursor: 'pointer',
-                    transition: 'background 0.2s',
+                    transition: 'all 0.2s',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '6px'
+                    gap: '6px',
+                    minHeight: '40px',
+                    whiteSpace: 'nowrap'
                   }}
                   onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#027f83'}
                   onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#03969c'}
                 >
-                  <i className="bi bi-star-fill"></i>
+                  <i className="bi bi-star-fill" style={{ fontSize: 'clamp(12px, 2.5vw, 14px)' }}></i>
                   Rate this Live
                 </button>
 
@@ -3065,20 +3701,22 @@ const App = () => {
                       backgroundColor: '#1890ff',
                       color: '#fff',
                       fontWeight: '600',
-                      padding: '8px 24px',
-                      borderRadius: '4px',
-                      fontSize: '13px',
+                      padding: '10px 24px',
+                      borderRadius: '6px',
+                      fontSize: 'clamp(12px, 2.5vw, 13px)',
                       border: 'none',
                       cursor: 'pointer',
-                      transition: 'background 0.2s',
+                      transition: 'all 0.2s',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '6px'
+                      gap: '6px',
+                      minHeight: '40px',
+                      whiteSpace: 'nowrap'
                     }}
                     onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1570d3'}
                     onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#1890ff'}
                   >
-                    <i className="bi bi-plus-circle-fill"></i>
+                    <i className="bi bi-plus-circle-fill" style={{ fontSize: 'clamp(12px, 2.5vw, 14px)' }}></i>
                     Add Event
                   </button>
                 )}
@@ -3089,27 +3727,30 @@ const App = () => {
                     backgroundColor: '#e61220',
                     color: '#fff',
                     fontWeight: '600',
-                    padding: '8px 20px',
-                    borderRadius: '4px',
-                    fontSize: '13px',
+                    padding: '10px 24px',
+                    borderRadius: '6px',
+                    fontSize: 'clamp(12px, 2.5vw, 13px)',
                     border: 'none',
                     cursor: 'pointer',
-                    transition: 'background 0.2s',
+                    transition: 'all 0.2s',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '6px'
+                    gap: '6px',
+                    minHeight: '40px',
+                    whiteSpace: 'nowrap'
                   }}
                   onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#dc2626'}
                   onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#e61220'}
                   onClick={handleLeaveStream}
                 >
+                  <i className="bi bi-box-arrow-left" style={{ fontSize: 'clamp(12px, 2.5vw, 14px)' }}></i>
                   Leave Stream
                 </button>
               </div>
 
               {/* Stream Title */}
               <h2 className="stream-title" style={{
-                fontSize: '18px',
+                fontSize: 'clamp(15px, 4vw, 18px)',
                 fontWeight: '600',
                 color: '#efeff1',
                 margin: '0 0 12px 0',
@@ -3120,49 +3761,53 @@ const App = () => {
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '16px',
+                gap: 'clamp(8px, 3vw, 16px)',
                 flexWrap: 'wrap'
               }}>
                 <div className="stat-item" style={{
-                  fontSize: '13px',
+                  fontSize: 'clamp(11px, 2.8vw, 13px)',
                   color: '#adadb8',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '6px'
                 }}>
-                  <i className="bi bi-clock"></i>
+                  <i className="bi bi-clock" style={{ fontSize: 'clamp(12px, 3vw, 14px)' }}></i>
                   {mainEvent.startTime}
                 </div>
                 <div className="stat-item" style={{
-                  fontSize: '13px',
+                  fontSize: 'clamp(11px, 2.8vw, 13px)',
                   color: '#adadb8',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '6px'
                 }}>
-                  <i className="bi bi-calendar3"></i>
+                  <i className="bi bi-calendar3" style={{ fontSize: 'clamp(12px, 3vw, 14px)' }}></i>
                   {currentTime}
                 </div>
                 <div className="stat-item" style={{
-                  fontSize: '13px',
+                  fontSize: 'clamp(11px, 2.8vw, 13px)',
                   color: '#adadb8',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '6px'
+                  gap: '6px',
+                  flexWrap: 'wrap'
                 }}>
                   <span>Stream ID:</span>
                   <span style={{ color: '#efeff1', fontWeight: '600' }}>{mainEvent.streamId}</span>
                   <button
                     style={{
                       color: isCopied ? '#03969c' : '#adadb8',
-                      padding: '2px',
+                      padding: '4px',
                       background: 'transparent',
                       border: 'none',
                       cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
-                      fontSize: '14px',
-                      transition: 'color 0.2s'
+                      fontSize: 'clamp(13px, 3vw, 14px)',
+                      transition: 'color 0.2s',
+                      minWidth: '32px',
+                      minHeight: '32px',
+                      justifyContent: 'center'
                     }}
                     title={isCopied ? 'Copied!' : 'Copy stream ID'}
                     onClick={handleCopyStreamId}
@@ -3178,7 +3823,7 @@ const App = () => {
                   {isCopied && (
                     <span style={{
                       color: '#03969c',
-                      fontSize: '12px',
+                      fontSize: 'clamp(11px, 2.5vw, 12px)',
                       fontWeight: '600',
                       animation: 'slideIn 0.3s ease-out'
                     }}>
@@ -3191,7 +3836,7 @@ const App = () => {
           </div>
 
           {/* Right Section: Live Chat */}
-          <div className="chat-section" style={{
+          <div className={`chat-section ${isChatOpen ? 'chat-open' : ''}`} style={{
             width: '340px',
             backgroundColor: '#1f1f23',
             display: 'flex',
@@ -3204,7 +3849,8 @@ const App = () => {
             <div style={{
               padding: '16px',
               borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-              backgroundColor: '#18181b'
+              backgroundColor: '#18181b',
+              position: 'relative'
             }}>
               <h3 style={{
                 fontWeight: '600',
@@ -3228,6 +3874,25 @@ const App = () => {
                   padding: '2px 8px',
                   borderRadius: '10px'
                 }}>{mainEvent.messages.length}</span>
+                {/* Mobile Close Button */}
+                <button
+                  onClick={() => setIsChatOpen(false)}
+                  className="mobile-chat-close"
+                  style={{
+                    display: 'none',
+                    background: 'transparent',
+                    border: 'none',
+                    color: '#adadb8',
+                    cursor: 'pointer',
+                    padding: '4px',
+                    fontSize: '18px',
+                    transition: 'color 0.2s'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.color = '#efeff1'}
+                  onMouseLeave={(e) => e.currentTarget.style.color = '#adadb8'}
+                >
+                  <i className="bi bi-chevron-down"></i>
+                </button>
               </h3>
             </div>
 
@@ -3695,39 +4360,55 @@ const App = () => {
 
       {/* Add Event Modal */}
       {showAddEventModal && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.8)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 2000,
-          backdropFilter: 'blur(4px)'
-        }} onClick={() => setShowAddEventModal(false)}>
-          <div className="modal-content" style={{
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 2000,
+            backdropFilter: 'blur(4px)',
+            padding: '16px',
+            overflowY: 'auto'
+          }}
+          onMouseDown={(e) => {
+            // Only close if clicking directly on backdrop
+            if (e.target === e.currentTarget) {
+              setShowAddEventModal(false);
+            }
+          }}
+        >
+          <div className="modal-content add-event-modal" style={{
             backgroundColor: '#18181b',
-            borderRadius: '8px',
-            padding: '32px',
-            maxWidth: '480px',
-            width: '90%',
+            borderRadius: 'clamp(8px, 2vw, 12px)',
+            padding: 'clamp(20px, 5vw, 32px)',
+            maxWidth: '320px',
+            width: 'auto',
+            maxHeight: '90vh',
+            overflowY: 'auto',
             boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)',
-            border: '1px solid rgba(255, 255, 255, 0.1)'
-          }} onClick={(e) => e.stopPropagation()}>
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            margin: 'auto',
+            pointerEvents: 'auto'
+          }} onMouseDown={(e) => e.stopPropagation()}>
             <h2 style={{
-              fontSize: '20px',
+              fontSize: 'clamp(18px, 4.5vw, 20px)',
               fontWeight: '600',
               color: '#efeff1',
               marginBottom: '8px',
-              marginTop: 0
+              marginTop: 0,
+              lineHeight: '1.3'
             }}>Add Another Event</h2>
             <p style={{
-              fontSize: '13px',
+              fontSize: 'clamp(12px, 3vw, 13px)',
               color: '#adadb8',
-              marginBottom: '24px'
+              marginBottom: 'clamp(16px, 4vw, 24px)',
+              lineHeight: '1.5'
             }}>Enter the event ID or host ID to join another live stream (maximum 3 events).</p>
             <input
               type="text"
@@ -3736,35 +4417,41 @@ const App = () => {
               placeholder="Enter Event Link or Host ID"
               style={{
                 width: '100%',
-                padding: '12px',
+                padding: 'clamp(10px, 3vw, 12px)',
                 border: '1px solid rgba(255, 255, 255, 0.2)',
-                borderRadius: '4px',
-                fontSize: '14px',
-                marginBottom: '24px',
+                borderRadius: '6px',
+                fontSize: '16px',
+                marginBottom: 'clamp(16px, 4vw, 24px)',
                 outline: 'none',
                 boxSizing: 'border-box',
                 backgroundColor: '#2f2f35',
-                color: '#efeff1'
+                color: '#efeff1',
+                minHeight: '44px'
               }}
               onKeyDown={(e) => e.key === 'Enter' && handleAddEvent()}
             />
             <div style={{
               display: 'flex',
-              gap: '12px',
-              justifyContent: 'flex-end'
+              gap: 'clamp(8px, 2vw, 12px)',
+              justifyContent: 'flex-end',
+              flexWrap: 'wrap'
             }}>
               <button
                 onClick={() => setShowAddEventModal(false)}
                 style={{
-                  padding: '10px 24px',
-                  borderRadius: '4px',
+                  padding: '12px 24px',
+                  borderRadius: '6px',
                   border: '1px solid rgba(255, 255, 255, 0.2)',
                   backgroundColor: 'transparent',
                   color: '#efeff1',
-                  fontSize: '14px',
+                  fontSize: 'clamp(13px, 3vw, 14px)',
                   fontWeight: '600',
                   cursor: 'pointer',
-                  transition: 'all 0.2s'
+                  transition: 'all 0.2s',
+                  minHeight: '44px',
+                  minWidth: '100px',
+                  flex: '1',
+                  maxWidth: '150px'
                 }}
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)'}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
@@ -3775,15 +4462,19 @@ const App = () => {
                 onClick={handleAddEvent}
                 disabled={!newEventId.trim()}
                 style={{
-                  padding: '10px 24px',
-                  borderRadius: '4px',
+                  padding: '12px 24px',
+                  borderRadius: '6px',
                   border: 'none',
                   backgroundColor: newEventId.trim() ? '#1890ff' : '#4b5563',
                   color: '#fff',
-                  fontSize: '14px',
+                  fontSize: 'clamp(13px, 3vw, 14px)',
                   fontWeight: '600',
                   cursor: newEventId.trim() ? 'pointer' : 'not-allowed',
-                  transition: 'all 0.2s'
+                  transition: 'all 0.2s',
+                  minHeight: '44px',
+                  minWidth: '100px',
+                  flex: '1',
+                  maxWidth: '150px'
                 }}
                 onMouseEnter={(e) => {
                   if (newEventId.trim()) e.currentTarget.style.backgroundColor = '#1570d3';
@@ -3801,33 +4492,46 @@ const App = () => {
 
       {/* Rating Modal */}
       {showRatingModal && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.8)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 2000,
-          backdropFilter: 'blur(4px)'
-        }} onClick={() => {
-          setShowRatingModal(false);
-          setRating(0);
-          setRatingComment('');
-        }}>
-          <div style={{
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 2000,
+            backdropFilter: 'blur(4px)',
+            padding: '16px',
+            overflowY: 'auto'
+          }}
+          onMouseDown={(e) => {
+            // Only close if clicking directly on backdrop
+            if (e.target === e.currentTarget) {
+              setShowRatingModal(false);
+              setRating(0);
+              setRatingComment('');
+            }
+          }}
+        >
+          <div className="rating-modal" style={{
             backgroundColor: '#18181b',
-            borderRadius: '12px',
-            padding: '32px',
-            maxWidth: '480px',
-            width: '90%',
+            borderRadius: 'clamp(8px, 2vw, 12px)',
+            padding: 'clamp(20px, 5vw, 32px)',
+            paddingTop: 'clamp(40px, 8vw, 50px)',
+            maxWidth: '400px',
+            width: 'auto',
+            maxHeight: '90vh',
+            overflowY: 'auto',
             boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)',
             border: '1px solid rgba(255, 255, 255, 0.1)',
-            position: 'relative'
-          }} onClick={(e) => e.stopPropagation()}>
+            position: 'relative',
+            margin: 'auto',
+            pointerEvents: 'auto'
+          }} onMouseDown={(e) => e.stopPropagation()}>
             {/* Close button */}
             <button
               onClick={() => {
@@ -3837,50 +4541,64 @@ const App = () => {
               }}
               style={{
                 position: 'absolute',
-                top: '16px',
-                right: '16px',
+                top: 'clamp(12px, 3vw, 16px)',
+                right: 'clamp(12px, 3vw, 16px)',
                 background: 'transparent',
                 border: 'none',
                 color: '#adadb8',
                 cursor: 'pointer',
-                fontSize: '20px',
-                padding: '4px',
+                fontSize: 'clamp(18px, 4vw, 20px)',
+                padding: '8px',
                 transition: 'color 0.2s',
                 display: 'flex',
-                alignItems: 'center'
+                alignItems: 'center',
+                justifyContent: 'center',
+                minWidth: '44px',
+                minHeight: '44px',
+                borderRadius: '50%'
               }}
-              onMouseEnter={(e) => e.currentTarget.style.color = '#efeff1'}
-              onMouseLeave={(e) => e.currentTarget.style.color = '#adadb8'}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = '#efeff1';
+                e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = '#adadb8';
+                e.currentTarget.style.backgroundColor = 'transparent';
+              }}
             >
               <i className="bi bi-x-lg"></i>
             </button>
 
             {/* Title */}
             <h2 style={{
-              fontSize: '24px',
+              fontSize: 'clamp(18px, 5vw, 24px)',
               fontWeight: '600',
               color: '#efeff1',
               marginBottom: '8px',
               marginTop: 0,
               display: 'flex',
               alignItems: 'center',
-              gap: '10px'
+              gap: 'clamp(6px, 2vw, 10px)',
+              flexWrap: 'wrap',
+              lineHeight: '1.3'
             }}>
-              <i className="bi bi-star-fill" style={{ color: '#03969c', fontSize: '28px' }}></i>
+              <i className="bi bi-star-fill" style={{ color: '#03969c', fontSize: 'clamp(20px, 5vw, 28px)' }}></i>
               Rate this Live Stream
             </h2>
             <p style={{
-              fontSize: '14px',
+              fontSize: 'clamp(12px, 3vw, 14px)',
               color: '#adadb8',
-              marginBottom: '24px'
+              marginBottom: 'clamp(16px, 4vw, 24px)',
+              lineHeight: '1.5'
             }}>Share your experience with {mainEvent.photographer}</p>
 
             {/* Star Rating */}
             <div style={{
               display: 'flex',
               justifyContent: 'center',
-              gap: '8px',
-              marginBottom: '32px'
+              gap: 'clamp(4px, 2vw, 8px)',
+              marginBottom: 'clamp(20px, 5vw, 32px)',
+              flexWrap: 'wrap'
             }}>
               {[1, 2, 3, 4, 5].map((star) => (
                 <button
@@ -3892,11 +4610,16 @@ const App = () => {
                     background: 'transparent',
                     border: 'none',
                     cursor: 'pointer',
-                    padding: '4px',
-                    fontSize: '48px',
+                    padding: 'clamp(4px, 1vw, 8px)',
+                    fontSize: 'clamp(32px, 10vw, 48px)',
                     color: (hoverRating || rating) >= star ? '#fbbf24' : 'rgba(255, 255, 255, 0.2)',
                     transition: 'all 0.2s',
-                    transform: (hoverRating || rating) >= star ? 'scale(1.1)' : 'scale(1)'
+                    transform: (hoverRating || rating) >= star ? 'scale(1.1)' : 'scale(1)',
+                    minWidth: '44px',
+                    minHeight: '44px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
                   }}
                   onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.95)'}
                   onMouseUp={(e) => e.currentTarget.style.transform = (hoverRating || rating) >= star ? 'scale(1.1)' : 'scale(1)'}
@@ -3910,8 +4633,8 @@ const App = () => {
             {rating > 0 && (
               <div style={{
                 textAlign: 'center',
-                marginBottom: '24px',
-                fontSize: '16px',
+                marginBottom: 'clamp(16px, 4vw, 24px)',
+                fontSize: 'clamp(14px, 3.5vw, 16px)',
                 fontWeight: '600',
                 color: '#fbbf24'
               }}>
@@ -3924,9 +4647,9 @@ const App = () => {
             )}
 
             {/* Comment Section */}
-            <div style={{ marginBottom: '24px' }}>
+            <div style={{ marginBottom: 'clamp(16px, 4vw, 24px)' }}>
               <label style={{
-                fontSize: '14px',
+                fontSize: 'clamp(13px, 3vw, 14px)',
                 fontWeight: '600',
                 color: '#efeff1',
                 marginBottom: '8px',
@@ -3938,25 +4661,26 @@ const App = () => {
                 value={ratingComment}
                 onChange={(e) => setRatingComment(e.target.value)}
                 placeholder="Share your thoughts about this live stream..."
+                maxLength={500}
                 style={{
                   width: '100%',
-                  padding: '12px',
+                  padding: 'clamp(10px, 3vw, 12px)',
                   border: '1px solid rgba(255, 255, 255, 0.2)',
-                  borderRadius: '8px',
-                  fontSize: '14px',
+                  borderRadius: '6px',
+                  fontSize: '16px',
                   outline: 'none',
                   boxSizing: 'border-box',
                   backgroundColor: '#2f2f35',
                   color: '#efeff1',
-                  minHeight: '100px',
+                  minHeight: 'clamp(80px, 20vw, 100px)',
                   resize: 'vertical',
                   fontFamily: 'inherit'
                 }}
               />
               <div style={{
-                fontSize: '12px',
+                fontSize: 'clamp(11px, 2.5vw, 12px)',
                 color: '#adadb8',
-                marginTop: '8px',
+                marginTop: '6px',
                 textAlign: 'right'
               }}>
                 {ratingComment.length}/500
@@ -3966,8 +4690,9 @@ const App = () => {
             {/* Action Buttons */}
             <div style={{
               display: 'flex',
-              gap: '12px',
-              justifyContent: 'flex-end'
+              gap: 'clamp(8px, 2vw, 12px)',
+              justifyContent: 'flex-end',
+              flexWrap: 'wrap'
             }}>
               <button
                 onClick={() => {
@@ -3977,14 +4702,18 @@ const App = () => {
                 }}
                 style={{
                   padding: '12px 24px',
-                  borderRadius: '8px',
+                  borderRadius: '6px',
                   border: '1px solid rgba(255, 255, 255, 0.2)',
                   backgroundColor: 'transparent',
                   color: '#efeff1',
-                  fontSize: '14px',
+                  fontSize: 'clamp(13px, 3vw, 14px)',
                   fontWeight: '600',
                   cursor: 'pointer',
-                  transition: 'all 0.2s'
+                  transition: 'all 0.2s',
+                  minHeight: '44px',
+                  minWidth: '100px',
+                  flex: '1',
+                  maxWidth: '150px'
                 }}
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)'}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
@@ -3994,18 +4723,23 @@ const App = () => {
               <button
                 onClick={handleSubmitRating}
                 style={{
-                  padding: '12px 32px',
-                  borderRadius: '8px',
+                  padding: '12px 24px',
+                  borderRadius: '6px',
                   border: 'none',
                   backgroundColor: rating === 0 ? '#4b5563' : '#03969c',
                   color: '#fff',
-                  fontSize: '14px',
+                  fontSize: 'clamp(13px, 3vw, 14px)',
                   fontWeight: '600',
                   cursor: rating === 0 ? 'not-allowed' : 'pointer',
                   transition: 'all 0.2s',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '8px'
+                  justifyContent: 'center',
+                  gap: 'clamp(6px, 1.5vw, 8px)',
+                  minHeight: '44px',
+                  minWidth: '100px',
+                  flex: '1',
+                  maxWidth: '180px'
                 }}
                 onMouseEnter={(e) => {
                   if (rating > 0) e.currentTarget.style.backgroundColor = '#027f83';
@@ -4015,13 +4749,25 @@ const App = () => {
                 }}
                 disabled={rating === 0}
               >
-                <i className="bi bi-send-fill"></i>
+                <i className="bi bi-send-fill" style={{ fontSize: 'clamp(12px, 3vw, 14px)' }}></i>
                 Submit Rating
               </button>
             </div>
           </div>
         </div>
       )}
+
+      {/* Mobile Chat Toggle Button (hidden on desktop) */}
+      <button
+        onClick={() => setIsChatOpen(true)}
+        className="mobile-chat-toggle"
+        style={{ display: 'none' }}
+      >
+        <i className="bi bi-chat-dots-fill"></i>
+        {mainEvent.messages.length > 0 && (
+          <span className="unread-badge">{mainEvent.messages.length}</span>
+        )}
+      </button>
 
       {/* Video Message Recorder */}
       {showVideoMessageRecorder && (

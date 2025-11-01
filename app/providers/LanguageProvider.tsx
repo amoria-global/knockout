@@ -9,7 +9,7 @@ import enMessages from '../../messages/en.json';
 import frMessages from '../../messages/fr.json';
 import esMessages from '../../messages/es.json';
 
-const messages = {
+const messages: Record<string, typeof enMessages> = {
   en: enMessages,
   fr: frMessages,
   es: esMessages,
@@ -45,9 +45,12 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     return null;
   }
 
+  // Use the locale's messages if available, otherwise fall back to default locale
+  const currentMessages = messages[locale] || messages[defaultLocale];
+
   return (
     <LanguageContext.Provider value={{ locale, setLocale }}>
-      <IntlProvider messages={messages[locale]} locale={locale}>
+      <IntlProvider messages={currentMessages} locale={locale}>
         {children}
       </IntlProvider>
     </LanguageContext.Provider>
