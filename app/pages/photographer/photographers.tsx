@@ -3,6 +3,11 @@
 import React, { useState, useEffect } from 'react';
 import AmoriaKNavbar from '../../components/navbar';
 import { useTranslations } from 'next-intl';
+import {
+  getLocationFromStorage,
+  getDistrictsForCountry,
+  type LocationData,
+} from '../../utils/locationUtils';
 
 const Photographers: React.FC = () => {
   const t = useTranslations('photographers');
@@ -15,7 +20,19 @@ const Photographers: React.FC = () => {
   const [bookmarkedPhotographers, setBookmarkedPhotographers] = useState<number[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [isMobile, setIsMobile] = useState(false);
+  const [userLocation, setUserLocation] = useState<LocationData | null>(null);
+  const [availableDistricts, setAvailableDistricts] = useState<string[]>([]);
   const itemsPerPage = 12;
+
+  // Load user location from storage and set available districts
+  useEffect(() => {
+    const location = getLocationFromStorage();
+    if (location) {
+      setUserLocation(location);
+      const districts = getDistrictsForCountry(location.countryCode);
+      setAvailableDistricts(districts);
+    }
+  }, []);
 
   // Detect screen size
   useEffect(() => {
@@ -346,11 +363,22 @@ const Photographers: React.FC = () => {
     );
   };
 
+  // Filter photographers based on selected location
+  const filteredPhotographers = featuredPhotographers.filter((photographer) => {
+    // Filter by location (district)
+    if (selectedLocation !== 'all') {
+      // Check if the photographer location contains the selected district
+      const locationMatch = photographer.location.toLowerCase().includes(selectedLocation.toLowerCase());
+      if (!locationMatch) return false;
+    }
+    return true;
+  });
+
   // Pagination logic
-  const totalPages = Math.ceil(featuredPhotographers.length / itemsPerPage);
+  const totalPages = Math.ceil(filteredPhotographers.length / itemsPerPage);
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentPhotographers = featuredPhotographers.slice(indexOfFirstItem, indexOfLastItem);
+  const currentPhotographers = filteredPhotographers.slice(indexOfFirstItem, indexOfLastItem);
 
   const goToNextPage = () => {
     setCurrentPage(prev => Math.min(prev + 1, totalPages));
@@ -562,11 +590,11 @@ const Photographers: React.FC = () => {
                 }}
               >
                 <option value="all">{t('allLocations')}</option>
-                <option value="kigali">Kigali</option>
-                <option value="musanze">Musanze</option>
-                <option value="huye">Huye</option>
-                <option value="rubavu">Rubavu</option>
-                <option value="nyanza">Nyanza</option>
+                {availableDistricts.map((district) => (
+                  <option key={district} value={district}>
+                    {district}
+                  </option>
+                ))}
               </select>
             </div>
 
