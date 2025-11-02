@@ -3,6 +3,11 @@
 import React, { useState, useEffect } from 'react';
 import AmoriaKNavbar from '../../components/navbar';
 import { useTranslations } from 'next-intl';
+import {
+  getLocationFromStorage,
+  getDistrictsForCountry,
+  type LocationData,
+} from '../../utils/locationUtils';
 
 const Events: React.FC = () => {
   const t = useTranslations('events');
@@ -14,7 +19,19 @@ const Events: React.FC = () => {
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [isMobile, setIsMobile] = useState(false);
+  const [userLocation, setUserLocation] = useState<LocationData | null>(null);
+  const [availableDistricts, setAvailableDistricts] = useState<string[]>([]);
   const itemsPerPage = 12;
+
+  // Load user location from storage and set available districts
+  useEffect(() => {
+    const location = getLocationFromStorage();
+    if (location) {
+      setUserLocation(location);
+      const districts = getDistrictsForCountry(location.countryCode);
+      setAvailableDistricts(districts);
+    }
+  }, []);
 
   // Detect screen size
   useEffect(() => {
@@ -335,11 +352,22 @@ const Events: React.FC = () => {
     console.log('Searching for:', searchTerm);
   };
 
+  // Filter events based on selected location
+  const filteredEvents = eventsData.filter((event) => {
+    // Filter by location (district)
+    if (selectedLocation !== 'all') {
+      // Check if the event location contains the selected district
+      const locationMatch = event.location.toLowerCase().includes(selectedLocation.toLowerCase());
+      if (!locationMatch) return false;
+    }
+    return true;
+  });
+
   // Pagination logic
-  const totalPages = Math.ceil(eventsData.length / itemsPerPage);
+  const totalPages = Math.ceil(filteredEvents.length / itemsPerPage);
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentEvents = eventsData.slice(indexOfFirstItem, indexOfLastItem);
+  const currentEvents = filteredEvents.slice(indexOfFirstItem, indexOfLastItem);
 
   const goToNextPage = () => {
     setCurrentPage(prev => Math.min(prev + 1, totalPages));
@@ -609,12 +637,11 @@ const Events: React.FC = () => {
                 }}
               >
                 <option value="all">{t('allLocations')}</option>
-                <option value ="Rwanda">Rwanda</option>
-                <option value="Uganda">Uganda</option>
-                <option value="Kenya">Kenya</option>
-                <option value="Tanzania">Tanzania</option>
-                <option value="Burundi">Burundi</option>
-                <option value="DRC">DRC</option>
+                {availableDistricts.map((district) => (
+                  <option key={district} value={district}>
+                    {district}
+                  </option>
+                ))}
               </select>
             </div>
 
