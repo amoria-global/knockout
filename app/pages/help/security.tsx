@@ -322,7 +322,7 @@ const SecurityHelp: React.FC = () => {
                     <div>
                       <p style={{ fontSize: '1rem', fontWeight: '600', color: '#92400E', marginBottom: '0.5rem' }}>Highly Recommended</p>
                       <p style={{ fontSize: '0.95rem', lineHeight: '1.7', color: '#78350F' }}>
-                        We strongly recommend enabling 2FA on your Amoria Connekt account. Accounts with 2FA enabled are 99.9% less likely to be compromised.
+                        We strongly recommend enabling 2FA on your Amoria connekyt account. Accounts with 2FA enabled are 99.9% less likely to be compromised.
                       </p>
                     </div>
                   </div>
@@ -551,7 +551,7 @@ const SecurityHelp: React.FC = () => {
                   }}>
                     <p style={{ fontSize: '0.95rem', lineHeight: '1.7', color: '#4B5563', margin: 0 }}>
                       <i className="bi bi-envelope-fill" style={{ color: '#083A85', marginRight: '8px' }}></i>
-                      To exercise any of these rights, contact our Data Protection Officer at <strong>privacy@amoriaconnekt.com</strong>
+                      To exercise any of these rights, contact our Data Protection Officer at <strong>privacy@amoriaconnekyt.com</strong>
                     </p>
                   </div>
                 </div>
@@ -740,7 +740,7 @@ const SecurityHelp: React.FC = () => {
                 }}>
                   <ol style={{ paddingLeft: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                     {[
-                      'Log in to your Amoria Connekt account',
+                      'Log in to your Amoria connekyt account',
                       'Click on your profile photo in the top right corner',
                       'Select "Account Settings" from the dropdown menu',
                       'Navigate to the "Privacy & Security" tab',
@@ -964,7 +964,7 @@ const SecurityHelp: React.FC = () => {
                   <div>
                     <p style={{ fontSize: '1rem', fontWeight: '600', color: '#991B1B', marginBottom: '0.5rem' }}>Security Incident Hotline</p>
                     <p style={{ fontSize: '0.95rem', lineHeight: '1.7', color: '#7F1D1D' }}>
-                      If you suspect your account has been compromised or notice suspicious activity, contact our 24/7 Security Incident Response Team immediately at <strong>security@amoriaconnekt.com</strong> or call <strong>1-800-SECURE-AC</strong>. Do not delay - early reporting significantly reduces potential damage.
+                      If you suspect your account has been compromised or notice suspicious activity, contact our 24/7 Security Incident Response Team immediately at <strong>security@amoriaconnekyt.com</strong> or call <strong>1-800-SECURE-AC</strong>. Do not delay - early reporting significantly reduces potential damage.
                     </p>
                   </div>
                 </div>

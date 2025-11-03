@@ -267,7 +267,7 @@ const BookingHelp: React.FC = () => {
               </div>
 
               <p style={{ fontSize: '1.05rem', lineHeight: '1.8', color: '#4B5563', marginBottom: '2rem' }}>
-                Booking a photographer on Amoria Connekt is simple and secure. Our platform connects you with professional photographers who match your specific needs, budget, and style preferences. Follow these steps to find and book your perfect photographer.
+                Booking a photographer on Amoria connekyt is simple and secure. Our platform connects you with professional photographers who match your specific needs, budget, and style preferences. Follow these steps to find and book your perfect photographer.
               </p>
 
               <div style={{ marginBottom: '3rem' }}>

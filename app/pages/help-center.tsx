@@ -22,7 +22,7 @@ type FAQ = {
 const mockFAQs: FAQ[] = [
   {
     id: '1',
-    question: 'How do I book a photographer on Amoria Connekt?',
+    question: 'How do I book a photographer on Amoria connekyt?',
     answer: 'To book a photographer, browse through our verified photographers, view their portfolios, check availability, and send a booking request. Once the photographer accepts, you can proceed with payment through our secure escrow system.',
     category: 'Booking',
     priority: 'high',
@@ -940,9 +940,9 @@ const HelpSupportCenter: React.FC = () => {
                   <i className="bi bi-envelope-fill text-white" style={{ fontSize: isMobile ? '0.875rem' : '1rem' }}></i>
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-bold text-gray-900 mb-2" style={{ fontSize: isMobile ? '1rem' : '1.125rem' }}>Email Support</h3>
-                  <p className="text-[#083A85] font-semibold mb-2" style={{ fontSize: isMobile ? '0.875rem' : '1rem' }}>support@amoriaconnekt.com</p>
-                  <div className="flex items-center gap-2 text-gray-600" style={{ fontSize: isMobile ? '0.8125rem' : '0.875rem' }}>
+                  <h3 className="font-bold text-gray-900 text-lg mb-2">Email Support</h3>
+                  <p className="text-base text-[#083A85] font-semibold mb-2">support@amoriaconnekyt.com</p>
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
                     <i className="bi bi-clock-fill"></i>
                     <span>Response within 24 hours</span>
                   </div>

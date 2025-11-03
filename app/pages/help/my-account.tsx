@@ -79,7 +79,7 @@ const MyAccountHelp: React.FC = () => {
             lineHeight: '1.8',
             fontWeight: '400'
           }}>
-            Complete guide to creating, managing, and optimizing your Amoria Connekt account
+            Complete guide to creating, managing, and optimizing your Amoria connekyt account
           </p>
 
           <div style={{
@@ -271,7 +271,7 @@ const MyAccountHelp: React.FC = () => {
                   Getting Started
                 </h3>
                 <p style={{ fontSize: '1.05rem', lineHeight: '1.8', color: '#4B5563', marginBottom: '1.5rem' }}>
-                  Create your Amoria Connekt account in minutes and join our vibrant photography community. Our streamlined registration process ensures you can start booking photographers or accepting bookings quickly and securely.
+                  Create your Amoria connekyt account in minutes and join our vibrant photography community. Our streamlined registration process ensures you can start booking photographers or accepting bookings quickly and securely.
                 </p>
                 <div style={{
                   background: 'linear-gradient(135deg, rgba(8, 58, 133, 0.04) 0%, rgba(8, 58, 133, 0.08) 100%)',
@@ -292,7 +292,7 @@ const MyAccountHelp: React.FC = () => {
                       <strong>Enter Personal Information:</strong> Provide your full name, valid email address, and create a secure password (minimum 8 characters, including uppercase, lowercase, and numbers).
                     </li>
                     <li style={{ fontSize: '1.05rem', lineHeight: '1.7', color: '#374151' }}>
-                      <strong>Email Verification:</strong> Check your inbox for a verification email from Amoria Connekt. Click the verification link to confirm your email address within 24 hours.
+                      <strong>Email Verification:</strong> Check your inbox for a verification email from Amoria connekyt. Click the verification link to confirm your email address within 24 hours.
                     </li>
                     <li style={{ fontSize: '1.05rem', lineHeight: '1.7', color: '#374151' }}>
                       <strong>Complete Your Profile:</strong> Upload a professional profile picture, write a compelling bio, and add relevant information about your photography interests or services.
@@ -309,7 +309,7 @@ const MyAccountHelp: React.FC = () => {
                   Account Types
                 </h3>
                 <p style={{ fontSize: '1.05rem', lineHeight: '1.8', color: '#4B5563', marginBottom: '1.5rem' }}>
-                  Amoria Connekt offers two distinct account types, each tailored to specific user needs. You can switch between account types at any time from your account settings without losing your data.
+                  Amoria connekyt offers two distinct account types, each tailored to specific user needs. You can switch between account types at any time from your account settings without losing your data.
                 </p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                   <div style={{
@@ -389,7 +389,7 @@ const MyAccountHelp: React.FC = () => {
                   Profile Settings
                 </h3>
                 <p style={{ fontSize: '1.05rem', lineHeight: '1.8', color: '#4B5563', marginBottom: '1.5rem' }}>
-                  Your profile is your digital identity on Amoria Connekt. Keeping it up-to-date ensures you make the best impression on potential clients or photographers. A complete, professional profile increases trust and engagement on the platform.
+                  Your profile is your digital identity on Amoria connekyt. Keeping it up-to-date ensures you make the best impression on potential clients or photographers. A complete, professional profile increases trust and engagement on the platform.
                 </p>
                 <div style={{
                   background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.04) 0%, rgba(16, 185, 129, 0.08) 100%)',
@@ -490,7 +490,7 @@ const MyAccountHelp: React.FC = () => {
               </div>
 
               <p style={{ fontSize: '1.05rem', lineHeight: '1.8', color: '#4B5563', marginBottom: '2rem' }}>
-                Becoming a verified photographer on Amoria Connekt significantly increases your credibility, visibility, and booking rates. Verified accounts are prioritized in search results and receive exclusive benefits. Our verification process ensures clients can trust they're booking legitimate, professional photographers.
+                Becoming a verified photographer on Amoria connekyt significantly increases your credibility, visibility, and booking rates. Verified accounts are prioritized in search results and receive exclusive benefits. Our verification process ensures clients can trust they're booking legitimate, professional photographers.
               </p>
 
               <div style={{
@@ -699,7 +699,7 @@ const MyAccountHelp: React.FC = () => {
                       { icon: 'bi-envelope-fill', title: 'Email Notifications', desc: 'Receive detailed updates and summaries directly to your inbox. Best for non-urgent information and daily digests.' },
                       { icon: 'bi-phone-fill', title: 'SMS Alerts', desc: 'Get instant text notifications for time-sensitive events like booking confirmations, payment updates, and urgent messages.' },
                       { icon: 'bi-app-indicator', title: 'Push Notifications', desc: 'Real-time alerts through our mobile app and browser. Ideal for staying connected while on the go.' },
-                      { icon: 'bi-bell-fill', title: 'In-App Notifications', desc: 'See notifications within the platform dashboard. Perfect for when you\'re actively using Amoria Connekt.' }
+                      { icon: 'bi-bell-fill', title: 'In-App Notifications', desc: 'See notifications within the platform dashboard. Perfect for when you\'re actively using Amoria connekyt.' }
                     ].map((channel, idx) => (
                       <div key={idx} style={{
                         display: 'flex',
@@ -851,7 +851,7 @@ const MyAccountHelp: React.FC = () => {
                   Data Management
                 </h3>
                 <p style={{ fontSize: '1.05rem', lineHeight: '1.8', color: '#4B5563', marginBottom: '1.5rem' }}>
-                  You have complete control over your personal data stored on Amoria Connekt. Access these features from Account Settings - Privacy & Data:
+                  You have complete control over your personal data stored on Amoria connekyt. Access these features from Account Settings - Privacy & Data:
                 </p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                   {[
@@ -859,7 +859,7 @@ const MyAccountHelp: React.FC = () => {
                     { icon: 'bi-trash', title: 'Delete Account', desc: 'Permanently delete your account and all associated data. This action is irreversible after 30-day grace period' },
                     { icon: 'bi-eye-slash', title: 'Marketing Opt-Out', desc: 'Unsubscribe from promotional emails, newsletters, and marketing communications while keeping essential notifications' },
                     { icon: 'bi-shield-check', title: 'Cookie Preferences', desc: 'Manage cookie settings to control tracking, analytics, and personalization features across the platform' },
-                    { icon: 'bi-lock', title: 'Third-Party Access', desc: 'Review and revoke access for any third-party apps or services connected to your Amoria Connekt account' },
+                    { icon: 'bi-lock', title: 'Third-Party Access', desc: 'Review and revoke access for any third-party apps or services connected to your Amoria connekyt account' },
                     { icon: 'bi-file-earmark-text', title: 'Privacy Policy', desc: 'Review our complete privacy policy detailing how we collect, use, store, and protect your personal information' }
                   ].map((feature, idx) => (
                     <div key={idx} style={{
@@ -945,7 +945,7 @@ const MyAccountHelp: React.FC = () => {
                       icon: 'bi-envelope-x',
                       solutions: [
                         'Check your spam/junk folder',
-                        'Add noreply@amoriaconnekt.com to your contacts',
+                        'Add noreply@amoriaconnekyt.com to your contacts',
                         'Wait 5 minutes, then request a new verification email',
                         'Verify the email address in your account settings is correct',
                         'Try adding a backup email address',
@@ -1047,7 +1047,7 @@ const MyAccountHelp: React.FC = () => {
                   <div>
                     <p style={{ fontSize: '1rem', fontWeight: '600', color: '#1E3A8A', marginBottom: '0.5rem' }}>Need Further Assistance?</p>
                     <p style={{ fontSize: '0.95rem', lineHeight: '1.7', color: '#1E40AF', margin: 0 }}>
-                      If you've tried these solutions and still experience issues, contact our support team via live chat, email at support@amoriaconnekt.com, or submit a ticket through your account dashboard. Include screenshots and detailed error messages for faster resolution.
+                      If you've tried these solutions and still experience issues, contact our support team via live chat, email at support@amoriaconnekyt.com, or submit a ticket through your account dashboard. Include screenshots and detailed error messages for faster resolution.
                     </p>
                   </div>
                 </div>

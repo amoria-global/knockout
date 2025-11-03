@@ -109,11 +109,13 @@ export default function Home() {
             .how-it-works-steps { flex-direction: column !important; gap: 30px !important; }
             .how-it-works-svg { display: none !important; }
             .step-img { width: 180px !important; height: 180px !important; }
+            .step-title { font-size: 24px !important; }
+            .step-description { font-size: 15px !important; }
 
             .photographer-container { flex-direction: column !important; padding: 20px !important; gap: 20px !important; }
             .photographer-title { font-size: 32px !important; position: relative !important; top: 0 !important; }
-            .photographer-description { position: relative !important; top: 0 !important; margin-bottom: 20px !important; }
-            .photographer-button { position: relative !important; left: 0 !important; top: 0 !important; width: 100% !important; max-width: 250px !important; margin: 0 auto !important; }
+            .photographer-description { position: relative !important; top: 0 !important; margin-bottom: 20px !important; font-size: 16px !important; }
+            .photographer-button { position: relative !important; left: 0 !important; top: 0 !important; width: 100% !important; max-width: 250px !important; margin: 0 auto !important; font-size: 18px !important; }
             .photographer-video-container { max-width: 100% !important; }
 
             .mockups-section { padding: 60px 20px !important; }
@@ -123,25 +125,29 @@ export default function Home() {
             .device-phone { width: 200px !important; height: 400px !important; }
 
             .why-amoria-title { font-size: 36px !important; }
+            .why-amoria-subtitle { font-size: 16px !important; }
             .why-amoria-content { flex-direction: column !important; gap: 30px !important; }
             .why-amoria-image-container { height: 400px !important; max-width: 100% !important; }
+            .why-amoria-card-title { font-size: 18px !important; }
+            .why-amoria-card-description { font-size: 14px !important; }
 
             .global-network-section { padding: 60px 20px !important; }
             .global-network-content { flex-direction: column !important; gap: 40px !important; }
             .global-network-left { flex: 1 !important; max-width: 100% !important; text-align: center; }
             .global-network-title { font-size: 36px !important; }
+            .global-network-description { font-size: 15px !important; }
             .global-network-buttons { justify-content: center !important; flex-wrap: wrap !important; }
             .global-network-right { height: 300px !important; }
           }
 
           @media (min-width: 769px) and (max-width: 1024px) {
-            .hero-title { font-size: 42px !important; }
+            .hero-title { font-size: 48px !important; }
             .hero-content { padding: 30px 20px 80px !important; }
             .mockups-section { padding: 80px 40px !important; }
             .mockups-container { height: 450px !important; }
-            .how-it-works-title { font-size: 42px !important; }
-            .why-amoria-title { font-size: 42px !important; }
-            .global-network-title { font-size: 42px !important; }
+            .how-it-works-title { font-size: 45px !important; }
+            .why-amoria-title { font-size: 45px !important; }
+            .global-network-title { font-size: 45px !important; }
           }
         `}</style>
         {/* Hero Section */}
@@ -654,7 +660,7 @@ export default function Home() {
                     marginBottom: '30px'
                   }}
                 />
-                <h3 style={{
+                <h3 className="step-title" style={{
                   fontSize: '30px',
                   fontWeight: 700,
                   color: '#000',
@@ -662,7 +668,7 @@ export default function Home() {
                 }}>
                   {t('howItWorks.getStarted.title')}
                 </h3>
-                <p style={{
+                <p className="step-description" style={{
                   fontSize: '17px',
                   fontWeight: 400,
                   color: '#1f1d1d',
@@ -694,7 +700,7 @@ export default function Home() {
                     marginBottom: '30px'
                   }}
                 />
-                <h3 style={{
+                <h3 className="step-title" style={{
                   fontSize: '30px',
                   fontWeight: 700,
                   color: '#000',
@@ -702,7 +708,7 @@ export default function Home() {
                 }}>
                   {t('howItWorks.photography.title')}
                 </h3>
-                <p style={{
+                <p className="step-description" style={{
                   fontSize: '17px',
                   fontWeight: 400,
                   color: '#1f1d1d',
@@ -734,7 +740,7 @@ export default function Home() {
                     marginBottom: '30px'
                   }}
                 />
-                <h3 style={{
+                <h3 className="step-title" style={{
                   fontSize: '30px',
                   fontWeight: 700,
                   color: '#000',
@@ -742,7 +748,7 @@ export default function Home() {
                 }}>
                   {t('howItWorks.goLive.title')}
                 </h3>
-                <p style={{
+                <p className="step-description" style={{
                   fontSize: '17px',
                   fontWeight: 400,
                   color: '#1f1d1d',
@@ -1567,7 +1573,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Why Amoria Connekt Only Section */}
+        {/* Why Amoria connekyt Only Section */}
         <section style={{
           backgroundColor: '#fff',
           padding: '90px 0', // Standardized vertical padding
@@ -1592,7 +1598,7 @@ export default function Home() {
               }}>
                   {t('whyAmoria.title')}
               </h2>
-              <p style={{
+              <p className="why-amoria-subtitle" style={{
                 fontSize: '18px',
                 fontWeight: 500,
                 color: '#1f1d1d',
@@ -1650,7 +1656,7 @@ export default function Home() {
                       </svg>
                     </div>
                     <div style={{ flex: 1 }}>
-                      <h3 style={{
+                      <h3 className="why-amoria-card-title" style={{
                         fontSize: '20px',
                         fontWeight: 700,
                         color: '#083A85',
@@ -1658,7 +1664,7 @@ export default function Home() {
                       }}>
                         {t('whyAmoria.ratedPhotographers.title')}
                       </h3>
-                      <p style={{
+                      <p className="why-amoria-card-description" style={{
                         fontSize: '16px',
                         fontWeight: 400,
                         color: '#000',
@@ -1701,7 +1707,7 @@ export default function Home() {
                       </svg>
                     </div>
                     <div style={{ flex: 1 }}>
-                      <h3 style={{
+                      <h3 className="why-amoria-card-title" style={{
                         fontSize: '20px',
                         fontWeight: 700,
                         color: '#083A85',
@@ -1709,7 +1715,7 @@ export default function Home() {
                       }}>
                         {t('whyAmoria.liveStreaming.title')}
                       </h3>
-                      <p style={{
+                      <p className="why-amoria-card-description" style={{
                         fontSize: '16px',
                         fontWeight: 400,
                         color: '#000',
@@ -1751,7 +1757,7 @@ export default function Home() {
                       </svg>
                     </div>
                     <div style={{ flex: 1 }}>
-                      <h3 style={{
+                      <h3 className="why-amoria-card-title" style={{
                         fontSize: '20px',
                         fontWeight: 700,
                         color: '#083A85',
@@ -1759,7 +1765,7 @@ export default function Home() {
                       }}>
                         {t('whyAmoria.securePayments.title')}
                       </h3>
-                      <p style={{
+                      <p className="why-amoria-card-description" style={{
                         fontSize: '16px',
                         fontWeight: 400,
                         color: '#000',
@@ -1802,7 +1808,7 @@ export default function Home() {
                       </svg>
                     </div>
                     <div style={{ flex: 1 }}>
-                      <h3 style={{
+                      <h3 className="why-amoria-card-title" style={{
                         fontSize: '20px',
                         fontWeight: 700,
                         color: '#083A85',
@@ -1810,7 +1816,7 @@ export default function Home() {
                       }}>
                         {t('whyAmoria.fullEventGallery.title')}
                       </h3>
-                      <p style={{
+                      <p className="why-amoria-card-description" style={{
                         fontSize: '16px',
                         fontWeight: 400,
                         color: '#000',
@@ -1971,7 +1977,7 @@ export default function Home() {
               </h2>
 
               {/* Description */}
-              <p style={{
+              <p className="global-network-description" style={{
                 fontSize: '17px',
                 lineHeight: '1.65',
                 color: '#fff',

@@ -119,7 +119,7 @@ export default function Preloader({ onComplete }: PreloaderProps) {
           />
         </div>
 
-        {/* Main Logo SVG - Amoria Connekt 'K' Symbol */}
+        {/* Main Logo SVG - Amoria connekyt 'K' Symbol */}
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}

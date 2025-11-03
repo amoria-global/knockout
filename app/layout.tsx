@@ -5,7 +5,7 @@ import BackToTop from "./components/BackToTop";
 import { LanguageProvider } from "./providers/LanguageProvider";
 
 export const metadata: Metadata = {
-  title: "Amoria Connekt",
+  title: "Amoria connekyt",
   description: "Connecting moments, creating memories. Your trusted platform for professional event photography and live streaming.",
 };
 

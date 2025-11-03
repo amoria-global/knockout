@@ -281,7 +281,7 @@ const About = () => {
                 textAlign: 'left',
               }}
             >
-              Amoria Connekt is where vision meets visibility
+              Amoria connekyt is where vision meets visibility
             </h2>
 
             <p
@@ -764,7 +764,7 @@ const About = () => {
                 marginBottom: '14px',
               }}
             >
-              What began as a simple idea has grown into a purposeful movement. We saw the challenges creatives face in finding platforms that truly represent them and their potential. Driven by that need, Amoria Connekt was born—not just as a tool, but as a bridge between talent and opportunity.
+              What began as a simple idea has grown into a purposeful movement. We saw the challenges creatives face in finding platforms that truly represent them and their potential. Driven by that need, Amoria connekyt was born—not just as a tool, but as a bridge between talent and opportunity.
             </p>
 
             <p

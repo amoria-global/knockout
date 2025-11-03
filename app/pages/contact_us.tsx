@@ -232,10 +232,10 @@ export default function ContactUsPage(): React.JSX.Element {
                 </div>
 
                 {/* Email */}
-                <div style={{display: 'flex', alignItems: 'center', gap: isMobile ? 'clamp(0.5rem, 1.5vw, 0.75rem)' : '0.75rem'}}>
-                  <i className="bi bi-envelope" style={{fontSize: isMobile ? 'clamp(1rem, 3vw, 1.2rem)' : '1.2rem', color: '#000000'}}></i>
-                  <div style={{fontSize: isMobile ? 'clamp(0.95rem, 2.8vw, 1.1rem)' : '1.1rem', fontWeight: '700', color: '#000000'}}>
-                    info@amoriaconnekt.com
+                <div style={{display: 'flex', alignItems: 'center', gap: '0.75rem'}}>
+                  <i className="bi bi-envelope" style={{fontSize: '1.2rem', color: '#000000'}}></i>
+                  <div style={{fontSize: '1.1rem', fontWeight: '700', color: '#000000'}}>
+                    info@amoriaconnekyt.com
                   </div>
                 </div>
 

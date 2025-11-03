@@ -63,7 +63,7 @@ export default function EmailConfirmationPage(): React.JSX.Element {
               textAlign: 'center',
             }}
           >
-            Amoria connekt
+            Amoria connekyt
           </p>
         </div>
 
@@ -105,7 +105,7 @@ export default function EmailConfirmationPage(): React.JSX.Element {
                 maxWidth: '400px',
               }}
             >
-              Thank you for choosing Amoria connekt. Use the following OTP
+              Thank you for choosing Amoria connekyt. Use the following OTP
               to complete the procedure to verify your email address. OTP is
               valid for <strong>10 minutes</strong>.
             </p>
@@ -150,7 +150,7 @@ export default function EmailConfirmationPage(): React.JSX.Element {
             marginBottom: '12px',
           }}
         >
-          Amoria connekt
+          Amoria connekyt
         </p>
         <p
           style={{
@@ -167,7 +167,7 @@ export default function EmailConfirmationPage(): React.JSX.Element {
             color: '#083A85',
           }}
         >
-          Copyright &copy; 2025 Amoria connekt. All rights reserved.
+          Copyright &copy; 2025 Amoria connekyt. All rights reserved.
         </p>
       </div>
     </div>
