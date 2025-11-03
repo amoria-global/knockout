@@ -114,7 +114,7 @@ export default function Footer() {
       links: [
         { text: t('links.joinPhotographer'), href: '/user/auth/signup-type?type=photographer' },
         { text: t('links.photographerGuide'), href: '/photographer-guide' },
-        { text: t('links.portfolioTips'), href: '/portfolio-tips' },
+        { text: t('links.portfolioTips'), href: '/user/portfolio-tips' },
       ],
     },
     {
@@ -166,36 +166,74 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Main Footer Body */}
-        <div className="footer-body">
-          <div className="footer-content">
-            {/* Main Footer Content Grid */}
-            <div className="footer-grid">
-              {/* Amoria Connekt Section */}
-              <div className="footer-brand">
-                <Link href="/" className="footer-logo">
-                  <h3>Amoria</h3>
-                  <img src="/fav.png" alt="AmoriaK Logo" />
-                </Link>
-                <p className="footer-description">{t('description')}</p>
-                <div className="social-section">
-                  <span className="social-title">{t('followUs')}</span>
-                  <div className="social-links">
-                    {socialLinks.map((social) => (
-                      <a
-                        key={social.label}
-                        href={social.href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        aria-label={social.label}
-                        className="social-link"
-                      >
-                        <social.icon className="social-icon" />
-                      </a>
-                    ))}
-                  </div>
+      {/* Main Footer Body */}
+      <div
+        style={{
+          background: 'linear-gradient(to right, #052047, #052047, #103E83)',
+          borderTopLeftRadius: '2rem',
+          borderTopRightRadius: '2rem',
+          color: 'white',
+        }}
+      >
+        <div
+          style={{
+            maxWidth: '90rem',
+            margin: '0 auto',
+            paddingLeft: '3rem',
+            paddingRight: '3rem',
+            paddingTop: '3.2rem',
+            paddingBottom: '1.6rem',
+          }}
+        >
+          {/* Main Footer Content Grid */}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '1.5fr 1fr 1fr 1fr 1fr',
+              gap: '4rem',
+              marginBottom: '4rem',
+            }}
+          >
+            {/* Amoria connekyt Section */}
+            <div style={{ paddingRight: '1.6rem' }}>
+              <Link href="/" style={{ display: 'flex', alignItems: 'center', marginBottom: '1.9rem', marginLeft: '-1rem', cursor: 'pointer', textDecoration: 'none', color: 'inherit' }}>             
+                <h3 style={{ fontSize: '1.6rem', fontWeight: 700, marginLeft: '16px', marginTop: '-1.9rem' }}>
+                  Amoria
+                </h3>
+                <img src="/fav.png" alt="AmoriaK Logo" style={{ height: '40px', width: '40px', borderRadius: '9999px', marginTop: '-1.9rem', marginLeft: '-5px' }} />
+              </Link>
+              <p
+                style={{
+                  color: '#D1D5DB',
+                  fontSize: '0.96rem',
+                  lineHeight: '1.625',
+                  marginBottom: '2rem',
+                }}
+              >
+                {t('description')}
+              </p>
+              <div style={{ marginTop: '5.4rem', marginBottom: '-2.2rem' }}>
+                <span style={{ color: '#D1D5DB', fontSize: '1.04rem', display: 'block', marginBottom: '0.8rem', gap: '2.4rem' }}>
+                  {t('followUs')}
+                </span>
+                <div style={{ display: 'flex', gap: '1.6rem' }}>
+                  {socialLinks.map((social) => (
+                    <a
+                      key={social.label}
+                      href={social.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={social.label}
+                      style={{ color: '#0D99FF', transition: 'color 0.2s' }}
+                      onMouseOver={(e) => (e.currentTarget.style.color = 'white')}
+                      onMouseOut={(e) => (e.currentTarget.style.color = '#0D99FF')}
+                    >
+                      <social.icon style={{ height: '1.3rem', width: '1.3rem' }} />
+                    </a>
+                  ))}
                 </div>
               </div>
+            </div>
 
               {/* Footer Link Sections */}
               {footerSections.map((section) => (

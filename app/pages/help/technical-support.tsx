@@ -309,7 +309,7 @@ const TechnicalSupportHelp: React.FC = () => {
                           'Verify you\'re using the exact email address used during registration',
                           'Check for typos or extra spaces in the email field',
                           'Try logging in with alternative email addresses you may have used',
-                          'Search your email for "Amoria Connekt" to find your registration confirmation',
+                          'Search your email for "Amoria connekyt" to find your registration confirmation',
                           'Create a new account if you cannot locate your original registration'
                         ]
                       }

@@ -515,7 +515,7 @@ const Events: React.FC = () => {
           textAlign: 'center'
         }}>
           <h1 style={{
-            fontSize: 'clamp(1.875rem, 7vw, 3rem)',
+            fontSize: 'clamp(1.5rem, 4vw, 2.25rem)',
             fontWeight: 'bold',
             color: 'white',
             marginBottom: 'clamp(0.5rem, 1.5vw, 0.75rem)',
@@ -525,7 +525,7 @@ const Events: React.FC = () => {
             {t('title')}
           </h1>
           <p style={{
-            fontSize: 'clamp(1.125rem, 3.5vw, 1.375rem)',
+            fontSize: 'clamp(0.875rem, 1.5vw, 1rem)',
             color: 'rgba(255, 255, 255, 0.9)',
             maxWidth: '42rem',
             margin: '0 auto clamp(1rem, 2vw, 1.5rem)',
@@ -553,7 +553,7 @@ const Events: React.FC = () => {
                   borderRadius: '0.5rem',
                   boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
                   border: 'none',
-                  fontSize: 'clamp(1.125rem, 3.5vw, 1.25rem)',
+                  fontSize: '1rem',
                   outline: 'none',
                   backgroundColor: '#d4d4d4',
                   color: '#000000'
@@ -570,7 +570,7 @@ const Events: React.FC = () => {
                   border: 'none',
                   color: '#9ca3af',
                   cursor: 'pointer',
-                  fontSize: 'clamp(1rem, 3vw, 1.25rem)'
+                  fontSize: '1.25rem'
                 }}
               >
                 <i className="bi bi-search"></i>
@@ -600,7 +600,7 @@ const Events: React.FC = () => {
                   border: '2px solid rgba(255, 255, 255, 0.3)',
                   backgroundColor: 'rgba(255, 255, 255, 0.95)',
                   color: '#111827',
-                  fontSize: 'clamp(1rem, 3.5vw, 1.125rem)',
+                  fontSize: '0.9rem',
                   fontWeight: '500',
                   cursor: 'pointer',
                   outline: 'none',
@@ -629,7 +629,7 @@ const Events: React.FC = () => {
                   border: '2px solid rgba(255, 255, 255, 0.3)',
                   backgroundColor: 'rgba(255, 255, 255, 0.95)',
                   color: '#111827',
-                  fontSize: 'clamp(1rem, 3.5vw, 1.125rem)',
+                  fontSize: '0.9rem',
                   fontWeight: '500',
                   cursor: 'pointer',
                   outline: 'none',
@@ -657,7 +657,7 @@ const Events: React.FC = () => {
                   border: '2px solid rgba(255, 255, 255, 0.3)',
                   backgroundColor: 'rgba(255, 255, 255, 0.95)',
                   color: '#111827',
-                  fontSize: 'clamp(1rem, 3.5vw, 1.125rem)',
+                  fontSize: '0.9rem',
                   fontWeight: '500',
                   cursor: 'pointer',
                   outline: 'none',
@@ -685,7 +685,7 @@ const Events: React.FC = () => {
                   border: '2px solid rgba(255, 255, 255, 0.3)',
                   backgroundColor: 'rgba(255, 255, 255, 0.95)',
                   color: '#111827',
-                  fontSize: 'clamp(1rem, 3.5vw, 1.125rem)',
+                  fontSize: '0.9rem',
                   fontWeight: '500',
                   cursor: 'pointer',
                   outline: 'none',
@@ -713,7 +713,7 @@ const Events: React.FC = () => {
           display: 'flex',
           alignItems: 'center',
           marginBottom: '2rem',
-          overflowX: 'auto',
+          overflowX: isMobile ? 'auto' : 'hidden',
           overflowY: 'hidden',
           paddingTop: '1rem',
           paddingBottom: '1rem',
@@ -730,25 +730,24 @@ const Events: React.FC = () => {
             height: '3px',
             background: 'linear-gradient(90deg, #ec4899 0%, #f97316 50%, #8b5cf6 100%)',
             transform: 'translateY(-50%)',
-            zIndex: 0,
-            minWidth: '100%'
+            zIndex: 0
           }}></div>
 
           {/* Hot Live Trends Badge */}
           <div style={{
             background: 'linear-gradient(135deg, #ec4899 0%, #f97316 50%, #8b5cf6 100%)',
-            padding: 'clamp(0.5rem, 2vw, 0.75rem) clamp(1rem, 3vw, 1.5rem)',
+            padding: isMobile ? 'clamp(0.5rem, 2vw, 0.75rem) clamp(1rem, 3vw, 1.5rem)' : '0.75rem 1.5rem',
             borderRadius: '50px',
             display: 'flex',
             alignItems: 'center',
             gap: '0.5rem',
             fontWeight: 'bold',
-            fontSize: 'clamp(1.25rem, 3.5vw, 1.5rem)',
+            fontSize: '1.1rem',
             color: 'white',
             whiteSpace: 'nowrap',
             boxShadow: '0 4px 15px rgba(236, 72, 153, 0.4)',
             flexShrink: 0,
-            marginRight: 'clamp(0.75rem, 2vw, 1.5rem)',
+            marginRight: isMobile ? 'clamp(0.75rem, 2vw, 1.5rem)' : '1.5rem',
             position: 'relative',
             zIndex: 2
           }}>
@@ -759,13 +758,13 @@ const Events: React.FC = () => {
           <div style={{
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'flex-start',
+            justifyContent: isMobile ? 'flex-start' : 'space-between',
             flex: 1,
             position: 'relative',
             zIndex: 1,
-            gap: 'clamp(0.5rem, 2vw, 1rem)',
-            paddingRight: 'clamp(0.75rem, 2vw, 1.5rem)',
-            minWidth: 'max-content'
+            gap: isMobile ? 'clamp(0.5rem, 2vw, 1rem)' : '0.5rem',
+            paddingRight: isMobile ? 'clamp(0.75rem, 2vw, 1.5rem)' : '1.5rem',
+            minWidth: isMobile ? 'max-content' : 'auto'
           }}>
             {trendingEvents.map((event) => (
               <div
@@ -786,8 +785,8 @@ const Events: React.FC = () => {
                 }}
               >
                 <div style={{
-                  width: 'clamp(50px, 10vw, 70px)',
-                  height: 'clamp(50px, 10vw, 70px)',
+                  width: isMobile ? 'clamp(50px, 10vw, 70px)' : '70px',
+                  height: isMobile ? 'clamp(50px, 10vw, 70px)' : '70px',
                   borderRadius: '50%',
                   overflow: 'hidden',
                   border: '3px solid #cf5704',
@@ -875,7 +874,7 @@ const Events: React.FC = () => {
                       marginBottom: '0.6rem'
                     }}>
                       <h3 style={{
-                        fontSize: 'clamp(1.375rem, 4vw, 1.625rem)',
+                        fontSize: '1.2rem',
                         fontWeight: '700',
                         color: '#111827',
                         lineHeight: '1.2',
@@ -902,7 +901,7 @@ const Events: React.FC = () => {
                           color: '#039130',
                           padding: 'clamp(0.5rem, 2vw, 0.625rem) clamp(0.75rem, 2.5vw, 1rem)',
                           borderRadius: '20px',
-                          fontSize: 'clamp(1.125rem, 3.5vw, 1.25rem)',
+                          fontSize: '0.9rem',
                           fontWeight: '700',
                           textTransform: 'uppercase',
                           marginBottom: '0.5rem',
@@ -911,7 +910,7 @@ const Events: React.FC = () => {
                           boxSizing: 'border-box'
                         }}
                       >
-                        <i className="bi bi-camera-video-fill live-badge-icon" style={{ fontSize: 'clamp(1.125rem, 3.5vw, 1.25rem)' }}></i>
+                        <i className="bi bi-camera-video-fill live-badge-icon" style={{ fontSize: '0.9rem' }}></i>
                         {t('status.live')}
                       </div>
                     ) : (
@@ -926,7 +925,7 @@ const Events: React.FC = () => {
                           color: '#3b82f6',
                           padding: 'clamp(0.5rem, 2vw, 0.625rem) clamp(0.75rem, 2.5vw, 1rem)',
                           borderRadius: '20px',
-                          fontSize: 'clamp(1.125rem, 3.5vw, 1.25rem)',
+                          fontSize: '0.9rem',
                           fontWeight: '700',
                           textTransform: 'uppercase',
                           marginBottom: '0.5rem',
@@ -935,7 +934,7 @@ const Events: React.FC = () => {
                           boxSizing: 'border-box'
                         }}
                       >
-                        <i className="bi bi-broadcast" style={{ fontSize: 'clamp(1.125rem, 3.5vw, 1.25rem)' }}></i>
+                        <i className="bi bi-broadcast" style={{ fontSize: '0.9rem' }}></i>
                         {t('status.upcoming')}
                       </div>
                     )}
@@ -947,13 +946,13 @@ const Events: React.FC = () => {
                       justifyContent: 'center',
                       gap: '0.4rem',
                       color: '#374151',
-                      fontSize: 'clamp(1.0625rem, 3vw, 1.1875rem)',
+                      fontSize: '0.9rem',
                       marginBottom: '0.4rem',
                       fontWeight: '500',
                       width: '100%',
                       minWidth: '0'
                     }}>
-                      <i className="bi bi-geo-alt-fill" style={{ fontSize: 'clamp(1rem, 2.8vw, 1.125rem)', color: '#3b82f6', flexShrink: 0 }}></i>
+                      <i className="bi bi-geo-alt-fill" style={{ fontSize: '0.85rem', color: '#3b82f6', flexShrink: 0 }}></i>
                       <span style={{
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
@@ -971,12 +970,12 @@ const Events: React.FC = () => {
                       justifyContent: 'center',
                       gap: '0.4rem',
                       color: '#374151',
-                      fontSize: 'clamp(1.0625rem, 3vw, 1.1875rem)',
+                      fontSize: '0.9rem',
                       marginBottom: '0.75rem',
                       fontWeight: '500',
                       width: '100%'
                     }}>
-                      <i className="bi bi-clock-fill" style={{ fontSize: 'clamp(1rem, 2.8vw, 1.125rem)', color: '#3b82f6', flexShrink: 0 }}></i>
+                      <i className="bi bi-clock-fill" style={{ fontSize: '0.85rem', color: '#3b82f6', flexShrink: 0 }}></i>
                       <span style={{ textAlign: 'center' }}>{event.time}</span>
                     </div>
 
@@ -993,7 +992,7 @@ const Events: React.FC = () => {
                         color: '#FFFFFF',
                         padding: 'clamp(0.625rem, 2.5vw, 0.75rem) clamp(1rem, 3vw, 1.25rem)',
                         borderRadius: '20px',
-                        fontSize: 'clamp(1.0625rem, 3vw, 1.1875rem)',
+                        fontSize: '0.9rem',
                         fontWeight: '700',
                         textTransform: 'uppercase',
                         cursor: 'pointer',
@@ -1058,7 +1057,7 @@ const Events: React.FC = () => {
                   color: currentPage === 1 ? '#9ca3af' : '#111827',
                   cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
                   fontWeight: '500',
-                  fontSize: 'clamp(1.0625rem, 3vw, 1.1875rem)',
+                  fontSize: '0.9rem',
                   transition: 'all 0.2s ease',
                   display: 'flex',
                   alignItems: 'center',
@@ -1097,7 +1096,7 @@ const Events: React.FC = () => {
                         style={{
                           padding: 'clamp(0.4rem, 1.5vw, 0.5rem) clamp(0.3rem, 1vw, 0.5rem)',
                           color: '#9ca3af',
-                          fontSize: 'clamp(1.0625rem, 3vw, 1.1875rem)',
+                          fontSize: '0.9rem',
                           display: 'flex',
                           alignItems: 'center'
                         }}
@@ -1120,7 +1119,7 @@ const Events: React.FC = () => {
                         color: currentPage === page ? '#ffffff' : '#111827',
                         cursor: 'pointer',
                         fontWeight: currentPage === page ? '600' : '500',
-                        fontSize: 'clamp(1.0625rem, 3vw, 1.1875rem)',
+                        fontSize: '0.9rem',
                         minWidth: 'clamp(2.25rem, 6vw, 2.75rem)',
                         transition: 'all 0.2s ease'
                       }}
@@ -1155,7 +1154,7 @@ const Events: React.FC = () => {
                   color: currentPage === totalPages ? '#9ca3af' : '#111827',
                   cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
                   fontWeight: '500',
-                  fontSize: 'clamp(1.0625rem, 3vw, 1.1875rem)',
+                  fontSize: '0.9rem',
                   transition: 'all 0.2s ease',
                   display: 'flex',
                   alignItems: 'center',
