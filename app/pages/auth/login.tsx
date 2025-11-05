@@ -43,8 +43,8 @@ export default function LoginPage(): React.JSX.Element {
   // Responsive styles for form inputs (mobile-only responsiveness, desktop keeps original)
   const inputStyle = {
     width: '100%',
-    padding: isMobile ? '12px 14px' : '10px 12px',
-    fontSize: isMobile ? '16px' : '14px', // 16px on mobile prevents iOS zoom
+    padding: isMobile ? '10px 12px' : '12px 14px',
+    fontSize: isMobile ? '16px' : '15px', // 16px on mobile prevents iOS zoom
     border: '2px solid #d1d5db',
     borderRadius: isMobile ? '16px' : '20px',
     outline: 'none',
@@ -56,10 +56,10 @@ export default function LoginPage(): React.JSX.Element {
 
   const labelStyle = {
     display: 'block',
-    fontSize: isMobile ? '13px' : '14px',
+    fontSize: isMobile ? '13px' : '15px',
     fontWeight: '500',
     color: '#374151',
-    marginBottom: isMobile ? '4px' : '5px'
+    marginBottom: isMobile ? '4px' : '6px'
   };
 
   return (
@@ -77,9 +77,46 @@ export default function LoginPage(): React.JSX.Element {
       <div
         className="h-screen overflow-hidden bg-gray-50 flex items-center justify-center"
         style={{
-          padding: isMobile ? '0.5rem' : '1rem'
+          padding: isMobile ? '0.5rem' : '4rem 1rem 1rem 1rem',
+          paddingTop: isMobile ? '12rem' : '4rem',
+          position: 'relative'
         }}
       >
+        {/* Logo */}
+        <Link href="/" style={{
+          display: 'flex',
+          alignItems: 'center',
+          position: 'absolute',
+          left: '-15px',
+          top: isMobile ? '20px' : '10px',
+          textDecoration: 'none',
+          flexShrink: 0,
+          zIndex: 1000
+        }}>
+          <span style={{
+            fontSize: isMobile ? '20px' : '24px',
+            fontWeight: 700,
+            color: '#000',
+            marginLeft: '38px',
+            transition: 'color 0.3s ease'
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.color = '#083A85'}
+          onMouseLeave={(e) => e.currentTarget.style.color = '#000'}
+          >
+            Amoria
+          </span>
+          <img
+            src="/logo.png"
+            alt="Amoria Logo"
+            style={{
+              height: isMobile ? '32px' : '40px',
+              width: isMobile ? '32px' : '40px',
+              borderRadius: '50%',
+              marginLeft: '-8px'
+            }}
+          />
+        </Link>
+
         <div
           className="w-full bg-white shadow-2xl overflow-hidden flex flex-col lg:flex-row"
           style={{
@@ -263,7 +300,7 @@ export default function LoginPage(): React.JSX.Element {
           className={`w-full lg:w-1/2 flex flex-col items-center h-full overflow-y-auto ${isMobile ? 'mobile-safe-area' : ''}`}
           style={{
             padding: isMobile ? '1rem 1rem' : '20px 30px',
-            paddingTop: isMobile ? '1.5rem' : '20px',
+            paddingTop: isMobile ? '2rem' : '3rem',
             paddingBottom: isMobile ? '1.5rem' : '20px',
             justifyContent: isMobile ? 'flex-start' : 'center'
           }}
@@ -275,18 +312,18 @@ export default function LoginPage(): React.JSX.Element {
             }}
           >
             <h1 style={{
-              fontSize: isMobile ? '20px' : '26px',
+              fontSize: isMobile ? '20px' : '28px',
               fontWeight: '700',
               textAlign: 'left',
               color: '#000000',
-              marginBottom: isMobile ? '10px' : '20px',
+              marginBottom: isMobile ? '8px' : '24px',
               letterSpacing: '0.5px'
             }}>
               {t('title')}
             </h1>
 
             {/* Social Login Buttons */}
-            <div style={{ display: 'flex', gap: '12px', marginBottom: isMobile ? '8px' : '12px' }}>
+            <div style={{ display: 'flex', gap: '12px', marginBottom: isMobile ? '8px' : '16px' }}>
               {/* Google Button */}
               <button style={{
                 flex: '1',
@@ -300,7 +337,7 @@ export default function LoginPage(): React.JSX.Element {
                 cursor: 'pointer',
                 transition: 'all 0.3s'
               }}>
-                <img src="https://www.svgrepo.com/show/355037/google.svg" alt="Google" style={{ width: '20px', height: '20px' }} />
+                <img src="https://www.svgrepo.com/show/355037/google.svg" alt="Google" style={{ width: '22px', height: '22px' }} />
               </button>
             </div>
 
@@ -308,17 +345,17 @@ export default function LoginPage(): React.JSX.Element {
             <div style={{
               display: 'flex',
               alignItems: 'center',
-              marginBottom: isMobile ? '8px' : '12px',
-              marginTop: isMobile ? '8px' : '12px'
+              marginBottom: isMobile ? '8px' : '16px',
+              marginTop: isMobile ? '8px' : '16px'
             }}>
               <hr style={{ flex: '1', border: 'none', borderTop: '2px solid #d1d5db' }} />
-              <span style={{ padding: '0 10px', fontSize: isMobile ? '13px' : '14px', color: '#6b7280', fontWeight: '600' }}>{t('orContinueWith')}</span>
+              <span style={{ padding: '0 12px', fontSize: isMobile ? '13px' : '16px', color: '#6b7280', fontWeight: '600' }}>{t('orContinueWith')}</span>
               <hr style={{ flex: '1', border: 'none', borderTop: '2px solid #d1d5db' }} />
             </div>
 
             {/* Login Form */}
             <form onSubmit={handleSubmit}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '8px' : '12px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '6px' : '16px' }}>
                 {/* Email Input */}
                 <div>
                   <label htmlFor="email" style={labelStyle}>
@@ -374,21 +411,21 @@ export default function LoginPage(): React.JSX.Element {
                         padding: '4px'
                       }}
                     >
-                      <i className={`bi ${showPassword ? 'bi-eye-slash' : 'bi-eye'}`} style={{ fontSize: '14px' }}></i>
+                      <i className={`bi ${showPassword ? 'bi-eye-slash' : 'bi-eye'}`} style={{ fontSize: '16px' }}></i>
                     </button>
                   </div>
                 </div>
               </div>
 
               {/* Submit Button */}
-              <div style={{ marginTop: isMobile ? '10px' : '16px' }}>
+              <div style={{ marginTop: isMobile ? '8px' : '20px' }}>
                 <button
                   type="submit"
                   disabled={isDisabled}
                   style={{
                     width: '100%',
-                    padding: isMobile ? '10px' : '11px',
-                    fontSize: '15px',
+                    padding: isMobile ? '10px' : '12px',
+                    fontSize: '16px',
                     borderRadius: '30px',
                     fontWeight: '600',
                     transition: 'all 0.3s',
@@ -405,21 +442,21 @@ export default function LoginPage(): React.JSX.Element {
 
             {/* Links */}
             <div style={{
-              marginTop: isMobile ? '10px' : '16px',
+              marginTop: isMobile ? '8px' : '20px',
               marginBottom: isMobile ? '1rem' : '0',
               display: 'flex',
               flexDirection: 'column',
-              gap: isMobile ? '4px' : '5px'
+              gap: isMobile ? '4px' : '6px'
             }}>
               <Link href="/user/auth/forgotpswd" style={{
-                fontSize: isMobile ? '13px' : '14px',
+                fontSize: isMobile ? '13px' : '15px',
                 color: '#083A85',
                 textDecoration: 'underline',
                 fontWeight: '800'
               }}>
                 {t('forgotPasswordLink')}
               </Link>
-              <p style={{ fontSize: isMobile ? '13px' : '14px', color: '#6b7280', margin: 0 }}>
+              <p style={{ fontSize: isMobile ? '13px' : '15px', color: '#6b7280', margin: 0 }}>
                 {t('notRegistered')}{' '}
                 <Link href="/user/auth/signup" style={{ color: '#083A85', textDecoration: 'underline', fontWeight: '800' }}>
                   {t('createAccount')}

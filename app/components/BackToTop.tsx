@@ -46,11 +46,11 @@ export default function BackToTop(): React.JSX.Element {
       onMouseLeave={() => setIsHovered(false)}
       style={{
         position: 'fixed',
-        bottom: '30px',
+        bottom: '-5px',
         right: '30px',
-        width: '50px',
-        height: '50px',
-        borderRadius: '50%',
+        width: '40px',
+        height: '40px',
+        borderRadius: '20%',
         backgroundColor: isHovered ? '#2f68bd' : '#325180',
         color: '#fff',
         border: 'none',

@@ -954,11 +954,6 @@ const Events: React.FC = () => {
                     }}>
                       <i className="bi bi-geo-alt-fill" style={{ fontSize: '0.85rem', color: '#3b82f6', flexShrink: 0 }}></i>
                       <span style={{
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                        minWidth: '0',
-                        flex: 1,
                         textAlign: 'center'
                       }}>{event.location}</span>
                     </div>

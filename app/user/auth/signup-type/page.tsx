@@ -11,9 +11,27 @@ function SignupTypeContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [selectedType, setSelectedType] = useState<string>('');
+  const [screenSize, setScreenSize] = useState<'mobile' | 'tablet' | 'desktop'>('desktop');
 
   // Check if user came from photographer-specific link
   const isPhotographerFlow = searchParams.get('type') === 'photographer';
+
+  // Screen size detection for responsive design
+  useEffect(() => {
+    const handleResize = () => {
+      const width = window.innerWidth;
+      if (width < 768) setScreenSize('mobile');
+      else if (width < 1025) setScreenSize('tablet');
+      else setScreenSize('desktop');
+    };
+
+    handleResize(); // Initial check
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const isMobile = screenSize === 'mobile';
+  const isTablet = screenSize === 'tablet';
 
   // Define user type options
   const allOptions = [
@@ -74,11 +92,11 @@ function SignupTypeContent() {
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: '#DBDBDB',
-      padding: '20px',
+      padding: isMobile ? '80px 20px 40px 20px' : '20px',
       fontFamily: "'Pragati Narrow', sans-serif"
     }}>
       <div style={{
-        maxWidth: '800px',
+        maxWidth: isMobile ? '100%' : (isTablet ? '700px' : '900px'),
         width: '100%',
         textAlign: 'center'
       }}>
@@ -118,11 +136,13 @@ function SignupTypeContent() {
 
         {/* Title */}
         <h1 style={{
-          fontSize: '42px',
+          fontSize: isMobile ? '28px' : (isTablet ? '36px' : '42px'),
           fontWeight: 700,
           color: '#000',
-          marginBottom: '16px',
-          letterSpacing: '-0.02em'
+          marginBottom: isMobile ? '12px' : '16px',
+          letterSpacing: '-0.02em',
+          lineHeight: '1.2',
+          padding: isMobile ? '0 10px' : '0'
         }}>
           {t('title')} {isPhotographerFlow ? t('titlePhotographer') : t('titleClient')}
         </h1>
@@ -130,10 +150,14 @@ function SignupTypeContent() {
         {/* Selection Cards */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: isPhotographerFlow ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)',
-          gap: '20px',
-          marginTop: '48px',
-          marginBottom: '32px'
+          gridTemplateColumns: isMobile
+            ? '1fr'
+            : (isTablet
+              ? (isPhotographerFlow ? 'repeat(2, 1fr)' : 'repeat(2, 1fr)')
+              : (isPhotographerFlow ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)')),
+          gap: isMobile ? '16px' : '20px',
+          marginTop: isMobile ? '32px' : '48px',
+          marginBottom: isMobile ? '24px' : '32px'
         }}>
           {displayOptions.map((option) => (
             <button
@@ -141,30 +165,31 @@ function SignupTypeContent() {
               onClick={() => setSelectedType(option.id)}
               style={{
                 position: 'relative',
-                padding: '32px 24px',
+                padding: isMobile ? '24px 20px' : '32px 24px',
                 backgroundColor: '#fff',
                 border: selectedType === option.id ? '3px solid #083A85' : '2px solid #D1D5DB',
-                borderRadius: '16px',
+                borderRadius: isMobile ? '12px' : '16px',
                 cursor: 'pointer',
                 transition: 'all 0.3s ease',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
                 textAlign: 'center',
-                minHeight: '240px',
+                minHeight: isMobile ? '180px' : '240px',
                 boxShadow: selectedType === option.id
                   ? '0 8px 24px rgba(8, 58, 133, 0.2)'
-                  : '0 2px 8px rgba(0, 0, 0, 0.08)'
+                  : '0 2px 8px rgba(0, 0, 0, 0.08)',
+                width: '100%'
               }}
               onMouseEnter={(e) => {
-                if (selectedType !== option.id) {
+                if (selectedType !== option.id && !isMobile) {
                   e.currentTarget.style.borderColor = '#083A85';
                   e.currentTarget.style.transform = 'translateY(-4px)';
                   e.currentTarget.style.boxShadow = '0 8px 20px rgba(8, 58, 133, 0.15)';
                 }
               }}
               onMouseLeave={(e) => {
-                if (selectedType !== option.id) {
+                if (selectedType !== option.id && !isMobile) {
                   e.currentTarget.style.borderColor = '#D1D5DB';
                   e.currentTarget.style.transform = 'translateY(0)';
                   e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.08)';
@@ -174,36 +199,38 @@ function SignupTypeContent() {
               {/* Radio Button Indicator */}
               <div style={{
                 position: 'absolute',
-                top: '20px',
-                right: '20px',
-                width: '24px',
-                height: '24px',
+                top: isMobile ? '16px' : '20px',
+                right: isMobile ? '16px' : '20px',
+                width: isMobile ? '20px' : '24px',
+                height: isMobile ? '20px' : '24px',
                 borderRadius: '50%',
-                border: selectedType === option.id ? '7px solid #083A85' : '2px solid #D1D5DB',
+                border: selectedType === option.id ? (isMobile ? '6px solid #083A85' : '7px solid #083A85') : '2px solid #D1D5DB',
                 backgroundColor: '#fff',
                 transition: 'all 0.3s ease'
               }} />
 
               {/* Icon */}
               <div style={{
-                width: '80px',
-                height: '80px',
-                marginBottom: '20px',
+                width: isMobile ? '60px' : '80px',
+                height: isMobile ? '60px' : '80px',
+                marginBottom: isMobile ? '16px' : '20px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 color: selectedType === option.id ? '#083A85' : '#6B7280',
                 transition: 'color 0.3s ease'
               }}>
-                {option.icon}
+                <div style={{ transform: isMobile ? 'scale(0.75)' : 'scale(1)' }}>
+                  {option.icon}
+                </div>
               </div>
 
               {/* Title */}
               <h3 style={{
-                fontSize: '20px',
+                fontSize: isMobile ? '18px' : '20px',
                 fontWeight: 700,
                 color: '#000',
-                marginBottom: '12px',
+                marginBottom: isMobile ? '8px' : '12px',
                 lineHeight: '1.3'
               }}>
                 {option.title}
@@ -211,7 +238,7 @@ function SignupTypeContent() {
 
               {/* Description */}
               <p style={{
-                fontSize: '15px',
+                fontSize: isMobile ? '14px' : '15px',
                 color: '#6B7280',
                 lineHeight: '1.5',
                 fontWeight: 500
@@ -227,29 +254,30 @@ function SignupTypeContent() {
           onClick={handleContinue}
           disabled={!selectedType}
           style={{
-            width: '50%',
-            maxWidth: '300px',
-            padding: '5px 12px',
+            width: isMobile ? '100%' : '50%',
+            maxWidth: isMobile ? '100%' : '300px',
+            padding: isMobile ? '16px 24px' : '14px 12px',
             backgroundColor: selectedType ? '#083A85' : '#D1D5DB',
             color: '#fff',
-            fontSize: '18px',
+            fontSize: isMobile ? '17px' : '18px',
             fontWeight: 700,
             borderRadius: '50px',
             border: 'none',
             cursor: selectedType ? 'pointer' : 'not-allowed',
             transition: 'all 0.3s ease',
             boxShadow: selectedType ? '0 4px 12px rgba(255, 255, 255, 0.3)' : 'none',
-            marginBottom: '24px'
+            marginBottom: isMobile ? '20px' : '24px',
+            minHeight: isMobile ? '52px' : 'auto'
           }}
           onMouseEnter={(e) => {
-            if (selectedType) {
+            if (selectedType && !isMobile) {
               e.currentTarget.style.backgroundColor = '#083A85';
               e.currentTarget.style.transform = 'translateY(-2px)';
               e.currentTarget.style.boxShadow = '0 6px 16px rgba(255, 255, 255, 0.3)';
             }
           }}
           onMouseLeave={(e) => {
-            if (selectedType) {
+            if (selectedType && !isMobile) {
               e.currentTarget.style.backgroundColor = '#083A85';
               e.currentTarget.style.transform = 'translateY(0)';
               e.currentTarget.style.boxShadow = '0 4px 12px rgba(255, 255, 255, 0.3)';
@@ -264,9 +292,10 @@ function SignupTypeContent() {
 
         {/* Already have account link */}
         <p style={{
-          fontSize: '16px',
+          fontSize: isMobile ? '15px' : '16px',
           color: '#3d3d3d',
-          fontWeight: 600
+          fontWeight: 600,
+          padding: isMobile ? '0 10px' : '0'
         }}>
           {t('alreadyHaveAccount')}{' '}
           <Link

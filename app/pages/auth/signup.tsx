@@ -106,29 +106,29 @@ export default function SignupPage(): React.JSX.Element {
   // Responsive styles for form inputs (mobile-only responsiveness, desktop keeps original)
   const inputStyle = {
     width: '100%',
-    padding: isMobile ? '10px 12px' : '12px 14px',
+    padding: isMobile ? '14px 16px' : '12px 14px',
     fontSize: isMobile ? '16px' : '15px', // 16px on mobile prevents iOS zoom
     border: '2px solid #d1d5db',
     borderRadius: isMobile ? '16px' : '20px',
     outline: 'none',
     transition: 'all 0.3s',
     backgroundColor: '#ffffff',
-    minHeight: isMobile ? '44px' : 'auto', // Minimum touch target on mobile only
+    minHeight: isMobile ? '50px' : 'auto', // Minimum touch target on mobile only
     boxSizing: 'border-box' as const
   };
 
   const labelStyle = {
     display: 'block',
-    fontSize: isMobile ? '13px' : '15px',
+    fontSize: isMobile ? '15px' : '15px',
     fontWeight: '500',
     color: '#374151',
-    marginBottom: isMobile ? '4px' : '6px'
+    marginBottom: isMobile ? '8px' : '6px'
   };
 
   const errorStyle = {
-    fontSize: isMobile ? '11px' : '13px',
+    fontSize: isMobile ? '12px' : '13px',
     color: '#dc2626',
-    marginTop: isMobile ? '2px' : '4px'
+    marginTop: isMobile ? '4px' : '4px'
   };
 
   return (
@@ -141,21 +141,77 @@ export default function SignupPage(): React.JSX.Element {
             padding-bottom: max(2rem, env(safe-area-inset-bottom)) !important;
           }
         }
+
+        /* Prevent zoom on iOS input focus */
+        @media screen and (max-width: 767px) {
+          input[type="text"],
+          input[type="email"],
+          input[type="tel"],
+          input[type="password"],
+          select {
+            font-size: 16px !important;
+          }
+        }
+
+        /* Smooth scrolling on mobile */
+        @media screen and (max-width: 767px) {
+          * {
+            -webkit-overflow-scrolling: touch;
+          }
+        }
       `}</style>
 
       <div
         className="h-screen overflow-hidden bg-gray-50 flex items-center justify-center"
         style={{
-          padding: isMobile ? '0.5rem' : '1rem'
+          padding: isMobile ? '0' : '4rem 1rem 1rem 1rem',
+          paddingTop: isMobile ? '3.5rem' : '4rem',
+          position: 'relative'
         }}
       >
+        {/* Logo */}
+        <Link href="/" style={{
+          display: 'flex',
+          alignItems: 'center',
+          position: 'absolute',
+          left: isMobile ? '0.5rem' : '-15px',
+          top: isMobile ? '0.5rem' : '10px',
+          textDecoration: 'none',
+          flexShrink: 0,
+          zIndex: 1000
+        }}>
+          <span style={{
+            fontSize: isMobile ? '18px' : '24px',
+            fontWeight: 700,
+            color: '#000',
+            marginLeft: isMobile ? '0' : '38px',
+            transition: 'color 0.3s ease'
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.color = '#083A85'}
+          onMouseLeave={(e) => e.currentTarget.style.color = '#000'}
+          >
+            Amoria
+          </span>
+          <img
+            src="/logo.png"
+            alt="Amoria Logo"
+            style={{
+              height: isMobile ? '28px' : '40px',
+              width: isMobile ? '28px' : '40px',
+              borderRadius: '50%',
+              marginLeft: isMobile ? '4px' : '-8px'
+            }}
+          />
+        </Link>
+
       <div
         className="w-full bg-white shadow-2xl overflow-hidden flex flex-col lg:flex-row"
         style={{
           maxWidth: isMobile ? '100%' : '80rem',
-          height: isMobile ? '100vh' : '90vh',
-          maxHeight: isMobile ? '100vh' : '800px',
-          borderRadius: isMobile ? '0' : '1.5rem'
+          height: isMobile ? 'calc(100vh - 3.5rem)' : '90vh',
+          maxHeight: isMobile ? 'none' : '800px',
+          borderRadius: isMobile ? '0' : '1.5rem',
+          marginTop: isMobile ? '3.5rem' : '0'
         }}
       >
 
@@ -230,21 +286,25 @@ export default function SignupPage(): React.JSX.Element {
           className={`w-full lg:w-1/2 flex flex-col items-center h-full overflow-y-auto ${isMobile ? 'mobile-safe-area' : ''}`}
           style={{
             scrollBehavior: 'smooth',
-            padding: isMobile ? '0.75rem 1rem 2rem 1rem' : '30px 40px 30px 50px'
+            WebkitOverflowScrolling: 'touch',
+            padding: isMobile ? '1.5rem 1.25rem 2rem 1.25rem' : '30px 40px 30px 50px',
+            paddingTop: isMobile ? '1.5rem' : '3rem'
           }}
         >
           <div
             className="w-full max-w-md px-6 sm:px-8 md:px-12 py-4 sm:py-6"
             style={{
-              padding: isMobile ? '0 0.25rem' : undefined
+              padding: isMobile ? '0' : undefined,
+              width: '100%',
+              maxWidth: isMobile ? '100%' : undefined
             }}
           >
             <h1 style={{
-              fontSize: isMobile ? '20px' : '28px',
+              fontSize: isMobile ? '24px' : '28px',
               fontWeight: '700',
               textAlign: 'left',
               color: '#000000',
-              marginBottom: isMobile ? '8px' : '24px',
+              marginBottom: isMobile ? '16px' : '24px',
               letterSpacing: '0.5px',
               marginLeft: isMobile ? '0' : '55px'
             }}>
@@ -252,21 +312,27 @@ export default function SignupPage(): React.JSX.Element {
             </h1>
 
             {/* Social Login Buttons */}
-            <div style={{ display: 'flex', gap: '12px', marginBottom: isMobile ? '8px' : '16px' }}>
+            <div style={{
+              display: 'flex',
+              gap: '12px',
+              marginBottom: isMobile ? '14px' : '16px',
+              width: '100%'
+            }}>
               {/* Google Button */}
               <button style={{
                 flex: '1',
-                padding: '10px',
+                padding: isMobile ? '14px' : '10px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                borderRadius: '20px',
+                borderRadius: isMobile ? '16px' : '20px',
                 border: '2px solid #d1d5db',
                 backgroundColor: '#ffffff',
                 cursor: 'pointer',
-                transition: 'all 0.3s'
+                transition: 'all 0.3s',
+                minHeight: isMobile ? '50px' : 'auto'
               }}>
-                <img src="https://www.svgrepo.com/show/355037/google.svg" alt="Google" style={{ width: '22px', height: '22px' }} />
+                <img src="https://www.svgrepo.com/show/355037/google.svg" alt="Google" style={{ width: isMobile ? '24px' : '22px', height: isMobile ? '24px' : '22px' }} />
               </button>
             </div>
 
@@ -274,17 +340,23 @@ export default function SignupPage(): React.JSX.Element {
             <div style={{
               display: 'flex',
               alignItems: 'center',
-              marginBottom: isMobile ? '8px' : '16px',
-              marginTop: isMobile ? '8px' : '16px'
+              marginBottom: isMobile ? '16px' : '16px',
+              marginTop: isMobile ? '14px' : '16px',
+              width: '100%'
             }}>
               <hr style={{ flex: '1', border: 'none', borderTop: '2px solid #d1d5db' }} />
-              <span style={{ padding: '0 12px', fontSize: isMobile ? '13px' : '16px', color: '#6b7280', fontWeight: '600' }}>{t('orSignUpWith')}</span>
+              <span style={{ padding: '0 12px', fontSize: isMobile ? '14px' : '16px', color: '#6b7280', fontWeight: '600' }}>{t('orSignUpWith')}</span>
               <hr style={{ flex: '1', border: 'none', borderTop: '2px solid #d1d5db' }} />
             </div>
 
             {/* Signup Form */}
-            <form onSubmit={handleSubmit}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '6px' : '16px' }}>
+            <form onSubmit={handleSubmit} style={{ width: '100%' }}>
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: isMobile ? '14px' : '16px',
+                width: '100%'
+              }}>
                 {/* First Name */}
                 <div>
                   <label htmlFor="firstName" style={labelStyle}>
@@ -334,11 +406,21 @@ export default function SignupPage(): React.JSX.Element {
                 </div>
 
                 {/* Phone Number */}
-                <div>
+                <div style={{ width: '100%' }}>
                   <label htmlFor="phoneNumber" style={labelStyle}>
                     {t('phone')}
                   </label>
-                  <div style={{ position: 'relative', display: 'flex', alignItems: 'center', border: '2px solid #d1d5db', borderRadius: '20px', overflow: 'hidden', backgroundColor: '#ffffff' }}>
+                  <div style={{
+                    position: 'relative',
+                    display: 'flex',
+                    alignItems: 'center',
+                    border: '2px solid #d1d5db',
+                    borderRadius: isMobile ? '16px' : '20px',
+                    overflow: 'hidden',
+                    backgroundColor: '#ffffff',
+                    minHeight: isMobile ? '50px' : 'auto',
+                    width: '100%'
+                  }}>
                     <select
                       value={countryCode}
                       onChange={(e) => setCountryCode(e.target.value)}
@@ -348,8 +430,9 @@ export default function SignupPage(): React.JSX.Element {
                         outline: 'none',
                         backgroundColor: '#ffffff',
                         cursor: 'pointer',
-                        padding: '12px 10px',
-                        fontSize: '15px'
+                        padding: isMobile ? '14px 10px' : '12px 10px',
+                        fontSize: isMobile ? '16px' : '15px',
+                        minHeight: isMobile ? '50px' : 'auto'
                       }}
                     >
                       {countries.map((country) => (
@@ -368,8 +451,9 @@ export default function SignupPage(): React.JSX.Element {
                         flex: '1',
                         border: '0',
                         outline: 'none',
-                        padding: '12px 14px',
-                        fontSize: '15px'
+                        padding: isMobile ? '14px 16px' : '12px 14px',
+                        fontSize: isMobile ? '16px' : '15px',
+                        minHeight: isMobile ? '50px' : 'auto'
                       }}
                     />
                   </div>
@@ -411,7 +495,7 @@ export default function SignupPage(): React.JSX.Element {
                       <i className={`bi ${showPassword ? 'bi-eye-slash' : 'bi-eye'}`} style={{ fontSize: '16px' }}></i>
                     </button>
                   </div>
-                  <p style={{ fontSize: isMobile ? '12px' : '14px', color: '#6b7280', marginTop: isMobile ? '2px' : '4px' }}>
+                  <p style={{ fontSize: isMobile ? '14px' : '14px', color: '#6b7280', marginTop: isMobile ? '6px' : '4px', lineHeight: '1.5' }}>
                     {t('passwordHelper')}
                   </p>
                   {errors.password && <p style={errorStyle}>{errors.password}</p>}
@@ -458,11 +542,12 @@ export default function SignupPage(): React.JSX.Element {
 
               {/* Terms and Conditions */}
               <div style={{
-                marginTop: isMobile ? '6px' : '16px',
-                fontSize: isMobile ? '12px' : '15px',
+                marginTop: isMobile ? '14px' : '16px',
+                fontSize: isMobile ? '14px' : '15px',
                 color: '#6b7280',
                 textAlign: 'left',
-                lineHeight: '1.4'
+                lineHeight: '1.6',
+                width: '100%'
               }}>
                 {t('termsText')}{' '}
                 <a href="/user/terms-of-service" style={{ color: '#083A85', textDecoration: 'underline', fontWeight: '800' }}>{t('termsOfService')}</a>
@@ -471,13 +556,13 @@ export default function SignupPage(): React.JSX.Element {
               </div>
 
               {/* Submit Button */}
-              <div style={{ marginTop: isMobile ? '8px' : '20px' }}>
+              <div style={{ marginTop: isMobile ? '16px' : '20px', width: '100%' }}>
                 <button
                   type="submit"
                   disabled={isDisabled}
                   style={{
                     width: '100%',
-                    padding: isMobile ? '10px' : '12px',
+                    padding: isMobile ? '15px' : '12px',
                     fontSize: '16px',
                     borderRadius: '30px',
                     fontWeight: '600',
@@ -485,7 +570,8 @@ export default function SignupPage(): React.JSX.Element {
                     cursor: isDisabled ? 'not-allowed' : 'pointer',
                     backgroundColor: isDisabled ? '#d1d5db' : '#083A85',
                     color: isDisabled ? '#9ca3af' : '#ffffff',
-                    border: 'none'
+                    border: 'none',
+                    minHeight: isMobile ? '52px' : 'auto'
                   }}
                 >
                   {t('createAccountButton')}
@@ -495,14 +581,15 @@ export default function SignupPage(): React.JSX.Element {
 
             {/* Links */}
             <div style={{
-              marginTop: isMobile ? '8px' : '20px',
+              marginTop: isMobile ? '16px' : '20px',
               marginBottom: isMobile ? '2rem' : '0',
               display: 'flex',
               flexDirection: 'column',
-              gap: isMobile ? '4px' : '6px',
-              paddingBottom: isMobile ? '1rem' : '0'
+              gap: isMobile ? '6px' : '6px',
+              paddingBottom: isMobile ? '2rem' : '0',
+              width: '100%'
             }}>
-              <p style={{ fontSize: isMobile ? '13px' : '15px', color: '#6b7280', margin: 0 }}>
+              <p style={{ fontSize: isMobile ? '15px' : '15px', color: '#6b7280', margin: 0 }}>
                 {t('alreadyHaveAccountText')}{' '}
                 <Link href="/user/auth/login" style={{ color: '#083A85', textDecoration: 'underline', fontWeight: '800' }}>
                   {t('loginLink')}

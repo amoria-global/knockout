@@ -3633,7 +3633,7 @@ const App = () => {
                 </div>
               )}
 
-              {/* Photographer Info */}
+              {/* Photographer Info and Buttons */}
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -3668,37 +3668,18 @@ const App = () => {
                     margin: 0
                   }}>{mainEvent.category}</p>
                 </div>
-                <button
-                  onClick={() => setShowRatingModal(true)}
-                  style={{
-                    backgroundColor: '#03969c',
-                    color: '#fff',
-                    fontWeight: '600',
-                    padding: '10px 24px',
-                    borderRadius: '6px',
-                    fontSize: 'clamp(12px, 2.5vw, 13px)',
-                    border: 'none',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    minHeight: '40px',
-                    whiteSpace: 'nowrap'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#027f83'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#03969c'}
-                >
-                  <i className="bi bi-star-fill" style={{ fontSize: 'clamp(12px, 2.5vw, 14px)' }}></i>
-                  Rate this Live
-                </button>
 
-                {/* Add Event Button */}
-                {events.length < 3 && (
+                {/* Buttons Container */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 'clamp(8px, 2.5vw, 12px)',
+                  flexWrap: 'wrap'
+                }}>
                   <button
-                    onClick={() => setShowAddEventModal(true)}
+                    onClick={() => setShowRatingModal(true)}
                     style={{
-                      backgroundColor: '#1890ff',
+                      backgroundColor: '#03969c',
                       color: '#fff',
                       fontWeight: '600',
                       padding: '10px 24px',
@@ -3713,39 +3694,67 @@ const App = () => {
                       minHeight: '40px',
                       whiteSpace: 'nowrap'
                     }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1570d3'}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#1890ff'}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#027f83'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#03969c'}
                   >
-                    <i className="bi bi-plus-circle-fill" style={{ fontSize: 'clamp(12px, 2.5vw, 14px)' }}></i>
-                    Add Event
+                    <i className="bi bi-star-fill" style={{ fontSize: 'clamp(12px, 2.5vw, 14px)' }}></i>
+                    Rate this Live
                   </button>
-                )}
 
-                {/* Leave Stream Button */}
-                <button
-                  style={{
-                    backgroundColor: '#e61220',
-                    color: '#fff',
-                    fontWeight: '600',
-                    padding: '10px 24px',
-                    borderRadius: '6px',
-                    fontSize: 'clamp(12px, 2.5vw, 13px)',
-                    border: 'none',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    minHeight: '40px',
-                    whiteSpace: 'nowrap'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#dc2626'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#e61220'}
-                  onClick={handleLeaveStream}
-                >
-                  <i className="bi bi-box-arrow-left" style={{ fontSize: 'clamp(12px, 2.5vw, 14px)' }}></i>
-                  Leave Stream
-                </button>
+                  {/* Add Event Button */}
+                  {events.length < 3 && (
+                    <button
+                      onClick={() => setShowAddEventModal(true)}
+                      style={{
+                        backgroundColor: '#1890ff',
+                        color: '#fff',
+                        fontWeight: '600',
+                        padding: '10px 24px',
+                        borderRadius: '6px',
+                        fontSize: 'clamp(12px, 2.5vw, 13px)',
+                        border: 'none',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        minHeight: '40px',
+                        whiteSpace: 'nowrap'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1570d3'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#1890ff'}
+                    >
+                      <i className="bi bi-plus-circle-fill" style={{ fontSize: 'clamp(12px, 2.5vw, 14px)' }}></i>
+                      Add Event
+                    </button>
+                  )}
+
+                  {/* Leave Stream Button */}
+                  <button
+                    style={{
+                      backgroundColor: '#e61220',
+                      color: '#fff',
+                      fontWeight: '600',
+                      padding: '10px 24px',
+                      borderRadius: '6px',
+                      fontSize: 'clamp(12px, 2.5vw, 13px)',
+                      border: 'none',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      minHeight: '40px',
+                      whiteSpace: 'nowrap'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#dc2626'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#e61220'}
+                    onClick={handleLeaveStream}
+                  >
+                    <i className="bi bi-box-arrow-left" style={{ fontSize: 'clamp(12px, 2.5vw, 14px)' }}></i>
+                    Leave Stream
+                  </button>
+                </div>
               </div>
 
               {/* Stream Title */}
