@@ -1089,4 +1089,3 @@ const Photographers: React.FC = () => {
 };
 
 export default Photographers;
-

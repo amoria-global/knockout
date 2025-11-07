@@ -302,13 +302,44 @@ export default function LoginPage(): React.JSX.Element {
             padding: isMobile ? '1rem 1rem' : '20px 30px',
             paddingTop: isMobile ? '2rem' : '3rem',
             paddingBottom: isMobile ? '1.5rem' : '20px',
-            justifyContent: isMobile ? 'flex-start' : 'center'
+            justifyContent: isMobile ? 'flex-start' : 'center',
+            position: 'relative'
           }}
         >
+          {/* Back to Home Button */}
+          <Link href="/" style={{
+            position: 'absolute',
+            top: isMobile ? '1.5rem' : '1.5rem',
+            left: isMobile ? '1rem' : '2rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            color: '#083A85',
+            textDecoration: 'none',
+            fontSize: isMobile ? '14px' : '16px',
+            fontWeight: '600',
+            transition: 'all 0.3s',
+            cursor: 'pointer',
+            zIndex: 10
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = '#052559';
+            e.currentTarget.style.transform = 'translateX(-4px)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = '#083A85';
+            e.currentTarget.style.transform = 'translateX(0)';
+          }}
+          >
+            <i className="bi bi-house-door-fill" style={{ fontSize: isMobile ? '18px' : '20px' }}></i>
+            <span>{isMobile ? 'Back' : 'Back'}</span>
+          </Link>
+
           <div
             className="w-full max-w-md"
             style={{
-              padding: isMobile ? '0 0.25rem' : '0 2rem'
+              padding: isMobile ? '0 0.25rem' : '0 2rem',
+              marginTop: isMobile ? '2.5rem' : '3rem'
             }}
           >
             <h1 style={{
