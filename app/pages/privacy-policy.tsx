@@ -1,10 +1,19 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Navbar from '../components/navbar';
 
 const PrivacyPolicyPage = () => {
   const [selectedSection, setSelectedSection] = useState('privacy-policy');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  // Scroll to top when section changes
+  useEffect(() => {
+    if (contentRef.current) {
+      contentRef.current.scrollTop = 0;
+    }
+  }, [selectedSection]);
 
   
   const sections = [
@@ -1075,12 +1084,228 @@ Previous versions available upon request for comparison and transparency purpose
             scrollbar-width: thin;
             scrollbar-color: #083A85 #C0C0C0;
           }
+
+          /* Mobile Menu Toggle Button */
+          .mobile-menu-toggle {
+            display: none;
+            position: fixed;
+            top: 80px;
+            left: 1rem;
+            z-index: 1000;
+            background-color: #083A85;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 0.75rem;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            transition: background-color 0.2s ease;
+          }
+
+          .mobile-menu-toggle:hover {
+            background-color: #062d6b;
+          }
+
+          .mobile-menu-toggle:active {
+            transform: scale(0.95);
+          }
+
+          /* Hamburger Icon */
+          .hamburger {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            width: 24px;
+          }
+
+          .hamburger span {
+            display: block;
+            width: 100%;
+            height: 3px;
+            background-color: white;
+            border-radius: 2px;
+            transition: all 0.3s ease;
+          }
+
+          .hamburger.active span:nth-child(1) {
+            transform: rotate(45deg) translate(7px, 7px);
+          }
+
+          .hamburger.active span:nth-child(2) {
+            opacity: 0;
+          }
+
+          .hamburger.active span:nth-child(3) {
+            transform: rotate(-45deg) translate(7px, -7px);
+          }
+
+          /* Mobile Responsive Styles */
+          @media (max-width: 768px) {
+            * {
+              -webkit-tap-highlight-color: transparent;
+              -webkit-touch-callout: none;
+            }
+
+            .mobile-menu-toggle {
+              display: block !important;
+            }
+
+            .main-content-container {
+              flex-direction: column !important;
+              margin-left: 0 !important;
+              margin-right: 0 !important;
+              width: 100% !important;
+            }
+
+            .left-sidebar {
+              position: fixed !important;
+              top: 80px !important;
+              left: 0 !important;
+              width: 80% !important;
+              max-width: 300px !important;
+              height: calc(100vh - 80px) !important;
+              z-index: 999 !important;
+              transform: translateX(-100%) !important;
+              transition: transform 0.3s ease !important;
+              box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1) !important;
+              pointer-events: none !important;
+              touch-action: pan-y !important;
+            }
+
+            .left-sidebar.open {
+              transform: translateX(0) !important;
+              pointer-events: auto !important;
+            }
+
+            .right-content {
+              width: 100% !important;
+              padding: 1.5rem 1rem !important;
+              margin-top: 60px !important;
+            }
+
+            .privacy-header {
+              padding: 1rem 0 !important;
+            }
+
+            .privacy-header h1 {
+              font-size: 1.5rem !important;
+            }
+
+            .content-header h2 {
+              font-size: 1.4rem !important;
+            }
+
+            .content-header p {
+              font-size: 14px !important;
+            }
+
+            .content-text {
+              font-size: 0.95rem !important;
+              line-height: 1.6 !important;
+            }
+
+            /* Mobile Overlay */
+            .mobile-overlay {
+              display: none;
+              position: fixed;
+              top: 0;
+              left: 0;
+              right: 0;
+              bottom: 0;
+              background-color: rgba(0, 0, 0, 0.5);
+              z-index: 998;
+            }
+
+            .mobile-overlay.active {
+              display: block;
+            }
+          }
+
+          /* Tablet Responsive Styles */
+          @media (max-width: 1024px) and (min-width: 769px) {
+            .main-content-container {
+              margin-left: 0.5rem !important;
+              margin-right: 0.5rem !important;
+            }
+
+            .left-sidebar {
+              width: 35% !important;
+            }
+
+            .right-content {
+              width: 65% !important;
+              padding: 2rem 1.5rem !important;
+            }
+
+            .content-header h2 {
+              font-size: 1.5rem !important;
+            }
+
+            .content-text {
+              font-size: 1rem !important;
+            }
+          }
+
+          /* Small Mobile Devices */
+          @media (max-width: 480px) {
+            .left-sidebar {
+              width: 90% !important;
+            }
+
+            .right-content {
+              padding: 1rem 0.75rem !important;
+            }
+
+            .content-header h2 {
+              font-size: 1.25rem !important;
+            }
+
+            .content-text {
+              font-size: 0.9rem !important;
+            }
+
+            .mobile-menu-toggle {
+              top: 70px;
+              left: 0.5rem;
+              padding: 0.6rem;
+            }
+          }
         `}
       </style>
       <Navbar />
 
+      {/* Mobile Menu Toggle Button */}
+      <button
+        className="mobile-menu-toggle"
+        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        aria-label="Toggle navigation menu"
+      >
+        <div className={`hamburger ${isMobileMenuOpen ? 'active' : ''}`}>
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+      </button>
+
+      {/* Mobile Overlay */}
+      <div
+        className={`mobile-overlay ${isMobileMenuOpen ? 'active' : ''}`}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setIsMobileMenuOpen(false);
+        }}
+        onTouchEnd={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setIsMobileMenuOpen(false);
+        }}
+      />
+
       {/* Header */}
-      <div style={{
+      <div
+        className="privacy-header"
+        style={{
         width: '100%',
         backgroundColor: 'white',
         borderBottom: '1px solid #d1d5db',
@@ -1098,11 +1323,11 @@ Previous versions available upon request for comparison and transparency purpose
       </div>
 
       {/* Main Content Container */}
-      <div style={{ display: 'flex', width: 'calc(100% - 2rem)', minHeight: 'calc(100vh - 120px)', overflow: 'hidden', marginLeft: '1rem', marginRight: '1rem', marginBottom: '0' }}>
+      <div className="main-content-container" style={{ display: 'flex', width: 'calc(100% - 2rem)', minHeight: 'calc(100vh - 120px)', overflow: 'hidden', marginLeft: '1rem', marginRight: '1rem', marginBottom: '0' }}>
 
         {/* Left Sidebar Navigation */}
         <div
-          className="left-nav-scrollbar"
+          className={`left-nav-scrollbar left-sidebar ${isMobileMenuOpen ? 'open' : ''}`}
           style={{
             width: '30%',
             backgroundColor: '#C0C0C0',
@@ -1116,7 +1341,18 @@ Previous versions available upon request for comparison and transparency purpose
             {sections.map((section) => (
               <div
                 key={section.id}
-                onClick={() => setSelectedSection(section.id)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setSelectedSection(section.id);
+                  setIsMobileMenuOpen(false);
+                }}
+                onTouchEnd={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setSelectedSection(section.id);
+                  setIsMobileMenuOpen(false);
+                }}
                 style={{
                   cursor: 'pointer',
                   padding: '0.75rem 1rem',
@@ -1125,19 +1361,25 @@ Previous versions available upon request for comparison and transparency purpose
                   color: selectedSection === section.id ? '#ffffff' : '#000000',
                   fontWeight: '600',
                   backgroundColor: selectedSection === section.id ? '#083A85' : 'transparent',
-                  transition: 'all 0.2s ease'
+                  transition: 'all 0.2s ease',
+                  WebkitTapHighlightColor: 'rgba(0, 0, 0, 0)',
+                  userSelect: 'none'
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#083A85';
-                  e.currentTarget.style.color = '#ffffff';
-                }}
-                onMouseLeave={(e) => {
-                  if (selectedSection === section.id) {
+                  if (window.innerWidth > 768) {
                     e.currentTarget.style.backgroundColor = '#083A85';
                     e.currentTarget.style.color = '#ffffff';
-                  } else {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                    e.currentTarget.style.color = '#000000';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (window.innerWidth > 768) {
+                    if (selectedSection === section.id) {
+                      e.currentTarget.style.backgroundColor = '#083A85';
+                      e.currentTarget.style.color = '#ffffff';
+                    } else {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                      e.currentTarget.style.color = '#000000';
+                    }
                   }
                 }}
               >
@@ -1148,16 +1390,20 @@ Previous versions available upon request for comparison and transparency purpose
         </div>
 
         {/* Right Content Area */}
-        <div style={{
-          width: '70%',
-          backgroundColor: '#F2FFDD',
-          padding: '2.5rem',
-          overflowY: 'auto',
-          minHeight: '100%',
-          maxHeight: '100%'
-        }}>
+        <div
+          ref={contentRef}
+          className="right-content"
+          key={selectedSection}
+          style={{
+            width: '70%',
+            backgroundColor: '#F2FFDD',
+            padding: '2.5rem',
+            overflowY: 'auto',
+            minHeight: '100%',
+            maxHeight: '100%'
+          }}>
           {/* Static Header */}
-          <div style={{ marginBottom: '2rem' }}>
+          <div className="content-header" style={{ marginBottom: '2rem' }}>
             <h2 style={{
               fontSize: '1.7rem',
               fontWeight: 'bold',
@@ -1189,7 +1435,7 @@ Previous versions available upon request for comparison and transparency purpose
           </div>
 
           {/* Content */}
-          <div style={{
+          <div className="content-text" style={{
             fontSize: '1.06rem',
             color: '#000000',
             lineHeight: '1.625',

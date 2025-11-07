@@ -288,15 +288,46 @@ export default function SignupPage(): React.JSX.Element {
             scrollBehavior: 'smooth',
             WebkitOverflowScrolling: 'touch',
             padding: isMobile ? '1.5rem 1.25rem 2rem 1.25rem' : '30px 40px 30px 50px',
-            paddingTop: isMobile ? '1.5rem' : '3rem'
+            paddingTop: isMobile ? '1.5rem' : '3rem',
+            position: 'relative'
           }}
         >
+          {/* Back to Home Button */}
+          <Link href="/" style={{
+            position: 'absolute',
+            top: isMobile ? '1.5rem' : '1.5rem',
+            left: isMobile ? '1rem' : '2rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            color: '#083A85',
+            textDecoration: 'none',
+            fontSize: isMobile ? '14px' : '16px',
+            fontWeight: '600',
+            transition: 'all 0.3s',
+            cursor: 'pointer',
+            zIndex: 10
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = '#052559';
+            e.currentTarget.style.transform = 'translateX(-4px)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = '#083A85';
+            e.currentTarget.style.transform = 'translateX(0)';
+          }}
+          >
+            <i className="bi bi-house-door-fill" style={{ fontSize: isMobile ? '18px' : '20px' }}></i>
+            <span>{isMobile ? 'Back' : 'Back'}</span>
+          </Link>
+
           <div
             className="w-full max-w-md px-6 sm:px-8 md:px-12 py-4 sm:py-6"
             style={{
               padding: isMobile ? '0' : undefined,
               width: '100%',
-              maxWidth: isMobile ? '100%' : undefined
+              maxWidth: isMobile ? '100%' : undefined,
+              marginTop: isMobile ? '2.5rem' : '3rem'
             }}
           >
             <h1 style={{
