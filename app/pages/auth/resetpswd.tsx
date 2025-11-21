@@ -2,7 +2,8 @@
 import React, { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { setNewPassword } from '@/lib/APIs/auth/set-new-password/route';
+import { setNewPassword as setNewPasswordAPI } from '@/lib/APIs/auth/set-new-password/route';
+import type { ApiResponse } from '@/lib/db';
 
 // Component that uses useSearchParams - needs to be wrapped in Suspense
 function ResetPasswordContent(): React.JSX.Element {
@@ -42,13 +43,14 @@ function ResetPasswordContent(): React.JSX.Element {
       setLoading(true);
 
       try {
-        const response = await setNewPassword({
+        const passwordData = {
           email: emailFromQuery,
           code: codeFromQuery, // Backend expects 'code'
           password: newPassword, // Backend requires 'password'
           newPassword: newPassword, // Backend also requires 'newPassword'
           confirmPassword: confirmPassword, // Backend requires confirmPassword
-        });
+        };
+        const response = await setNewPasswordAPI(passwordData);
 
         if (response.success) {
           // Show success message

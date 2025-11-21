@@ -101,7 +101,7 @@ export default function Footer() {
       .footer-content { padding: 4.5rem 1rem 1.5rem !important; }
       .footer-grid { gap: 1.5rem !important; }
       .footer-brand { padding-top: 1.5rem !important; margin-bottom: 1.5rem !important; }
-      .footer-section { flex: 0 0 calc(50% - 1rem) !important; min-width: 120px !important; }
+      .footer-section { flex: 0 0 calc(50% - 1rem) !important; min-width: 120px !important; }~
       .footer-logo { justify-content: center !important; }
       .footer-logo h3 { font-size: 1.25rem !important; margin-left: 10px !important; }
       .footer-logo img { height: 30px !important; width: 30px !important; }
