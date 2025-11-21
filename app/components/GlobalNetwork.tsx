@@ -124,10 +124,11 @@ const GlobalNetwork = () => {
   };
 
   return (
-    <div style={{ position: 'relative', width: '110%', height: '100%', overflow: 'hidden' }}>
+    <div className="global-network-svg-container" style={{ position: 'relative', width: '110%', height: '100%', overflow: 'hidden', margin: '0 auto' }}>
       <svg
+        className="global-network-svg"
         viewBox="10 0 1000 780"
-        style={{ width: '100%', height: '100%', display: 'block' }}
+        style={{ width: '100%', height: '100%', display: 'block', margin: '0 auto' }}
         preserveAspectRatio="xMidYMid slice"
       >
         <defs>
@@ -310,6 +311,16 @@ const GlobalNetwork = () => {
         }
         g {
            transform-origin: center;
+        }
+
+        /* Mobile responsive styles */
+        @media (max-width: 768px) {
+          .global-network-svg-container {
+            width: 180% !important;
+            height: 180% !important;
+            margin-left: -40% !important;
+            margin-top: 20px !important;
+          }
         }
       `}</style>
     </div>

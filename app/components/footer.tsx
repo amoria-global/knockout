@@ -69,34 +69,51 @@ export default function Footer() {
       .subscribe-wrapper { top: -1.8rem; padding: 0 1rem; max-width: calc(100% - 2rem); }
       .subscribe-input { font-size: 0.875rem; padding: 0.44rem 1rem 0.44rem 0.5rem; }
       .subscribe-button { font-size: 0.8rem; padding: 0.5rem 1rem; }
-      .footer-body { border-radius: 1.5rem 1.5rem 0 0; }
-      .footer-content { padding: 4rem 1.5rem 1.5rem; }
-      .footer-grid { grid-template-columns: 1fr; gap: 2rem; margin-bottom: 2.5rem; }
-      .footer-brand { margin-bottom: 1rem; padding-top: 1rem; }
-      .footer-logo { margin-bottom: 1rem; }
-      .footer-logo h3 { font-size: 1.4rem; }
-      .footer-logo img { height: 35px; width: 35px; }
-      .footer-description { font-size: 0.875rem; margin-bottom: 1.5rem; }
-      .social-section { margin: 1.5rem 0 0; }
-      .social-title { font-size: 0.95rem; }
-      .social-links { gap: 1.2rem; }
-      .social-icon { height: 1.2rem; width: 1.2rem; }
-      .footer-section h4 { font-size: 0.9rem; margin-bottom: 1rem; }
-      .footer-link { font-size: 0.875rem; }
-      .footer-copyright { padding-top: 1.2rem; }
-      .footer-copyright p { font-size: 0.875rem; }
+      .footer-body { border-radius: 1.5rem 1.5rem 0 0 !important; }
+      .footer-content { padding: 4rem 1.5rem 1.5rem !important; text-align: center; }
+      .footer-grid { display: flex !important; flex-wrap: wrap !important; gap: 1.5rem !important; margin-bottom: 2.5rem !important; justify-content: space-between !important; }
+      .footer-brand { width: 100% !important; margin-bottom: 2rem !important; padding-top: 1rem !important; padding-right: 0 !important; order: -1 !important; }
+      .footer-section { flex: 0 1 22% !important; text-align: center; }
+      .footer-section:nth-child(2) { order: 1 !important; }
+      .footer-section:nth-child(3) { order: 2 !important; }
+      .footer-section:nth-child(4) { order: 4 !important; }
+      .footer-section:nth-child(5) { order: 3 !important; }
+      .footer-logo { margin-bottom: 1rem !important; justify-content: center !important; margin-left: 0 !important; }
+      .footer-logo h3 { font-size: 1.4rem !important; margin-left: 12px !important; }
+      .footer-logo img { height: 35px !important; width: 35px !important; }
+      .footer-description { font-size: 0.875rem !important; margin-bottom: 1.5rem !important; text-align: center; max-width: 100%; }
+      .social-section { margin: 1.5rem 0 0 !important; text-align: center; }
+      .social-title { font-size: 0.95rem !important; text-align: center; }
+      .social-links { gap: 1.5rem !important; justify-content: center !important; }
+      .social-icon { height: 1.2rem !important; width: 1.2rem !important; }
+      .footer-section h4 { font-size: 0.9rem !important; margin-bottom: 1rem !important; text-align: center; }
+      .footer-section ul { text-align: center; }
+      .footer-link { font-size: 0.875rem !important; text-align: center; }
+      .footer-copyright { padding-top: 1.5rem !important; margin-top: 1rem !important; width: 100% !important; }
+      .footer-copyright p { font-size: 0.875rem !important; }
     }
 
     @media (max-width: 480px) {
       .footer-container { margin-top: 5.5rem; }
-      .subscribe-wrapper { top: -1.5rem; }
-      .subscribe-input { font-size: 0.8rem; padding-left: 0.8rem; }
+      .subscribe-wrapper { top: -1.5rem; padding: 0 0.75rem; }
+      .subscribe-input { font-size: 0.8rem; padding: 0.4rem 0.8rem 0.4rem 0.8rem; }
       .subscribe-button { font-size: 0.75rem; padding: 0.5rem 0.8rem; }
-      .footer-content { padding: 4.5rem 1rem 1.5rem; }
-      .footer-grid { gap: 1.5rem; }
-      .footer-brand { padding-top: 1.5rem; }
-      .footer-logo h3 { font-size: 1.25rem; }
-      .footer-logo img { height: 30px; width: 30px; }
+      .footer-content { padding: 4.5rem 1rem 1.5rem !important; }
+      .footer-grid { gap: 1.5rem !important; }
+      .footer-brand { padding-top: 1.5rem !important; margin-bottom: 1.5rem !important; }
+      .footer-section { flex: 0 0 calc(50% - 1rem) !important; min-width: 120px !important; }
+      .footer-logo { justify-content: center !important; }
+      .footer-logo h3 { font-size: 1.25rem !important; margin-left: 10px !important; }
+      .footer-logo img { height: 30px !important; width: 30px !important; }
+      .footer-description { font-size: 0.825rem !important; line-height: 1.5 !important; padding: 0 0.5rem; }
+      .social-section { margin: 1.25rem 0 0 !important; }
+      .social-title { font-size: 0.9rem !important; }
+      .social-links { gap: 1.25rem !important; }
+      .social-icon { height: 1.1rem !important; width: 1.1rem !important; }
+      .footer-section h4 { font-size: 0.875rem !important; margin-bottom: 0.875rem !important; }
+      .footer-link { font-size: 0.825rem !important; }
+      .footer-copyright { padding-top: 1.25rem !important; }
+      .footer-copyright p { font-size: 0.825rem !important; }
     }
   `;
 
@@ -168,6 +185,7 @@ export default function Footer() {
 
       {/* Main Footer Body */}
       <div
+        className="footer-body"
         style={{
           background: 'linear-gradient(to right, #052047, #052047, #103E83)',
           borderTopLeftRadius: '2rem',
@@ -176,6 +194,7 @@ export default function Footer() {
         }}
       >
         <div
+          className="footer-content"
           style={{
             maxWidth: '90rem',
             margin: '0 auto',
@@ -187,6 +206,7 @@ export default function Footer() {
         >
           {/* Main Footer Content Grid */}
           <div
+            className="footer-grid"
             style={{
               display: 'grid',
               gridTemplateColumns: '1.5fr 1fr 1fr 1fr 1fr',
@@ -195,14 +215,15 @@ export default function Footer() {
             }}
           >
             {/* Amoria connekyt Section */}
-            <div style={{ paddingRight: '1.6rem' }}>
-              <Link href="/" style={{ display: 'flex', alignItems: 'center', marginBottom: '1.9rem', marginLeft: '-1rem', cursor: 'pointer', textDecoration: 'none', color: 'inherit' }}>             
+            <div className="footer-brand" style={{ paddingRight: '1.6rem' }}>
+              <Link href="/" className="footer-logo" style={{ display: 'flex', alignItems: 'center', marginBottom: '1.9rem', marginLeft: '-1rem', cursor: 'pointer', textDecoration: 'none', color: 'inherit' }}>
                 <h3 style={{ fontSize: '1.6rem', fontWeight: 700, marginLeft: '16px', marginTop: '-1.9rem' }}>
                   Amoria
                 </h3>
                 <img src="/fav.png" alt="AmoriaK Logo" style={{ height: '40px', width: '40px', borderRadius: '9999px', marginTop: '-1.9rem', marginLeft: '-5px' }} />
               </Link>
               <p
+                className="footer-description"
                 style={{
                   color: '#D1D5DB',
                   fontSize: '0.96rem',
@@ -212,11 +233,11 @@ export default function Footer() {
               >
                 {t('description')}
               </p>
-              <div style={{ marginTop: '5.4rem', marginBottom: '-2.2rem' }}>
-                <span style={{ color: '#D1D5DB', fontSize: '1.04rem', display: 'block', marginBottom: '0.8rem', gap: '2.4rem' }}>
+              <div className="social-section" style={{ marginTop: '5.4rem', marginBottom: '-2.2rem' }}>
+                <span className="social-title" style={{ color: '#D1D5DB', fontSize: '1.04rem', display: 'block', marginBottom: '0.8rem', gap: '2.4rem' }}>
                   {t('followUs')}
                 </span>
-                <div style={{ display: 'flex', gap: '1.6rem' }}>
+                <div className="social-links" style={{ display: 'flex', gap: '1.6rem' }}>
                   {socialLinks.map((social) => (
                     <a
                       key={social.label}
@@ -224,11 +245,12 @@ export default function Footer() {
                       target="_blank"
                       rel="noopener noreferrer"
                       aria-label={social.label}
+                      className="social-link"
                       style={{ color: '#0D99FF', transition: 'color 0.2s' }}
                       onMouseOver={(e) => (e.currentTarget.style.color = 'white')}
                       onMouseOut={(e) => (e.currentTarget.style.color = '#0D99FF')}
                     >
-                      <social.icon style={{ height: '1.3rem', width: '1.3rem' }} />
+                      <social.icon className="social-icon" style={{ height: '1.3rem', width: '1.3rem' }} />
                     </a>
                   ))}
                 </div>

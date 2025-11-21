@@ -1,14 +1,19 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import { login } from '@/lib/APIs/auth/login/route';
 
 export default function LoginPage(): React.JSX.Element {
+  const router = useRouter();
   const t = useTranslations('auth.loginPage');
   const tAuth = useTranslations('auth');
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   // Screen size detection for responsive design
   const [screenSize, setScreenSize] = useState<'mobile' | 'tablet' | 'desktop' | 'large' | 'xlarge'>('desktop');
@@ -30,11 +35,42 @@ export default function LoginPage(): React.JSX.Element {
 
   const isDisabled = !email || !password;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
+
     if (!isDisabled) {
-      console.log('Login submitted:', { email, password });
-      // Add your login logic here
+      setLoading(true);
+
+      try {
+        const response = await login({ email, password });
+
+        if (response.success && response.data) {
+          // Check if OTP is verified
+          if (!response.data.otpVerified && response.data.applicantId) {
+            // Redirect to OTP verification page
+            router.push(`/user/auth/verify-otp?applicantId=${encodeURIComponent(response.data.applicantId)}&email=${encodeURIComponent(email)}`);
+            return;
+          }
+
+          // Check if account is locked
+          if (response.data.accountLocked) {
+            setError('Your account has been locked. Please contact support.');
+            return;
+          }
+
+          // Successful login - redirect to dashboard
+          router.push('/user/dashboard');
+        } else {
+          // Display error from API
+          setError(response.error || 'Login failed. Please check your credentials.');
+        }
+      } catch (err) {
+        console.error('Login error:', err);
+        setError('An error occurred during login. Please try again.');
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -386,6 +422,13 @@ export default function LoginPage(): React.JSX.Element {
 
             {/* Login Form */}
             <form onSubmit={handleSubmit}>
+              {/* Error Message */}
+              {error && (
+                <div style={{ backgroundColor: '#fee2e2', border: '1px solid #fecaca', borderRadius: '8px', padding: isMobile ? '8px' : '12px', marginBottom: isMobile ? '8px' : '12px' }}>
+                  <p style={{ fontSize: isMobile ? '11px' : '13px', color: '#991b1b', margin: 0 }}>{error}</p>
+                </div>
+              )}
+
               <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '6px' : '16px' }}>
                 {/* Email Input */}
                 <div>
@@ -452,7 +495,7 @@ export default function LoginPage(): React.JSX.Element {
               <div style={{ marginTop: isMobile ? '8px' : '20px' }}>
                 <button
                   type="submit"
-                  disabled={isDisabled}
+                  disabled={isDisabled || loading}
                   style={{
                     width: '100%',
                     padding: isMobile ? '10px' : '12px',
@@ -460,13 +503,13 @@ export default function LoginPage(): React.JSX.Element {
                     borderRadius: '30px',
                     fontWeight: '600',
                     transition: 'all 0.3s',
-                    cursor: isDisabled ? 'not-allowed' : 'pointer',
-                    backgroundColor: isDisabled ? '#d1d5db' : '#083A85',
-                    color: isDisabled ? '#9ca3af' : '#ffffff',
+                    cursor: (isDisabled || loading) ? 'not-allowed' : 'pointer',
+                    backgroundColor: (isDisabled || loading) ? '#d1d5db' : '#083A85',
+                    color: (isDisabled || loading) ? '#9ca3af' : '#ffffff',
                     border: 'none'
                   }}
                 >
-                  {t('loginButton')}
+                  {loading ? 'Signing in...' : t('loginButton')}
                 </button>
               </div>
             </form>
