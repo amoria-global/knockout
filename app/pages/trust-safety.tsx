@@ -478,367 +478,752 @@ We retain your data only as long as genuinely necessary for legitimate purposes,
     {
       id: 'user-rights',
       title: 'Your Rights and Choices',
-      content: `Depending on your country or region, you may have specific legal rights regarding how your personal data is collected, used, and managed. At Amoria Connekt, we are committed to ensuring that all users can exercise these rights easily and transparently.
+      content: `At Amoria Connekyt, we believe that your personal data belongs to you—not to us. While we process your information to provide valuable services, you retain fundamental rights over how that data is collected, used, stored, and shared. These rights aren't merely legal formalities; they represent our commitment to treating you as a partner in your own data management rather than a passive subject of our data practices. We've designed our systems and processes to make exercising these rights as straightforward as possible.
 
-1. Access Rights
-You have the right to request access to any personal data that Amoria Connekt holds about you. This includes:
-The right to view all personal data associated with your account or profile.
-The right to request a copy of your personal data in a structured, commonly used, and machine-readable format (data portability).
-The right to review the history of how your data has been processed and shared, including third-party integrations or automated systems involved.
-We aim to respond to all access requests within a reasonable timeframe and in accordance with applicable data protection laws.
+Depending on your country or region, you may have specific legal rights under various data protection frameworks including Rwanda's Data Protection and Privacy Law, the European Union's General Data Protection Regulation (GDPR), California's Consumer Privacy Act (CCPA), and other regional privacy laws. Regardless of which specific laws apply to you, we extend comprehensive privacy rights to all users because we believe everyone deserves control over their personal information.
 
-2. Correction Rights
-You have the right to ensure that any personal information we hold is accurate and up to date. You may:
-Update or modify your personal information directly through your account dashboard or profile settings.
-Request correction of inaccurate, outdated, or incomplete data stored in our systems.
-Verify the accuracy of any data before further processing, especially in cases where data accuracy is disputed.
+1. Access Rights - Understanding What We Know About You
+You have the fundamental right to know what personal information we hold about you. This isn't just a legal requirement—it's a cornerstone of the transparent relationship we want to have with every user. When you request access to your data, you're not asking for a favor; you're exercising a right we genuinely want you to use.
 
-3. Deletion Rights ("Right to be Forgotten")
-You may request that Amoria Connekt permanently delete your personal data. Upon receiving a verified request, we will:
-Remove your personal data from our active systems and archives.
-Inform relevant third-party service providers (if applicable) to also delete associated data.
-Retain only minimal information necessary for compliance with legal obligations, fraud prevention, or dispute resolution purposes.
-Please note that certain data may be retained where required by law, regulatory requirements, or legitimate business interests (e.g., accounting, security audits, or transaction verification).
+Your access rights include the ability to view all personal data associated with your account or profile, including information you provided directly (name, email, preferences), information generated through your use of the platform (booking history, reviews, communications), information inferred or derived from your activity (usage patterns, interest profiles), and information received from third parties (payment verification, identity confirmation). You can also request a complete copy of your personal data in a structured, commonly used, and machine-readable format—this is your data portability right, allowing you to take your information elsewhere if you choose.
 
-4. Objection Rights
-You have the right to object, at any time, to the processing of your personal data. This includes:
-Marketing purposes — you can refuse personalized marketing, targeted advertising, or promotional communication.
-Automated decision-making or profiling — you can request human review of any automated processes affecting you.
-Legitimate interest processing — you may object where processing relies on Amoria Connekt’s legitimate business interests instead of your consent.
-If you object, we will stop processing your data unless there are compelling legitimate grounds to continue, or where processing is necessary for legal claims.
+Beyond simply seeing your data, you have the right to understand how it has been processed. This means reviewing the history of how your data has been used, who has had access to it (including third-party integrations), what automated systems have processed it, and what decisions have been made based on it. We maintain detailed logs specifically to support this transparency.
 
-5. Restriction Rights
-In certain situations, you may request that the processing of your personal data be restricted. This right applies when:
-You contest the accuracy of the data, allowing time for verification.
-The processing is unlawful, but you prefer restriction instead of deletion.
-The data is no longer needed by Amoria Connekt but required by you for legal claims.
-You have objected to processing pending resolution of the objection.
-During restriction, your data will remain stored but will not be processed except under specific, legally permitted circumstances.`
+When you submit an access request, we respond within 30 days as required by law, providing your information in a clear, organized format that actually makes sense rather than dumping raw database exports. If your request is complex or we need more time, we'll tell you why and provide an updated timeline. Access requests are free of charge for reasonable requests; excessive or repetitive requests may incur a reasonable administrative fee, but we'll inform you before processing such requests.
+
+2. Correction Rights - Keeping Your Information Accurate
+Accurate personal information benefits everyone. Incorrect data can lead to poor recommendations, failed communications, payment issues, or misrepresentation of your professional profile. You have the absolute right to ensure that any personal information we hold is accurate, complete, and up to date—and we have every incentive to help you maintain data quality.
+
+Most corrections can be made directly by you through self-service options. Your account dashboard and profile settings allow you to update contact information, change preferences and settings, modify your biography and professional description, update portfolio content and service offerings, correct any user-generated content you've created, and adjust privacy and communication preferences. These changes take effect immediately without requiring our intervention.
+
+For information you cannot modify directly, you can submit a correction request to our support team. This includes correcting transaction records where errors occurred, updating identity information that was incorrectly recorded during verification, fixing data received from third-party sources, and correcting historical information in system logs or archives where technically feasible. When you dispute the accuracy of specific data, we'll investigate promptly—and while the investigation is ongoing, we'll mark the disputed data to prevent it from being used for decisions until accuracy is confirmed.
+
+We don't just correct data when you ask; we proactively notify relevant parties when corrections affect shared information. If incorrect data was shared with third parties, we'll inform them of corrections so they can update their records too.
+
+3. Deletion Rights - The Right to Be Forgotten
+Perhaps the most powerful right you have is the ability to have your personal data permanently erased. This "right to be forgotten" recognizes that you may want to remove your digital footprint from our platform—whether you're leaving the service, concerned about privacy, or simply prefer not to have certain information retained.
+
+Upon receiving a verified deletion request, we take comprehensive action. Your personal data is removed from our active systems and databases, making it inaccessible for normal platform operations. We inform relevant third-party service providers with whom we've shared your data, requiring them to delete their copies as well. Your public profile, portfolio, and user-generated content are removed from public view. Marketing systems are updated to ensure you receive no further communications. And your data is queued for removal from backup systems as backup rotation cycles occur.
+
+However, we must be transparent about limitations on deletion. Certain data cannot be deleted immediately due to legal requirements including transaction records retained for 7 years under tax regulations, KYC and identity verification documents retained for 5 years under anti-money laundering laws, data subject to active legal holds or ongoing disputes, and information required for fraud prevention or regulatory compliance. We'll clearly explain what can be deleted, what must be retained and why, and when retained data will eventually be removed.
+
+The deletion process follows a structured timeline. Within 24 hours of request verification, your account is deactivated and removed from public view. Within 30 days, deletable personal information is removed from active systems. Within 30-90 days, data is purged from backup systems as rotation cycles complete. At the end of legal retention periods, legally required data is finally deleted.
+
+4. Objection Rights - Saying No to Specific Processing
+You have the right to object to certain types of data processing, even when we have legal grounds to perform that processing. Objection rights give you veto power over uses of your data that you find uncomfortable, unnecessary, or intrusive—regardless of whether those uses are technically permitted.
+
+You can object to marketing and promotional processing at any time without providing any reason. This includes refusing personalized marketing based on your profile or behavior, opting out of targeted advertising and promotional communications, blocking your data from being used for marketing analytics, and preventing your information from being shared with marketing partners. Marketing objections are absolute—we stop immediately with no exceptions.
+
+You can object to automated decision-making and profiling, particularly when automated processes significantly affect you. This includes requesting human review of any algorithmic decisions (such as account verification, fraud detection, or matching algorithms), understanding the logic behind automated decisions, challenging decisions you believe are unfair or inaccurate, and opting out of profiling for purposes beyond core service delivery.
+
+You can object to legitimate interest processing where we process data based on our business interests rather than your explicit consent. When you object, we must either demonstrate compelling legitimate grounds that override your interests, or stop the processing. Common objection scenarios include analytics and research using your data, platform improvement studies, aggregate reporting that includes your information, and new feature testing using historical data.
+
+When you submit an objection, we respond promptly—typically within 30 days. If we believe we have compelling grounds to continue processing despite your objection, we'll explain our reasoning and give you the opportunity to escalate to regulatory authorities if you disagree.
+
+5. Restriction Rights - Pausing Data Processing
+Sometimes you don't want your data deleted, but you do want us to stop using it—at least temporarily. Restriction rights allow you to "freeze" your data, keeping it stored but preventing active processing while issues are resolved or decisions are made.
+
+Restriction is appropriate in several scenarios. When you contest data accuracy, restriction protects you while we verify whether information is correct. If processing is unlawful but you prefer restriction over deletion (perhaps because you need the data for legal claims), restriction preserves your options. When we no longer need data but you require it for legal purposes, restriction keeps it available for you. And when you've objected to processing and we're evaluating your objection, restriction maintains the status quo during review.
+
+During restriction, your data remains securely stored but is not used for any active processing. It won't influence recommendations, won't be included in analytics, won't be shared with third parties, and won't be used for any decisions. The only exceptions are storage itself, processing with your explicit consent, processing for legal claims, processing to protect others' rights, and processing for important public interest reasons.
+
+Restriction can be lifted when the issue that triggered it is resolved—for example, when disputed data is verified as accurate, when your objection is processed, or when you request lifting the restriction. We'll inform you before lifting any restriction so you can take further action if needed.
+
+6. How to Exercise Your Rights - Making It Easy
+We've designed multiple channels for exercising your rights, recognizing that different users prefer different approaches. Self-service through your account settings handles most routine requests instantly. You can access and download your data, modify profile information, adjust privacy settings, manage communication preferences, and initiate account deletion directly through your dashboard.
+
+For requests requiring our involvement, you can contact us at privacy@amoriaglobal.com with your specific request. When submitting requests, please include your account email or username, the specific right you're exercising, details about what data or processing you're addressing, any relevant context that helps us understand your request, and your preferred response format if you have one.
+
+We respond to all rights requests within 30 days, though complex requests may require extensions (which we'll communicate promptly). We verify your identity before processing requests to protect against unauthorized access to your data—this typically involves confirming your email or, for sensitive requests, additional verification steps.
+
+Our Commitment to Your Data Rights:
+Your rights aren't obstacles to our business—they're expressions of the respectful relationship we want to have with you. We've invested in systems, processes, and training specifically to make rights exercise easy and effective. When you have questions about your rights or encounter difficulties exercising them, our privacy team is ready to help. And if you're ever unsatisfied with how we handle your rights, you have the additional right to lodge complaints with data protection authorities in your jurisdiction.`
     },
     {
       id: 'cookies-tracking',
       title: 'Cookies and Tracking',
-      content: `At Amoria Connekyt, we use cookies and similar technologies to improve your browsing experience, optimize platform performance, analyze usage trends, and ensure the platform operates securely and efficiently. These technologies help us tailor our content and services to better match your preferences and enhance how you interact with the platform.
+      content: `At Amoria Connekyt, we use cookies and similar tracking technologies as essential tools for delivering a seamless, secure, and personalized experience on our platform. These small but powerful technologies work behind the scenes to remember your preferences, keep you logged in, analyze how our platform performs, and help us understand what features matter most to our users. We believe in complete transparency about these technologies—what they are, why we use them, how they benefit you, and most importantly, how you can control them.
 
-1. What Are Cookies
-Cookies are small text files or data fragments that are placed on your computer, tablet, or mobile device when you visit a website or use an online service. They contain information such as your browser type, session duration, preferences, and interaction history.
-Cookies serve as digital memory — allowing the platform to recognize your device, remember your login sessions, and deliver a seamless experience across visits. For example, they may keep you signed in, save your preferred language, and help pages load faster.
-In addition to cookies, we may use similar tracking technologies such as web beacons, pixels, and local storage to gather analytical or functional data that helps improve our services.
+Cookies and tracking technologies are often misunderstood or viewed with suspicion, but when used responsibly and transparently, they're fundamental to modern web experiences. Without them, every page visit would feel like your first—you'd need to log in repeatedly, reconfigure settings constantly, and lose the personalized experience that makes platforms genuinely useful. Our approach is to use these technologies only where they provide genuine value to you or are necessary for platform operation, never for invasive surveillance or purposes that don't benefit our users.
 
-2. Types of Cookies We Use
-To make your experience efficient, Amoria Connekt uses different categories of cookies, each serving a distinct purpose:
+1. What Are Cookies - Understanding the Technology
+Cookies are small text files or data fragments that are placed on your computer, tablet, or mobile device when you visit a website or use an online service. Despite their technical nature, they serve a simple purpose: helping websites remember information about your visit so they can provide better, more personalized experiences. They contain information such as your browser type, session identifiers, user preferences, interaction history, and authentication tokens that verify your identity.
 
-• Essential Cookies
+Think of cookies as digital memory—they allow the platform to recognize your device, remember your login sessions, and deliver a seamless experience across visits. For example, when you log into Amoria Connekyt and return later to find yourself still signed in, that's cookies at work. When the platform remembers your preferred language, display settings, or the photographers you've favorited, cookies enable that continuity. When pages load quickly because cached preferences are already known, cookies improve that performance.
 
-These cookies are fundamental to the operation of our platform. Without them, the site and its core features—like account login, payment processing, or navigation—would not function properly.
-They enable secure access to user accounts, prevent fraudulent activity, and ensure that platform sessions remain stable and safe during use.
+Beyond traditional cookies, we employ similar tracking technologies that serve related purposes. Web beacons (also called tracking pixels) are tiny, invisible images embedded in pages or emails that help us understand whether content was viewed and how users navigate our platform. Local storage and session storage are browser-based data stores that can hold larger amounts of information than cookies, useful for complex preferences or temporary data during your session. Device fingerprinting techniques may be used for fraud prevention, creating unique identifiers based on device characteristics to detect suspicious activity. These technologies work together to create the modern web experience you expect.
 
-• Analytics Cookies
+2. Types of Cookies We Use - Purpose-Driven Categories
+To make your experience efficient, secure, and personalized, Amoria Connekyt uses different categories of cookies, each serving a distinct and documented purpose. Understanding these categories helps you make informed decisions about which to accept and which to decline.
 
-Analytics cookies collect anonymous data about how users interact with the platform—such as pages visited, features used, session duration, and navigation paths.
-We use this information to analyze platform performance, identify technical issues, and understand what users enjoy most. This helps us continually refine our user interface, load times, and feature efficiency for a smoother experience.
+• Essential Cookies - The Foundation of Platform Functionality
 
-• Preference Cookies
+These cookies are fundamental to the operation of our platform—without them, Amoria Connekyt simply wouldn't work properly. They're not optional extras or conveniences; they're the technical backbone that enables core features like account login, payment processing, navigation, and security protections. Essential cookies enable secure access to user accounts by maintaining authentication state so you don't need to log in on every page. They prevent fraudulent activity by tracking suspicious patterns and validating legitimate sessions. They ensure platform sessions remain stable and safe during use by managing server connections and load balancing. They enable shopping cart functionality for booking services and completing purchases. They remember form data during multi-step processes so you don't lose progress. And they enforce security policies like CSRF protection that prevent malicious attacks.
 
-Preference cookies remember choices you make during your visits, like your selected language, region, display settings, or login preferences.
-By storing these preferences, the platform can automatically adjust your interface and personalize your experience each time you return, reducing the need to reconfigure settings.
+Because these cookies are necessary for basic platform operation, they cannot be disabled without breaking core functionality. However, we minimize their scope to only what's genuinely required, and they contain no personally identifying information beyond what's necessary for session management.
 
-• Marketing Cookies
+• Analytics Cookies - Understanding Platform Performance
 
-Marketing cookies are used to deliver relevant advertisements and promotional content based on your interests and prior interactions with our platform.
-They help us and our advertising partners measure the effectiveness of campaigns and ensure you see offers that align with your needs—such as photography deals, event packages, or featured photographers.
-While these cookies enhance personalization, you have the full right to disable or opt out of them if you prefer not to receive targeted content.
+Analytics cookies collect data about how users interact with the platform—such as pages visited, features used, session duration, navigation paths, error encounters, and performance metrics. This information helps us understand what's working well and what needs improvement, enabling data-driven decisions about platform development.
 
-3. Third-Party Cookies
-In addition to our own cookies, Amoria Connekt integrates trusted third-party services that may set cookies on your device for their respective purposes. These partners help us maintain analytics, process secure transactions, and improve sharing capabilities.
-Examples include:
+The data collected through analytics cookies is aggregated and anonymized wherever possible, meaning we see patterns and trends rather than individual behaviors. We learn that "40% of users visit the photographer search page before booking" rather than "User John Smith searched for wedding photographers on Tuesday." This aggregate understanding helps us analyze platform performance and identify bottlenecks, detect and diagnose technical issues before they affect many users, understand which features users value most (so we can invest in improving them), identify confusing user flows that need redesign, measure the success of new features or changes, and plan infrastructure capacity based on usage patterns.
 
-Google Analytics — to monitor overall site traffic, usage trends, and performance insights.
-Payment processors (such as Stripe or PayPal) — to ensure secure financial transactions and fraud prevention.
-Social media platforms — for sharing content directly from Amoria Connekt to your social accounts or to authenticate logins through social sign-ins.
-Advertising partners — to manage, deliver, and track promotional campaigns relevant to users.
-All third-party cookies are governed by their respective privacy policies, and Amoria Connekt ensures that only reputable and compliant providers are integrated into the platform.
+We use analytics tools like Google Analytics, which set their own cookies subject to Google's privacy policies. We've configured these tools to anonymize IP addresses and minimize data collection while still providing valuable insights.
 
-4. Managing Cookies
-You have full control over how cookies are used on your device. You can manage or delete cookies at any time through:
-Browser settings — Most browsers allow you to block or delete cookies under “Privacy” or “Security” settings.
-Our cookie preference center — A dedicated in-platform tool (if enabled) that lets you selectively enable or disable certain cookie categories.
-Third-party opt-out tools — Such as those provided by advertising networks or analytics platforms.
-Be aware that disabling essential cookies may limit certain functionalities—such as login persistence, checkout processes, or personalized content display—and could reduce overall platform performance.
+• Preference Cookies - Personalizing Your Experience
 
-5. Do Not Track
-Amoria Connekt respects Do Not Track (DNT) signals where technically feasible. If your browser sends a DNT request, we make every reasonable effort to honor that preference and restrict unnecessary data collection, though full implementation may depend on third-party integrations that have their own data practices.
+Preference cookies remember choices you make during your visits, enabling the platform to provide a customized experience tailored to your needs. They store information like your selected language and region, display settings (dark mode, layout preferences, thumbnail sizes), login preferences (remember me options, preferred authentication methods), search preferences and filters you commonly use, notification settings and communication preferences, accessibility options you've configured, and recently viewed content for quick access.
 
-6. Cookie Duration
-Cookies on Amoria Connekt have varying lifespans depending on their purpose:
+By storing these preferences, the platform automatically adjusts your interface and personalizes your experience each time you return, eliminating the need to reconfigure settings repeatedly. Preference cookies make the platform feel like "yours"—configured the way you like it rather than generic and impersonal. These cookies typically persist for extended periods (months to years) so your preferences remain stable across sessions.
 
-Session Cookies — Temporary cookies that remain active only during your browsing session. They are automatically deleted when you close your browser.
-Persistent Cookies — Remain stored on your device for a defined period or until manually deleted. They help remember login states or preferences between sessions. The typical duration ranges from 1 to 2 years, depending on the service or cookie type.
-Persistent cookies may be refreshed each time you revisit the platform to maintain your personalized experience.
+• Marketing Cookies - Relevant Content and Advertising
 
-7. Updates
-Our cookie usage practices may evolve as we introduce new features or technologies. When significant updates occur—such as adding new cookie categories, integrating new analytics tools, or modifying consent processes—we will notify users via platform banners, updated policy links, or email communications.
-We encourage all users to periodically review this Cookie Policy to stay informed about how their data is being used to improve Amoria Connekt’s performance and security.`
+Marketing cookies are used to deliver relevant advertisements and promotional content based on your interests and prior interactions with our platform. They help ensure that when you see Amoria Connekyt-related content—whether on our platform or elsewhere—it's relevant to your interests rather than random and irrelevant.
+
+These cookies enable us and our advertising partners to show you offers aligned with your demonstrated interests (photography styles you've browsed, event types you've searched for, price ranges you've explored), measure the effectiveness of promotional campaigns so we can invest in marketing that actually helps users find what they need, limit how often you see the same advertisement (frequency capping), understand the customer journey from first seeing an ad to completing a booking, and provide photographers and creative professionals with aggregated insights about their audience reach.
+
+Marketing cookies are entirely optional—you have complete control over whether to accept them. Declining marketing cookies means you may see less relevant advertisements, but it won't affect core platform functionality. We respect this choice absolutely and never penalize users who prefer not to be tracked for marketing purposes.
+
+3. Third-Party Cookies - Our Trusted Partners
+In addition to our own first-party cookies, Amoria Connekyt integrates trusted third-party services that may set their own cookies on your device for their respective purposes. These partnerships enable capabilities we couldn't provide alone and are essential for a full-featured platform experience.
+
+Google Analytics provides comprehensive website analytics, helping us understand traffic patterns, user behavior, and platform performance. Google's cookies enable detailed reporting on page views, session duration, user flow, and technical performance metrics. These cookies are governed by Google's privacy policy, and we've implemented privacy-protective configurations including IP anonymization.
+
+Payment processors such as Stripe, PayPal, and local payment providers set cookies necessary for secure financial transactions. These cookies enable fraud detection (identifying suspicious payment patterns), session management during checkout flows, compliance with payment card industry (PCI) security standards, and remembering payment preferences for returning users. Payment processor cookies are essential for completing transactions securely and cannot be disabled without breaking payment functionality.
+
+Social media platforms including Facebook, Instagram, LinkedIn, and others may set cookies when you use social features on our platform. These enable sharing content directly from Amoria Connekyt to your social accounts, authenticating logins through social sign-in options, displaying social proof like follower counts or shared content, and enabling social plugins that enhance connectivity. Social media cookies are governed by each platform's respective privacy policies.
+
+Advertising partners help us deliver and measure marketing campaigns. These partners may set cookies for ad targeting based on browsing behavior, campaign performance measurement, conversion tracking (understanding which ads led to bookings), and cross-site advertising coordination. All advertising partners are vetted for compliance with privacy regulations and our own standards.
+
+We carefully select third-party partners based on their privacy practices, security standards, and regulatory compliance. All third-party integrations undergo review, and we maintain contractual requirements for data protection. However, third-party cookies are ultimately governed by their providers' policies, which we encourage you to review.
+
+4. Managing Cookies - Your Control Options
+You have full control over how cookies are used on your device, and we provide multiple ways to exercise that control. We believe informed consent means giving you genuine choices, not just legal checkboxes.
+
+Browser settings provide the most comprehensive cookie control. Most modern browsers (Chrome, Firefox, Safari, Edge) allow you to view all cookies stored on your device, delete specific cookies or clear all cookies at once, block all cookies (though this breaks many websites), block only third-party cookies (allowing first-party cookies from sites you visit directly), set exceptions for specific websites, and enable "private browsing" or "incognito" mode that doesn't retain cookies after sessions end.
+
+To access cookie settings, look for "Privacy," "Security," or "Cookies" options in your browser's settings menu. Each browser handles this slightly differently, but all major browsers provide these controls.
+
+Our cookie preference center (when enabled on the platform) provides granular control specifically for Amoria Connekyt cookies. Through this interface, you can accept or decline specific cookie categories, change your preferences at any time, see exactly what cookies are active, and understand the purpose of each cookie category before deciding.
+
+Third-party opt-out tools are provided by advertising networks and analytics platforms. The Digital Advertising Alliance (DAA) offers opt-out tools at aboutads.info. The Network Advertising Initiative (NAI) provides options at networkadvertising.org. Google provides specific opt-out mechanisms for its advertising and analytics services. European users can use the EDAA's YourOnlineChoices.eu tool.
+
+Important considerations when managing cookies: Disabling essential cookies will break core platform functionality—you won't be able to log in, complete purchases, or use many features. Disabling analytics cookies means we have less insight into platform problems you might experience, potentially slowing our ability to fix issues. Disabling preference cookies means you'll need to reconfigure settings on each visit. Disabling marketing cookies won't reduce the number of ads you see—just their relevance to your interests.
+
+5. Do Not Track - Respecting Browser Signals
+Amoria Connekyt respects Do Not Track (DNT) browser signals where technically feasible. Do Not Track is a browser setting that sends a signal to websites requesting that they not track your browsing activity. When your browser sends a DNT request, we make every reasonable effort to honor that preference.
+
+When we detect a DNT signal, we disable non-essential tracking cookies, exclude your activity from marketing analytics, prevent advertising partners from setting targeting cookies, and limit data collection to what's strictly necessary for platform operation.
+
+However, we must be transparent about limitations. DNT is not a legally mandated standard, and there's no universal definition of what "honoring DNT" means. Some third-party services integrated into our platform may have their own DNT policies that differ from ours. Essential cookies and tracking necessary for security, fraud prevention, and basic functionality continue regardless of DNT signals.
+
+If privacy is a priority, we recommend combining DNT with other measures: using browser privacy settings, installing privacy-focused browser extensions, regularly clearing cookies, and reviewing our cookie preference center to customize your experience.
+
+6. Cookie Duration - How Long They Last
+Cookies on Amoria Connekyt have varying lifespans depending on their purpose, ranging from minutes to years. Understanding cookie duration helps you know how long your browsing data persists.
+
+Session cookies are temporary cookies that exist only during your active browsing session. They're stored in temporary memory and are automatically deleted when you close your browser. Session cookies handle short-term needs like maintaining your login state while browsing, keeping items in your cart during a shopping session, managing multi-step processes (like checkout flows), and storing temporary preferences during a single visit. Because session cookies disappear when you close your browser, they pose minimal long-term privacy implications.
+
+Persistent cookies remain stored on your device for a defined period or until you manually delete them. They survive browser closures and computer restarts, enabling continuity across sessions. Persistent cookie durations vary by purpose. Authentication cookies that enable "remember me" functionality typically last 30 days to 1 year. Preference cookies storing your settings typically last 1 to 2 years. Analytics cookies tracking usage patterns typically last 6 months to 2 years. Marketing cookies for advertising purposes typically last 30 days to 1 year.
+
+Persistent cookies may be refreshed each time you revisit the platform, extending their expiration date to maintain your personalized experience. For example, a preference cookie set to expire in one year might be renewed to another year each time you visit, ensuring your settings persist as long as you remain an active user.
+
+You can view cookie expiration dates in your browser's cookie management interface and delete persistent cookies at any time if you prefer not to be remembered across sessions.
+
+7. Updates - Evolving Our Cookie Practices
+Our cookie usage practices evolve as we introduce new features, adopt new technologies, respond to regulatory changes, and improve our platform. We're committed to keeping you informed about significant changes that affect how your data is collected and used.
+
+When significant updates occur, we notify users through multiple channels. Platform banners alert you when visiting the site about cookie policy changes. Updated policy links direct you to review changes in detail. Email communications inform registered users of material changes. In-app notifications highlight changes within the platform interface. And our cookie preference center is updated to reflect new cookie categories or purposes.
+
+Changes that trigger notifications include adding new cookie categories or purposes, integrating new third-party services that set cookies, modifying consent processes or user controls, changing cookie durations significantly, and responding to new privacy regulations affecting cookie use.
+
+We encourage all users to periodically review this Cookie Policy to stay informed about how tracking technologies are used on Amoria Connekyt. Policy review is especially important after receiving change notifications, if you have concerns about new features or integrations, when privacy regulations in your region change, or if you're reconsidering your cookie preferences.
+
+Our Commitment to Transparent Tracking:
+Cookies and tracking technologies are tools—and like all tools, their impact depends on how they're used. We're committed to using these technologies responsibly, transparently, and always with your interests in mind. We minimize tracking to what genuinely improves your experience or is necessary for platform operation. We're transparent about what we track, why, and how long data persists. We provide meaningful controls so you can make informed choices. We respect your preferences, including browser signals like Do Not Track. And we continuously evaluate our practices against evolving privacy standards and user expectations. Your trust matters more than any data point we could collect.`
     },
     {
       id: 'third-party-links',
       title: 'Third-Party Links',
-      content: `Amoria Connekyt may include links or integrations that direct you to external websites, tools, or online services not operated or controlled by us. These links are often provided to enhance your experience — such as allowing photographers to display their personal portfolios or letting users make secure payments through verified gateways. However, once you leave our platform, your interaction is governed by the terms and policies of those external providers.
+      content: `Amoria Connekyt exists within a broader digital ecosystem—we're not an isolated platform but rather a connected hub that integrates with payment processors, social media networks, creative tools, and the personal websites of our photographer community. This interconnectedness enables powerful capabilities: seamless payments, social sharing, portfolio showcasing, and access to specialized tools that enhance the creative professional experience. However, it also means that your journey on Amoria Connekyt may lead you to external destinations where different rules, policies, and privacy practices apply.
 
-1. External Websites
-Our platform may feature or redirect users to external sites, including but not limited to:
-Photographer personal websites and portfolios that showcase their work beyond Amoria Connekyt.
-Social media profiles to help users engage with creative communities or share published content.
-Payment processor sites for completing transactions securely, such as booking sessions or purchasing services.
-Partner platforms and services that collaborate with Amoria Connekyt to provide extended functionalities, such as AI-based editing tools, print-on-demand services, or booking extensions.
+We believe in transparency about these connections. When you click a link that takes you outside Amoria Connekyt—whether to a photographer's personal portfolio, a payment processor's checkout page, or a social media platform—you're entering territory we don't control. This section explains what external connections exist, why they're valuable, what risks they may present, and how you can protect yourself while enjoying the benefits of our connected platform.
 
-These links are provided for convenience and user experience enhancement. However, their inclusion does not imply endorsement, monitoring, or control by Amoria Connekyt.
+1. External Websites - Understanding the Connections
+Our platform features or redirects users to external sites across several categories, each serving distinct purposes in enhancing your Amoria Connekyt experience.
 
-2. No Responsibility
-While we strive to connect you only with trusted and reputable partners, Amoria Connekyt does not assume responsibility for any external websites or services linked through our platform. This includes, but is not limited to:
-The privacy practices or data protection measures employed by external sites.
-The accuracy, relevance, or reliability of content displayed on linked pages.
-The security or stability of third-party platforms, including how they manage user information.
-The terms, conditions, and policies that govern the operation or service usage of these external providers.
+Photographer personal websites and portfolios represent one of the most common external link categories. Creative professionals on our platform often maintain independent websites showcasing their complete body of work, detailed service offerings, client testimonials, and booking systems. These personal sites may offer content not available on Amoria Connekyt—behind-the-scenes content, blog posts about their creative process, expanded galleries, or direct booking options. When you visit a photographer's external portfolio, you're accessing content they've created and hosted independently, subject to their own terms and privacy practices.
 
-By following a link to an external website, you acknowledge that Amoria Connekyt has no control over how those sites collect, use, or store your information.
+Social media profiles and pages connect you with photographers' broader online presence. Many creative professionals maintain active Instagram accounts, Facebook pages, Pinterest boards, YouTube channels, or TikTok profiles where they share work, engage with followers, and build their brand. Links to these profiles help you evaluate photographers' style, engagement with their community, and recent work before making booking decisions. However, each social platform has its own data collection practices that apply once you visit.
 
-3. User Discretion
-We encourage all users to exercise caution and good judgment when engaging with third-party websites or services.
-When you visit any external link or platform through Amoria Connekyt:
-Review their privacy policy to understand how your personal data will be handled.
-Read their terms and conditions to know your rights and responsibilities when using their services.
-Be mindful of personal information — avoid sharing sensitive data unless you trust the platform’s security.
-Ensure secure connections (look for “https://” in the URL and a padlock symbol in your browser).
-Amoria Connekyt cannot guarantee that third-party links are free from malicious or misleading content, so your vigilance is key to maintaining online safety.
+Payment processor sites handle the financial aspects of transactions on our platform. When you complete a booking or purchase services, you may be redirected to secure payment pages operated by processors like Stripe, PayPal, Flutterwave, or local payment providers. These redirects are necessary for PCI-compliant payment processing—keeping sensitive financial data on specialized, highly-secured systems rather than our own servers. Payment processors have their own privacy policies and security measures, typically among the most stringent in the technology industry.
 
-4. Social Media Integration
-Amoria Connekyt may integrate with social media platforms to provide users with enhanced connectivity and accessibility features, including:
-Profile authentication, allowing users to sign in or create accounts using their existing social media profiles.
+Partner platforms and services extend Amoria Connekyt's capabilities through integrations. These may include AI-based photo editing tools that enhance images, print-on-demand services for physical products, calendar and scheduling integrations for booking management, cloud storage providers for portfolio hosting, email marketing platforms for client communication, and specialized creative software with partnership arrangements. Each partner operates independently with their own policies governing your use of their services.
 
-Content sharing, enabling users to share their photos, portfolio updates, or achievements directly on platforms such as Instagram, Facebook, or LinkedIn.
+Educational and resource links may direct you to photography tutorials, industry publications, equipment reviews, or professional development resources. While we curate these links to provide value, the content is created and maintained by external parties whose views and practices may differ from ours.
 
-Social login features, which streamline the registration process and improve user experience.
-While these integrations make using our platform more convenient, your use of these features is subject to the privacy policies and data practices of the respective social media platforms. We recommend reviewing them carefully to understand how your data may be processed outside Amoria Connekyt’s environment.
-These integrations are subject to the privacy policies of respective platforms.
+These links are provided for convenience and user experience enhancement. However, their inclusion does not imply endorsement, monitoring, or control by Amoria Connekyt. A link's presence on our platform means we've identified potential value for users, not that we've audited or approved every aspect of the destination.
 
-5. Photographer External Content
-Photographers or creative professionals on Amoria Connekyt may share external links to showcase additional content — such as their personal websites, third-party galleries, or hosted portfolios.
-These links are entirely under the photographer’s control and are shared at their discretion. Amoria Connekyt does not monitor, verify, or endorse the accuracy, legality, or appropriateness of external content linked by users.
-If you choose to access a photographer’s external portfolio, you do so at your own discretion and assume responsibility for any interactions that occur on those external platforms.
+2. No Responsibility - Understanding the Boundaries
+While we strive to connect you only with trusted and reputable partners and to remove obviously problematic links when identified, Amoria Connekyt cannot and does not assume responsibility for external websites or services. This isn't a legal technicality designed to avoid accountability—it reflects the genuine reality that we have no control over external sites and cannot guarantee their behavior.
 
-6. Reporting Concerns
-The safety and trust of our community are top priorities. If you encounter inappropriate, misleading, or suspicious external links while browsing Amoria Connekyt — whether posted by users, embedded in content, or appearing within messages — please report them immediately to our Support Team.
+Our responsibility boundaries include the following areas. Privacy practices of external sites are beyond our control. When you leave Amoria Connekyt, you enter environments governed by different privacy policies. External sites may collect more data than we do, share information with additional third parties, use tracking technologies we don't employ, or have weaker data protection standards. We cannot audit every external site's privacy practices or ensure they meet our standards.
 
-Our team will review reported cases promptly, and where necessary, take action such as removing harmful links, disabling associated accounts, or notifying affected users.
-You can report such issues by:
+Content accuracy, relevance, and reliability on linked pages cannot be guaranteed. Photographer portfolios may contain outdated information, pricing that's changed, or work samples that don't represent current capabilities. Partner sites may modify their offerings, terms, or availability without notifying us. Resource links may become outdated as industries evolve. We don't continuously monitor external content for accuracy.
 
-Using the in-platform “Report” feature where available.
-Contacting our support desk directly via the Help Center or support@amoriaconnekyt.com`
+Security and stability of third-party platforms varies widely. While we partner with reputable payment processors and established platforms, we cannot guarantee that any external site is free from security vulnerabilities, data breaches, or operational issues. External sites may experience downtime, be compromised by attackers, or suffer data loss—events outside our knowledge or control.
+
+Terms, conditions, and policies governing external services are created and enforced by those services, not by us. When you use an external platform, you're agreeing to their terms, which may include provisions about intellectual property, dispute resolution, liability limitations, or data usage that differ significantly from Amoria Connekyt's policies.
+
+By following a link to an external website, you acknowledge that Amoria Connekyt has no control over how those sites operate, collect data, present information, or interact with you. This acknowledgment isn't about shifting blame—it's about ensuring you understand the reality of internet interconnection and can make informed decisions about which links to follow.
+
+3. User Discretion - Protecting Yourself Online
+We encourage all users to exercise caution and good judgment when engaging with third-party websites or services. The internet offers tremendous opportunities but also presents risks that require personal vigilance. Your online safety is ultimately in your hands, and we want to equip you with the knowledge to protect yourself.
+
+Before visiting external links, consider several protective practices. Review their privacy policy to understand how your personal data will be handled. Look for clear explanations of what data is collected, how it's used, who it's shared with, and how long it's retained. Privacy policies that are hidden, vague, or excessively complicated may indicate concerning practices.
+
+Read their terms and conditions to know your rights and responsibilities. Pay particular attention to sections about intellectual property (especially important for photographers sharing work), dispute resolution processes, liability limitations, and cancellation or refund policies. Understanding terms before engaging prevents surprises later.
+
+Be mindful of personal information you share. Avoid providing sensitive data—financial information, identity documents, detailed personal history—unless you trust the platform's security and have verified you're on the legitimate site (not a phishing imitation). Legitimate services rarely ask for unnecessary personal information.
+
+Ensure secure connections by checking for "https://" in the URL and a padlock symbol in your browser's address bar. These indicators confirm encrypted connections that protect data in transit. Be especially cautious on sites lacking these security indicators, particularly when entering any personal information.
+
+Verify you're on legitimate sites, especially for financial transactions. Phishing attacks often create convincing imitations of legitimate payment processors or popular websites. Double-check URLs, look for subtle misspellings, and when in doubt, navigate directly to known legitimate addresses rather than clicking links.
+
+Be skeptical of requests that seem unusual. If an external site asks for information that seems unrelated to its purpose, requests payment through unusual methods, or pressures you to act quickly, these may be warning signs of scams or compromised sites.
+
+Amoria Connekyt cannot guarantee that third-party links are free from malicious or misleading content. While we remove problematic links when identified and investigate reports promptly, the dynamic nature of the internet means new threats emerge constantly. Your vigilance is key to maintaining online safety.
+
+4. Social Media Integration - Connected but Independent
+Amoria Connekyt integrates with major social media platforms to provide users with enhanced connectivity, simplified access, and seamless content sharing. These integrations make our platform more convenient and help creative professionals extend their reach, but they also create connections to platforms with their own extensive data practices.
+
+Profile authentication through social login allows users to sign in or create accounts using existing social media credentials from platforms like Google, Facebook, Apple, or LinkedIn. This integration offers several benefits: no need to create and remember another password, faster account creation, automatic profile information population, and verified email addresses. However, social login also creates data flows between Amoria Connekyt and the authentication provider. When you use social login, the provider may receive information about your Amoria Connekyt activity, and we may receive profile information from the provider. The exact data exchanged depends on permissions you grant during the login process.
+
+Content sharing enables users to share photos, portfolio updates, booking announcements, or achievements directly on platforms such as Instagram, Facebook, LinkedIn, Twitter, or Pinterest. Sharing integrations help photographers promote their work, celebrate milestones, and engage their audiences across platforms. When you share content, you're interacting directly with social platforms, which may track this activity, associate it with your social profile, and use it for their own purposes (advertising targeting, content recommendations, engagement metrics).
+
+Social media embeds may display Instagram feeds, Facebook pages, or other social content directly within Amoria Connekyt profiles or pages. These embeds provide rich, dynamic content but also allow social platforms to track your presence on our site—even if you don't interact with the embedded content. Social platforms may use this tracking to build profiles of your browsing behavior across the web.
+
+Social proof features may display follower counts, engagement metrics, or social endorsements to help users evaluate photographers. This information comes from social platforms and is subject to their accuracy and availability.
+
+While these integrations make using our platform more convenient and powerful, your use of social features is subject to the privacy policies and data practices of the respective social media platforms. These platforms—Facebook/Meta, Google, Apple, LinkedIn, Twitter, and others—have extensive data collection practices that may include information about your use of Amoria Connekyt when you use connected features.
+
+We recommend reviewing social platform privacy policies carefully to understand how your data may be processed outside Amoria Connekyt's environment. You can often limit data sharing through privacy settings on both our platform and the social platforms themselves. Consider whether the convenience of social features outweighs privacy trade-offs for your personal situation.
+
+5. Photographer External Content - User-Generated Links
+Photographers and creative professionals on Amoria Connekyt frequently share external links to showcase additional content beyond what's hosted on our platform. This user-generated linking is a fundamental feature that enables creative professionals to present their complete professional presence, but it also means we host links to content we haven't created, reviewed, or approved.
+
+Common external content shared by photographers includes personal websites featuring expanded portfolios, detailed service information, and direct booking capabilities that may differ from Amoria Connekyt's systems. Third-party gallery platforms like SmugMug, Pixieset, or 500px where photographers host client galleries or display additional work. Video hosting platforms like YouTube or Vimeo where photographers share behind-the-scenes content, tutorials, or cinematic work. Cloud storage links to downloadable resources, contracts, or sample deliverables. Blog posts and articles showcasing their expertise, creative process, or industry insights. Review platforms where clients have left testimonials or ratings.
+
+These links are entirely under the photographer's control and are shared at their discretion. Amoria Connekyt does not pre-screen, monitor, verify, or endorse the accuracy, legality, quality, or appropriateness of external content linked by users. We cannot guarantee that photographer-shared links are safe, accurate, professional, or consistent with how photographers present themselves on our platform.
+
+Photographers are responsible for the links they share. Our community guidelines require that shared links be relevant to their professional services, free from malicious content or security threats, compliant with applicable laws, and not misleading about their services or capabilities. Violation of these requirements may result in link removal, account warnings, or suspension.
+
+If you choose to access a photographer's external portfolio or linked content, you do so at your own discretion and assume responsibility for any interactions that occur on those external platforms. We recommend applying the same caution you'd use for any unfamiliar website: verify security indicators, review privacy policies, and be thoughtful about information you share.
+
+6. Reporting Concerns - Community-Powered Safety
+The safety and trust of our community are top priorities, and maintaining a safe linking environment requires partnership between Amoria Connekyt and our users. We cannot monitor every external link in real-time, but we can respond quickly and effectively when our community identifies problems.
+
+If you encounter inappropriate, misleading, or suspicious external links while browsing Amoria Connekyt—whether posted by photographers, embedded in content, appearing within messages, or found anywhere else on the platform—please report them immediately to our Support Team. Your reports help us identify and address problems that automated systems might miss.
+
+Reportable concerns include links to malicious websites containing malware, phishing attempts, or security threats. Deceptive links that misrepresent their destination or purpose. Inappropriate content that violates community standards or applicable laws. Broken links that lead to error pages or hijacked domains. Suspicious links that seem designed to scam or defraud users. Privacy-violating links that inappropriately expose personal information. Copyright-infringing content hosted on linked sites.
+
+Our team reviews reported cases promptly, typically within 24-48 hours for standard reports and faster for urgent security concerns. Based on our investigation, we may take various actions including removing harmful links from the platform, issuing warnings to users who shared problematic links, suspending or terminating accounts involved in malicious linking, notifying affected users who may have clicked dangerous links, reporting severe violations to appropriate authorities, and implementing platform-wide protections against similar threats.
+
+You can report concerns through multiple channels. The in-platform "Report" feature is available on most content where you see external links—look for report options in menus or near the content. Our support desk can be reached directly via the Help Center for detailed reports or urgent concerns. Email reports can be sent to support@amoriaconnekyt.com with "External Link Concern" in the subject line. When reporting, please include the URL of the problematic link, where you encountered it on our platform, what concern it raised, and any other relevant details.
+
+We appreciate every report and take each one seriously. Community vigilance is essential to maintaining a safe platform, and we're grateful to users who take the time to help protect others.
+
+Our Commitment to Safe Connections:
+External links are essential to Amoria Connekyt's value proposition—they connect you with photographer portfolios, enable secure payments, facilitate social sharing, and extend our platform's capabilities. We couldn't provide the rich, connected experience users expect without these external integrations. At the same time, we recognize that every external link is a doorway to environments we don't control, and we take seriously our responsibility to be transparent about this reality. We vet our official partners and integrations carefully, respond promptly to reported concerns, and continuously work to balance connectivity with safety. Your awareness and caution complement our efforts, creating a community where the benefits of connection don't come at the cost of security or privacy.`
     },
     {
       id: 'childrens-privacy',
       title: "Children's Privacy",
-      content: `Amoria connekyt is committed to protecting the privacy of children and complying with applicable children's privacy laws.
+      content: `Protecting children online is not just a legal obligation—it's a moral imperative that Amoria Connekyt takes with the utmost seriousness. Children deserve special protection in digital environments, where they may not fully understand the implications of sharing personal information, the permanence of digital footprints, or the potential risks of online interactions. While our platform is designed for adult creative professionals and their clients, we recognize our responsibility to implement robust safeguards that prevent minors from accessing services not intended for them and to respond swiftly and appropriately if we discover children have gained access to our platform.
 
-1. Age Requirements
-• Amoria connekyt is not intended for users under 18 years old
-• We do not knowingly collect information from individuals under 18
-• Users must confirm they meet age requirements during registration
+Our approach to children's privacy goes beyond mere compliance with laws like COPPA (Children's Online Privacy Protection Act) or GDPR provisions for minors. We've built our systems, policies, and response procedures with the understanding that any failure to protect children represents a fundamental breach of trust—not just with potential minor users, but with our entire community of parents, families, and responsible adults who expect platforms to prioritize child safety.
 
-2. Parental Consent
-If we discover that a user is under 18:
-• The account will be immediately suspended
-• We will attempt to notify parents or guardians
-• All personal information will be deleted promptly
+1. Age Requirements - An Adults-Only Platform
+Amoria Connekyt is designed exclusively for users who are 18 years of age or older. This isn't an arbitrary restriction—it reflects the professional nature of our platform, the types of transactions and interactions that occur here, and the legal frameworks governing online services for minors. Our platform facilitates commercial transactions, professional service arrangements, and business communications that are appropriate only for adults who can legally enter into contracts and make informed decisions about their personal and financial information.
 
-3. COPPA Compliance
-We comply with the Children's Online Privacy Protection Act (COPPA) and similar international regulations protecting minors online.
+We do not knowingly collect, store, process, or use personal information from individuals under 18 years of age. This prohibition applies to all categories of personal data, including account registration information, profile details, communication content, transaction records, usage analytics, and any other information that could identify or relate to a minor. Our data collection systems are designed with the assumption that all users are adults, and we have no legitimate purpose for processing children's data.
 
-4. No Targeting of Minors
-• We do not market to children
-• Our services are designed for adult professionals and clients
-• Content is appropriate for business purposes only
+During registration, all users must affirmatively confirm that they meet our age requirements. This confirmation is not merely a checkbox acknowledgment—it's a representation that the user is legally an adult and eligible to use our services. Providing false age information during registration violates our Terms of Service and may result in immediate account termination. We implement this confirmation as a gate that must be passed before any account creation or data collection begins.
 
-5. Reporting Underage Users
-If you believe a user is under 18, please report this to:
-• Email: privacy@amoriaconnekyt.com
-• Subject line: "Underage User Report"
-• Include relevant account information
+We employ multiple layers of age verification and detection throughout the user journey. Initial registration requires explicit age confirmation before proceeding. Profile information is monitored for indicators that might suggest underage users. Behavioral patterns that seem inconsistent with adult professional use may trigger review. Reports from community members about suspected underage users are investigated promptly. And we continuously evaluate and improve our age verification methods as technology and best practices evolve.
 
-6. Educational Use
-For legitimate educational purposes (e.g., photography students over 18), parental consent may be required by educational institutions, though this is outside our direct control.
+While no age verification system is perfect—determined minors can sometimes circumvent restrictions—we're committed to making our verification as effective as possible while maintaining reasonable user experience for legitimate adult users. We regularly review industry developments in age verification technology and update our approaches accordingly.
 
-7. Data Deletion
-If found, data from underage users will be deleted immediately and permanently from all systems, including backups.`
+2. Parental Consent and Discovery Response - Swift Action When Needed
+Despite our preventive measures, we recognize that minors may occasionally create accounts using false information, borrowed credentials, or other methods to circumvent age restrictions. When we discover or reasonably suspect that a user is under 18 years of age, we take immediate and comprehensive action to protect the minor and comply with applicable children's privacy laws.
+
+Immediate account suspension occurs the moment we have reasonable grounds to believe a user is a minor. This suspension prevents further data collection, stops access to platform features, and halts any ongoing transactions or communications. We don't wait for conclusive proof before taking protective action—when child safety is at stake, we err on the side of caution.
+
+We make reasonable efforts to notify parents or guardians when we discover an underage user, particularly in cases where we can identify appropriate contacts. This notification serves multiple purposes: alerting parents to their child's online activity, providing information about what data was collected, explaining what steps we're taking to protect the child, and offering parents the opportunity to make decisions about any data that might need to be retained for legitimate purposes (such as evidence in investigations).
+
+Prompt data deletion is initiated for all personal information associated with the underage user's account. This deletion is comprehensive—we remove data from active databases, queue it for removal from backups as rotation cycles permit, and notify any third parties who may have received the minor's data that they should delete it as well. Our goal is to eliminate the minor's digital footprint from our systems as completely and quickly as technically possible.
+
+In cases where the minor's account was involved in any transactions, communications, or interactions that might require investigation (for child safety, fraud, or legal reasons), we may retain minimal necessary records in secure, access-restricted storage while investigations proceed. This retention is strictly limited to what's legally required or necessary for child protection purposes, and data is deleted as soon as retention is no longer justified.
+
+If we discover patterns suggesting systematic attempts by minors to access our platform—whether organized efforts, viral trends, or exploitation of specific vulnerabilities—we escalate our response to include enhanced verification measures, potential coordination with parents' groups or schools, and consultation with child safety experts.
+
+3. COPPA and International Compliance - Meeting Global Standards
+We comply with the Children's Online Privacy Protection Act (COPPA), the landmark U.S. federal law that protects children under 13 online, as well as similar international regulations protecting minors in jurisdictions worldwide. While our platform is designed for users 18 and older (exceeding COPPA's 13-year threshold), we maintain COPPA compliance as a foundational element of our children's privacy program.
+
+COPPA compliance means we do not knowingly collect personal information from children under 13 without verifiable parental consent—and since we don't offer services to children at all, we don't seek such consent. We don't market to children, design features to appeal specifically to minors, or create any content targeted at users under 18. Our privacy practices for any inadvertently collected children's data meet or exceed COPPA's requirements for notice, consent, access, and deletion.
+
+Beyond COPPA, we comply with international children's privacy frameworks including GDPR provisions for minors (which provide enhanced protections for children under 16 in the EU), the UK Age Appropriate Design Code (Children's Code), which establishes standards for online services likely to be accessed by children, Australia's Privacy Act provisions regarding children's personal information, Canada's PIPEDA and provincial privacy laws as they apply to minors, and Rwanda's Data Protection and Privacy Law provisions protecting vulnerable persons including children.
+
+These regulations share common principles: children deserve heightened privacy protections, parental involvement is essential for children's online activities, data minimization is especially important for minors, and services must be designed with children's best interests in mind. Even though we're an adults-only platform, we embrace these principles as guides for how we handle any inadvertent contact with minors.
+
+We maintain awareness of evolving children's privacy regulations worldwide and update our practices as new laws are enacted or existing laws are strengthened. Our legal and compliance teams monitor regulatory developments, and we participate in industry discussions about best practices for children's online safety.
+
+4. No Targeting of Minors - Platform Design Philosophy
+Our commitment to children's privacy extends beyond reactive measures to fundamental platform design decisions. Amoria Connekyt is architected, marketed, and operated as an adults-only professional platform, with no features, content, or communications designed to attract or appeal to minors.
+
+We do not market to children through any channel. Our advertising, social media presence, and promotional activities are directed exclusively at adult professionals and clients. We don't advertise on platforms or in contexts primarily frequented by minors, we don't use marketing techniques known to appeal to children (cartoon characters, gamification designed for young users, prizes or rewards targeting youth), and we don't partner with influencers or brands primarily associated with younger audiences.
+
+Our services are designed for adult professionals and their clients, reflecting the business nature of photography services, event planning, creative professional work, and the associated transactions. The features we build assume adult users making professional decisions—booking photography services for weddings, corporate events, or professional portfolios; managing business relationships; processing payments; and conducting professional communications. Nothing about our feature set is designed to engage or entertain children.
+
+Content on the platform is appropriate for business purposes only. We don't host games, entertainment content, or interactive features designed to appeal to minors. User-generated content is expected to be professional in nature, and our community guidelines prohibit content that might attract underage users or be inappropriate for professional contexts.
+
+Our user interface and experience design reflect adult professional expectations—clean, business-oriented design without elements specifically appealing to children like bright cartoon graphics, simplified language for young readers, or gamified elements common in youth-oriented platforms.
+
+If we ever introduce new features, marketing campaigns, or content strategies, our review process includes assessment of whether changes might inadvertently attract minors or require additional children's privacy safeguards.
+
+5. Reporting Underage Users - Community Partnership
+Protecting children requires partnership between platform operators and community members. Our users are often best positioned to identify potential underage users through interactions, profile content, or behavioral patterns that might not be visible to automated systems. We encourage and facilitate reporting of suspected underage users as an essential component of our children's safety program.
+
+If you believe a user may be under 18 years of age, please report this concern immediately. Reports can be submitted through multiple channels to ensure accessibility. Email reports should be sent to privacy@amoriaconnekyt.com with "Underage User Report" in the subject line. The in-platform reporting feature allows you to flag concerning profiles or users directly. Our support desk via the Help Center can receive reports along with questions about our process.
+
+When submitting a report, please include information that helps us investigate effectively: the username or profile URL of the suspected underage user, what led you to believe the user might be under 18 (profile content, communication content, behavior patterns, direct statements, etc.), any relevant screenshots or documentation (if available and appropriate to share), your contact information in case we need clarification, and any urgency factors that might require expedited review.
+
+All underage user reports are treated as high priority and reviewed by trained staff members—not just automated systems. We typically begin investigation within 24 hours of receiving a report, with expedited review for reports indicating immediate safety concerns. During investigation, we may temporarily restrict the reported account's access while we gather information.
+
+We take reporter privacy seriously. Your identity as a reporter is kept confidential and is not shared with the reported user. We don't retaliate against good-faith reporters, even if investigation determines the reported user is actually an adult. We'd rather receive reports that turn out to be unfounded than miss genuine cases of minors on the platform.
+
+After investigation, we inform reporters of the general outcome (account removed, account confirmed as adult user, investigation ongoing) without sharing details that might compromise the privacy of either party.
+
+6. Educational Use and Special Circumstances - Nuanced Approaches
+While Amoria Connekyt is an adults-only platform, we recognize that legitimate educational contexts may involve users near the age boundary or situations requiring nuanced consideration. We approach these circumstances thoughtfully while maintaining our commitment to children's privacy.
+
+Photography students aged 18 and older are welcome on our platform as adult users. Many university photography programs, professional training courses, and continuing education offerings include students who are legal adults but may be in educational settings. These users have the same rights and responsibilities as any adult user, and their educational context doesn't change our privacy practices.
+
+For educational institutions using Amoria Connekyt as part of curriculum or training, we recommend institutions verify that participating students meet our age requirements, institutional policies address appropriate platform use, and any required institutional consents or approvals are obtained. While these matters are outside our direct control—educational institutions are responsible for their own policies—we're happy to provide information about our platform to support institutional decision-making.
+
+Users aged 16-17 present a gray area in some jurisdictions where they may legally enter certain types of contracts or be considered capable of consent for some purposes. However, our policy is clear: Amoria Connekyt requires users to be 18 or older, regardless of local variations in age of majority or consent. This bright-line rule simplifies compliance, ensures consistent user experience, and provides maximum protection for minors.
+
+In rare circumstances where legal processes, investigations, or other extraordinary situations might involve minor's data (for example, if a minor was victimized through misuse of our platform), we cooperate with appropriate authorities while applying heightened protections to any children's information involved.
+
+7. Data Deletion - Complete and Permanent Removal
+When we identify that personal data belongs to or was collected from an underage user, we initiate comprehensive data deletion procedures designed to eliminate the minor's information from our systems as completely and permanently as possible.
+
+Immediate deletion from active systems removes the minor's data from production databases, making it inaccessible for any platform operations, analytics, or other processing. This deletion is not a soft delete or archival—it's removal of data from active systems.
+
+Third-party notification is sent to any service providers, partners, or integrations that may have received the minor's data, instructing them to delete associated information from their systems. We track these notifications and follow up to confirm deletion where possible.
+
+Backup purging occurs as backup rotation cycles complete. Because backups are created as complete snapshots and can't easily have individual records selectively removed without compromising backup integrity, minor's data may persist in backups until those backups naturally expire and are replaced. For most backup generations, this occurs within 30-90 days. We document when deletion was initiated and track backup expiration to ensure eventual complete removal.
+
+Audit trail retention is limited to the minimum information necessary to demonstrate compliance with children's privacy laws and our internal policies. This may include records that an account was identified as belonging to a minor and deleted, timestamps of relevant actions, and general categories of data that were removed—but not the actual personal information itself.
+
+In cases involving legal holds, ongoing investigations, or situations where retention is legally required (such as cooperation with law enforcement investigating crimes against children), we may retain minimal necessary data in highly secured, access-restricted storage. This retention is strictly limited, carefully documented, and terminated as soon as legal requirements permit.
+
+Our Commitment to Children's Safety:
+Children's privacy isn't an afterthought or a compliance checkbox at Amoria Connekyt—it's a fundamental commitment that shapes how we design, operate, and govern our platform. We recognize that protecting children requires constant vigilance, continuous improvement, and partnership with parents, regulators, and our community. While we're confident in our current safeguards, we're never complacent—we continuously evaluate new risks, emerging best practices, and technological developments that might strengthen our protections. Every child deserves a safe online environment, and we're committed to doing our part to create that safety, even on a platform not intended for children.`
     },
     {
       id: 'international-transfers',
       title: 'International Data Transfers',
-      content: `Amoria connekyt operates globally and may transfer data across international borders.
+      content: `In today's interconnected digital economy, providing a seamless global service often requires moving data across international borders. Amoria Connekyt operates as a global platform connecting creative professionals and clients across multiple countries and continents, which means your personal information may be transferred to, stored in, and processed in countries other than the one where you reside. We understand that international data transfers raise legitimate privacy concerns—different countries have different privacy laws, and data moving across borders may be subject to varying levels of legal protection.
 
-1. Data Transfer Locations
-Your information may be transferred to and processed in:
-• United States (primary data center location)
-• European Union (for EU users)
-• Other countries where our service providers operate
+We take these concerns seriously and have implemented comprehensive safeguards to ensure your data receives consistent, high-quality protection regardless of where it's processed. Our approach combines legal mechanisms recognized by major privacy regulators, robust technical security measures, careful vetting of international partners, and transparency about where and why your data travels. This section explains the reality of international data transfers in our operations and the protections we've put in place.
 
-2. Legal Safeguards
-We ensure international transfers comply with:
-• Standard Contractual Clauses (SCCs)
-• EU-US Data Privacy Framework
-• Adequacy decisions by data protection authorities
-• Other legally recognized transfer mechanisms
+1. Data Transfer Locations - Where Your Information May Travel
+Your information may be transferred to and processed in multiple jurisdictions depending on various factors including where you're located, what services you're using, which service providers are involved, and operational requirements at any given time. Understanding these potential destinations helps you make informed decisions about using our platform.
 
-3. EU User Rights
-For users in the European Economic Area:
-• Your data is protected under GDPR
-• We maintain EU representative contact information
-• You have additional rights under European law
+Rwanda serves as our primary operational headquarters and a key data processing location. As a Rwandan company, significant portions of our data processing occur within Rwanda under the governance of Rwanda's Data Protection and Privacy Law No. 058/2021. User data for African operations, local payment processing, customer support for regional users, and core business operations are primarily handled in Rwanda.
 
-4. Cross-Border Processing
-Data may be processed across borders for:
-• Payment processing
-• Cloud storage and backup
-• Customer support services
-• Analytics and platform improvement
+The United States hosts critical infrastructure for our global operations. Many of the world's leading cloud service providers, payment processors, and technology platforms are headquartered in the US, making it a common destination for data transfers. Our US-based processing may include cloud infrastructure and hosting services provided by major platforms like Amazon Web Services, Google Cloud, or Microsoft Azure. Payment processing through US-headquartered providers like Stripe or PayPal. Analytics and performance monitoring tools. Content delivery networks that speed up platform performance globally. And customer support systems that serve users across time zones.
 
-5. Security During Transfer
-• All data transfers use encrypted connections
-• We vet all international service providers
-• Regular compliance audits are conducted
+The European Union maintains some of the world's strongest data protection standards under GDPR, and we maintain EU-based processing capabilities to serve European users effectively. Data from EU users may be processed within EU member states to comply with GDPR localization preferences, using EU-based cloud regions and service providers where available. We maintain EU representative contact information as required by GDPR for non-EU companies processing EU residents' data.
 
-6. Your Consent
-By using Amoria connekyt, you consent to international data transfers as described in this policy.`
+Other countries where our service providers operate may also process your data. The global nature of technology services means data may flow through various jurisdictions including the United Kingdom (post-Brexit, with its own data protection framework similar to GDPR), Canada (with PIPEDA providing privacy protections), Singapore and other Asian technology hubs hosting regional infrastructure, and various countries where specialized service providers or support teams are located.
+
+We maintain current records of which service providers process data in which jurisdictions and can provide this information upon request. The specific countries involved may change over time as we add, remove, or change service providers, but we always ensure appropriate safeguards are in place before transferring data to any new jurisdiction.
+
+2. Legal Safeguards - Protecting Your Data Across Borders
+International data transfers don't happen without legal frameworks ensuring your information remains protected. We rely on multiple legally recognized mechanisms to legitimize cross-border transfers and maintain consistent protection standards regardless of where data is processed.
+
+Standard Contractual Clauses (SCCs) are pre-approved contract terms adopted by the European Commission and recognized by other regulators as providing adequate data protection guarantees. When we transfer data to countries without "adequacy" decisions (official recognition that a country's privacy laws meet EU standards), we use SCCs to contractually bind recipients to protect data according to EU-equivalent standards. These clauses impose obligations on data importers including protecting data with appropriate security measures, limiting use to specified purposes, notifying us of government access requests, allowing audits of their data protection practices, and deleting or returning data when the relationship ends. We've implemented the latest 2021 SCCs that address modern data processing scenarios and regularly review our SCC implementations to ensure continued compliance.
+
+The EU-US Data Privacy Framework (and its predecessor mechanisms) provides a structured approach for transatlantic data transfers. US companies that certify under this framework commit to privacy principles enforceable by US regulatory authorities. When transferring data to US service providers, we prioritize those participating in recognized transfer frameworks. For providers not participating in such frameworks, we implement SCCs and additional safeguards.
+
+Adequacy decisions by data protection authorities recognize certain countries as providing data protection "essentially equivalent" to EU standards, allowing free data flow without additional safeguards. Countries with adequacy decisions include Canada (for commercial organizations under PIPEDA), Japan, South Korea, the United Kingdom, Switzerland, Israel, New Zealand, and others. When we transfer data to countries with adequacy decisions, the transfer is legally straightforward, though we still implement strong contractual and technical protections.
+
+Binding Corporate Rules (BCRs) may be relevant for some of our larger service providers who have obtained approval for company-wide data protection policies that govern international transfers within their corporate groups. BCRs provide another legally recognized mechanism for ensuring consistent protection across borders.
+
+Additional safeguards beyond these primary mechanisms may include data localization where we keep certain data within specific regions when required by law or user preference, encryption ensuring data is protected during transfer and at rest in destination countries, access controls limiting who can access transferred data to only those with legitimate need, pseudonymization and anonymization reducing the identifiability of transferred data where possible, and transfer impact assessments evaluating the legal environment in destination countries and implementing additional protections where needed.
+
+3. EU User Rights - Enhanced Protections Under GDPR
+For users located in the European Economic Area (EEA), the United Kingdom, or Switzerland, your data receives the full protection of GDPR and equivalent frameworks, including specific rights related to international transfers.
+
+Your data is protected under GDPR regardless of where it's processed. GDPR's extraterritorial reach means that EU data protection principles follow your data across borders. Service providers processing EU residents' data must comply with GDPR requirements even if they're located outside the EU. This "data follows the person" approach ensures consistent protection.
+
+We maintain EU representative contact information as required by GDPR Article 27. Non-EU companies that process EU residents' data must designate a representative within the EU to serve as a contact point for data subjects and supervisory authorities. Our EU representative can be reached for questions about data protection, to exercise your rights, or to raise concerns about our data practices.
+
+You have additional rights under European law specifically related to international transfers. You can request information about international transfers, including which countries your data has been transferred to, what safeguards are in place, and how to obtain copies of relevant safeguard documents (like SCCs). You can object to specific transfers if you have legitimate grounds. You can lodge complaints with your local data protection authority if you believe transfers aren't adequately protected. And you can seek judicial remedies if you believe your rights have been violated.
+
+We respond to EU data subject requests within GDPR's required timeframes (generally 30 days) and provide the detailed information about international transfers that GDPR requires.
+
+4. Cross-Border Processing - Why Data Travels
+Understanding why data crosses borders helps contextualize the necessity of international transfers. We don't transfer data internationally without operational justification—every cross-border flow serves specific purposes that benefit you or are necessary for platform operations.
+
+Payment processing often requires international transfers because payment networks are inherently global. When you make or receive payments on Amoria Connekyt, transaction data may flow through payment processors headquartered in various countries. Card network authorizations may route through international processing centers. Currency conversion and international payment settlement involve cross-border data flows. Fraud detection systems may analyze patterns across global transaction data. And compliance with payment card industry (PCI) standards may require processing in certified facilities located in various jurisdictions.
+
+Cloud storage and backup leverages the global infrastructure of major cloud providers to ensure reliability, performance, and disaster recovery. Your data may be stored in multiple geographic regions to provide fast access regardless of your location, redundancy protecting against regional outages or disasters, compliance with data localization requirements where applicable, and optimal performance through content delivery networks.
+
+Customer support services may involve international teams to provide coverage across time zones and language capabilities. When you contact support, your inquiry may be handled by team members in various locations depending on availability, language requirements, and expertise needed. We ensure all support personnel, regardless of location, are trained in data protection and bound by confidentiality obligations.
+
+Analytics and platform improvement aggregate data from users worldwide to understand platform performance, identify issues, and improve features. Analytics processing may occur in jurisdictions where our analytics providers are headquartered. However, analytics data is typically aggregated and anonymized, minimizing privacy implications of these transfers.
+
+Security and fraud prevention systems analyze patterns across our global user base to detect and prevent abuse. This may involve transferring data to security service providers in various jurisdictions who maintain threat intelligence and fraud detection capabilities.
+
+5. Security During Transfer - Technical Protections
+Legal safeguards are complemented by robust technical measures that protect your data as it moves across borders. We don't rely solely on legal frameworks—we implement security measures that provide practical protection regardless of which jurisdiction data passes through.
+
+All data transfers use encrypted connections. Data in transit between your device and our servers, between our servers and service providers, and between different service provider systems is encrypted using industry-standard protocols like TLS 1.2 or higher. Encryption ensures that even if data is intercepted during transfer, it cannot be read by unauthorized parties.
+
+Data at rest in destination systems is also encrypted. Beyond protecting data in transit, we ensure that data stored in cloud infrastructure, databases, and backup systems is encrypted at rest. This protection means that even physical access to storage hardware wouldn't reveal readable data without encryption keys.
+
+We vet all international service providers before engaging them for services that involve personal data. Our vendor assessment process evaluates security certifications and compliance (SOC 2, ISO 27001, etc.), data protection policies and practices, technical security measures and infrastructure, incident response capabilities, legal jurisdiction and government access risks, and contractual willingness to accept appropriate data protection obligations.
+
+Regular compliance audits verify that our international data protection measures remain effective. We conduct periodic assessments of our own practices as well as our service providers, reviewing compliance with contractual obligations, verifying security measures remain current, identifying and addressing any gaps or risks, and updating safeguards as threats and best practices evolve.
+
+Access controls limit who can access your data regardless of where it's stored. Role-based access ensures only authorized personnel can access personal data, with access limited to what's necessary for their specific job functions. We maintain logs of data access for audit purposes.
+
+6. Your Consent and Choices - Understanding Your Options
+By using Amoria Connekyt, you acknowledge that international data transfers are necessary for us to provide our services and consent to such transfers as described in this policy. However, this consent is informed consent—we want you to understand what you're agreeing to and what options you have.
+
+Your consent is based on transparency. We've explained where your data may travel, why transfers occur, what legal safeguards protect transferred data, what technical measures secure data in transit and at rest, and what rights you have regarding international transfers. This information enables you to make an informed decision about using our platform.
+
+You have options to limit international transfers in some cases. If you're concerned about specific destinations, contact us to discuss whether alternatives are available. For some services, we may be able to accommodate data localization preferences, though this may limit functionality or incur additional costs. EU users can specifically request information about EU-based processing options.
+
+You can withdraw consent by closing your account, though this means discontinuing use of our services. Account closure triggers our data deletion procedures, including deletion from international systems (subject to legal retention requirements discussed elsewhere in this policy).
+
+If you have concerns about specific transfers, we're happy to discuss them. Contact our privacy team at privacy@amoriaglobal.com with questions about international transfers, requests for information about specific destination countries or service providers, concerns about legal protections in particular jurisdictions, or requests for copies of relevant safeguard documents.
+
+Our Commitment to Global Data Protection:
+Operating a global platform means navigating a complex landscape of international data flows, varying legal requirements, and evolving privacy standards. We're committed to getting this right—not just meeting minimum legal requirements, but implementing comprehensive protections that give you genuine confidence in how your data is handled across borders. We continuously monitor developments in international data transfer law, update our safeguards as requirements change, and maintain transparency about where and why your data travels. The global nature of our platform enables us to connect creative professionals and clients across the world, and we're determined to deliver that value while respecting your privacy regardless of which borders your data crosses.`
     },
     {
       id: 'rwanda-privacy',
       title: 'Rwanda Data Protection and Privacy Rights',
       content: (
         <div>
-          Rwanda's Data Protection and Privacy Law No. 058/2021 of 13/10/2021 provides individuals (data subjects) with rights concerning how their personal data is collected, processed, and used. Amoria connekyt respects and complies with this law to ensure that your personal information is protected, processed fairly, and used only for legitimate purposes.
+          As a Rwandan company, Amoria Connekyt operates under the jurisdiction of Rwanda's Data Protection and Privacy Law No. 058/2021 of 13/10/2021—one of Africa's most comprehensive data protection frameworks. This landmark legislation establishes robust rights for individuals (data subjects) concerning how their personal data is collected, processed, stored, and used by organizations operating in Rwanda. We don't view compliance with this law as merely a legal obligation; we see it as an expression of our commitment to respecting the privacy and dignity of every person who entrusts us with their personal information.
           <br /><br />
-          <strong>1. Right to Be Informed</strong><br />
-          You have the right to be informed about how and why Amoria connekyt collects and uses your personal data. This includes knowing the purpose, legal basis, data retention period, and your rights regarding such data.
+          Rwanda's data protection framework reflects the country's broader commitment to becoming a leading digital economy in Africa while ensuring that technological advancement doesn't come at the expense of individual privacy rights. The law aligns with international best practices, including principles found in the European Union's GDPR, while addressing the specific context and needs of Rwanda's digital ecosystem. For users in Rwanda and those whose data is processed under Rwandan jurisdiction, this section details your comprehensive rights and how Amoria Connekyt fulfills its obligations under this important legislation.
           <br /><br />
-          <strong>2. Right of Access</strong><br />
-          You may request access to the personal data we hold about you, including how it has been processed and for what purpose.
+          <strong>1. Right to Be Informed - Transparency as Foundation</strong><br />
+          You have the fundamental right to be informed about how and why Amoria Connekyt collects and uses your personal data before and during our processing activities. This right to transparency is the foundation upon which all other data protection rights rest—you cannot make informed decisions about your data if you don't understand what's happening with it.
           <br /><br />
-          <strong>3. Right to Rectification</strong><br />
-          You have the right to request correction of any inaccurate or incomplete personal data we hold about you.
+          Your right to be informed includes knowing the specific purposes for which your data is collected and processed, whether for account management, service delivery, payment processing, marketing, analytics, or other purposes. You're entitled to understand the legal basis justifying our processing—whether we're relying on your consent, contractual necessity, legal obligations, or legitimate business interests. You should know the categories of personal data we collect about you, from basic contact information to more sensitive data like financial details or identity documents.
           <br /><br />
-          <strong>4. Right to Erasure ("Right to Be Forgotten")</strong><br />
-          You can request the deletion of your personal data when:
+          We must inform you about data retention periods—how long we keep different types of information and why. You have the right to know about any third parties with whom we share your data, whether service providers, business partners, or regulatory authorities. If we transfer your data outside Rwanda, you're entitled to know the destination countries and the safeguards protecting your information abroad. And crucially, you must be informed about your rights under Rwandan law and how to exercise them.
+          <br /><br />
+          We fulfill this obligation through this comprehensive privacy policy, through notices provided at the point of data collection, through our cookie consent mechanisms, and through direct communications when processing activities change. If you ever feel inadequately informed about our data practices, please contact us—transparency is a right we take seriously.
+          <br /><br />
+          <strong>2. Right of Access - Understanding What We Know</strong><br />
+          You have the right to request and receive confirmation of whether Amoria Connekyt processes your personal data, and if so, to access that data along with comprehensive information about how it's being used. This access right empowers you to understand exactly what information we hold about you and to verify that our processing is lawful and fair.
+          <br /><br />
+          When you exercise your access right, we provide a copy of your personal data in a commonly used electronic format. Beyond the raw data, we also provide contextual information including the purposes of our processing, the categories of data involved, the recipients or categories of recipients who have received your data, the retention period or criteria used to determine how long data is kept, information about your other rights (rectification, erasure, restriction, objection), your right to lodge complaints with the supervisory authority, the source of data if we didn't collect it directly from you, and information about any automated decision-making or profiling affecting you.
+          <br /><br />
+          Access requests are free of charge for reasonable requests. If requests are manifestly unfounded, excessive, or repetitive, we may charge a reasonable administrative fee or refuse to act—but we'll explain our reasoning and your options if this occurs. We respond to access requests within the timeframes required by Rwandan law, typically within 30 days, though complex requests may require extensions with notification to you.
+          <br /><br />
+          <strong>3. Right to Rectification - Ensuring Accuracy</strong><br />
+          You have the right to request correction of any inaccurate personal data we hold about you and to have incomplete data completed. Accurate data is essential for fair processing—decisions based on incorrect information can harm you, and maintaining data quality is both your right and our responsibility.
+          <br /><br />
+          Your rectification right covers several scenarios. Factually incorrect data should be corrected—if your name is misspelled, your address is outdated, or your professional credentials are wrong, you can request correction. Incomplete data can be supplemented—if relevant information is missing from your profile that would provide a more accurate picture, you can request completion. Outdated information that no longer reflects current reality can be updated to maintain accuracy over time.
+          <br /><br />
+          Many corrections can be made directly through your account settings without needing to submit a formal request. For data you cannot modify yourself, submit a rectification request to our privacy team with details of what's incorrect and what the accurate information should be, along with any supporting documentation if relevant.
+          <br /><br />
+          When we correct data that was previously shared with third parties, we notify those recipients of the correction so they can update their records—ensuring accuracy propagates throughout systems that hold your information.
+          <br /><br />
+          <strong>4. Right to Erasure ("Right to Be Forgotten") - Deletion When Appropriate</strong><br />
+          You have the right to request that Amoria Connekyt permanently delete your personal data in certain circumstances. This "right to be forgotten" recognizes that your relationship with us may end, that you may withdraw consent, or that continued retention may simply not be justified.
+          <br /><br />
+          You can request erasure when:
           <ul style={{ marginTop: '0.5rem', marginBottom: '0.5rem' }}>
-            <li>The data is no longer needed for its original purpose.</li>
-            <li>You withdraw your consent.</li>
-            <li>The data has been unlawfully processed.</li>
-            <li>Erasure is required to comply with Rwandan law.</li>
+            <li>The data is no longer needed for the purposes for which it was originally collected or processed—if you close your account and we have no ongoing need for your information, deletion is appropriate.</li>
+            <li>You withdraw consent that was the basis for processing—if we processed data based on your consent and you revoke that consent, the legal basis for continued processing disappears.</li>
+            <li>You successfully object to processing—if your objection is upheld, continued retention isn't justified.</li>
+            <li>The data has been unlawfully processed—if we processed data without proper legal basis, erasure remedies the violation.</li>
+            <li>Erasure is required to comply with Rwandan law—legal obligations may mandate deletion in specific circumstances.</li>
+            <li>The data was collected in relation to offering information society services to a child—special protections for children's data may require erasure.</li>
           </ul>
-          <strong>5. Right to Restrict Processing</strong><br />
-          You may request that we limit the processing of your personal data in certain cases, such as when the accuracy of the data is contested or when processing is unlawful.
+          However, the right to erasure isn't absolute. We may retain data despite your request when retention is necessary for exercising freedom of expression and information, complying with legal obligations under Rwandan law (such as tax records or anti-money laundering requirements), performing tasks in the public interest, establishing, exercising, or defending legal claims, or archiving in the public interest, scientific research, or statistical purposes where erasure would seriously impair the processing.
           <br /><br />
-          <strong>6. Right to Data Portability</strong><br />
-          You have the right to obtain your personal data in a structured, commonly used, and machine-readable format, and to transfer it to another controller where technically feasible.
+          When we delete your data, we implement comprehensive deletion from active systems, notify third parties who received your data to delete their copies, and queue removal from backups as rotation cycles permit. We'll confirm what has been deleted and explain any data that must be retained and why.
           <br /><br />
-          <strong>7. Right to Object</strong><br />
-          You may object to the processing of your personal data for marketing, profiling, or other legitimate interests pursued by Amoria connekyt.
+          <strong>5. Right to Restrict Processing - Pausing Without Deleting</strong><br />
+          You have the right to request that we limit or "freeze" our processing of your personal data in certain circumstances. Restriction is a middle ground between continued processing and full deletion—your data remains stored but is not actively used while issues are resolved.
           <br /><br />
-          <strong>8. Rights in Automated Decision-Making</strong><br />
-          You have the right not to be subject to decisions based solely on automated processing, including profiling, that significantly affects you.
+          You can request restriction when you contest the accuracy of your data—restriction applies while we verify accuracy, protecting you from decisions based on potentially incorrect information. Restriction is available when processing is unlawful but you prefer restriction over erasure—perhaps because you need the data for legal claims even though our processing was improper. You can request restriction when we no longer need the data but you require it for legal claims—keeping data available for your purposes even after our purposes end. And restriction applies when you've objected to processing and we're evaluating whether our legitimate grounds override your objection.
           <br /><br />
-          <strong>9. Data Protection and Security</strong><br />
-          Amoria connekyt implements strict technical and organizational measures to secure your data, including:
+          During restriction, your data remains securely stored but is excluded from active processing. We won't use it for analytics, include it in marketing, share it with third parties, or base decisions on it. The only processing permitted during restriction is storage itself, processing with your explicit consent, processing for legal claims, processing to protect others' rights, and processing for important public interest reasons.
+          <br /><br />
+          Before lifting any restriction, we'll inform you so you can take further action if needed. Restriction can be lifted when the triggering issue is resolved—disputed data verified, objection evaluated, or your explicit consent obtained.
+          <br /><br />
+          <strong>6. Right to Data Portability - Taking Your Data With You</strong><br />
+          You have the right to receive your personal data in a structured, commonly used, and machine-readable format, and to transmit that data to another controller without hindrance from Amoria Connekyt. This portability right recognizes that your data has value and that you shouldn't be locked into our platform simply because migrating your information elsewhere is too difficult.
+          <br /><br />
+          Portability applies to personal data you provided to us directly (account information, profile content, uploaded files, messages you wrote) and data generated through your use of our services (transaction history, booking records, interaction logs). It applies when processing is based on your consent or on contract performance and when processing is carried out by automated means.
+          <br /><br />
+          When you exercise portability, we provide your data in formats like JSON, CSV, or XML that can be read by other systems. Where technically feasible and where you request it, we can transmit data directly to another controller—though this depends on the receiving system's ability to accept such transfers.
+          <br /><br />
+          Portability empowers you to move your professional presence, booking history, and accumulated data to competing platforms if you choose. We support this right because we believe users should stay with us because of the value we provide, not because leaving is too difficult.
+          <br /><br />
+          <strong>7. Right to Object - Saying No to Specific Processing</strong><br />
+          You have the right to object to certain types of processing of your personal data, requiring us to stop unless we can demonstrate compelling legitimate grounds that override your interests. Objection is a powerful right that gives you control over uses of your data that you find objectionable.
+          <br /><br />
+          You can object to direct marketing at any time, unconditionally, and without needing to provide reasons. When you object to marketing, we stop using your data for promotional purposes immediately—no exceptions, no delays, no questions asked. This includes email marketing, targeted advertising, personalized promotions, and any other marketing activities.
+          <br /><br />
+          You can object to processing based on legitimate interests (ours or third parties') or processing for tasks in the public interest. When you object on these grounds, we must stop processing unless we demonstrate compelling legitimate grounds that override your interests, rights, and freedoms, or processing is necessary for legal claims. The burden is on us to justify continued processing, not on you to justify your objection.
+          <br /><br />
+          You can object to profiling to the extent it relates to direct marketing (absolute right) or where it produces legal or similarly significant effects (subject to exceptions for contract performance, legal authorization, or explicit consent).
+          <br /><br />
+          We inform you of your right to object at the point of first communication and in our privacy policy. When you object, we acknowledge receipt promptly and communicate our decision within timeframes required by law.
+          <br /><br />
+          <strong>8. Rights in Automated Decision-Making - Human Oversight of Algorithms</strong><br />
+          You have the right not to be subject to decisions based solely on automated processing, including profiling, that produce legal effects concerning you or similarly significantly affect you. This right ensures that consequential decisions about your life aren't made entirely by algorithms without human judgment and oversight.
+          <br /><br />
+          Automated decision-making covered by this right includes decisions that affect your legal rights or status, decisions with significant financial implications, decisions about access to services or opportunities, and profiling that places you in categories that affect how you're treated. Examples might include automated rejection of account applications, algorithmic determination of service pricing, automated fraud detection resulting in account restrictions, or profiling that affects what opportunities are shown to you.
+          <br /><br />
+          When automated decisions significantly affect you, you have the right to obtain human intervention—having a real person review the automated decision. You can express your point of view and provide additional information that the algorithm may not have considered. You can contest the decision if you believe it's wrong, and you're entitled to an explanation of the logic involved in the automated processing.
+          <br /><br />
+          Exceptions exist where automated decision-making is necessary for contract performance (fraud detection enabling secure payments), authorized by Rwandan law with appropriate safeguards, or based on your explicit consent. Even in these cases, we implement safeguards including the ability to obtain human intervention, to express your view, and to contest decisions.
+          <br /><br />
+          <strong>9. Data Protection and Security - Our Technical and Organizational Safeguards</strong><br />
+          Rwandan law requires data controllers to implement appropriate technical and organizational measures to secure personal data. Amoria Connekyt takes this obligation seriously, implementing comprehensive security measures that protect your data throughout its lifecycle.
+          <br /><br />
+          Our technical security measures include:
           <ul style={{ marginTop: '0.5rem', marginBottom: '0.5rem' }}>
-            <li>Encryption and access control mechanisms.</li>
-            <li>Secure storage and transmission of personal data.</li>
-            <li>Regular audits and compliance checks.</li>
+            <li>Encryption protecting data in transit (TLS 1.2+) and at rest (AES-256), ensuring unauthorized parties cannot read your information even if they intercept or access it.</li>
+            <li>Access control mechanisms limiting data access to authorized personnel with legitimate need, enforced through role-based permissions, strong authentication, and the principle of least privilege.</li>
+            <li>Secure storage infrastructure using reputable cloud providers with certified security practices (SOC 2, ISO 27001) and geographic redundancy for disaster recovery.</li>
+            <li>Network security including firewalls, intrusion detection systems, and continuous monitoring for suspicious activities.</li>
+            <li>Regular security testing including vulnerability assessments and penetration testing to identify and remediate weaknesses.</li>
           </ul>
-          <strong>10. Cross-Border Data Transfers</strong><br />
-          We transfer personal data outside Rwanda only when adequate protection measures are in place, and in compliance with the National Cyber Security Authority (NCSA) regulations.
+          Our organizational security measures include security awareness training for all personnel handling personal data, background checks for employees with access to sensitive information, incident response procedures for detecting, containing, and remediating security events, vendor management ensuring third-party service providers maintain adequate security, and regular audits verifying compliance with our security policies and legal requirements.
           <br /><br />
-          <strong>11. Data Retention</strong><br />
-          Personal data is retained only for as long as necessary to fulfill its intended purpose or comply with legal obligations.
+          We document our security measures and can demonstrate compliance to the supervisory authority upon request. When security incidents occur that may affect your data, we notify you and the authorities as required by Rwandan law.
           <br /><br />
-          <strong>12. How to Exercise Your Rights</strong><br />
-          To exercise any of these rights, please contact:<br />
+          <strong>10. Cross-Border Data Transfers - International Protection</strong><br />
+          Rwanda's Data Protection and Privacy Law regulates transfers of personal data outside Rwanda's borders, recognizing that data traveling internationally may be subject to different legal protections. As a platform serving users across Africa and beyond, Amoria Connekyt necessarily transfers some data internationally—and we ensure these transfers comply fully with Rwandan legal requirements.
+          <br /><br />
+          We transfer personal data outside Rwanda only when adequate protection measures are in place as recognized by the National Cyber Security Authority (NCSA). Adequate protection may be established through transfers to countries with data protection laws recognized as providing adequate protection, standard contractual clauses approved by relevant authorities binding recipients to protect data, binding corporate rules for transfers within corporate groups, explicit consent from you after being informed of potential risks, or necessity for contract performance, legal claims, or vital interests.
+          <br /><br />
+          Before transferring data internationally, we assess the destination country's legal environment, implement appropriate safeguards, and document our compliance rationale. We maintain records of international transfers that we can provide to regulators upon request.
+          <br /><br />
+          You have the right to know when your data is transferred outside Rwanda, to which countries, and what safeguards protect it. This information is available in our general privacy policy and can be provided in more detail upon specific request.
+          <br /><br />
+          <strong>11. Data Retention - Keeping Data Only as Long as Necessary</strong><br />
+          Under Rwandan law, personal data must not be kept longer than necessary for the purposes for which it was collected. We implement documented retention schedules ensuring data is deleted when no longer needed, rather than retained indefinitely out of convenience.
+          <br /><br />
+          Our retention periods are determined by the original purpose of collection—when purpose is fulfilled, retention justification ends. Legal obligations may require extended retention—tax laws require 7-year financial record retention, anti-money laundering laws require 5-year KYC document retention. Ongoing legal disputes or investigations may necessitate retaining relevant data until resolution. And legitimate business needs, when documented and specific, may justify limited extended retention.
+          <br /><br />
+          When retention periods expire, data is securely deleted from active systems, queued for removal from backups, and anonymized where aggregate information provides value without privacy risk. We conduct regular reviews to ensure data isn't retained beyond justified periods.
+          <br /><br />
+          You can request information about specific retention periods applicable to your data, and you can request early deletion subject to legal retention requirements we cannot waive.
+          <br /><br />
+          <strong>12. How to Exercise Your Rights - Practical Steps</strong><br />
+          We've designed accessible processes for exercising your rights under Rwandan data protection law. You don't need legal expertise or formal documentation—we respond to straightforward requests submitted through convenient channels.
+          <br /><br />
+          To exercise any of your rights, please contact:<br />
           Email: <a href="mailto:privacy@amoriaconnekyt.com" style={{ color: '#083A85', textDecoration: 'underline' }}>privacy@amoriaconnekyt.com</a><br />
-          Subject line: "Rwanda Data Privacy Request"<br />
-          Include your name, email, and specific request. We will respond within the timeframe required by Rwandan law.
+          Subject line: "Rwanda Data Privacy Request"<br /><br />
+          In your request, please include your full name and email address associated with your account, the specific right you're exercising (access, rectification, erasure, restriction, portability, objection, or automated decision-making), details about your request—what data, what correction, what objection grounds, etc., and any supporting documentation if relevant to your request.
           <br /><br />
-          <strong>13. Supervisory Authority</strong><br />
-          If you believe your data protection rights have been violated, you can file a complaint with:<br />
+          We acknowledge receipt of requests promptly, typically within 48 hours. We verify your identity to protect against unauthorized access to your data—this usually involves confirming your email address, but sensitive requests may require additional verification. We respond substantively within the timeframe required by Rwandan law, typically 30 days from verified request receipt. If requests are complex, we may extend by an additional period with notification to you explaining the delay.
+          <br /><br />
+          If we cannot fulfill your request (due to legal retention requirements, identity verification failure, or other valid reasons), we explain why, inform you of your options, and advise you of your right to complain to the supervisory authority.
+          <br /><br />
+          <strong>13. Supervisory Authority - Independent Oversight</strong><br />
+          Rwanda's data protection framework includes independent regulatory oversight through the National Cyber Security Authority (NCSA), which serves as the supervisory authority for data protection matters. The NCSA has powers to investigate complaints, conduct audits, issue guidance, and enforce compliance with data protection law.
+          <br /><br />
+          If you believe your data protection rights have been violated by Amoria Connekyt, you have the right to lodge a complaint with the NCSA. You don't need to exhaust internal remedies with us first—you can complain to the authority at any time, though we encourage you to contact us first as we may be able to resolve concerns more quickly.
+          <br /><br />
           National Cyber Security Authority (NCSA)<br />
           Data Protection Office – Kigali, Rwanda<br />
           Website: <a href="https://www.ncsa.gov.rw" target="_blank" rel="noopener noreferrer" style={{ color: '#083A85', textDecoration: 'underline' }}>www.ncsa.gov.rw</a>
+          <br /><br />
+          The NCSA can investigate your complaint, require us to provide information and access, order us to take specific actions to remedy violations, and impose penalties for non-compliance. We cooperate fully with NCSA investigations and respect their authority to enforce Rwandan data protection law.
+          <br /><br />
+          <strong>Our Commitment to Rwandan Data Protection Standards:</strong><br />
+          As a Rwandan company, we're proud to operate under one of Africa's most progressive data protection frameworks. We view Rwanda's Data Protection and Privacy Law not as a burden but as an expression of values we share—respect for individual dignity, transparency in how organizations operate, and accountability when things go wrong. We're committed to not just meeting but exceeding the law's requirements, to being a positive example of data protection in Rwanda's growing digital economy, and to continuously improving our practices as standards evolve. Your trust is the foundation of our business, and Rwandan data protection law gives us a framework for honoring that trust consistently and verifiably.
         </div>
       )
     },
     {
       id: 'policy-updates',
       title: 'Updates to This Policy',
-      content: `We may update this Privacy Policy from time to time to reflect changes in our practices or legal requirements.
+      content: `Privacy practices and the legal landscape governing them are not static—they evolve as technology advances, regulations change, business practices develop, and user expectations shift. Amoria Connekyt is committed to maintaining a Privacy Policy that accurately reflects our current practices, complies with applicable laws, and provides you with the information you need to make informed decisions about your data. This means we may update this Privacy Policy from time to time, and this section explains how we handle those updates, how we notify you, and what your options are when changes occur.
 
-1. Notification of Changes
-When we make significant changes:
-• We will update the "Effective Date" at the top
-• We will notify users via email
-• We will display a prominent notice on the platform
-• Major changes require 30 days notice before taking effect
+We approach policy updates with the same transparency and respect for users that guides all our privacy practices. We don't bury changes in fine print or hope users won't notice—we proactively communicate updates, explain what's changing and why, and give you meaningful opportunities to understand and respond to changes that affect your rights or our handling of your data.
 
-2. Minor Changes
-For minor or administrative changes:
-• We will update the policy with a new effective date
-• Continued use of the platform constitutes acceptance
-• Changes will be highlighted in the updated policy
+1. Notification of Changes - How We Communicate Updates
+When we make significant changes to this Privacy Policy, we employ multiple notification methods to ensure you're aware of updates that may affect your privacy rights or how we handle your personal information. We don't rely on a single notification channel because we know different users engage with our platform in different ways.
 
-3. Review Frequency
-We review this policy:
-• Annually as part of compliance audits
-• When launching new features
-• When legal requirements change
-• Following user feedback or privacy concerns
+We update the "Effective Date" prominently displayed at the top of this policy with every revision, whether major or minor. This date serves as your first indicator that something has changed—if the date is more recent than your last review, updates have occurred. We recommend noting the effective date when you review this policy so you can easily identify future changes.
 
-4. Version History
-Previous versions of this policy are available upon request for comparison and transparency purposes.
+For significant changes, we notify users via email sent to the address associated with your account. These email notifications summarize what's changing, explain why changes are being made (new features, legal requirements, improved practices), highlight any changes that particularly affect your rights or our data handling, and provide direct links to the updated policy for your review. We send these notifications to all active users, not just those who've opted into marketing communications—policy updates are service communications, not marketing.
 
-5. Your Responsibility
-We encourage you to:
-• Review this policy periodically
-• Check the effective date for updates
-• Contact us with questions about changes
-• Exercise your rights if you disagree with changes
+We display prominent notices on the platform itself when you log in or use our services after a significant update. These notices may appear as banners, pop-ups, or interstitial pages depending on the significance of changes. Platform notices ensure that even users who don't regularly check email are informed of important updates when they engage with our services.
 
-6. Continued Use
-Continued use of Amoria connekyt after policy updates indicates acceptance of the revised terms. If you do not agree, you should discontinue use and may request account deletion.
+Major changes require advance notice before taking effect—typically 30 days from notification to implementation. This advance notice period gives you time to review the changes, understand their implications, ask questions if anything is unclear, adjust your privacy settings if desired, exercise your rights (including account deletion) if you disagree with changes, and make informed decisions about continued use of our platform. During this advance notice period, the current policy remains in effect—changes don't apply until the stated effective date.
 
-7. Material Changes
-Material changes affecting your rights will require explicit consent or the opportunity to opt-out before taking effect.`
+2. Minor Changes - Administrative and Clarifying Updates
+Not every policy update is significant. Some changes are administrative, clarifying, or technical in nature—they don't substantively affect your rights or how we handle your data. For these minor changes, our notification approach is proportionally lighter while still maintaining transparency.
+
+Minor changes include corrections of typographical errors, grammar, or formatting issues that don't change meaning. Clarifications that explain existing practices more clearly without changing what we actually do. Updates to contact information, company names, or other administrative details. Reorganization of content for better readability without substantive changes. Updates to reflect changes in third-party service provider names or branding. And technical corrections that align policy language with actual, unchanged practices.
+
+For minor changes, we update the policy with a new effective date so you can identify that changes occurred. We may highlight changed sections within the policy document itself using revision marks or change summaries. Continued use of the platform after minor updates constitutes acceptance—we don't require explicit acknowledgment for non-substantive changes. We maintain change logs so you can review exactly what was modified if you're interested.
+
+The distinction between "significant" and "minor" changes involves judgment, and we err on the side of treating changes as significant when there's any doubt. If a change could reasonably affect your decisions about using our platform or sharing data with us, we treat it as significant and provide full notification.
+
+3. Review Frequency - When and Why We Update
+We don't update this policy arbitrarily or on a fixed schedule without reason. Updates are driven by genuine changes in our practices, legal requirements, or circumstances that warrant policy revision. However, we do conduct regular reviews to ensure our policy remains accurate and compliant.
+
+Annual compliance audits trigger policy review as part of our regular governance processes. Even if no changes are needed, we verify that our stated practices match our actual practices, that legal requirements haven't changed in ways requiring policy updates, that new features or services are adequately addressed, and that user feedback or questions haven't revealed areas needing clarification.
+
+Launching new features or services prompts policy review because new functionality may involve new data collection, new processing purposes, new third-party integrations, or other changes that should be reflected in our privacy disclosures. We review privacy implications during product development and update policies before or concurrent with feature launches.
+
+Legal and regulatory changes necessitate policy updates when new laws are enacted, existing laws are amended, regulatory guidance is issued, or court decisions affect data protection requirements. We monitor legal developments in Rwanda, the EU, the US, and other jurisdictions where we operate or have users, updating our policy to maintain compliance as requirements evolve.
+
+User feedback and privacy concerns may reveal areas where our policy is unclear, incomplete, or not aligned with user expectations. We take feedback seriously and update our policy when doing so would better serve users' understanding of our practices.
+
+Industry best practices evolve, and we periodically update our policy to reflect improved approaches to privacy disclosure, consent mechanisms, or data handling that emerge as standards across the technology industry.
+
+4. Version History - Transparency Through Archives
+Previous versions of this Privacy Policy are available upon request for comparison and transparency purposes. We maintain policy archives because transparency isn't just about the current policy—it's about understanding how our practices have evolved over time.
+
+Our version history allows you to compare current and previous versions to understand exactly what changed. You can review the policy that was in effect during specific periods if you have questions about practices that applied to your data at particular times. You can track the evolution of our privacy practices over the life of the platform. And regulators, auditors, or legal processes can access historical policies when relevant to investigations or compliance verification.
+
+To request previous policy versions, contact our privacy team at privacy@amoriaglobal.com specifying which version(s) you need—by date, version number, or approximate timeframe. We provide requested versions in a reasonable timeframe, typically within 14 days.
+
+We also maintain internal change logs documenting the rationale for each policy update, which sections were modified, and what drove the changes. While these detailed logs are primarily for internal governance, summaries may be shared upon request to help users understand the evolution of specific policy provisions.
+
+5. Your Responsibility - Staying Informed
+While we work hard to notify you of policy changes through multiple channels, maintaining awareness of our privacy practices is a shared responsibility. We encourage you to take an active role in staying informed about how your data is handled.
+
+Review this policy periodically, especially after receiving notification of updates. We recommend reviewing at least annually even if you haven't received change notifications, to refresh your understanding of our practices and ensure continued comfort with our data handling.
+
+Check the effective date for updates whenever you access this policy. If the date has changed since your last review, take time to understand what's new. We try to make changes easy to identify, but the effective date is your reliable indicator of updates.
+
+Contact us with questions about changes if anything is unclear. We're happy to explain what changed, why changes were made, and how updates affect you specifically. Our privacy team can be reached at privacy@amoriaglobal.com for questions about policy updates.
+
+Exercise your rights if you disagree with changes. If policy updates reflect practices you're not comfortable with, you have options: adjust your privacy settings, limit your use of certain features, exercise data deletion rights, or discontinue use entirely. We respect your right to make these choices, even when it means losing you as a user.
+
+Update your contact information to ensure you receive policy update notifications. If your email address changes, update it in your account settings so important communications reach you.
+
+6. Continued Use - What It Means for Acceptance
+Continued use of Amoria Connekyt after policy updates take effect indicates your acceptance of the revised terms. This is a standard approach across the technology industry, and it's important you understand what it means and doesn't mean.
+
+Continued use constitutes acceptance because ongoing engagement with our services necessarily involves data processing as described in our policy. When you log in, browse, book services, communicate with other users, or otherwise use the platform after an updated policy takes effect, you're engaging in activities governed by that updated policy.
+
+This doesn't mean you have no choice. Before updates take effect (during the advance notice period for significant changes), you can review changes and decide whether to continue using our services. If you disagree with upcoming changes, you can exercise your rights before the new policy applies—including downloading your data, deleting your account, or adjusting settings. You're never forced to accept changes you disagree with; the alternative is discontinuing use.
+
+If you do not agree with policy updates, you should discontinue use of our platform. We understand this may be a significant decision, especially if you've invested in building your presence on Amoria Connekyt. We don't take this lightly, which is why we provide advance notice for significant changes—giving you time to make thoughtful decisions rather than forcing immediate choices.
+
+Account deletion is available if you choose to leave. You can request complete deletion of your account and personal data (subject to legal retention requirements), export your data before leaving (exercising portability rights), and close your account through self-service or by contacting support. We process departure requests promptly and don't create artificial barriers to leaving.
+
+7. Material Changes - Special Handling for Significant Rights Impact
+Some policy changes are so significant that they warrant special handling beyond standard notification procedures. Material changes affecting your fundamental rights require explicit consent or meaningful opt-out opportunities before taking effect.
+
+Material changes include introducing entirely new categories of data collection not previously disclosed. Sharing data with new categories of third parties in ways that significantly expand disclosure. Changing the legal basis for processing in ways that affect your control over your data. Removing or significantly limiting privacy rights you previously enjoyed. Introducing new uses of sensitive personal information. Changes to international transfer practices that significantly affect data protection. And modifications to retention periods that significantly extend how long we keep your data.
+
+For material changes, we go beyond standard notification. We may require explicit consent through active acknowledgment (not just continued use) before changes apply to your data. We provide meaningful opt-out opportunities allowing you to reject specific changes while continuing to use the platform where feasible. We offer extended notice periods beyond the standard 30 days for particularly significant changes. We provide direct communication explaining the changes and your options, not just policy updates. And we ensure granular choices where possible—allowing you to accept some changes while rejecting others.
+
+Our goal with material changes is ensuring you have genuine informed consent, not just technical legal compliance. We want you to understand significant changes, have real choices about whether to accept them, and never feel that changes were imposed without your knowledge or meaningful opportunity to respond.
+
+Our Commitment to Transparent Policy Evolution:
+This Privacy Policy is a living document that evolves alongside our platform, the legal landscape, and privacy best practices. We're committed to evolving thoughtfully—making changes when genuinely needed while maintaining the stability users depend on. We're committed to communicating clearly—using plain language, multiple channels, and adequate notice so you're never surprised by changes. We're committed to respecting your choices—providing real options when changes occur, not just take-it-or-leave-it ultimatums where avoidable. And we're committed to maintaining trust—recognizing that how we handle policy updates reflects our broader values about transparency, respect, and user empowerment. The way we update this policy is itself a privacy practice, and we hold it to the same high standards as everything else we do with your data.`
     },
     {
       id: 'contact-us',
       title: 'Contact Us',
       content: (
         <div>
-          If you have any questions, concerns, or requests regarding this Privacy Policy or our data practices, please contact us.
+          Your ability to communicate with us about privacy matters is fundamental to the trust relationship we're building. Whether you have questions about how we handle your data, concerns about practices you've observed, requests to exercise your privacy rights, or feedback on how we can improve our privacy practices, we want to hear from you. We've established multiple contact channels to ensure you can reach the right team for your specific needs, and we're committed to responding promptly, thoroughly, and respectfully to every inquiry.
           <br /><br />
-          <strong>1. Privacy Office Contact</strong><br />
-          Amoria connekyt Privacy Office<br />
+          We believe that accessible communication is itself a privacy practice. If you can't easily reach us with questions or concerns, our commitments to transparency and user rights ring hollow. That's why we've invested in building responsive privacy and support teams, establishing clear escalation paths for complex issues, and maintaining multiple contact methods to accommodate different preferences and needs.
+          <br /><br />
+          <strong>1. Privacy Office Contact - Your Primary Privacy Resource</strong><br />
+          For all privacy-related questions, concerns, and requests, our Privacy Office serves as your primary point of contact. This dedicated team handles privacy inquiries with the specialized knowledge and attention these matters deserve.
+          <br /><br />
+          <strong>Amoria Connekyt Privacy Office</strong><br />
           Email: <a href="mailto:privacy@amoriaconnekyt.com" style={{ color: '#083A85', textDecoration: 'underline' }}>privacy@amoriaconnekyt.com</a><br />
           Phone: <a href="tel:+250788437347" style={{ color: '#083A85', textDecoration: 'underline' }}>+250 788 437 347</a><br />
           Website: <a href="https://www.amoriaconnekyt.com" target="_blank" rel="noopener noreferrer" style={{ color: '#083A85', textDecoration: 'underline' }}>www.amoriaconnekyt.com</a>
           <br /><br />
-          <strong>2. General Support</strong><br />
-          For general inquiries:<br />
+          The Privacy Office handles a wide range of inquiries including questions about this Privacy Policy or how specific provisions apply to your situation, requests to exercise your privacy rights (access, correction, deletion, portability, objection, restriction), concerns about how your data has been collected, used, or shared, questions about specific data processing activities or third-party integrations, reports of potential privacy violations or security incidents, inquiries about international data transfers and applicable safeguards, questions about children's privacy or age verification, and feedback on our privacy practices or suggestions for improvement.
+          <br /><br />
+          When contacting the Privacy Office, please include your name and email address associated with your Amoria Connekyt account (if applicable), a clear description of your question, concern, or request, any relevant details that help us understand and address your inquiry, and your preferred method of response if you have a preference.
+          <br /><br />
+          We acknowledge receipt of Privacy Office inquiries within 48 hours and provide substantive responses within the timeframes required by applicable law—typically 30 days for formal rights requests, though many inquiries are resolved more quickly. Complex requests may require additional time, and we'll communicate proactively if extensions are needed.
+          <br /><br />
+          <strong>2. General Support - Platform and Account Assistance</strong><br />
+          For general inquiries about using the Amoria Connekyt platform, account issues, technical problems, or questions not specifically related to privacy, our General Support team is available to help.
+          <br /><br />
           Email: <a href="mailto:support@amoriaconnekyt.com" style={{ color: '#083A85', textDecoration: 'underline' }}>support@amoriaconnekyt.com</a><br />
-          Response time: Within 24-48 hours
+          Response time: Within 24-48 hours for standard inquiries
           <br /><br />
-          <strong>3. Data Protection Officer</strong><br />
-          For specific privacy and data protection matters:<br />
-          Email: <a href="mailto:dpo@amoriaconnekyt.com" style={{ color: '#083A85', textDecoration: 'underline' }}>dpo@amoriaconnekyt.com</a><br />
-          Available for GDPR and CCPA related inquiries
+          General Support handles account access and authentication issues, platform functionality questions and technical troubleshooting, booking and transaction inquiries, general questions about our services and features, feedback on user experience and platform improvements, and issues with other users or content concerns (which may be escalated to Trust & Safety).
           <br /><br />
-          We take all privacy concerns seriously and will work diligently to address your issues.
+          If you contact General Support with a privacy-specific inquiry, our support team will route your message to the Privacy Office to ensure it receives appropriate specialized attention. You don't need to worry about contacting the "wrong" team—we'll make sure your inquiry reaches the right people.
+          <br /><br />
+          For urgent account security issues—such as suspected unauthorized access to your account, compromised credentials, or active security threats—please indicate "URGENT: Security Issue" in your subject line for expedited handling. We prioritize security-related support requests to minimize potential harm.
+          <br /><br />
+          <strong>3. Data Protection Officer - Specialized Privacy Oversight</strong><br />
+          For specific privacy and data protection matters requiring specialized expertise, particularly those involving regulatory compliance, complex legal questions, or formal complaints, our Data Protection Officer (DPO) provides independent oversight and guidance.
+          <br /><br />
+          Email: <a href="mailto:dpo@amoriaconnekyt.com" style={{ color: '#083A85', textDecoration: 'underline' }}>dpo@amoriaconnekyt.com</a>
+          <br /><br />
+          The DPO is available for GDPR-related inquiries from users in the European Economic Area, United Kingdom, or Switzerland, including questions about EU-specific rights, international data transfers, and adequacy safeguards. CCPA and state privacy law inquiries from California residents and users in other US states with comprehensive privacy laws. Formal privacy complaints when you believe your rights have been violated and initial responses haven't resolved your concerns. Complex cross-border privacy issues involving multiple jurisdictions or international data flows. Questions about our compliance with Rwanda's Data Protection and Privacy Law. Inquiries from regulatory authorities, including data protection supervisory authorities. And requests for information about our data protection impact assessments or privacy program governance.
+          <br /><br />
+          The DPO operates with independence within our organization, meaning they can provide objective assessments of our privacy practices without pressure to minimize concerns or avoid difficult conclusions. If you feel your privacy concerns haven't been adequately addressed through other channels, escalating to the DPO ensures independent review.
+          <br /><br />
+          <strong>4. Physical Address - Formal Correspondence</strong><br />
+          For formal written correspondence, legal notices, or situations where physical mail is preferred or required, you can reach us at our registered business address:
+          <br /><br />
+          Amoria Global Ltd<br />
+          Kigali, Rwanda<br />
+          <br />
+          Please note that physical mail takes longer to process than electronic communications. For time-sensitive matters, we recommend using email as your primary contact method and sending physical copies only when legally required or specifically preferred.
+          <br /><br />
+          <strong>5. Response Times and Escalation - What to Expect</strong><br />
+          We're committed to responding to privacy inquiries promptly and thoroughly. Here's what you can expect when you contact us:
+          <br /><br />
+          Initial acknowledgment within 48 hours confirms we've received your inquiry, provides a reference number for tracking, and indicates expected response timeframe based on the nature of your request.
+          <br /><br />
+          Standard response times vary by inquiry type. General privacy questions typically receive responses within 5-7 business days. Formal rights requests (access, deletion, etc.) are completed within 30 days as required by law. Complex requests requiring investigation may take longer, with proactive communication about extensions. Urgent security matters receive expedited handling, often within 24 hours.
+          <br /><br />
+          If you're not satisfied with our initial response, escalation paths are available. You can request supervisory review by asking for your matter to be escalated to a privacy team supervisor. You can contact the DPO directly for independent assessment if you believe your concerns weren't adequately addressed. You can lodge complaints with supervisory authorities—we'll provide relevant contact information upon request. And you can seek legal remedies if you believe your rights have been violated and other resolution attempts have failed.
+          <br /><br />
+          <strong>6. Language and Accessibility - Communicating Effectively</strong><br />
+          We want communication barriers to never prevent you from exercising your privacy rights or raising concerns. Our primary communication languages are English and French, reflecting Rwanda's linguistic environment and our international user base. If you need to communicate in another language, please let us know and we'll make reasonable efforts to accommodate your needs, potentially using translation services for important communications.
+          <br /><br />
+          If you have accessibility needs that affect how you communicate with us—such as requirements for large text, screen reader-compatible formats, or alternative communication methods—please inform us and we'll work to accommodate your needs.
+          <br /><br />
+          <strong>7. What Happens After You Contact Us - Our Process</strong><br />
+          When you reach out with a privacy inquiry, here's what happens on our end:
+          <br /><br />
+          Your inquiry is logged and assigned a tracking reference so you can follow up efficiently and we can maintain records of our communications. We verify your identity when necessary to protect against unauthorized access to personal information—this is especially important for rights requests that involve accessing or modifying your data. Your inquiry is routed to the appropriate team member based on the nature of your request, ensuring specialized handling for complex matters. We investigate and gather information needed to respond thoroughly, which may involve consulting internal records, technical teams, or legal resources. We prepare and send our response, aiming for clarity and completeness while avoiding unnecessary legal jargon. We follow up if needed to ensure your inquiry has been fully resolved and you're satisfied with our response.
+          <br /><br />
+          We maintain records of privacy inquiries and our responses as part of our accountability practices. These records help us identify patterns that might indicate systemic issues, demonstrate compliance with regulatory requirements, improve our privacy practices based on the questions and concerns users raise, and ensure consistent handling of similar inquiries.
+          <br /><br />
+          <strong>Our Commitment to Accessible Privacy Communication:</strong><br />
+          We take all privacy concerns seriously and will work diligently to address your issues. Your questions and concerns aren't inconveniences—they're opportunities for us to demonstrate our commitment to transparency and to improve how we serve our users. We'd rather hear about problems directly from you than have concerns go unaddressed. Whether your inquiry is a simple question or a complex complaint, we approach every communication with respect, attention, and genuine commitment to resolution. Don't hesitate to reach out—we're here to help.
         </div>
       )
     },
@@ -848,72 +1233,230 @@ Material changes affecting your rights will require explicit consent or the oppo
     {
       id: 'trust-safety-overview',
       title: 'Trust & Safety Overview',
-      content: `The Amoria Connekyt Trust & Safety Policy outlines how we create and maintain a secure, respectful, and transparent environment for all users — photographers, videographers, and clients across our platform.
+      content: `The Amoria Connekyt Trust & Safety Policy represents our comprehensive commitment to creating and maintaining a secure, respectful, and transparent environment for all users—photographers, videographers, creative professionals, and clients alike—across every aspect of our platform. This isn't merely a set of rules to be enforced; it's the foundation of the community we're building together, reflecting our belief that meaningful creative collaboration can only flourish when all participants feel safe, respected, and fairly treated.
 
-Our goal is to protect creativity, promote fairness, and ensure emotional and digital wellbeing for everyone who uses Amoria Connekyt.
+In the creative services industry, trust is everything. Clients entrust photographers with capturing their most precious moments—weddings, family milestones, professional achievements, and personal stories that cannot be recreated. Photographers entrust clients with valuing their artistic expertise, respecting their time and creative vision, and fulfilling payment commitments. Both parties share sensitive personal information, engage in financial transactions, and collaborate intimately on projects that matter deeply to everyone involved. This trust cannot exist without robust safety measures, clear expectations, transparent processes, and meaningful accountability when things go wrong.
 
-SCOPE:
-This Policy applies to:
-• All registered users, including Clients, Creators, and Organizers
-• All services, including bookings, messaging, file sharing, live sessions, and payments
-• All data and interactions taking place on or through the Amoria Connekyt platform, website, or mobile app
+Our Trust & Safety framework addresses the full spectrum of risks and challenges that arise in online creative service marketplaces. We protect against fraud and financial abuse through verified identities, secure payment systems, and proactive monitoring. We prevent harassment, discrimination, and inappropriate behavior through clear community standards and responsive enforcement. We safeguard intellectual property and creative content through robust rights management and dispute resolution. We ensure fair treatment and professional conduct through transparent policies and balanced conflict resolution. And we maintain digital security through comprehensive technical safeguards protecting user data and platform integrity.
 
-At Amoria Connekyt, we believe that trust is the foundation of every creative collaboration. Whether you are a client seeking to preserve your story or a photographer capturing it, we are committed to maintaining a safe, transparent, and respectful community.`
+Our goal is to protect creativity at its core—enabling photographers and clients to focus on the art of capturing and preserving meaningful moments without worrying about scams, disputes, safety threats, or unfair treatment. We promote fairness across all interactions, ensuring that both service providers and clients are treated with equal respect and have access to equitable processes when issues arise. We ensure emotional and digital wellbeing for everyone who uses Amoria Connekyt, recognizing that creative work is deeply personal and that platform experiences can significantly impact users' mental health, professional reputations, and financial security.
+
+SCOPE AND APPLICATION:
+This Trust & Safety Policy applies comprehensively to all aspects of the Amoria Connekyt ecosystem, ensuring consistent protection and standards across every user interaction.
+
+All registered users are covered by this policy, including Clients who book photography and creative services for personal, corporate, or special event needs, seeking professionals to capture and preserve their important moments. Creators encompassing photographers, videographers, and other creative professionals who offer their artistic services through our platform, building their businesses and serving clients. Organizers who coordinate events, manage group bookings, or facilitate creative projects involving multiple parties. And any other user types we may introduce as our platform evolves to serve the creative community.
+
+All services and features fall within this policy's scope, including Bookings and service arrangements from initial inquiry through project completion and final delivery. Messaging and communications between users, whether related to active bookings, inquiries, or general platform interaction. File sharing and content delivery for portfolios, project deliverables, contracts, and other materials exchanged between users. Live sessions including virtual consultations, remote photo direction, or real-time collaboration features. Payments and financial transactions covering deposits, milestone payments, final payments, refunds, and disputes. Reviews and ratings that help build reputation and inform future booking decisions. And any additional features we develop to enhance the creative service experience.
+
+All data and interactions taking place on or through the Amoria Connekyt platform are governed by this policy, whether accessed via our website, mobile applications, API integrations, or any other interface we provide. This includes actions taken directly on the platform as well as off-platform behavior that affects the Amoria Connekyt community or violates our standards.
+
+WHY TRUST & SAFETY MATTERS:
+At Amoria Connekyt, we believe that trust is the foundation of every creative collaboration. The relationship between a photographer and client is uniquely intimate—photographers are often present at the most significant moments of people's lives, granted access to private spaces and emotional experiences, and trusted to capture images that will be treasured for generations. This level of trust cannot be manufactured through marketing or mandated through contracts alone; it must be earned through consistent, reliable, and respectful behavior supported by platform systems that hold all parties accountable.
+
+Whether you are a client seeking to preserve your story—a wedding day, a family reunion, a professional milestone, or a personal creative project—or a photographer capturing it and building your creative business, we are committed to maintaining a safe, transparent, and respectful community. Safety means protection from fraud, harassment, and harm. Transparency means clear expectations, honest communication, and understandable processes. Respect means treating every user—regardless of their role, experience level, or transaction size—with dignity and fairness.
+
+Our Trust & Safety commitment extends beyond reactive enforcement of rules. We proactively design our platform to encourage positive behavior, make violations difficult, and resolve issues quickly when they occur. We invest in technology that detects problems before they escalate, support teams trained to handle sensitive situations with empathy and expertise, and processes that balance efficiency with fairness. We recognize that perfect safety is impossible, but we believe that continuous improvement, honest acknowledgment of challenges, and genuine commitment to user wellbeing can create a community where creativity thrives.
+
+GUIDING PRINCIPLES:
+Several core principles guide our Trust & Safety approach and inform every decision we make about policies, enforcement, and platform design.
+
+Prevention over reaction—we design systems that make harmful behavior difficult rather than simply punishing it after the fact. Verified identities, secure payments, and clear guidelines reduce opportunities for bad actors to cause harm.
+
+Proportional response—our enforcement actions match the severity of violations. Minor first-time issues receive education and warnings; serious or repeated violations result in stronger consequences up to permanent removal.
+
+Due process and fairness—users accused of violations have opportunities to respond before final decisions are made. We investigate thoroughly, consider context, and explain our reasoning.
+
+Transparency and clarity—our rules are published, explained, and consistently applied. Users know what's expected and what happens when expectations aren't met.
+
+Continuous improvement—we learn from every incident, regularly review our policies and processes, and evolve our approach as new challenges emerge and best practices develop.
+
+Human judgment supplementing technology—while we use automated systems to scale our safety efforts, human reviewers make final decisions on complex or consequential matters.
+
+Our Commitment to the Creative Community:
+This Trust & Safety Policy exists because we genuinely care about the people who use Amoria Connekyt. Photographers building their businesses and pursuing their artistic passions deserve a platform that protects their work, ensures fair payment, and connects them with respectful clients. Clients capturing life's precious moments deserve confidence that they're working with verified professionals who will deliver quality work and treat them fairly. Everyone deserves a digital environment free from harassment, fraud, and abuse. We take this responsibility seriously, and we invite every member of our community to help us build the safe, creative, and thriving platform we all want Amoria Connekyt to be.`
     },
     {
       id: 'commitment-safety',
       title: 'Our Commitment to Safety',
-      content: `Amoria Connekyt is committed to:
+      content: `Safety isn't a feature we've added to Amoria Connekyt—it's woven into the fabric of everything we do. From the moment we began building this platform, we understood that creative professionals and their clients need more than just a marketplace for services; they need an environment where they can focus on their craft and their important moments without worrying about fraud, harassment, unfair treatment, or security threats. Our commitment to safety reflects our belief that the best creative work happens when people feel protected, respected, and confident that the platform supporting their collaboration has their best interests at heart.
 
-• Providing a safe digital space for both creators and clients
-• Ensuring transparency in payments and fair treatment of all parties
-• Protecting users' personal data and creative content through encryption and privacy safeguards
-• Promoting mental health and emotional respect through positive communication
+This commitment manifests in every aspect of our platform: the technologies we deploy, the policies we enforce, the teams we train, the processes we design, and the culture we cultivate. We don't view safety as a cost center or compliance burden—we see it as a competitive advantage and moral imperative that distinguishes Amoria Connekyt as a platform where creativity can truly flourish.
 
-Amoria Connekyt is built on integrity, professionalism, and care. We actively monitor, verify, and protect the experience of every user on our platform through:
+CORE SAFETY COMMITMENTS:
 
-• Verified user and photographer onboarding with KYC processes
-• Secure payment and content delivery systems (Hold & Release model)
-• Active moderation and user support for conflict resolution
-• Strict data protection aligned with Rwanda's Data Protection and Privacy Law No. 058/2021
-• Compliance with AML/CTF regulations and international standards`
+1. Providing a Safe Digital Space for Both Creators and Clients
+Every user who joins Amoria Connekyt—whether a photographer building their business or a client planning their wedding—deserves protection from the risks that plague online platforms. We're committed to creating an environment where harmful behavior is difficult, detected quickly, and addressed decisively.
+
+For creators, this means protection from clients who might attempt to obtain services without proper payment, misuse delivered content, leave fraudulent negative reviews, or engage in harassment. Photographers invest significant time, creativity, and resources in their work; they deserve a platform that ensures fair compensation and professional treatment.
+
+For clients, this means protection from photographers who might misrepresent their capabilities, fail to deliver promised services, deliver substandard work, or behave unprofessionally during sensitive events. Clients often book photography for once-in-a-lifetime moments that cannot be recreated; they deserve confidence that they're working with verified, accountable professionals.
+
+For everyone, this means protection from scams, phishing attempts, identity theft, harassment, discrimination, and other harmful behaviors that can occur on online platforms. We implement technical safeguards, human moderation, and clear policies to minimize these risks and respond effectively when they occur.
+
+2. Ensuring Transparency in Payments and Fair Treatment of All Parties
+Financial transactions are often where trust breaks down on online platforms. Disputes over payment, delivery, and quality can poison what should be positive creative collaborations. We're committed to payment systems and processes that are transparent, fair, and protective of both parties' legitimate interests.
+
+Our Hold & Release payment model protects both sides of every transaction. Clients pay upfront, ensuring photographers know they'll be compensated for accepted work. Payments are held securely until deliverables are provided and accepted, ensuring clients receive what they paid for before funds are released. Clear milestones and release conditions prevent misunderstandings about when payments become due.
+
+Transparent pricing and fees mean no hidden charges or surprise deductions. Users know exactly what they'll pay or receive before committing to transactions. Platform fees are clearly disclosed, and the mathematics of every transaction are understandable and verifiable.
+
+Fair dispute resolution provides balanced processes when disagreements occur. We don't automatically favor clients over creators or vice versa—we investigate facts, consider evidence, apply consistent standards, and reach fair outcomes. Both parties have opportunities to present their perspectives before decisions are made.
+
+3. Protecting Users' Personal Data and Creative Content Through Encryption and Privacy Safeguards
+Personal information and creative work are valuable assets that deserve robust protection. We implement comprehensive technical and organizational measures to safeguard both.
+
+Data protection encompasses everything from the personal information you share during registration to the communications you exchange with other users. We encrypt data in transit and at rest, limit access to authorized personnel with legitimate need, implement strong authentication and access controls, and maintain security practices aligned with industry standards and regulatory requirements. Our privacy practices comply with Rwanda's Data Protection and Privacy Law No. 058/2021, GDPR, and other applicable frameworks.
+
+Creative content protection recognizes that photographers' images and clients' personal photographs represent significant value—artistic, commercial, and sentimental. We implement access controls ensuring only authorized parties can view and download content. We provide tools for watermarking and protecting preview images. We prohibit unauthorized redistribution and take action against intellectual property violations. And we maintain secure delivery systems that protect content during transfer.
+
+4. Promoting Mental Health and Emotional Respect Through Positive Communication
+Creative work is deeply personal, and the interactions surrounding it can significantly impact emotional wellbeing. We're committed to fostering a community culture that supports positive mental health and treats all participants with emotional respect.
+
+Professional communication standards require users to interact respectfully, constructively, and without harassment, discrimination, or intimidation. We prohibit hate speech, personal attacks, and behavior designed to demean or distress other users. Our community guidelines establish clear expectations for appropriate conduct.
+
+Support for difficult situations recognizes that creative projects—especially those involving significant life events—can be emotionally charged. Weddings, family gatherings, and personal milestones carry emotional weight, and disappointments or disputes in these contexts can be particularly distressing. Our support teams are trained to handle sensitive situations with empathy, patience, and understanding.
+
+Constructive feedback mechanisms encourage honest reviews and improvement-focused communication rather than destructive criticism or personal attacks. We want users to share genuine experiences while maintaining respect for everyone's dignity and professional reputation.
+
+HOW WE DELIVER ON THESE COMMITMENTS:
+
+Amoria Connekyt is built on integrity, professionalism, and care. These aren't just values we espouse—they're principles embedded in our operational practices. We actively monitor, verify, and protect the experience of every user on our platform through comprehensive systems and dedicated teams.
+
+Verified User and Photographer Onboarding with KYC Processes
+Trust begins with knowing who you're dealing with. Our Know Your Customer (KYC) verification processes ensure that users are who they claim to be, reducing opportunities for fraud, impersonation, and abuse.
+
+For photographers and creative professionals, verification includes identity document validation confirming legal identity, professional credential verification where applicable, portfolio review ensuring authentic representation of capabilities, contact information verification enabling reliable communication, and background screening for professionals working in sensitive contexts. Verified photographers display trust badges that help clients identify accountable professionals.
+
+For clients, verification includes identity confirmation preventing fake accounts, contact verification ensuring reachability for booking communications, and payment method validation enabling secure transactions.
+
+Our verification processes balance thoroughness with user experience—we want robust trust signals without creating unnecessary friction for legitimate users joining the platform.
+
+Secure Payment and Content Delivery Systems (Hold & Release Model)
+Our payment infrastructure is designed to protect both parties while facilitating smooth transactions.
+
+The Hold & Release model works as follows: clients submit payment when booking is confirmed, funds are held securely in escrow (not released to photographers immediately), photographers complete work and deliver through our platform, clients review deliverables and confirm satisfaction, and upon confirmation (or after reasonable review period), funds are released to photographers. This model protects clients from paying for undelivered work while ensuring photographers are compensated for completed projects.
+
+Secure payment processing uses PCI-compliant payment providers, encrypted transaction data, fraud detection systems, and multiple payment method support accommodating user preferences across regions.
+
+Content delivery systems ensure that creative work is transferred securely, with access controls preventing unauthorized viewing, download tracking maintaining accountability, and delivery confirmation documenting successful transfer.
+
+Active Moderation and User Support for Conflict Resolution
+Technology alone cannot ensure safety—human judgment is essential for complex situations. We maintain dedicated teams for moderation, support, and dispute resolution.
+
+Content moderation reviews reported content and communications for policy violations. We use a combination of automated detection for obvious violations and human review for nuanced situations. Moderators are trained to apply policies consistently while considering context.
+
+User support provides assistance with platform usage, answers questions, addresses concerns, and escalates issues requiring specialized attention. Support is available through multiple channels with response time targets ensuring timely assistance.
+
+Conflict resolution handles disputes between users—disagreements over service quality, payment, delivery, reviews, or other matters. Our dispute resolution process gathers information from all parties, investigates facts objectively, applies consistent standards, and reaches fair outcomes. We aim to resolve disputes efficiently while ensuring thoroughness.
+
+Strict Data Protection Aligned with Rwanda's Data Protection and Privacy Law No. 058/2021
+Legal compliance is the floor, not the ceiling, of our data protection commitment. We comply fully with Rwanda's comprehensive data protection framework while implementing additional safeguards that exceed minimum requirements.
+
+Our data protection program includes documented policies and procedures governing data handling, designated personnel responsible for privacy compliance, regular training ensuring all team members understand their obligations, technical measures implementing privacy by design principles, incident response procedures for potential data breaches, and regular audits verifying compliance and identifying improvement opportunities.
+
+We also comply with international standards including GDPR for European users, providing consistent high-quality data protection regardless of user location.
+
+Compliance with AML/CTF Regulations and International Standards
+As a platform facilitating financial transactions, we take seriously our obligations to prevent money laundering, terrorist financing, and other financial crimes. Our compliance program aligns with Rwanda's Law No. 69/2018 on Prevention and Punishment of Money Laundering and Terrorist Financing.
+
+AML/CTF measures include customer due diligence verifying user identities, transaction monitoring detecting suspicious patterns, reporting obligations to relevant authorities when required, record-keeping maintaining required documentation, and ongoing training ensuring staff understand compliance requirements.
+
+These measures protect not only regulatory compliance but also platform integrity—financial crime prevention helps ensure that Amoria Connekyt remains a legitimate marketplace serving genuine creative professionals and clients.
+
+Our Commitment in Action:
+Safety commitments are meaningful only when they translate into real-world protection. We measure our success not by the policies we've written but by the experiences of our users. We track safety metrics, investigate every serious incident, learn from failures, and continuously improve our systems and processes. When we fall short—and we recognize that no platform achieves perfect safety—we acknowledge problems honestly, take responsibility, and work to prevent recurrence. Our commitment to safety is ongoing, evolving, and central to everything Amoria Connekyt aspires to be.`
     },
     {
       id: 'verification-authenticity',
       title: 'User Responsibilities',
-      content: `Every user of Amoria Connekyt must:
+      content: `A safe, trustworthy, and thriving creative community requires active participation from every member. While Amoria Connekyt provides the infrastructure, policies, and support systems that enable trust, the daily reality of our platform is shaped by the choices and behaviors of our users. Every photographer who delivers excellent work on time, every client who communicates clearly and pays fairly, every user who treats others with respect—these individual actions collectively create the community we all want to be part of.
 
-1. Registration and Information
-• Provide accurate information during registration and bookings
-• Maintain up-to-date contact and profile information
-• Complete identity verification (KYC) when required
-• Keep account credentials secure and confidential
+User responsibilities aren't arbitrary rules imposed from above; they're the shared commitments that make Amoria Connekyt work for everyone. When users fulfill these responsibilities, photographers can build sustainable businesses, clients can capture their important moments with confidence, and the platform can continue investing in features and protections that benefit the entire community. When users neglect these responsibilities, trust erodes, disputes increase, and the collaborative spirit that makes creative work meaningful suffers.
 
-2. Professional Communication
-• Communicate respectfully and avoid harassment, discrimination, or hate speech
-• Treat all users with dignity and professionalism
-• Respond promptly to messages and requests
-• Maintain positive and constructive interactions
+This section outlines what we expect from every user of Amoria Connekyt. These aren't suggestions or aspirational guidelines—they're requirements for participation in our community. Users who consistently meet these standards help build something valuable; users who violate them risk losing access to the platform and the opportunities it provides.
 
-3. Service Delivery and Integrity
-• Deliver or receive services with integrity and professionalism
-• Honor commitments and agreed terms
-• Complete projects according to specifications
-• Act in good faith during all transactions
+1. Registration and Information - The Foundation of Trust
+Accurate information is the bedrock of trust on any platform. When users provide false, misleading, or incomplete information, they undermine the verification systems that protect everyone and create risks that ripple throughout the community.
 
-4. Platform Compliance
-• Refrain from sharing personal payment details or attempting to bypass the platform
-• Use Amoria Connekyt's payment system for all transactions
-• Follow platform guidelines and community standards
-• Respect intellectual property and privacy laws
+Provide accurate information during registration and bookings. This means using your real legal name (or legitimate business name), providing genuine contact information, accurately representing your location, and truthfully describing your services, experience, and capabilities. For photographers, this includes honest portfolio representation—showing work you actually created, not images from other photographers or stock sources. For clients, this includes accurate event details, realistic expectations, and truthful descriptions of project requirements.
 
-5. Content Standards
-• Upload only original content or properly licensed materials
-• Respect copyright and creative ownership
-• Do not share inappropriate, illegal, or harmful content
-• Report violations through proper channels
+Misrepresentation isn't just a policy violation—it's a form of fraud that harms other users. A photographer who exaggerates their experience may secure bookings they can't fulfill properly. A client who misrepresents project scope may receive quotes that don't reflect actual requirements. These misrepresentations waste time, create disappointments, and damage trust that's difficult to rebuild.
 
-Violations of these standards may lead to suspension or permanent removal from the platform.`
+Maintain up-to-date contact and profile information throughout your time on the platform. If your phone number changes, update it. If you relocate, reflect that in your profile. If your service offerings evolve, keep your listings current. Outdated information creates friction—missed communications, booking confusion, and frustrated users who can't reach you when they need to.
+
+Complete identity verification (KYC) when required promptly and honestly. Verification protects you as much as it protects others. Verified users are more trustworthy in the eyes of potential clients or service providers, have access to features unavailable to unverified accounts, and benefit from the accountability systems that require knowing who participants are. Attempting to circumvent verification or providing fraudulent documents is grounds for immediate permanent removal from the platform.
+
+Keep account credentials secure and confidential. Your account is your responsibility. Use strong, unique passwords. Enable two-factor authentication when available. Never share your login credentials with others—not friends, not family, not anyone claiming to be from Amoria Connekyt support. If you suspect your account has been compromised, contact us immediately. You are responsible for actions taken through your account, so protecting access protects you.
+
+2. Professional Communication - Respect in Every Interaction
+How users communicate with each other defines the character of our community. Professional, respectful communication creates an environment where creativity flourishes; hostile, disrespectful communication drives away talented professionals and discerning clients alike.
+
+Communicate respectfully and avoid harassment, discrimination, or hate speech in all interactions. This applies to booking inquiries, project discussions, feedback exchanges, review content, and any other communication on or related to the platform. Respect means addressing others politely, considering how your words will be received, and maintaining professional tone even when frustrated or disappointed.
+
+Harassment includes repeated unwanted contact, threatening language, intimidation tactics, sexually inappropriate messages, stalking behavior, and any communication designed to frighten, demean, or distress another user. Harassment is never acceptable, regardless of provocation or context.
+
+Discrimination based on race, ethnicity, nationality, religion, gender, sexual orientation, age, disability, or any other protected characteristic violates our community standards and, in many jurisdictions, the law. Every user deserves equal treatment based on their professional qualifications and conduct, not their personal characteristics.
+
+Hate speech—content that attacks, demeans, or incites violence against individuals or groups based on protected characteristics—has no place on Amoria Connekyt. This includes slurs, dehumanizing language, calls for exclusion or harm, and content promoting hateful ideologies.
+
+Treat all users with dignity and professionalism regardless of transaction size, user tenure, or any other factor. The client booking a small portrait session deserves the same respect as the corporate client booking a major event. The new photographer just starting out deserves the same courtesy as the established professional with hundreds of bookings. Professional dignity is universal, not earned through status.
+
+Respond promptly to messages and requests within reasonable timeframes. While we understand that users have lives outside the platform, timely communication is essential for successful collaborations. Photographers should respond to booking inquiries within 24-48 hours. Clients should provide feedback on deliverables within agreed timeframes. Both parties should communicate proactively about delays, changes, or issues rather than leaving others wondering.
+
+Maintain positive and constructive interactions even when things go wrong. Projects sometimes face challenges—schedule conflicts, creative disagreements, quality concerns, or unforeseen circumstances. How users handle these challenges matters as much as how they handle smooth transactions. Approach problems with solution-oriented mindsets, express concerns constructively, and seek resolution rather than escalation.
+
+3. Service Delivery and Integrity - Honoring Commitments
+The core purpose of Amoria Connekyt is facilitating successful creative service transactions. This requires both parties to approach their commitments with integrity, professionalism, and genuine intent to fulfill their obligations.
+
+Deliver or receive services with integrity and professionalism. For photographers and creators, this means providing work that meets or exceeds the quality represented in your portfolio and promised in your communications. It means showing up prepared, treating clients' events and projects with appropriate seriousness, and applying your skills conscientiously. For clients, this means providing accurate project information, being available and cooperative during sessions, and approaching the creative process as a collaboration.
+
+Honor commitments and agreed terms without exception unless circumstances make fulfillment genuinely impossible. When you commit to a delivery date, meet it. When you agree to specific inclusions, provide them. When you confirm a booking, honor it. If you must deviate from commitments, communicate immediately, explain honestly, and work collaboratively to find solutions. Broken commitments without adequate explanation or remedy damage your reputation and harm users who relied on your word.
+
+Complete projects according to specifications agreed upon at booking. This means understanding what was promised, tracking deliverables throughout the project, and ensuring final delivery matches expectations. If specifications change mid-project—which sometimes happens legitimately—document the changes with explicit agreement from both parties before proceeding.
+
+Act in good faith during all transactions. Good faith means honest dealing, reasonable interpretation of ambiguous terms, genuine effort to fulfill obligations, and cooperative approach to resolving issues. Bad faith—attempting to exploit loopholes, deliberately misunderstanding terms, or gaming systems for unfair advantage—violates the spirit of our community even when it doesn't technically break specific rules.
+
+4. Platform Compliance - Using Amoria Connekyt Properly
+Our platform systems exist to protect users, facilitate transactions, and maintain the trust infrastructure that makes the marketplace function. Circumventing these systems undermines protections for everyone.
+
+Refrain from sharing personal payment details or attempting to bypass the platform for transactions that originated on Amoria Connekyt. When you take transactions off-platform, you lose the protections our systems provide—escrow security, dispute resolution, payment guarantees, and documented transaction history. You also violate the terms that make the platform sustainable—we rely on transaction fees to fund the services, support, and safety measures that benefit all users.
+
+We understand the temptation to avoid fees by transacting directly, but consider the risks: no payment protection if things go wrong, no dispute resolution support, no verified transaction history for future reference, and potential account termination if discovered. The platform protections are worth the fees, and violating this policy isn't worth the consequences.
+
+Use Amoria Connekyt's payment system for all transactions conducted through the platform. This isn't just a business requirement—it's a safety measure. Our payment systems provide fraud protection, escrow security, dispute resolution, and financial accountability that direct payments can't match. For photographers, platform payments ensure you're dealing with serious clients with verified payment methods. For clients, platform payments ensure your money is protected until work is delivered.
+
+Follow platform guidelines and community standards as published and updated. Our policies exist for reasons—usually because we've seen the problems that occur without them. When we prohibit certain behaviors, it's because those behaviors have harmed users in the past. When we require certain processes, it's because those processes prevent common issues. Compliance isn't just rule-following; it's participating in systems designed to protect you.
+
+Respect intellectual property and privacy laws both on and off the platform. Don't use others' creative work without permission. Don't share private information about other users. Don't violate copyright, trademark, or other intellectual property rights. Don't collect or use data in ways that violate privacy laws or platform policies. These aren't just legal requirements—they're ethical obligations that creative professionals especially should understand and honor.
+
+5. Content Standards - What You Share Matters
+The content users upload, share, and create on Amoria Connekyt shapes the platform experience for everyone. Content standards ensure that what users encounter is appropriate, legal, and consistent with the professional creative community we're building.
+
+Upload only original content or properly licensed materials to your portfolio, project deliverables, and other platform areas. For photographers, this means showing work you actually created. Using others' images in your portfolio is fraud—it misrepresents your capabilities to potential clients. If you collaborate with other creatives, credit them appropriately and obtain permission before displaying collaborative work.
+
+For all users, respect licensing restrictions on any materials you use. Stock images, music, graphics, and other licensed content come with usage restrictions that must be honored. Violating licenses exposes you to legal liability and reflects poorly on the professional standards of our community.
+
+Respect copyright and creative ownership in all your platform activities. Photographers retain copyright to their work unless explicitly transferred. Clients receive usage rights as agreed in their contracts. Neither party should exceed the rights they've been granted—photographers shouldn't use client-specific images in ways that weren't authorized, and clients shouldn't reproduce or distribute images beyond agreed terms.
+
+Do not share inappropriate, illegal, or harmful content on the platform. This includes content that is sexually explicit or pornographic (unless specifically permitted in designated adult sections, which currently don't exist on our platform), violent, gory, or depicting harm to humans or animals, promoting illegal activities or providing instructions for illegal acts, harassing, threatening, or designed to harm specific individuals, fraudulent, deceptive, or designed to mislead users, malicious content including malware, phishing attempts, or security threats, or spam, excessive self-promotion, or content that degrades platform usability.
+
+Report violations through proper channels when you encounter content or behavior that violates our standards. The "Report" feature is available throughout the platform for flagging concerns. For serious or urgent issues, contact our Trust & Safety team directly. Reporting isn't "snitching"—it's community stewardship that helps keep the platform safe for everyone.
+
+CONSEQUENCES OF VIOLATIONS:
+We don't publish these responsibilities to ignore them. Violations have real consequences, proportional to severity and frequency.
+
+Minor first-time violations typically result in warnings, education about correct behavior, and opportunities to remedy the situation. We recognize that people make mistakes and deserve chances to improve.
+
+Repeated violations or more serious first offenses may result in temporary suspension—loss of platform access for a defined period while we investigate and while you demonstrate understanding of the violated policies.
+
+Severe violations or patterns of problematic behavior may result in permanent removal from the platform. This includes fraud, harassment, discrimination, safety threats, repeated policy violations after warnings, and any behavior that makes the platform unsafe for others.
+
+Violations involving illegal activity may be reported to law enforcement in addition to platform consequences. We cooperate with legal authorities investigating crimes committed through or related to our platform.
+
+Our goal isn't punishment for its own sake—it's maintaining a community where users can trust each other and focus on creative collaboration. Users who demonstrate through their actions that they can't or won't participate constructively lose the privilege of access to our community and the opportunities it provides.
+
+Your Role in Building This Community:
+These responsibilities might seem extensive, but they reflect something simple: treating others as you'd want to be treated, fulfilling your commitments, and participating honestly in a community built on trust. Most users meet these standards naturally because they're fundamentally decent people who understand that creative collaboration requires mutual respect and reliability. For those users, these policies are just documentation of what they already do. For everyone, they're the foundation of the trusted creative marketplace we're building together.`
     },
     {
       id: 'secure-transactions',
@@ -1214,148 +1757,322 @@ Data protection and confidentiality aren't just legal requirements—they're fun
     {
       id: 'reporting-issues',
       title: 'Reporting & Resolution',
-      content: `Users can report misconduct, safety risks, or policy violations through multiple channels:
+      content: `A safe community depends on members who speak up when they see problems. No matter how sophisticated our automated detection systems become, human observers—users who notice something wrong, experience inappropriate behavior, or identify potential threats—remain our most valuable safety resource. When you report misconduct, safety risks, or policy violations, you're not just protecting yourself; you're protecting every other user who might encounter the same problem. We've built comprehensive reporting systems to make this community stewardship as easy and effective as possible.
 
-1. Report Directly
-• Use the in-app "Report a Concern" or "Trust & Safety" feature
-• Quick access to reporting tools within the platform
-• Confidential and secure reporting process
+We understand that reporting can feel uncomfortable. You might worry about retaliation, doubt whether your concern is serious enough to warrant attention, or simply not want to get involved in someone else's problems. We've designed our reporting processes to address these concerns: reports are confidential, reporters are protected from retaliation, every report is taken seriously regardless of apparent severity, and you can report anonymously if you prefer. Our goal is to remove every barrier that might prevent you from sharing information that could keep our community safe.
 
-2. Email Reporting
-• Support: support@amoriaconnect.com
-• Legal & Safety: legal@amoriaglobal.com
-• Include: Your name, email, description of the issue, and any supporting evidence
+This section explains how to report concerns, what information helps us investigate effectively, how we handle reports, what outcomes you can expect, and how we protect reporters throughout the process.
 
-3. Information to Include
-• Clear description of the incident or concern
-• User accounts involved (if applicable)
-• Screenshots or evidence (if available)
-• Date and time of occurrence
-• Impact on you or other users
+1. Report Directly Through the Platform - Your Primary Reporting Channel
+The most efficient way to report concerns is through our built-in reporting tools, which are designed for quick access, comprehensive information capture, and seamless routing to the appropriate team members.
 
-Response and Resolution:
+Use the in-app "Report a Concern" or "Trust & Safety" feature available throughout the platform. You'll find report options on user profiles (to report problematic users), on content (to report inappropriate images, messages, or other materials), within booking and transaction interfaces (to report service or payment issues), and in your account settings (for general concerns or issues not tied to specific content).
 
-• All reports are reviewed confidentially by our Trust & Safety team
-• Our team investigates and responds within 72 hours
-• Urgent matters such as abuse, harassment, or fraud are prioritized immediately
+Our in-platform reporting process walks you through providing relevant information, allows you to attach screenshots or evidence directly, automatically captures context (such as which user or content you're reporting), and routes your report to the appropriate team based on the issue type. Reports submitted through the platform are typically processed faster than other channels because they arrive with contextual information already attached.
 
-Depending on the issue, responses may include:
+The reporting process is confidential and secure. Your identity as a reporter is not shared with the reported party. Report data is encrypted and accessible only to Trust & Safety team members. We maintain audit trails ensuring accountability in how reports are handled. And you can track your report's status through your account.
 
-• Temporary account holds or warnings
-• Mediation between parties
-• Permanent suspension for severe violations
-• Reporting to authorities under applicable Rwandan laws (BNR, RIB, NCSA)
+For users who prefer not to create a record associated with their account, anonymous reporting options are available for certain issue types. Anonymous reports are investigated with the same seriousness as identified reports, though our ability to follow up with additional questions or provide resolution updates may be limited.
 
-Your Safety Matters:
+2. Email Reporting - Alternative Channels for Detailed Concerns
+While in-platform reporting is preferred for most situations, email reporting provides an alternative channel for users who need to provide extensive documentation, prefer to communicate outside the platform, or are reporting issues that prevent them from accessing their accounts.
 
-• We take all reports seriously and investigate thoroughly
-• Reporters are protected from retaliation
-• Confidentiality maintained throughout the process
-• Follow-up communication provided`
+General Support for platform-related concerns: support@amoriaconnect.com
+This channel handles service quality issues, booking disputes, general policy questions, and concerns that don't rise to the level of safety emergencies. Response times are typically within 24-48 hours for initial acknowledgment.
+
+Legal & Safety for serious violations and legal matters: legal@amoriaglobal.com
+This channel handles reports of fraud, harassment, threats, illegal activity, severe policy violations, legal notices, and issues requiring urgent attention. Reports to this channel receive priority handling with initial response typically within 24 hours.
+
+Trust & Safety emergencies for immediate safety threats: safety@amoriaconnekyt.com
+For situations involving imminent physical danger, active harassment campaigns, ongoing fraud, or other time-sensitive safety concerns, this dedicated channel ensures rapid response from senior Trust & Safety personnel.
+
+When reporting via email, include your name and account email (or indicate if you wish to remain anonymous), the specific issue you're reporting with as much detail as possible, user accounts or content involved (usernames, URLs, booking IDs, etc.), relevant dates and times, any evidence you can attach (screenshots, message exports, documents), and the impact on you or others and any immediate concerns.
+
+3. Information to Include - Helping Us Help You
+The quality of information you provide directly affects our ability to investigate effectively and reach appropriate resolutions. While we investigate every report regardless of completeness, detailed reports lead to faster, more accurate outcomes.
+
+Essential information for effective reporting includes a clear description of the incident or concern explaining what happened in your own words. Be specific: instead of "this user was rude," describe what was said or done. Instead of "the photos were bad," explain specifically what was wrong with them. Context matters—help us understand not just what happened, but why it concerns you.
+
+Include user accounts involved if applicable. Provide usernames, profile URLs, or any identifying information for users involved in the reported behavior. If you're reporting content, provide links or descriptions that help us locate it. If you're reporting a transaction issue, include booking IDs or transaction references.
+
+Attach screenshots or evidence if available. Visual evidence significantly strengthens investigations—screenshots of problematic messages, photos of substandard deliverables, records of missed communications, or any other documentation supporting your report. If you have extensive evidence, organize it chronologically and label files clearly.
+
+Note the date and time of occurrence as precisely as possible. Timestamps help us locate relevant system logs, correlate events across multiple reports, and establish patterns of behavior. If the issue involved multiple incidents, provide a timeline.
+
+Describe the impact on you or other users. Understanding harm helps us prioritize appropriately and determine suitable responses. How did this affect you emotionally, financially, professionally, or otherwise? Are other users potentially affected? Is the issue ongoing or resolved?
+
+Even if you can't provide all this information, submit your report anyway. Partial information is better than no report, and we may be able to gather additional details through investigation.
+
+4. Response and Resolution - What Happens After You Report
+When you submit a report, it enters a structured process designed to ensure thorough investigation, fair treatment of all parties, and appropriate resolution.
+
+Initial acknowledgment confirms receipt of your report, typically within 24 hours for email reports and immediately for in-platform reports. Acknowledgment includes a reference number for tracking, confirmation of what was reported, estimated timeline for investigation, and any immediate actions taken (such as content removal for obviously violating material).
+
+All reports are reviewed confidentially by our Trust & Safety team. Trained specialists assess each report, determining severity, gathering additional information if needed, and coordinating investigation. Your identity as a reporter remains confidential throughout—we never reveal who reported to the reported party.
+
+Our team investigates and responds within 72 hours for standard reports. Investigation depth varies based on complexity—straightforward content violations may be resolved within hours, while complex disputes involving multiple parties and conflicting accounts may require longer investigation. We keep reporters informed of progress, especially if investigation extends beyond initial estimates.
+
+Urgent matters receive immediate priority handling. Reports involving abuse, harassment, fraud, safety threats, or other serious concerns jump the queue for immediate attention. Our Trust & Safety team includes members available outside business hours for true emergencies. Don't hesitate to mark reports as urgent if circumstances warrant—we'd rather assess urgency ourselves than have you hesitate to flag genuine emergencies.
+
+5. Possible Outcomes - How We Address Violations
+Depending on the nature and severity of reported issues, our responses may include a range of actions from educational interventions to permanent removal and legal reporting.
+
+Warnings and education address minor first-time violations where users may not have understood our policies or the impact of their actions. We explain what went wrong, what behavior is expected, and what consequences will follow if violations continue. Warnings are documented and considered in evaluating any future reports.
+
+Temporary account holds or suspensions remove problematic users from the platform while investigations proceed or as a consequence for moderate violations. Holds may restrict specific features (messaging, payouts, booking) or full account access depending on the situation. Users are notified of holds and given opportunity to respond before final decisions.
+
+Mediation between parties helps resolve disputes where both parties share some responsibility or where misunderstandings created conflict. Our mediation process facilitates communication, helps parties understand each other's perspectives, and works toward mutually acceptable resolutions. Mediation is voluntary—we don't force parties to accept outcomes they find unfair.
+
+Permanent suspension for severe violations removes users who have demonstrated through their actions that they cannot participate safely in our community. Permanent suspension applies to fraud, serious harassment, discrimination, repeated violations after warnings, and any behavior that poses unacceptable risk to other users. Permanently suspended users cannot create new accounts; if discovered doing so, new accounts are also removed.
+
+Financial remedies may include refund orders, payment holds, or damage compensation depending on the nature of disputes. Our payment protection systems (escrow, Hold & Release) provide mechanisms for fair financial resolution when service or payment issues arise.
+
+Reporting to authorities occurs when violations involve potential criminal activity or regulatory concerns under applicable Rwandan laws. We cooperate with the National Bank of Rwanda (BNR) for financial crimes, Rwanda Investigation Bureau (RIB) for criminal matters, and National Cyber Security Authority (NCSA) for data protection and cybercrime issues. We notify affected users when legally permitted to do so and provide assistance to users who wish to file their own reports with authorities.
+
+6. Your Safety as a Reporter - Protection and Confidentiality
+We recognize that reporting requires courage, and we're committed to ensuring that reporters are protected, respected, and kept informed throughout the process.
+
+We take all reports seriously and investigate thoroughly regardless of how minor concerns might initially appear. What seems like a small issue might be part of a larger pattern visible only when multiple reports are combined. Even if investigation determines no violation occurred, your report contributed to our understanding of community dynamics and potential risk areas.
+
+Reporters are protected from retaliation. Any attempt by reported parties to retaliate against reporters—through harassment, negative reviews, booking interference, or any other means—is itself a serious policy violation resulting in escalated consequences. If you experience any negative treatment that you believe is connected to a report you made, report the retaliation immediately for priority handling.
+
+Confidentiality is maintained throughout the process. We don't reveal reporter identities to reported parties. Investigation communications are secured. Only Trust & Safety team members with direct involvement access report details. We don't discuss reports publicly or share information beyond what's necessary for resolution.
+
+Follow-up communication keeps you informed. We notify reporters of investigation outcomes, actions taken, and resolution status. If you reported a safety concern that affected you personally, we check in to ensure the issue has been fully resolved and you feel safe continuing to use the platform.
+
+Your feedback on the reporting experience helps us improve. After reports are resolved, we may ask about your experience—whether the process was accessible, whether you felt heard, whether the outcome seemed fair. This feedback directly shapes improvements to our Trust & Safety systems.
+
+Our Commitment to Effective Reporting and Resolution:
+The reporting system is only as good as the trust users place in it. If users don't believe reports will be taken seriously, they won't report. If reporters face retaliation, others will stay silent. If investigations are biased or outcomes are arbitrary, the system loses legitimacy. We're committed to earning and maintaining your trust in our reporting processes through consistent, fair, and transparent handling of every concern raised. When you report, you're partnering with us to keep Amoria Connekyt safe—and we take that partnership seriously.`
     },
     {
       id: 'enforcement-accountability',
       title: 'Platform Moderation & Enforcement',
-      content: `Our moderation team uses a hybrid system combining AI detection tools and human review to ensure:
+      content: `Effective moderation and consistent enforcement are the operational backbone of our Trust & Safety commitment. Policies without enforcement are merely suggestions; enforcement without fair process becomes arbitrary punishment. Amoria Connekyt has developed comprehensive moderation systems and enforcement procedures that protect our community while respecting the rights and dignity of all users—including those who violate our policies and face consequences.
 
-1. Content Moderation
-• Safe and relevant content uploads
-• Prevention of illegal, explicit, or abusive materials
-• Quick resolution of user conflicts or inappropriate behavior
-• Automated and manual review processes
+Our approach balances multiple objectives that can sometimes tension with each other: swift action to prevent ongoing harm versus thorough investigation to ensure accuracy; consistent enforcement to maintain fairness versus contextual judgment to avoid rigid injustice; transparency about our processes versus confidentiality protecting reporters and investigation integrity; user autonomy and second chances versus community safety requiring removal of dangerous actors. Navigating these tensions requires sophisticated systems, trained personnel, and clear principles guiding every decision.
 
-2. Enforcement Actions
-Violations of this Policy may result in:
+This section explains how our moderation systems work, what enforcement actions we take and when, how we collaborate with legal authorities, the legal foundations of our enforcement authority, and the fair process protections that ensure enforcement serves justice rather than mere punishment.
 
-• Account warnings or initial notifications
-• Temporary suspension for investigation
-• Termination of access for serious violations
-• Withholding of payments in dispute cases
-• Permanent account removal for serious or repeated offenses
-• Legal reporting when required under Rwandan law
+1. Content Moderation - Keeping the Platform Safe and Professional
+Content moderation is the first line of defense against policy violations. Our moderation team uses a hybrid system combining AI detection tools and human review to ensure that content on Amoria Connekyt remains safe, professional, and consistent with our community standards.
 
-3. Collaboration with Authorities
-Amoria Connekyt cooperates with Rwanda Investigation Bureau (RIB), NCSA, and BNR to report and resolve cases of:
+Automated detection systems continuously scan platform content for obvious policy violations. Machine learning models trained on millions of examples identify potentially problematic content including images that may contain explicit, violent, or otherwise prohibited visual content, text that may contain harassment, hate speech, spam, or other prohibited language, patterns suggesting fraudulent activity, fake profiles, or coordinated abuse, and technical threats such as malware links, phishing attempts, or security exploits. Automated systems flag suspicious content for human review rather than taking immediate action on borderline cases—we'd rather have humans make nuanced decisions than have algorithms make mistakes that harm innocent users.
 
-• Fraud or financial abuse
-• Identity theft or impersonation
-• Harassment or threats
-• Misuse of digital content
-• Money laundering or terrorism financing
-• Other criminal activities
+Human moderators review flagged content, user reports, and random samples to ensure quality and catch issues that automated systems might miss. Our moderation team is trained in our policies, cultural context, and the specific challenges of creative service platforms. They understand that photography involves images of people, artistic expression can push boundaries, and professional disputes require nuanced assessment. Human moderators make final decisions on content removal, understand context that algorithms cannot grasp, handle appeals and edge cases with appropriate judgment, and continuously provide feedback that improves our automated systems.
 
-4. Legal Basis for Enforcement
-This Policy is enforceable under:
+Safe and relevant content uploads are ensured through pre-publication review for certain content types (particularly portfolio images for new photographers), post-publication monitoring for policy violations, and responsive review when content is reported by users. We balance thoroughness with efficiency—most legitimate content flows through without delay while problematic content is caught and addressed.
 
-• Law No. 18/2010 on Electronic Transactions (Rwanda)
-• Law No. 69/2018 on Prevention and Suppression of Money Laundering and Terrorism Financing
-• Law No. 058/2021 on Data Protection and Privacy
-• International standards including ISO 27001 (Information Security) and FATF Guidelines
+Prevention of illegal, explicit, or abusive materials protects users from content that violates laws, platform policies, or basic decency standards. This includes child sexual abuse material (CSAM), which triggers immediate removal and law enforcement reporting, explicit sexual content not appropriate for our professional platform, violent or gory imagery, content promoting illegal activities, harassment or threats directed at individuals or groups, fraudulent content designed to deceive users, and intellectual property violations including unauthorized use of others' creative work.
 
-5. Fair Process
-• Users are notified of violations when appropriate
-• Opportunity to respond or appeal decisions
-• Transparent enforcement based on clear policies
-• Protection of platform integrity and user safety`
+Quick resolution of user conflicts or inappropriate behavior addresses interpersonal issues before they escalate. When users report conflicts—whether booking disputes, communication problems, or behavioral concerns—moderators assess the situation, gather relevant information, and work toward resolution. Early intervention often prevents minor disagreements from becoming major disputes.
+
+2. Enforcement Actions - Proportional Response to Violations
+When policy violations are confirmed, we take enforcement actions proportional to the severity and nature of the violation, the user's history on the platform, the impact on other users and the community, and the user's response and apparent intent. Our enforcement philosophy emphasizes education and rehabilitation for minor issues while prioritizing community protection for serious threats.
+
+Account warnings or initial notifications address first-time minor violations where users may not have understood our policies or the impact of their actions. Warnings explain what policy was violated, what behavior is expected going forward, and what consequences will follow if violations continue. Warnings are documented in user records and considered in evaluating any future issues—they're not "free passes" but rather opportunities to correct course before more serious consequences apply.
+
+Temporary suspension for investigation removes users from the platform while we gather information about serious allegations. Suspension may also serve as a standalone consequence for moderate violations—a "time out" that demonstrates seriousness while allowing users to return after demonstrating understanding of violated policies. During suspension, users cannot access their accounts, conduct transactions, or communicate through the platform. Suspension length varies based on circumstances, typically ranging from 24 hours to 30 days.
+
+Termination of access for serious violations permanently removes users who have committed severe policy violations or demonstrated inability to participate safely in our community. Termination is appropriate for fraud, serious harassment or threats, discrimination, child safety violations, repeated violations after warnings, and any behavior posing unacceptable risk to others. Terminated users are prohibited from creating new accounts; circumvention attempts result in immediate termination of new accounts discovered.
+
+Withholding of payments in dispute cases protects financial interests while issues are resolved. When disputes arise involving payment—service quality concerns, non-delivery, unauthorized charges, or other financial issues—we may hold relevant funds in escrow pending investigation and resolution. Holds protect both parties: clients aren't forced to pay for disputed services, and creators' earnings aren't released prematurely only to be clawed back later. Funds are released according to dispute outcomes once investigations conclude.
+
+Permanent account removal for serious or repeated offenses is our most severe enforcement action. Permanent removal applies when users have demonstrated through their actions that they cannot or will not participate appropriately in our community. This includes all cases of fraud, child safety violations, or violent threats, as well as users who accumulate multiple violations despite warnings and opportunities to improve. Permanent removal includes prohibition from future account creation—this is a lifetime ban from our platform.
+
+Legal reporting when required under Rwandan law occurs when violations involve potential criminal activity. We don't take this step lightly, but we also don't hesitate when safety, legal compliance, or justice requires involving authorities. Legal reporting may occur with or without platform enforcement actions depending on circumstances—some issues require law enforcement even if they don't warrant account termination, while serious platform violations may warrant termination without rising to criminal thresholds.
+
+3. Collaboration with Authorities - Partnership for Serious Matters
+Some violations transcend platform policy—they're potential crimes requiring law enforcement involvement. Amoria Connekyt maintains cooperative relationships with Rwandan authorities and fulfills our legal obligations to report and assist investigation of serious matters.
+
+We cooperate with Rwanda Investigation Bureau (RIB) for criminal matters including fraud, threats, harassment rising to criminal levels, and other offenses investigated by this national law enforcement agency. Cooperation includes responding to lawful information requests, preserving evidence when notified of investigations, and proactively reporting serious crimes we discover through platform operations.
+
+We cooperate with National Cyber Security Authority (NCSA) for data protection, cybersecurity, and cybercrime matters. This includes reporting data breaches as required by law, cooperating with investigations of cyber offenses, and seeking guidance on complex data protection questions.
+
+We cooperate with Bank of National Rwanda (BNR) for financial crimes including suspected money laundering, terrorism financing, fraud, and other financial offenses within their regulatory purview. As a platform facilitating financial transactions, we have specific obligations under anti-money laundering laws that require suspicious activity reporting and cooperation with regulatory investigations.
+
+Categories of matters we report or cooperate on include fraud or financial abuse involving deception for financial gain, scams, or systematic exploitation of users or the platform. Identity theft or impersonation including fake profiles, stolen credentials, or fraudulent representation of identity. Harassment or threats that rise to criminal levels, particularly those involving violence, stalking, or systematic intimidation. Misuse of digital content including copyright infringement at commercial scale, CSAM, or other content-related crimes. Money laundering or terrorism financing including any transactions appearing designed to disguise illegal funds or support prohibited activities. And other criminal activities discovered through platform operations that legal obligations or ethical responsibilities require us to report.
+
+When we report matters to authorities, we notify affected users when legally permitted to do so. Some situations—particularly active criminal investigations—may require us to maintain confidentiality about reports to avoid compromising investigations. We provide affected users with available information about their rights and options.
+
+4. Legal Basis for Enforcement - Authority and Accountability
+Our enforcement authority isn't arbitrary—it derives from legal frameworks, contractual agreements with users, and legitimate platform governance responsibilities. Understanding this legal basis helps users recognize that enforcement isn't mere corporate overreach but rather exercise of responsibilities recognized and supported by law.
+
+This Policy is enforceable under multiple legal frameworks:
+
+Law No. 18/2010 on Electronic Transactions (Rwanda) establishes the legal framework for electronic commerce in Rwanda, including provisions for terms of service, user agreements, and platform governance. Our Terms of Service and Trust & Safety Policy constitute binding agreements under this law, and enforcement actions taken pursuant to these policies are legally supported.
+
+Law No. 69/2018 on Prevention and Suppression of Money Laundering and Terrorism Financing imposes specific obligations on financial service providers—including platforms like ours that facilitate payments. This law requires us to implement customer due diligence, monitor transactions for suspicious activity, and report concerns to authorities. Enforcement actions related to financial crimes are not just platform policy but legal compliance.
+
+Law No. 058/2021 on Data Protection and Privacy governs how we collect, process, and protect personal data. This law both empowers and constrains our enforcement activities—empowering us to take action against data misuse while constraining how we handle personal information during investigations. Enforcement related to privacy violations serves legal compliance as well as community protection.
+
+International standards complement Rwandan law in guiding our practices. ISO 27001 (Information Security Management) provides frameworks for protecting user data during enforcement activities. FATF Guidelines on anti-money laundering inform our financial crime prevention and reporting practices. Industry best practices for trust and safety, developed through organizations like the Trust & Safety Professional Association, shape our procedures and training.
+
+5. Fair Process - Justice in Enforcement
+Enforcement without fairness becomes arbitrary punishment that erodes trust and fails to serve justice. We're committed to fair process principles ensuring that enforcement actions are accurate, proportional, and respectful of user rights.
+
+Users are notified of violations when appropriate, including clear explanation of what policy was violated, what evidence supports the finding, what enforcement action is being taken, what options are available for response or appeal, and what steps can lead to reinstatement (for temporary actions). Notification may be delayed or limited when doing so would compromise ongoing investigations, endanger other users, or violate legal requirements—but we default to transparency when circumstances permit.
+
+Opportunity to respond or appeal decisions ensures that users aren't condemned without being heard. Before final enforcement decisions on serious matters, users have opportunity to provide their perspective, submit evidence, and explain circumstances that might affect our assessment. For decisions already made, appeal processes allow users to request reconsideration with new information or arguments that prior review didn't consider.
+
+Transparent enforcement based on clear policies means users can understand what's expected and predict consequences of violations. We don't enforce secret rules or apply undisclosed standards. Our policies are published, explained, and applied consistently. When we take enforcement action, we cite specific policies violated so users understand the basis for our decisions.
+
+Protection of platform integrity and user safety remains the ultimate purpose of enforcement. Fair process doesn't mean tolerating ongoing harm while procedures unfold—when immediate action is needed to protect users or platform integrity, we act first and address due process through post-action review. But even in urgent situations, we ensure that decisions are reviewed, users have opportunity to respond, and errors are corrected when identified.
+
+Our Commitment to Principled Enforcement:
+Moderation and enforcement are among the most challenging aspects of platform governance. Every decision affects real people—reporters seeking protection, accused users facing consequences, and community members whose safety depends on effective enforcement. We approach these responsibilities with humility, recognizing that we'll sometimes make mistakes, and with commitment to continuous improvement. Our goal isn't perfect enforcement—an impossible standard—but principled enforcement that's fair, consistent, transparent, and effective at protecting the creative community we're privileged to serve.`
     },
     {
       id: 'continuous-improvement',
       title: 'Policy Updates & Continuous Improvement',
-      content: `Trust and safety are ongoing responsibilities. Amoria Connekyt continuously reviews community feedback, local regulations, and best practices to strengthen user safety, data protection, and professional integrity across our platform.
+      content: `Trust and safety are not destinations to be reached but ongoing journeys requiring constant attention, adaptation, and improvement. The threat landscape evolves as bad actors develop new techniques; technology creates new capabilities and new risks; user expectations shift as digital literacy increases; and legal frameworks advance as regulators respond to emerging challenges. A static Trust & Safety Policy would quickly become obsolete, failing to protect users from new threats or leverage new protective technologies. Amoria Connekyt is committed to continuous evolution of our safety practices, policies, and systems.
 
-1. Regular Reviews
-• This Policy may be updated as technology, user needs, or legal requirements evolve
-• Annual review of safety measures and procedures
-• Adaptation to new threats and challenges
-• Integration of user feedback
+This commitment to continuous improvement reflects a fundamental truth about platform governance: we will never be "done" with trust and safety work. Every resolved incident teaches us something about vulnerabilities we hadn't fully appreciated. Every user complaint reveals friction points we should address. Every regulatory update clarifies expectations we should meet. Every technological advancement offers tools we should consider adopting. Our goal isn't a perfect policy that never needs revision—such a thing doesn't exist—but rather a living framework that grows stronger and more effective over time through systematic learning and improvement.
 
-2. Community Feedback
-• We listen to user concerns and suggestions
-• Regular surveys and feedback collection
-• Implementation of safety improvements based on community input
-• Transparency in policy changes
+This section explains how we approach policy updates, how we gather and incorporate feedback, how we stay current with regulatory requirements, how we communicate changes to users, and how we invest in the people, technology, and partnerships that make effective trust and safety possible.
 
-3. Compliance Updates
-• Staying current with Rwanda's evolving regulations
-• Alignment with international best practices
-• GDPR, ISO 27001, and FATF compliance
-• Regular compliance audits
+1. Regular Reviews - Systematic Policy Assessment
+Our Trust & Safety Policy undergoes regular, systematic review to ensure it remains effective, relevant, and aligned with current challenges and best practices. We don't wait for problems to force reactive updates—we proactively assess our policies and procedures on established schedules.
 
-4. Notification of Changes
-• Major updates will be announced via email or in-app notification
-• Continued use of the platform signifies acceptance of any updates
-• Users can review policy history and changes
-• Clear communication of material changes
+This Policy may be updated as technology, user needs, or legal requirements evolve. Updates aren't arbitrary changes but responses to genuine shifts in the environment we operate in. Technology changes create both new threats (sophisticated fraud techniques, AI-generated fake content, novel attack vectors) and new defenses (better detection algorithms, improved verification tools, enhanced encryption). User needs shift as our community grows, diversifies, and develops new expectations for platform safety and fairness. Legal requirements change as Rwanda continues developing its digital economy regulatory framework and as international standards evolve.
 
-5. Commitment to Excellence
-• Continuous investment in safety technology
-• Training for moderation and support teams
-• Partnership with industry leaders in trust and safety
-• Dedication to protecting our community`
+Annual comprehensive review of safety measures and procedures ensures that nothing becomes stale through neglect. Each year, our Trust & Safety team conducts systematic assessment of all policies, evaluating whether stated policies match actual practices, identifying gaps where policies should exist but don't, assessing whether current policies effectively address the threats they were designed to counter, reviewing enforcement data to identify patterns suggesting policy improvements, and benchmarking our practices against industry peers and best practice frameworks.
+
+Adaptation to new threats and challenges occurs continuously as we identify emerging risks. Our monitoring systems track threat intelligence from industry sources, law enforcement advisories, and our own incident data. When new threat patterns emerge—whether novel fraud schemes, new harassment techniques, or previously unseen attack methods—we assess whether current policies and systems provide adequate protection and update as needed.
+
+Integration of user feedback ensures that policy development isn't purely top-down but incorporates perspectives from the community we serve. Users often identify issues before they appear in our metrics, suggest improvements based on their direct experience, and help us understand whether our policies work as intended in practice. Feedback integration is discussed in detail below.
+
+Quarterly focused reviews complement annual comprehensive assessments. Each quarter, we conduct targeted reviews of specific policy areas or emerging concerns, allowing more agile response to developments that can't wait for annual cycles. These reviews examine recent incident trends, user feedback themes, regulatory developments, and competitive landscape changes.
+
+2. Community Feedback - Learning from Our Users
+Our users are our most valuable source of insight into how our policies and systems actually work in practice. Feedback from photographers, clients, and other community members helps us identify problems we might miss, understand user experiences, and develop improvements that genuinely serve user needs.
+
+We listen to user concerns and suggestions through multiple channels. Direct feedback through support contacts often reveals friction points, confusing policies, or unmet needs. Social media monitoring surfaces public discussions about our platform and policies. In-platform feedback mechanisms allow users to share thoughts without leaving the platform. Community forums (when available) facilitate peer discussion that often generates valuable insights. And direct outreach to active users provides deeper understanding of experienced perspectives.
+
+Regular surveys and feedback collection provide structured data complementing unstructured feedback. We conduct periodic surveys covering user satisfaction with safety features and policies, experiences with reporting and resolution processes, perceptions of platform safety and trustworthiness, suggestions for improvements or new features, and concerns about emerging issues or trends. Survey design emphasizes actionable insights—we ask questions whose answers can inform specific improvements, not just general satisfaction metrics.
+
+Implementation of safety improvements based on community input demonstrates that feedback matters. When users identify legitimate issues, we investigate and, where appropriate, make changes. We track feedback-driven improvements and communicate them to the community, showing that user input leads to real results. This closes the feedback loop, encouraging continued engagement from users who see their contributions valued.
+
+Transparency in policy changes acknowledges when user feedback drives updates. When we modify policies based on community input, we note this in change communications, credit the community for contributions (without identifying specific individuals unless they wish to be recognized), and explain how feedback influenced our decisions. This transparency builds trust and encourages ongoing engagement.
+
+User advisory input provides deeper engagement with particularly active or experienced community members. Selected users may be invited to participate in advisory discussions, beta testing of new safety features, or early review of proposed policy changes. These engaged users provide valuable perspectives while serving as ambassadors helping the broader community understand our safety commitment.
+
+3. Compliance Updates - Staying Current with Legal Requirements
+Operating a platform in Rwanda while serving users across Africa and beyond requires ongoing attention to evolving legal and regulatory frameworks. We're committed to full compliance with applicable laws and proactive alignment with emerging standards.
+
+Staying current with Rwanda's evolving regulations is foundational to our compliance commitment. Rwanda continues developing its digital economy legal framework, with ongoing evolution in data protection implementation, e-commerce regulation, financial services oversight, and cybersecurity requirements. We monitor regulatory developments through official channels (Rwanda Development Board, NCSA, BNR, and other relevant authorities), industry associations, and legal advisors. When regulations change, we assess impacts on our policies and operations, implement necessary changes promptly, and communicate relevant updates to users.
+
+Alignment with international best practices ensures our standards meet global expectations even when local requirements might permit lesser protections. We reference frameworks including GDPR as the gold standard for data protection, ISO 27001 for information security management, FATF guidelines for anti-money laundering compliance, industry-specific standards from organizations like the Trust & Safety Professional Association, and emerging frameworks for AI governance, content moderation, and platform accountability.
+
+Regular compliance audits verify that our practices match our policies and that both meet regulatory requirements. Internal audits conducted by our compliance team assess ongoing adherence to established standards. External audits by independent assessors provide objective verification and identify blind spots internal review might miss. Regulatory examinations when conducted by authorities receive our full cooperation, with findings driving improvements. Certification maintenance ensures we continue meeting requirements for certifications we hold.
+
+Gap analysis and remediation address any compliance shortfalls identified through monitoring or audits. When we identify gaps between requirements and current practices, we develop remediation plans with clear timelines, allocate resources for implementation, track progress to completion, and verify effectiveness of remediation efforts. We don't treat compliance as a checkbox exercise but as genuine commitment to meeting the standards we're held to.
+
+4. Notification of Changes - Keeping Users Informed
+Policy changes only protect users if users know about them. We're committed to clear, timely communication about updates to our Trust & Safety Policy and related practices.
+
+Major updates will be announced via email or in-app notification to ensure users are aware of significant changes. Major updates include new prohibited behaviors or content categories, changes to enforcement procedures or consequences, modifications to user rights or responsibilities, updates responding to significant regulatory changes, and any changes materially affecting user experience or protections. For major updates, we provide advance notice (typically 30 days) before changes take effect, allowing users to understand and prepare for new requirements.
+
+Continued use of the platform signifies acceptance of any updates, consistent with standard platform practices. This doesn't mean we make changes without user awareness—we communicate proactively and provide time to review changes. But requiring affirmative consent for every policy update would create friction that harms user experience without proportionate benefit. Users who disagree with updates have the option to discontinue use rather than accept terms they find objectionable.
+
+Users can review policy history and changes through our policy archive, which maintains previous versions for comparison. This transparency allows users to understand how our policies have evolved, compare current and previous versions, reference historical policies relevant to past events, and verify that changes have been communicated as stated. Policy archives are available upon request for users seeking historical documentation.
+
+Clear communication of material changes emphasizes updates that most significantly affect users. While we communicate all notable changes, material changes—those affecting user rights, creating new obligations, or substantially modifying protections—receive enhanced communication including summary explanations, highlighted changes, and extended review periods. Our goal is ensuring users understand what's changing and why, not burying significant updates in routine notifications.
+
+Minor updates are documented but may not trigger proactive notification. Clarifications, formatting changes, corrections of errors, and other non-material updates are reflected in policy version history but don't require the same communication treatment as material changes. Users can always access current policies and version history to review any updates.
+
+5. Commitment to Excellence - Investing in Trust & Safety
+Continuous improvement requires ongoing investment—in technology, in people, and in partnerships that advance our capabilities. We're committed to the resources and attention necessary for trust and safety excellence.
+
+Continuous investment in safety technology ensures our technical capabilities keep pace with evolving threats and opportunities. This includes automated detection systems using machine learning to identify policy violations, fraud patterns, and security threats. Verification technology for identity confirmation, document authentication, and credential validation. Security infrastructure protecting user data, preventing unauthorized access, and ensuring platform integrity. Monitoring and analytics systems providing visibility into platform health, threat trends, and enforcement effectiveness. And user-facing safety tools empowering users to protect themselves and report concerns.
+
+Training for moderation and support teams ensures our human capabilities match our technical investments. Technology alone cannot handle the nuanced judgments trust and safety work requires—trained people make final decisions on complex cases, handle sensitive situations with appropriate care, and provide the human touch that automated systems cannot replicate. Our training programs cover policy knowledge ensuring team members understand and can apply our standards consistently. Cultural competence helping team members navigate the diverse contexts of our global user base. Trauma-informed practices preparing team members to handle disturbing content and distressed users appropriately. Investigation techniques enabling thorough, fair assessment of reported concerns. And communication skills ensuring users receive clear, empathetic responses.
+
+Partnership with industry leaders in trust and safety extends our capabilities beyond what we could develop alone. We engage with industry associations and working groups sharing best practices and threat intelligence. Technology partners providing specialized capabilities we integrate into our systems. Academic researchers studying platform safety, content moderation, and related topics. Civil society organizations advocating for user rights and platform accountability. And peer platforms facing similar challenges, where appropriate information sharing benefits all parties' users.
+
+Dedication to protecting our community ultimately drives everything else. Investments in technology, training, and partnerships serve the fundamental goal of keeping Amoria Connekyt safe for the photographers, clients, and creative professionals who trust us with their businesses, their important moments, and their personal information. This dedication isn't a marketing message—it's the animating purpose behind every policy we write, every system we build, and every decision we make about trust and safety.
+
+Our Commitment to Continuous Evolution:
+Trust and safety work is never finished. As long as Amoria Connekyt serves users, we will continue learning, improving, and adapting our protections to meet new challenges. We're committed to humility—recognizing we don't have all the answers and can always do better. We're committed to responsiveness—acting on feedback, incidents, and regulatory guidance rather than defending the status quo. We're committed to transparency—explaining what we're doing and why, including when we make mistakes and how we're addressing them. And we're committed to our users—the photographers and clients whose trust we're privileged to hold and determined to honor through continuous improvement in how we protect them.`
     },
     {
       id: 'trust-safety-contact',
       title: 'Contact Our Trust & Safety Team',
       content: (
         <div>
-          For Trust & Safety matters, contact:
+          Effective trust and safety depends on open communication between our platform and the community we serve. Whether you're reporting a concern, seeking clarification about our policies, requesting assistance with a safety issue, or providing feedback on how we can better protect our users, we want to hear from you. Our Trust & Safety team exists to help—and we can only help if you reach out.
           <br /><br />
-          <strong>Amoria Global Tech Ltd. (Rwanda)</strong>
+          We've established multiple contact channels to ensure you can reach the right team for your specific needs. Different situations call for different expertise, and routing your inquiry appropriately ensures faster, more effective responses. This section provides comprehensive contact information for all Trust & Safety matters, along with guidance on which channel to use for different types of concerns.
           <br /><br />
-          <strong>Support:</strong><br />
+          <strong>Amoria Global Tech Ltd. (Rwanda)</strong><br />
+          Amoria Connekyt is operated by Amoria Global Tech Ltd., a company registered and headquartered in Kigali, Rwanda. As a Rwandan company, we operate under Rwandan law and regulatory oversight, while serving users across Africa and beyond with consistent high standards of trust, safety, and user protection.
+          <br /><br />
+          <strong>1. General Support - Platform Assistance and User Help</strong><br />
           <a href="mailto:support@amoriaconnect.com" style={{ color: '#083A85', textDecoration: 'underline' }}>support@amoriaconnect.com</a>
           <br /><br />
-          <strong>Legal & Compliance:</strong><br />
+          Our general support team handles the broadest range of inquiries and serves as your first point of contact for most platform-related matters. This channel is appropriate for account access issues and authentication problems, platform functionality questions and technical troubleshooting, booking and transaction inquiries, general questions about our services and features, user experience feedback and suggestions, initial reports of concerns that may require Trust & Safety review, and questions about policies or procedures.
+          <br /><br />
+          Response times for general support inquiries are typically within 24-48 hours for initial acknowledgment, with most issues resolved within 3-5 business days depending on complexity. If your inquiry requires specialized Trust & Safety attention, our support team will route it appropriately and inform you of the transfer.
+          <br /><br />
+          For urgent matters requiring immediate attention—such as active safety threats, ongoing harassment, or time-sensitive security concerns—please indicate "URGENT" in your subject line for expedited handling. Truly urgent matters may also be reported through our Legal & Safety channel below.
+          <br /><br />
+          <strong>2. Legal & Compliance - Serious Matters and Regulatory Issues</strong><br />
           <a href="mailto:legal@amoriaglobal.com" style={{ color: '#083A85', textDecoration: 'underline' }}>legal@amoriaglobal.com</a>
           <br /><br />
-          <strong>General Inquiries:</strong><br />
+          Our Legal & Compliance team handles matters requiring specialized legal expertise, regulatory knowledge, or escalated attention. This channel is appropriate for reports of fraud, financial crimes, or serious policy violations, harassment, threats, or safety concerns requiring urgent intervention, legal notices, subpoenas, or law enforcement inquiries, regulatory compliance questions or concerns, intellectual property disputes and DMCA/copyright matters, formal complaints about Trust & Safety decisions or enforcement actions, data protection requests requiring legal assessment, and reports of illegal content or activity on the platform.
+          <br /><br />
+          The Legal & Compliance team operates with heightened confidentiality and security protocols appropriate for sensitive matters. Response times are typically within 24 hours for initial acknowledgment, with urgent safety matters receiving same-day attention when reported during business hours.
+          <br /><br />
+          When contacting Legal & Compliance, please provide as much relevant detail as possible, including your account information (if applicable), a clear description of the matter, any supporting documentation or evidence, and the outcome you're seeking or the assistance you need. Detailed initial communications help us respond more effectively and avoid delays from back-and-forth clarification requests.
+          <br /><br />
+          <strong>3. Trust & Safety Emergencies - Immediate Threats and Urgent Concerns</strong><br />
+          <a href="mailto:safety@amoriaconnekyt.com" style={{ color: '#083A85', textDecoration: 'underline' }}>safety@amoriaconnekyt.com</a>
+          <br /><br />
+          For situations requiring immediate Trust & Safety intervention, our emergency channel provides direct access to senior Trust & Safety personnel. Use this channel for imminent physical safety threats to yourself or others, active harassment campaigns or coordinated abuse, ongoing fraud or scams affecting multiple users, discovery of child safety concerns or CSAM, security breaches or compromised accounts with active unauthorized access, and any situation where delay could result in serious harm.
+          <br /><br />
+          This channel is monitored with extended hours and prioritized handling. For true emergencies involving immediate physical danger, please also contact local emergency services (police) in your jurisdiction—platform response cannot replace emergency services for immediate safety threats.
+          <br /><br />
+          <strong>4. General Inquiries - Business and Partnership Matters</strong><br />
           <a href="mailto:info@amoriaglobal.com" style={{ color: '#083A85', textDecoration: 'underline' }}>info@amoriaglobal.com</a>
           <br /><br />
-          <strong>Website:</strong><br />
+          For general business inquiries not related to specific Trust & Safety concerns, our general inquiries channel handles media and press inquiries, partnership and business development discussions, general questions about Amoria Global Tech Ltd., speaking engagement and event participation requests, and research collaboration inquiries.
+          <br /><br />
+          This channel is not appropriate for user support issues, safety reports, or urgent matters—please use the appropriate specialized channels above for those needs.
+          <br /><br />
+          <strong>5. In-Platform Reporting - Quick Access While Using Amoria Connekyt</strong><br />
+          Beyond email channels, our platform includes built-in reporting tools accessible throughout your Amoria Connekyt experience. Look for "Report" options on user profiles to report problematic users, on content (images, messages, reviews) to report policy violations, within booking interfaces to report transaction or service issues, and in your account settings for general concerns or feedback.
+          <br /><br />
+          In-platform reports automatically capture relevant context (which user or content you're reporting, your account information, timestamps) and route directly to appropriate team members. For many concerns, in-platform reporting is the fastest and most efficient option.
+          <br /><br />
+          <strong>6. Website and Online Resources</strong><br />
           <a href="https://www.amoriaconnect.com" target="_blank" rel="noopener noreferrer" style={{ color: '#083A85', textDecoration: 'underline' }}>www.amoriaconnect.com</a>
           <br /><br />
-          <strong>Location:</strong><br />
+          Our website provides access to this Trust & Safety Policy and all related documentation, help center articles answering common questions, account management and self-service tools, community guidelines and policy explanations, and contact forms for various inquiry types.
+          <br /><br />
+          Before contacting support, you may find answers to common questions in our help center. However, don't hesitate to reach out directly if you can't find what you need or prefer personalized assistance.
+          <br /><br />
+          <strong>7. Physical Address - Formal Correspondence</strong><br />
+          Amoria Global Tech Ltd.<br />
           Kigali, Rwanda
+          <br /><br />
+          For formal written correspondence, legal notices, or situations requiring physical mail, you may reach us at our registered business address. Please note that physical mail takes longer to process than electronic communications. For time-sensitive matters, email is strongly recommended, with physical copies sent only when legally required or specifically preferred.
+          <br /><br />
+          <strong>8. Response Expectations and Escalation</strong><br />
+          We're committed to responsive, helpful communication on all Trust & Safety matters. Here's what you can expect:
+          <br /><br />
+          Initial acknowledgment confirms receipt of your inquiry, typically within 24-48 hours for standard matters and faster for urgent concerns. Acknowledgment includes a reference number for tracking and estimated timeline for substantive response.
+          <br /><br />
+          Investigation and resolution timelines vary based on complexity. Simple questions may be answered immediately. Standard concerns typically receive substantive responses within 3-5 business days. Complex investigations involving multiple parties or extensive evidence review may take longer, with proactive updates on progress.
+          <br /><br />
+          If you're not satisfied with a response or believe your concern hasn't been adequately addressed, escalation options are available. You may request supervisory review by replying to indicate you'd like escalation. You may contact Legal & Compliance directly for independent assessment. For data protection matters, you may contact our Data Protection Officer at dpo@amoriaconnekyt.com. And you may lodge complaints with relevant regulatory authorities if you believe your rights have been violated.
+          <br /><br />
+          <strong>9. Language and Accessibility</strong><br />
+          Our primary communication languages are English and French. If you need to communicate in another language, please let us know and we'll make reasonable efforts to accommodate your needs.
+          <br /><br />
+          If you have accessibility requirements affecting how you communicate with us, please inform us and we'll work to accommodate your needs through alternative formats, communication methods, or other appropriate adjustments.
+          <br /><br />
+          <strong>Our Commitment to Accessible Trust & Safety Communication:</strong><br />
+          We measure our Trust & Safety effectiveness not just by the policies we write or the systems we build, but by whether users feel comfortable reaching out when they need help. Every barrier to communication—confusing contact information, slow responses, dismissive treatment—undermines the safety we're trying to create. We're committed to being accessible, responsive, and genuinely helpful to everyone who contacts us. Your safety concerns, questions, and feedback aren't interruptions to our work; they are our work. Don't hesitate to reach out—we're here to help.
           <br /><br />
           © 2026 Amoria Global Tech Ltd. | All Rights Reserved | Trust & Safety Policy
         </div>

@@ -2,12 +2,14 @@
 import React, { useState, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { forgotPassword } from '@/lib/APIs/auth/forgot-password/route';
 
 export default function ForgotPasswordPage(): React.JSX.Element {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [verificationCode, setVerificationCode] = useState(['', '', '', '', '', '']);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<'email' | 'verification'>('email'); // Track current step
 
   // Create refs for each input box
@@ -16,18 +18,32 @@ export default function ForgotPasswordPage(): React.JSX.Element {
   const isEmailDisabled = !email;
   const isCodeDisabled = verificationCode.some(digit => digit === '');
 
-  const handleEmailSubmit = (e: React.FormEvent) => {
+  const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
     if (!isEmailDisabled) {
-      // Move to verification code step
-      setStep('verification');
-      console.log('Verification code would be sent to:', email);
-      // Focus on first input box after switching to verification step
-      setTimeout(() => {
-        inputRefs.current[0]?.focus();
-      }, 100);
+      setLoading(true);
+
+      try {
+        const response = await forgotPassword({ email });
+
+        if (response.success) {
+          // Move to verification code step
+          setStep('verification');
+          // Focus on first input box after switching to verification step
+          setTimeout(() => {
+            inputRefs.current[0]?.focus();
+          }, 100);
+        } else {
+          setError(response.error || 'Failed to send verification code. Please try again.');
+        }
+      } catch (err) {
+        console.error('Forgot password error:', err);
+        setError('An error occurred. Please try again.');
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -37,7 +53,7 @@ export default function ForgotPasswordPage(): React.JSX.Element {
 
     if (!isCodeDisabled) {
       const code = verificationCode.join('');
-      // Navigate to reset password page with email and code
+      // Navigate to reset password page with email and code (set-new-password endpoint expects 'code')
       router.push(`/user/auth/resetpswd?email=${encodeURIComponent(email)}&code=${code}`);
       console.log('Verification code entered:', code);
     }
@@ -94,10 +110,24 @@ export default function ForgotPasswordPage(): React.JSX.Element {
     }
   };
 
-  const handleResendCode = () => {
+  const handleResendCode = async () => {
+    setError('');
     setVerificationCode(['', '', '', '', '', '']);
-    console.log('Resend verification code to:', email);
-    alert('Verification code resent successfully!');
+
+    try {
+      // Call forgot-password again to resend the code
+      const response = await forgotPassword({ email });
+
+      if (response.success) {
+        alert('Verification code resent successfully!');
+      } else {
+        setError(response.error || 'Failed to resend code. Please try again.');
+      }
+    } catch (err) {
+      console.error('Resend code error:', err);
+      setError('Failed to resend code. Please try again.');
+    }
+
     // Focus on first input box
     setTimeout(() => {
       inputRefs.current[0]?.focus();
@@ -164,7 +194,7 @@ export default function ForgotPasswordPage(): React.JSX.Element {
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={isEmailDisabled}
+              disabled={isEmailDisabled || loading}
               style={{
                 width: '100%',
                 padding: '10px',
@@ -172,14 +202,14 @@ export default function ForgotPasswordPage(): React.JSX.Element {
                 borderRadius: window.innerWidth < 640 ? '10px' : '12px',
                 fontWeight: '500',
                 transition: 'all 0.3s',
-                cursor: isEmailDisabled ? 'not-allowed' : 'pointer',
-                backgroundColor: isEmailDisabled ? '#d1d5db' : '#083A85',
-                color: isEmailDisabled ? '#9ca3af' : '#ffffff',
+                cursor: (isEmailDisabled || loading) ? 'not-allowed' : 'pointer',
+                backgroundColor: (isEmailDisabled || loading) ? '#d1d5db' : '#083A85',
+                color: (isEmailDisabled || loading) ? '#9ca3af' : '#ffffff',
                 border: 'none',
                 marginBottom: window.innerWidth < 640 ? '10px' : '16px'
               }}
             >
-              Send Verification Code
+              {loading ? 'Sending...' : 'Send Verification Code'}
             </button>
 
             {/* Back to Sign In Link */}

@@ -1,9 +1,12 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import { signup } from '@/lib/APIs/auth/signup/route';
 
 export default function SignupPage(): React.JSX.Element {
+  const router = useRouter();
   const t = useTranslations('auth.signupPage');
   const tAuth = useTranslations('auth');
   const [showPassword, setShowPassword] = useState(false);
@@ -12,6 +15,7 @@ export default function SignupPage(): React.JSX.Element {
   const [lastName, setLastName] = useState('');
   const [countryCode, setCountryCode] = useState('+250');
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [loading, setLoading] = useState(false);
 
   // Screen size detection for responsive design
   const [screenSize, setScreenSize] = useState<'mobile' | 'tablet' | 'desktop' | 'large' | 'xlarge'>('desktop');
@@ -71,7 +75,7 @@ export default function SignupPage(): React.JSX.Element {
     return hasNumber && hasLetter && hasSpecialChar && isLongEnough;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const newErrors: { [key: string]: string } = {};
 
@@ -90,14 +94,48 @@ export default function SignupPage(): React.JSX.Element {
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length === 0) {
-      console.log('Signup submitted:', {
-        firstName,
-        lastName,
-        phone: `${countryCode}${phoneNumber}`,
-        email,
-        password,
-      });
-      // Add your signup logic here
+      setLoading(true);
+
+      try {
+        const response = await signup({
+          firstName,
+          lastName,
+          email,
+          phone: `${countryCode}${phoneNumber}`, // Combine country code and phone number
+          customerType: 'client', // Backend expects 'customerType'
+          password,
+        });
+
+        console.log('📋 Signup Response:', response);
+
+        if (response.success && response.data) {
+          // Redirect to OTP verification page with applicantId and email
+          console.log('📋 Response data:', response.data);
+          const applicantId = response.data.applicant_id; // Backend returns snake_case
+          console.log('📋 Extracted applicantId:', applicantId);
+
+          if (!applicantId) {
+            console.error('❌ No applicant_id in response:', response.data);
+            newErrors.email = 'Signup succeeded but missing applicant ID. Please contact support.';
+            setErrors(newErrors);
+            setLoading(false);
+            return;
+          }
+
+          console.log('✅ Redirecting to verify-otp with applicantId:', applicantId);
+          router.push(`/user/auth/verify-otp?applicantId=${encodeURIComponent(applicantId)}&email=${encodeURIComponent(email)}`);
+        } else {
+          // Display error from API
+          newErrors.email = response.error || 'Signup failed. Please try again.';
+          setErrors(newErrors);
+        }
+      } catch (err) {
+        console.error('Signup error:', err);
+        newErrors.email = 'An error occurred during signup. Please try again.';
+        setErrors(newErrors);
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -590,7 +628,7 @@ export default function SignupPage(): React.JSX.Element {
               <div style={{ marginTop: isMobile ? '16px' : '20px', width: '100%' }}>
                 <button
                   type="submit"
-                  disabled={isDisabled}
+                  disabled={isDisabled || loading}
                   style={{
                     width: '100%',
                     padding: isMobile ? '15px' : '12px',
@@ -598,14 +636,14 @@ export default function SignupPage(): React.JSX.Element {
                     borderRadius: '30px',
                     fontWeight: '600',
                     transition: 'all 0.3s',
-                    cursor: isDisabled ? 'not-allowed' : 'pointer',
-                    backgroundColor: isDisabled ? '#d1d5db' : '#083A85',
-                    color: isDisabled ? '#9ca3af' : '#ffffff',
+                    cursor: (isDisabled || loading) ? 'not-allowed' : 'pointer',
+                    backgroundColor: (isDisabled || loading) ? '#d1d5db' : '#083A85',
+                    color: (isDisabled || loading) ? '#9ca3af' : '#ffffff',
                     border: 'none',
                     minHeight: isMobile ? '52px' : 'auto'
                   }}
                 >
-                  {t('createAccountButton')}
+                  {loading ? 'Creating Account...' : t('createAccountButton')}
                 </button>
               </div>
             </form>

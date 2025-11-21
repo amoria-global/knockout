@@ -94,50 +94,60 @@ export default function Home() {
         <main style={{ flex: 1 }}>
         <style jsx>{`
           @media (max-width: 768px) {
-            .hero-content { flex-direction: column !important; padding: 20px 15px 60px !important; }
-            .hero-left { width: 100% !important; max-width: 100% !important; text-align: center; }
-            .hero-right { width: 100% !important; height: 350px !important; margin-top: 30px; }
-            .hero-title { font-size: 36px !important; }
-            .hero-description { max-width: 100% !important; }
-            .hero-buttons { justify-content: center !important; }
+            .hero-content { flex-direction: column !important; padding: 20px 15px 40px !important; min-height: auto !important; gap: 20px !important; }
+            .hero-left { width: 100% !important; max-width: 100% !important; text-align: center; padding: 0 10px !important; }
+            .hero-right { width: 100% !important; height: 380px !important; margin-top: 10px; position: relative !important; overflow: visible !important; transform: scale(0.55) translateX(25%) !important; transform-origin: top center !important; margin-bottom: -120px !important; }
+            .hero-title { font-size: 32px !important; line-height: 1.1 !important; }
+            .hero-description { max-width: 100% !important; font-size: 14px !important; padding: 0 5px !important; }
+            .hero-buttons { justify-content: center !important; flex-direction: column !important; align-items: center !important; gap: 10px !important; }
+            .hero-buttons button { width: 100% !important; max-width: 280px !important; }
             .twitter-badge { margin-left: auto; margin-right: auto; }
-            .hero-image-container { left: 50% !important; transform: translateX(-50%) !important; width: 100% !important; }
-            .hero-image { width: 100% !important; height: auto !important; }
-            .hero-overlay { width: 100% !important; height: 100% !important; }
+            .hero-image-container { left: 50% !important; transform: translateX(-50%) !important; }
+            .hero-glow { display: none !important; }
+            .hero-circle { display: none !important; }
 
-            .how-it-works-title { font-size: 36px !important; margin-bottom: 40px !important; }
-            .how-it-works-steps { flex-direction: column !important; gap: 30px !important; }
+            .how-it-works-title { font-size: 36px !important; margin-bottom: 40px !important; text-align: center !important; }
+            .how-it-works-steps { flex-direction: column !important; gap: 30px !important; align-items: center !important; }
             .how-it-works-svg { display: none !important; }
             .step-img { width: 180px !important; height: 180px !important; }
-            .step-title { font-size: 24px !important; }
-            .step-description { font-size: 15px !important; }
+            .step-title { font-size: 24px !important; text-align: center !important; }
+            .step-description { font-size: 15px !important; text-align: center !important; }
 
-            .photographer-container { flex-direction: column !important; padding: 20px !important; gap: 20px !important; }
-            .photographer-title { font-size: 32px !important; position: relative !important; top: 0 !important; }
-            .photographer-description { position: relative !important; top: 0 !important; margin-bottom: 20px !important; font-size: 16px !important; }
-            .photographer-button { position: relative !important; left: 0 !important; top: 0 !important; width: 100% !important; max-width: 250px !important; margin: 0 auto !important; font-size: 18px !important; }
-            .photographer-video-container { max-width: 100% !important; }
+            .photographer-container { flex-direction: column !important; padding: 20px !important; gap: 20px !important; align-items: center !important; text-align: center !important; }
+            .photographer-title { font-size: 32px !important; position: relative !important; top: 0 !important; text-align: center !important; }
+            .photographer-description { position: relative !important; top: 0 !important; margin-bottom: 20px !important; font-size: 16px !important; text-align: center !important; }
+            .photographer-button { position: relative !important; left: 0 !important; top: 0 !important; width: 100% !important; max-width: 220px !important; margin: 0 auto !important; font-size: 22px !important; }
+            .photographer-video-container { max-width: 100% !important; width: 100% !important; height: auto !important; }
 
-            .mockups-section { padding: 60px 20px !important; }
-            .mockups-container { height: 400px !important; }
-            .device-laptop { display: none !important; }
+            .mockups-section { padding: 90px 20px !important; }
+            .mockups-container { display: flex !important; justify-content: center !important; align-items: center !important; }
+            .mockups-container { height: 400px !important; width: 100% !important; max-width: 400px !important; position: relative !important; }
+            .device-laptop { display: none; max-width: 700px !important; max-height: 400px !important; width: 400px !important; height: 300px !important; }
             .device-tablet { width: 300px !important; height: 400px !important; }
             .device-phone { width: 200px !important; height: 400px !important; }
 
-            .why-amoria-title { font-size: 36px !important; }
-            .why-amoria-subtitle { font-size: 16px !important; }
-            .why-amoria-content { flex-direction: column !important; gap: 30px !important; }
-            .why-amoria-image-container { height: 400px !important; max-width: 100% !important; }
-            .why-amoria-card-title { font-size: 18px !important; }
-            .why-amoria-card-description { font-size: 14px !important; }
+            .why-amoria-section { padding: 60px 15px !important; overflow: hidden !important; }
+            .why-amoria-header { margin-bottom: 40px !important; }
+            .why-amoria-title { font-size: 28px !important; text-align: center !important; line-height: 1.15 !important; margin-bottom: 16px !important; }
+            .why-amoria-subtitle { font-size: 14px !important; text-align: center !important; padding: 0 10px !important; }
+            .why-amoria-content { flex-direction: column !important; gap: 30px !important; align-items: center !important; }
+            .why-amoria-cards { width: 100% !important; max-width: 100% !important; }
+            .why-amoria-image-container { position: relative !important; width: 100% !important; max-width: 370px !important; height: 400px !important; margin: 30px auto 0 !important; flex: none !important; }
+            .why-amoria-image-container > div:first-child { width: 100% !important; height: 380px !important; right: 0 !important; }
+            .why-amoria-image-container > div:last-child { width: 100% !important; height: 380px !important; right: 0 !important; top: 10px !important; }
+            .why-amoria-card-title { font-size: 16px !important; }
+            .why-amoria-card-description { font-size: 13px !important; }
 
-            .global-network-section { padding: 60px 20px !important; }
-            .global-network-content { flex-direction: column !important; gap: 40px !important; }
-            .global-network-left { flex: 1 !important; max-width: 100% !important; text-align: center; }
-            .global-network-title { font-size: 36px !important; }
-            .global-network-description { font-size: 15px !important; }
-            .global-network-buttons { justify-content: center !important; flex-wrap: wrap !important; }
-            .global-network-right { height: 300px !important; }
+            .global-network-section { padding: 50px 15px !important; overflow: hidden !important; margin-top: 0 !important; }
+            .global-network-content { flex-direction: column !important; gap: 30px !important; align-items: center !important; }
+            .global-network-left { flex: 1 !important; max-width: 100% !important; text-align: center !important; padding: 0 10px !important; }
+            .global-network-title { font-size: 28px !important; line-height: 1.15 !important; text-align: center !important; }
+            .global-network-description { font-size: 14px !important; text-align: center !important; padding: 0 10px !important; margin-bottom: 20px !important; }
+            .global-network-buttons { justify-content: center !important; flex-direction: column !important; align-items: center !important; gap: 10px !important; }
+            .global-network-buttons button { width: 100% !important; max-width: 280px !important; }
+            .global-network-right { width: 90% !important; height: 350px !important; margin-top: 20px !important; overflow: visible !important; position: relative !important; }
+            .global-network-svg-container { position: relative !important; left: 50% !important; transform: translateX(-50%) !important; overflow: visible !important; }
+            .global-network-svg { display: block !important; }
           }
 
           @media (min-width: 769px) and (max-width: 1024px) {
@@ -176,7 +186,7 @@ export default function Home() {
               zIndex: 10
             }}>
               {/* Blue lighting bulb-like glow effect */}
-              <div style={{
+              <div className="hero-glow" style={{
                 position: 'absolute',
                 top: '30px',
                 left: '-135px',
@@ -275,7 +285,7 @@ export default function Home() {
               zIndex: 5
             }}>
               {/* Full Circle - Upper Left */}
-              <div style={{
+              <div className="hero-circle" style={{
                 position: 'absolute',
                 left: '-115px',
                 top: '235px',
@@ -287,7 +297,7 @@ export default function Home() {
               }} />
 
               {/* Half Circle - Lower Right */}
-              <div style={{
+              <div className="hero-circle" style={{
                 position: 'absolute',
                 left: '-50px',
                 bottom: '140px',
@@ -323,7 +333,7 @@ export default function Home() {
                 />
 
                 {/* Blue Angular Gradient Overlay - Top Right with 3D Perspective */}
-                <div style={{
+                <div className="hero-overlay" style={{
                   position: 'absolute',
                   top: '2px',
                   right: '20px',
@@ -338,7 +348,7 @@ export default function Home() {
                 }} />
 
                 {/* Lady with Speech Bubble - Top Left */}
-                <div style={{
+                <div className="hero-floating-card" style={{
                   position: 'absolute',
                   top: '-10px',
                   left: '-175px',
@@ -400,7 +410,7 @@ export default function Home() {
                 </div>
 
                 {/* Call UI Card - Left Middle (under camera) */}
-                <div style={{
+                <div className="hero-floating-card" style={{
                   position: 'absolute',
                   left: '-200px',
                   top: '130px',
@@ -468,7 +478,7 @@ export default function Home() {
                 </div>
 
                 {/* Verified Man Card - Right Bottom (under photographer hair) */}
-                <div style={{
+                <div className="hero-floating-card" style={{
                   position: 'absolute',
                   right: '-10px',
                   top: '335px',
@@ -538,7 +548,7 @@ export default function Home() {
                 </div>
 
                 {/* Smile Please - Bottom Center (under photographer mouth) */}
-                <div style={{
+                <div className="hero-floating-card" style={{
                   position: 'absolute',
                   left: '225px',
                   bottom: '210px',
@@ -559,6 +569,7 @@ export default function Home() {
                 </div>
                 {/* Triangular polygon pointer for Smile Please bubble */}
                 <svg
+                  className="hero-floating-card"
                   style={{
                     position: 'absolute',
                     width: '15px',
@@ -800,29 +811,6 @@ export default function Home() {
                 }}>
                   {t('howItWorks.forPhotographers.description')}
                 </p>
-                <button
-                  className="photographer-button"
-                  onClick={() => window.location.href = '/user/auth/signup-type'}
-                  style={{
-                    background: 'linear-gradient(90deg, #041DC0 0%, #FF6363 0%, #7763FF 100%)',
-                    color: '#000',
-                    position: 'absolute',
-                    left: '150px',
-                    top: '290px',
-                    fontSize: '20px',
-                    fontWeight: 600,
-                    padding: '8.25px 5.5px',
-                    width: '180px',
-                    height: '12%',
-                    borderRadius: '50px',
-                    border: 'none',
-                    cursor: 'pointer',
-                    transition: 'transform 0.2s ease',
-                    boxShadow: '0 4px 15px rgba(0,0,0,0.2)'
-                  }}
-                >
-                  {t('howItWorks.forPhotographers.cta')}
-                </button>
               </div>
 
               {/* Right Video Container */}
@@ -863,6 +851,31 @@ export default function Home() {
                   </video>
                 </div>
               </div>
+
+              {/* Button - Now after video */}
+              <button
+                className="photographer-button"
+                onClick={() => window.location.href = '/user/auth/signup-type'}
+                style={{
+                  background: 'linear-gradient(90deg, #041DC0 0%, #FF6363 0%, #7763FF 100%)',
+                  color: '#000',
+                  position: 'absolute',
+                  left: '150px',
+                  top: '290px',
+                  fontSize: '20px',
+                  fontWeight: 600,
+                  padding: '8.25px 5.5px',
+                  width: '180px',
+                  height: '12%',
+                  borderRadius: '50px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  transition: 'transform 0.2s ease',
+                  boxShadow: '0 4px 15px rgba(0,0,0,0.2)'
+                }}
+              >
+                {t('howItWorks.forPhotographers.cta')}
+              </button>
             </div>
           </div>
         </section>
@@ -1574,9 +1587,9 @@ export default function Home() {
         </section>
 
         {/* Why Amoria connekyt Only Section */}
-        <section style={{
+        <section className="why-amoria-section" style={{
           backgroundColor: '#fff',
-          padding: '90px 0', // Standardized vertical padding
+          padding: '90px 0',
         }}>
           <div style={{
             maxWidth: '1080px',
@@ -1584,7 +1597,7 @@ export default function Home() {
             padding: '0 20px',
           }}>
              {/* Section Header */}
-            <div style={{
+            <div className="why-amoria-header" style={{
               maxWidth: '780px',
               margin: '0 auto 80px',
               textAlign: 'center'
@@ -1616,7 +1629,7 @@ export default function Home() {
               gap: '64px'
             }}>
               {/* Left Content */}
-              <div style={{
+              <div className="why-amoria-cards" style={{
                 flex: 1,
                 maxWidth: '500px'
               }}>

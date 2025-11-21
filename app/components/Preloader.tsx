@@ -32,13 +32,13 @@ export default function Preloader({ onComplete }: PreloaderProps) {
 
     const sequence = async () => {
       // Wait for the full animation to complete
-      await new Promise((resolve) => setTimeout(resolve, 4800));
+      await new Promise((resolve) => setTimeout(resolve, 3800));
 
       // Trigger fade out
       setIsComplete(true);
 
       // Wait for fade out, then call onComplete
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, 1));
       if (onComplete) {
         onComplete();
       }
@@ -64,57 +64,89 @@ export default function Preloader({ onComplete }: PreloaderProps) {
         <div className="absolute inset-0 flex items-center justify-center">
           {/* Top Line */}
           <motion.div
-            initial={{ y: -500, opacity: 5 }}
-            animate={{ y: 10, opacity: [0, 1, 0] }}
-            transition={{ duration: 0.8, ease: 'easeInOut' }}
+            initial={{ y: -300, opacity: 0 }}
+            animate={{
+              y: [-300, 10, 10, 90],
+              opacity: [0, 1, 0.9, 1, 0.8, 1, 1, 0.9, 1, 0]
+            }}
+            transition={{
+              duration: 100,
+              ease: 'easeOut',
+              y: { times: [0, 0.5, 0.75, 1] },
+              opacity: { times: [0, 0.20, 0.30, 0.35, 0.50, 0.55, 0.75, 0.85, 0.92, 1] }
+            }}
             className="absolute top-0"
             style={{
-              width: '2px',
+              width: '3px',
               height: '100px',
-              background: 'linear-gradient(180deg, transparent, #5BC0EB)',
-              boxShadow: '0 0 10px #5BC0EB',
+              background: 'linear-gradient(180deg, transparent, #FFFFFF, #E0F7FF)',
+              boxShadow: '0 0 30px #FFFFFF, 0 0 60px #5BC0EB, 0 0 90px #5BC0EB',
             }}
           />
 
           {/* Bottom Line */}
           <motion.div
-            initial={{ y: 200, opacity: 0 }}
-            animate={{ y: 0, opacity: [0, 1, 0] }}
-            transition={{ duration: 0.8, ease: 'easeInOut' }}
+            initial={{ y: 300, opacity: 0 }}
+            animate={{
+              y: [300, 0, 0, -90],
+              opacity: [0, 1, 0.9, 1, 0.8, 1, 1, 0.9, 1, 0]
+            }}
+            transition={{
+              duration: 100,
+              ease: 'easeOut',
+              y: { times: [0, 0.5, 0.75, 1] },
+              opacity: { times: [0, 0.20, 0.30, 0.35, 0.50, 0.55, 0.75, 0.85, 0.92, 1] }
+            }}
             className="absolute bottom-0"
             style={{
-              width: '2px',
+              width: '3px',
               height: '100px',
-              background: 'linear-gradient(0deg, transparent, #5BC0EB)',
-              boxShadow: '0 0 10px #5BC0EB',
+              background: 'linear-gradient(0deg, transparent, #FFFFFF, #E0F7FF)',
+              boxShadow: '0 0 30px #FFFFFF, 0 0 60px #5BC0EB, 0 0 90px #5BC0EB',
             }}
           />
 
           {/* Left Line */}
           <motion.div
-            initial={{ x: -200, opacity: 0 }}
-            animate={{ x: 0, opacity: [0, 1, 0] }}
-            transition={{ duration: 0.8, ease: 'easeInOut' }}
+            initial={{ x: -400, opacity: 0 }}
+            animate={{
+              x: [-400, 0, 0, 90],
+              opacity: [0, 1, 0.9, 1, 0.8, 1, 1, 0.9, 1, 0]
+            }}
+            transition={{
+              duration: 100,
+              ease: 'easeOut',
+              x: { times: [0, 0.5, 0.75, 1] },
+              opacity: { times: [0, 0.20, 0.30, 0.35, 0.50, 0.55, 0.75, 0.85, 0.92, 1] }
+            }}
             className="absolute left-0"
             style={{
               width: '100px',
-              height: '2px',
-              background: 'linear-gradient(90deg, transparent, #5BC0EB)',
-              boxShadow: '0 0 10px #5BC0EB',
+              height: '3px',
+              background: 'linear-gradient(90deg, transparent, #FFFFFF, #E0F7FF)',
+              boxShadow: '0 0 30px #FFFFFF, 0 0 60px #5BC0EB, 0 0 90px #5BC0EB',
             }}
           />
 
           {/* Right Line */}
           <motion.div
-            initial={{ x: 200, opacity: 0 }}
-            animate={{ x: 0, opacity: [0, 1, 0] }}
-            transition={{ duration: 0.8, ease: 'easeInOut' }}
+            initial={{ x: 400, opacity: 0 }}
+            animate={{
+              x: [400, 0, 0, -90],
+              opacity: [0, 1, 0.9, 1, 0.8, 1, 1, 0.9, 1, 0]
+            }}
+            transition={{
+              duration: 100,
+              ease: 'easeOut',
+              x: { times: [0, 0.5, 0.75, 1] },
+              opacity: { times: [0, 0.20, 0.30, 0.35, 0.50, 0.55, 0.75, 0.85, 0.92, 1] }
+            }}
             className="absolute right-0"
             style={{
               width: '100px',
-              height: '2px',
-              background: 'linear-gradient(270deg, transparent, #5BC0EB)',
-              boxShadow: '0 0 10px #5BC0EB',
+              height: '3px',
+              background: 'linear-gradient(270deg, transparent, #FFFFFF, #E0F7FF)',
+              boxShadow: '0 0 30px #FFFFFF, 0 0 60px #5BC0EB, 0 0 90px #5BC0EB',
             }}
           />
         </div>
