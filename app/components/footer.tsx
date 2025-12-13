@@ -216,11 +216,11 @@ export default function Footer() {
           >
             {/* Amoria connekyt Section */}
             <div className="footer-brand" style={{ paddingRight: '1.6rem' }}>
-              <Link href="/" className="footer-logo" style={{ display: 'flex', alignItems: 'center', marginBottom: '1.9rem', marginLeft: '-1rem', cursor: 'pointer', textDecoration: 'none', color: 'inherit' }}>
-                <h3 style={{ fontSize: '1.6rem', fontWeight: 700, marginLeft: '16px', marginTop: '-1.9rem' }}>
+              <Link href="/" className="footer-logo" style={{ display: 'flex', alignItems: 'center', marginBottom: '3rem', marginLeft: '-1rem', cursor: 'pointer', textDecoration: 'none', color: 'inherit' }}>
+                <h3 style={{ fontSize: '1.6rem', fontWeight: 700, marginLeft: '16px', marginTop: '-0.5rem' }}>
                   Amoria
                 </h3>
-                <img src="/fav.png" alt="AmoriaK Logo" style={{ height: '40px', width: '40px', borderRadius: '9999px', marginTop: '-1.9rem', marginLeft: '-5px' }} />
+                <img src="/fav.png" alt="AmoriaK Logo" style={{ height: '40px', width: '40px', borderRadius: '9999px', marginTop: '-0.5rem', marginLeft: '-5px' }} />
               </Link>
               <p
                 className="footer-description"
