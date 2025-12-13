@@ -37,6 +37,15 @@ export default function Home() {
     }
   }, [isPaused])
 
+  // Auto-rotation effect for Why Amoria Connekt cards - rotate every 3 seconds
+  useEffect(() => {
+    const cardInterval = setInterval(() => {
+      setActiveCard((prev) => (prev + 1) % 4)
+    }, 3000)
+
+    return () => clearInterval(cardInterval)
+  }, [])
+
   // Calculate circular positions for each device based on activeDevice
   const getDevicePosition = (deviceIndex: number) => {
     // Calculate relative position (0 = center/front, 1 = right, 2 = left)
@@ -119,9 +128,10 @@ export default function Home() {
             .photographer-button { position: relative !important; left: 0 !important; top: 0 !important; width: 100% !important; max-width: 220px !important; margin: 0 auto !important; font-size: 22px !important; }
             .photographer-video-container { max-width: 100% !important; width: 100% !important; height: auto !important; }
 
-            .mockups-section { padding: 90px 20px !important; }
-            .mockups-container { display: flex !important; justify-content: center !important; align-items: center !important; }
-            .mockups-container { height: 400px !important; width: 100% !important; max-width: 400px !important; position: relative !important; }
+            .mockups-section { padding: 90px 15px !important; }
+            .mockups-inner { padding: 40px 20px !important; margin: 0 auto !important; }
+            .mockups-container { display: flex !important; justify-content: center !important; align-items: center !important; margin-left: 0 !important; padding: 0 !important; }
+            .mockups-container { height: 400px !important; width: 100% !important; max-width: 100% !important; position: relative !important; }
             .device-laptop { display: none; max-width: 700px !important; max-height: 400px !important; width: 400px !important; height: 300px !important; }
             .device-tablet { width: 300px !important; height: 400px !important; }
             .device-phone { width: 200px !important; height: 400px !important; }
@@ -882,24 +892,32 @@ export default function Home() {
 
         {/* Mockups Section */}
         <section className="mockups-section" style={{
-          background: 'linear-gradient(90deg, #ec4899 0%, #f97316 50%, #8b5cf6 100%)',
-          backdropFilter: 'blur(1000px)',
-          padding: '130px 220px 130px 250px',
+          backgroundColor: '#DBDBDB',
+          padding: '130px 40px',
           position: 'relative',
           overflow: 'hidden'
         }}>
-          <div className="mockups-container" style={{
-            maxWidth: '1400px',
+          {/* Inner container with #adadad background */}
+          <div className="mockups-inner" style={{
+            backgroundColor: '#adadad',
+            borderRadius: '24px',
+            padding: '60px 120px 60px 180px',
+            maxWidth: '2200px',
+            width: '100%',
             margin: '0 auto',
-            padding: '0 20px',
-            position: 'relative',
-            height: '500px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            perspective: '2000px',
-            perspectiveOrigin: 'center center'
+            overflow: 'hidden'
           }}>
+            <div className="mockups-container" style={{
+              padding: '0 20px',
+              position: 'relative',
+              height: '600px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              perspective: '2000px',
+              perspectiveOrigin: 'center center',
+              marginLeft: '40px'
+            }}>
             {/* Laptop Mockup - Background Layer */}
             <div
               className="device-laptop"
@@ -916,7 +934,7 @@ export default function Home() {
                 zIndex: getDevicePosition(2).zIndex,
                 opacity: getDevicePosition(2).opacity,
                 filter: getDevicePosition(2).zIndex > 5 ? 'none' : 'blur(1px)',
-                transition: 'all 0.7s ease-out',
+                transition: 'all 0.4s ease-out',
                 cursor: 'pointer'
             }}>
               {/* Laptop Screen */}
@@ -1097,7 +1115,7 @@ export default function Home() {
                 zIndex: getDevicePosition(1).zIndex,
                 opacity: getDevicePosition(1).opacity,
                 filter: getDevicePosition(1).zIndex > 5 ? 'none' : 'blur(1px)',
-                transition: 'all 0.7s ease-out',
+                transition: 'all 0.4s ease-out',
                 cursor: 'pointer'
             }}>
               {/* Power Button (Top Right) */}
@@ -1346,7 +1364,7 @@ export default function Home() {
                 zIndex: getDevicePosition(0).zIndex,
                 opacity: getDevicePosition(0).opacity,
                 filter: getDevicePosition(0).zIndex > 5 ? 'none' : 'blur(1px)',
-                transition: 'all 0.7s ease-out',
+                transition: 'all 0.4s ease-out',
                 cursor: 'pointer'
             }}>
               {/* Power Button (Right Side) */}
@@ -1583,6 +1601,7 @@ export default function Home() {
                 />
               ))}
             </div>
+          </div>
           </div>
         </section>
 

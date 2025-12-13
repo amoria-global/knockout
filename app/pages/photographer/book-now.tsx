@@ -1,9 +1,112 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import AmoriaKNavbar from '../../components/navbar';
 
-export default function BookNowPage(): React.JSX.Element {
+// Shared photographer data - same as view-profile.tsx
+const photographersData = [
+  {
+    id: 1,
+    name: 'Cole Palmer',
+    image: 'https://i.pinimg.com/1200x/e9/1f/59/e91f59ed85a702d7252f2b0c8e02c7d2.jpg',
+    bannerImage: 'https://i.pinimg.com/736x/8b/89/70/8b8970fb8745252e4d36f60305967d37.jpg',
+    verified: true,
+    location: 'Kigali - Rwanda, Gasabo',
+    specialty: 'Videographer',
+    rating: 4.9,
+    reviews: 127,
+    completedJobs: 50,
+  },
+  {
+    id: 2,
+    name: 'Enzo Fernandez',
+    image: 'https://i.pinimg.com/1200x/8e/5e/69/8e5e6976723a4d5f4e0999a9dd5ac8c6.jpg',
+    bannerImage: 'https://i.pinimg.com/1200x/8e/5e/69/8e5e6976723a4d5f4e0999a9dd5ac8c6.jpg',
+    verified: true,
+    location: 'Musanze - Rwanda, Musanze',
+    specialty: 'Photographer',
+    rating: 4.8,
+    reviews: 98,
+    completedJobs: 65,
+  },
+  {
+    id: 3,
+    name: 'Liam delap',
+    image: 'https://i.pinimg.com/1200x/09/23/45/092345eac1919407e0c49f67e285b831.jpg',
+    bannerImage: 'https://i.pinimg.com/1200x/09/23/45/092345eac1919407e0c49f67e285b831.jpg',
+    verified: true,
+    location: 'Kigali - Rwanda, Kicukiro',
+    specialty: 'Photographer',
+    rating: 4.7,
+    reviews: 156,
+    completedJobs: 80,
+  },
+  {
+    id: 4,
+    name: 'Moises Caicedo',
+    image: 'https://i.pinimg.com/1200x/84/1b/a6/841ba626d4bb44b8906d8c25400e261f.jpg',
+    bannerImage: 'https://i.pinimg.com/1200x/84/1b/a6/841ba626d4bb44b8906d8c25400e261f.jpg',
+    verified: true,
+    location: 'Huye - Rwanda, Huye',
+    specialty: 'Videographer',
+    rating: 4.9,
+    reviews: 143,
+    completedJobs: 72,
+  },
+  {
+    id: 5,
+    name: 'Pedro neto',
+    image: 'https://i.pinimg.com/736x/0f/22/d0/0f22d09fadd8a310fa484d1e94c8c55f.jpg',
+    bannerImage: 'https://i.pinimg.com/736x/0f/22/d0/0f22d09fadd8a310fa484d1e94c8c55f.jpg',
+    verified: true,
+    location: 'Rubavu - Rwanda, Rubavu',
+    specialty: 'Photographer',
+    rating: 4.8,
+    reviews: 134,
+    completedJobs: 58,
+  },
+  {
+    id: 6,
+    name: 'Reece James',
+    image: 'https://i.pinimg.com/1200x/7c/85/39/7c8539e01282b4f5d555f9182a4acf44.jpg',
+    bannerImage: 'https://i.pinimg.com/1200x/7c/85/39/7c8539e01282b4f5d555f9182a4acf44.jpg',
+    verified: true,
+    location: 'Kigali - Rwanda, Nyarugenge',
+    specialty: 'Photographer',
+    rating: 4.9,
+    reviews: 167,
+    completedJobs: 91,
+  },
+  {
+    id: 7,
+    name: 'Levi Colwill',
+    image: 'https://i.pinimg.com/736x/e2/a6/5d/e2a65d23bea44eae43bd4c5965e4ff56.jpg',
+    bannerImage: 'https://i.pinimg.com/736x/e2/a6/5d/e2a65d23bea44eae43bd4c5965e4ff56.jpg',
+    verified: true,
+    location: 'Nyanza - Rwanda, Nyanza',
+    specialty: 'Videographer',
+    rating: 4.7,
+    reviews: 92,
+    completedJobs: 55,
+  },
+  {
+    id: 8,
+    name: 'Malo Gusto',
+    image: 'https://i.pinimg.com/736x/ca/0c/1b/ca0c1beee4be6b1dfe93c67ac02bdb49.jpg',
+    bannerImage: 'https://i.pinimg.com/736x/ca/0c/1b/ca0c1beee4be6b1dfe93c67ac02bdb49.jpg',
+    verified: true,
+    location: 'Kigali - Rwanda, Gasabo',
+    specialty: 'Photographer',
+    rating: 4.8,
+    reviews: 118,
+    completedJobs: 63,
+  },
+];
+
+function BookNowContent(): React.JSX.Element {
+  const searchParams = useSearchParams();
+  const photographerId = searchParams.get('id');
   const t = useTranslations('booking.step1');
   const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
@@ -19,13 +122,19 @@ export default function BookNowPage(): React.JSX.Element {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Sample photographer data - this would normally come from props or API
+  // Get photographer data based on ID from URL
+  const photographer = photographersData.find(p => p.id === Number(photographerId)) || photographersData[0];
+
   const photographerData = {
-    name: 'Cole Palmer',
-    profileImage: 'https://i.pinimg.com/1200x/85/c5/96/85c596eec98acf0645c5c231f3f8b870.jpg',
+    name: photographer.name,
+    profileImage: photographer.image,
+    backgroundImage: photographer.bannerImage,
+    location: photographer.location,
+    rating: photographer.rating,
+    completedJobs: photographer.completedJobs,
+    verified: photographer.verified,
     availability: 'Monday - Sunday',
     hours: '08:00 AM - 11:50 PM',
-    location: 'Rwanda / Musanze',
     minimumEarnings: '$200.00 / Event',
   };
 
@@ -33,6 +142,11 @@ export default function BookNowPage(): React.JSX.Element {
     {
       id: 'essential',
       name: t('packages.essential.name'),
+      price: '$90',
+      period: 'per event*',
+      badge: 'Essential',
+      badgeColor: '#22D3EE',
+      badgeGradient: 'linear-gradient(135deg, #22D3EE 0%, #3B82F6 100%)',
       hours: t('packages.essential.hours'),
       description: t('packages.essential.description'),
       features: [
@@ -45,11 +159,15 @@ export default function BookNowPage(): React.JSX.Element {
         { text: t('packages.features.liveStreaming'), available: false },
         { text: t('packages.features.dronePhotography'), available: false },
       ],
-      color: '#083A85',
     },
     {
       id: 'custom',
       name: t('packages.custom.name'),
+      price: '$150',
+      period: 'per event*',
+      badge: 'Custom',
+      badgeColor: '#FBBF24',
+      badgeGradient: 'linear-gradient(135deg, #FDE047 0%, #FBBF24 50%, #F59E0B 100%)',
       hours: t('packages.custom.hours'),
       description: t('packages.custom.description'),
       features: [
@@ -62,11 +180,15 @@ export default function BookNowPage(): React.JSX.Element {
         { text: t('packages.features.liveStreaming'), available: false },
         { text: t('packages.features.dronePhotography'), available: false },
       ],
-      color: '#083A85',
     },
     {
       id: 'premium',
       name: t('packages.premium.name'),
+      price: '$200',
+      period: 'per event*',
+      badge: 'Premium',
+      badgeColor: '#A855F7',
+      badgeGradient: 'linear-gradient(135deg, #C084FC 0%, #A855F7 50%, #7C3AED 100%)',
       hours: t('packages.premium.hours'),
       description: t('packages.premium.description'),
       features: [
@@ -79,474 +201,807 @@ export default function BookNowPage(): React.JSX.Element {
         { text: t('packages.features.liveStreaming'), available: true },
         { text: t('packages.features.dronePhotography'), available: true },
       ],
-      color: '#083A85',
     },
   ];
 
-  const handleNext = () => {
-    if (selectedPackage) {
-      console.log('Selected package:', selectedPackage);
-      // Navigate to next step or booking confirmation
-    }
-  };
-
   const handleCancel = () => {
-    console.log('Booking cancelled');
-    // Navigate back or clear selection
     setSelectedPackage(null);
   };
 
   return (
     <>
       <AmoriaKNavbar />
-      <div className="min-h-screen" style={{ backgroundColor: '#f8f9fa', position: 'relative' }}>
-        {/* Back Button - Overlay at top left */}
-        <button
-          onClick={() => window.history.back()}
+      <div className="min-h-screen" style={{ backgroundColor: '#f0f4f8', position: 'relative' }}>
+        {/* Header Section - Same as View Profile */}
+        <div
           style={{
-            position: 'absolute',
-            top: isMobile ? '10px' : '20px',
-            left: '0',
-            background: 'none',
-            border: 'none',
-            fontSize: isMobile ? '14px' : '16px',
-            color: '#8b8b8c',
-            cursor: 'pointer',
-            padding: isMobile ? '8px 16px' : '10px 24px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            transition: 'all 0.3s ease',
-            fontWeight: '600',
-            borderRadius: '0',
-            zIndex: 10,
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.color = '#083A85';
-            e.currentTarget.style.backgroundColor = '#f0f7ff';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.color = '#8b8b8c';
-            e.currentTarget.style.backgroundColor = 'transparent';
+            position: 'relative',
+            margin: isMobile ? '0 clamp(12px, 3vw, 24px)' : '0 24px',
+            marginTop: isMobile ? 'clamp(12px, 3vw, 20px)' : '20px',
           }}
         >
-          <i className="bi bi-chevron-left" style={{ fontSize: isMobile ? '18px' : '20px' }}></i>
-          <span>{t('back')}</span>
-        </button>
+          {/* Banner Container with Border */}
+          <div
+            style={{
+              position: 'relative',
+              height: isMobile ? 'clamp(180px, 35vw, 270px)' : '270px',
+              backgroundImage: `url(${photographerData.backgroundImage})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              borderRadius: isMobile ? 'clamp(12px, 3vw, 17px)' : '17px',
+              border: isMobile ? '2px solid #bab8b8' : '3px solid #bab8b8',
+              overflow: 'hidden',
+            }}
+          >
+            {/* Back Button - Glassmorphism */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                window.history.back();
+              }}
+              style={{
+                position: 'absolute',
+                top: isMobile ? 'clamp(12px, 3vw, 20px)' : '20px',
+                left: isMobile ? 'clamp(12px, 3vw, 20px)' : '20px',
+                zIndex: 10,
+                width: isMobile ? 'clamp(36px, 8vw, 40px)' : '40px',
+                height: isMobile ? 'clamp(36px, 8vw, 40px)' : '40px',
+                borderRadius: '50%',
+                backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                backdropFilter: 'blur(10px)',
+                WebkitBackdropFilter: 'blur(10px)',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                color: '#fff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)',
+              }}
+              onMouseEnter={(e) => {
+                if (!isMobile) {
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.25)';
+                  e.currentTarget.style.transform = 'scale(1.05)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isMobile) {
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.15)';
+                  e.currentTarget.style.transform = 'scale(1)';
+                }
+              }}
+              aria-label="Go back"
+            >
+              <i className="bi bi-chevron-left" style={{ fontSize: isMobile ? 'clamp(16px, 4vw, 20px)' : '20px', fontWeight: 'bold' }}></i>
+            </button>
+
+            {/* Overlay */}
+            <div
+              style={{
+                position: 'absolute',
+                inset: 0,
+                backgroundColor: 'rgba(13, 27, 42, 0.3)',
+                borderRadius: '17px',
+              }}
+            ></div>
+          </div>
+
+          {/* Profile Picture Container - Positioned to overlap */}
+          <div
+            style={{
+              position: 'absolute',
+              top: isMobile ? 'clamp(150px, 28vw, 230px)' : '230px',
+              left: isMobile ? 'clamp(12px, 3vw, 20px)' : '20px',
+              width: isMobile ? 'clamp(60px, 12vw, 70px)' : '70px',
+              height: isMobile ? 'clamp(60px, 12vw, 70px)' : '70px',
+              zIndex: 10,
+            }}
+          >
+            <div
+              style={{
+                position: 'relative',
+                width: '100%',
+                height: '100%',
+              }}
+            >
+              <img
+                src={photographerData.profileImage}
+                alt={photographerData.name}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  borderRadius: '50%',
+                  border: '2px solid white',
+                  objectFit: 'cover',
+                  objectPosition: 'center',
+                  display: 'block',
+                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
+                }}
+              />
+              {/* Verification Badge */}
+              <div
+                style={{
+                  position: 'absolute',
+                  bottom: '0px',
+                  right: '0px',
+                  background: 'white',
+                  borderRadius: '50%',
+                  width: '24px',
+                  height: '24px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 2px 4px rgba(0, 0, 0, 0.15)',
+                  zIndex: 5,
+                }}
+              >
+                <i className="bi bi-patch-check-fill" style={{ color: '#3b82f6', fontSize: '1rem' }}></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Profile Section - White Background with Shadow */}
+        <div
+          style={{
+            backgroundColor: '#fff',
+            position: 'relative',
+            zIndex: 5,
+            paddingBottom: isMobile ? 'clamp(16px, 4vw, 24px)' : '24px',
+            marginTop: '0',
+            marginRight: isMobile ? 'clamp(12px, 3vw, 24px)' : '24px',
+            marginBottom: '0',
+            marginLeft: isMobile ? 'clamp(12px, 3vw, 24px)' : '24px',
+            boxShadow: '0 2px 10px rgba(0, 0, 0, 0.05)',
+            borderRadius: isMobile ? '0 0 clamp(12px, 3vw, 17px) clamp(12px, 3vw, 17px)' : '0 0 17px 17px',
+            border: isMobile ? '2px solid #bab8b8' : '3px solid #bab8b8',
+            borderTop: 'none',
+          }}
+        >
+          {/* Profile Content */}
+          <div
+            style={{
+              paddingTop: isMobile ? 'clamp(32px, 7vw, 38px)' : '38px',
+              paddingLeft: isMobile ? 'clamp(12px, 3vw, 16px)' : '16px',
+              paddingRight: isMobile ? 'clamp(12px, 3vw, 16px)' : '16px',
+              paddingBottom: isMobile ? 'clamp(12px, 3vw, 16px)' : '16px',
+              display: 'flex',
+              flexDirection: isMobile ? 'column' : 'row',
+              justifyContent: 'space-between',
+              alignItems: isMobile ? 'stretch' : 'flex-start',
+              gap: isMobile ? 'clamp(16px, 4vw, 20px)' : '20px',
+            }}
+          >
+            {/* Left Side - Name, Location, and Stats */}
+            <div style={{ flex: 1 }}>
+              {/* Name */}
+              <h3 style={{
+                fontSize: '20px',
+                fontWeight: '700',
+                color: '#111827',
+                marginBottom: '8px',
+              }}>
+                {photographerData.name}
+              </h3>
+
+              {/* Location */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                color: '#40444d',
+                fontSize: '15px',
+                marginBottom: '16px',
+              }}>
+                <i className="bi bi-geo-alt-fill" style={{ fontSize: '15px' }}></i>
+                <span>{photographerData.location}</span>
+              </div>
+
+              {/* Stats Row */}
+              <div style={{
+                display: 'flex',
+                gap: '24px',
+                alignItems: 'center',
+                marginTop: '12px',
+              }}>
+                {/* Rating */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}>
+                  <i className="bi bi-star-fill" style={{ color: '#FFA500', fontSize: '16px' }}></i>
+                  <span style={{
+                    fontSize: '16px',
+                    fontWeight: '700',
+                    color: '#111827',
+                  }}>
+                    {photographerData.rating}
+                  </span>
+                  <span style={{
+                    fontSize: '14px',
+                    color: '#083A85',
+                    fontWeight: '500',
+                  }}>
+                    Rating
+                  </span>
+                </div>
+
+                {/* Events */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}>
+                  <i className="bi bi-camera-fill" style={{ color: '#083A85', fontSize: '16px' }}></i>
+                  <span style={{
+                    fontSize: '16px',
+                    fontWeight: '700',
+                    color: '#111827',
+                  }}>
+                    {photographerData.completedJobs}+
+                  </span>
+                  <span style={{
+                    fontSize: '14px',
+                    color: '#083A85',
+                    fontWeight: '500',
+                  }}>
+                    Events
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Side - Availability, Working Hours, Starting Price */}
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: isMobile ? 'column' : 'row',
+                gap: isMobile ? '24px' : '72px',
+                alignItems: isMobile ? 'flex-start' : 'center',
+                flex: isMobile ? 'none' : 2,
+                justifyContent: 'flex-start',
+                paddingLeft: isMobile ? '0' : '40px',
+              }}
+            >
+              {/* Availability */}
+              <div>
+                <div
+                  style={{
+                    fontSize: '11px',
+                    fontWeight: '600',
+                    color: '#083A85',
+                    marginBottom: '4px',
+                    letterSpacing: '0.3px',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  {t('availability')}
+                </div>
+                <div style={{ fontSize: '14px', color: '#111827', fontWeight: '600' }}>
+                  {photographerData.availability}
+                </div>
+              </div>
+
+              {/* Working Hours */}
+              <div>
+                <div
+                  style={{
+                    fontSize: '11px',
+                    fontWeight: '600',
+                    color: '#083A85',
+                    marginBottom: '4px',
+                    letterSpacing: '0.3px',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  {t('workingHours')}
+                </div>
+                <div
+                  style={{
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    color: '#111827',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                  }}
+                >
+                  <i className="bi bi-clock-fill" style={{ color: '#083A85', fontSize: '14px' }}></i>
+                  {photographerData.hours}
+                </div>
+              </div>
+
+              {/* Starting Price */}
+              <div>
+                <div
+                  style={{
+                    fontSize: '11px',
+                    fontWeight: '600',
+                    color: '#083A85',
+                    marginBottom: '4px',
+                    letterSpacing: '0.3px',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  {t('startingPrice')}
+                </div>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                  }}
+                >
+                  <i className="bi bi-tag-fill" style={{ color: '#10b981', fontSize: '14px' }}></i>
+                  <span
+                    style={{
+                      fontSize: '16px',
+                      color: '#10b981',
+                      fontWeight: '700',
+                    }}
+                  >
+                    {photographerData.minimumEarnings}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* Main Content Container */}
         <div
           style={{
             maxWidth: '1400px',
             margin: '0 auto',
-            padding: isMobile ? '20px 16px 40px' : '20px 24px 40px',
+            padding: isMobile ? '32px 16px 40px' : '40px 24px 40px',
           }}
         >
-          {/* New Layout: Photographer Info at Top, Packages Below Horizontally */}
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '28px',
-            }}
-          >
-            {/* Top Section: Photographer Information - Horizontal Layout */}
-            <div
+          {/* Page Header - Choose Your Preferred Package */}
+          <div style={{ marginBottom: isMobile ? '24px' : '32px', textAlign: 'center' }}>
+            <h1
               style={{
-                backgroundColor: '#fff',
-                borderRadius: '17px',
-                padding: isMobile ? '24px 16px' : '40px 32px 40px 140px',
-                boxShadow: '0 4px 16px rgba(0, 0, 0, 0.08)',
-                border: '1px solid #e5e7eb',
-                transition: 'all 0.3s ease',
-                minHeight: isMobile ? 'auto' : '180px',
+                fontSize: isMobile ? '26px' : '34px',
+                fontWeight: '900',
+                color: '#083A85',
+                marginBottom: '8px',
               }}
             >
-              <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'flex-start' : 'center', gap: isMobile ? '20px' : '32px' }}>
-                {/* Profile Image */}
-                <div
-                  style={{
-                    width: isMobile ? '70px' : '90px',
-                    height: isMobile ? '70px' : '90px',
-                    borderRadius: '50%',
-                    overflow: 'hidden',
-                    border: '3px solid #083A85',
-                    boxShadow: '0 4px 12px rgba(8, 58, 133, 0.2)',
-                    flexShrink: 0,
-                  }}
-                >
-                  <img
-                    src={photographerData.profileImage}
-                    alt={photographerData.name}
+              {t('title')}
+            </h1>
+            <p style={{ fontSize: isMobile ? '14px' : '16px', color: '#40444d', maxWidth: '600px', margin: '0 auto' }}>
+              Choose the perfect package that suits your needs and budget
+            </p>
+          </div>
+
+          {/* Package Cards Section */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)',
+            gap: isMobile ? '24px' : '24px',
+            marginBottom: '32px',
+            alignItems: 'start',
+          }}>
+            {packages.map((pkg) => (
+              <div
+                key={pkg.id}
+                onClick={() => setSelectedPackage(pkg.id)}
+                style={{
+                  position: 'relative',
+                  backgroundColor: selectedPackage === pkg.id ? '#0a2540' : '#1e3a5f',
+                  borderRadius: '20px',
+                  overflow: 'hidden',
+                  cursor: 'pointer',
+                  border: selectedPackage === pkg.id ? '3px solid #00BFFF' : '3px solid transparent',
+                  transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                  boxShadow: selectedPackage === pkg.id
+                    ? '0 25px 50px rgba(0, 191, 255, 0.35), 0 0 0 1px rgba(0, 191, 255, 0.1)'
+                    : '0 10px 30px rgba(0, 0, 0, 0.2)',
+                  transform: selectedPackage === pkg.id ? 'translateY(-12px) scale(1.03)' : 'translateY(0) scale(1)',
+                }}
+                onMouseEnter={(e) => {
+                  if (selectedPackage !== pkg.id) {
+                    e.currentTarget.style.transform = 'translateY(-4px)';
+                    e.currentTarget.style.boxShadow = '0 15px 35px rgba(0, 0, 0, 0.25)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (selectedPackage !== pkg.id) {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 10px 30px rgba(0, 0, 0, 0.2)';
+                  }
+                }}
+              >
+                {/* Selected Indicator Ribbon */}
+                {selectedPackage === pkg.id && (
+                  <div
                     style={{
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'cover',
+                      position: 'absolute',
+                      top: '12px',
+                      right: '-30px',
+                      backgroundColor: '#10b981',
+                      color: '#fff',
+                      padding: '4px 40px',
+                      fontSize: '11px',
+                      fontWeight: '700',
+                      textTransform: 'uppercase',
+                      letterSpacing: '1px',
+                      transform: 'rotate(45deg)',
+                      boxShadow: '0 2px 8px rgba(16, 185, 129, 0.4)',
                     }}
-                  />
+                  >
+                    Selected
+                  </div>
+                )}
+
+                {/* Badge - Ellipse/Oval shape sitting on top */}
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  paddingTop: selectedPackage === pkg.id ? '24px' : '20px',
+                  marginBottom: '-24px',
+                  position: 'relative',
+                  zIndex: 2,
+                  transition: 'all 0.3s ease',
+                }}>
+                  <div
+                    style={{
+                      background: pkg.badgeGradient,
+                      color: pkg.id === 'custom' ? '#1f2937' : '#fff',
+                      padding: selectedPackage === pkg.id ? '12px 48px' : '10px 40px',
+                      borderRadius: '50px',
+                      fontSize: selectedPackage === pkg.id ? '16px' : '15px',
+                      fontWeight: '700',
+                      letterSpacing: '0.5px',
+                      boxShadow: selectedPackage === pkg.id
+                        ? '0 6px 20px rgba(0, 0, 0, 0.3)'
+                        : '0 4px 12px rgba(0, 0, 0, 0.2)',
+                      minWidth: '110px',
+                      textAlign: 'center',
+                      transition: 'all 0.3s ease',
+                    }}
+                  >
+                    {pkg.badge}
+                  </div>
                 </div>
 
-                {/* Photographer Info - Horizontal */}
-                <div style={{ flex: 1, display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? '16px' : '40px', alignItems: isMobile ? 'flex-start' : 'center', width: '100%' }}>
-                  {/* Name */}
-                  <div>
-                    <h2
-                      style={{
-                        fontSize: isMobile ? '18px' : '22px',
-                        fontWeight: '900',
-                        color: '#111827',
-                        marginBottom: '4px',
-                        lineHeight: '1.3',
-                      }}
-                    >
-                      {photographerData.name}
-                    </h2>
-                    <p style={{ fontSize: isMobile ? '13px' : '15px', color: '#6b7280', fontWeight: '500' }}>
-                      {t('professionalPhotographer')}
-                    </p>
+                {/* Price Section - White Card */}
+                <div
+                  style={{
+                    backgroundColor: selectedPackage === pkg.id ? '#f0f9ff' : '#fff',
+                    margin: '0 12px 12px 12px',
+                    borderRadius: '16px',
+                    padding: selectedPackage === pkg.id ? '44px 24px 28px 24px' : '40px 20px 24px 20px',
+                    textAlign: 'center',
+                    position: 'relative',
+                    zIndex: 1,
+                    transition: 'all 0.3s ease',
+                    border: selectedPackage === pkg.id ? '2px solid rgba(0, 191, 255, 0.2)' : '2px solid transparent',
+                  }}
+                >
+                  {/* Price */}
+                  <div
+                    style={{
+                      fontSize: selectedPackage === pkg.id ? (isMobile ? '48px' : '56px') : (isMobile ? '42px' : '48px'),
+                      fontWeight: '800',
+                      color: selectedPackage === pkg.id ? '#083A85' : '#1f2937',
+                      lineHeight: 1,
+                      marginBottom: '6px',
+                      transition: 'all 0.3s ease',
+                    }}
+                  >
+                    {pkg.price}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: selectedPackage === pkg.id ? '20px' : '18px',
+                      color: selectedPackage === pkg.id ? '#083A85' : '#1f2937',
+                      fontWeight: '700',
+                      marginBottom: '10px',
+                      transition: 'all 0.3s ease',
+                    }}
+                  >
+                    {pkg.period}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: selectedPackage === pkg.id ? '17px' : '16px',
+                      color: selectedPackage === pkg.id ? '#083A85' : '#374151',
+                      fontWeight: '700',
+                      fontStyle: 'italic',
+                      transition: 'all 0.3s ease',
+                    }}
+                  >
+                    *{pkg.hours}
                   </div>
 
-                  {/* Details Grid */}
-                  <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: isMobile ? '16px' : '32px', flex: 1, width: '100%' }}>
-                    {/* Availability */}
-                    <div>
-                      <div
-                        style={{
-                          fontSize: '11px',
-                          fontWeight: '600',
-                          color: '#083A85',
-                          marginBottom: '4px',
-                          letterSpacing: '0.3px',
-                          textTransform: 'uppercase',
-                        }}
-                      >
-                        {t('availability')}
-                      </div>
-                      <div
-                        style={{
-                          fontSize: isMobile ? '12px' : '14px',
-                          color: '#111827',
-                          fontWeight: '600',
-                        }}
-                      >
-                        {photographerData.availability}
-                      </div>
-                    </div>
+                  {/* Divider */}
+                  <div
+                    style={{
+                      height: selectedPackage === pkg.id ? '2px' : '1px',
+                      backgroundColor: selectedPackage === pkg.id ? '#00BFFF' : '#e5e7eb',
+                      margin: '20px 0',
+                      transition: 'all 0.3s ease',
+                    }}
+                  ></div>
 
-                    {/* Hours */}
-                    <div>
+                  {/* Features List */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: selectedPackage === pkg.id ? '14px' : '12px', transition: 'all 0.3s ease' }}>
+                    {pkg.features.map((feature, index) => (
                       <div
-                        style={{
-                          fontSize: '11px',
-                          fontWeight: '600',
-                          color: '#083A85',
-                          marginBottom: '4px',
-                          letterSpacing: '0.3px',
-                          textTransform: 'uppercase',
-                        }}
-                      >
-                        {t('workingHours')}
-                      </div>
-                      <div
-                        style={{
-                          fontSize: isMobile ? '12px' : '14px',
-                          fontWeight: '600',
-                          color: '#111827',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                        }}
-                      >
-                        <i className="bi bi-clock-fill" style={{ color: '#083A85', fontSize: '14px' }}></i>
-                        {photographerData.hours}
-                      </div>
-                    </div>
-
-                    {/* Location */}
-                    <div>
-                      <div
-                        style={{
-                          fontSize: '11px',
-                          fontWeight: '600',
-                          color: '#083A85',
-                          marginBottom: '4px',
-                          letterSpacing: '0.3px',
-                          textTransform: 'uppercase',
-                        }}
-                      >
-                        {t('location')}
-                      </div>
-                      <div
+                        key={index}
                         style={{
                           display: 'flex',
                           alignItems: 'center',
-                          gap: '6px',
+                          justifyContent: 'center',
+                          gap: '10px',
                         }}
                       >
-                        <i
-                          className="bi bi-geo-alt-fill"
-                          style={{ color: '#083A85', fontSize: '14px' }}
-                        ></i>
+                        {feature.available ? (
+                          <i
+                            className="bi bi-check-circle-fill"
+                            style={{
+                              color: selectedPackage === pkg.id ? '#059669' : '#10b981',
+                              fontSize: selectedPackage === pkg.id ? '18px' : '16px',
+                              transition: 'all 0.3s ease',
+                            }}
+                          ></i>
+                        ) : (
+                          <i
+                            className="bi bi-x-circle"
+                            style={{
+                              color: '#d1d5db',
+                              fontSize: selectedPackage === pkg.id ? '18px' : '16px',
+                              transition: 'all 0.3s ease',
+                            }}
+                          ></i>
+                        )}
                         <span
                           style={{
-                            fontSize: isMobile ? '12px' : '14px',
-                            color: '#111827',
+                            fontSize: selectedPackage === pkg.id ? '15px' : '14px',
+                            color: feature.available
+                              ? (selectedPackage === pkg.id ? '#1f2937' : '#374151')
+                              : '#9ca3af',
+                            fontWeight: selectedPackage === pkg.id && feature.available ? '600' : '500',
+                            transition: 'all 0.3s ease',
+                          }}
+                        >
+                          {feature.text}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Expanded Section - Only shows when selected */}
+                  {selectedPackage === pkg.id && (
+                    <div
+                      style={{
+                        marginTop: '20px',
+                        paddingTop: '20px',
+                        borderTop: '1px dashed #00BFFF',
+                        animation: 'fadeIn 0.3s ease',
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '8px',
+                          color: '#083A85',
+                          fontSize: '14px',
+                          fontWeight: '600',
+                          marginBottom: '12px',
+                        }}
+                      >
+                        <i className="bi bi-info-circle-fill"></i>
+                        Package Includes
+                      </div>
+                      <div
+                        style={{
+                          display: 'flex',
+                          flexWrap: 'wrap',
+                          justifyContent: 'center',
+                          gap: '8px',
+                        }}
+                      >
+                        <span
+                          style={{
+                            backgroundColor: '#e0f2fe',
+                            color: '#0369a1',
+                            padding: '6px 12px',
+                            borderRadius: '20px',
+                            fontSize: '12px',
                             fontWeight: '600',
                           }}
                         >
-                          {photographerData.location}
+                          <i className="bi bi-camera-fill" style={{ marginRight: '4px' }}></i>
+                          HD Photos
+                        </span>
+                        <span
+                          style={{
+                            backgroundColor: '#dcfce7',
+                            color: '#15803d',
+                            padding: '6px 12px',
+                            borderRadius: '20px',
+                            fontSize: '12px',
+                            fontWeight: '600',
+                          }}
+                        >
+                          <i className="bi bi-clock-fill" style={{ marginRight: '4px' }}></i>
+                          {pkg.hours}
+                        </span>
+                        <span
+                          style={{
+                            backgroundColor: '#fef3c7',
+                            color: '#b45309',
+                            padding: '6px 12px',
+                            borderRadius: '20px',
+                            fontSize: '12px',
+                            fontWeight: '600',
+                          }}
+                        >
+                          <i className="bi bi-lightning-fill" style={{ marginRight: '4px' }}></i>
+                          Fast Delivery
                         </span>
                       </div>
                     </div>
+                  )}
+                </div>
 
-                    {/* Minimum Earnings */}
-                    <div>
-                      <div
-                        style={{
-                          fontSize: '11px',
-                          fontWeight: '600',
-                          color: '#083A85',
-                          marginBottom: '4px',
-                          letterSpacing: '0.3px',
-                          textTransform: 'uppercase',
-                        }}
-                      >
-                        {t('startingPrice')}
-                      </div>
+                {/* Bottom padding area with Select Button */}
+                <div style={{ padding: selectedPackage === pkg.id ? '16px 20px 20px' : '12px 16px', transition: 'all 0.3s ease' }}>
+                  {selectedPackage === pkg.id ? (
+                    <div
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: '12px',
+                      }}
+                    >
                       <div
                         style={{
                           display: 'flex',
                           alignItems: 'center',
-                          gap: '6px',
+                          justifyContent: 'center',
+                          gap: '8px',
+                          color: '#10b981',
+                          fontSize: '16px',
+                          fontWeight: '700',
                         }}
                       >
-                        <i
-                          className="bi bi-tag-fill"
-                          style={{ color: '#10b981', fontSize: '14px' }}
-                        ></i>
-                        <span
-                          style={{
-                            fontSize: isMobile ? '14px' : '16px',
-                            color: '#10b981',
-                            fontWeight: '700',
-                          }}
-                        >
-                          {photographerData.minimumEarnings}
-                        </span>
+                        <i className="bi bi-check-circle-fill" style={{ fontSize: '20px' }}></i>
+                        Package Selected
+                      </div>
+                      <div
+                        style={{
+                          color: 'rgba(255, 255, 255, 0.7)',
+                          fontSize: '13px',
+                          textAlign: 'center',
+                        }}
+                      >
+                        Click &quot;Next&quot; to continue booking
                       </div>
                     </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Bottom Section: Package Selection - Horizontal */}
-            <div>
-              {/* Header */}
-              <h1
-                style={{
-                  fontSize: '22px',
-                  fontWeight: '700',
-                  color: '#111827',
-                  marginBottom: '20px',
-                  letterSpacing: '0.3px',
-                }}
-              >
-                {t('title')}
-              </h1>
-
-              {/* Package Cards - Horizontal Grid */}
-              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: '20px' }}>
-                {packages.map((pkg) => (
-                  <div
-                    key={pkg.id}
-                    onClick={() => setSelectedPackage(pkg.id)}
-                    style={{
-                      backgroundColor: selectedPackage === pkg.id ? '#083A85' : '#35354a',
-                      borderRadius: '20px',
-                      padding: '24px 20px',
-                      cursor: 'pointer',
-                      border:
-                        selectedPackage === pkg.id
-                          ? '3px solid #00BFFF'
-                          : '3px solid transparent',
-                      transition: 'all 0.3s ease',
-                      boxShadow:
-                        selectedPackage === pkg.id
-                          ? '0 8px 24px rgba(8, 58, 133, 0.4), 0 0 0 4px rgba(8, 58, 133, 0.1)'
-                          : '0 4px 12px rgba(0,0,0,0.08)',
-                      transform: selectedPackage === pkg.id ? 'translateY(-4px) scale(1.02)' : 'translateY(0)',
-                      height: '100%',
-                      display: 'flex',
-                      flexDirection: 'column',
-                    }}
-                    onMouseEnter={(e) => {
-                      if (selectedPackage !== pkg.id) {
-                        e.currentTarget.style.transform = 'translateY(-4px)';
-                        e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.15)';
-                        e.currentTarget.style.backgroundColor = '#4b5563';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (selectedPackage !== pkg.id) {
-                        e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)';
-                        e.currentTarget.style.backgroundColor = '#35354a';
-                      }
-                    }}
-                  >
-                    {/* Package Name & Hours */}
-                    <div style={{ marginBottom: '10px' }}>
-                      <h3
-                        style={{
-                          fontSize: '16px',
-                          fontWeight: '900',
-                          color: '#fff',
-                          marginBottom: '4px',
-                          letterSpacing: '0.3px',
-                        }}
-                      >
-                        {pkg.name}
-                      </h3>
-                      <p
-                        style={{
-                          fontSize: '14px',
-                          color: '#fff',
-                          fontWeight: '900',
-                          opacity: 0.95,
-                        }}
-                      >
-                        {pkg.hours}
-                      </p>
-                    </div>
-
-                    {/* Description */}
-                    <p
+                  ) : (
+                    <div
                       style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        color: 'rgba(255, 255, 255, 0.6)',
                         fontSize: '13px',
-                        color: '#fff',
-                        marginBottom: '12px',
-                        opacity: 0.9,
-                        lineHeight: '1.5',
+                        fontWeight: '500',
                       }}
                     >
-                      {pkg.description}
-                    </p>
-
-                    {/* Features List */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
-                      {pkg.features.map((feature, index) => (
-                        <div
-                          key={index}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                          }}
-                        >
-                          <i
-                            className={feature.available ? 'bi bi-check-circle-fill' : 'bi bi-x-circle-fill'}
-                            style={{
-                              color: feature.available ? '#10b981' : '#ef4444',
-                              fontSize: '15px',
-                              fontWeight: '900',
-                            }}
-                          ></i>
-                          <span
-                            style={{
-                              fontSize: '13px',
-                              color: '#fff',
-                              fontWeight: '700',
-                              opacity: feature.available ? 1 : 0.65,
-                              textDecoration: feature.available ? 'none' : 'line-through',
-                            }}
-                          >
-                            {feature.text}
-                          </span>
-                        </div>
-                      ))}
+                      <i className="bi bi-hand-index-thumb"></i>
+                      Click to select
                     </div>
-                  </div>
-                ))}
+                  )}
+                </div>
               </div>
-            </div>
+            ))}
+          </div>
 
-            {/* Action Buttons - Separate Section at Bottom */}
-            <div
+          {/* Action Buttons */}
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: isMobile ? 'column' : 'row',
+              justifyContent: 'center',
+              gap: '16px',
+              paddingTop: '8px',
+            }}
+          >
+            <button
+              onClick={handleCancel}
               style={{
-                display: 'flex',
-                flexDirection: isMobile ? 'column' : 'row',
-                justifyContent: 'flex-end',
-                gap: '12px',
-                paddingTop: '8px',
+                padding: '14px 40px',
+                backgroundColor: '#fff',
+                color: '#374151',
+                border: '2px solid #d1d5db',
+                borderRadius: '12px',
+                fontSize: '15px',
+                fontWeight: '700',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                minWidth: isMobile ? '100%' : '160px',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#f9fafb';
+                e.currentTarget.style.borderColor = '#9ca3af';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '#fff';
+                e.currentTarget.style.borderColor = '#d1d5db';
               }}
             >
-                <button
-                  onClick={handleCancel}
-                  style={{
-                    padding: isMobile ? '12px 20px' : '12px 28px',
-                    backgroundColor: '#fff',
-                    color: '#374151',
-                    border: '2px solid #d1d5db',
-                    borderRadius: '10px',
-                    fontSize: '14px',
-                    fontWeight: '700',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s ease',
-                    letterSpacing: '0.5px',
-                    width: isMobile ? '100%' : 'auto',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = '#f9fafb';
-                    e.currentTarget.style.borderColor = '#9ca3af';
-                    e.currentTarget.style.transform = 'translateY(-1px)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = '#fff';
-                    e.currentTarget.style.borderColor = '#d1d5db';
-                    e.currentTarget.style.transform = 'translateY(0)';
-                  }}
-                >
-                  {t('cancel')}
-                </button>
-                <button
-                   onClick={() => (window.location.href = '/user/photographers/book-now1')}
-                  disabled={!selectedPackage}
-                  style={{
-                    padding: isMobile ? '12px 20px' : '12px 32px',
-                    backgroundColor: selectedPackage ? '#083A85' : '#d1d5db',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: '10px',
-                    fontSize: '14px',
-                    fontWeight: '700',
-                    cursor: selectedPackage ? 'pointer' : 'not-allowed',
-                    transition: 'all 0.3s ease',
-                    letterSpacing: '0.5px',
-                    boxShadow: selectedPackage ? '0 4px 12px rgba(8, 58, 133, 0.25)' : 'none',
-                    width: isMobile ? '100%' : 'auto',
-                  }}
-                  onMouseEnter={(e) => {
-                    if (selectedPackage) {
-                      e.currentTarget.style.backgroundColor = '#062d6b';
-                      e.currentTarget.style.transform = 'translateY(-2px)';
-                      e.currentTarget.style.boxShadow = '0 6px 16px rgba(8, 58, 133, 0.35)';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (selectedPackage) {
-                      e.currentTarget.style.backgroundColor = '#083A85';
-                      e.currentTarget.style.transform = 'translateY(0)';
-                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(8, 58, 133, 0.25)';
-                    }
-                  }}
-                >
-                  {t('next')}
-                </button>
-              </div>
+              {t('cancel')}
+            </button>
+            <button
+              onClick={() => (window.location.href = 'https://connekt-dashboard.vercel.app/user/client/events')}
+              disabled={!selectedPackage}
+              style={{
+                padding: '14px 40px',
+                backgroundColor: selectedPackage ? '#083A85' : '#d1d5db',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '12px',
+                fontSize: '15px',
+                fontWeight: '700',
+                cursor: selectedPackage ? 'pointer' : 'not-allowed',
+                transition: 'all 0.3s ease',
+                boxShadow: selectedPackage ? '0 8px 20px rgba(8, 58, 133, 0.35)' : 'none',
+                minWidth: isMobile ? '100%' : '200px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+              }}
+              onMouseEnter={(e) => {
+                if (selectedPackage) {
+                  e.currentTarget.style.backgroundColor = '#062d6b';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 12px 28px rgba(8, 58, 133, 0.45)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (selectedPackage) {
+                  e.currentTarget.style.backgroundColor = '#083A85';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 8px 20px rgba(8, 58, 133, 0.35)';
+                }
+              }}
+            >
+              {t('next')}
+              <i className="bi bi-arrow-right"></i>
+            </button>
           </div>
+
+          {/* Footer Note */}
+          <p
+            style={{
+              textAlign: 'center',
+              fontSize: '12px',
+              color: '#9ca3af',
+              marginTop: '24px',
+            }}
+          >
+            * Prices may vary based on event type and additional requirements
+          </p>
         </div>
       </div>
     </>
+  );
+}
+
+export default function BookNowPage(): React.JSX.Element {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <BookNowContent />
+    </Suspense>
   );
 }
