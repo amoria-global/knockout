@@ -5,26 +5,27 @@ import { geoEqualEarth, geoPath } from 'd3-geo';
 import { feature } from 'topojson-client';
 import type { Feature, FeatureCollection, Geometry } from 'geojson';
 
-// Interface for the connection lines
+// Interface for the connection lines with explicit control point
 interface ConnectionLine {
   id: number;
-  from: [number, number]; // Source coordinates [longitude, latitude]
-  to: [number, number];   // Destination coordinates [longitude, latitude]
+  from: [number, number];
+  to: [number, number];
+  controlOffset: [number, number]; // Explicit offset from midpoint [x, y] in SVG coords
   delay: number;
 }
 
 // Interface for the glowing nodes on the map
 interface GlowNode {
   id: number;
-  coords: [number, number]; // Geographic coordinates [longitude, latitude]
+  coords: [number, number];
   delay: number;
   size: number;
+  type: 'solid' | 'ring';
   label?: string;
 }
 
-const GlobalNetwork = () => {
+const GlobalNetwork: React.FC = () => {
   const [mounted, setMounted] = useState(false);
-  // Use a more specific type for GeoJSON features
   const [geographies, setGeographies] = useState<Feature<Geometry>[]>([]);
 
   const geoUrl = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
@@ -34,286 +35,316 @@ const GlobalNetwork = () => {
     fetch(geoUrl)
       .then(response => response.json())
       .then(data => {
-        // Correctly type the TopoJSON data with the fix
         const countries = feature(data, data.objects.countries) as unknown as FeatureCollection;
         setGeographies(countries.features);
       });
   }, []);
 
-  // Memoize the D3 projection to prevent re-computation on re-renders
   const projection = useMemo(() => {
     return geoEqualEarth()
       .scale(180)
       .translate([500, 400])
       .rotate([0, 0, 0]);
   }, []);
-  
+
   const pathGenerator = useMemo(() => geoPath().projection(projection), [projection]);
 
-  // Define major hubs across continents
+  // Nodes - Kept mostly same, but organized for the new "cleaner" layout
   const nodes: GlowNode[] = [
-    { id: 1, coords: [-120.006, 40.7128], delay: 0, size: 8, label: 'New York' },
-    { id: 2, coords: [-118.2437, 34.0522], delay: 0.5, size: 6, label: 'Los Angeles' },
-    { id: 3, coords: [-67.6333, -23.5505], delay: 1, size: 6, label: 'São Paulo' },
-    { id: 4, coords: [-0.1276, 51.5074], delay: 1.5, size: 7, label: 'London' },
-    { id: 5, coords: [2.3522, 48.8566], delay: 2, size: 6, label: 'Paris' },
-    { id: 6, coords: [29.7500, 2.0800], delay: 2.5, size: 6, label: 'Kigali' },
-    { id: 7, coords: [55.2708, 25.2048], delay: 3, size: 6, label: 'Dubai' },
-    { id: 8, coords: [139.6917, 35.6895], delay: 3.5, size: 7, label: 'Tokyo' },
-    { id: 9, coords: [103.8198, 1.3521], delay: 4, size: 6, label: 'Singapore' },
-    { id: 10, coords: [116.4074, 39.9042], delay: 4.5, size: 8, label: 'Beijing' },
-    { id: 11, coords: [151.2093, -33.8688], delay: 5, size: 6, label: 'Sydney' },
+    // North America
+    { id: 1, coords: [-122.4194, 37.7749], delay: 0, size: 6, type: 'solid', label: 'SF' },           // 0
+    { id: 2, coords: [-74.006, 40.7128], delay: 0.2, size: 5, type: 'solid', label: 'NY' },           // 1
+    // Europe
+    { id: 3, coords: [-0.1276, 51.5074], delay: 0.4, size: 6, type: 'solid', label: 'London' },       // 2
+    { id: 4, coords: [10.0, 48.0], delay: 0.6, size: 4, type: 'ring', label: 'Frankfurt' },           // 3
+    { id: 5, coords: [37.6173, 55.7558], delay: 0.8, size: 5, type: 'solid', label: 'Moscow' },       // 4
+    // Middle East & Africa
+    { id: 6, coords: [55.2708, 25.2048], delay: 1.0, size: 5, type: 'ring', label: 'Dubai' },         // 5
+    { id: 7, coords: [36.8, -1.3], delay: 1.2, size: 4, type: 'ring', label: 'Nairobi' },             // 6
+    // Asia
+    { id: 8, coords: [72.8777, 19.0760], delay: 1.4, size: 5, type: 'solid', label: 'Mumbai' },       // 7
+    { id: 9, coords: [121.4737, 31.2304], delay: 1.6, size: 5, type: 'solid', label: 'Shanghai' },    // 8
+    { id: 10, coords: [139.6917, 35.6895], delay: 1.8, size: 6, type: 'solid', label: 'Tokyo' },      // 9
+    { id: 11, coords: [126.978, 37.5665], delay: 2.0, size: 4, type: 'ring', label: 'Seoul' },        // 10
+    // Southeast Asia & Oceania
+    { id: 12, coords: [103.8198, 1.3521], delay: 2.2, size: 5, type: 'solid', label: 'Singapore' },   // 11
+    { id: 13, coords: [151.2093, -33.8688], delay: 2.4, size: 5, type: 'ring', label: 'Sydney' },     // 12
+    { id: 14, coords: [174.7633, -41.2865], delay: 2.6, size: 5, type: 'solid', label: 'Wellington' },// 13
+    // South America
+    { id: 15, coords: [-77.0428, -12.0464], delay: 2.8, size: 4, type: 'ring', label: 'Lima' },       // 14
+    { id: 16, coords: [-70.6693, -33.4489], delay: 3.0, size: 4, type: 'ring', label: 'Santiago' },   // 15
+    // Central America
+    { id: 17, coords: [-99.1332, 19.4326], delay: 3.1, size: 4, type: 'ring', label: 'Mexico City' }, // 16
   ];
 
-  // Define a denser, intersecting web of connections for a "globular" structure
-  const connections: ConnectionLine[] = [
-    { id: 1, from: nodes[0].coords, to: nodes[3].coords, delay: 0 }, // New York -> London
-    { id: 2, from: nodes[1].coords, to: nodes[7].coords, delay: 0.2 }, // LA -> Tokyo
-    { id: 3, from: nodes[2].coords, to: nodes[5].coords, delay: 0.4 }, // São Paulo -> Kigali
-    { id: 4, from: nodes[3].coords, to: nodes[9].coords, delay: 0.6 }, // London -> Beijing
-    { id: 5, from: nodes[4].coords, to: nodes[0].coords, delay: 0.8 }, // Paris -> New York
-    { id: 6, from: nodes[5].coords, to: nodes[10].coords, delay: 1.0 }, // Kigali -> Sydney
-    { id: 7, from: nodes[6].coords, to: nodes[1].coords, delay: 1.2 }, // Dubai -> LA
-    { id: 8, from: nodes[7].coords, to: nodes[2].coords, delay: 1.4 }, // Tokyo -> São Paulo
-    { id: 9, from: nodes[8].coords, to: nodes[3].coords, delay: 1.6 }, // Singapore -> London
-    { id: 10, from: nodes[9].coords, to: nodes[6].coords, delay: 1.8 }, // Beijing -> Dubai
-    { id: 11, from: nodes[10].coords, to: nodes[0].coords, delay: 2.0 }, // Sydney -> New York
-    { id: 12, from: nodes[0].coords, to: nodes[7].coords, delay: 2.2 }, // New York -> Tokyo
-    { id: 13, from: nodes[3].coords, to: nodes[10].coords, delay: 2.4 },// London -> Sydney
-    { id: 14, from: nodes[1].coords, to: nodes[9].coords, delay: 2.6 }, // LA -> Beijing
-    { id: 15, from: nodes[2].coords, to: nodes[8].coords, delay: 2.8 }, // São Paulo -> Singapore
-  ];
-
-  // Convert geographic coordinates to SVG coordinates
   const projectCoords = (coords: [number, number]): [number, number] | null => {
     if (!projection) return null;
     const projected = projection(coords);
     return projected || null;
   };
 
-  // Generate a smooth quadratic bezier curve path
-  const generateCircularPath = (
-    start: [number, number],
-    end: [number, number],
-    curvature: number = 0.3
+  // Pre-calculate projected positions for connections
+  const projectedNodes = useMemo(() => {
+    return nodes.map(node => projectCoords(node.coords));
+  }, [projection]);
+
+  /**
+   * REVISED CONNECTION TOPOLOGY - "High Arches & Perfect Curves"
+   * Strategy:
+   * - Huge negative Y offsets create the "Parabolic" look
+   * - Varied X offsets prevent lines from looking parallel
+   * - Matching reference image layout
+   */
+  const connections: ConnectionLine[] = [
+    // --- NORTHERN HEMISPHERE ARCHES (well separated) ---
+
+    // 1. SF to London: High Atlantic arch (TOP LEFT)
+    { id: 1, from: nodes[0].coords, to: nodes[2].coords, controlOffset: [-100, -180], delay: 0 },
+
+    // 2. Tokyo to Moscow: High arch (TOP RIGHT - matches SF to London)
+    { id: 2, from: nodes[9].coords, to: nodes[4].coords, controlOffset: [0, -180], delay: 0.5 },
+
+    // 3. NY to Moscow: High Atlantic-Eurasian arch (matches top curves)
+    { id: 3, from: nodes[1].coords, to: nodes[4].coords, controlOffset: [80, -180], delay: 1.0 },
+
+    // 5. NY to Mexico City: Short North America connection
+    { id: 5, from: nodes[1].coords, to: nodes[16].coords, controlOffset: [-30, -70], delay: 1.8 },
+
+
+    // --- EURASIAN CONNECTIONS (London to Tokyo split) ---
+
+    // 6. London to Dubai: Europe to Middle East
+    { id: 6, from: nodes[2].coords, to: nodes[5].coords, controlOffset: [40, -120], delay: 2.0 },
+
+    // 7. Dubai to Tokyo: Middle East to Japan (cuts through middle of top arches)
+    { id: 7, from: nodes[5].coords, to: nodes[9].coords, controlOffset: [0, -180], delay: 2.5 },
+
+
+    // --- PACIFIC CONNECTIONS (SF to Singapore split) ---
+
+    // 9. Shanghai to Singapore: East Asia to Southeast Asia
+    { id: 9, from: nodes[8].coords, to: nodes[11].coords, controlOffset: [50, -90], delay: 3.5 },
+
+
+    // --- CENTRAL EQUATORIAL CONNECTIONS (extending to center) ---
+
+    // 10. London to Mumbai: Europe to India (mid-level)
+    { id: 10, from: nodes[2].coords, to: nodes[7].coords, controlOffset: [60, -200], delay: 4.0 },
+
+    // 11. Mumbai to Singapore: India to Southeast Asia
+    { id: 11, from: nodes[7].coords, to: nodes[11].coords, controlOffset: [70, -100], delay: 4.5 },
+
+    // 12. Nairobi to Mumbai: Africa to India (central connection)
+    { id: 12, from: nodes[6].coords, to: nodes[7].coords, controlOffset: [-50, -70], delay: 5.0 },
+
+    // 13. Nairobi to Singapore: Africa to Southeast Asia
+    { id: 13, from: nodes[6].coords, to: nodes[11].coords, controlOffset: [70, -120], delay: 5.5 },
+
+
+    // --- ASIA-OCEANIA CONNECTIONS ---
+
+    // 14. Tokyo to Sydney: Eastern Pacific curve
+    { id: 14, from: nodes[9].coords, to: nodes[12].coords, controlOffset: [130, -100], delay: 6.0 },
+
+    // 15. Singapore to Sydney: Southeast Asia to Oceania
+    { id: 15, from: nodes[11].coords, to: nodes[12].coords, controlOffset: [70, -80], delay: 6.5 },
+
+
+    // --- AMERICAS CONNECTIONS ---
+
+    // 16. Canada to Lima: Americas western spine
+    { id: 16, from: nodes[0].coords, to: nodes[14].coords, controlOffset: [-180, 20], delay: 7.0 },
+
+    // 17. NY to Nairobi: East Americas to Africa (central bridge)
+    { id: 17, from: nodes[1].coords, to: nodes[6].coords, controlOffset: [20, -140], delay: 7.5 },
+
+
+    // --- CROSS-HEMISPHERE CONNECTIONS (Santiago to Sydney split) ---
+
+    // 18. Santiago to Nairobi: South America to Africa
+    { id: 18, from: nodes[15].coords, to: nodes[6].coords, controlOffset: [-120, -250], delay: 8.0 },
+
+    // 19. Nairobi to Sydney: Africa to Oceania
+    { id: 19, from: nodes[6].coords, to: nodes[12].coords, controlOffset: [80, -140], delay: 8.5 },
+
+    // 20. Lima to Dubai: South America to Middle East (central link)
+    { id: 20, from: nodes[14].coords, to: nodes[5].coords, controlOffset: [-90, -260], delay: 9.0 },
+
+    // 21. Mumbai to Tokyo: South Asia to Japan
+    { id: 21, from: nodes[7].coords, to: nodes[9].coords, controlOffset: [40, -100], delay: 9.5 },
+    { id: 22, from: nodes[16].coords, to: nodes[15].coords, controlOffset: [-120, 100], delay: 9.5 },
+  ];
+
+  
+  // Generate bezier path with explicit control point
+  const generatePath = (
+    start: [number, number] | null,
+    end: [number, number] | null,
+    controlOffset: [number, number]
   ): string => {
-    const [startX, startY] = start;
-    const [endX, endY] = end;
+    if (!start || !end) return '';
 
-    // Use different midpoint calculation based on direction
-    // For connections going right (positive dx), use the /5 formula
-    // For connections going left (negative dx), mirror the approach
-    const dx = endX - startX;
-    const dy = endY - startY;
+    const midX = (start[0] + end[0]) / 2;
+    const midY = (start[1] + end[1]) / 2;
 
-    let midX, midY;
-    if (dx > 0) {
-      // Going right - use /5 for startX bias
-      midX = (startX + endX) / 10 ;
-    } else {
-      // Going left - mirror the bias (4/5 from start, 1/5 from end)
-      midX = startX + (endX - startX) / 3;
-    }
-    midY = (startY + endY) / 2;
+    const cpX = midX + controlOffset[0];
+    const cpY = midY + controlOffset[1];
 
-    const offsetX = -dy * curvature;
-    const offsetY = dx * curvature;
-    const cp1X = midX + offsetX;
-    const cp1Y = midY + offsetY;
-    return `M ${startX} ${startY} Q ${cp1X} ${cp1Y} ${endX} ${endY}`;
+    return `M ${start[0]} ${start[1]} Q ${cpX} ${cpY} ${end[0]} ${end[1]}`;
   };
 
   return (
     <div className="global-network-svg-container" style={{ position: 'relative', width: '110%', height: '100%', overflow: 'hidden', margin: '0 auto' }}>
       <svg
         className="global-network-svg"
-        viewBox="10 0 1000 780"
+        viewBox="0 0 1000 800"
         style={{ width: '100%', height: '100%', display: 'block', margin: '0 auto' }}
         preserveAspectRatio="xMidYMid slice"
       >
         <defs>
-          {/* Glow filter for nodes */}
-          <filter id="glow" x="-10%" y="-100%" width="300%" height="300%">
-            <feGaussianBlur stdDeviation="8" result="coloredBlur" />
+          <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="4" result="coloredBlur" />
             <feMerge>
               <feMergeNode in="coloredBlur" />
               <feMergeNode in="SourceGraphic" />
             </feMerge>
           </filter>
 
-          {/* Subtle glow for map outlines */}
-          <filter id="mapGlow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="0" result="blur1" />
-            <feMerge>
-              <feMergeNode in="blur1" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-
-          {/* Glow for thin connection lines */}
-          <filter id="lineGlow" x="-100%" y="-100%" width="300%" height="900%">
-            <feGaussianBlur stdDeviation="0" result="blurOut" />
+          <filter id="lineGlow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="2" result="blurOut" />
             <feMerge>
               <feMergeNode in="blurOut" />
               <feMergeNode in="SourceGraphic" />
             </feMerge>
           </filter>
 
-          {/* Gradient for the core nodes */}
           <radialGradient id="nodeGradient">
             <stop offset="0%" style={{ stopColor: '#FFFFFF', stopOpacity: 1 }} />
-            <stop offset="50%" style={{ stopColor: '#00F0FF', stopOpacity: 0.9 }} />
-            <stop offset="100%" style={{ stopColor: '#0088FF', stopOpacity: 0.3 }} />
+            <stop offset="60%" style={{ stopColor: '#00E8FF', stopOpacity: 0.8 }} />
+            <stop offset="100%" style={{ stopColor: '#0088FF', stopOpacity: 0.2 }} />
           </radialGradient>
         </defs>
 
         {/* World Map */}
         {mounted && (
-          <g opacity="0.35" filter="url(#mapGlow)">
-             {geographies.map((geo, i) => (
-                <path
-                  key={`geo-${i}`}
-                  d={pathGenerator(geo) || ''}
-                  fill="#4A90A4"
-                  stroke="#5AC8E8"
-                  strokeWidth={2}
-                  style={{ outline: 'none' }}
-                />
-              ))}
+          <g opacity="0.7">
+            {geographies.map((geo, i) => (
+              <path
+                key={`geo-${i}`}
+                d={pathGenerator(geo) || ''}
+                fill="#3A6B7C"
+                stroke="#4A8FA8"
+                strokeWidth={1}
+                style={{ outline: 'none' }}
+              />
+            ))}
           </g>
         )}
 
-        {/* Thin, intersecting connection lines */}
-        {mounted && connections.map((conn, index) => {
+        {/* Connection lines */}
+        {mounted && connections.map((conn) => {
           const start = projectCoords(conn.from);
           const end = projectCoords(conn.to);
           if (!start || !end) return null;
 
-          const curvatures = [0.696, 0.696, 0.396, -0.696, 0.696, 0.696, -0.696, -0.896, 0.396, 0.396, 0.696, 0.396, 0.396, 0.396, 0.396];
-          const curvature = curvatures[index % curvatures.length];
-          const pathData = generateCircularPath(start, end, curvature);
+          const pathData = generatePath(start, end, conn.controlOffset);
 
           return (
             <g key={`conn-${conn.id}`}>
+              {/* Main line with glow */}
               <path
                 d={pathData}
                 stroke="#00D4FF"
-                strokeWidth="0.75"
-                opacity="0.6"
+                strokeWidth="0.9"
+                opacity="1.0"
                 fill="none"
                 strokeLinecap="round"
                 filter="url(#lineGlow)"
               />
+              {/* Animated particle */}
               <path
                 d={pathData}
                 stroke="#FFFFFF"
-                strokeWidth="1"
+                strokeWidth="2"
                 fill="none"
                 strokeLinecap="round"
                 style={{
-                  strokeDasharray: '20 200',
+                  strokeDasharray: '12 400',
                   strokeDashoffset: '0',
-                  animation: `flowLine 6s linear ${conn.delay}s infinite`,
-                  willChange: 'stroke-dashoffset',
+                  animation: `flowLine 10s linear ${conn.delay}s infinite`,
                 }}
               />
             </g>
           );
         })}
 
-        {/* Nodes with glowing signal waves */}
+        {/* Nodes */}
         {mounted && nodes.map((node) => {
           const pos = projectCoords(node.coords);
           if (!pos) return null;
 
-          return (
-            <g key={`node-${node.id}`} style={{ transformOrigin: `${pos[0]}px ${pos[1]}px` }}>
-              {/* Signal Wave 1 */}
-              <circle
-                cx={pos[0]}
-                cy={pos[1]}
-                r={node.size}
-                fill="none"
-                stroke="#00F0FF"
-                strokeWidth="2"
-                style={{
-                  animation: `signalWave 10s ease-out ${node.delay}s infinite`,
-                  willChange: 'transform, opacity, stroke-width',
-                }}
-              />
-              {/* Signal Wave 2 (delayed) */}
-              <circle
-                cx={pos[0]}
-                cy={pos[1]}
-                r={node.size}
-                fill="none"
-                stroke="#FFFFFF"
-                strokeWidth="1.5"
-                style={{
-                  animation: `signalWave 3000s ease-out ${node.delay + 0.5}s infinite`,
-                  willChange: 'transform, opacity, stroke-width',
-                }}
-              />
-
-              {/* Core twinkling node */}
-              <circle cx={pos[0]} cy={pos[1]} r={node.size * 1.5} fill="#00E8FF" opacity="0.4" filter="url(#glow)" style={{ animation: `glow 2s ease-in-out ${node.delay}s infinite`, willChange: 'transform, opacity' }} />
-              <circle cx={pos[0]} cy={pos[1]} r={node.size} fill="url(#nodeGradient)" filter="url(#glow)" />
-              <circle cx={pos[0]} cy={pos[1]} r={node.size * 0.5} fill="#FFFFFF" opacity="0.95" filter="url(#glow)" style={{ animation: `brightPulse 2s ease-in-out ${node.delay}s infinite`, willChange: 'opacity' }} />
-            </g>
-          );
+          if (node.type === 'solid') {
+            return (
+              <g key={`node-${node.id}`}>
+                {/* Glow */}
+                <circle
+                  cx={pos[0]}
+                  cy={pos[1]}
+                  r={node.size * 2}
+                  fill="#00E8FF"
+                  opacity="0.3"
+                  filter="url(#glow)"
+                />
+                {/* Main body */}
+                <circle
+                  cx={pos[0]}
+                  cy={pos[1]}
+                  r={node.size}
+                  fill="url(#nodeGradient)"
+                />
+                {/* Center dot */}
+                <circle
+                  cx={pos[0]}
+                  cy={pos[1]}
+                  r={node.size * 0.35}
+                  fill="#FFFFFF"
+                />
+              </g>
+            );
+          } else {
+            return (
+              <g key={`node-${node.id}`}>
+                {/* Glow */}
+                <circle
+                  cx={pos[0]}
+                  cy={pos[1]}
+                  r={node.size * 1.5}
+                  fill="#00E8FF"
+                  opacity="0.2"
+                  filter="url(#glow)"
+                />
+                {/* Ring */}
+                <circle
+                  cx={pos[0]}
+                  cy={pos[1]}
+                  r={node.size}
+                  fill="none"
+                  stroke="#FFFFFF"
+                  strokeWidth="2"
+                  opacity="0.9"
+                />
+              </g>
+            );
+          }
         })}
       </svg>
 
-      {/* Correct Next.js styled-jsx syntax */}
       <style jsx>{`
-        /* Animation for the subtle particle on connection lines */
         @keyframes flowLine {
-          from { stroke-dashoffset: 202; }
-          to { stroke-dashoffset: -202; }
+          from { stroke-dashoffset: 412; }
+          to { stroke-dashoffset: -412; }
         }
 
-        /* Brighter glowing signal wave animation from each node */
-        @keyframes signalWave {
-          0% {
-            transform: scale(0.8);
-            opacity: 1;
-            stroke-width: 2.5px;
-          }
-          100% {
-            transform: scale(5);
-            opacity: 0;
-            stroke-width: 0.5px;
-          }
-        }
-
-        /* Breathing glow effect for core nodes */
-        @keyframes glow {
-          0%, 100% {
-            opacity: 0.4;
-            transform: scale(1);
-          }
-          50% {
-            opacity: 0.7;
-            transform: scale(1.15);
-          }
-        }
-
-        /* Twinkling effect for the center of the nodes */
-        @keyframes brightPulse {
-          0%, 100% { opacity: 0.85; }
-          50% { opacity: 1; }
-        }
-
-        /* GPU acceleration hints for smoother animations */
-        svg * {
-          transform: translateZ(0);
-          backface-visibility: hidden;
-        }
-        g {
-           transform-origin: center;
-        }
-
-        /* Mobile responsive styles */
         @media (max-width: 768px) {
           .global-network-svg-container {
             width: 180% !important;
