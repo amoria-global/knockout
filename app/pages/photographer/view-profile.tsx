@@ -281,6 +281,15 @@ function ViewProfileContent(): React.JSX.Element {
   const [imageViewerOpen, setImageViewerOpen] = useState(false);
   const [currentImageType, setCurrentImageType] = useState<'profile' | 'cover' | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [showBookingBanner, setShowBookingBanner] = useState(false);
+
+  // Handle Book Now button click with success banner
+  const handleBookNowClick = () => {
+    setShowBookingBanner(true);
+    setTimeout(() => {
+      window.location.href = `/user/photographers/book-now?id=${photographerId}`;
+    }, 1500);
+  };
 
   // Detect screen size
   useEffect(() => {
@@ -519,6 +528,84 @@ function ViewProfileContent(): React.JSX.Element {
   return (
     <>
       <AmoriaKNavbar />
+
+      {/* Success Booking Banner */}
+      {showBookingBanner && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            zIndex: 9999,
+            backgroundColor: '#10b981',
+            color: '#fff',
+            padding: '16px 24px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '12px',
+            boxShadow: '0 4px 20px rgba(16, 185, 129, 0.4)',
+            animation: 'slideDown 0.4s ease-out',
+          }}
+        >
+          <div
+            style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '50%',
+              backgroundColor: 'rgba(255, 255, 255, 0.2)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <i className="bi bi-check-lg" style={{ fontSize: '20px', fontWeight: 'bold' }}></i>
+          </div>
+          <div>
+            <div style={{ fontSize: '16px', fontWeight: '700' }}>
+              Booking Photographer Successfully!
+            </div>
+            <div style={{ fontSize: '13px', opacity: 0.9 }}>
+              Redirecting to package selection...
+            </div>
+          </div>
+          <div
+            style={{
+              marginLeft: '20px',
+              width: '24px',
+              height: '24px',
+              border: '3px solid rgba(255, 255, 255, 0.3)',
+              borderTopColor: '#fff',
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite',
+            }}
+          ></div>
+        </div>
+      )}
+
+      {/* CSS Animation Keyframes */}
+      <style jsx>{`
+        @keyframes slideDown {
+          from {
+            transform: translateY(-100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateY(0);
+            opacity: 1;
+          }
+        }
+        @keyframes spin {
+          from {
+            transform: rotate(0deg);
+          }
+          to {
+            transform: rotate(360deg);
+          }
+        }
+      `}</style>
+
       <div className="min-h-screen bg-white" style={{ opacity: isLoading ? 0 : 1, transition: 'opacity 0.3s ease-in' }}>
         {/* Header Section - Matching Photographers Card Design */}
       <div
@@ -726,8 +813,10 @@ function ViewProfileContent(): React.JSX.Element {
           position: 'relative',
           zIndex: 5,
           paddingBottom: isMobile ? 'clamp(16px, 4vw, 24px)' : '24px',
-          margin: isMobile ? '0 clamp(12px, 3vw, 24px)' : '0 24px',
           marginTop: '0',
+          marginRight: isMobile ? 'clamp(12px, 3vw, 24px)' : '24px',
+          marginBottom: '0',
+          marginLeft: isMobile ? 'clamp(12px, 3vw, 24px)' : '24px',
           boxShadow: '0 2px 10px rgba(0, 0, 0, 0.05)',
           borderRadius: isMobile ? '0 0 clamp(12px, 3vw, 17px) clamp(12px, 3vw, 17px)' : '0 0 17px 17px',
           border: isMobile ? '2px solid #bab8b8' : '3px solid #bab8b8',
@@ -828,6 +917,101 @@ function ViewProfileContent(): React.JSX.Element {
             </div>
           </div>
 
+          {/* Middle Section - Availability, Working Hours, Starting Price */}
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: isMobile ? 'column' : 'row',
+              gap: isMobile ? '20px' : '72px',
+              alignItems: isMobile ? 'flex-start' : 'center',
+              flex: isMobile ? 'none' : 2,
+              justifyContent: 'flex-start',
+              paddingLeft: isMobile ? '0' : '40px',
+            }}
+          >
+            {/* Availability */}
+            <div>
+              <div
+                style={{
+                  fontSize: '11px',
+                  fontWeight: '600',
+                  color: '#083A85',
+                  marginBottom: '4px',
+                  letterSpacing: '0.3px',
+                  textTransform: 'uppercase',
+                }}
+              >
+                Availability
+              </div>
+              <div style={{ fontSize: '14px', color: '#111827', fontWeight: '600' }}>
+                Monday - Sunday
+              </div>
+            </div>
+
+            {/* Working Hours */}
+            <div>
+              <div
+                style={{
+                  fontSize: '11px',
+                  fontWeight: '600',
+                  color: '#083A85',
+                  marginBottom: '4px',
+                  letterSpacing: '0.3px',
+                  textTransform: 'uppercase',
+                }}
+              >
+                Working Hours
+              </div>
+              <div
+                style={{
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  color: '#111827',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}
+              >
+                <i className="bi bi-clock-fill" style={{ color: '#083A85', fontSize: '14px' }}></i>
+                08:00 AM - 11:50 PM
+              </div>
+            </div>
+
+            {/* Starting Price */}
+            <div>
+              <div
+                style={{
+                  fontSize: '11px',
+                  fontWeight: '600',
+                  color: '#083A85',
+                  marginBottom: '4px',
+                  letterSpacing: '0.3px',
+                  textTransform: 'uppercase',
+                }}
+              >
+                Starting Price
+              </div>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}
+              >
+                <i className="bi bi-tag-fill" style={{ color: '#10b981', fontSize: '14px' }}></i>
+                <span
+                  style={{
+                    fontSize: '16px',
+                    color: '#10b981',
+                    fontWeight: '700',
+                  }}
+                >
+                  $200.00 / Event
+                </span>
+              </div>
+            </div>
+          </div>
+
           {/* Right Side - Modern Action Buttons */}
           <div style={{
             display: 'flex',
@@ -837,16 +1021,17 @@ function ViewProfileContent(): React.JSX.Element {
             width: isMobile ? '100%' : 'auto',
           }}>
             <button
-              onClick={() => (window.location.href = '/user/photographers/book-now')}
+              onClick={handleBookNowClick}
+              disabled={showBookingBanner}
               style={{
                 padding: isMobile ? 'clamp(12px, 3vw, 14px) clamp(20px, 5vw, 24px)' : '12px 24px',
-                backgroundColor: '#083A85',
+                backgroundColor: showBookingBanner ? '#10b981' : '#083A85',
                 color: 'white',
                 border: 'none',
                 borderRadius: isMobile ? 'clamp(6px, 1.5vw, 8px)' : '8px',
                 fontSize: isMobile ? 'clamp(14px, 3.5vw, 15px)' : '15px',
                 fontWeight: '600',
-                cursor: 'pointer',
+                cursor: showBookingBanner ? 'not-allowed' : 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -856,14 +1041,14 @@ function ViewProfileContent(): React.JSX.Element {
                 whiteSpace: 'nowrap',
               }}
               onMouseEnter={(e) => {
-                if (!isMobile) {
+                if (!isMobile && !showBookingBanner) {
                   e.currentTarget.style.backgroundColor = '#062d6b';
                   e.currentTarget.style.transform = 'translateY(-2px)';
                   e.currentTarget.style.boxShadow = '0 6px 16px rgba(8, 58, 133, 0.35)';
                 }
               }}
               onMouseLeave={(e) => {
-                if (!isMobile) {
+                if (!isMobile && !showBookingBanner) {
                   e.currentTarget.style.backgroundColor = '#083A85';
                   e.currentTarget.style.transform = 'translateY(0)';
                   e.currentTarget.style.boxShadow = '0 4px 12px rgba(8, 58, 133, 0.25)';
@@ -871,11 +1056,11 @@ function ViewProfileContent(): React.JSX.Element {
               }}
             >
               <i className="bi bi-calendar-check" style={{ fontSize: isMobile ? 'clamp(14px, 3.5vw, 16px)' : '16px' }}></i>
-              {t('bookNow')}
+              {showBookingBanner ? 'Booking...' : t('bookNow')}
             </button>
 
             <button
-              onClick={() => (window.location.href = '/user/chat')}
+              onClick={() => (window.location.href = 'https://connekt-dashboard.vercel.app/user/client/inbox')}
               style={{
                 padding: isMobile ? 'clamp(12px, 3vw, 14px) clamp(20px, 5vw, 24px)' : '12px 24px',
                 backgroundColor: '#fff',

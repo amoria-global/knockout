@@ -2378,9 +2378,12 @@ const App = () => {
             flex: 1,
             display: 'flex',
             flexDirection: 'column',
-            backgroundColor: '#0e0e10',
+            backgroundColor: '#1a1a1d',
             overflow: isSwapping ? 'visible' : 'auto',
-            position: 'relative'
+            position: 'relative',
+            paddingLeft: '40px',
+            paddingTop: '20px',
+            paddingRight: '20px',
           }}>
 
             {/* Main Video Player Container */}
@@ -2403,7 +2406,8 @@ const App = () => {
                 overflow: isSwapping ? 'visible' : 'hidden',
                 transition: isSwapping ? 'none' : 'all 0.3s ease',
                 zIndex: isSwapping && swappingFromIndex === mainEventIndex ? 1000 : 1,
-                pointerEvents: isSwapping ? 'none' : 'auto'
+                pointerEvents: isSwapping ? 'none' : 'auto',
+                borderRadius: '16px',
               }}>
               <video
                 key={mainEvent.id}
@@ -2522,7 +2526,7 @@ const App = () => {
                   backgroundColor: 'rgba(0, 0, 0, 0.7)',
                   color: '#fff',
                   padding: '6px 12px',
-                  borderRadius: '4px',
+                  borderRadius: '12px',
                   fontSize: '13px',
                   fontWeight: '600',
                   zIndex: 10,
@@ -2549,7 +2553,7 @@ const App = () => {
                   backgroundColor: '#eb0400',
                   color: '#fff',
                   padding: '4px 12px',
-                  borderRadius: '4px',
+                  borderRadius: '12px',
                   fontSize: '12px',
                   fontWeight: '700',
                   textTransform: 'uppercase',
@@ -2688,7 +2692,7 @@ const App = () => {
                     width: '100%',
                     height: 'clamp(4px, 0.5vw, 6px)',
                     backgroundColor: 'rgba(255, 255, 255, 0.3)',
-                    borderRadius: '2px',
+                    borderRadius: '6px',
                     cursor: 'pointer',
                     marginBottom: 'clamp(8px, 1vw, 12px)',
                     position: 'relative',
@@ -2704,7 +2708,7 @@ const App = () => {
                   <div style={{
                     height: '100%',
                     backgroundColor: '#03969c',
-                    borderRadius: '2px',
+                    borderRadius: '6px',
                     width: `${mainState.progress}%`,
                     position: 'relative',
                     pointerEvents: 'none'
@@ -2794,7 +2798,7 @@ const App = () => {
                         width: '100px',
                         height: '4px',
                         backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                        borderRadius: '2px',
+                        borderRadius: '6px',
                         cursor: 'pointer'
                       }}>
                         <div style={{
@@ -2804,7 +2808,7 @@ const App = () => {
                           height: '100%',
                           width: `${mainState.volume ?? 100}%`,
                           backgroundColor: '#03969c',
-                          borderRadius: '2px',
+                          borderRadius: '6px',
                           transition: 'width 0.1s ease'
                         }}></div>
 
@@ -2889,7 +2893,7 @@ const App = () => {
                       display: 'flex',
                       alignItems: 'center',
                       fontSize: 'clamp(20px, 2vw, 28px)',
-                      borderRadius: '4px',
+                      borderRadius: '12px',
                       transition: 'all 0.2s',
                       minWidth: 'clamp(40px, 4vw, 56px)',
                       minHeight: 'clamp(40px, 4vw, 56px)'
@@ -2935,7 +2939,7 @@ const App = () => {
                         display: 'flex',
                         alignItems: 'center',
                         fontSize: 'clamp(20px, 2vw, 28px)',
-                        borderRadius: '4px',
+                        borderRadius: '12px',
                         transition: 'all 0.2s',
                         minWidth: 'clamp(40px, 4vw, 56px)',
                         minHeight: 'clamp(40px, 4vw, 56px)'
@@ -2953,7 +2957,7 @@ const App = () => {
                         bottom: 'clamp(50px, 12vw, 60px)',
                         right: '0',
                         backgroundColor: '#18181b',
-                        borderRadius: 'clamp(6px, 2vw, 8px)',
+                        borderRadius: '16px',
                         padding: 'clamp(6px, 2vw, 8px)',
                         minWidth: 'clamp(200px, 50vw, 240px)',
                         maxWidth: 'min(90vw, 280px)',
@@ -2988,7 +2992,7 @@ const App = () => {
                                   padding: 'clamp(8px, 2.5vw, 10px) clamp(10px, 3vw, 12px)',
                                   backgroundColor: videoQuality === quality ? 'rgba(3, 150, 156, 0.2)' : 'transparent',
                                   border: 'none',
-                                  borderRadius: '4px',
+                                  borderRadius: '12px',
                                   color: videoQuality === quality ? '#03969c' : '#efeff1',
                                   fontSize: 'clamp(13px, 3vw, 14px)',
                                   cursor: 'pointer',
@@ -3043,7 +3047,7 @@ const App = () => {
                               padding: '10px 12px',
                               backgroundColor: 'transparent',
                               border: 'none',
-                              borderRadius: '4px',
+                              borderRadius: '12px',
                               color: '#efeff1',
                               fontSize: '14px',
                               cursor: 'pointer',
@@ -3094,7 +3098,7 @@ const App = () => {
                               padding: '10px 12px',
                               backgroundColor: 'transparent',
                               border: 'none',
-                              borderRadius: '4px',
+                              borderRadius: '12px',
                               color: '#ef4444',
                               fontSize: '14px',
                               cursor: 'pointer',
@@ -3125,7 +3129,7 @@ const App = () => {
                         bottom: '50px',
                         right: '0',
                         backgroundColor: '#18181b',
-                        borderRadius: '8px',
+                        borderRadius: '16px',
                         padding: '8px',
                         minWidth: '240px',
                         maxHeight: '400px',
@@ -3190,7 +3194,7 @@ const App = () => {
                                 padding: '10px 12px',
                                 backgroundColor: 'transparent',
                                 border: 'none',
-                                borderRadius: '4px',
+                                borderRadius: '12px',
                                 color: '#efeff1',
                                 fontSize: '14px',
                                 cursor: 'pointer',
@@ -3357,7 +3361,7 @@ const App = () => {
                       left: '50%',
                       transform: 'translate(-50%, -50%)',
                       backgroundColor: '#18181b',
-                      borderRadius: 'clamp(8px, 2vw, 12px)',
+                      borderRadius: '20px',
                       padding: 'clamp(16px, 4vw, 20px)',
                       width: 'min(calc(100vw - 32px), 320px)',
                       maxHeight: 'min(80vh, 500px)',
@@ -3429,7 +3433,7 @@ const App = () => {
                           alignItems: 'center',
                           padding: '12px',
                           backgroundColor: '#2f2f35',
-                          borderRadius: '4px',
+                          borderRadius: '14px',
                           gap: '12px',
                           transition: 'background 0.2s'
                         }}
@@ -3516,7 +3520,7 @@ const App = () => {
                           width: '300px',
                           height: '170px',
                           backgroundColor: '#000',
-                          borderRadius: '8px',
+                          borderRadius: '16px',
                           overflow: 'hidden',
                           cursor: isSwapping ? 'default' : 'pointer',
                           border: '2px solid rgba(3, 150, 156, 0.3)',
@@ -3603,7 +3607,7 @@ const App = () => {
                             backgroundColor: '#eb0400',
                             color: '#fff',
                             padding: '2px 8px',
-                            borderRadius: '3px',
+                            borderRadius: '10px',
                             fontSize: '10px',
                             fontWeight: '700',
                             textTransform: 'uppercase',
@@ -3620,7 +3624,7 @@ const App = () => {
                             backgroundColor: 'rgba(0, 0, 0, 0.7)',
                             color: '#fff',
                             padding: '4px 6px',
-                            borderRadius: '3px',
+                            borderRadius: '10px',
                             fontSize: '12px',
                             backdropFilter: 'blur(10px)'
                           }}>
@@ -3683,7 +3687,7 @@ const App = () => {
                       color: '#fff',
                       fontWeight: '600',
                       padding: '10px 24px',
-                      borderRadius: '6px',
+                      borderRadius: '16px',
                       fontSize: 'clamp(12px, 2.5vw, 13px)',
                       border: 'none',
                       cursor: 'pointer',
@@ -3710,7 +3714,7 @@ const App = () => {
                         color: '#fff',
                         fontWeight: '600',
                         padding: '10px 24px',
-                        borderRadius: '6px',
+                        borderRadius: '16px',
                         fontSize: 'clamp(12px, 2.5vw, 13px)',
                         border: 'none',
                         cursor: 'pointer',
@@ -3736,7 +3740,7 @@ const App = () => {
                       color: '#fff',
                       fontWeight: '600',
                       padding: '10px 24px',
-                      borderRadius: '6px',
+                      borderRadius: '16px',
                       fontSize: 'clamp(12px, 2.5vw, 13px)',
                       border: 'none',
                       cursor: 'pointer',
@@ -3919,7 +3923,7 @@ const App = () => {
                   display: 'flex',
                   gap: '8px',
                   padding: '8px',
-                  borderRadius: '4px',
+                  borderRadius: '12px',
                   transition: 'background 0.2s',
                   animation: 'slideIn 0.3s ease-out',
                   position: 'relative'
@@ -3973,7 +3977,7 @@ const App = () => {
                             padding: '6px 8px',
                             backgroundColor: 'rgba(255, 255, 255, 0.1)',
                             border: '1px solid rgba(3, 150, 156, 0.5)',
-                            borderRadius: '4px',
+                            borderRadius: '10px',
                             color: '#efeff1',
                             fontSize: '13px',
                             outline: 'none'
@@ -3986,7 +3990,7 @@ const App = () => {
                             padding: '4px 8px',
                             backgroundColor: '#03969c',
                             border: 'none',
-                            borderRadius: '4px',
+                            borderRadius: '10px',
                             color: '#fff',
                             fontSize: '11px',
                             cursor: 'pointer'
@@ -4003,7 +4007,7 @@ const App = () => {
                             padding: '4px 8px',
                             backgroundColor: 'rgba(255, 255, 255, 0.1)',
                             border: 'none',
-                            borderRadius: '4px',
+                            borderRadius: '10px',
                             color: '#efeff1',
                             fontSize: '11px',
                             cursor: 'pointer'
@@ -4213,7 +4217,7 @@ const App = () => {
                 <div style={{
                   backgroundColor: 'rgba(3, 150, 156, 0.1)',
                   border: '1px solid rgba(3, 150, 156, 0.3)',
-                  borderRadius: '4px',
+                  borderRadius: '12px',
                   padding: '8px 12px',
                   marginBottom: '8px',
                   display: 'flex',
@@ -4254,7 +4258,7 @@ const App = () => {
                       fontSize: '14px',
                       display: 'flex',
                       alignItems: 'center',
-                      borderRadius: '4px',
+                      borderRadius: '10px',
                       transition: 'all 0.2s'
                     }}
                     onMouseEnter={(e) => {
@@ -4275,7 +4279,7 @@ const App = () => {
                 display: 'flex',
                 alignItems: 'center',
                 backgroundColor: '#2f2f35',
-                borderRadius: '4px',
+                borderRadius: '16px',
                 padding: '8px 12px',
                 gap: '8px'
               }}>
@@ -4326,7 +4330,7 @@ const App = () => {
                   padding: '12px',
                   backgroundColor: '#e61220',
                   border: 'none',
-                  borderRadius: '6px',
+                  borderRadius: '16px',
                   color: '#fff',
                   fontSize: '13px',
                   fontWeight: '600',
@@ -4394,7 +4398,7 @@ const App = () => {
         >
           <div className="modal-content add-event-modal" style={{
             backgroundColor: '#18181b',
-            borderRadius: 'clamp(8px, 2vw, 12px)',
+            borderRadius: '20px',
             padding: 'clamp(20px, 5vw, 32px)',
             maxWidth: '320px',
             width: 'auto',
@@ -4428,7 +4432,7 @@ const App = () => {
                 width: '100%',
                 padding: 'clamp(10px, 3vw, 12px)',
                 border: '1px solid rgba(255, 255, 255, 0.2)',
-                borderRadius: '6px',
+                borderRadius: '14px',
                 fontSize: '16px',
                 marginBottom: 'clamp(16px, 4vw, 24px)',
                 outline: 'none',
@@ -4449,7 +4453,7 @@ const App = () => {
                 onClick={() => setShowAddEventModal(false)}
                 style={{
                   padding: '12px 24px',
-                  borderRadius: '6px',
+                  borderRadius: '14px',
                   border: '1px solid rgba(255, 255, 255, 0.2)',
                   backgroundColor: 'transparent',
                   color: '#efeff1',
@@ -4472,7 +4476,7 @@ const App = () => {
                 disabled={!newEventId.trim()}
                 style={{
                   padding: '12px 24px',
-                  borderRadius: '6px',
+                  borderRadius: '14px',
                   border: 'none',
                   backgroundColor: newEventId.trim() ? '#1890ff' : '#4b5563',
                   color: '#fff',
@@ -4528,7 +4532,7 @@ const App = () => {
         >
           <div className="rating-modal" style={{
             backgroundColor: '#18181b',
-            borderRadius: 'clamp(8px, 2vw, 12px)',
+            borderRadius: '20px',
             padding: 'clamp(20px, 5vw, 32px)',
             paddingTop: 'clamp(40px, 8vw, 50px)',
             maxWidth: '400px',
@@ -4675,7 +4679,7 @@ const App = () => {
                   width: '100%',
                   padding: 'clamp(10px, 3vw, 12px)',
                   border: '1px solid rgba(255, 255, 255, 0.2)',
-                  borderRadius: '6px',
+                  borderRadius: '14px',
                   fontSize: '16px',
                   outline: 'none',
                   boxSizing: 'border-box',
@@ -4711,7 +4715,7 @@ const App = () => {
                 }}
                 style={{
                   padding: '12px 24px',
-                  borderRadius: '6px',
+                  borderRadius: '14px',
                   border: '1px solid rgba(255, 255, 255, 0.2)',
                   backgroundColor: 'transparent',
                   color: '#efeff1',
@@ -4733,7 +4737,7 @@ const App = () => {
                 onClick={handleSubmitRating}
                 style={{
                   padding: '12px 24px',
-                  borderRadius: '6px',
+                  borderRadius: '14px',
                   border: 'none',
                   backgroundColor: rating === 0 ? '#4b5563' : '#03969c',
                   color: '#fff',
