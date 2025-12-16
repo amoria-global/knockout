@@ -161,6 +161,138 @@ const App = () => {
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   // Mobile chat visibility state
   const [isChatOpen, setIsChatOpen] = useState(false);
+  // Gift modal state
+  const [showGiftModal, setShowGiftModal] = useState(false);
+  const [giftTargetEvent, setGiftTargetEvent] = useState<EventStream | null>(null);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string | null>(null);
+  const [giftAmount, setGiftAmount] = useState("");
+  const [giftMessage, setGiftMessage] = useState("");
+  // Payment details state
+  const [paymentPhone, setPaymentPhone] = useState("");
+  const [bankAccountName, setBankAccountName] = useState("");
+  const [bankAccountNumber, setBankAccountNumber] = useState("");
+  const [bankName, setBankName] = useState("");
+  const [cardNumber, setCardNumber] = useState("");
+  const [cardExpiry, setCardExpiry] = useState("");
+  const [cardCvv, setCardCvv] = useState("");
+  const [cardHolderName, setCardHolderName] = useState("");
+
+  // Giftable ceremony categories
+  const giftableCategories = [
+    'Wedding', 'Wedding Events', 'Birthday', 'Bridal Shower', 'Baby Shower',
+    'Anniversary', 'Engagement', 'Graduation', 'Baptism', 'Christening'
+  ];
+
+  // Check if an event is giftable based on its category
+  const isEventGiftable = (event: EventStream) => giftableCategories.some(cat =>
+    event.category.toLowerCase().includes(cat.toLowerCase())
+  );
+
+  // Check if current main event is giftable (for backward compatibility)
+  const isGiftableEvent = isEventGiftable(mainEvent);
+
+  // Open gift modal for a specific event
+  const openGiftModal = (event: EventStream) => {
+    setGiftTargetEvent(event);
+    setShowGiftModal(true);
+  };
+
+  // Payment methods
+  const paymentMethods = [
+    { id: 'mtn', name: 'MTN Mobile Money', image: '/mtn.png' },
+    { id: 'airtel', name: 'Airtel Money', image: '/airtel.png' },
+    { id: 'bank', name: 'Bank Account', image: '/bank.png' },
+    { id: 'card', name: 'VISA & Master Card', image: '/cards.png' }
+  ];
+
+  // Helper to reset all gift modal state
+  const resetGiftModal = () => {
+    setShowGiftModal(false);
+    setGiftTargetEvent(null);
+    setSelectedPaymentMethod(null);
+    setGiftAmount("");
+    setGiftMessage("");
+    setPaymentPhone("");
+    setBankAccountName("");
+    setBankAccountNumber("");
+    setBankName("");
+    setCardNumber("");
+    setCardExpiry("");
+    setCardCvv("");
+    setCardHolderName("");
+  };
+
+  // Validate payment details based on selected method
+  const isPaymentDetailsValid = () => {
+    if (!selectedPaymentMethod || !giftAmount) return false;
+
+    switch (selectedPaymentMethod) {
+      case 'mtn':
+      case 'airtel':
+        return paymentPhone.length >= 10;
+      case 'bank':
+        return bankAccountName.trim() !== '' && bankAccountNumber.trim() !== '' && bankName.trim() !== '';
+      case 'card':
+        return cardNumber.length >= 16 && cardExpiry.length >= 4 && cardCvv.length >= 3 && cardHolderName.trim() !== '';
+      default:
+        return false;
+    }
+  };
+
+  // Handle sending gift
+  const handleSendGift = () => {
+    if (!selectedPaymentMethod || !giftAmount) {
+      alert('Please select a payment method and enter an amount');
+      return;
+    }
+
+    if (!isPaymentDetailsValid()) {
+      alert('Please fill in all required payment details');
+      return;
+    }
+
+    // Build payment details based on method
+    let paymentDetails = {};
+    switch (selectedPaymentMethod) {
+      case 'mtn':
+      case 'airtel':
+        paymentDetails = { phone: paymentPhone };
+        break;
+      case 'bank':
+        paymentDetails = {
+          accountName: bankAccountName,
+          accountNumber: bankAccountNumber,
+          bankName: bankName
+        };
+        break;
+      case 'card':
+        paymentDetails = {
+          cardNumber: cardNumber,
+          expiry: cardExpiry,
+          cvv: cardCvv,
+          holderName: cardHolderName
+        };
+        break;
+    }
+
+    // Use target event or fallback to main event
+    const targetEvent = giftTargetEvent || mainEvent;
+
+    // Here you would integrate with actual payment processing
+    console.log('Sending gift:', {
+      amount: giftAmount,
+      method: selectedPaymentMethod,
+      paymentDetails,
+      message: giftMessage,
+      eventId: targetEvent.id,
+      eventTitle: targetEvent.title,
+      photographer: targetEvent.photographer
+    });
+
+    const methodName = paymentMethods.find(m => m.id === selectedPaymentMethod)?.name || selectedPaymentMethod;
+    alert(`Gift of UGX ${parseInt(giftAmount).toLocaleString()} sent to ${targetEvent.photographer} via ${methodName}!`);
+    resetGiftModal();
+  };
 
   // Get current time
   const getCurrentTime = () => {
@@ -867,7 +999,7 @@ const App = () => {
     }
 
     // Check if any modal or menu is open
-    const hasOpenModal = showSettings || showEmojiPicker || showParticipants || showRatingModal || showAddEventModal;
+    const hasOpenModal = showSettings || showEmojiPicker || showParticipants || showRatingModal || showAddEventModal || showGiftModal;
 
     // Only auto-hide if no modals/menus are open (YouTube-like behavior)
     if (!hasOpenModal) {
@@ -885,7 +1017,7 @@ const App = () => {
     }
 
     // Check if any modal or menu is open
-    const hasOpenModal = showSettings || showEmojiPicker || showParticipants || showRatingModal || showAddEventModal;
+    const hasOpenModal = showSettings || showEmojiPicker || showParticipants || showRatingModal || showAddEventModal || showGiftModal;
 
     // Only hide controls if no modals/menus are open and not in fullscreen
     if (!hasOpenModal && !isFullscreen) {
@@ -903,7 +1035,7 @@ const App = () => {
     }
 
     // Check if any modal or menu is open
-    const hasOpenModal = showSettings || showEmojiPicker || showParticipants || showRatingModal || showAddEventModal;
+    const hasOpenModal = showSettings || showEmojiPicker || showParticipants || showRatingModal || showAddEventModal || showGiftModal;
 
     // Only auto-hide if no modals/menus are open (YouTube-like behavior)
     if (!hasOpenModal) {
@@ -1030,7 +1162,7 @@ const App = () => {
 
       // If entering fullscreen and no modals are open, start auto-hide timer
       if (isCurrentlyFullscreen) {
-        const hasOpenModal = showSettings || showEmojiPicker || showParticipants || showRatingModal || showAddEventModal;
+        const hasOpenModal = showSettings || showEmojiPicker || showParticipants || showRatingModal || showAddEventModal || showGiftModal;
         if (!hasOpenModal) {
           if (controlsTimeoutRef.current) {
             clearTimeout(controlsTimeoutRef.current);
@@ -3485,6 +3617,49 @@ const App = () => {
               )}
             </div>
 
+            {/* Send Gift Button - Only visible for giftable ceremonies when there's only one event */}
+            {isGiftableEvent && events.length === 1 && (
+              <div style={{
+                padding: '12px 0',
+                display: 'flex',
+                justifyContent: 'center'
+              }}>
+                <button
+                  onClick={() => openGiftModal(mainEvent)}
+                  style={{
+                    background: 'linear-gradient(135deg, #03969c 0%, #026d72 100%)',
+                    border: 'none',
+                    borderRadius: '12px',
+                    padding: '16px 28px',
+                    color: '#fff',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '10px',
+                    transition: 'all 0.3s ease',
+                    boxShadow: '0 4px 15px rgba(3, 150, 156, 0.3)',
+                    minWidth: '130px',
+                    minHeight: '120px'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'scale(1.02)';
+                    e.currentTarget.style.boxShadow = '0 6px 20px rgba(3, 150, 156, 0.4)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'scale(1)';
+                    e.currentTarget.style.boxShadow = '0 4px 15px rgba(3, 150, 156, 0.3)';
+                  }}
+                >
+                  <i className="bi bi-gift-fill" style={{ fontSize: '28px' }}></i>
+                  <span>Send Gift</span>
+                </button>
+              </div>
+            )}
+
             {/* Stream Info Section (includes mini-players) */}
             <div className="stream-info-section" style={{
               backgroundColor: '#18181b',
@@ -3499,6 +3674,7 @@ const App = () => {
               {events.length > 1 && (
                 <div className="mini-players-container" style={{
                   display: 'flex',
+                  alignItems: 'flex-end',
                   gap: '16px',
                   marginBottom: '20px',
                   overflowX: isSwapping ? 'visible' : 'auto',
@@ -3509,131 +3685,223 @@ const App = () => {
                   {events.map((event, idx) => {
                     if (idx === mainEventIndex) return null;
                     const miniState = playbackState[event.id] || { isPlaying: false, isMuted: true, progress: 0, volume: 0 };
+                    const isMiniEventGiftable = isEventGiftable(event);
 
                     return (
                       <div
                         key={event.id}
-                        onClick={() => !isSwapping && switchToMainEvent(idx)}
-                        className={isSwapping && swappingToIndex === idx ? 'swapping-mini-to-main' : ''}
                         style={{
                           flex: '0 0 auto',
-                          width: '300px',
-                          height: '170px',
-                          backgroundColor: '#000',
-                          borderRadius: '16px',
-                          overflow: 'hidden',
-                          cursor: isSwapping ? 'default' : 'pointer',
-                          border: '2px solid rgba(3, 150, 156, 0.3)',
-                          transition: isSwapping ? 'none' : 'all 0.3s',
-                          position: 'relative',
-                          pointerEvents: isSwapping ? 'none' : 'auto',
-                          zIndex: isSwapping && swappingToIndex === idx ? 1000 : 1
-                        }}
-                        onMouseEnter={(e) => {
-                          if (!isSwapping) {
-                            e.currentTarget.style.border = '2px solid rgba(3, 150, 156, 0.8)';
-                            e.currentTarget.style.transform = 'scale(1.05)';
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          if (!isSwapping) {
-                            e.currentTarget.style.border = '2px solid rgba(3, 150, 156, 0.3)';
-                            e.currentTarget.style.transform = 'scale(1)';
-                          }
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'stretch',
+                          gap: '8px'
                         }}
                       >
-                        <div style={{
-                          position: 'relative',
-                          width: '100%',
-                          height: '100%'
-                        }}>
-                          <video
-                            key={event.id}
-                            ref={(el) => {
-                              if (el) {
-                                videoRefs.current[event.id] = el;
-                              } else {
-                                // Clean up ref when element is unmounted
-                                delete videoRefs.current[event.id];
-                              }
+                        {/* Mini Player Card */}
+                        <div
+                          onClick={() => !isSwapping && switchToMainEvent(idx)}
+                          className={isSwapping && swappingToIndex === idx ? 'swapping-mini-to-main' : ''}
+                          style={{
+                            width: '300px',
+                            height: '170px',
+                            backgroundColor: '#000',
+                            borderRadius: '16px',
+                            overflow: 'hidden',
+                            cursor: isSwapping ? 'default' : 'pointer',
+                            border: '2px solid rgba(3, 150, 156, 0.3)',
+                            transition: isSwapping ? 'none' : 'all 0.3s',
+                            position: 'relative',
+                            pointerEvents: isSwapping ? 'none' : 'auto',
+                            zIndex: isSwapping && swappingToIndex === idx ? 1000 : 1
+                          }}
+                          onMouseEnter={(e) => {
+                            if (!isSwapping) {
+                              e.currentTarget.style.border = '2px solid rgba(3, 150, 156, 0.8)';
+                              e.currentTarget.style.transform = 'scale(1.05)';
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (!isSwapping) {
+                              e.currentTarget.style.border = '2px solid rgba(3, 150, 156, 0.3)';
+                              e.currentTarget.style.transform = 'scale(1)';
+                            }
+                          }}
+                        >
+                          <div style={{
+                            position: 'relative',
+                            width: '100%',
+                            height: '100%'
+                          }}>
+                            <video
+                              key={event.id}
+                              ref={(el) => {
+                                if (el) {
+                                  videoRefs.current[event.id] = el;
+                                } else {
+                                  // Clean up ref when element is unmounted
+                                  delete videoRefs.current[event.id];
+                                }
+                              }}
+                              style={{
+                                width: '100%',
+                                height: '100%',
+                                objectFit: 'cover'
+                              }}
+                              muted={true}
+                              loop
+                            >
+                              <source src={event.videoSrc} type="video/mp4" />
+                            </video>
+
+                            {/* Overlay */}
+                            <div style={{
+                              position: 'absolute',
+                              inset: 0,
+                              background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 50%)',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              justifyContent: 'flex-end',
+                              padding: '8px'
+                            }}>
+                              <div style={{
+                                fontSize: '12px',
+                                fontWeight: '600',
+                                color: '#fff',
+                                marginBottom: '2px',
+                                textOverflow: 'ellipsis',
+                                overflow: 'hidden',
+                                whiteSpace: 'nowrap'
+                              }}>{event.photographer}</div>
+                              <div style={{
+                                fontSize: '10px',
+                                color: '#adadb8',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px'
+                              }}>
+                                <i className="bi bi-eye-fill"></i>
+                                {event.viewers.toLocaleString()}
+                              </div>
+                            </div>
+
+                            {/* Live Badge */}
+                            <div style={{
+                              position: 'absolute',
+                              top: '8px',
+                              right: '8px',
+                              backgroundColor: '#eb0400',
+                              color: '#fff',
+                              padding: '2px 8px',
+                              borderRadius: '10px',
+                              fontSize: '10px',
+                              fontWeight: '700',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.5px'
+                            }}>
+                              LIVE
+                            </div>
+
+                            {/* Muted indicator */}
+                            <div style={{
+                              position: 'absolute',
+                              top: '8px',
+                              left: '8px',
+                              backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                              color: '#fff',
+                              padding: '4px 6px',
+                              borderRadius: '10px',
+                              fontSize: '12px',
+                              backdropFilter: 'blur(10px)'
+                            }}>
+                              <i className="bi bi-volume-mute-fill"></i>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Send Gift Button for Mini Player - Only for giftable events */}
+                        {isMiniEventGiftable && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openGiftModal(event);
                             }}
                             style={{
                               width: '100%',
-                              height: '100%',
-                              objectFit: 'cover'
-                            }}
-                            muted={true}
-                            loop
-                          >
-                            <source src={event.videoSrc} type="video/mp4" />
-                          </video>
-
-                          {/* Overlay */}
-                          <div style={{
-                            position: 'absolute',
-                            inset: 0,
-                            background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 50%)',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            justifyContent: 'flex-end',
-                            padding: '8px'
-                          }}>
-                            <div style={{
+                              background: 'linear-gradient(135deg, #03969c 0%, #026d72 100%)',
+                              border: 'none',
+                              borderRadius: '10px',
+                              padding: '8px 16px',
+                              color: '#fff',
                               fontSize: '12px',
                               fontWeight: '600',
-                              color: '#fff',
-                              marginBottom: '2px',
-                              textOverflow: 'ellipsis',
-                              overflow: 'hidden',
-                              whiteSpace: 'nowrap'
-                            }}>{event.photographer}</div>
-                            <div style={{
-                              fontSize: '10px',
-                              color: '#adadb8',
+                              cursor: 'pointer',
                               display: 'flex',
                               alignItems: 'center',
-                              gap: '4px'
-                            }}>
-                              <i className="bi bi-eye-fill"></i>
-                              {event.viewers.toLocaleString()}
-                            </div>
-                          </div>
-
-                          {/* Live Badge */}
-                          <div style={{
-                            position: 'absolute',
-                            top: '8px',
-                            right: '8px',
-                            backgroundColor: '#eb0400',
-                            color: '#fff',
-                            padding: '2px 8px',
-                            borderRadius: '10px',
-                            fontSize: '10px',
-                            fontWeight: '700',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.5px'
-                          }}>
-                            LIVE
-                          </div>
-
-                          {/* Muted indicator */}
-                          <div style={{
-                            position: 'absolute',
-                            top: '8px',
-                            left: '8px',
-                            backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                            color: '#fff',
-                            padding: '4px 6px',
-                            borderRadius: '10px',
-                            fontSize: '12px',
-                            backdropFilter: 'blur(10px)'
-                          }}>
-                            <i className="bi bi-volume-mute-fill"></i>
-                          </div>
-                        </div>
+                              justifyContent: 'center',
+                              gap: '6px',
+                              transition: 'all 0.3s ease',
+                              boxShadow: '0 2px 10px rgba(3, 150, 156, 0.3)'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.transform = 'scale(1.02)';
+                              e.currentTarget.style.boxShadow = '0 4px 15px rgba(3, 150, 156, 0.4)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.transform = 'scale(1)';
+                              e.currentTarget.style.boxShadow = '0 2px 10px rgba(3, 150, 156, 0.3)';
+                            }}
+                          >
+                            <i className="bi bi-gift-fill" style={{ fontSize: '14px' }}></i>
+                            Send Gift
+                          </button>
+                        )}
                       </div>
                     );
                   })}
+
+                  {/* Main Event Send Gift Button - Right side, extended full height */}
+                  {isGiftableEvent && (
+                    <div style={{
+                      flex: '1 1 auto',
+                      display: 'flex',
+                      justifyContent: 'flex-end'
+                    }}>
+                      <button
+                        onClick={() => openGiftModal(mainEvent)}
+                        style={{
+                          background: 'linear-gradient(135deg, #03969c 0%, #026d72 100%)',
+                          border: 'none',
+                          borderRadius: '12px',
+                          padding: '16px 28px',
+                          color: '#fff',
+                          fontSize: '14px',
+                          fontWeight: '600',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '10px',
+                          transition: 'all 0.3s ease',
+                          boxShadow: '0 4px 15px rgba(3, 150, 156, 0.3)',
+                          minWidth: '130px',
+                          alignSelf: 'stretch'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.transform = 'scale(1.02)';
+                          e.currentTarget.style.boxShadow = '0 6px 20px rgba(3, 150, 156, 0.4)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.transform = 'scale(1)';
+                          e.currentTarget.style.boxShadow = '0 4px 15px rgba(3, 150, 156, 0.3)';
+                        }}
+                      >
+                        <i className="bi bi-gift-fill" style={{ fontSize: '28px' }}></i>
+                        <span>Send Gift</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -4766,6 +5034,593 @@ const App = () => {
                 Submit Rating
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Gift Modal */}
+      {showGiftModal && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 2000,
+            backdropFilter: 'blur(4px)',
+            padding: '16px',
+            overflowY: 'auto'
+          }}
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) {
+              resetGiftModal();
+            }
+          }}
+        >
+          <div className="gift-modal" style={{
+            backgroundColor: '#18181b',
+            borderRadius: '20px',
+            padding: 'clamp(20px, 5vw, 32px)',
+            paddingTop: 'clamp(40px, 8vw, 50px)',
+            maxWidth: '450px',
+            width: '100%',
+            maxHeight: '90vh',
+            overflowY: 'auto',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            position: 'relative',
+            margin: 'auto',
+            pointerEvents: 'auto'
+          }} onMouseDown={(e) => e.stopPropagation()}>
+            {/* Close button */}
+            <button
+              onClick={() => resetGiftModal()}
+              style={{
+                position: 'absolute',
+                top: 'clamp(12px, 3vw, 16px)',
+                right: 'clamp(12px, 3vw, 16px)',
+                background: 'transparent',
+                border: 'none',
+                color: '#adadb8',
+                cursor: 'pointer',
+                fontSize: 'clamp(18px, 4vw, 20px)',
+                padding: '8px',
+                transition: 'color 0.2s',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minWidth: '44px',
+                minHeight: '44px',
+                borderRadius: '50%'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = '#efeff1';
+                e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = '#adadb8';
+                e.currentTarget.style.backgroundColor = 'transparent';
+              }}
+            >
+              <i className="bi bi-x-lg"></i>
+            </button>
+
+            {/* Title */}
+            <h2 style={{
+              fontSize: 'clamp(18px, 5vw, 24px)',
+              fontWeight: '600',
+              color: '#efeff1',
+              marginBottom: '8px',
+              marginTop: 0,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 'clamp(6px, 2vw, 10px)',
+              flexWrap: 'wrap',
+              lineHeight: '1.3'
+            }}>
+              <i className="bi bi-gift-fill" style={{ color: '#03969c', fontSize: 'clamp(20px, 5vw, 28px)' }}></i>
+              Send a Gift
+            </h2>
+            <p style={{
+              fontSize: 'clamp(12px, 3vw, 14px)',
+              color: '#adadb8',
+              marginBottom: 'clamp(16px, 4vw, 24px)',
+              lineHeight: '1.5'
+            }}>Show your appreciation to {giftTargetEvent?.photographer || mainEvent.photographer}</p>
+
+            {/* Gift Amount Input */}
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{
+                display: 'block',
+                fontSize: '13px',
+                fontWeight: '600',
+                color: '#efeff1',
+                marginBottom: '8px'
+              }}>Gift Amount (UGX)</label>
+              <input
+                type="number"
+                value={giftAmount}
+                onChange={(e) => setGiftAmount(e.target.value)}
+                placeholder="Enter amount"
+                style={{
+                  width: '100%',
+                  padding: '12px 16px',
+                  backgroundColor: '#27272a',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  borderRadius: '12px',
+                  color: '#efeff1',
+                  fontSize: '14px',
+                  outline: 'none',
+                  transition: 'border-color 0.2s',
+                  boxSizing: 'border-box'
+                }}
+                onFocus={(e) => e.currentTarget.style.borderColor = '#03969c'}
+                onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'}
+              />
+            </div>
+
+            {/* Quick Amount Buttons */}
+            <div style={{
+              display: 'flex',
+              gap: '8px',
+              flexWrap: 'wrap',
+              marginBottom: '20px'
+            }}>
+              {['10000', '20000', '50000', '100000'].map((amount) => (
+                <button
+                  key={amount}
+                  onClick={() => setGiftAmount(amount)}
+                  style={{
+                    flex: '1 1 calc(25% - 6px)',
+                    minWidth: '70px',
+                    padding: '10px 12px',
+                    backgroundColor: giftAmount === amount ? '#03969c' : '#27272a',
+                    border: '1px solid',
+                    borderColor: giftAmount === amount ? '#03969c' : 'rgba(255, 255, 255, 0.1)',
+                    borderRadius: '10px',
+                    color: '#efeff1',
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (giftAmount !== amount) {
+                      e.currentTarget.style.borderColor = '#03969c';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (giftAmount !== amount) {
+                      e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                    }
+                  }}
+                >
+                  {parseInt(amount).toLocaleString()}
+                </button>
+              ))}
+            </div>
+
+            {/* Payment Method Selection */}
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{
+                display: 'block',
+                fontSize: '13px',
+                fontWeight: '600',
+                color: '#efeff1',
+                marginBottom: '12px'
+              }}>Select Payment Method</label>
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '10px'
+              }}>
+                {paymentMethods.map((method) => (
+                  <button
+                    key={method.id}
+                    onClick={() => setSelectedPaymentMethod(method.id)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      padding: '12px 16px',
+                      backgroundColor: selectedPaymentMethod === method.id ? 'rgba(3, 150, 156, 0.15)' : '#27272a',
+                      border: '2px solid',
+                      borderColor: selectedPaymentMethod === method.id ? '#03969c' : 'rgba(255, 255, 255, 0.1)',
+                      borderRadius: '12px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      width: '100%',
+                      textAlign: 'left'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (selectedPaymentMethod !== method.id) {
+                        e.currentTarget.style.borderColor = 'rgba(3, 150, 156, 0.5)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (selectedPaymentMethod !== method.id) {
+                        e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                      }
+                    }}
+                  >
+                    <div style={{
+                      width: '44px',
+                      height: '44px',
+                      borderRadius: '10px',
+                      overflow: 'hidden',
+                      flexShrink: 0
+                    }}>
+                      <img
+                        src={method.image}
+                        alt={method.name}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover'
+                        }}
+                      />
+                    </div>
+                    <span style={{
+                      color: '#efeff1',
+                      fontSize: '14px',
+                      fontWeight: '500'
+                    }}>{method.name}</span>
+                    {selectedPaymentMethod === method.id && (
+                      <i className="bi bi-check-circle-fill" style={{
+                        marginLeft: 'auto',
+                        color: '#03969c',
+                        fontSize: '20px'
+                      }}></i>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Payment Details Input - MTN/Airtel Mobile Money */}
+            {(selectedPaymentMethod === 'mtn' || selectedPaymentMethod === 'airtel') && (
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{
+                  display: 'block',
+                  fontSize: '13px',
+                  fontWeight: '600',
+                  color: '#efeff1',
+                  marginBottom: '8px'
+                }}>Your Phone Number *</label>
+                <input
+                  type="tel"
+                  value={paymentPhone}
+                  onChange={(e) => setPaymentPhone(e.target.value.replace(/\D/g, '').slice(0, 12))}
+                  placeholder={selectedPaymentMethod === 'mtn' ? "e.g., 0781234567" : "e.g., 0721234567"}
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    backgroundColor: '#27272a',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    borderRadius: '12px',
+                    color: '#efeff1',
+                    fontSize: '14px',
+                    outline: 'none',
+                    transition: 'border-color 0.2s',
+                    boxSizing: 'border-box'
+                  }}
+                  onFocus={(e) => e.currentTarget.style.borderColor = '#03969c'}
+                  onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'}
+                />
+                <p style={{
+                  fontSize: '11px',
+                  color: '#71717a',
+                  marginTop: '6px',
+                  marginBottom: 0
+                }}>You will receive a payment confirmation SMS on this number</p>
+              </div>
+            )}
+
+            {/* Payment Details Input - Bank Account */}
+            {selectedPaymentMethod === 'bank' && (
+              <div style={{ marginBottom: '20px' }}>
+                <div style={{ marginBottom: '12px' }}>
+                  <label style={{
+                    display: 'block',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    color: '#efeff1',
+                    marginBottom: '8px'
+                  }}>Bank Name *</label>
+                  <input
+                    type="text"
+                    value={bankName}
+                    onChange={(e) => setBankName(e.target.value)}
+                    placeholder="e.g., Stanbic Bank, Centenary Bank"
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      backgroundColor: '#27272a',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      borderRadius: '12px',
+                      color: '#efeff1',
+                      fontSize: '14px',
+                      outline: 'none',
+                      transition: 'border-color 0.2s',
+                      boxSizing: 'border-box'
+                    }}
+                    onFocus={(e) => e.currentTarget.style.borderColor = '#03969c'}
+                    onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'}
+                  />
+                </div>
+                <div style={{ marginBottom: '12px' }}>
+                  <label style={{
+                    display: 'block',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    color: '#efeff1',
+                    marginBottom: '8px'
+                  }}>Account Holder Name *</label>
+                  <input
+                    type="text"
+                    value={bankAccountName}
+                    onChange={(e) => setBankAccountName(e.target.value)}
+                    placeholder="Enter account holder name"
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      backgroundColor: '#27272a',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      borderRadius: '12px',
+                      color: '#efeff1',
+                      fontSize: '14px',
+                      outline: 'none',
+                      transition: 'border-color 0.2s',
+                      boxSizing: 'border-box'
+                    }}
+                    onFocus={(e) => e.currentTarget.style.borderColor = '#03969c'}
+                    onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'}
+                  />
+                </div>
+                <div>
+                  <label style={{
+                    display: 'block',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    color: '#efeff1',
+                    marginBottom: '8px'
+                  }}>Account Number *</label>
+                  <input
+                    type="text"
+                    value={bankAccountNumber}
+                    onChange={(e) => setBankAccountNumber(e.target.value.replace(/\D/g, ''))}
+                    placeholder="Enter account number"
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      backgroundColor: '#27272a',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      borderRadius: '12px',
+                      color: '#efeff1',
+                      fontSize: '14px',
+                      outline: 'none',
+                      transition: 'border-color 0.2s',
+                      boxSizing: 'border-box'
+                    }}
+                    onFocus={(e) => e.currentTarget.style.borderColor = '#03969c'}
+                    onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Payment Details Input - Card */}
+            {selectedPaymentMethod === 'card' && (
+              <div style={{ marginBottom: '20px' }}>
+                <div style={{ marginBottom: '12px' }}>
+                  <label style={{
+                    display: 'block',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    color: '#efeff1',
+                    marginBottom: '8px'
+                  }}>Card Holder Name *</label>
+                  <input
+                    type="text"
+                    value={cardHolderName}
+                    onChange={(e) => setCardHolderName(e.target.value)}
+                    placeholder="Name on card"
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      backgroundColor: '#27272a',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      borderRadius: '12px',
+                      color: '#efeff1',
+                      fontSize: '14px',
+                      outline: 'none',
+                      transition: 'border-color 0.2s',
+                      boxSizing: 'border-box'
+                    }}
+                    onFocus={(e) => e.currentTarget.style.borderColor = '#03969c'}
+                    onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'}
+                  />
+                </div>
+                <div style={{ marginBottom: '12px' }}>
+                  <label style={{
+                    display: 'block',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    color: '#efeff1',
+                    marginBottom: '8px'
+                  }}>Card Number *</label>
+                  <input
+                    type="text"
+                    value={cardNumber}
+                    onChange={(e) => setCardNumber(e.target.value.replace(/\D/g, '').slice(0, 16))}
+                    placeholder="1234 5678 9012 3456"
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      backgroundColor: '#27272a',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      borderRadius: '12px',
+                      color: '#efeff1',
+                      fontSize: '14px',
+                      outline: 'none',
+                      transition: 'border-color 0.2s',
+                      boxSizing: 'border-box',
+                      letterSpacing: '2px'
+                    }}
+                    onFocus={(e) => e.currentTarget.style.borderColor = '#03969c'}
+                    onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'}
+                  />
+                </div>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={{
+                      display: 'block',
+                      fontSize: '13px',
+                      fontWeight: '600',
+                      color: '#efeff1',
+                      marginBottom: '8px'
+                    }}>Expiry Date *</label>
+                    <input
+                      type="text"
+                      value={cardExpiry}
+                      onChange={(e) => {
+                        let value = e.target.value.replace(/\D/g, '').slice(0, 4);
+                        if (value.length >= 2) {
+                          value = value.slice(0, 2) + '/' + value.slice(2);
+                        }
+                        setCardExpiry(value);
+                      }}
+                      placeholder="MM/YY"
+                      maxLength={5}
+                      style={{
+                        width: '100%',
+                        padding: '12px 16px',
+                        backgroundColor: '#27272a',
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        borderRadius: '12px',
+                        color: '#efeff1',
+                        fontSize: '14px',
+                        outline: 'none',
+                        transition: 'border-color 0.2s',
+                        boxSizing: 'border-box'
+                      }}
+                      onFocus={(e) => e.currentTarget.style.borderColor = '#03969c'}
+                      onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'}
+                    />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={{
+                      display: 'block',
+                      fontSize: '13px',
+                      fontWeight: '600',
+                      color: '#efeff1',
+                      marginBottom: '8px'
+                    }}>CVV *</label>
+                    <input
+                      type="password"
+                      value={cardCvv}
+                      onChange={(e) => setCardCvv(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                      placeholder="***"
+                      maxLength={4}
+                      style={{
+                        width: '100%',
+                        padding: '12px 16px',
+                        backgroundColor: '#27272a',
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        borderRadius: '12px',
+                        color: '#efeff1',
+                        fontSize: '14px',
+                        outline: 'none',
+                        transition: 'border-color 0.2s',
+                        boxSizing: 'border-box'
+                      }}
+                      onFocus={(e) => e.currentTarget.style.borderColor = '#03969c'}
+                      onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Gift Message */}
+            <div style={{ marginBottom: '24px' }}>
+              <label style={{
+                display: 'block',
+                fontSize: '13px',
+                fontWeight: '600',
+                color: '#efeff1',
+                marginBottom: '8px'
+              }}>Add a Message (Optional)</label>
+              <textarea
+                value={giftMessage}
+                onChange={(e) => setGiftMessage(e.target.value)}
+                placeholder="Write a congratulatory message..."
+                rows={3}
+                style={{
+                  width: '100%',
+                  padding: '12px 16px',
+                  backgroundColor: '#27272a',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  borderRadius: '12px',
+                  color: '#efeff1',
+                  fontSize: '14px',
+                  outline: 'none',
+                  transition: 'border-color 0.2s',
+                  resize: 'none',
+                  boxSizing: 'border-box',
+                  fontFamily: 'inherit'
+                }}
+                onFocus={(e) => e.currentTarget.style.borderColor = '#03969c'}
+                onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'}
+              />
+            </div>
+
+            {/* Send Gift Button */}
+            <button
+              onClick={handleSendGift}
+              disabled={!isPaymentDetailsValid()}
+              style={{
+                width: '100%',
+                padding: '14px 24px',
+                background: !isPaymentDetailsValid()
+                  ? '#3f3f46'
+                  : 'linear-gradient(135deg, #03969c 0%, #026d72 100%)',
+                border: 'none',
+                borderRadius: '12px',
+                color: !isPaymentDetailsValid() ? '#71717a' : '#fff',
+                fontSize: '15px',
+                fontWeight: '600',
+                cursor: !isPaymentDetailsValid() ? 'not-allowed' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                transition: 'all 0.3s ease',
+                boxShadow: !isPaymentDetailsValid()
+                  ? 'none'
+                  : '0 4px 15px rgba(3, 150, 156, 0.3)'
+              }}
+              onMouseEnter={(e) => {
+                if (isPaymentDetailsValid()) {
+                  e.currentTarget.style.transform = 'scale(1.02)';
+                  e.currentTarget.style.boxShadow = '0 6px 20px rgba(3, 150, 156, 0.4)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (isPaymentDetailsValid()) {
+                  e.currentTarget.style.transform = 'scale(1)';
+                  e.currentTarget.style.boxShadow = '0 4px 15px rgba(3, 150, 156, 0.3)';
+                }
+              }}
+            >
+              <i className="bi bi-gift-fill" style={{ fontSize: '18px' }}></i>
+              Send Gift {giftAmount && `(UGX ${parseInt(giftAmount).toLocaleString()})`}
+            </button>
           </div>
         </div>
       )}

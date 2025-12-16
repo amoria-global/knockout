@@ -212,10 +212,11 @@ const About = () => {
         >
           <h1
             style={{
-              fontSize: '32px',
-              fontWeight: '600',
+              fontSize: '50px',
+              fontWeight: 700,
               margin: 0,
-              lineHeight: '1.3',
+              lineHeight: '1.05',
+              letterSpacing: '-0.02em',
             }}
           >
             <span style={{ color: '#FF6B6B' }}>About Us:</span>{' '}
@@ -236,7 +237,7 @@ const About = () => {
       {/* Mission Section */}
       <section
         style={{
-          padding: '60px 20px',
+          padding: '80px 20px',
           backgroundColor: '#ffffff',
           position: 'relative',
           overflow: 'visible',
@@ -253,16 +254,16 @@ const About = () => {
 
         <div
           style={{
-            maxWidth: '1400px',
+            maxWidth: '1080px',
             margin: '0 auto',
             display: 'flex',
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'space-between',
-            gap: '80px',
+            gap: '60px',
             position: 'relative',
             zIndex: 1,
-            padding: '0 40px',
+            padding: '0 20px',
           }}
         >
           {/* Text Content - Left Side */}
@@ -273,12 +274,13 @@ const About = () => {
             {/* Heading now above the text */}
             <h2
               style={{
-                fontSize: '24px',
-                fontWeight: '600',
-                marginBottom: '16px',
-                color: '#063572',
-                lineHeight: '1.3',
+                fontSize: '30px',
+                fontWeight: 700,
+                marginBottom: '19.5px',
+                color: '#083A85',
+                lineHeight: '1.05',
                 textAlign: 'left',
+                letterSpacing: '-0.02em',
               }}
             >
               Amoria connekyt is where vision meets visibility
@@ -286,10 +288,10 @@ const About = () => {
 
             <p
               style={{
-                fontSize: '13px',
-                fontWeight: '400',
-                lineHeight: '1.6',
-                color: '#555',
+                fontSize: '15px',
+                fontWeight: 400,
+                lineHeight: '1.65',
+                color: '#1f1d1d',
                 marginBottom: '14px',
                 textAlign: 'left',
               }}
@@ -302,10 +304,10 @@ const About = () => {
 
             <p
               style={{
-                fontSize: '13px',
-                fontWeight: '400',
-                lineHeight: '1.6',
-                color: '#555',
+                fontSize: '15px',
+                fontWeight: 400,
+                lineHeight: '1.65',
+                color: '#1f1d1d',
                 marginBottom: '0',
                 textAlign: 'left',
               }}
@@ -355,7 +357,7 @@ const About = () => {
       {/* Features Section */}
       <section
         style={{
-          padding: '60px 20px',
+          padding: '80px 20px',
           backgroundColor: '#f8f9fa',
           position: 'relative',
           textAlign: 'center',
@@ -363,7 +365,7 @@ const About = () => {
       >
         <div
           style={{
-            maxWidth: '900px',
+            maxWidth: '1080px',
             margin: '0 auto',
             position: 'relative',
           }}
@@ -371,10 +373,11 @@ const About = () => {
           {/* Main Heading */}
           <h2
             style={{
-              fontSize: '28px',
-              fontWeight: '600',
-              marginBottom: '20px',
-              lineHeight: '1.3',
+              fontSize: '50px',
+              fontWeight: 700,
+              marginBottom: '19.5px',
+              lineHeight: '1.05',
+              letterSpacing: '-0.02em',
             }}
           >
             <span
@@ -396,13 +399,13 @@ const About = () => {
           {/* Subtext */}
           <p
             style={{
-              fontSize: '14px',
-              fontWeight: '500',
-              lineHeight: '1.6',
-              color: '#666',
-              marginBottom: '28px',
-              maxWidth: '700px',
-              margin: '0 auto 28px',
+              fontSize: '15px',
+              fontWeight: 400,
+              lineHeight: '1.65',
+              color: '#1f1d1d',
+              marginBottom: '30px',
+              maxWidth: '800px',
+              margin: '0 auto 30px',
             }}
           >
             Experience powerful features for photography booking, livestreaming, and media sharing made for every moment that matters
@@ -413,11 +416,11 @@ const About = () => {
             style={{
               background: 'linear-gradient(90deg, #FF6B6B 0%, #8B5CF6 100%)',
               color: '#fff',
-              fontSize: '14px',
-              fontWeight: '500',
-              padding: '10px 35px',
+              fontSize: '15px',
+              fontWeight: 600,
+              padding: '11.25px 25.5px',
               border: 'none',
-              borderRadius: '30px',
+              borderRadius: '37.5px',
               cursor: 'pointer',
               boxShadow: '0 4px 15px rgba(255, 107, 107, 0.3)',
               transition: 'all 0.3s ease',
@@ -439,7 +442,7 @@ const About = () => {
       {/* App Showcase Section */}
       <section
         style={{
-          padding: '100px 20px',
+          padding: '80px 20px',
           backgroundColor: '#E8F4F8',
           position: 'relative',
           overflow: 'hidden',
@@ -447,7 +450,7 @@ const About = () => {
       >
         <div
           style={{
-            maxWidth: '1200px',
+            maxWidth: '1080px',
             margin: '0 auto',
             position: 'relative',
             display: 'flex',
@@ -622,18 +625,19 @@ const About = () => {
       {/* Journey Section */}
       <section
         style={{
-          padding: '100px 20px',
+          padding: '80px 20px',
           backgroundColor: '#ffffff',
           position: 'relative',
         }}
       >
         <div
           style={{
-            maxWidth: '1400px',
+            maxWidth: '1080px',
             margin: '0 auto',
             display: 'flex',
             gap: '60px',
             alignItems: 'flex-start',
+            padding: '0 20px',
           }}
         >
           {/* Left Side - Main Title and Description */}
@@ -645,10 +649,11 @@ const About = () => {
           >
             <h2
               style={{
-                fontSize: '28px',
-                fontWeight: '600',
-                marginBottom: '20px',
-                lineHeight: '1.3',
+                fontSize: '50px',
+                fontWeight: 700,
+                marginBottom: '19.5px',
+                lineHeight: '1.05',
+                letterSpacing: '-0.02em',
               }}
             >
               <span
@@ -666,10 +671,10 @@ const About = () => {
             <div style={{ marginBottom: '24px' }}>
               <p
                 style={{
-                  fontSize: '13px',
-                  fontWeight: '400',
-                  lineHeight: '1.6',
-                  color: '#555',
+                  fontSize: '15px',
+                  fontWeight: 400,
+                  lineHeight: '1.65',
+                  color: '#1f1d1d',
                   marginBottom: '14px',
                 }}
               >
@@ -678,10 +683,10 @@ const About = () => {
 
               <p
                 style={{
-                  fontSize: '13px',
-                  fontWeight: '400',
-                  lineHeight: '1.6',
-                  color: '#555',
+                  fontSize: '15px',
+                  fontWeight: 400,
+                  lineHeight: '1.65',
+                  color: '#1f1d1d',
                   marginBottom: '14px',
                 }}
               >
@@ -690,10 +695,10 @@ const About = () => {
 
               <p
                 style={{
-                  fontSize: '13px',
-                  fontWeight: '400',
-                  lineHeight: '1.6',
-                  color: '#555',
+                  fontSize: '15px',
+                  fontWeight: 400,
+                  lineHeight: '1.65',
+                  color: '#1f1d1d',
                 }}
               >
                 The journey continues—with every milestone, we unlock new possibilities for creators worldwide.
@@ -733,12 +738,12 @@ const About = () => {
             {/* Card Title */}
             <h3
               style={{
-                fontSize: '20px',
-                fontWeight: '600',
+                fontSize: '30px',
+                fontWeight: 700,
                 marginTop: '40px',
                 marginBottom: '16px',
                 color: '#000',
-                lineHeight: '1.3',
+                lineHeight: '1.05',
               }}
             >
               The Birth of Our Vision:{' '}
@@ -757,10 +762,10 @@ const About = () => {
             {/* Card Content */}
             <p
               style={{
-                fontSize: '13px',
-                fontWeight: '400',
-                lineHeight: '1.6',
-                color: '#555',
+                fontSize: '15px',
+                fontWeight: 400,
+                lineHeight: '1.65',
+                color: '#1f1d1d',
                 marginBottom: '14px',
               }}
             >
@@ -769,10 +774,10 @@ const About = () => {
 
             <p
               style={{
-                fontSize: '13px',
-                fontWeight: '400',
-                lineHeight: '1.6',
-                color: '#555',
+                fontSize: '15px',
+                fontWeight: 400,
+                lineHeight: '1.65',
+                color: '#1f1d1d',
               }}
             >
               Our journey started with a desire to empower event creators, photographers, and storytellers alike. Every feature we build reflects real voices, real problems, and real solutions. From sketches on paper to fully integrated experiences, our vision keeps evolving with our users. This is only the beginning: we're building something bigger, together.
@@ -792,7 +797,7 @@ const About = () => {
       >
         <div
           style={{
-            maxWidth: '900px',
+            maxWidth: '1080px',
             margin: '0 auto',
             position: 'relative',
           }}
@@ -800,10 +805,11 @@ const About = () => {
           {/* Main Heading */}
           <h2
             style={{
-              fontSize: '28px',
-              fontWeight: '600',
-              marginBottom: '20px',
-              lineHeight: '1.3',
+              fontSize: '50px',
+              fontWeight: 700,
+              marginBottom: '19.5px',
+              lineHeight: '1.05',
+              letterSpacing: '-0.02em',
             }}
           >
             <span
@@ -831,13 +837,13 @@ const About = () => {
           {/* Description */}
           <p
             style={{
-              fontSize: '14px',
-              fontWeight: '500',
-              lineHeight: '1.6',
-              color: '#000',
-              marginBottom: '32px',
+              fontSize: '15px',
+              fontWeight: 400,
+              lineHeight: '1.65',
+              color: '#1f1d1d',
+              marginBottom: '30px',
               maxWidth: '800px',
-              margin: '0 auto 32px',
+              margin: '0 auto 30px',
             }}
           >
             Whether you're a passionate photographer or someone looking for the perfect moment to be captured, Amoria Connect brings creators and clients together in one seamless experience
@@ -856,24 +862,24 @@ const About = () => {
             {/* Find A Photographer Button */}
             <button
               style={{
-                backgroundColor: '#063572',
+                backgroundColor: '#083A85',
                 color: '#fff',
-                fontSize: '14px',
-                fontWeight: '500',
-                padding: '10px 30px',
+                fontSize: '15px',
+                fontWeight: 600,
+                padding: '11.25px 25.5px',
                 border: 'none',
-                borderRadius: '30px',
+                borderRadius: '37.5px',
                 cursor: 'pointer',
-                boxShadow: '0 4px 15px rgba(6, 53, 114, 0.3)',
+                boxShadow: '0 3px 9px rgba(8, 58, 133, 0.2)',
                 transition: 'all 0.3s ease',
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.transform = 'translateY(-2px)';
-                e.currentTarget.style.boxShadow = '0 6px 20px rgba(6, 53, 114, 0.4)';
+                e.currentTarget.style.boxShadow = '0 6px 20px rgba(8, 58, 133, 0.4)';
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 4px 15px rgba(6, 53, 114, 0.3)';
+                e.currentTarget.style.boxShadow = '0 3px 9px rgba(8, 58, 133, 0.2)';
               }}
             >
               Find A Photographer
@@ -882,28 +888,25 @@ const About = () => {
             {/* Join As Photographer Button */}
             <button
               style={{
-                backgroundColor: '#fff',
-                color: '#063572',
-                fontSize: '14px',
-                fontWeight: '500',
-                padding: '10px 30px',
-                border: '2px solid #063572',
-                borderRadius: '30px',
+                backgroundColor: 'transparent',
+                color: '#083A85',
+                fontSize: '15px',
+                fontWeight: 600,
+                padding: '11.25px 25.5px',
+                border: '1.5px solid #083A85',
+                borderRadius: '37.5px',
                 cursor: 'pointer',
-                boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)',
                 transition: 'all 0.3s ease',
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.transform = 'translateY(-2px)';
-                e.currentTarget.style.boxShadow = '0 6px 20px rgba(0, 0, 0, 0.15)';
-                e.currentTarget.style.backgroundColor = '#063572';
+                e.currentTarget.style.backgroundColor = '#083A85';
                 e.currentTarget.style.color = '#fff';
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.1)';
-                e.currentTarget.style.backgroundColor = '#fff';
-                e.currentTarget.style.color = '#063572';
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.color = '#083A85';
               }}
             >
               Join As Photographer

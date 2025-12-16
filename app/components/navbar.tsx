@@ -321,8 +321,8 @@ const AmoriaKNavbar = () => {
                     className="absolute"
                     style={{
                       top: 'calc(100% + 20px)',
-                      left: '-160%',
-                      width: '55vw',
+                      left: '-350%',
+                      width: '75vw',
                       height: '555px',
                       background: 'rgba(255, 255, 255, 0.70)',
                       backdropFilter: 'blur(25px)',
@@ -336,13 +336,14 @@ const AmoriaKNavbar = () => {
                     }}
                   >
                   <div style={{
-                    width: '100%',
+                    width: '55vw',
                     height: '100%',
                     padding: '4rem 5rem',
                     display: 'flex',
                     flexDirection: 'column',
                     maxWidth: '1400px',
-                    margin: '0 auto'
+                    marginLeft: 'auto',
+                    marginRight: '0'
                   }}>
                     <div style={{ marginBottom: '0.5rem', flexShrink: 0 }}>
                       <h3 style={{
