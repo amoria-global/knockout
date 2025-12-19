@@ -22,6 +22,7 @@ const About = () => {
 
       {/* Header/Hero Section - Grid Pattern Design */}
       <section
+        className="about-hero-section"
         style={{
           backgroundColor: '#1a1a2e',
           position: 'relative',
@@ -64,6 +65,7 @@ const About = () => {
 
         {/* Abstract 3D Shape - Bottom Right */}
         <div
+          className="about-hero-shape"
           style={{
             position: 'absolute',
             bottom: '-130px',
@@ -87,6 +89,7 @@ const About = () => {
 
         {/* Content */}
         <div
+          className="about-hero-content"
           style={{
             position: 'relative',
             zIndex: 10,
@@ -96,6 +99,7 @@ const About = () => {
           }}
         >
           <h1
+            className="about-hero-title"
             style={{
               fontSize: '60px',
               fontWeight: 700,
@@ -120,6 +124,7 @@ const About = () => {
           </h1>
 
           <p
+            className="about-hero-subtitle"
             style={{
               fontSize: '18px',
               fontWeight: 400,
@@ -166,6 +171,7 @@ const About = () => {
 
       {/* Journey Section */}
       <section
+        className="about-journey-section"
         style={{
           padding: '80px 20px',
           backgroundColor: '#ffffff',
@@ -173,6 +179,7 @@ const About = () => {
         }}
       >
         <div
+          className="about-journey-container"
           style={{
             maxWidth: '1080px',
             margin: '0 auto',
@@ -184,12 +191,14 @@ const About = () => {
         >
           {/* Left Side - Main Title and Description */}
           <div
+            className="about-journey-left"
             style={{
               flex: '1',
               maxWidth: '450px',
             }}
           >
             <h2
+              className="about-journey-title"
               style={{
                 fontSize: '60px',
                 fontWeight: 700,
@@ -250,6 +259,7 @@ const About = () => {
 
           {/* Right Side - Timeline Card */}
           <div
+            className="about-journey-card"
             style={{
               flex: '1',
               backgroundColor: '#E8F4F8',
@@ -260,6 +270,7 @@ const About = () => {
           >
             {/* Year Badge */}
             <div
+              className="about-journey-year-badge"
               style={{
                 position: 'absolute',
                 top: '20px',
@@ -279,6 +290,7 @@ const About = () => {
 
             {/* Card Title */}
             <h3
+              className="about-journey-card-title"
               style={{
                 fontSize: '40px',
                 fontWeight: 700,
@@ -330,12 +342,14 @@ const About = () => {
 
       {/* Mock Image Section */}
       <section
+        className="about-mock-section"
         style={{
           padding: '16px',
           backgroundColor: '#ffffff',
         }}
       >
         <div
+          className="about-mock-container"
           style={{
             position: 'relative',
             width: '100%',
@@ -362,6 +376,7 @@ const About = () => {
 
           {/* Content Overlay */}
           <div
+            className="about-mock-overlay"
             style={{
               position: 'relative',
               zIndex: 10,
@@ -375,11 +390,13 @@ const About = () => {
           >
             {/* Left Side Content */}
             <div
+              className="about-mock-content"
               style={{
                 maxWidth: '550px',
               }}
             >
               <h2
+                className="about-mock-title"
                 style={{
                   fontSize: '60px',
                   fontWeight: 700,
@@ -393,6 +410,7 @@ const About = () => {
               </h2>
 
               <p
+                className="about-mock-subtitle"
                 style={{
                   fontSize: '18px',
                   fontWeight: 400,
@@ -437,6 +455,7 @@ const About = () => {
 
       {/* Call to Action Section */}
       <section
+        className="about-cta-section"
         style={{
           padding: '80px 0 80px 0',
           backgroundColor: '#ffffff',
@@ -444,6 +463,7 @@ const About = () => {
         }}
       >
         <div
+          className="about-cta-container"
           style={{
             maxWidth: '100%',
             margin: '0 auto',
@@ -455,6 +475,7 @@ const About = () => {
         >
           {/* Left Side - Image Card */}
           <div
+            className="about-cta-image"
             style={{
               flex: '1.2',
               backgroundColor: 'transparent',
@@ -484,12 +505,14 @@ const About = () => {
 
           {/* Right Side - Content */}
           <div
+            className="about-cta-content"
             style={{
               flex: '1',
               maxWidth: '500px',
             }}
           >
             <h2
+              className="about-cta-title"
               style={{
                 fontSize: '65px',
                 fontWeight: 700,
@@ -521,6 +544,7 @@ const About = () => {
             </h2>
 
             <p
+              className="about-cta-subtitle"
               style={{
                 fontSize: '18px',
                 fontWeight: 400,
@@ -534,6 +558,7 @@ const About = () => {
 
             {/* CTA Buttons */}
             <div
+              className="about-cta-buttons"
               style={{
                 display: 'flex',
                 gap: '20px',

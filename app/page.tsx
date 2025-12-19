@@ -1614,7 +1614,7 @@ export default function Home() {
         }}>
           {/* Background Decorative Elements */}
           {/* Top-left decorative icon */}
-          <div style={{
+          <div className="why-amoria-decorative" style={{
             position: 'absolute',
             top: '15%',
             left: '3%',
@@ -1628,7 +1628,7 @@ export default function Home() {
             </svg>
           </div>
           {/* Bottom-left circle icon */}
-          <div style={{
+          <div className="why-amoria-decorative" style={{
             position: 'absolute',
             bottom: '20%',
             left: '5%',
@@ -1643,7 +1643,7 @@ export default function Home() {
             </svg>
           </div>
           {/* Right side decorative icon */}
-          <div style={{
+          <div className="why-amoria-decorative" style={{
             position: 'absolute',
             top: '30%',
             right: '3%',
@@ -1658,7 +1658,7 @@ export default function Home() {
             </svg>
           </div>
           {/* Bottom-right decorative */}
-          <div style={{
+          <div className="why-amoria-decorative" style={{
             position: 'absolute',
             bottom: '15%',
             right: '5%',
@@ -1674,7 +1674,7 @@ export default function Home() {
           </div>
 
           {/* Dotted pattern background */}
-          <div style={{
+          <div className="why-amoria-dotted-bg" style={{
             position: 'absolute',
             inset: 0,
             backgroundImage: 'radial-gradient(circle, #94a3b8 1px, transparent 1px)',
