@@ -922,14 +922,14 @@ const Donations = () => {
       </section>
 
       {/* Education Section - Curved design inspired by BRD */}
-      <section style={{
+      <section className="education-section" style={{
         position: 'relative',
         overflow: 'hidden',
         padding: '0',
         marginTop: '-1px',
       }}>
         {/* Curved top background shape */}
-        <div style={{
+        <div className="education-bg-curve" style={{
           position: 'absolute',
           top: 0,
           left: '-10%',
@@ -941,13 +941,13 @@ const Donations = () => {
         }} />
 
         {/* Inner curved container for the content */}
-        <div style={{
+        <div className="education-inner" style={{
           position: 'relative',
           zIndex: 1,
           paddingTop: '30px',
         }}>
           {/* Top curved edge overlay */}
-          <div style={{
+          <div className="education-curve-overlay" style={{
             position: 'absolute',
             top: 0,
             left: '50%',
@@ -1165,7 +1165,7 @@ const Donations = () => {
           margin: '0 auto',
         }}>
           <div style={{ textAlign: 'center', marginBottom: '50px' }}>
-            <h2 style={{
+            <h2 className="categories-title" style={{
               fontSize: '50px',
               fontWeight: 700,
               marginBottom: '15px',

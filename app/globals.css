@@ -96,6 +96,10 @@ body {
     display: none !important;
   }
 
+  .why-amoria-decorative {
+    display: none !important;
+  }
+
   .why-amoria-card-large,
   .why-amoria-card-medium,
   .why-amoria-card-base,
@@ -145,5 +149,1047 @@ body {
 
   .why-amoria-card-base > div:first-child {
     height: 160px !important;
+  }
+
+  .why-amoria-subtitle {
+    font-size: 16px !important;
+    padding: 0 10px !important;
+  }
+
+  /* Card text adjustments for tablet */
+  .why-amoria-card-medium h3,
+  .why-amoria-card-small h3,
+  .why-amoria-card-base h3 {
+    font-size: 16px !important;
+  }
+
+  .why-amoria-card-small p,
+  .why-amoria-card-base p {
+    font-size: 13px !important;
+  }
+}
+
+/* Why Amoria Section - Small Mobile (480px and below) */
+@media (max-width: 480px) {
+  .why-amoria-section {
+    padding: 40px 0 !important;
+  }
+
+  .why-amoria-title {
+    font-size: 28px !important;
+    margin-bottom: 16px !important;
+  }
+
+  .why-amoria-subtitle {
+    font-size: 14px !important;
+    line-height: 1.6 !important;
+    padding: 0 5px !important;
+  }
+
+  .why-amoria-header {
+    margin-bottom: 30px !important;
+  }
+
+  .why-amoria-dashboard {
+    gap: 12px !important;
+  }
+
+  .why-amoria-card-large,
+  .why-amoria-card-medium,
+  .why-amoria-card-base,
+  .why-amoria-card-small {
+    border-radius: 14px !important;
+  }
+
+  .why-amoria-card-large > div:first-child {
+    height: 180px !important;
+  }
+
+  .why-amoria-card-medium > div > div:last-child {
+    height: 150px !important;
+  }
+
+  .why-amoria-card-small > div:first-child {
+    height: 170px !important;
+  }
+
+  .why-amoria-card-base > div:first-child {
+    height: 140px !important;
+  }
+
+  /* Hide decorative elements on small screens */
+  .why-amoria-decorative {
+    display: none !important;
+  }
+
+  .why-amoria-dotted-bg {
+    opacity: 0.5 !important;
+    background-size: 15px 15px !important;
+  }
+
+  /* Card text adjustments for small mobile */
+  .why-amoria-card-medium h3,
+  .why-amoria-card-small h3,
+  .why-amoria-card-base h3 {
+    font-size: 15px !important;
+  }
+
+  .why-amoria-card-small p,
+  .why-amoria-card-base p {
+    font-size: 12px !important;
+  }
+
+  /* Card padding adjustments */
+  .why-amoria-card-medium > div:first-child,
+  .why-amoria-card-small > div:last-child,
+  .why-amoria-card-base > div:last-child {
+    padding: 10px 12px !important;
+  }
+}
+
+/* Why Amoria Section - Extra Small Mobile (375px and below) */
+@media (max-width: 375px) {
+  .why-amoria-title {
+    font-size: 24px !important;
+  }
+
+  .why-amoria-subtitle {
+    font-size: 13px !important;
+  }
+
+  .why-amoria-card-large > div:first-child {
+    height: 160px !important;
+  }
+
+  .why-amoria-card-medium > div > div:last-child {
+    height: 130px !important;
+  }
+
+  .why-amoria-card-small > div:first-child {
+    height: 150px !important;
+  }
+
+  .why-amoria-card-base > div:first-child {
+    height: 120px !important;
+  }
+
+  /* Card text adjustments for extra small mobile */
+  .why-amoria-card-medium h3,
+  .why-amoria-card-small h3,
+  .why-amoria-card-base h3 {
+    font-size: 14px !important;
+  }
+
+  .why-amoria-card-small p,
+  .why-amoria-card-base p {
+    font-size: 11px !important;
+  }
+
+  .why-amoria-dotted-bg {
+    opacity: 0.3 !important;
+  }
+}
+
+/* ============================================
+   ABOUT PAGE - Responsive Styles
+   ============================================ */
+
+/* About Page - Tablet (1024px and below) */
+@media (max-width: 1024px) {
+  .about-hero-section {
+    padding: 80px 20px 100px !important;
+    min-height: 350px !important;
+  }
+
+  .about-hero-title {
+    font-size: 48px !important;
+  }
+
+  .about-hero-shape {
+    width: 300px !important;
+    height: 300px !important;
+    bottom: -100px !important;
+    right: -80px !important;
+  }
+
+  .about-journey-container {
+    gap: 40px !important;
+  }
+
+  .about-journey-title {
+    font-size: 48px !important;
+  }
+
+  .about-journey-card-title {
+    font-size: 32px !important;
+  }
+
+  .about-mock-container {
+    min-height: 550px !important;
+  }
+
+  .about-mock-overlay {
+    padding: 60px 40px !important;
+    min-height: 550px !important;
+  }
+
+  .about-mock-title {
+    font-size: 48px !important;
+  }
+
+  .about-cta-container {
+    gap: 40px !important;
+    padding: 0 20px !important;
+  }
+
+  .about-cta-image {
+    min-height: 400px !important;
+    height: 350px !important;
+  }
+
+  .about-cta-title {
+    font-size: 50px !important;
+  }
+}
+
+/* About Page - Tablet/Mobile (768px and below) */
+@media (max-width: 768px) {
+  .about-hero-section {
+    padding: 60px 16px 80px !important;
+    min-height: auto !important;
+  }
+
+  .about-hero-title {
+    font-size: 36px !important;
+    margin-bottom: 20px !important;
+  }
+
+  .about-hero-subtitle {
+    font-size: 16px !important;
+    margin-bottom: 24px !important;
+  }
+
+  .about-hero-shape {
+    width: 200px !important;
+    height: 200px !important;
+    bottom: -60px !important;
+    right: -50px !important;
+    opacity: 0.6 !important;
+  }
+
+  .about-journey-section {
+    padding: 60px 16px !important;
+  }
+
+  .about-journey-container {
+    flex-direction: column !important;
+    gap: 30px !important;
+    padding: 0 !important;
+  }
+
+  .about-journey-left {
+    max-width: 100% !important;
+  }
+
+  .about-journey-title {
+    font-size: 36px !important;
+  }
+
+  .about-journey-left p {
+    font-size: 16px !important;
+  }
+
+  .about-journey-card {
+    padding: 30px 20px !important;
+    padding-top: 20px !important;
+  }
+
+  /* Position year badge above title in mobile */
+  .about-journey-year-badge {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    margin-bottom: 16px !important;
+    display: inline-block !important;
+    width: auto !important;
+  }
+
+  .about-journey-card-title {
+    font-size: 26px !important;
+    margin-top: 0 !important;
+  }
+
+  .about-journey-card p {
+    font-size: 16px !important;
+  }
+
+  .about-mock-section {
+    padding: 12px !important;
+  }
+
+  .about-mock-container {
+    min-height: auto !important;
+    border-radius: 16px !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  /* Background image as separate element on mobile */
+  .about-mock-container > div:first-child {
+    position: relative !important;
+    height: 300px !important;
+    border-radius: 16px 16px 0 0 !important;
+    background-position: center right !important;
+  }
+
+  .about-mock-overlay {
+    position: relative !important;
+    padding: 30px 20px !important;
+    min-height: auto !important;
+    background-color: #1a1a2e !important;
+    border-radius: 0 0 16px 16px !important;
+  }
+
+  .about-mock-content {
+    max-width: 100% !important;
+  }
+
+  .about-mock-title {
+    font-size: 28px !important;
+    margin-bottom: 16px !important;
+  }
+
+  .about-mock-subtitle {
+    font-size: 15px !important;
+    margin-bottom: 24px !important;
+  }
+
+  .about-cta-section {
+    padding: 60px 0 !important;
+  }
+
+  .about-cta-container {
+    flex-direction: column !important;
+    gap: 30px !important;
+    padding: 0 16px !important;
+  }
+
+  .about-cta-image {
+    width: 100% !important;
+    min-height: 300px !important;
+    height: 280px !important;
+    margin-left: 0 !important;
+  }
+
+  .about-cta-content {
+    max-width: 100% !important;
+    text-align: center !important;
+  }
+
+  .about-cta-title {
+    font-size: 36px !important;
+  }
+
+  .about-cta-subtitle {
+    font-size: 16px !important;
+  }
+
+  .about-cta-buttons {
+    justify-content: center !important;
+  }
+}
+
+/* About Page - Small Mobile (480px and below) */
+@media (max-width: 480px) {
+  .about-hero-section {
+    padding: 50px 12px 60px !important;
+  }
+
+  .about-hero-title {
+    font-size: 28px !important;
+    margin-bottom: 16px !important;
+  }
+
+  .about-hero-subtitle {
+    font-size: 14px !important;
+    padding: 0 5px !important;
+  }
+
+  .about-hero-shape {
+    display: none !important;
+  }
+
+  .about-journey-section {
+    padding: 40px 12px !important;
+  }
+
+  .about-journey-title {
+    font-size: 28px !important;
+  }
+
+  .about-journey-left p {
+    font-size: 15px !important;
+  }
+
+  .about-journey-card {
+    padding: 24px 16px !important;
+    padding-top: 16px !important;
+    border-radius: 16px !important;
+  }
+
+  .about-journey-year-badge {
+    padding: 6px 16px !important;
+    font-size: 16px !important;
+  }
+
+  .about-journey-card-title {
+    font-size: 22px !important;
+    margin-top: 0 !important;
+  }
+
+  .about-journey-card p {
+    font-size: 14px !important;
+  }
+
+  .about-mock-section {
+    padding: 8px !important;
+  }
+
+  .about-mock-container {
+    min-height: auto !important;
+    border-radius: 12px !important;
+  }
+
+  .about-mock-container > div:first-child {
+    height: 250px !important;
+    border-radius: 12px 12px 0 0 !important;
+  }
+
+  .about-mock-overlay {
+    padding: 24px 16px !important;
+    min-height: auto !important;
+    border-radius: 0 0 12px 12px !important;
+  }
+
+  .about-mock-title {
+    font-size: 24px !important;
+  }
+
+  .about-mock-subtitle {
+    font-size: 14px !important;
+  }
+
+  .about-cta-section {
+    padding: 40px 0 !important;
+  }
+
+  .about-cta-image {
+    min-height: 250px !important;
+    height: 230px !important;
+    border-radius: 16px !important;
+  }
+
+  .about-cta-title {
+    font-size: 28px !important;
+  }
+
+  .about-cta-subtitle {
+    font-size: 14px !important;
+  }
+
+  .about-cta-buttons {
+    flex-direction: column !important;
+    gap: 12px !important;
+    width: 100% !important;
+  }
+
+  .about-cta-buttons button {
+    width: 100% !important;
+  }
+}
+
+/* About Page - Extra Small Mobile (375px and below) */
+@media (max-width: 375px) {
+  .about-hero-title {
+    font-size: 24px !important;
+  }
+
+  .about-hero-subtitle {
+    font-size: 13px !important;
+  }
+
+  .about-journey-title {
+    font-size: 24px !important;
+  }
+
+  .about-journey-card-title {
+    font-size: 20px !important;
+  }
+
+  .about-mock-title {
+    font-size: 22px !important;
+  }
+
+  .about-mock-subtitle {
+    font-size: 13px !important;
+  }
+
+  .about-cta-title {
+    font-size: 24px !important;
+  }
+
+  .about-cta-subtitle {
+    font-size: 13px !important;
+  }
+}
+
+/* ============================================
+   DONATIONS PAGE - Responsive Styles
+   ============================================ */
+
+/* Donations Page - Tablet (1024px and below) */
+@media (max-width: 1024px) {
+  .donations-page .hero-content {
+    padding: 60px 30px !important;
+  }
+
+  .donations-page .hero-title {
+    font-size: 44px !important;
+  }
+
+  .donations-page .hero-right {
+    width: 350px !important;
+    height: 350px !important;
+  }
+
+  .donations-page .impact-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 20px !important;
+  }
+
+  .donations-page .categories-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  .donations-page .mission-content {
+    gap: 40px !important;
+    padding: 80px 30px 60px !important;
+  }
+
+  .donations-page .mission-left h2 {
+    font-size: 40px !important;
+  }
+
+  .donations-page .mission-right img {
+    min-width: 350px !important;
+    min-height: 280px !important;
+  }
+}
+
+/* Donations Page - Tablet/Mobile (768px and below) */
+@media (max-width: 768px) {
+  .donations-page .hero-content {
+    flex-direction: column !important;
+    text-align: center !important;
+    padding: 50px 20px !important;
+    gap: 40px !important;
+  }
+
+  .donations-page .hero-left {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .donations-page .hero-title {
+    font-size: 36px !important;
+  }
+
+  .donations-page .hero-left > div:first-child {
+    justify-content: center !important;
+  }
+
+  .donations-page .hero-left > div:last-child {
+    justify-content: center !important;
+  }
+
+  .donations-page .hero-right {
+    width: 100% !important;
+    height: 300px !important;
+    margin-top: 20px !important;
+  }
+
+  .donations-page .hero-right > div:first-child {
+    width: 160px !important;
+    height: 160px !important;
+  }
+
+  .donations-page .hero-right > div:nth-child(2) {
+    top: 10px !important;
+    right: 20% !important;
+  }
+
+  .donations-page .hero-right > div:nth-child(3) {
+    bottom: 20px !important;
+    left: 20% !important;
+  }
+
+  .donations-page .impact-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 16px !important;
+  }
+
+  .donations-page .impact-card {
+    padding: 30px 20px !important;
+    min-height: 150px !important;
+  }
+
+  .donations-page .impact-card > div:nth-child(2) {
+    font-size: 36px !important;
+  }
+
+  .donations-page .categories-grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+
+  .donations-page .mission-content {
+    flex-direction: column !important;
+    gap: 30px !important;
+    padding: 60px 20px 50px !important;
+  }
+
+  /* Education section curve fixes for mobile */
+  .donations-page .education-section .education-bg-curve {
+    border-radius: 200px 200px 0 0 !important;
+  }
+
+  .donations-page .education-section .education-curve-overlay {
+    height: 60px !important;
+    border-radius: 0 0 40% 40% !important;
+  }
+
+  .donations-page .education-section .education-inner {
+    padding-top: 20px !important;
+  }
+
+  .donations-page .education-section .mission-content {
+    padding-top: 80px !important;
+  }
+
+  .donations-page .mission-left {
+    width: 100% !important;
+    max-width: 100% !important;
+    text-align: center !important;
+  }
+
+  .donations-page .mission-left h2 {
+    font-size: 32px !important;
+  }
+
+  .donations-page .mission-left p {
+    font-size: 16px !important;
+  }
+
+  .donations-page .mission-left button {
+    margin: 0 auto !important;
+  }
+
+  .donations-page .mission-left > div:last-child {
+    align-items: center !important;
+  }
+
+  .donations-page .mission-right {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  .donations-page .mission-right > div {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-right: 0 !important;
+    padding: 0 !important;
+    border-radius: 20px !important;
+  }
+
+  .donations-page .mission-right > div > div {
+    border-radius: 20px !important;
+  }
+
+  .donations-page .mission-right img {
+    min-width: 100% !important;
+    min-height: 250px !important;
+    max-width: 100% !important;
+  }
+
+  .donations-page .donation-form-container {
+    flex-direction: column !important;
+    gap: 30px !important;
+  }
+
+  .donations-page .form-left,
+  .donations-page .form-right {
+    width: 100% !important;
+  }
+
+  .donations-page .amounts-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px !important;
+  }
+
+  .donations-page .cta-title {
+    font-size: 32px !important;
+  }
+
+  .donations-page section > div[style*="maxWidth: '1200px'"],
+  .donations-page section > div[style*="maxWidth: '1100px'"],
+  .donations-page section > div[style*="maxWidth: '1000px'"] {
+    padding: 0 16px !important;
+  }
+
+  /* Impact section title */
+  .donations-page #impact-section h2 {
+    font-size: 36px !important;
+  }
+
+  /* Categories section title */
+  .donations-page .categories-title {
+    font-size: 36px !important;
+  }
+
+  /* Donation form section */
+  .donations-page #donate-section > div > div:first-child h2 {
+    font-size: 36px !important;
+  }
+
+  .donations-page #donate-section > div > div:last-child {
+    padding: 30px 20px !important;
+    border-radius: 20px !important;
+  }
+
+  /* Trust badges */
+  .donations-page #donate-section .donate-btn + div {
+    flex-direction: column !important;
+    gap: 15px !important;
+  }
+}
+
+/* Donations Page - Small Mobile (480px and below) */
+@media (max-width: 480px) {
+  .donations-page .hero-content {
+    padding: 40px 16px !important;
+  }
+
+  .donations-page .hero-title {
+    font-size: 28px !important;
+  }
+
+  .donations-page .hero-left p {
+    font-size: 15px !important;
+  }
+
+  .donations-page .hero-left > div:last-child {
+    flex-direction: column !important;
+    gap: 12px !important;
+  }
+
+  .donations-page .hero-left > div:last-child button {
+    width: 100% !important;
+  }
+
+  .donations-page .hero-right {
+    height: 250px !important;
+  }
+
+  .donations-page .hero-right > div:first-child {
+    width: 130px !important;
+    height: 130px !important;
+  }
+
+  .donations-page .hero-right > div:first-child svg {
+    width: 50px !important;
+    height: 50px !important;
+  }
+
+  .donations-page .impact-card {
+    padding: 24px 16px !important;
+    min-height: 130px !important;
+    border-radius: 16px !important;
+  }
+
+  .donations-page .impact-card > div:nth-child(2) {
+    font-size: 32px !important;
+  }
+
+  .donations-page .impact-card > div:nth-child(3) {
+    font-size: 13px !important;
+  }
+
+  .donations-page #impact-section h2 {
+    font-size: 28px !important;
+  }
+
+  .donations-page #impact-section > div > div:first-child p {
+    font-size: 15px !important;
+  }
+
+  .donations-page .mission-left h2 {
+    font-size: 26px !important;
+  }
+
+  .donations-page .mission-left p {
+    font-size: 15px !important;
+  }
+
+  /* Categories section title */
+  .donations-page .categories-title {
+    font-size: 28px !important;
+  }
+
+  /* Education section curve fixes for small mobile */
+  .donations-page .education-section .education-bg-curve {
+    border-radius: 100px 100px 0 0 !important;
+  }
+
+  .donations-page .education-section .education-curve-overlay {
+    height: 40px !important;
+    border-radius: 0 0 30% 30% !important;
+  }
+
+  .donations-page .education-section .mission-content {
+    padding-top: 60px !important;
+  }
+
+  .donations-page .categories-grid > div {
+    padding: 24px 20px !important;
+  }
+
+  .donations-page #donate-section > div > div:first-child h2 {
+    font-size: 28px !important;
+  }
+
+  .donations-page #donate-section > div > div:last-child {
+    padding: 24px 16px !important;
+  }
+
+  .donations-page .form-left h3,
+  .donations-page .form-right h3 {
+    font-size: 18px !important;
+  }
+
+  .donations-page .amounts-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  .donations-page .amounts-grid button {
+    padding: 12px 10px !important;
+    font-size: 14px !important;
+    min-width: auto !important;
+  }
+
+  .donations-page .cta-title {
+    font-size: 26px !important;
+  }
+
+  .donations-page .payment-modal {
+    padding: 20px !important;
+    padding-top: 50px !important;
+    border-radius: 20px !important;
+  }
+}
+
+/* Donations Page - Extra Small Mobile (375px and below) */
+@media (max-width: 375px) {
+  .donations-page .hero-title {
+    font-size: 24px !important;
+  }
+
+  .donations-page .impact-card > div:nth-child(2) {
+    font-size: 28px !important;
+  }
+
+  .donations-page #impact-section h2 {
+    font-size: 24px !important;
+  }
+
+  .donations-page .mission-left h2 {
+    font-size: 24px !important;
+  }
+
+  .donations-page .categories-title {
+    font-size: 24px !important;
+  }
+
+  .donations-page #donate-section > div > div:first-child h2 {
+    font-size: 24px !important;
+  }
+
+  .donations-page .cta-title {
+    font-size: 22px !important;
+  }
+
+  .donations-page .amounts-grid button {
+    padding: 10px 8px !important;
+    font-size: 13px !important;
+  }
+}
+
+/* ============================================
+   PHOTOGRAPHER GUIDE PAGE - Responsive Styles
+   (First Section & Second Section Only)
+   ============================================ */
+
+/* Photographer Guide - Tablet (1024px and below) */
+@media (max-width: 1024px) {
+  /* First Section - Hero (only line-height change for title) */
+  .photographer-guide-page .pg-hero-title {
+    line-height: 1.4 !important;
+  }
+
+  /* Second Section - Steps */
+  .photographer-guide-page .pg-steps-section {
+    padding: 80px 20px 60px !important;
+  }
+
+  .photographer-guide-page .pg-steps-title {
+    font-size: 48px !important;
+  }
+
+  .photographer-guide-page .pg-step-card {
+    min-height: 400px !important;
+  }
+}
+
+/* Photographer Guide - Tablet/Mobile (768px and below) */
+@media (max-width: 768px) {
+  /* First Section - Hero (only line-height change for title) */
+  .photographer-guide-page .pg-hero-title {
+    line-height: 1.3 !important;
+  }
+
+  /* Second Section - Steps */
+  .photographer-guide-page .pg-steps-section {
+    padding: 60px 16px 50px !important;
+  }
+
+  .photographer-guide-page .pg-steps-header {
+    margin-bottom: 40px !important;
+  }
+
+  .photographer-guide-page .pg-steps-title {
+    font-size: 32px !important;
+    margin-bottom: 16px !important;
+  }
+
+  .photographer-guide-page .pg-steps-subtitle {
+    font-size: 15px !important;
+  }
+
+  .photographer-guide-page .pg-step-card {
+    flex-direction: column !important;
+    min-height: auto !important;
+    margin-bottom: 20px !important;
+  }
+
+  .photographer-guide-page .pg-step-card-reverse {
+    flex-direction: column !important;
+  }
+
+  .photographer-guide-page .pg-step-card > div:first-child {
+    padding: 24px 20px !important;
+  }
+
+  .photographer-guide-page .pg-step-card > div:last-child {
+    padding: 16px !important;
+    min-height: 250px !important;
+  }
+
+  .photographer-guide-page .pg-step-card h3 {
+    font-size: 22px !important;
+  }
+
+  .photographer-guide-page .pg-step-card p {
+    font-size: 14px !important;
+  }
+
+  .photographer-guide-page .pg-step-card ul li span {
+    font-size: 14px !important;
+  }
+}
+
+/* Photographer Guide - Small Mobile (480px and below) */
+@media (max-width: 480px) {
+  /* First Section - Hero (only line-height change for title) */
+  .photographer-guide-page .pg-hero-title {
+    line-height: 1.2 !important;
+  }
+
+  /* Second Section - Steps */
+  .photographer-guide-page .pg-steps-section {
+    padding: 40px 12px 40px !important;
+  }
+
+  .photographer-guide-page .pg-steps-header {
+    margin-bottom: 30px !important;
+  }
+
+  .photographer-guide-page .pg-steps-title {
+    font-size: 26px !important;
+  }
+
+  .photographer-guide-page .pg-steps-subtitle {
+    font-size: 14px !important;
+  }
+
+  .photographer-guide-page .pg-step-card {
+    border-radius: 16px !important;
+    margin-bottom: 16px !important;
+  }
+
+  .photographer-guide-page .pg-step-card > div:first-child {
+    padding: 20px 16px !important;
+  }
+
+  .photographer-guide-page .pg-step-card > div:last-child {
+    padding: 12px !important;
+    min-height: 200px !important;
+  }
+
+  .photographer-guide-page .pg-step-card h3 {
+    font-size: 20px !important;
+  }
+
+  .photographer-guide-page .pg-step-card p {
+    font-size: 13px !important;
+  }
+
+  /* Step number badge */
+  .photographer-guide-page .pg-step-card > div:first-child > div:first-child {
+    width: 40px !important;
+    height: 40px !important;
+    font-size: 20px !important;
+  }
+}
+
+/* Photographer Guide - Extra Small Mobile (375px and below) */
+@media (max-width: 375px) {
+  /* First Section - Hero (only line-height change for title) */
+  .photographer-guide-page .pg-hero-title {
+    line-height: 1.15 !important;
+  }
+
+  .photographer-guide-page .pg-steps-title {
+    font-size: 22px !important;
+  }
+
+  .photographer-guide-page .pg-steps-subtitle {
+    font-size: 13px !important;
+  }
+
+  .photographer-guide-page .pg-step-card h3 {
+    font-size: 18px !important;
+  }
+
+  .photographer-guide-page .pg-step-card p {
+    font-size: 12px !important;
   }
 }
