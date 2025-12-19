@@ -437,6 +437,7 @@ const AmoriaKNavbar = () => {
             </div>
 
             <Link href={getLocalePath('/user/about')} className="text-gray-700 hover:text-[#083A85] text-base font-semibold transition-colors duration-200 whitespace-nowrap cursor-pointer">{t('about')}</Link>
+            <Link href={getLocalePath('/user/donations')} className="text-gray-700 hover:text-[#083A85] text-base font-semibold transition-colors duration-200 whitespace-nowrap cursor-pointer">Donate</Link>
           </div>
 
           {/* Right: Language and Auth Buttons (Desktop) */}
@@ -652,6 +653,7 @@ const AmoriaKNavbar = () => {
             </div>
 
             <Link href={getLocalePath('/user/about')} onClick={handleLinkClick} className="block rounded-md text-gray-700 hover:bg-gray-50 hover:text-gray-900 font-medium transition-colors cursor-pointer" style={{ padding: isMobile ? '0.5rem 0.75rem' : '0.5rem 0.75rem', fontSize: isMobile ? '0.9375rem' : '1rem' }}>{t('about')}</Link>
+            <Link href={getLocalePath('/user/donations')} onClick={handleLinkClick} className="block rounded-md text-gray-700 hover:bg-gray-50 hover:text-gray-900 font-medium transition-colors cursor-pointer" style={{ padding: isMobile ? '0.5rem 0.75rem' : '0.5rem 0.75rem', fontSize: isMobile ? '0.9375rem' : '1rem' }}>Donate</Link>
 
             {/* Location Section (Mobile) - Hidden but location detection still active */}
 
