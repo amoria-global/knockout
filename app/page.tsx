@@ -1607,18 +1607,93 @@ export default function Home() {
 
         {/* Why Amoria connekyt Only Section */}
         <section className="why-amoria-section" style={{
-          backgroundColor: '#fff',
-          padding: '90px 0',
+          backgroundColor: '#f8fafc',
+          padding: '70px 0',
+          position: 'relative',
+          overflow: 'hidden'
         }}>
+          {/* Background Decorative Elements */}
+          {/* Top-left decorative icon */}
           <div style={{
-            maxWidth: '1080px',
+            position: 'absolute',
+            top: '15%',
+            left: '3%',
+            width: '60px',
+            height: '60px',
+            opacity: 0.4,
+            zIndex: 0
+          }}>
+            <svg viewBox="0 0 100 100" fill="none" stroke="#083A85" strokeWidth="3">
+              <polygon points="50,10 90,90 10,90"/>
+            </svg>
+          </div>
+          {/* Bottom-left circle icon */}
+          <div style={{
+            position: 'absolute',
+            bottom: '20%',
+            left: '5%',
+            width: '50px',
+            height: '50px',
+            opacity: 0.4,
+            zIndex: 0
+          }}>
+            <svg viewBox="0 0 100 100" fill="none" stroke="#083A85" strokeWidth="3">
+              <circle cx="50" cy="50" r="40"/>
+              <text x="50" y="60" textAnchor="middle" fontSize="30" fill="#083A85">$</text>
+            </svg>
+          </div>
+          {/* Right side decorative icon */}
+          <div style={{
+            position: 'absolute',
+            top: '30%',
+            right: '3%',
+            width: '70px',
+            height: '70px',
+            opacity: 0.4,
+            zIndex: 0
+          }}>
+            <svg viewBox="0 0 100 100" fill="none" stroke="#083A85" strokeWidth="2">
+              <path d="M50 10 L90 50 L50 90 L10 50 Z"/>
+              <circle cx="50" cy="50" r="15" fill="#083A85" opacity="0.3"/>
+            </svg>
+          </div>
+          {/* Bottom-right decorative */}
+          <div style={{
+            position: 'absolute',
+            bottom: '15%',
+            right: '5%',
+            width: '55px',
+            height: '55px',
+            opacity: 0.4,
+            zIndex: 0
+          }}>
+            <svg viewBox="0 0 100 100" fill="none" stroke="#083A85" strokeWidth="2">
+              <rect x="20" y="20" width="60" height="60" rx="8"/>
+              <rect x="35" y="35" width="30" height="30" rx="4"/>
+            </svg>
+          </div>
+
+          {/* Dotted pattern background */}
+          <div style={{
+            position: 'absolute',
+            inset: 0,
+            backgroundImage: 'radial-gradient(circle, #94a3b8 1px, transparent 1px)',
+            backgroundSize: '20px 20px',
+            opacity: 0.9,
+            zIndex: 0
+          }} />
+
+          <div style={{
+            maxWidth: '1200px',
             margin: '0 auto',
             padding: '0 20px',
+            position: 'relative',
+            zIndex: 1
           }}>
-             {/* Section Header */}
+            {/* Section Header */}
             <div className="why-amoria-header" style={{
               maxWidth: '780px',
-              margin: '0 auto 80px',
+              margin: '0 auto 120px',
               textAlign: 'center'
             }}>
               <h2 className="why-amoria-title" style={{
@@ -1640,265 +1715,132 @@ export default function Home() {
               </p>
             </div>
 
-            {/* Main Content Layout */}
-            <div className="why-amoria-content" style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: '64px'
+            {/* Overlapping Cards Layout */}
+            <div className="why-amoria-dashboard" style={{
+              position: 'relative',
+              maxWidth: '1100px',
+              margin: '0 auto',
+              height: '650px'
             }}>
-              {/* Left Content */}
-              <div className="why-amoria-cards" style={{
-                flex: 1,
-                maxWidth: '500px'
-              }}>
-                {/* Info Cards */}
+              {/* Connection Lines SVG */}
+              <svg
+                className="why-amoria-connections"
+                style={{
+                  position: 'absolute',
+                  width: '100%',
+                  height: '100%',
+                  top: 0,
+                  left: 0,
+                  zIndex: 0,
+                  pointerEvents: 'none'
+                }}
+                viewBox="0 0 1100 650"
+                preserveAspectRatio="xMidYMid meet"
+              >
+                <defs>
+                  <linearGradient id="lineGradientAmoria" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="#083A85" stopOpacity="0.5"/>
+                    <stop offset="50%" stopColor="#083A85" stopOpacity="0.9"/>
+                    <stop offset="100%" stopColor="#083A85" stopOpacity="0.5"/>
+                  </linearGradient>
+                </defs>
+                {/* Top line - straight horizontal */}
+                <path d="M 60 20 L 1040 20"
+                  stroke="#083A85" strokeWidth="2" fill="none" strokeDasharray="10,8" strokeLinecap="round" opacity="1"/>
+
+                {/* Right line - straight vertical */}
+                <path d="M 1090 60 L 1090 590"
+                  stroke="#083A85" strokeWidth="2" fill="none" strokeDasharray="10,8" strokeLinecap="round" opacity="1"/>
+
+                {/* Bottom line - straight horizontal */}
+                <path d="M 1040 630 L 60 630"
+                  stroke="#083A85" strokeWidth="2" fill="none" strokeDasharray="10,8" strokeLinecap="round" opacity="1"/>
+
+                {/* Left line - straight vertical */}
+                <path d="M 10 590 L 10 60"
+                  stroke="#083A85" strokeWidth="2" fill="none" strokeDasharray="10,8" strokeLinecap="round" opacity="1"/>
+
+                {/* Corner arcs */}
+                <path d="M 1040 20 Q 1090 20 1090 60" stroke="#083A85" strokeWidth="3" fill="none" strokeDasharray="10,8" strokeLinecap="round" opacity="1"/>
+                <path d="M 1090 590 Q 1090 630 1040 630" stroke="#083A85" strokeWidth="3" fill="none" strokeDasharray="10,8" strokeLinecap="round" opacity="1"/>
+                <path d="M 60 630 Q 10 630 10 590" stroke="#083A85" strokeWidth="3" fill="none" strokeDasharray="10,8" strokeLinecap="round" opacity="1"/>
+                <path d="M 10 60 Q 10 20 60 20" stroke="#083A85" strokeWidth="3" fill="none" strokeDasharray="10,8" strokeLinecap="round" opacity="1"/>
+              </svg>
+
+              {/* LARGE CARD - Gallery - Center background */}
+              <div
+                className="why-amoria-card why-amoria-card-large"
+                onMouseEnter={() => setActiveCard(3)}
+                style={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  width: '820px',
+                  backgroundColor: '#fff',
+                  borderRadius: '24px',
+                  boxShadow: activeCard === 3
+                    ? '0 30px 70px rgba(8, 58, 133, 0.25)'
+                    : '0 20px 50px rgba(0,0,0,0.1)',
+                  overflow: 'hidden',
+                  cursor: 'pointer',
+                  transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                  zIndex: 1
+                }}
+              >
                 <div style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '20px'
+                  height: '350px',
+                  overflow: 'hidden',
+                  position: 'relative'
                 }}>
-                  {/* Rated Photographers */}
-                  <div
-                    onMouseEnter={() => setActiveCard(0)}
+                  <img
+                    src="/gallery.png"
+                    alt="Full Event Gallery"
                     style={{
-                      background: 'linear-gradient(100deg, rgba(194, 194, 194, 1) 0%, rgba(194, 194, 194, 1) 25%, rgba(194, 194, 194, 1) 40%, rgba(194, 194, 194, 1) 55%, rgba(194, 194, 194, 1) 70%, rgba(124, 124, 124, 1) 100%)',
-                      borderRadius: '16px',
-                      padding: '20px',
-                      display: 'flex',
-                      alignItems: 'flex-start',
-                      gap: '16px',
-                      cursor: 'pointer',
-                      transition: 'all 0.3s ease',
-                      transform: activeCard === 0 ? 'scale(1.02)' : 'scale(1)',
-                      boxShadow: activeCard === 0 ? '0 8px 24px rgba(0,0,0,0.15)' : '0 4px 12px rgba(0,0,0,0.08)'
-                    }}>
-                    <div style={{
-                      width: '48px',
-                      height: '48px',
-                      backgroundColor: '#fff',
-                      borderRadius: '12px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0
-                    }}>
-                      <svg width="24" height="24" viewBox="0 0 16 16" fill="#FFD700">
-                        <path d="M8 0l2.163 4.382 4.837.703-3.5 3.411.826 4.818L8 11.09l-4.326 2.224.826-4.818-3.5-3.411 4.837-.703L8 0z"/>
-                      </svg>
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <h3 className="why-amoria-card-title" style={{
-                        fontSize: '20px',
-                        fontWeight: 700,
-                        color: '#083A85',
-                        marginBottom: '8px'
-                      }}>
-                        {t('whyAmoria.ratedPhotographers.title')}
-                      </h3>
-                      <p className="why-amoria-card-description" style={{
-                        fontSize: '16px',
-                        fontWeight: 400,
-                        color: '#000',
-                        lineHeight: '1.5'
-                      }}>
-                        {t('whyAmoria.ratedPhotographers.description')}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Live Streaming */}
-                  <div
-                    onMouseEnter={() => setActiveCard(1)}
-                    style={{
-                      background: 'linear-gradient(-100deg, rgba(194, 194, 194, 1) 0%, rgba(194, 194, 194, 1) 25%, rgba(194, 194, 194, 1) 40%, rgba(194, 194, 194, 1) 55%, rgba(194, 194, 194, 1) 70%, rgba(124, 124, 124, 1) 100%)',
-                      borderRadius: '16px',
-                      padding: '20px',
-                      display: 'flex',
-                      alignItems: 'flex-start',
-                      gap: '16px',
-                      cursor: 'pointer',
-                      transition: 'all 0.3s ease',
-                      transform: activeCard === 1 ? 'scale(1.02)' : 'scale(1)',
-                      boxShadow: activeCard === 1 ? '0 8px 24px rgba(0,0,0,0.15)' : '0 4px 12px rgba(0,0,0,0.08)'
-                    }}>
-                    <div style={{
-                      width: '48px',
-                      height: '48px',
-                      backgroundColor: '#fff',
-                      borderRadius: '12px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0
-                    }}>
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                        <circle cx="12" cy="12" r="3" fill="#FF0000"/>
-                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" fill="#FF0000" opacity="0.3"/>
-                        <path d="M16.5 8.5c1.5 1.5 1.5 3.5 1.5 3.5s0 2-1.5 3.5M7.5 8.5C6 10 6 12 6 12s0 2 1.5 3.5" stroke="#FF0000" strokeWidth="1.5" strokeLinecap="round"/>
-                      </svg>
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <h3 className="why-amoria-card-title" style={{
-                        fontSize: '20px',
-                        fontWeight: 700,
-                        color: '#083A85',
-                        marginBottom: '8px'
-                      }}>
-                        {t('whyAmoria.liveStreaming.title')}
-                      </h3>
-                      <p className="why-amoria-card-description" style={{
-                        fontSize: '16px',
-                        fontWeight: 400,
-                        color: '#000',
-                        lineHeight: '1.5'
-                      }}>
-                        {t('whyAmoria.liveStreaming.description')}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Secure Payments */}
-                  <div
-                    onMouseEnter={() => setActiveCard(2)}
-                    style={{
-                      background: 'linear-gradient(100deg, rgba(194, 194, 194, 1) 0%, rgba(194, 194, 194, 1) 25%, rgba(194, 194, 194, 1) 40%, rgba(194, 194, 194, 1) 55%, rgba(194, 194, 194, 1) 70%, rgba(124, 124, 124, 1) 100%)',
-                      borderRadius: '16px',
-                      padding: '20px',
-                      display: 'flex',
-                      alignItems: 'flex-start',
-                      gap: '16px',
-                      cursor: 'pointer',
-                      transition: 'all 0.3s ease',
-                      transform: activeCard === 2 ? 'scale(1.02)' : 'scale(1)',
-                      boxShadow: activeCard === 2 ? '0 8px 24px rgba(0,0,0,0.15)' : '0 4px 12px rgba(0,0,0,0.08)'
-                    }}>
-                    <div style={{
-                      width: '48px',
-                      height: '48px',
-                      backgroundColor: '#fff',
-                      borderRadius: '12px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0
-                    }}>
-                      <svg width="24" height="24" viewBox="0 0 16 16" fill="none">
-                        <path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v1H0zm0 3v5a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z" fill="#4CAF50"/>
-                        <path d="M3 9h1a1 1 0 0 1 1 1v1a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1v-1a1 1 0 0 1 1-1" fill="#2E7D32"/>
-                      </svg>
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <h3 className="why-amoria-card-title" style={{
-                        fontSize: '20px',
-                        fontWeight: 700,
-                        color: '#083A85',
-                        marginBottom: '8px'
-                      }}>
-                        {t('whyAmoria.securePayments.title')}
-                      </h3>
-                      <p className="why-amoria-card-description" style={{
-                        fontSize: '16px',
-                        fontWeight: 400,
-                        color: '#000',
-                        lineHeight: '1.5'
-                      }}>
-                        {t('whyAmoria.securePayments.description')}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Full Event Gallery */}
-                  <div
-                    onMouseEnter={() => setActiveCard(3)}
-                    style={{
-                      background: 'linear-gradient(-100deg, rgba(194, 194, 194, 1) 0%, rgba(194, 194, 194, 1) 25%, rgba(194, 194, 194, 1) 40%, rgba(194, 194, 194, 1) 55%, rgba(194, 194, 194, 1) 70%, rgba(124, 124, 124, 1) 100%)',
-                      borderRadius: '16px',
-                      padding: '20px',
-                      display: 'flex',
-                      alignItems: 'flex-start',
-                      gap: '16px',
-                      cursor: 'pointer',
-                      transition: 'all 0.3s ease',
-                      transform: activeCard === 3 ? 'scale(1.02)' : 'scale(1)',
-                      boxShadow: activeCard === 3 ? '0 8px 24px rgba(0,0,0,0.15)' : '0 4px 12px rgba(0,0,0,0.08)'
-                    }}>
-                    <div style={{
-                      width: '48px',
-                      height: '48px',
-                      backgroundColor: '#fff',
-                      borderRadius: '12px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0
-                    }}>
-                      <svg width="24" height="24" viewBox="0 0 16 16" fill="none">
-                        <path d="M2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4z" fill="#2196F3"/>
-                        <path d="M10.5 8.5a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0" fill="#03405e"/>
-                        <circle cx="2.5" cy="6" r="0.5" fill="#FFF"/>
-                      </svg>
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <h3 className="why-amoria-card-title" style={{
-                        fontSize: '20px',
-                        fontWeight: 700,
-                        color: '#083A85',
-                        marginBottom: '8px'
-                      }}>
-                        {t('whyAmoria.fullEventGallery.title')}
-                      </h3>
-                      <p className="why-amoria-card-description" style={{
-                        fontSize: '16px',
-                        fontWeight: 400,
-                        color: '#000',
-                        lineHeight: '1.5'
-                      }}>
-                        {t('whyAmoria.fullEventGallery.description')}
-                      </p>
-                    </div>
-                  </div>
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover'
+                    }}
+                  />
+                </div>
+                <div style={{ padding: '44px 20px' }}>
                 </div>
               </div>
 
-              {/* Right Image Container with Transitions */}
-              <div className="why-amoria-image-container" style={{
-                position: 'relative',
-                flex: 1,
-                maxWidth: '500px',
-                height: '600px'
-              }}>
-                {/* Background Gradient Container */}
-                <div style={{
+              {/* MEDIUM CARD - Rated Photographers - Top Left overlapping */}
+              <div
+                className="why-amoria-card why-amoria-card-medium"
+                onMouseEnter={() => setActiveCard(0)}
+                style={{
                   position: 'absolute',
-                  top: 0,
-                  right: 0,
-                  width: '490px',
-                  height: '580px',
-                  background: 'linear-gradient(0deg,rgba(255, 99, 99, 1) 0%, rgba(180, 110, 180, 1) 9%, rgba(99, 120, 255, 1) 30%, rgba(150, 110, 200, 1) 56%, rgba(255, 99, 99, 1) 75%, rgba(180, 110, 180, 1) 89%, rgba(99, 120, 255, 1) 100%)',
-                  borderRadius: '120px 20px 120px 20px',
-                  zIndex: 1
-                }} />
-
-                {/* Image Transition Container */}
-                <div style={{
-                  position: 'absolute',
-                  top: 16,
-                  right: '15px',
-                  width: '480px',
-                  height: '580px',
-                  borderRadius: '120px 20px 120px 20px',
+                  top: '-20px',
+                  left: '-50px',
+                  width: '340px',
+                  backgroundColor: '#fff',
+                  borderRadius: '20px',
+                  boxShadow: activeCard === 0
+                    ? '0 24px 60px rgba(8, 58, 133, 0.3)'
+                    : '0 12px 35px rgba(0,0,0,0.12)',
                   overflow: 'hidden',
-                  zIndex: 2,
-                  boxShadow: '0 20px 60px rgba(0,0,0,0.2)'
-                }}>
-                  {/* Rated Image - Card 0 */}
+                  cursor: 'pointer',
+                  transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                  transform: activeCard === 0 ? 'scale(1.05)' : 'scale(1)',
+                  zIndex: activeCard === 0 ? 10 : 3
+                }}
+              >
+                <div style={{ padding: '12px 14px 14px' }}>
+                  <h3 style={{
+                    fontSize: '18px',
+                    fontWeight: 700,
+                    color: '#083A85',
+                    marginBottom: '10px'
+                  }}>
+                    {t('whyAmoria.ratedPhotographers.title')}
+                  </h3>
                   <div style={{
-                    position: 'absolute',
-                    inset: 0,
-                    opacity: activeCard === 0 ? 1 : 0,
-                    transition: 'opacity 0.7s ease-out',
-                    zIndex: activeCard === 0 ? 2 : 1
+                    height: '200px',
+                    borderRadius: '14px',
+                    overflow: 'hidden'
                   }}>
                     <img
                       src="/rated.png"
@@ -1910,97 +1852,263 @@ export default function Home() {
                       }}
                     />
                   </div>
+                </div>
+              </div>
 
-                  {/* Live Streaming Image - Card 1 */}
+              {/* BASE CARD - Secure Payments - Bottom Left overlapping */}
+              <div
+                className="why-amoria-card why-amoria-card-base"
+                onMouseEnter={() => setActiveCard(2)}
+                style={{
+                  position: 'absolute',
+                  bottom: '-60px',
+                  left: '70px',
+                  width: '320px',
+                  backgroundColor: '#fff',
+                  borderRadius: '18px',
+                  boxShadow: activeCard === 2
+                    ? '0 22px 55px rgba(8, 58, 133, 0.28)'
+                    : '0 10px 30px rgba(0,0,0,0.1)',
+                  overflow: 'hidden',
+                  cursor: 'pointer',
+                  transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                  transform: activeCard === 2 ? 'scale(1.05)' : 'scale(1)',
+                  zIndex: activeCard === 2 ? 10 : 4
+                }}
+              >
+                <div style={{
+                  height: '180px',
+                  overflow: 'hidden',
+                  position: 'relative'
+                }}>
+                  <img
+                    src="/pay.png"
+                    alt="Secure Payments"
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover'
+                    }}
+                  />
                   <div style={{
                     position: 'absolute',
-                    inset: 0,
-                    opacity: activeCard === 1 ? 1 : 0,
-                    transition: 'opacity 0.7s ease-out',
-                    zIndex: activeCard === 1 ? 2 : 1
+                    bottom: '10px',
+                    left: '10px',
+                    backgroundColor: 'rgba(255,255,255,0.95)',
+                    color: '#16a34a',
+                    padding: '5px 10px',
+                    borderRadius: '12px',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '5px'
                   }}>
-                    <img
-                      src="/live.png"
-                      alt="Live Streaming"
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover'
-                      }}
-                    />
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2">
+                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                      <path d="M9 12l2 2 4-4"/>
+                    </svg>
+                    Secured
                   </div>
+                </div>
+                <div style={{ padding: '5px 14px' }}>
+                  <h3 style={{
+                    fontSize: '16px',
+                    fontWeight: 700,
+                    color: '#083A85',
+                    marginBottom: '4px'
+                  }}>
+                    {t('whyAmoria.securePayments.title')}
+                  </h3>
+                  <p style={{
+                    fontSize: '13px',
+                    color: '#64748b',
+                    lineHeight: '1.4',
+                    margin: 0
+                  }}>
+                    {t('whyAmoria.securePayments.description')}
+                  </p>
+                </div>
+              </div>
 
-                  {/* Secure Payments Image - Card 2 */}
+              {/* SECOND LARGE CARD - Live Streaming - Top Right overlapping */}
+              <div
+                className="why-amoria-card why-amoria-card-small"
+                onMouseEnter={() => setActiveCard(1)}
+                style={{
+                  position: 'absolute',
+                  top: '-30px',
+                  right: '-60px',
+                  width: '380px',
+                  backgroundColor: '#fff',
+                  borderRadius: '20px',
+                  boxShadow: activeCard === 1
+                    ? '0 24px 60px rgba(8, 58, 133, 0.3)'
+                    : '0 12px 35px rgba(0,0,0,0.12)',
+                  overflow: 'hidden',
+                  cursor: 'pointer',
+                  transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                  transform: activeCard === 1 ? 'scale(1.05)' : 'scale(1)',
+                  zIndex: activeCard === 1 ? 10 : 5
+                }}
+              >
+                <div style={{
+                  height: '240px',
+                  overflow: 'hidden',
+                  position: 'relative'
+                }}>
+                  <img
+                    src="/live.png"
+                    alt="Live Streaming"
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover'
+                    }}
+                  />
                   <div style={{
                     position: 'absolute',
-                    inset: 0,
-                    opacity: activeCard === 2 ? 1 : 0,
-                    transition: 'opacity 0.7s ease-out',
-                    zIndex: activeCard === 2 ? 2 : 1
+                    top: '12px',
+                    left: '12px',
+                    backgroundColor: '#dc2626',
+                    color: '#fff',
+                    padding: '5px 12px',
+                    borderRadius: '12px',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '5px'
                   }}>
-                    <img
-                      src="/pay.png"
-                      alt="Secure Payments"
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover'
-                      }}
-                    />
+                    <span style={{
+                      width: '7px',
+                      height: '7px',
+                      backgroundColor: '#fff',
+                      borderRadius: '50%',
+                      animation: 'pulse 1.5s infinite'
+                    }}/>
+                    LIVE
                   </div>
+                </div>
+                <div style={{ padding: '5px 16px' }}>
+                  <h3 style={{
+                    fontSize: '18px',
+                    fontWeight: 700,
+                    color: '#083A85',
+                    marginBottom: '4px'
+                  }}>
+                    {t('whyAmoria.liveStreaming.title')}
+                  </h3>
+                  <p style={{
+                    fontSize: '13px',
+                    color: '#64748b',
+                    lineHeight: '1.4',
+                    margin: 0
+                  }}>
+                    {t('whyAmoria.liveStreaming.description')}
+                  </p>
+                </div>
+              </div>
 
-                  {/* Full Event Gallery Image - Card 3 */}
+              {/* Extra small accent card - Bottom Right */}
+              <div
+                className="why-amoria-card-accent"
+                style={{
+                  position: 'absolute',
+                  bottom: '50px',
+                  right: '20px',
+                  width: '220px',
+                  backgroundColor: '#fff',
+                  borderRadius: '16px',
+                  boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+                  padding: '18px',
+                  zIndex: 2
+                }}
+              >
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  marginBottom: '12px'
+                }}>
                   <div style={{
-                    position: 'absolute',
-                    inset: 0,
-                    opacity: activeCard === 3 ? 1 : 0,
-                    transition: 'opacity 0.7s ease-out',
-                    zIndex: activeCard === 3 ? 2 : 1
+                    width: '44px',
+                    height: '44px',
+                    background: 'linear-gradient(135deg, #083A85 0%, #1e5bb7 100%)',
+                    borderRadius: '12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
                   }}>
-                    <img
-                      src="/gallery.png"
-                      alt="Full Event Gallery"
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover'
-                      }}
-                    />
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2">
+                      <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                      <path d="M2 17l10 5 10-5"/>
+                      <path d="M2 12l10 5 10-5"/>
+                    </svg>
                   </div>
+                  <div>
+                    <div style={{ fontSize: '15px', fontWeight: 700, color: '#083A85' }}>All-in-One</div>
+                    <div style={{ fontSize: '12px', color: '#64748b' }}>Platform</div>
+                  </div>
+                </div>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  color: '#083A85',
+                  fontSize: '13px',
+                  fontWeight: 600
+                }}>
+                  See more
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M6 9l6 6 6-6"/>
+                  </svg>
                 </div>
               </div>
             </div>
           </div>
         </section>
 
+        <style jsx>{`
+          @keyframes pulse {
+            0%, 100% {
+              opacity: 1;
+            }
+            50% {
+              opacity: 0.3;
+            }
+          }
+        `}</style>
+
         {/* Global Network Section */}
         <section className="global-network-section" style={{
           background: 'linear-gradient(135deg, #001a33 0%, #002b4d 50%, #001a33 100%)',
-          padding: '130px 0',
+          padding: '100px 0',
           position: 'relative',
           overflow: 'hidden'
         }}>
           <div className="global-network-content" style={{
-            maxWidth: '1280px',
+            maxWidth: '1480px',
             margin: '0 auto',
             padding: '0 20px',
             display: 'flex',
             alignItems: 'center',
-            gap: '80px',
-            minHeight: '450px'
+            gap: '5px',
+            minHeight: '350px'
           }}>
             {/* Left Content */}
             <div className="global-network-left" style={{
-              flex: '0 0 35%',
-              maxWidth: '500px',
+              flex: '0 0 42%',
+              maxWidth: '550px',
               color: '#fff',
               zIndex: 2
             }}>
               {/* Title */}
               <h2 className="global-network-title" style={{
-                fontSize: '50px',
+                fontSize: '55px',
                 fontWeight: 1000,
                 lineHeight: '1.1',
+                lineBreak: 'anywhere',
                 marginBottom: '24px',
                 color: '#fff',
                 letterSpacing: '-0.02em'

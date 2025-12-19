@@ -130,8 +130,7 @@ export default function Footer() {
       title: t('forPhotographers'),
       links: [
         { text: t('links.joinPhotographer'), href: '/user/auth/signup-type?type=photographer' },
-        { text: t('links.photographerGuide'), href: '/photographer-guide' },
-        { text: t('links.portfolioTips'), href: '/user/portfolio-tips' },
+        { text: t('links.photographerGuide'), href: '/user/photographer-guide' },
       ],
     },
     {
@@ -140,6 +139,7 @@ export default function Footer() {
         { text: t('links.aboutUs'), href: '/user/about' },
         { text: t('links.contact'), href: '/user/contact_us' },
         { text: t('links.blog'), href: 'https://www.amoriaglobal.com/' },
+        { text: 'Donations', href: '/user/donations' },
       ],
     },
     {
