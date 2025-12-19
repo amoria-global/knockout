@@ -58,12 +58,14 @@ const PhotographerGuide = () => {
 
       {/* Hero Section - Seamlessly Integrated Platform */}
       <section
+        className="pg-hero-section"
         style={{
           padding: '16px',
           backgroundColor: '#ffffff',
         }}
       >
         <div
+          className="pg-hero-container"
           style={{
             position: 'relative',
             width: '100%',
@@ -90,6 +92,7 @@ const PhotographerGuide = () => {
 
           {/* Content Overlay */}
           <div
+            className="pg-hero-overlay"
             style={{
               position: 'relative',
               zIndex: 10,
@@ -103,11 +106,13 @@ const PhotographerGuide = () => {
           >
             {/* Left Side Content */}
             <div
+              className="pg-hero-content"
               style={{
                 maxWidth: '700px',
               }}
             >
               <h2
+                className="pg-hero-title"
                 style={{
                   fontSize: '60px',
                   fontWeight: 700,
@@ -121,6 +126,7 @@ const PhotographerGuide = () => {
               </h2>
 
               <p
+                className="pg-hero-subtitle"
                 style={{
                   fontSize: '18px',
                   fontWeight: 400,
@@ -166,6 +172,7 @@ const PhotographerGuide = () => {
       {/* Getting Started Steps Section */}
       <section
         id="getting-started"
+        className="pg-steps-section"
         style={{
           backgroundColor: '#0a0a38',
           position: 'relative',
@@ -206,6 +213,7 @@ const PhotographerGuide = () => {
           }}
         />
         <div
+          className="pg-steps-container"
           style={{
             maxWidth: '1200px',
             margin: '0 auto',
@@ -213,9 +221,9 @@ const PhotographerGuide = () => {
             zIndex: 10,
           }}
         >
-          <div style={{ textAlign: 'center', marginBottom: '60px' }}>
+          <div className="pg-steps-header" style={{ textAlign: 'center', marginBottom: '60px' }}>
             <h1
-              className="hero-title"
+              className="pg-steps-title"
               style={{
                 fontSize: '60px',
                 fontWeight: 700,
@@ -238,6 +246,7 @@ const PhotographerGuide = () => {
               </span>
             </h1>
             <p
+              className="pg-steps-subtitle"
               style={{
                 fontSize: '18px',
                 fontWeight: 400,
@@ -253,7 +262,7 @@ const PhotographerGuide = () => {
 
           {/* Step 1: Create Account */}
           <div
-            className="guide-card"
+            className="guide-card pg-step-card"
             style={{
               backgroundColor: 'rgba(255, 255, 255, 0.95)',
               borderRadius: '20px',
@@ -352,7 +361,7 @@ const PhotographerGuide = () => {
 
           {/* Step 2: Choose Photographer Type */}
           <div
-            className="guide-card"
+            className="guide-card pg-step-card pg-step-card-reverse"
             style={{
               backgroundColor: 'rgba(255, 255, 255, 0.95)',
               borderRadius: '20px',
@@ -452,7 +461,7 @@ const PhotographerGuide = () => {
 
           {/* Step 3: Login */}
           <div
-            className="guide-card"
+            className="guide-card pg-step-card"
             style={{
               backgroundColor: 'rgba(255, 255, 255, 0.95)',
               borderRadius: '20px',
