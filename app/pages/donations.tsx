@@ -53,7 +53,7 @@ const currencyConfig: Record<Currency, { symbol: string; rate: number; name: str
 };
 
 // Base amounts in RWF
-const baseAmountsRWF = [5000, 10000, 25000, 50000, 100000, 250000];
+const baseAmountsRWF = [1000, 2000, 5000, 10000, 25000, 50000];
 
 // Convert amount from RWF to target currency
 const convertFromRWF = (amountRWF: number, currency: Currency): number => {
@@ -343,7 +343,7 @@ const paymentMethods = [
 
 const Donations = () => {
   const [activeCategory, setActiveCategory] = useState(0);
-  const [selectedAmount, setSelectedAmount] = useState<number>(baseAmountsRWF[2]); // Default 25,000 RWF
+  const [selectedAmount, setSelectedAmount] = useState<number>(baseAmountsRWF[2]); // Default 3,000 RWF
   const [customAmount, setCustomAmount] = useState('');
   const [currency, setCurrency] = useState<Currency>('RWF');
   const [donationFrequency, setDonationFrequency] = useState<'one-time' | 'monthly'>('one-time');

@@ -54,7 +54,7 @@ export default function Home() {
     const positions = [
       // Center/Front position
       {
-        left: '50%',
+        left: '47%',
         top: '50%',
         translateX: '-50%',
         translateY: '-50%',
@@ -65,18 +65,18 @@ export default function Home() {
       },
       // Right position (visible on right side)
       {
-        left: '75%',
+        left: '85%',
         top: '50%',
         translateX: '-50%',
         translateY: '-50%',
         scale: 0.5,
         zIndex: 2,
         opacity: 0.6,
-        rotate: 15
+        rotate: -75
       },
       // Left position (visible on left side)
       {
-        left: '15%',
+        left: '7%',
         top: '50%',
         translateX: '-50%',
         translateY: '-50%',
@@ -1104,7 +1104,7 @@ export default function Home() {
                 left: getDevicePosition(1).left,
                 top: getDevicePosition(1).top,
                 transform: `translate(${getDevicePosition(1).translateX}, ${getDevicePosition(1).translateY}) scale(${getDevicePosition(1).scale}) rotateY(${getDevicePosition(1).rotate}deg)`,
-                width: '450px',
+                width: '400px',
                 height: '580px',
                 backgroundColor: '#fff',
                 borderRadius: '30px',
@@ -1620,7 +1620,7 @@ export default function Home() {
             left: '3%',
             width: '60px',
             height: '60px',
-            opacity: 0.4,
+            opacity: 0.01,
             zIndex: 0
           }}>
             <svg viewBox="0 0 100 100" fill="none" stroke="#083A85" strokeWidth="3">
@@ -1678,8 +1678,8 @@ export default function Home() {
             position: 'absolute',
             inset: 0,
             backgroundImage: 'radial-gradient(circle, #94a3b8 1px, transparent 1px)',
-            backgroundSize: '20px 20px',
-            opacity: 0.9,
+            backgroundSize: '30px 30px',
+            opacity: 0.5,
             zIndex: 0
           }} />
 
