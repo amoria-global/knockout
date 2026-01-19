@@ -1,20 +1,27 @@
 /**
  * Database/API Client Configuration
  * Central configuration for all API calls to the backend server
+ *
+ * NOTE: This file maintains backward compatibility with existing code.
+ * New code should import from '@/lib/api/client' directly for full features.
  */
 
-// Backend server URL
-export const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://64.23.239.148';
+// Re-export from new API client for backward compatibility
+import {
+  apiClient,
+  getAuthToken,
+  setAuthToken,
+  removeAuthToken,
+  isAuthenticated,
+} from './api/client';
+import { API_CONFIG, API_ENDPOINTS as NEW_API_ENDPOINTS } from './api/config';
+import { logger } from './api/logger';
+import type { ApiResponse as NewApiResponse, HttpMethod } from './api/types';
 
-// Log configuration in development
-if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
-  console.log('🔧 API Configuration:', {
-    BASE_URL,
-    environment: process.env.NODE_ENV,
-  });
-}
+// Export the base URL for backward compatibility
+export const BASE_URL = API_CONFIG.baseUrl;
 
-// API endpoints base paths
+// Legacy API endpoints (for backward compatibility with existing code)
 export const API_ENDPOINTS = {
   AUTH: '/api/remote/auth',
   USER: '/api/remote/user',
@@ -25,20 +32,23 @@ export const API_ENDPOINTS = {
   CONTACT: '/api/remote/contact',
 } as const;
 
+// Export new structured endpoints for new code
+export { NEW_API_ENDPOINTS };
+
 /**
- * HTTP Client Configuration
+ * HTTP Client Configuration (legacy interface)
  */
 export interface RequestConfig {
   method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   headers?: HeadersInit;
-  body?: any;
+  body?: unknown;
   token?: string;
 }
 
 /**
- * Standard API Response wrapper
+ * Standard API Response wrapper (legacy interface)
  */
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   message?: string;
@@ -48,146 +58,74 @@ export interface ApiResponse<T = any> {
 
 /**
  * Make HTTP request to backend
+ * This function now uses the enhanced API client internally
+ *
  * @param endpoint - API endpoint path
  * @param config - Request configuration
  * @returns Promise with API response
+ *
+ * @deprecated Use apiClient from '@/lib/api/client' directly for new code
  */
-export async function apiRequest<T = any>(
+export async function apiRequest<T = unknown>(
   endpoint: string,
   config: RequestConfig
 ): Promise<ApiResponse<T>> {
-  try {
-    const url = `${BASE_URL}${endpoint}`;
-
-    // Build headers
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      ...(config.headers as Record<string, string>),
-    };
-
-    // Add authorization token if provided
-    if (config.token) {
-      headers['Authorization'] = `Bearer ${config.token}`;
-    }
-
-    // Build request options
-    const options: RequestInit = {
-      method: config.method,
-      headers,
-      mode: 'cors', // Explicitly set CORS mode
-      credentials: 'omit', // Changed from 'include' - cookies not needed for token-based auth
-    };
-
-    // Add body for non-GET requests
-    if (config.body && config.method !== 'GET') {
-      options.body = JSON.stringify(config.body);
-    }
-
-    // Make the request
-    console.log(`🔵 API Request: ${config.method} ${url}`);
-    const response = await fetch(url, options);
-    console.log(`🟢 API Response: ${response.status} ${response.statusText}`);
-
-    // Try to parse response
-    let data;
-    try {
-      data = await response.json();
-    } catch (parseError) {
-      console.error('❌ Failed to parse response as JSON:', parseError);
-      // If response is not JSON, return a generic error
-      if (!response.ok) {
-        return {
-          success: false,
-          error: `HTTP ${response.status}: ${response.statusText}`,
-        };
-      }
-      // If response is OK but not JSON, return success with no data
-      return {
-        success: true,
-        data: undefined,
-      };
-    }
-
-    // Handle HTTP errors
-    if (!response.ok) {
-      console.error('❌ API Error Response:', data);
-      return {
-        success: false,
-        error: data.message || data.error || `HTTP ${response.status}: ${response.statusText}`,
-        errors: data.errors,
-      };
-    }
-
-    console.log('✅ API Success:', data);
-
-    // Check if backend indicates failure with action field
-    if (typeof data.action === 'number' && data.action === 0) {
-      return {
-        success: false,
-        error: data.message || 'Operation failed',
-        data: data,
-      };
-    }
-
-    return {
-      success: true,
-      data: data.data || data,
-      message: data.message,
-    };
-  } catch (error) {
-    console.error('❌ API Request Error:', {
+  // Log deprecation warning in development
+  if (process.env.NODE_ENV === 'development') {
+    logger.debug('apiRequest() is deprecated. Use apiClient from @/lib/api/client', {
       endpoint,
       method: config.method,
-      error,
-      errorType: error instanceof TypeError ? 'Network/CORS Error' : 'Unknown Error',
+    });
+  }
+
+  // Use the new API client with backward-compatible options
+  const response = await apiClient.request<T>({
+    method: config.method as HttpMethod,
+    endpoint,
+    body: config.body,
+    headers: config.headers as Record<string, string>,
+    // If token is explicitly provided, use it; otherwise let the client handle auth
+    skipAuth: config.token === undefined ? false : true,
+  });
+
+  // If a token was explicitly provided, we need to make another request with it
+  // This handles the legacy pattern where token was passed explicitly
+  if (config.token) {
+    const responseWithToken = await apiClient.request<T>({
+      method: config.method as HttpMethod,
+      endpoint,
+      body: config.body,
+      headers: {
+        ...config.headers as Record<string, string>,
+        Authorization: `Bearer ${config.token}`,
+      },
+      skipAuth: true,
     });
 
-    // Provide more specific error messages
-    let errorMessage = 'Network error occurred';
-
-    if (error instanceof TypeError) {
-      errorMessage = 'Failed to connect to server. Please check:\n' +
-        '1. Backend server is running\n' +
-        '2. CORS is configured correctly\n' +
-        '3. Network connection is stable';
-    } else if (error instanceof Error) {
-      errorMessage = error.message;
-    }
-
     return {
-      success: false,
-      error: errorMessage,
+      success: responseWithToken.success,
+      data: responseWithToken.data,
+      message: responseWithToken.message,
+      error: responseWithToken.error,
+      errors: responseWithToken.errors,
     };
   }
+
+  // Convert new response format to legacy format
+  return {
+    success: response.success,
+    data: response.data,
+    message: response.message,
+    error: response.error,
+    errors: response.errors,
+  };
 }
 
-/**
- * Get authentication token from storage
- */
-export function getAuthToken(): string | null {
-  if (typeof window === 'undefined') return null;
-  return localStorage.getItem('authToken');
-}
+// Re-export auth utilities
+export { getAuthToken, setAuthToken, removeAuthToken, isAuthenticated };
 
-/**
- * Set authentication token in storage
- */
-export function setAuthToken(token: string): void {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem('authToken', token);
-}
+// Export the new API client for gradual migration
+export { apiClient };
 
-/**
- * Remove authentication token from storage
- */
-export function removeAuthToken(): void {
-  if (typeof window === 'undefined') return;
-  localStorage.removeItem('authToken');
-}
-
-/**
- * Check if user is authenticated
- */
-export function isAuthenticated(): boolean {
-  return getAuthToken() !== null;
-}
+// Export types from new system for gradual adoption
+export type { NewApiResponse, HttpMethod };
