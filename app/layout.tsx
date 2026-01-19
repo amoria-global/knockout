@@ -3,6 +3,9 @@ import "./globals.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
 import BackToTop from "./components/BackToTop";
 import { LanguageProvider } from "./providers/LanguageProvider";
+import { ToastProvider } from "@/lib/notifications/ToastProvider";
+import { ToastContainer } from "./components/Toast";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 
 export const metadata: Metadata = {
   title: "Amoria connekyt",
@@ -27,8 +30,13 @@ export default function RootLayout({
     <html lang="en">
       <body className="antialiased">
         <LanguageProvider>
-          {children}
-          <BackToTop />
+          <ToastProvider>
+            <ErrorBoundary>
+              {children}
+              <BackToTop />
+              <ToastContainer />
+            </ErrorBoundary>
+          </ToastProvider>
         </LanguageProvider>
       </body>
     </html>
