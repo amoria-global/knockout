@@ -167,6 +167,19 @@ const App = () => {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string | null>(null);
   const [giftAmount, setGiftAmount] = useState("");
   const [giftMessage, setGiftMessage] = useState("");
+  // Donation prompt modal state
+  const [showDonationPrompt, setShowDonationPrompt] = useState(false);
+  const [showDonationModal, setShowDonationModal] = useState(false);
+  const [donationAmount, setDonationAmount] = useState("");
+  const [donationPaymentMethod, setDonationPaymentMethod] = useState<string | null>(null);
+  const [donationPhone, setDonationPhone] = useState("");
+  const [donationBankName, setDonationBankName] = useState("");
+  const [donationBankAccountName, setDonationBankAccountName] = useState("");
+  const [donationBankAccountNumber, setDonationBankAccountNumber] = useState("");
+  const [donationCardNumber, setDonationCardNumber] = useState("");
+  const [donationCardExpiry, setDonationCardExpiry] = useState("");
+  const [donationCardCvv, setDonationCardCvv] = useState("");
+  const [donationCardHolderName, setDonationCardHolderName] = useState("");
   // Payment details state
   const [paymentPhone, setPaymentPhone] = useState("");
   const [bankAccountName, setBankAccountName] = useState("");
@@ -191,10 +204,106 @@ const App = () => {
   // Check if current main event is giftable (for backward compatibility)
   const isGiftableEvent = isEventGiftable(mainEvent);
 
-  // Open gift modal for a specific event
+  // Open gift modal for a specific event - now shows donation prompt first
   const openGiftModal = (event: EventStream) => {
     setGiftTargetEvent(event);
+    setShowDonationPrompt(true);
+  };
+
+  // Handle donation prompt responses
+  const handleDonationPromptYes = () => {
+    setShowDonationPrompt(false);
+    setShowDonationModal(true);
+  };
+
+  const handleDonationPromptNo = () => {
+    setShowDonationPrompt(false);
     setShowGiftModal(true);
+  };
+
+  // Reset donation modal state
+  const resetDonationModal = () => {
+    setShowDonationModal(false);
+    setDonationAmount("");
+    setDonationPaymentMethod(null);
+    setDonationPhone("");
+    setDonationBankName("");
+    setDonationBankAccountName("");
+    setDonationBankAccountNumber("");
+    setDonationCardNumber("");
+    setDonationCardExpiry("");
+    setDonationCardCvv("");
+    setDonationCardHolderName("");
+  };
+
+  // Validate donation payment details
+  const isDonationPaymentValid = () => {
+    if (!donationPaymentMethod || !donationAmount) return false;
+
+    switch (donationPaymentMethod) {
+      case 'mtn':
+      case 'airtel':
+        return donationPhone.length >= 10;
+      case 'bank':
+        return donationBankAccountName.trim() !== '' && donationBankAccountNumber.trim() !== '' && donationBankName.trim() !== '';
+      case 'card':
+        return donationCardNumber.length >= 16 && donationCardExpiry.length >= 4 && donationCardCvv.length >= 3 && donationCardHolderName.trim() !== '';
+      default:
+        return false;
+    }
+  };
+
+  // Handle sending donation
+  const handleSendDonation = () => {
+    if (!donationPaymentMethod || !donationAmount) {
+      alert('Please select a payment method and enter an amount');
+      return;
+    }
+
+    if (!isDonationPaymentValid()) {
+      alert('Please fill in all required payment details');
+      return;
+    }
+
+    let paymentDetails = {};
+    switch (donationPaymentMethod) {
+      case 'mtn':
+      case 'airtel':
+        paymentDetails = { phone: donationPhone };
+        break;
+      case 'bank':
+        paymentDetails = {
+          accountName: donationBankAccountName,
+          accountNumber: donationBankAccountNumber,
+          bankName: donationBankName
+        };
+        break;
+      case 'card':
+        paymentDetails = {
+          cardNumber: donationCardNumber,
+          expiry: donationCardExpiry,
+          cvv: donationCardCvv,
+          holderName: donationCardHolderName
+        };
+        break;
+    }
+
+    const methodNames: { [key: string]: string } = {
+      'mtn': 'MTN Mobile Money',
+      'airtel': 'Airtel Money',
+      'bank': 'Bank Transfer',
+      'card': 'Card Payment'
+    };
+    const methodName = methodNames[donationPaymentMethod] || donationPaymentMethod;
+
+    console.log('Sending donation:', {
+      amount: donationAmount,
+      method: donationPaymentMethod,
+      paymentDetails,
+    });
+
+    alert(`Thank you! Your donation of UGX ${parseInt(donationAmount).toLocaleString()} has been sent via ${methodName}!`);
+    resetDonationModal();
   };
 
   // Payment methods
@@ -5034,6 +5143,504 @@ const App = () => {
                 Submit Rating
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Donation Prompt Modal */}
+      {showDonationPrompt && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 2000,
+            backdropFilter: 'blur(4px)',
+          }}
+          onClick={() => setShowDonationPrompt(false)}
+        >
+          <div
+            style={{
+              backgroundColor: '#fff',
+              borderRadius: '16px',
+              padding: 'clamp(24px, 5vw, 32px)',
+              width: 'clamp(300px, 90vw, 420px)',
+              textAlign: 'center',
+              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{
+              width: '70px',
+              height: '70px',
+              backgroundColor: '#fef3c7',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 20px',
+            }}>
+              <i className="bi bi-heart-fill" style={{ fontSize: '32px', color: '#ef4444' }}></i>
+            </div>
+            <h3 style={{
+              fontSize: 'clamp(18px, 4vw, 22px)',
+              fontWeight: '700',
+              color: '#1f2937',
+              marginBottom: '12px',
+            }}>
+              Would you like to make a donation?
+            </h3>
+            <p style={{
+              fontSize: 'clamp(13px, 3vw, 15px)',
+              color: '#6b7280',
+              lineHeight: '1.6',
+              marginBottom: '28px',
+            }}>
+              Your contribution helps support families in need, medical bills, school requirements, and food for children.
+            </p>
+            <div style={{
+              display: 'flex',
+              gap: '12px',
+              justifyContent: 'center',
+            }}>
+              <button
+                onClick={handleDonationPromptNo}
+                style={{
+                  padding: '12px 28px',
+                  fontSize: '15px',
+                  fontWeight: '600',
+                  color: '#374151',
+                  backgroundColor: '#f3f4f6',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '10px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#e5e7eb';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '#f3f4f6';
+                }}
+              >
+                No, thanks
+              </button>
+              <button
+                onClick={handleDonationPromptYes}
+                style={{
+                  padding: '12px 28px',
+                  fontSize: '15px',
+                  fontWeight: '600',
+                  color: '#fff',
+                  background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                  border: 'none',
+                  borderRadius: '10px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  boxShadow: '0 4px 14px rgba(245, 158, 11, 0.4)',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 6px 20px rgba(245, 158, 11, 0.5)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 4px 14px rgba(245, 158, 11, 0.4)';
+                }}
+              >
+                Yes, donate
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Donation Payment Modal */}
+      {showDonationModal && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 2000,
+            backdropFilter: 'blur(4px)',
+          }}
+          onClick={resetDonationModal}
+        >
+          <div
+            style={{
+              backgroundColor: '#18181b',
+              borderRadius: '16px',
+              padding: 'clamp(16px, 4vw, 24px)',
+              width: 'clamp(320px, 95vw, 480px)',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: '20px',
+              paddingBottom: '16px',
+              borderBottom: '1px solid #333',
+            }}>
+              <div>
+                <h3 style={{
+                  fontSize: 'clamp(18px, 4vw, 22px)',
+                  fontWeight: '700',
+                  color: '#fff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  marginBottom: '4px',
+                }}>
+                  <i className="bi bi-heart-fill" style={{ color: '#ef4444' }}></i>
+                  Make a Donation
+                </h3>
+                <p style={{ fontSize: '13px', color: '#9ca3af' }}>
+                  Support families in need
+                </p>
+              </div>
+              <button
+                onClick={resetDonationModal}
+                style={{
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '50%',
+                  backgroundColor: '#333',
+                  border: 'none',
+                  color: '#fff',
+                  fontSize: '18px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Amount Input */}
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#fff', marginBottom: '8px' }}>
+                Donation Amount (UGX)
+              </label>
+              <input
+                type="number"
+                value={donationAmount}
+                onChange={(e) => setDonationAmount(e.target.value)}
+                placeholder="Enter amount"
+                style={{
+                  width: '100%',
+                  padding: '14px 16px',
+                  fontSize: '16px',
+                  backgroundColor: '#27272a',
+                  border: '1px solid #3f3f46',
+                  borderRadius: '10px',
+                  color: '#fff',
+                  outline: 'none',
+                }}
+              />
+              <div style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: '8px',
+                marginTop: '12px',
+              }}>
+                {['10000', '20000', '50000', '100000'].map((amount) => (
+                  <button
+                    key={amount}
+                    onClick={() => setDonationAmount(amount)}
+                    style={{
+                      padding: '8px 16px',
+                      fontSize: '13px',
+                      fontWeight: '600',
+                      backgroundColor: donationAmount === amount ? '#f59e0b' : '#27272a',
+                      color: donationAmount === amount ? '#000' : '#fff',
+                      border: '1px solid',
+                      borderColor: donationAmount === amount ? '#f59e0b' : '#3f3f46',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    {parseInt(amount).toLocaleString()}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Payment Methods */}
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#fff', marginBottom: '8px' }}>
+                Payment Method
+              </label>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
+                {paymentMethods.map((method) => (
+                  <button
+                    key={method.id}
+                    onClick={() => setDonationPaymentMethod(method.id)}
+                    style={{
+                      padding: '12px',
+                      backgroundColor: donationPaymentMethod === method.id ? '#f59e0b' : '#27272a',
+                      border: '1px solid',
+                      borderColor: donationPaymentMethod === method.id ? '#f59e0b' : '#3f3f46',
+                      borderRadius: '10px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    <img src={method.image} alt={method.name} style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
+                    <span style={{
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      color: donationPaymentMethod === method.id ? '#000' : '#fff',
+                      textAlign: 'left',
+                    }}>
+                      {method.name}
+                    </span>
+                    {donationPaymentMethod === method.id && (
+                      <i className="bi bi-check-circle-fill" style={{ marginLeft: 'auto', color: '#000' }}></i>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Payment Details */}
+            {(donationPaymentMethod === 'mtn' || donationPaymentMethod === 'airtel') && (
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#fff', marginBottom: '8px' }}>
+                  Phone Number
+                </label>
+                <input
+                  type="tel"
+                  value={donationPhone}
+                  onChange={(e) => setDonationPhone(e.target.value)}
+                  placeholder="Enter phone number"
+                  style={{
+                    width: '100%',
+                    padding: '14px 16px',
+                    fontSize: '16px',
+                    backgroundColor: '#27272a',
+                    border: '1px solid #3f3f46',
+                    borderRadius: '10px',
+                    color: '#fff',
+                    outline: 'none',
+                  }}
+                />
+              </div>
+            )}
+
+            {donationPaymentMethod === 'bank' && (
+              <div style={{ marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#fff', marginBottom: '8px' }}>
+                    Bank Name
+                  </label>
+                  <input
+                    type="text"
+                    value={donationBankName}
+                    onChange={(e) => setDonationBankName(e.target.value)}
+                    placeholder="Enter bank name"
+                    style={{
+                      width: '100%',
+                      padding: '14px 16px',
+                      fontSize: '16px',
+                      backgroundColor: '#27272a',
+                      border: '1px solid #3f3f46',
+                      borderRadius: '10px',
+                      color: '#fff',
+                      outline: 'none',
+                    }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#fff', marginBottom: '8px' }}>
+                    Account Holder Name
+                  </label>
+                  <input
+                    type="text"
+                    value={donationBankAccountName}
+                    onChange={(e) => setDonationBankAccountName(e.target.value)}
+                    placeholder="Enter account holder name"
+                    style={{
+                      width: '100%',
+                      padding: '14px 16px',
+                      fontSize: '16px',
+                      backgroundColor: '#27272a',
+                      border: '1px solid #3f3f46',
+                      borderRadius: '10px',
+                      color: '#fff',
+                      outline: 'none',
+                    }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#fff', marginBottom: '8px' }}>
+                    Account Number
+                  </label>
+                  <input
+                    type="text"
+                    value={donationBankAccountNumber}
+                    onChange={(e) => setDonationBankAccountNumber(e.target.value)}
+                    placeholder="Enter account number"
+                    style={{
+                      width: '100%',
+                      padding: '14px 16px',
+                      fontSize: '16px',
+                      backgroundColor: '#27272a',
+                      border: '1px solid #3f3f46',
+                      borderRadius: '10px',
+                      color: '#fff',
+                      outline: 'none',
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {donationPaymentMethod === 'card' && (
+              <div style={{ marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#fff', marginBottom: '8px' }}>
+                    Cardholder Name
+                  </label>
+                  <input
+                    type="text"
+                    value={donationCardHolderName}
+                    onChange={(e) => setDonationCardHolderName(e.target.value)}
+                    placeholder="Enter cardholder name"
+                    style={{
+                      width: '100%',
+                      padding: '14px 16px',
+                      fontSize: '16px',
+                      backgroundColor: '#27272a',
+                      border: '1px solid #3f3f46',
+                      borderRadius: '10px',
+                      color: '#fff',
+                      outline: 'none',
+                    }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#fff', marginBottom: '8px' }}>
+                    Card Number
+                  </label>
+                  <input
+                    type="text"
+                    value={donationCardNumber}
+                    onChange={(e) => setDonationCardNumber(e.target.value)}
+                    placeholder="Enter card number"
+                    maxLength={19}
+                    style={{
+                      width: '100%',
+                      padding: '14px 16px',
+                      fontSize: '16px',
+                      backgroundColor: '#27272a',
+                      border: '1px solid #3f3f46',
+                      borderRadius: '10px',
+                      color: '#fff',
+                      outline: 'none',
+                    }}
+                  />
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#fff', marginBottom: '8px' }}>
+                      Expiry Date
+                    </label>
+                    <input
+                      type="text"
+                      value={donationCardExpiry}
+                      onChange={(e) => setDonationCardExpiry(e.target.value)}
+                      placeholder="MM/YY"
+                      maxLength={5}
+                      style={{
+                        width: '100%',
+                        padding: '14px 16px',
+                        fontSize: '16px',
+                        backgroundColor: '#27272a',
+                        border: '1px solid #3f3f46',
+                        borderRadius: '10px',
+                        color: '#fff',
+                        outline: 'none',
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#fff', marginBottom: '8px' }}>
+                      CVV
+                    </label>
+                    <input
+                      type="text"
+                      value={donationCardCvv}
+                      onChange={(e) => setDonationCardCvv(e.target.value)}
+                      placeholder="CVV"
+                      maxLength={4}
+                      style={{
+                        width: '100%',
+                        padding: '14px 16px',
+                        fontSize: '16px',
+                        backgroundColor: '#27272a',
+                        border: '1px solid #3f3f46',
+                        borderRadius: '10px',
+                        color: '#fff',
+                        outline: 'none',
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Submit Button */}
+            <button
+              onClick={handleSendDonation}
+              disabled={!isDonationPaymentValid()}
+              style={{
+                width: '100%',
+                padding: '16px',
+                fontSize: '16px',
+                fontWeight: '700',
+                color: '#fff',
+                background: isDonationPaymentValid()
+                  ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'
+                  : '#3f3f46',
+                border: 'none',
+                borderRadius: '12px',
+                cursor: isDonationPaymentValid() ? 'pointer' : 'not-allowed',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '10px',
+                transition: 'all 0.3s ease',
+                boxShadow: isDonationPaymentValid() ? '0 4px 20px rgba(245, 158, 11, 0.4)' : 'none',
+              }}
+            >
+              <i className="bi bi-heart-fill" style={{ color: '#ef4444' }}></i>
+              Donate {donationAmount ? `(UGX ${parseInt(donationAmount).toLocaleString()})` : ''}
+            </button>
           </div>
         </div>
       )}

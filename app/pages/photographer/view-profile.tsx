@@ -400,10 +400,34 @@ function ViewProfileContent(): React.JSX.Element {
         },
       ],
       training: [
-        'Advanced Wedding Photography Workshop - 2022',
-        'Commercial Photography Masterclass - 2021',
-        'Lighting Techniques for Professionals - 2020',
-        'Portrait Photography Intensive - 2019',
+        {
+          id: 1,
+          title: 'Advanced Wedding Photography Workshop',
+          institution: 'International Photography Academy',
+          year: '2022',
+          description: 'Intensive workshop covering advanced techniques for capturing wedding moments and lighting setups',
+        },
+        {
+          id: 2,
+          title: 'Commercial Photography Masterclass',
+          institution: 'Creative Arts Institute',
+          year: '2021',
+          description: 'Professional training in commercial and product photography for brand campaigns',
+        },
+        {
+          id: 3,
+          title: 'Lighting Techniques for Professionals',
+          institution: 'Studio Pro Academy',
+          year: '2020',
+          description: 'Comprehensive course on studio and natural lighting techniques for various photography styles',
+        },
+        {
+          id: 4,
+          title: 'Portrait Photography Intensive',
+          institution: 'Rwanda Photography School',
+          year: '2019',
+          description: 'Focused training on portrait composition, posing, and post-processing techniques',
+        },
       ],
       projects: [
         {
@@ -1506,30 +1530,47 @@ function ViewProfileContent(): React.JSX.Element {
                 <h3 style={{ fontSize: '19px', fontWeight: '700', color: '#000', marginBottom: '14px' }}>
                   Professional Training
                 </h3>
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: isMobile
-                    ? 'repeat(auto-fill, minmax(min(180px, 100%), 1fr))'
-                    : 'repeat(auto-fill, minmax(200px, 1fr))',
-                  gap: isMobile ? 'clamp(8px, 2vw, 10px)' : '10px'
-                }}>
-                  {photographerData.portfolio.training.map((training, index) => (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {photographerData.portfolio.training.map((training) => (
                     <div
-                      key={index}
+                      key={training.id}
                       style={{
-                        padding: '10px 12px',
-                        backgroundColor: '#ffffffff',
-                        borderRadius: '6px',
-                        border: '1px solid #083A85',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
+                        padding: '16px',
+                        backgroundColor: '#f0f9ff',
+                        borderRadius: '10px',
+                        borderLeft: '4px solid #083A85',
+                        position: 'relative',
+                        overflow: 'hidden',
                       }}
                     >
-                      <i className="bi bi-check-circle-fill" style={{ color: '#083A85', fontSize: '14px', flexShrink: 0 }}></i>
-                      <span style={{ fontSize: '14px', color: '#083A85', fontWeight: '500' }}>
-                        {training}
-                      </span>
+                      <div style={{
+                        position: 'absolute',
+                        top: '12px',
+                        right: '12px',
+                        backgroundColor: '#083A85',
+                        color: '#fff',
+                        fontSize: '12px',
+                        fontWeight: '600',
+                        padding: '4px 10px',
+                        borderRadius: '12px',
+                      }}>
+                        {training.year}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                        <i className="bi bi-journal-bookmark-fill" style={{ color: '#083A85', fontSize: '18px' }}></i>
+                        <h4 style={{ fontSize: '15px', fontWeight: '700', color: '#1e293b', margin: 0 }}>
+                          {training.title}
+                        </h4>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+                        <i className="bi bi-building" style={{ color: '#64748b', fontSize: '13px' }}></i>
+                        <p style={{ fontSize: '14px', fontWeight: '600', color: '#475569', margin: 0 }}>
+                          {training.institution}
+                        </p>
+                      </div>
+                      <p style={{ fontSize: '13px', color: '#64748b', lineHeight: '1.6', margin: 0, paddingLeft: '26px' }}>
+                        {training.description}
+                      </p>
                     </div>
                   ))}
                 </div>
