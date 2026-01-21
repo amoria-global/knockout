@@ -4,11 +4,13 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { login } from '@/lib/APIs/auth/login/route';
+import { useToast } from '@/lib/notifications/ToastProvider';
 
 export default function LoginPage(): React.JSX.Element {
   const router = useRouter();
   const t = useTranslations('auth.loginPage');
   const tAuth = useTranslations('auth');
+  const { success: showSuccess, error: showError, warning: showWarning, isOnline } = useToast();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -39,35 +41,62 @@ export default function LoginPage(): React.JSX.Element {
     e.preventDefault();
     setError('');
 
+    // Check online status
+    if (!isOnline) {
+      showWarning('You are offline. Please check your internet connection.');
+      return;
+    }
+
     if (!isDisabled) {
       setLoading(true);
 
       try {
         const response = await login({ email, password });
 
-        if (response.success && response.data) {
-          // Check if OTP is verified
-          if (!response.data.otpVerified && response.data.applicantId) {
-            // Redirect to OTP verification page
-            router.push(`/user/auth/verify-otp?applicantId=${encodeURIComponent(response.data.applicantId)}&email=${encodeURIComponent(email)}`);
-            return;
-          }
+        // Check if OTP verification is needed (can come in success or error response)
+        const data = response.data;
+        const errorMsg = response.error || '';
+        const isOtpNotVerified =
+          (data && data.otpVerified === false) ||
+          errorMsg.toLowerCase().includes('otp') ||
+          errorMsg.toLowerCase().includes('verify');
 
+        // Get applicant ID from response data (may use different field names)
+        const applicantId = data?.applicantId ||
+          data?.applicant_id ||
+          data?.customerId ||
+          data?.customer_id;
+
+        if (isOtpNotVerified && applicantId) {
+          // Redirect to OTP verification page
+          showWarning(errorMsg || 'Please verify your email to continue.');
+          router.push(`/user/auth/verify-otp?applicantId=${encodeURIComponent(String(applicantId))}&email=${encodeURIComponent(email)}`);
+          return;
+        }
+
+        if (response.success && data) {
           // Check if account is locked
-          if (response.data.accountLocked) {
-            setError('Your account has been locked. Please contact support.');
+          if (data.accountLocked) {
+            const lockMsg = 'Your account has been locked. Please contact support.';
+            setError(lockMsg);
+            showError(lockMsg);
             return;
           }
 
-          // Successful login - redirect to dashboard
+          // Successful login - show success toast and redirect
+          showSuccess('Welcome back! Redirecting to dashboard...');
           router.push('/user/dashboard');
         } else {
-          // Display error from API
-          setError(response.error || 'Login failed. Please check your credentials.');
+          // Display the actual error message from the backend
+          const errorMessage = response.error || 'Login failed. Please check your credentials.';
+          setError(errorMessage);
+          showError(errorMessage);
         }
       } catch (err) {
-        console.error('Login error:', err);
-        setError('An error occurred during login. Please try again.');
+        // Handle unexpected errors - show actual error message if available
+        const errorMessage = err instanceof Error ? err.message : 'An error occurred during login. Please try again.';
+        setError(errorMessage);
+        showError(errorMessage);
       } finally {
         setLoading(false);
       }

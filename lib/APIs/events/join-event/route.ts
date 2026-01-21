@@ -1,9 +1,17 @@
 /**
  * Join Event API
  * POST /api/remote/events/:id/join
+ *
+ * Enhanced with new API client featuring:
+ * - Automatic retry with exponential backoff
+ * - Request timeout handling
+ * - Rate limiting protection
+ * - Production-safe logging
  */
 
-import { apiRequest, API_ENDPOINTS, getAuthToken } from '../../../db';
+import { apiClient, isAuthenticated } from '@/lib/api/client';
+import { API_ENDPOINTS } from '@/lib/api/config';
+import type { ApiResponse } from '@/lib/api/types';
 import type { Event } from '../get-events/route';
 
 export interface JoinEventRequest {
@@ -23,11 +31,11 @@ export interface JoinEventResponse {
 
 /**
  * Join Event
+ * Uses enhanced API client with automatic retry and error handling
+ * Requires authentication
  */
-export async function joinEvent(data: JoinEventRequest) {
-  const token = getAuthToken();
-
-  if (!token) {
+export async function joinEvent(data: JoinEventRequest): Promise<ApiResponse<JoinEventResponse>> {
+  if (!isAuthenticated()) {
     return {
       success: false,
       error: 'Authentication required to join events',
@@ -36,12 +44,11 @@ export async function joinEvent(data: JoinEventRequest) {
 
   const { eventId, attendeeInfo } = data;
 
-  const response = await apiRequest<JoinEventResponse>(
-    `${API_ENDPOINTS.EVENTS}/${eventId}/join`,
+  const response = await apiClient.post<JoinEventResponse>(
+    `${API_ENDPOINTS.LEGACY.EVENTS}/${eventId}/join`,
+    attendeeInfo || {},
     {
-      method: 'POST',
-      body: attendeeInfo || {},
-      token,
+      retries: 1, // Less retries for write operations
     }
   );
 

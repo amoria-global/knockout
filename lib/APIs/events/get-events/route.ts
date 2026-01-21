@@ -1,9 +1,17 @@
 /**
  * Get All Events API
  * GET /api/remote/events
+ *
+ * Enhanced with new API client featuring:
+ * - Automatic retry with exponential backoff
+ * - Request timeout handling
+ * - Rate limiting protection
+ * - Production-safe logging
  */
 
-import { apiRequest, API_ENDPOINTS } from '../../../db';
+import { apiClient } from '@/lib/api/client';
+import { API_ENDPOINTS } from '@/lib/api/config';
+import type { ApiResponse } from '@/lib/api/types';
 
 export interface Event {
   id: string;
@@ -56,8 +64,9 @@ export interface GetEventsResponse {
 
 /**
  * Get All Events (with filters)
+ * Uses enhanced API client with automatic retry and error handling
  */
-export async function getEvents(params?: GetEventsRequest) {
+export async function getEvents(params?: GetEventsRequest): Promise<ApiResponse<GetEventsResponse>> {
   const queryParams = new URLSearchParams();
 
   if (params) {
@@ -70,11 +79,12 @@ export async function getEvents(params?: GetEventsRequest) {
 
   const queryString = queryParams.toString();
   const endpoint = queryString
-    ? `${API_ENDPOINTS.EVENTS}?${queryString}`
-    : API_ENDPOINTS.EVENTS;
+    ? `${API_ENDPOINTS.LEGACY.EVENTS}?${queryString}`
+    : API_ENDPOINTS.LEGACY.EVENTS;
 
-  const response = await apiRequest<GetEventsResponse>(endpoint, {
-    method: 'GET',
+  const response = await apiClient.get<GetEventsResponse>(endpoint, {
+    skipAuth: true,
+    retries: 2,
   });
 
   return response;

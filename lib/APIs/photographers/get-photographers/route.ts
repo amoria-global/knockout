@@ -1,9 +1,17 @@
 /**
  * Get All Photographers API
- * GET /api/remote/photographers
+ * GET /api/remote/public/photographers/list
+ *
+ * Enhanced with new API client featuring:
+ * - Automatic retry with exponential backoff
+ * - Request timeout handling
+ * - Rate limiting protection
+ * - Production-safe logging
  */
 
-import { apiRequest, API_ENDPOINTS } from '../../../db';
+import { apiClient } from '@/lib/api/client';
+import { API_ENDPOINTS } from '@/lib/api/config';
+import type { ApiResponse } from '@/lib/api/types';
 
 export interface Photographer {
   id: string;
@@ -38,6 +46,7 @@ export interface Photographer {
 export interface GetPhotographersRequest {
   page?: number;
   limit?: number;
+  size?: number; // Backend uses 'size' for pagination
   search?: string;
   specialization?: string;
   city?: string;
@@ -70,8 +79,9 @@ export interface GetPhotographersResponse {
 
 /**
  * Get All Photographers (with filters)
+ * Uses enhanced API client with automatic retry and error handling
  */
-export async function getPhotographers(params?: GetPhotographersRequest) {
+export async function getPhotographers(params?: GetPhotographersRequest): Promise<ApiResponse<GetPhotographersResponse>> {
   const queryParams = new URLSearchParams();
 
   if (params) {
@@ -84,11 +94,12 @@ export async function getPhotographers(params?: GetPhotographersRequest) {
 
   const queryString = queryParams.toString();
   const endpoint = queryString
-    ? `${API_ENDPOINTS.PHOTOGRAPHERS}?${queryString}`
-    : API_ENDPOINTS.PHOTOGRAPHERS;
+    ? `${API_ENDPOINTS.PUBLIC.PHOTOGRAPHERS_LIST}?${queryString}`
+    : API_ENDPOINTS.PUBLIC.PHOTOGRAPHERS_LIST;
 
-  const response = await apiRequest<GetPhotographersResponse>(endpoint, {
-    method: 'GET',
+  const response = await apiClient.get<GetPhotographersResponse>(endpoint, {
+    skipAuth: true,
+    retries: 2,
   });
 
   return response;

@@ -1,17 +1,25 @@
 /**
  * Verify OTP (Email Confirmation) API
  * POST /api/remote/auth/verify-otp
+ *
+ * Enhanced with new API client featuring:
+ * - Automatic retry with exponential backoff
+ * - Request timeout handling
+ * - Rate limiting protection
+ * - Production-safe logging
  */
 
-import { apiRequest, API_ENDPOINTS, setAuthToken } from '../../../db';
+import { apiClient, setAuthToken } from '@/lib/api/client';
+import { API_ENDPOINTS } from '@/lib/api/config';
+import type { ApiResponse } from '@/lib/api/types';
 
 export interface VerifyOtpRequest {
-  applicantId: string; // Backend expects applicantId (UUID), not email
-  otp: number; // Backend expects otp as a number, not string
+  customerId: string; // Backend expects customerId (UUID)
+  otp: number; // Backend expects otp as a number
 }
 
 export interface VerifyOtpResponse {
-  success: boolean;
+  action: number; // 0 = failure, 1 = success
   message: string;
   token?: string;
   user?: {
@@ -24,13 +32,15 @@ export interface VerifyOtpResponse {
 
 /**
  * Verify OTP (Email Confirmation)
+ * Uses enhanced API client with automatic retry and error handling
  */
-export async function verifyOtp(data: VerifyOtpRequest) {
-  const response = await apiRequest<VerifyOtpResponse>(
-    `${API_ENDPOINTS.AUTH}/verify-otp`,
+export async function verifyOtp(data: VerifyOtpRequest): Promise<ApiResponse<VerifyOtpResponse>> {
+  const response = await apiClient.post<VerifyOtpResponse>(
+    API_ENDPOINTS.AUTH.VERIFY_OTP,
+    data,
     {
-      method: 'POST',
-      body: data,
+      skipAuth: true,
+      retries: 2,
     }
   );
 

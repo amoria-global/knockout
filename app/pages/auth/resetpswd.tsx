@@ -3,12 +3,13 @@ import React, { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { setNewPassword as setNewPasswordAPI } from '@/lib/APIs/auth/set-new-password/route';
-import type { ApiResponse } from '@/lib/db';
+import { useToast } from '@/lib/notifications/ToastProvider';
 
 // Component that uses useSearchParams - needs to be wrapped in Suspense
 function ResetPasswordContent(): React.JSX.Element {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { success: showSuccess, error: showError, warning: showWarning, isOnline } = useToast();
   const emailFromQuery = searchParams.get('email') || '';
   // set-new-password endpoint uses 'code' (from forgot-password email)
   const codeFromQuery = searchParams.get('code') || searchParams.get('token') || '';
@@ -27,16 +28,26 @@ function ResetPasswordContent(): React.JSX.Element {
     e.preventDefault();
     setError('');
 
+    // Check online status
+    if (!isOnline) {
+      showWarning('You are offline. Please check your internet connection.');
+      return;
+    }
+
     if (!isDisabled) {
       // Validate passwords match
       if (newPassword !== confirmPassword) {
-        setError('Passwords do not match');
+        const errMsg = 'Passwords do not match';
+        setError(errMsg);
+        showError(errMsg);
         return;
       }
 
       // Validate password strength (at least 8 characters)
       if (newPassword.length < 8) {
-        setError('Password must be at least 8 characters long');
+        const errMsg = 'Password must be at least 8 characters long';
+        setError(errMsg);
+        showError(errMsg);
         return;
       }
 
@@ -55,17 +66,21 @@ function ResetPasswordContent(): React.JSX.Element {
         if (response.success) {
           // Show success message
           setSuccess(true);
+          showSuccess('Password reset successful!');
 
           // Redirect to login after 2 seconds
           setTimeout(() => {
             router.push('/user/auth/login');
           }, 2000);
         } else {
-          setError(response.error || 'Password reset failed. Please try again.');
+          const errorMessage = response.error || 'Password reset failed. Please try again.';
+          setError(errorMessage);
+          showError(errorMessage);
         }
       } catch (err) {
-        console.error('Password reset error:', err);
-        setError('An error occurred. Please try again.');
+        const errorMessage = err instanceof Error ? err.message : 'An error occurred. Please try again.';
+        setError(errorMessage);
+        showError(errorMessage);
       } finally {
         setLoading(false);
       }

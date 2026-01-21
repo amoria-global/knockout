@@ -1,9 +1,17 @@
 /**
  * Send Message API
  * POST /api/remote/messages
+ *
+ * Enhanced with new API client featuring:
+ * - Automatic retry with exponential backoff
+ * - Request timeout handling
+ * - Rate limiting protection
+ * - Production-safe logging
  */
 
-import { apiRequest, API_ENDPOINTS, getAuthToken } from '../../../db';
+import { apiClient, isAuthenticated } from '@/lib/api/client';
+import { API_ENDPOINTS, TIMEOUT_PRESETS } from '@/lib/api/config';
+import type { ApiResponse } from '@/lib/api/types';
 
 export interface Message {
   id: string;
@@ -53,11 +61,11 @@ export interface SendMessageResponse {
 
 /**
  * Send Message
+ * Uses enhanced API client with automatic retry and error handling
+ * Requires authentication
  */
-export async function sendMessage(data: SendMessageRequest) {
-  const token = getAuthToken();
-
-  if (!token) {
+export async function sendMessage(data: SendMessageRequest): Promise<ApiResponse<SendMessageResponse>> {
+  if (!isAuthenticated()) {
     return {
       success: false,
       error: 'Authentication required',
@@ -81,19 +89,16 @@ export async function sendMessage(data: SendMessageRequest) {
       formData.append('metadata', JSON.stringify(data.metadata));
     }
 
-    data.attachments.forEach((file, index) => {
-      formData.append(`attachments`, file);
+    data.attachments.forEach((file) => {
+      formData.append('attachments', file);
     });
 
-    const response = await apiRequest<SendMessageResponse>(
-      API_ENDPOINTS.MESSAGES,
+    const response = await apiClient.post<SendMessageResponse>(
+      API_ENDPOINTS.LEGACY.MESSAGES,
+      formData,
       {
-        method: 'POST',
-        body: formData,
-        token,
-        headers: {
-          // Let browser set Content-Type for FormData
-        },
+        retries: 1,
+        timeout: TIMEOUT_PRESETS.LONG, // Longer timeout for file uploads
       }
     );
 
@@ -101,12 +106,11 @@ export async function sendMessage(data: SendMessageRequest) {
   }
 
   // Otherwise use JSON
-  const response = await apiRequest<SendMessageResponse>(
-    API_ENDPOINTS.MESSAGES,
+  const response = await apiClient.post<SendMessageResponse>(
+    API_ENDPOINTS.LEGACY.MESSAGES,
+    data,
     {
-      method: 'POST',
-      body: data,
-      token,
+      retries: 1,
     }
   );
 
