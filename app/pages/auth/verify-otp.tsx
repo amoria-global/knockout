@@ -4,11 +4,13 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { verifyOtp } from '@/lib/APIs/auth/verify-otp/route';
 import { resendOtp } from '@/lib/APIs/auth/resend-otp/route';
+import { useToast } from '@/lib/notifications/ToastProvider';
 
 // Component that uses useSearchParams - needs to be wrapped in Suspense
 function VerifyOtpContent(): React.JSX.Element {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { success: showSuccess, error: showError, warning: showWarning, isOnline } = useToast();
 
   // Get query params and validate they're not "undefined" strings
   const applicantIdFromQuery = searchParams.get('applicantId');
@@ -97,26 +99,37 @@ function VerifyOtpContent(): React.JSX.Element {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setLoading(true);
+
+    // Check online status
+    if (!isOnline) {
+      showWarning('You are offline. Please check your internet connection.');
+      return;
+    }
 
     if (!isDisabled) {
+      setLoading(true);
       const otpCode = otp.join('');
 
       try {
-        const response = await verifyOtp({ applicantId, otp: parseInt(otpCode, 10) });
+        // Use customerId as expected by backend
+        const response = await verifyOtp({ customerId: applicantId, otp: parseInt(otpCode, 10) });
 
         if (response.success) {
           setSuccess(true);
+          showSuccess('Email verified successfully!');
           // Redirect to login or dashboard after 2 seconds
           setTimeout(() => {
             router.push('/user/auth/login');
           }, 2000);
         } else {
-          setError(response.error || 'Invalid OTP. Please try again.');
+          const errorMessage = response.error || 'Invalid OTP. Please try again.';
+          setError(errorMessage);
+          showError(errorMessage);
         }
       } catch (err) {
-        setError('An error occurred. Please try again.');
-        console.error('OTP verification error:', err);
+        const errorMessage = err instanceof Error ? err.message : 'An error occurred. Please try again.';
+        setError(errorMessage);
+        showError(errorMessage);
       } finally {
         setLoading(false);
       }
@@ -127,17 +140,26 @@ function VerifyOtpContent(): React.JSX.Element {
     setError('');
     setOtp(['', '', '', '', '', '']);
 
+    // Check online status
+    if (!isOnline) {
+      showWarning('You are offline. Please check your internet connection.');
+      return;
+    }
+
     try {
       const response = await resendOtp({ applicantId });
 
       if (response.success) {
-        alert('Verification code sent successfully!');
+        showSuccess('Verification code sent successfully!');
       } else {
-        setError(response.error || 'Failed to resend code. Please try again.');
+        const errorMessage = response.error || 'Failed to resend code. Please try again.';
+        setError(errorMessage);
+        showError(errorMessage);
       }
     } catch (err) {
-      setError('Failed to resend code. Please try again.');
-      console.error('Resend OTP error:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to resend code. Please try again.';
+      setError(errorMessage);
+      showError(errorMessage);
     }
 
     // Focus on first input box

@@ -1,9 +1,17 @@
 /**
  * Create Event API
  * POST /api/remote/events
+ *
+ * Enhanced with new API client featuring:
+ * - Automatic retry with exponential backoff
+ * - Request timeout handling
+ * - Rate limiting protection
+ * - Production-safe logging
  */
 
-import { apiRequest, API_ENDPOINTS, getAuthToken } from '../../../db';
+import { apiClient, isAuthenticated } from '@/lib/api/client';
+import { API_ENDPOINTS } from '@/lib/api/config';
+import type { ApiResponse } from '@/lib/api/types';
 import type { Event } from '../get-events/route';
 
 export interface CreateEventRequest {
@@ -31,22 +39,24 @@ export interface CreateEventRequest {
 
 /**
  * Create Event
+ * Uses enhanced API client with automatic retry and error handling
+ * Requires authentication
  */
-export async function createEvent(data: CreateEventRequest) {
-  const token = getAuthToken();
-
-  if (!token) {
+export async function createEvent(data: CreateEventRequest): Promise<ApiResponse<Event>> {
+  if (!isAuthenticated()) {
     return {
       success: false,
       error: 'Authentication required to create events',
     };
   }
 
-  const response = await apiRequest<Event>(API_ENDPOINTS.EVENTS, {
-    method: 'POST',
-    body: data,
-    token,
-  });
+  const response = await apiClient.post<Event>(
+    API_ENDPOINTS.LEGACY.EVENTS,
+    data,
+    {
+      retries: 1, // Less retries for write operations
+    }
+  );
 
   return response;
 }

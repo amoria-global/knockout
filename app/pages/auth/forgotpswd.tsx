@@ -3,9 +3,11 @@ import React, { useState, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { forgotPassword } from '@/lib/APIs/auth/forgot-password/route';
+import { useToast } from '@/lib/notifications/ToastProvider';
 
 export default function ForgotPasswordPage(): React.JSX.Element {
   const router = useRouter();
+  const { success: showSuccess, error: showError, warning: showWarning, info: showInfo, isOnline } = useToast();
   const [email, setEmail] = useState('');
   const [verificationCode, setVerificationCode] = useState(['', '', '', '', '', '']);
   const [error, setError] = useState('');
@@ -22,6 +24,12 @@ export default function ForgotPasswordPage(): React.JSX.Element {
     e.preventDefault();
     setError('');
 
+    // Check online status
+    if (!isOnline) {
+      showWarning('You are offline. Please check your internet connection.');
+      return;
+    }
+
     if (!isEmailDisabled) {
       setLoading(true);
 
@@ -31,16 +39,21 @@ export default function ForgotPasswordPage(): React.JSX.Element {
         if (response.success) {
           // Move to verification code step
           setStep('verification');
+          showSuccess('Verification code sent to your email!');
+          showInfo('Check your inbox for the 6-digit code.');
           // Focus on first input box after switching to verification step
           setTimeout(() => {
             inputRefs.current[0]?.focus();
           }, 100);
         } else {
-          setError(response.error || 'Failed to send verification code. Please try again.');
+          const errorMessage = response.error || 'Failed to send verification code. Please try again.';
+          setError(errorMessage);
+          showError(errorMessage);
         }
       } catch (err) {
-        console.error('Forgot password error:', err);
-        setError('An error occurred. Please try again.');
+        const errorMessage = err instanceof Error ? err.message : 'An error occurred. Please try again.';
+        setError(errorMessage);
+        showError(errorMessage);
       } finally {
         setLoading(false);
       }
@@ -114,18 +127,27 @@ export default function ForgotPasswordPage(): React.JSX.Element {
     setError('');
     setVerificationCode(['', '', '', '', '', '']);
 
+    // Check online status
+    if (!isOnline) {
+      showWarning('You are offline. Please check your internet connection.');
+      return;
+    }
+
     try {
       // Call forgot-password again to resend the code
       const response = await forgotPassword({ email });
 
       if (response.success) {
-        alert('Verification code resent successfully!');
+        showSuccess('Verification code resent successfully!');
       } else {
-        setError(response.error || 'Failed to resend code. Please try again.');
+        const errorMessage = response.error || 'Failed to resend code. Please try again.';
+        setError(errorMessage);
+        showError(errorMessage);
       }
     } catch (err) {
-      console.error('Resend code error:', err);
-      setError('Failed to resend code. Please try again.');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to resend code. Please try again.';
+      setError(errorMessage);
+      showError(errorMessage);
     }
 
     // Focus on first input box

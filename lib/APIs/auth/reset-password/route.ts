@@ -1,9 +1,17 @@
 /**
  * Reset Password API
  * POST /api/remote/auth/reset-password
+ *
+ * Enhanced with new API client featuring:
+ * - Automatic retry with exponential backoff
+ * - Request timeout handling
+ * - Rate limiting protection
+ * - Production-safe logging
  */
 
-import { apiRequest, API_ENDPOINTS } from '../../../db';
+import { apiClient } from '@/lib/api/client';
+import { API_ENDPOINTS } from '@/lib/api/config';
+import type { ApiResponse } from '@/lib/api/types';
 
 export interface ResetPasswordRequest {
   email: string;
@@ -13,15 +21,15 @@ export interface ResetPasswordRequest {
 }
 
 export interface ResetPasswordResponse {
+  action: number; // 0 = failure, 1 = success
   message: string;
-  success: boolean;
-  action?: number;
 }
 
 /**
  * Reset Password (with token)
+ * Uses enhanced API client with automatic retry and error handling
  */
-export async function resetPassword(data: ResetPasswordRequest) {
+export async function resetPassword(data: ResetPasswordRequest): Promise<ApiResponse<ResetPasswordResponse>> {
   // Backend expects query parameters, not body
   const queryParams = new URLSearchParams({
     email: data.email,
@@ -30,10 +38,12 @@ export async function resetPassword(data: ResetPasswordRequest) {
     confirmPassword: data.confirmPassword,
   });
 
-  const response = await apiRequest<ResetPasswordResponse>(
-    `${API_ENDPOINTS.AUTH}/reset-password?${queryParams}`,
+  const response = await apiClient.post<ResetPasswordResponse>(
+    `${API_ENDPOINTS.AUTH.RESET_PASSWORD}?${queryParams}`,
+    undefined,
     {
-      method: 'POST',
+      skipAuth: true,
+      retries: 2,
     }
   );
 
