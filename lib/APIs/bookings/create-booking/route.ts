@@ -1,9 +1,17 @@
 /**
  * Create Booking API
  * POST /api/remote/bookings
+ *
+ * Enhanced with new API client featuring:
+ * - Automatic retry with exponential backoff
+ * - Request timeout handling
+ * - Rate limiting protection
+ * - Production-safe logging
  */
 
-import { apiRequest, API_ENDPOINTS, getAuthToken } from '../../../db';
+import { apiClient, isAuthenticated } from '@/lib/api/client';
+import { API_ENDPOINTS } from '@/lib/api/config';
+import type { ApiResponse } from '@/lib/api/types';
 
 export interface Booking {
   id: string;
@@ -84,23 +92,22 @@ export interface CreateBookingResponse {
 
 /**
  * Create Booking
+ * Uses enhanced API client with automatic retry and error handling
+ * Requires authentication
  */
-export async function createBooking(data: CreateBookingRequest) {
-  const token = getAuthToken();
-
-  if (!token) {
+export async function createBooking(data: CreateBookingRequest): Promise<ApiResponse<CreateBookingResponse>> {
+  if (!isAuthenticated()) {
     return {
       success: false,
       error: 'Authentication required to create bookings',
     };
   }
 
-  const response = await apiRequest<CreateBookingResponse>(
-    API_ENDPOINTS.BOOKINGS,
+  const response = await apiClient.post<CreateBookingResponse>(
+    API_ENDPOINTS.LEGACY.BOOKINGS,
+    data,
     {
-      method: 'POST',
-      body: data,
-      token,
+      retries: 1, // Less retries for write operations
     }
   );
 

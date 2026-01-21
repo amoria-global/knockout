@@ -4,11 +4,13 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { signup } from '@/lib/APIs/auth/signup/route';
+import { useToast } from '@/lib/notifications/ToastProvider';
 
 export default function SignupPage(): React.JSX.Element {
   const router = useRouter();
   const t = useTranslations('auth.signupPage');
   const tAuth = useTranslations('auth');
+  const { success: showSuccess, error: showError, warning: showWarning, info: showInfo, isOnline } = useToast();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [firstName, setFirstName] = useState('');
@@ -93,6 +95,12 @@ export default function SignupPage(): React.JSX.Element {
 
     setErrors(newErrors);
 
+    // Check online status
+    if (!isOnline) {
+      showWarning('You are offline. Please check your internet connection.');
+      return;
+    }
+
     if (Object.keys(newErrors).length === 0) {
       setLoading(true);
 
@@ -101,38 +109,43 @@ export default function SignupPage(): React.JSX.Element {
           firstName,
           lastName,
           email,
-          phone: `${countryCode}${phoneNumber}`, // Combine country code and phone number
-          customerType: 'client', // Backend expects 'customerType'
+          phone: `${countryCode}${phoneNumber}`,
+          customerType: 'client',
           password,
         });
 
-        console.log('📋 Signup Response:', response);
-
         if (response.success && response.data) {
-          // Redirect to OTP verification page with applicantId and email
-          console.log('📋 Response data:', response.data);
-          const applicantId = response.data.applicant_id; // Backend returns snake_case
-          console.log('📋 Extracted applicantId:', applicantId);
+          // Extract applicant/customer ID - handle various field names from backend
+          const { applicant_id, applicantId: appId, customerId, customer_id } = response.data;
+          const applicantId = applicant_id || appId || customerId || customer_id;
 
           if (!applicantId) {
-            console.error('❌ No applicant_id in response:', response.data);
-            newErrors.email = 'Signup succeeded but missing applicant ID. Please contact support.';
+            const errorMsg = 'Signup succeeded but missing applicant ID. Please contact support.';
+            newErrors.email = errorMsg;
             setErrors(newErrors);
+            showError(errorMsg);
             setLoading(false);
             return;
           }
 
-          console.log('✅ Redirecting to verify-otp with applicantId:', applicantId);
-          router.push(`/user/auth/verify-otp?applicantId=${encodeURIComponent(applicantId)}&email=${encodeURIComponent(email)}`);
+          // Show success and redirect to OTP verification
+          showSuccess('Account created! Please verify your email.');
+          showInfo('Check your email for the verification code.');
+          router.push(`/user/auth/verify-otp?applicantId=${encodeURIComponent(String(applicantId))}&email=${encodeURIComponent(email)}`);
         } else {
-          // Display error from API
-          newErrors.email = response.error || 'Signup failed. Please try again.';
+          // Display the actual error message from the backend
+          // The API returns messages like "This phone number already exists"
+          const errorMessage = response.error || 'Signup failed. Please try again.';
+          newErrors.email = errorMessage;
           setErrors(newErrors);
+          showError(errorMessage);
         }
       } catch (err) {
-        console.error('Signup error:', err);
-        newErrors.email = 'An error occurred during signup. Please try again.';
+        // Handle unexpected errors - show actual error message if available
+        const errorMessage = err instanceof Error ? err.message : 'An error occurred during signup. Please try again.';
+        newErrors.email = errorMessage;
         setErrors(newErrors);
+        showError(errorMessage);
       } finally {
         setLoading(false);
       }

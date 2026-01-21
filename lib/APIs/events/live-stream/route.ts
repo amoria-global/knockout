@@ -3,9 +3,17 @@
  * GET /api/remote/events/:id/live-stream
  * POST /api/remote/events/:id/start-stream
  * POST /api/remote/events/:id/end-stream
+ *
+ * Enhanced with new API client featuring:
+ * - Automatic retry with exponential backoff
+ * - Request timeout handling
+ * - Rate limiting protection
+ * - Production-safe logging
  */
 
-import { apiRequest, API_ENDPOINTS, getAuthToken } from '../../../db';
+import { apiClient, isAuthenticated } from '@/lib/api/client';
+import { API_ENDPOINTS } from '@/lib/api/config';
+import type { ApiResponse } from '@/lib/api/types';
 
 export interface LiveStreamInfo {
   streamId: string;
@@ -18,22 +26,21 @@ export interface LiveStreamInfo {
 
 /**
  * Get Live Stream Info
+ * Uses enhanced API client with automatic retry and error handling
+ * Requires authentication
  */
-export async function getLiveStreamInfo(eventId: string) {
-  const token = getAuthToken();
-
-  if (!token) {
+export async function getLiveStreamInfo(eventId: string): Promise<ApiResponse<LiveStreamInfo>> {
+  if (!isAuthenticated()) {
     return {
       success: false,
       error: 'Authentication required to access live streams',
     };
   }
 
-  const response = await apiRequest<LiveStreamInfo>(
-    `${API_ENDPOINTS.EVENTS}/${eventId}/live-stream`,
+  const response = await apiClient.get<LiveStreamInfo>(
+    `${API_ENDPOINTS.LEGACY.EVENTS}/${eventId}/live-stream`,
     {
-      method: 'GET',
-      token,
+      retries: 2,
     }
   );
 
@@ -42,22 +49,22 @@ export async function getLiveStreamInfo(eventId: string) {
 
 /**
  * Start Live Stream
+ * Uses enhanced API client with automatic retry and error handling
+ * Requires authentication
  */
-export async function startLiveStream(eventId: string) {
-  const token = getAuthToken();
-
-  if (!token) {
+export async function startLiveStream(eventId: string): Promise<ApiResponse<LiveStreamInfo>> {
+  if (!isAuthenticated()) {
     return {
       success: false,
       error: 'Authentication required to start live streams',
     };
   }
 
-  const response = await apiRequest<LiveStreamInfo>(
-    `${API_ENDPOINTS.EVENTS}/${eventId}/start-stream`,
+  const response = await apiClient.post<LiveStreamInfo>(
+    `${API_ENDPOINTS.LEGACY.EVENTS}/${eventId}/start-stream`,
+    undefined,
     {
-      method: 'POST',
-      token,
+      retries: 1, // Less retries for write operations
     }
   );
 
@@ -66,22 +73,22 @@ export async function startLiveStream(eventId: string) {
 
 /**
  * End Live Stream
+ * Uses enhanced API client with automatic retry and error handling
+ * Requires authentication
  */
-export async function endLiveStream(eventId: string) {
-  const token = getAuthToken();
-
-  if (!token) {
+export async function endLiveStream(eventId: string): Promise<ApiResponse<void>> {
+  if (!isAuthenticated()) {
     return {
       success: false,
       error: 'Authentication required to end live streams',
     };
   }
 
-  const response = await apiRequest(
-    `${API_ENDPOINTS.EVENTS}/${eventId}/end-stream`,
+  const response = await apiClient.post<void>(
+    `${API_ENDPOINTS.LEGACY.EVENTS}/${eventId}/end-stream`,
+    undefined,
     {
-      method: 'POST',
-      token,
+      retries: 1, // Less retries for write operations
     }
   );
 

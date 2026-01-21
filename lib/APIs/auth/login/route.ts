@@ -1,9 +1,17 @@
 /**
  * User Login API
  * POST /api/remote/auth/login
+ *
+ * Enhanced with new API client featuring:
+ * - Automatic retry with exponential backoff
+ * - Request timeout handling
+ * - Rate limiting protection
+ * - Production-safe logging
  */
 
-import { apiRequest, API_ENDPOINTS, setAuthToken } from '../../../db';
+import { apiClient, setAuthToken } from '@/lib/api/client';
+import { API_ENDPOINTS } from '@/lib/api/config';
+import type { ApiResponse } from '@/lib/api/types';
 
 export interface LoginRequest {
   email: string;
@@ -15,7 +23,11 @@ export interface LoginResponse {
   message: string;
   otpVerified: boolean; // Indicates if email is verified
   accountLocked: boolean; // Indicates if account is locked
-  applicantId: string | null; // User ID (null on failure)
+  // Backend may return different ID field names
+  applicantId?: string | null;
+  applicant_id?: string | null;
+  customerId?: string | null;
+  customer_id?: string | null;
   token?: string; // JWT token (only on successful login)
   user?: {
     id: string;
@@ -29,13 +41,15 @@ export interface LoginResponse {
 
 /**
  * User Login
+ * Uses enhanced API client with automatic retry and error handling
  */
-export async function login(data: LoginRequest) {
-  const response = await apiRequest<LoginResponse>(
-    `${API_ENDPOINTS.AUTH}/login`,
+export async function login(data: LoginRequest): Promise<ApiResponse<LoginResponse>> {
+  const response = await apiClient.post<LoginResponse>(
+    API_ENDPOINTS.AUTH.LOGIN,
+    data,
     {
-      method: 'POST',
-      body: data,
+      skipAuth: true, // Login doesn't need existing auth token
+      retries: 2, // Limit retries for auth to prevent lockouts
     }
   );
 

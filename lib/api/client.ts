@@ -180,6 +180,47 @@ class ApiClient {
   }
 
   /**
+   * Extract error message from various backend response formats
+   */
+  private extractErrorMessage(data: Record<string, unknown>): string {
+    // Try multiple possible error message fields (ordered by priority)
+    const errorFields = ['message', 'error', 'errorMessage', 'msg', 'description', 'detail', 'reason'];
+
+    for (const field of errorFields) {
+      const value = data[field];
+      if (typeof value === 'string' && value.trim()) {
+        return value.trim();
+      }
+    }
+
+    // Check nested error object
+    if (data.error && typeof data.error === 'object') {
+      const errorObj = data.error as Record<string, unknown>;
+      for (const field of errorFields) {
+        const value = errorObj[field];
+        if (typeof value === 'string' && value.trim()) {
+          return value.trim();
+        }
+      }
+    }
+
+    // Check errors array
+    if (Array.isArray(data.errors) && data.errors.length > 0) {
+      const firstError = data.errors[0];
+      if (typeof firstError === 'string') {
+        return firstError;
+      }
+      if (typeof firstError === 'object' && firstError) {
+        const errorItem = firstError as Record<string, unknown>;
+        if (typeof errorItem.message === 'string') return errorItem.message;
+        if (typeof errorItem.msg === 'string') return errorItem.msg;
+      }
+    }
+
+    return 'Operation failed';
+  }
+
+  /**
    * Parse backend response into standardized format
    */
   private parseResponse<T>(
@@ -191,7 +232,7 @@ class ApiClient {
     if (typeof data.action === 'number' && data.action === 0) {
       return {
         success: false,
-        error: data.message || 'Operation failed',
+        error: this.extractErrorMessage(data as unknown as Record<string, unknown>),
         data: data.data,
         statusCode,
         requestId,
@@ -281,9 +322,10 @@ class ApiClient {
 
       // Handle HTTP errors
       if (!response.ok) {
+        const errorMessage = this.extractErrorMessage(data as unknown as Record<string, unknown>);
         return {
           success: false,
-          error: data.message || data.error || `HTTP ${response.status}: ${response.statusText}`,
+          error: errorMessage !== 'Operation failed' ? errorMessage : `HTTP ${response.status}: ${response.statusText}`,
           errors: data.errors,
           statusCode: response.status,
           requestId,

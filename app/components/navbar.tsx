@@ -6,7 +6,24 @@ import { useTranslations } from 'next-intl';
 import { useRouter, usePathname } from 'next/navigation';
 import { useLanguage } from '../providers/LanguageProvider';
 import { locales, languageNames, type Locale } from '../../i18n';
+import { getCategories, type PhotographerCategory } from '@/lib/APIs/public';
 import 'bootstrap-icons/font/bootstrap-icons.css';
+
+// Map category names to icons
+const categoryIcons: Record<string, string> = {
+  'wedding': 'bi-heart-fill',
+  'weeding': 'bi-heart-fill', // typo in backend
+  'portrait': 'bi-person-fill',
+  'event': 'bi-calendar-event-fill',
+  'commercial': 'bi-briefcase-fill',
+  'fashion': 'bi-camera-fill',
+  'product': 'bi-box-fill',
+};
+
+const getIconForCategory = (name: string): string => {
+  const normalized = name.toLowerCase();
+  return categoryIcons[normalized] || 'bi-camera-fill';
+};
 
 const AmoriaKNavbar = () => {
   const { locale, setLocale } = useLanguage();
@@ -21,6 +38,8 @@ const AmoriaKNavbar = () => {
   const [isPhotographersDropdownOpen, setIsPhotographersDropdownOpen] = useState(false);
   const [isEventsDropdownOpen, setIsEventsDropdownOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [photographerCategories, setPhotographerCategories] = useState<{ value: string; label: string; icon: string }[]>([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
 
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
@@ -38,14 +57,30 @@ const AmoriaKNavbar = () => {
     return path;
   };
 
-  const photographerCategories = [
-    { value: 'wedding', label: t('photographerCategories.wedding'), icon: 'bi-heart-fill' },
-    { value: 'portrait', label: t('photographerCategories.portrait'), icon: 'bi-person-fill' },
-    { value: 'event', label: t('photographerCategories.event'), icon: 'bi-calendar-event-fill' },
-    { value: 'commercial', label: t('photographerCategories.commercial'), icon: 'bi-briefcase-fill' },
-    { value: 'fashion', label: t('photographerCategories.fashion'), icon: 'bi-camera-fill' },
-    { value: 'product', label: t('photographerCategories.product'), icon: 'bi-box-fill' },
-  ];
+  // Fetch photographer categories from API
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await getCategories();
+        if (response.success && response.data) {
+          const categories = response.data
+            .filter((cat: PhotographerCategory) => cat.isActive)
+            .map((cat: PhotographerCategory) => ({
+              value: cat.name.toLowerCase(),
+              label: cat.name,
+              icon: getIconForCategory(cat.name),
+            }));
+          setPhotographerCategories(categories);
+        }
+      } catch (error) {
+        console.error('Failed to fetch categories:', error);
+      } finally {
+        setCategoriesLoading(false);
+      }
+    };
+
+    fetchCategories();
+  }, []);
 
   const eventCategories = [
     { value: 'wedding', label: t('eventCategories.weddings'), icon: 'bi-heart-fill' },
