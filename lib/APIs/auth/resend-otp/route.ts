@@ -14,7 +14,7 @@ import { API_ENDPOINTS } from '@/lib/api/config';
 import type { ApiResponse } from '@/lib/api/types';
 
 export interface ResendOtpRequest {
-  applicantId: string; // Backend expects applicantId (UUID)
+  customerId: string; // Backend expects customerId (UUID)
 }
 
 export interface ResendOtpResponse {
@@ -31,7 +31,7 @@ export interface ResendOtpResponse {
  */
 export async function resendOtp(data: ResendOtpRequest): Promise<ApiResponse<ResendOtpResponse>> {
   // Backend expects query parameters, not body
-  const queryParams = new URLSearchParams({ applicantId: data.applicantId });
+  const queryParams = new URLSearchParams({ customerId: data.customerId });
 
   const response = await apiClient.post<ResendOtpResponse>(
     `${API_ENDPOINTS.AUTH.RESEND_OTP}?${queryParams}`,

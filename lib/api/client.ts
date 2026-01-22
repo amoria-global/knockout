@@ -230,10 +230,12 @@ class ApiClient {
   ): ApiResponse<T> {
     // Check backend action field (0 = failure, 1 = success)
     if (typeof data.action === 'number' && data.action === 0) {
+      // For action: 0, pass the full response as data since backend may return
+      // important info like customerId, otpVerified, etc. at the root level
       return {
         success: false,
         error: this.extractErrorMessage(data as unknown as Record<string, unknown>),
-        data: data.data,
+        data: data.data !== undefined ? data.data : (data as unknown as T),
         statusCode,
         requestId,
       };
@@ -302,6 +304,14 @@ class ApiClient {
       let data: BackendResponse<T>;
       try {
         data = await response.json();
+        // Log raw response in development for debugging
+        if (API_CONFIG.debug) {
+          logger.debug(`Raw API response from ${options.endpoint}:`, {
+            requestId,
+            status: response.status,
+            data
+          });
+        }
       } catch {
         // Non-JSON response
         if (!response.ok) {
@@ -405,12 +415,17 @@ class ApiClient {
       }
 
       // Create request promise with retry
+      // Store the last response to preserve data even on failure
+      let lastResponse: ApiResponse<T> | null = null;
+
       const requestPromise = withRetry<ApiResponse<T>>(
         async () => {
           const response = await this.executeRequest<T>(processedOptions);
+          lastResponse = response; // Store for potential use in catch
 
           // Throw error for retry mechanism if request failed with retryable status
-          if (!response.success && response.statusCode) {
+          // Only retry on server errors (5xx), not on business logic failures (action: 0)
+          if (!response.success && response.statusCode && response.statusCode >= 500) {
             const error = new Error(response.error) as Error & { statusCode: number };
             error.statusCode = response.statusCode;
             throw error;
@@ -424,7 +439,11 @@ class ApiClient {
         },
         requestId
       ).catch(async (error): Promise<ApiResponse<T>> => {
-        // If retry exhausted, return error response
+        // If we have a last response, return it (preserves data from backend)
+        if (lastResponse) {
+          return lastResponse;
+        }
+        // If retry exhausted without any response, return error
         return {
           success: false,
           error: error instanceof Error ? error.message : 'Request failed after retries',
@@ -523,6 +542,110 @@ class ApiClient {
  * Singleton API client instance
  */
 export const apiClient = new ApiClient();
+
+/**
+ * Flag to prevent multiple simultaneous token refreshes
+ */
+let isRefreshing = false;
+let refreshPromise: Promise<boolean> | null = null;
+
+/**
+ * Attempt to refresh the auth token
+ */
+async function attemptTokenRefresh(): Promise<boolean> {
+  // If already refreshing, return the existing promise
+  if (isRefreshing && refreshPromise) {
+    return refreshPromise;
+  }
+
+  isRefreshing = true;
+
+  refreshPromise = (async () => {
+    try {
+      const token = getAuthToken();
+      if (!token) return false;
+
+      const response = await fetch(
+        `${API_CONFIG.baseUrl}/api/remote/auth/api/v1/remote/refresh-token`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.token) {
+          setAuthToken(data.token);
+          logger.info('Token refreshed successfully');
+          return true;
+        }
+      }
+
+      return false;
+    } catch (error) {
+      logger.warn('Token refresh failed', { error: String(error) });
+      return false;
+    } finally {
+      isRefreshing = false;
+      refreshPromise = null;
+    }
+  })();
+
+  return refreshPromise;
+}
+
+/**
+ * Redirect to login page
+ */
+function redirectToLogin(): void {
+  if (typeof window !== 'undefined') {
+    // Clear auth data
+    removeAuthToken();
+    localStorage.removeItem('authUser');
+
+    // Redirect to login
+    window.location.href = '/user/auth/login';
+  }
+}
+
+/**
+ * Add 401 response interceptor for automatic token refresh
+ */
+apiClient.addResponseInterceptor(async (response, options) => {
+  // Handle 401 Unauthorized responses
+  if (response.statusCode === HTTP_STATUS.UNAUTHORIZED) {
+    // Skip refresh for auth endpoints to avoid loops
+    if (options.endpoint.includes('/auth/login') ||
+        options.endpoint.includes('/auth/signup') ||
+        options.endpoint.includes('/refresh-token')) {
+      return response;
+    }
+
+    logger.info('Received 401, attempting token refresh...');
+
+    // Try to refresh the token
+    const refreshed = await attemptTokenRefresh();
+
+    if (refreshed) {
+      // Token refreshed, retry the original request
+      logger.info('Retrying request after token refresh');
+      return apiClient.request({
+        ...options,
+        retries: 0, // Don't retry again to avoid loops
+      });
+    } else {
+      // Refresh failed, redirect to login
+      logger.warn('Token refresh failed, redirecting to login');
+      redirectToLogin();
+    }
+  }
+
+  return response;
+});
 
 /**
  * Export auth token utilities for backward compatibility

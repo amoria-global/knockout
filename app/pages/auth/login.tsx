@@ -5,17 +5,25 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { login } from '@/lib/APIs/auth/login/route';
 import { useToast } from '@/lib/notifications/ToastProvider';
+import { useAuth } from '@/app/providers/AuthProvider';
+import { getAuthToken } from '@/lib/api/client';
+import PostLoginModal from '@/app/components/PostLoginModal';
+import { getDashboardUrlWithToken } from '@/lib/utils/dashboard-url';
 
 export default function LoginPage(): React.JSX.Element {
   const router = useRouter();
   const t = useTranslations('auth.loginPage');
   const tAuth = useTranslations('auth');
   const { success: showSuccess, error: showError, warning: showWarning, isOnline } = useToast();
+  const { login: loginUser } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPostLoginModal, setShowPostLoginModal] = useState(false);
+  const [loggedInUserName, setLoggedInUserName] = useState('');
+  const [loggedInUserType, setLoggedInUserType] = useState<string | undefined>(undefined);
 
   // Screen size detection for responsive design
   const [screenSize, setScreenSize] = useState<'mobile' | 'tablet' | 'desktop' | 'large' | 'xlarge'>('desktop');
@@ -37,6 +45,28 @@ export default function LoginPage(): React.JSX.Element {
 
   const isDisabled = !email || !password;
 
+  // Modal handlers
+  const handleKeepExploring = () => {
+    setShowPostLoginModal(false);
+    router.push('/user/photographers');
+  };
+
+  const handleGoToDashboard = () => {
+    const token = getAuthToken();
+    const dashboardUrl = getDashboardUrlWithToken(loggedInUserType, token || undefined);
+
+    if (dashboardUrl && token) {
+      // Open dashboard in new tab with type-based route
+      window.open(dashboardUrl, '_blank');
+    } else {
+      // Fallback to local dashboard if env not set
+      window.open('/user/dashboard', '_blank');
+    }
+    // Close modal and redirect to photographers page
+    setShowPostLoginModal(false);
+    router.push('/user/photographers');
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -53,42 +83,72 @@ export default function LoginPage(): React.JSX.Element {
       try {
         const response = await login({ email, password });
 
-        // Check if OTP verification is needed (can come in success or error response)
+        // Debug: Log full response in development
+        console.log('[Login] Full API response:', JSON.stringify(response, null, 2));
+
+        // Get data from response
         const data = response.data;
-        const errorMsg = response.error || '';
-        const isOtpNotVerified =
-          (data && data.otpVerified === false) ||
-          errorMsg.toLowerCase().includes('otp') ||
-          errorMsg.toLowerCase().includes('verify');
 
-        // Get applicant ID from response data (may use different field names)
-        const applicantId = data?.applicantId ||
-          data?.applicant_id ||
-          data?.customerId ||
-          data?.customer_id;
+        // Get customerId from response data (may use different field names)
+        const customerId = data?.customerId ||
+          data?.customer_id ||
+          data?.applicantId ||
+          data?.applicant_id;
 
-        if (isOtpNotVerified && applicantId) {
-          // Redirect to OTP verification page
-          showWarning(errorMsg || 'Please verify your email to continue.');
-          router.push(`/user/auth/verify-otp?applicantId=${encodeURIComponent(String(applicantId))}&email=${encodeURIComponent(email)}`);
+        // Check if OTP verification is needed
+        // Backend returns: { action: 0, customerId: "...", otpVerified: false, message: "OTP not verified..." }
+        // Handle both boolean false and string "false"
+        const isOtpNotVerified = data?.otpVerified === false || data?.otpVerified === 'false';
+
+        console.log('[Login] OTP check:', { isOtpNotVerified, otpVerified: data?.otpVerified, customerId, data });
+
+        if (isOtpNotVerified && customerId) {
+          // Backend has already sent a new OTP, redirect to verification page
+          const message = data?.message || response.error || 'Please verify your email to continue.';
+          showWarning(message);
+          setLoading(false); // Stop loading before redirect
+          const redirectUrl = `/user/auth/verify-otp?applicantId=${encodeURIComponent(String(customerId))}&email=${encodeURIComponent(email)}`;
+          console.log('[Login] Redirecting to:', redirectUrl);
+          router.push(redirectUrl);
+          return;
+        }
+
+        // Check if account is locked (handle both boolean true and string "true")
+        if (data?.accountLocked === true || data?.accountLocked === 'true') {
+          const lockMsg = 'Your account has been locked. Please contact support.';
+          setError(lockMsg);
+          showError(lockMsg);
+          setLoading(false);
           return;
         }
 
         if (response.success && data) {
-          // Check if account is locked
-          if (data.accountLocked) {
-            const lockMsg = 'Your account has been locked. Please contact support.';
-            setError(lockMsg);
-            showError(lockMsg);
-            return;
-          }
+          // Successful login - store user in AuthContext and show modal
+          // Get customerType from user object or default to 'photographer'
+          const customerType = data.user?.userType || 'photographer';
 
-          // Successful login - show success toast and redirect
-          showSuccess('Welcome back! Redirecting to dashboard...');
-          router.push('/user/dashboard');
+          const userData = {
+            id: data.id || data.user?.id || '',
+            firstName: data.firstName || data.user?.firstName || '',
+            lastName: data.lastName || data.user?.lastName || '',
+            email: data.email || data.user?.email || email,
+            phone: data.phone || '',
+            customerId: data.customerId || '',
+            customerType: customerType,
+          };
+
+          // The token is already stored by the login API function
+          // We just need to store user data in context
+          loginUser(userData, data.token || '');
+
+          // Set username and userType for modal and show it
+          setLoggedInUserName(userData.firstName || 'User');
+          setLoggedInUserType(customerType);
+          showSuccess('Welcome back!');
+          setShowPostLoginModal(true);
         } else {
           // Display the actual error message from the backend
-          const errorMessage = response.error || 'Login failed. Please check your credentials.';
+          const errorMessage = response.error || data?.message || 'Login failed. Please check your credentials.';
           setError(errorMessage);
           showError(errorMessage);
         }
@@ -570,6 +630,15 @@ export default function LoginPage(): React.JSX.Element {
         </div>
       </div>
     </div>
+
+    {/* Post-Login Modal */}
+    <PostLoginModal
+      isOpen={showPostLoginModal}
+      userName={loggedInUserName}
+      customerType={loggedInUserType}
+      onKeepExploring={handleKeepExploring}
+      onGoToDashboard={handleGoToDashboard}
+    />
     </>
   );
 }

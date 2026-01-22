@@ -1,27 +1,48 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import AmoriaKNavbar from '../../components/navbar';
 import { useTranslations } from 'next-intl';
+import { useSearchParams } from 'next/navigation';
 import {
   getLocationFromStorage,
   getDistrictsForCountry,
   type LocationData,
 } from '../../utils/locationUtils';
+import {
+  getPhotographers,
+  getCategories,
+  type Photographer,
+  type PaginatedPhotographers,
+  type PhotographerCategory,
+} from '@/lib/APIs/public';
+import { useToast } from '@/lib/notifications/ToastProvider';
 
 const Photographers: React.FC = () => {
   const t = useTranslations('photographers');
+  const searchParams = useSearchParams();
+  const toast = useToast();
+
   // States
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedCategory, setSelectedCategory] = useState<string>(searchParams.get('category') || 'all');
   const [selectedLocation, setSelectedLocation] = useState<string>('all');
   const [priceRange, setPriceRange] = useState<string>('all');
   const [selectedRating, setSelectedRating] = useState<string>('all');
-  const [bookmarkedPhotographers, setBookmarkedPhotographers] = useState<number[]>([]);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [bookmarkedPhotographers, setBookmarkedPhotographers] = useState<string[]>([]);
+  const [currentPage, setCurrentPage] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
   const [userLocation, setUserLocation] = useState<LocationData | null>(null);
   const [availableDistricts, setAvailableDistricts] = useState<string[]>([]);
+
+  // API data states
+  const [photographers, setPhotographers] = useState<Photographer[]>([]);
+  const [categories, setCategories] = useState<PhotographerCategory[]>([]);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const itemsPerPage = 12;
 
   // Load user location from storage and set available districts
@@ -45,317 +66,75 @@ const Photographers: React.FC = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Mock photographer data
-  const featuredPhotographers = [
-    {
-      id: 1,
-      name: 'Cole Palmer',
-      image: 'https://i.pinimg.com/1200x/e9/1f/59/e91f59ed85a702d7252f2b0c8e02c7d2.jpg',
-      bannerImage: 'https://i.pinimg.com/736x/8b/89/70/8b8970fb8745252e4d36f60305967d37.jpg',
-      verified: true,
-      location: 'Kigali - Rwanda, Gasabo',
-      specialty: 'Videographer',
-      categories: ['Weddings', 'Concerts', 'Birthdays', 'Corporate', 'Events'],
-      rating: 4.9,
-      reviews: 127,
-      completedJobs: 50,
-      accuracy: 98,
-      responseTime: '2h'
-    },
-    {
-      id: 2,
-      name: 'Enzo Fernandez',
-      image: 'https://i.pinimg.com/1200x/8e/5e/69/8e5e6976723a4d5f4e0999a9dd5ac8c6.jpg',
-      bannerImage: 'https://i.pinimg.com/1200x/8e/5e/69/8e5e6976723a4d5f4e0999a9dd5ac8c6.jpg',
-      verified: true,
-      location: 'Musanze - Rwanda, Musanze',
-      specialty: 'Photographer',
-      categories: ['Events', 'Corporate', 'Portraits'],
-      rating: 4.8,
-      reviews: 98,
-      completedJobs: 65,
-      accuracy: 96,
-      responseTime: '1h'
-    },
-    {
-      id: 3,
-      name: 'Liam delap',
-      image: 'https://i.pinimg.com/1200x/09/23/45/092345eac1919407e0c49f67e285b831.jpg',
-      bannerImage: 'https://i.pinimg.com/1200x/09/23/45/092345eac1919407e0c49f67e285b831.jpg',
-      verified: true,
-      location: 'Kigali - Rwanda, Kicukiro',
-      specialty: 'Photographer',
-      categories: ['Portraits', 'Fashion', 'Weddings'],
-      rating: 4.7,
-      reviews: 156,
-      completedJobs: 80,
-      accuracy: 95,
-      responseTime: '3h'
-    },
-    {
-      id: 4,
-      name: 'Moises Caicedo',
-      image: 'https://i.pinimg.com/1200x/84/1b/a6/841ba626d4bb44b8906d8c25400e261f.jpg',
-      bannerImage: 'https://i.pinimg.com/1200x/84/1b/a6/841ba626d4bb44b8906d8c25400e261f.jpg',
-      verified: true,
-      location: 'Huye - Rwanda, Huye',
-      specialty: 'Videographer',
-      categories: ['Commercial', 'Product', 'Events'],
-      rating: 4.9,
-      reviews: 143,
-      completedJobs: 72,
-      accuracy: 99,
-      responseTime: '1h'
-    },
-    {
-      id: 5,
-      name: 'Pedro neto',
-      image: 'https://i.pinimg.com/736x/0f/22/d0/0f22d09fadd8a310fa484d1e94c8c55f.jpg',
-      bannerImage: 'https://i.pinimg.com/736x/0f/22/d0/0f22d09fadd8a310fa484d1e94c8c55f.jpg',
-      verified: true,
-      location: 'Rubavu - Rwanda, Rubavu',
-      specialty: 'Photographer',
-      categories: ['Weddings', 'Events', 'Family'],
-      rating: 4.8,
-      reviews: 134,
-      completedJobs: 58,
-      accuracy: 97,
-      responseTime: '2h'
-    },
-    {
-      id: 6,
-      name: 'Reece James',
-      image: 'https://i.pinimg.com/1200x/7c/85/39/7c8539e01282b4f5d555f9182a4acf44.jpg',
-      bannerImage: 'https://i.pinimg.com/1200x/7c/85/39/7c8539e01282b4f5d555f9182a4acf44.jpg',
-      verified: true,
-      location: 'Kigali - Rwanda, Nyarugenge',
-      specialty: 'Photographer',
-      categories: ['Fashion', 'Portraits', 'Commercial'],
-      rating: 4.9,
-      reviews: 167,
-      completedJobs: 91,
-      accuracy: 98,
-      responseTime: '1h'
-    },
-    {
-      id: 7,
-      name: 'Levi Colwill',
-      image: 'https://i.pinimg.com/736x/e2/a6/5d/e2a65d23bea44eae43bd4c5965e4ff56.jpg',
-      bannerImage: 'https://i.pinimg.com/736x/e2/a6/5d/e2a65d23bea44eae43bd4c5965e4ff56.jpg',
-      verified: true,
-      location: 'Nyanza - Rwanda, Nyanza',
-      specialty: 'Videographer',
-      categories: ['Events', 'Sports', 'Concerts'],
-      rating: 4.7,
-      reviews: 92,
-      completedJobs: 55,
-      accuracy: 94,
-      responseTime: '2h'
-    },
-    {
-      id: 8,
-      name: 'Aleandro Gernacho',
-      image: 'https://i.pinimg.com/1200x/44/1a/bb/441abbf59cee7bf34891180e25f241dd.jpg',
-      bannerImage: 'https://i.pinimg.com/1200x/44/1a/bb/441abbf59cee7bf34891180e25f241dd.jpg',
-      verified: true,
-      location: 'Kigali - Rwanda, Gasabo',
-      specialty: 'Photographer',
-      categories: ['Commercial', 'Corporate', 'Headshots'],
-      rating: 4.8,
-      reviews: 118,
-      completedJobs: 68,
-      accuracy: 97,
-      responseTime: '3h'
-    },
-    {
-      id: 9,
-      name: 'Marc Cucurella',
-      image: 'https://i.pinimg.com/1200x/29/aa/49/29aa4967c90b6694814729ae5786c40c.jpg',
-      bannerImage: 'https://i.pinimg.com/1200x/29/aa/49/29aa4967c90b6694814729ae5786c40c.jpg',
-      verified: true,
-      location: 'Musanze - Rwanda, Musanze',
-      specialty: 'Photographer',
-      categories: ['Portraits', 'Weddings', 'Lifestyle'],
-      rating: 4.9,
-      reviews: 145,
-      completedJobs: 75,
-      accuracy: 98,
-      responseTime: '1h'
-    },
-    {
-      id: 10,
-      name: 'Axel Disasi',
-      image: 'https://i.pinimg.com/1200x/05/8c/26/058c26d6ce2094fa9f47dd4732dc7fbe.jpg',
-      bannerImage: 'https://i.pinimg.com/1200x/05/8c/26/058c26d6ce2094fa9f47dd4732dc7fbe.jpg',
-      verified: true,
-      location: 'Kigali - Rwanda, Kicukiro',
-      specialty: 'Videographer',
-      categories: ['Weddings', 'Events', 'Engagements'],
-      rating: 4.8,
-      reviews: 129,
-      completedJobs: 62,
-      accuracy: 96,
-      responseTime: '2h'
-    },
-    {
-      id: 11,
-      name: 'Romeo Lavia',
-      image: 'https://i.pinimg.com/1200x/d9/71/12/d971127ada9316145eb3bdbf889653d2.jpg',
-      bannerImage: 'https://i.pinimg.com/1200x/d9/71/12/d971127ada9316145eb3bdbf889653d2.jpg',
-      verified: true,
-      location: 'Huye - Rwanda, Huye',
-      specialty: 'Photographer',
-      categories: ['Fashion', 'Commercial', 'Editorial'],
-      rating: 4.9,
-      reviews: 178,
-      completedJobs: 88,
-      accuracy: 99,
-      responseTime: '1h'
-    },
-    {
-      id: 12,
-      name: 'Robert Sanchez',
-      image: 'https://i.pinimg.com/736x/2a/61/2d/2a612dd46f350c345caa4e36a9db9f93.jpg',
-      bannerImage: 'https://i.pinimg.com/736x/2a/61/2d/2a612dd46f350c345caa4e36a9db9f93.jpg',
-      verified: true,
-      location: 'Rubavu - Rwanda, Rubavu',
-      specialty: 'Videographer',
-      categories: ['Events', 'Portraits', 'Parties'],
-      rating: 4.7,
-      reviews: 103,
-      completedJobs: 59,
-      accuracy: 95,
-      responseTime: '2h'
-    },
-    {
-      id: 13,
-      name: 'James Maddison',
-      image: 'https://i.pinimg.com/1200x/44/1a/bb/441abbf59cee7bf34891180e25f241dd.jpg',
-      bannerImage: 'https://i.pinimg.com/1200x/44/1a/bb/441abbf59cee7bf34891180e25f241dd.jpg',
-      verified: true,
-      location: 'Kigali - Rwanda, Gasabo',
-      specialty: 'Photographer',
-      categories: ['Weddings', 'Lifestyle', 'Portraits'],
-      rating: 4.8,
-      reviews: 142,
-      completedJobs: 73,
-      accuracy: 97,
-      responseTime: '2h'
-    },
-    {
-      id: 14,
-      name: 'Dejan Kulusevski',
-      image: 'https://i.pinimg.com/1200x/29/aa/49/29aa4967c90b6694814729ae5786c40c.jpg',
-      bannerImage: 'https://i.pinimg.com/1200x/29/aa/49/29aa4967c90b6694814729ae5786c40c.jpg',
-      verified: true,
-      location: 'Musanze - Rwanda, Musanze',
-      specialty: 'Videographer',
-      categories: ['Sports', 'Events', 'Action'],
-      rating: 4.9,
-      reviews: 158,
-      completedJobs: 84,
-      accuracy: 98,
-      responseTime: '1h'
-    },
-    {
-      id: 15,
-      name: 'Pape Sarr',
-      image: 'https://i.pinimg.com/1200x/7c/85/39/7c8539e01282b4f5d555f9182a4acf44.jpg',
-      bannerImage: 'https://i.pinimg.com/1200x/7c/85/39/7c8539e01282b4f5d555f9182a4acf44.jpg',
-      verified: true,
-      location: 'Huye - Rwanda, Huye',
-      specialty: 'Photographer',
-      categories: ['Fashion', 'Editorial', 'Portraits'],
-      rating: 4.7,
-      reviews: 125,
-      completedJobs: 67,
-      accuracy: 96,
-      responseTime: '3h'
-    },
-    {
-      id: 16,
-      name: 'Yves Bissouma',
-      image: 'https://i.pinimg.com/1200x/8e/5e/69/8e5e6976723a4d5f4e0999a9dd5ac8c6.jpg',
-      bannerImage: 'https://i.pinimg.com/1200x/8e/5e/69/8e5e6976723a4d5f4e0999a9dd5ac8c6.jpg',
-      verified: true,
-      location: 'Kigali - Rwanda, Kicukiro',
-      specialty: 'Videographer',
-      categories: ['Corporate', 'Conferences', 'Commercial'],
-      rating: 4.8,
-      reviews: 136,
-      completedJobs: 71,
-      accuracy: 97,
-      responseTime: '2h'
-    },
-    {
-      id: 17,
-      name: 'Son Heung-min',
-      image: 'https://i.pinimg.com/736x/0f/22/d0/0f22d09fadd8a310fa484d1e94c8c55f.jpg',
-      bannerImage: 'https://i.pinimg.com/736x/0f/22/d0/0f22d09fadd8a310fa484d1e94c8c55f.jpg',
-      verified: true,
-      location: 'Rubavu - Rwanda, Rubavu',
-      specialty: 'Photographer',
-      categories: ['Sports', 'Action', 'Events'],
-      rating: 4.9,
-      reviews: 189,
-      completedJobs: 95,
-      accuracy: 99,
-      responseTime: '1h'
-    },
-    {
-      id: 18,
-      name: 'Cristian Romero',
-      image: 'https://i.pinimg.com/1200x/84/1b/a6/841ba626d4bb44b8906d8c25400e261f.jpg',
-      bannerImage: 'https://i.pinimg.com/1200x/84/1b/a6/841ba626d4bb44b8906d8c25400e261f.jpg',
-      verified: true,
-      location: 'Nyanza - Rwanda, Nyanza',
-      specialty: 'Videographer',
-      categories: ['Weddings', 'Cinematic', 'Events'],
-      rating: 4.8,
-      reviews: 147,
-      completedJobs: 76,
-      accuracy: 97,
-      responseTime: '2h'
-    },
-    {
-      id: 19,
-      name: 'Guglielmo Vicario',
-      image: 'https://i.pinimg.com/736x/e2/a6/5d/e2a65d23bea44eae43bd4c5965e4ff56.jpg',
-      bannerImage: 'https://i.pinimg.com/736x/e2/a6/5d/e2a65d23bea44eae43bd4c5965e4ff56.jpg',
-      verified: true,
-      location: 'Kigali - Rwanda, Nyarugenge',
-      specialty: 'Photographer',
-      categories: ['Portraits', 'Headshots', 'Professional'],
-      rating: 4.7,
-      reviews: 114,
-      completedJobs: 63,
-      accuracy: 95,
-      responseTime: '3h'
-    },
-    {
-      id: 20,
-      name: 'Destiny Udogie',
-      image: 'https://i.pinimg.com/1200x/e9/1f/59/e91f59ed85a702d7252f2b0c8e02c7d2.jpg',
-      bannerImage: 'https://i.pinimg.com/736x/8b/89/70/8b8970fb8745252e4d36f60305967d37.jpg',
-      verified: true,
-      location: 'Musanze - Rwanda, Musanze',
-      specialty: 'Videographer',
-      categories: ['Music Videos', 'Concerts', 'Entertainment'],
-      rating: 4.9,
-      reviews: 171,
-      completedJobs: 87,
-      accuracy: 98,
-      responseTime: '1h'
+  // Fetch categories on mount
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await getCategories();
+        if (response.success && response.data) {
+          setCategories(response.data.filter((cat) => cat.isActive));
+        }
+      } catch (err) {
+        console.error('Failed to fetch categories:', err);
+      }
+    };
+    fetchCategories();
+  }, []);
+
+  // Fetch photographers from API
+  const fetchPhotographers = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await getPhotographers({
+        page: currentPage,
+        size: itemsPerPage,
+        sortColumn: 'createdAt',
+        sortDirection: 'asc',
+        category: selectedCategory !== 'all' ? selectedCategory : undefined,
+        location: selectedLocation !== 'all' ? selectedLocation : undefined,
+        search: searchTerm || undefined,
+      });
+
+      if (response.success && response.data) {
+        setPhotographers(response.data.content);
+        setTotalPages(response.data.totalPages);
+        setTotalElements(response.data.totalElements);
+      } else {
+        setError(response.error || 'Failed to fetch photographers');
+        toast.error(response.error || 'Failed to fetch photographers');
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred';
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
     }
-  ];
+  }, [currentPage, selectedCategory, selectedLocation, searchTerm, toast]);
+
+  // Fetch photographers when filters change
+  useEffect(() => {
+    fetchPhotographers();
+  }, [fetchPhotographers]);
+
+  // Update category from URL params
+  useEffect(() => {
+    const categoryParam = searchParams.get('category');
+    if (categoryParam) {
+      setSelectedCategory(categoryParam);
+    }
+  }, [searchParams]);
 
   // Handlers
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Searching for:', searchTerm);
+    setCurrentPage(0); // Reset to first page on search
+    fetchPhotographers();
   };
 
-  const toggleBookmark = (photographerId: number) => {
+  const toggleBookmark = (photographerId: string) => {
     setBookmarkedPhotographers(prev =>
       prev.includes(photographerId)
         ? prev.filter(id => id !== photographerId)
@@ -363,29 +142,40 @@ const Photographers: React.FC = () => {
     );
   };
 
-  // Filter photographers based on selected location
-  const filteredPhotographers = featuredPhotographers.filter((photographer) => {
-    // Filter by location (district)
-    if (selectedLocation !== 'all') {
-      // Check if the photographer location contains the selected district
-      const locationMatch = photographer.location.toLowerCase().includes(selectedLocation.toLowerCase());
-      if (!locationMatch) return false;
+  // Helper function to get photographer display data
+  const getPhotographerDisplayName = (photographer: Photographer) => {
+    return `${photographer.firstName} ${photographer.lastName}`;
+  };
+
+  const getPhotographerLocation = (photographer: Photographer) => {
+    return photographer.address || 'Location not specified';
+  };
+
+  const getProfileImage = (photographer: Photographer) => {
+    if (photographer.profilePicture && !photographer.profilePicture.includes('/null')) {
+      return photographer.profilePicture;
     }
-    return true;
-  });
+    return 'https://i.pinimg.com/1200x/e9/1f/59/e91f59ed85a702d7252f2b0c8e02c7d2.jpg';
+  };
 
-  // Pagination logic
-  const totalPages = Math.ceil(filteredPhotographers.length / itemsPerPage);
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentPhotographers = filteredPhotographers.slice(indexOfFirstItem, indexOfLastItem);
+  const getCoverImage = (photographer: Photographer) => {
+    if (photographer.coverPicture && !photographer.coverPicture.includes('/null')) {
+      return photographer.coverPicture;
+    }
+    return 'https://i.pinimg.com/736x/8b/89/70/8b8970fb8745252e4d36f60305967d37.jpg';
+  };
 
+  // Pagination handlers (0-indexed for API)
   const goToNextPage = () => {
-    setCurrentPage(prev => Math.min(prev + 1, totalPages));
+    if (currentPage < totalPages - 1) {
+      setCurrentPage(prev => prev + 1);
+    }
   };
 
   const goToPreviousPage = () => {
-    setCurrentPage(prev => Math.max(prev - 1, 1));
+    if (currentPage > 0) {
+      setCurrentPage(prev => prev - 1);
+    }
   };
 
   const goToPage = (pageNumber: number) => {
@@ -545,7 +335,10 @@ const Photographers: React.FC = () => {
             <div>
               <select
                 value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
+                onChange={(e) => {
+                  setSelectedCategory(e.target.value);
+                  setCurrentPage(0);
+                }}
                 style={{
                   width: '100%',
                   padding: 'clamp(0.5rem, 2vw, 0.625rem) clamp(0.75rem, 2.5vw, 1rem)',
@@ -561,12 +354,11 @@ const Photographers: React.FC = () => {
                 }}
               >
                 <option value="all">{t('allCategories')}</option>
-                <option value="wedding">{t('categories.weddings')}</option>
-                <option value="portrait">{t('categories.portraits')}</option>
-                <option value="event">{t('categories.events')}</option>
-                <option value="commercial">{t('categories.commercial')}</option>
-                <option value="fashion">{t('categories.fashion')}</option>
-                <option value="product">{t('categories.product')}</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.name.toLowerCase()}>
+                    {category.name}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -574,7 +366,10 @@ const Photographers: React.FC = () => {
             <div>
               <select
                 value={selectedLocation}
-                onChange={(e) => setSelectedLocation(e.target.value)}
+                onChange={(e) => {
+                  setSelectedLocation(e.target.value);
+                  setCurrentPage(0);
+                }}
                 style={{
                   width: '100%',
                   padding: 'clamp(0.5rem, 2vw, 0.625rem) clamp(0.75rem, 2.5vw, 1rem)',
@@ -665,7 +460,97 @@ const Photographers: React.FC = () => {
           margin: '0 auto',
           padding: 'clamp(3rem, 8vw, 5rem) clamp(0.5rem, 2vw, 1rem) 4rem clamp(0.5rem, 2vw, 1rem)'
         }}>
+          {/* Loading State */}
+          {isLoading && (
+            <div style={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              minHeight: '300px',
+              width: '100%'
+            }}>
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '1rem'
+              }}>
+                <div style={{
+                  width: '48px',
+                  height: '48px',
+                  border: '4px solid #e5e7eb',
+                  borderTopColor: '#083A85',
+                  borderRadius: '50%',
+                  animation: 'spin 1s linear infinite'
+                }}></div>
+                <p style={{ color: '#6b7280', fontSize: '1rem' }}>Loading photographers...</p>
+              </div>
+              <style>{`
+                @keyframes spin {
+                  to { transform: rotate(360deg); }
+                }
+              `}</style>
+            </div>
+          )}
+
+          {/* Error State */}
+          {error && !isLoading && (
+            <div style={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              minHeight: '300px',
+              width: '100%'
+            }}>
+              <div style={{
+                textAlign: 'center',
+                padding: '2rem',
+                backgroundColor: '#fef2f2',
+                borderRadius: '12px',
+                border: '1px solid #fecaca'
+              }}>
+                <i className="bi bi-exclamation-circle" style={{ fontSize: '2rem', color: '#dc2626' }}></i>
+                <p style={{ color: '#dc2626', marginTop: '0.5rem' }}>{error}</p>
+                <button
+                  onClick={fetchPhotographers}
+                  style={{
+                    marginTop: '1rem',
+                    padding: '0.5rem 1rem',
+                    backgroundColor: '#083A85',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Try Again
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Empty State */}
+          {!isLoading && !error && photographers.length === 0 && (
+            <div style={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              minHeight: '300px',
+              width: '100%'
+            }}>
+              <div style={{
+                textAlign: 'center',
+                padding: '2rem'
+              }}>
+                <i className="bi bi-camera" style={{ fontSize: '3rem', color: '#9ca3af' }}></i>
+                <p style={{ color: '#6b7280', marginTop: '1rem', fontSize: '1.1rem' }}>No photographers found</p>
+                <p style={{ color: '#9ca3af', marginTop: '0.5rem' }}>Try adjusting your filters or search terms</p>
+              </div>
+            </div>
+          )}
+
           {/* Photographer Cards Grid */}
+          {!isLoading && !error && photographers.length > 0 && (
           <div style={{
             display: 'grid',
             gridTemplateColumns: isMobile
@@ -674,8 +559,13 @@ const Photographers: React.FC = () => {
             gap: isMobile ? 'clamp(1.5rem, 4vw, 2.5rem) clamp(0.75rem, 2vw, 1.5rem)' : '2.5rem 1.5rem',
             width: '100%'
           }}>
-            {currentPhotographers.map((photographer) => {
+            {photographers.map((photographer) => {
               const isBookmarked = bookmarkedPhotographers.includes(photographer.id);
+              const displayName = getPhotographerDisplayName(photographer);
+              const profileImage = getProfileImage(photographer);
+              const coverImage = getCoverImage(photographer);
+              const location = getPhotographerLocation(photographer);
+
               return (
               <div
                 key={photographer.id}
@@ -704,7 +594,7 @@ const Photographers: React.FC = () => {
                   position: 'relative',
                   width: '100%',
                   height: '140px',
-                  backgroundImage: `url(${photographer.bannerImage})`,
+                  backgroundImage: `url(${coverImage})`,
                   backgroundSize: 'cover',
                   backgroundPosition: 'center',
                   borderTopLeftRadius: '17px',
@@ -727,8 +617,8 @@ const Photographers: React.FC = () => {
                 {/* Profile Image Container with Verification Badge */}
                 <div className="profile-image-container">
                   <img
-                    src={photographer.image}
-                    alt={photographer.name}
+                    src={profileImage}
+                    alt={displayName}
                     style={{
                       width: '100%',
                       height: '100%',
@@ -739,11 +629,9 @@ const Photographers: React.FC = () => {
                       display: 'block'
                     }}
                   />
-                  {photographer.verified && (
-                    <div className="verification-badge">
-                      <i className="bi bi-patch-check-fill" style={{ color: '#3b82f6', fontSize: '1rem' }}></i>
-                    </div>
-                  )}
+                  <div className="verification-badge">
+                    <i className="bi bi-patch-check-fill" style={{ color: '#3b82f6', fontSize: '1rem' }}></i>
+                  </div>
                 </div>
 
                 {/* Card Content */}
@@ -789,14 +677,14 @@ const Photographers: React.FC = () => {
                       color: '#111827',
                       marginBottom: '0.03rem'
                     }}>
-                      {photographer.name}
+                      {displayName}
                     </h3>
                     <p style={{
                       color: '#40444d',
                       fontSize: '0.85rem',
                       marginBottom: '0.15rem'
                     }}>
-                      {photographer.specialty}
+                      {photographer.customerType}
                     </p>
                   </div>
 
@@ -810,10 +698,10 @@ const Photographers: React.FC = () => {
                     marginBottom: '0.3rem'
                   }}>
                     <i className="bi bi-geo-alt-fill" style={{ fontSize: '0.8rem' }}></i>
-                    <span>{photographer.location}</span>
+                    <span>{location}</span>
                   </div>
 
-                  {/* Service Categories */}
+                  {/* Service Categories / Specialties */}
                   <div style={{
                     display: 'flex',
                     justifyContent: 'flex-start',
@@ -821,33 +709,49 @@ const Photographers: React.FC = () => {
                     flexWrap: 'wrap',
                     marginBottom: '0.4rem'
                   }}>
-                    {photographer.categories.slice(0, 3).map((cat, i) => (
-                      <span key={i} style={{
+                    {photographer.specialties.length > 0 ? (
+                      <>
+                        {photographer.specialties.slice(0, 3).map((specialty, i) => (
+                          <span key={i} style={{
+                            backgroundColor: '#f9fafb',
+                            color: '#40444d',
+                            padding: '0.25rem 0.7rem',
+                            borderRadius: '9999px',
+                            fontSize: '0.8rem',
+                            fontWeight: '500',
+                            border: '0.001px solid #adadad'
+                          }}>
+                            {specialty}
+                          </span>
+                        ))}
+                        {photographer.specialties.length > 3 && (
+                          <span style={{
+                            backgroundColor: '#f9fafb',
+                            color: '#6b7280',
+                            padding: '0.25rem 0.7rem',
+                            borderRadius: '9999px',
+                            fontSize: '0.8rem',
+                            fontWeight: '600',
+                            border: '1px solid #bab8b8',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}>
+                            +{photographer.specialties.length - 3}
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      <span style={{
                         backgroundColor: '#f9fafb',
-                        color: '#40444d',
+                        color: '#9ca3af',
                         padding: '0.25rem 0.7rem',
                         borderRadius: '9999px',
                         fontSize: '0.8rem',
                         fontWeight: '500',
                         border: '0.001px solid #adadad'
                       }}>
-                        {cat}
-                      </span>
-                    ))}
-                    {photographer.categories.length > 3 && (
-                      <span style={{
-                        backgroundColor: '#f9fafb',
-                        color: '#6b7280',
-                        padding: '0.25rem 0.7rem',
-                        borderRadius: '9999px',
-                        fontSize: '0.8rem',
-                        fontWeight: '600',
-                        border: '1px solid #bab8b8',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                      }}>
-                        +{photographer.categories.length - 3}
+                        No specialties listed
                       </span>
                     )}
                   </div>
@@ -875,7 +779,7 @@ const Photographers: React.FC = () => {
                         marginBottom: '0.15rem'
                       }}>
                         <i className="bi bi-star-fill" style={{ color: '#000000', fontSize: '0.77rem' }}></i>
-                        {photographer.rating}
+                        {photographer.rating.toFixed(1)}
                       </p>
                       <p style={{ fontSize: '0.8rem', color: '#40444d', fontWeight: '500' }}>
                         {t('rating')}
@@ -893,7 +797,7 @@ const Photographers: React.FC = () => {
                         marginBottom: '0.15rem'
                       }}>
                         <i className="bi bi-people-fill" style={{ fontSize: '0.77rem' }}></i>
-                        {photographer.completedJobs}+
+                        {photographer.reviews.length}
                       </p>
                       <p style={{ fontSize: '0.8rem', color: '#40444d', fontWeight: '500' }}>
                         {t('completedJobs')}
@@ -911,7 +815,7 @@ const Photographers: React.FC = () => {
                         marginBottom: '0.15rem'
                       }}>
                         <i className="bi bi-clock" style={{ fontSize: '0.77rem' }}></i>
-                        {photographer.accuracy}%
+                        {photographer.projects.length}
                       </p>
                       <p style={{ fontSize: '0.8rem', color: '#40444d', fontWeight: '500' }}>
                         {t('accuracy')}
@@ -956,9 +860,10 @@ const Photographers: React.FC = () => {
               )
             })}
           </div>
+          )}
 
           {/* Pagination */}
-          {totalPages > 1 && (
+          {!isLoading && !error && totalPages > 1 && (
             <div style={{
               display: 'flex',
               justifyContent: 'center',
@@ -971,14 +876,14 @@ const Photographers: React.FC = () => {
               {/* Previous Button */}
               <button
                 onClick={goToPreviousPage}
-                disabled={currentPage === 1}
+                disabled={currentPage === 0}
                 style={{
                   padding: 'clamp(0.4rem, 1.5vw, 0.5rem) clamp(0.75rem, 2vw, 1rem)',
                   borderRadius: '0.5rem',
                   border: '1px solid #bab8b8',
-                  backgroundColor: currentPage === 1 ? '#f3f4f6' : '#ffffff',
-                  color: currentPage === 1 ? '#9ca3af' : '#111827',
-                  cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                  backgroundColor: currentPage === 0 ? '#f3f4f6' : '#ffffff',
+                  color: currentPage === 0 ? '#9ca3af' : '#111827',
+                  cursor: currentPage === 0 ? 'not-allowed' : 'pointer',
                   fontWeight: '500',
                   fontSize: '0.9rem',
                   transition: 'all 0.2s ease',
@@ -988,13 +893,13 @@ const Photographers: React.FC = () => {
                   whiteSpace: 'nowrap'
                 }}
                 onMouseEnter={(e) => {
-                  if (currentPage !== 1) {
+                  if (currentPage !== 0) {
                     e.currentTarget.style.backgroundColor = '#f9fafb';
                     e.currentTarget.style.borderColor = '#083A85';
                   }
                 }}
                 onMouseLeave={(e) => {
-                  if (currentPage !== 1) {
+                  if (currentPage !== 0) {
                     e.currentTarget.style.backgroundColor = '#ffffff';
                     e.currentTarget.style.borderColor = '#bab8b8';
                   }
@@ -1011,36 +916,36 @@ const Photographers: React.FC = () => {
                 flexWrap: 'wrap',
                 justifyContent: 'center'
               }}>
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                {Array.from({ length: totalPages }, (_, i) => i).map((pageIndex) => (
                   <button
-                    key={pageNum}
-                    onClick={() => goToPage(pageNum)}
+                    key={pageIndex}
+                    onClick={() => goToPage(pageIndex)}
                     style={{
                       padding: 'clamp(0.4rem, 1.5vw, 0.5rem) clamp(0.6rem, 1.5vw, 0.75rem)',
                       borderRadius: '0.5rem',
-                      border: currentPage === pageNum ? '2px solid #083A85' : '1px solid #bab8b8',
-                      backgroundColor: currentPage === pageNum ? '#083A85' : '#ffffff',
-                      color: currentPage === pageNum ? '#ffffff' : '#111827',
+                      border: currentPage === pageIndex ? '2px solid #083A85' : '1px solid #bab8b8',
+                      backgroundColor: currentPage === pageIndex ? '#083A85' : '#ffffff',
+                      color: currentPage === pageIndex ? '#ffffff' : '#111827',
                       cursor: 'pointer',
-                      fontWeight: currentPage === pageNum ? '600' : '500',
+                      fontWeight: currentPage === pageIndex ? '600' : '500',
                       fontSize: '0.9rem',
                       minWidth: 'clamp(2.25rem, 6vw, 2.75rem)',
                       transition: 'all 0.2s ease'
                     }}
                     onMouseEnter={(e) => {
-                      if (currentPage !== pageNum) {
+                      if (currentPage !== pageIndex) {
                         e.currentTarget.style.backgroundColor = '#f9fafb';
                         e.currentTarget.style.borderColor = '#083A85';
                       }
                     }}
                     onMouseLeave={(e) => {
-                      if (currentPage !== pageNum) {
+                      if (currentPage !== pageIndex) {
                         e.currentTarget.style.backgroundColor = '#ffffff';
                         e.currentTarget.style.borderColor = '#bab8b8';
                       }
                     }}
                   >
-                    {pageNum}
+                    {pageIndex + 1}
                   </button>
                 ))}
               </div>
@@ -1048,14 +953,14 @@ const Photographers: React.FC = () => {
               {/* Next Button */}
               <button
                 onClick={goToNextPage}
-                disabled={currentPage === totalPages}
+                disabled={currentPage >= totalPages - 1}
                 style={{
                   padding: 'clamp(0.4rem, 1.5vw, 0.5rem) clamp(0.75rem, 2vw, 1rem)',
                   borderRadius: '0.5rem',
                   border: '1px solid #bab8b8',
-                  backgroundColor: currentPage === totalPages ? '#f3f4f6' : '#ffffff',
-                  color: currentPage === totalPages ? '#9ca3af' : '#111827',
-                  cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+                  backgroundColor: currentPage >= totalPages - 1 ? '#f3f4f6' : '#ffffff',
+                  color: currentPage >= totalPages - 1 ? '#9ca3af' : '#111827',
+                  cursor: currentPage >= totalPages - 1 ? 'not-allowed' : 'pointer',
                   fontWeight: '500',
                   fontSize: '0.9rem',
                   transition: 'all 0.2s ease',
@@ -1065,13 +970,13 @@ const Photographers: React.FC = () => {
                   whiteSpace: 'nowrap'
                 }}
                 onMouseEnter={(e) => {
-                  if (currentPage !== totalPages) {
+                  if (currentPage < totalPages - 1) {
                     e.currentTarget.style.backgroundColor = '#f9fafb';
                     e.currentTarget.style.borderColor = '#083A85';
                   }
                 }}
                 onMouseLeave={(e) => {
-                  if (currentPage !== totalPages) {
+                  if (currentPage < totalPages - 1) {
                     e.currentTarget.style.backgroundColor = '#ffffff';
                     e.currentTarget.style.borderColor = '#bab8b8';
                   }
