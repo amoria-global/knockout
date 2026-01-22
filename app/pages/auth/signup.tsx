@@ -68,7 +68,7 @@ export default function SignupPage(): React.JSX.Element {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
-  const isDisabled = !firstName || !lastName || !email || !phoneNumber || !password || !confirmPassword;
+  const isDisabled = !firstName || !lastName || !email || phoneNumber.length !== 9 || !password || !confirmPassword;
 
   const validatePassword = (pwd: string): boolean => {
     const hasNumber = /\d/.test(pwd);
@@ -79,6 +79,21 @@ export default function SignupPage(): React.JSX.Element {
     return hasNumber && hasLetter && hasSpecialChar && isLongEnough;
   };
 
+  const validatePhoneNumber = (phone: string): boolean => {
+    // Remove any non-digit characters
+    const digitsOnly = phone.replace(/\D/g, '');
+    // Must be exactly 9 digits
+    return digitsOnly.length === 9;
+  };
+
+  // Handle phone number input - only allow digits, max 9
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/\D/g, ''); // Remove non-digits
+    if (value.length <= 9) {
+      setPhoneNumber(value);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const newErrors: { [key: string]: string } = {};
@@ -86,7 +101,11 @@ export default function SignupPage(): React.JSX.Element {
     // Validation
     if (!firstName.trim()) newErrors.firstName = t('firstNameRequired');
     if (!lastName.trim()) newErrors.lastName = t('lastNameRequired');
-    if (!phoneNumber.trim()) newErrors.phoneNumber = t('phoneRequired');
+    if (!phoneNumber.trim()) {
+      newErrors.phoneNumber = t('phoneRequired');
+    } else if (!validatePhoneNumber(phoneNumber)) {
+      newErrors.phoneNumber = 'Phone number must be exactly 9 digits';
+    }
     if (!email.trim()) newErrors.email = t('emailRequired');
     if (!validatePassword(password)) {
       newErrors.password = t('passwordInvalid');
@@ -115,6 +134,9 @@ export default function SignupPage(): React.JSX.Element {
           customerType: userType,
           password,
         });
+
+        // Debug: Log full response in development
+        console.log('[Signup] Full API response:', JSON.stringify(response, null, 2));
 
         if (response.success && response.data) {
           // Extract applicant/customer ID - handle various field names from backend
@@ -528,8 +550,11 @@ export default function SignupPage(): React.JSX.Element {
                       type="tel"
                       id="phoneNumber"
                       value={phoneNumber}
-                      onChange={(e) => setPhoneNumber(e.target.value)}
-                      placeholder=""
+                      onChange={handlePhoneChange}
+                      placeholder="786875878"
+                      maxLength={9}
+                      inputMode="numeric"
+                      pattern="[0-9]*"
                       style={{
                         flex: '1',
                         border: '0',

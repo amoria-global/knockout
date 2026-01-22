@@ -4,276 +4,47 @@ import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import AmoriaKNavbar from '../../components/navbar';
 import ReviewModal from '../../components/ReviewModal';
+import { getPhotographers, type Photographer } from '@/lib/APIs/public';
+import { useToast } from '@/lib/notifications/ToastProvider';
 
-// Shared photographer data - matches photographers.tsx exactly
-const photographersData = [
-  {
-    id: 1,
-    name: 'Cole Palmer',
-    image: 'https://i.pinimg.com/1200x/e9/1f/59/e91f59ed85a702d7252f2b0c8e02c7d2.jpg',
-    bannerImage: 'https://i.pinimg.com/736x/8b/89/70/8b8970fb8745252e4d36f60305967d37.jpg',
-    verified: true,
-    location: 'Kigali - Rwanda, Gasabo',
-    specialty: 'Videographer',
-    categories: ['Weddings', 'Concerts', 'Birthdays', 'Corporate', 'Events'],
-    rating: 4.9,
-    reviews: 127,
-    completedJobs: 50,
-  },
-  {
-    id: 2,
-    name: 'Enzo Fernandez',
-    image: 'https://i.pinimg.com/1200x/8e/5e/69/8e5e6976723a4d5f4e0999a9dd5ac8c6.jpg',
-    bannerImage: 'https://i.pinimg.com/1200x/8e/5e/69/8e5e6976723a4d5f4e0999a9dd5ac8c6.jpg',
-    verified: true,
-    location: 'Musanze - Rwanda, Musanze',
-    specialty: 'Photographer',
-    categories: ['Events', 'Corporate', 'Portraits'],
-    rating: 4.8,
-    reviews: 98,
-    completedJobs: 65,
-  },
-  {
-    id: 3,
-    name: 'Liam delap',
-    image: 'https://i.pinimg.com/1200x/09/23/45/092345eac1919407e0c49f67e285b831.jpg',
-    bannerImage: 'https://i.pinimg.com/1200x/09/23/45/092345eac1919407e0c49f67e285b831.jpg',
-    verified: true,
-    location: 'Kigali - Rwanda, Kicukiro',
-    specialty: 'Photographer',
-    categories: ['Portraits', 'Fashion', 'Weddings'],
-    rating: 4.7,
-    reviews: 156,
-    completedJobs: 80,
-  },
-  {
-    id: 4,
-    name: 'Moises Caicedo',
-    image: 'https://i.pinimg.com/1200x/84/1b/a6/841ba626d4bb44b8906d8c25400e261f.jpg',
-    bannerImage: 'https://i.pinimg.com/1200x/84/1b/a6/841ba626d4bb44b8906d8c25400e261f.jpg',
-    verified: true,
-    location: 'Huye - Rwanda, Huye',
-    specialty: 'Videographer',
-    categories: ['Commercial', 'Product', 'Events'],
-    rating: 4.9,
-    reviews: 143,
-    completedJobs: 72,
-  },
-  {
-    id: 5,
-    name: 'Pedro neto',
-    image: 'https://i.pinimg.com/736x/0f/22/d0/0f22d09fadd8a310fa484d1e94c8c55f.jpg',
-    bannerImage: 'https://i.pinimg.com/736x/0f/22/d0/0f22d09fadd8a310fa484d1e94c8c55f.jpg',
-    verified: true,
-    location: 'Rubavu - Rwanda, Rubavu',
-    specialty: 'Photographer',
-    categories: ['Weddings', 'Events', 'Family'],
-    rating: 4.8,
-    reviews: 134,
-    completedJobs: 58,
-  },
-  {
-    id: 6,
-    name: 'Reece James',
-    image: 'https://i.pinimg.com/1200x/7c/85/39/7c8539e01282b4f5d555f9182a4acf44.jpg',
-    bannerImage: 'https://i.pinimg.com/1200x/7c/85/39/7c8539e01282b4f5d555f9182a4acf44.jpg',
-    verified: true,
-    location: 'Kigali - Rwanda, Nyarugenge',
-    specialty: 'Photographer',
-    categories: ['Fashion', 'Portraits', 'Commercial'],
-    rating: 4.9,
-    reviews: 167,
-    completedJobs: 91,
-  },
-  {
-    id: 7,
-    name: 'Levi Colwill',
-    image: 'https://i.pinimg.com/736x/e2/a6/5d/e2a65d23bea44eae43bd4c5965e4ff56.jpg',
-    bannerImage: 'https://i.pinimg.com/736x/e2/a6/5d/e2a65d23bea44eae43bd4c5965e4ff56.jpg',
-    verified: true,
-    location: 'Nyanza - Rwanda, Nyanza',
-    specialty: 'Videographer',
-    categories: ['Events', 'Sports', 'Concerts'],
-    rating: 4.7,
-    reviews: 92,
-    completedJobs: 55,
-  },
-  {
-    id: 8,
-    name: 'Aleandro Gernacho',
-    image: 'https://i.pinimg.com/1200x/44/1a/bb/441abbf59cee7bf34891180e25f241dd.jpg',
-    bannerImage: 'https://i.pinimg.com/1200x/44/1a/bb/441abbf59cee7bf34891180e25f241dd.jpg',
-    verified: true,
-    location: 'Kigali - Rwanda, Gasabo',
-    specialty: 'Photographer',
-    categories: ['Commercial', 'Corporate', 'Headshots'],
-    rating: 4.8,
-    reviews: 118,
-    completedJobs: 68,
-  },
-  {
-    id: 9,
-    name: 'Marc Cucurella',
-    image: 'https://i.pinimg.com/1200x/29/aa/49/29aa4967c90b6694814729ae5786c40c.jpg',
-    bannerImage: 'https://i.pinimg.com/1200x/29/aa/49/29aa4967c90b6694814729ae5786c40c.jpg',
-    verified: true,
-    location: 'Musanze - Rwanda, Musanze',
-    specialty: 'Photographer',
-    categories: ['Portraits', 'Weddings', 'Lifestyle'],
-    rating: 4.9,
-    reviews: 145,
-    completedJobs: 75,
-  },
-  {
-    id: 10,
-    name: 'Axel Disasi',
-    image: 'https://i.pinimg.com/1200x/05/8c/26/058c26d6ce2094fa9f47dd4732dc7fbe.jpg',
-    bannerImage: 'https://i.pinimg.com/1200x/05/8c/26/058c26d6ce2094fa9f47dd4732dc7fbe.jpg',
-    verified: true,
-    location: 'Kigali - Rwanda, Kicukiro',
-    specialty: 'Videographer',
-    categories: ['Weddings', 'Events', 'Engagements'],
-    rating: 4.8,
-    reviews: 129,
-    completedJobs: 62,
-  },
-  {
-    id: 11,
-    name: 'Romeo Lavia',
-    image: 'https://i.pinimg.com/1200x/d9/71/12/d971127ada9316145eb3bdbf889653d2.jpg',
-    bannerImage: 'https://i.pinimg.com/1200x/d9/71/12/d971127ada9316145eb3bdbf889653d2.jpg',
-    verified: true,
-    location: 'Huye - Rwanda, Huye',
-    specialty: 'Photographer',
-    categories: ['Fashion', 'Commercial', 'Editorial'],
-    rating: 4.9,
-    reviews: 178,
-    completedJobs: 88,
-  },
-  {
-    id: 12,
-    name: 'Robert Sanchez',
-    image: 'https://i.pinimg.com/736x/2a/61/2d/2a612dd46f350c345caa4e36a9db9f93.jpg',
-    bannerImage: 'https://i.pinimg.com/736x/2a/61/2d/2a612dd46f350c345caa4e36a9db9f93.jpg',
-    verified: true,
-    location: 'Rubavu - Rwanda, Rubavu',
-    specialty: 'Videographer',
-    categories: ['Events', 'Portraits', 'Parties'],
-    rating: 4.7,
-    reviews: 103,
-    completedJobs: 59,
-  },
-  {
-    id: 13,
-    name: 'James Maddison',
-    image: 'https://i.pinimg.com/1200x/44/1a/bb/441abbf59cee7bf34891180e25f241dd.jpg',
-    bannerImage: 'https://i.pinimg.com/1200x/44/1a/bb/441abbf59cee7bf34891180e25f241dd.jpg',
-    verified: true,
-    location: 'Kigali - Rwanda, Gasabo',
-    specialty: 'Photographer',
-    categories: ['Weddings', 'Lifestyle', 'Portraits'],
-    rating: 4.8,
-    reviews: 142,
-    completedJobs: 73,
-  },
-  {
-    id: 14,
-    name: 'Dejan Kulusevski',
-    image: 'https://i.pinimg.com/1200x/29/aa/49/29aa4967c90b6694814729ae5786c40c.jpg',
-    bannerImage: 'https://i.pinimg.com/1200x/29/aa/49/29aa4967c90b6694814729ae5786c40c.jpg',
-    verified: true,
-    location: 'Musanze - Rwanda, Musanze',
-    specialty: 'Videographer',
-    categories: ['Sports', 'Events', 'Action'],
-    rating: 4.9,
-    reviews: 158,
-    completedJobs: 84,
-  },
-  {
-    id: 15,
-    name: 'Pape Sarr',
-    image: 'https://i.pinimg.com/1200x/7c/85/39/7c8539e01282b4f5d555f9182a4acf44.jpg',
-    bannerImage: 'https://i.pinimg.com/1200x/7c/85/39/7c8539e01282b4f5d555f9182a4acf44.jpg',
-    verified: true,
-    location: 'Huye - Rwanda, Huye',
-    specialty: 'Photographer',
-    categories: ['Fashion', 'Editorial', 'Portraits'],
-    rating: 4.7,
-    reviews: 125,
-    completedJobs: 67,
-  },
-  {
-    id: 16,
-    name: 'Yves Bissouma',
-    image: 'https://i.pinimg.com/1200x/8e/5e/69/8e5e6976723a4d5f4e0999a9dd5ac8c6.jpg',
-    bannerImage: 'https://i.pinimg.com/1200x/8e/5e/69/8e5e6976723a4d5f4e0999a9dd5ac8c6.jpg',
-    verified: true,
-    location: 'Kigali - Rwanda, Kicukiro',
-    specialty: 'Videographer',
-    categories: ['Corporate', 'Conferences', 'Commercial'],
-    rating: 4.8,
-    reviews: 136,
-    completedJobs: 71,
-  },
-  {
-    id: 17,
-    name: 'Son Heung-min',
-    image: 'https://i.pinimg.com/736x/0f/22/d0/0f22d09fadd8a310fa484d1e94c8c55f.jpg',
-    bannerImage: 'https://i.pinimg.com/736x/0f/22/d0/0f22d09fadd8a310fa484d1e94c8c55f.jpg',
-    verified: true,
-    location: 'Rubavu - Rwanda, Rubavu',
-    specialty: 'Photographer',
-    categories: ['Sports', 'Action', 'Events'],
-    rating: 4.9,
-    reviews: 189,
-    completedJobs: 95,
-  },
-  {
-    id: 18,
-    name: 'Cristian Romero',
-    image: 'https://i.pinimg.com/1200x/84/1b/a6/841ba626d4bb44b8906d8c25400e261f.jpg',
-    bannerImage: 'https://i.pinimg.com/1200x/84/1b/a6/841ba626d4bb44b8906d8c25400e261f.jpg',
-    verified: true,
-    location: 'Nyanza - Rwanda, Nyanza',
-    specialty: 'Videographer',
-    categories: ['Weddings', 'Cinematic', 'Events'],
-    rating: 4.8,
-    reviews: 147,
-    completedJobs: 76,
-  },
-  {
-    id: 19,
-    name: 'Guglielmo Vicario',
-    image: 'https://i.pinimg.com/736x/e2/a6/5d/e2a65d23bea44eae43bd4c5965e4ff56.jpg',
-    bannerImage: 'https://i.pinimg.com/736x/e2/a6/5d/e2a65d23bea44eae43bd4c5965e4ff56.jpg',
-    verified: true,
-    location: 'Kigali - Rwanda, Nyarugenge',
-    specialty: 'Photographer',
-    categories: ['Portraits', 'Headshots', 'Professional'],
-    rating: 4.7,
-    reviews: 114,
-    completedJobs: 63,
-  },
-  {
-    id: 20,
-    name: 'Destiny Udogie',
-    image: 'https://i.pinimg.com/1200x/e9/1f/59/e91f59ed85a702d7252f2b0c8e02c7d2.jpg',
-    bannerImage: 'https://i.pinimg.com/736x/8b/89/70/8b8970fb8745252e4d36f60305967d37.jpg',
-    verified: true,
-    location: 'Musanze - Rwanda, Musanze',
-    specialty: 'Videographer',
-    categories: ['Music Videos', 'Concerts', 'Entertainment'],
-    rating: 4.9,
-    reviews: 171,
-    completedJobs: 87,
+// Default images for fallback
+const DEFAULT_PROFILE_IMAGE = 'https://i.pinimg.com/1200x/e9/1f/59/e91f59ed85a702d7252f2b0c8e02c7d2.jpg';
+const DEFAULT_COVER_IMAGE = 'https://i.pinimg.com/736x/8b/89/70/8b8970fb8745252e4d36f60305967d37.jpg';
+
+// Helper function to get valid profile image
+const getProfileImage = (photographer: Photographer | null): string => {
+  if (!photographer) return DEFAULT_PROFILE_IMAGE;
+  if (photographer.profilePicture && !photographer.profilePicture.includes('/null')) {
+    return photographer.profilePicture;
   }
-];
+  return DEFAULT_PROFILE_IMAGE;
+};
+
+// Helper function to get valid cover image
+const getCoverImage = (photographer: Photographer | null): string => {
+  if (!photographer) return DEFAULT_COVER_IMAGE;
+  if (photographer.coverPicture && !photographer.coverPicture.includes('/null')) {
+    return photographer.coverPicture;
+  }
+  return DEFAULT_COVER_IMAGE;
+};
+
+// Helper to format date
+const formatJoinDate = (dateString: string): string => {
+  try {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
+  } catch {
+    return 'Recently joined';
+  }
+};
 
 // Component that uses useSearchParams - needs to be wrapped in Suspense
 function ViewProfileContent(): React.JSX.Element {
   const t = useTranslations('viewProfile');
   const searchParams = useSearchParams();
   const photographerId = searchParams.get('id');
+  const toast = useToast();
 
   const [activeTab, setActiveTab] = useState('overview');
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
@@ -282,6 +53,50 @@ function ViewProfileContent(): React.JSX.Element {
   const [currentImageType, setCurrentImageType] = useState<'profile' | 'cover' | null>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [showBookingBanner, setShowBookingBanner] = useState(false);
+
+  // API data state
+  const [photographer, setPhotographer] = useState<Photographer | null>(null);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+
+  // Fetch photographer data from API by filtering from main list
+  useEffect(() => {
+    const fetchPhotographer = async () => {
+      if (!photographerId) {
+        setFetchError('No photographer ID provided');
+        setIsLoading(false);
+        return;
+      }
+
+      setIsLoading(true);
+      setFetchError(null);
+
+      try {
+        // Fetch all photographers and filter by ID (no unique endpoint for single photographer)
+        const response = await getPhotographers({ size: 100 });
+
+        if (response.success && response.data?.content) {
+          const found = response.data.content.find(p => p.id === photographerId);
+          if (found) {
+            setPhotographer(found);
+          } else {
+            setFetchError('Photographer not found');
+            toast.error('Photographer not found');
+          }
+        } else {
+          setFetchError(response.error || 'Failed to load photographer profile');
+          toast.error(response.error || 'Failed to load photographer profile');
+        }
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'An error occurred';
+        setFetchError(errorMessage);
+        toast.error(errorMessage);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchPhotographer();
+  }, [photographerId, toast]);
 
   // Handle Book Now button click with success banner
   const handleBookNowClick = () => {
@@ -300,11 +115,6 @@ function ViewProfileContent(): React.JSX.Element {
     handleResize(); // Initial check
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  useEffect(() => {
-    // Simulate loading
-    setTimeout(() => setIsLoading(false), 500);
   }, []);
 
   useEffect(() => {
@@ -336,186 +146,73 @@ function ViewProfileContent(): React.JSX.Element {
     setCurrentImageType(null);
   };
 
-  // Get photographer data based on ID or default to first one
-  const selectedPhotographer = photographersData.find(p => p.id === Number(photographerId)) || photographersData[0];
-
-  // Sample data for the photographer needed for rendering - now using selected photographer's images
+  // Build photographer display data from API response - NO mock data, only real API data
   const photographerData = {
-    name: selectedPhotographer.name,
-    location: selectedPhotographer.location,
-    eventsCompleted: selectedPhotographer.completedJobs,
-    rating: selectedPhotographer.rating,
-    profileImage: selectedPhotographer.image,
-    backgroundImage: selectedPhotographer.bannerImage, 
-    about: 'Whether you\'re capturing moments or living them Across Connect brings people together to create something unforgettable',
-    specialties: ['Wedding', 'Birthday', 'Other', 'Corporate', 'Portrait', 'Family'],
-    equipments: ['Canon EOS R5', 'Sony A7 IV', 'Canon RF 24-70mm f/2.8', 'Canon RF 70-200mm f/2.8', 'Godox AD600Pro', 'DJI Mavic 3 Pro', 'Profoto B10', 'Manfrotto Tripod'],
+    name: photographer ? `${photographer.firstName} ${photographer.lastName}` : '',
+    location: photographer?.address || '',
+    eventsCompleted: photographer?.projects?.length || 0,
+    rating: photographer?.rating || 0,
+    profileImage: getProfileImage(photographer),
+    backgroundImage: getCoverImage(photographer),
+    about: photographer?.about || photographer?.professionalPhilosophy || '',
+    specialties: photographer?.specialties || [],
+    equipments: photographer?.equipments?.map(eq => eq.name) || [],
     portfolio: {
-      beliefs: 'I believe in capturing authentic moments that tell genuine stories. Every photograph should evoke emotion and preserve memories that last a lifetime. My approach is to blend creativity with technical excellence to create timeless visual narratives.',
-      skills: [
-        { name: 'Portrait Photography', level: 95 },
-        { name: 'Event Photography', level: 90 },
-        { name: 'Photo Editing (Lightroom/Photoshop)', level: 88 },
-        { name: 'Studio Lighting', level: 85 },
-        { name: 'Drone Photography', level: 75 },
-        { name: 'Client Communication', level: 92 },
-      ],
-      qualifications: [
-        {
-          id: 1,
-          title: 'Professional Photography Certification',
-          issuer: 'International Photography Institute',
-          year: '2019',
-          description: 'Advanced certification in professional photography techniques',
-        },
-        {
-          id: 2,
-          title: 'Adobe Certified Professional',
-          issuer: 'Adobe Inc.',
-          year: '2020',
-          description: 'Certification in Photoshop and Lightroom',
-        },
-        {
-          id: 3,
-          title: 'Wedding Photography Specialist',
-          issuer: 'Professional Photographers Association',
-          year: '2021',
-          description: 'Specialized training in wedding and event photography',
-        },
-      ],
-      education: [
-        {
-          id: 1,
-          degree: 'Bachelor of Fine Arts in Photography',
-          institution: 'Kigali Institute of Arts',
-          year: '2015 - 2018',
-          description: 'Focused on visual arts, photography techniques, and digital media',
-        },
-        {
-          id: 2,
-          degree: 'Diploma in Digital Media',
-          institution: 'Rwanda Technical College',
-          year: '2013 - 2015',
-          description: 'Foundation in digital media production and visual communication',
-        },
-      ],
-      training: [
-        {
-          id: 1,
-          title: 'Advanced Wedding Photography Workshop',
-          institution: 'International Photography Academy',
-          year: '2022',
-          description: 'Intensive workshop covering advanced techniques for capturing wedding moments and lighting setups',
-        },
-        {
-          id: 2,
-          title: 'Commercial Photography Masterclass',
-          institution: 'Creative Arts Institute',
-          year: '2021',
-          description: 'Professional training in commercial and product photography for brand campaigns',
-        },
-        {
-          id: 3,
-          title: 'Lighting Techniques for Professionals',
-          institution: 'Studio Pro Academy',
-          year: '2020',
-          description: 'Comprehensive course on studio and natural lighting techniques for various photography styles',
-        },
-        {
-          id: 4,
-          title: 'Portrait Photography Intensive',
-          institution: 'Rwanda Photography School',
-          year: '2019',
-          description: 'Focused training on portrait composition, posing, and post-processing techniques',
-        },
-      ],
-      projects: [
-        {
-          id: 1,
-          image: 'https://images.unsplash.com/photo-1606216794074-735e91aa2c92?w=500',
-          title: 'Elite Wedding Series 2023',
-          description: 'Documented 15+ luxury weddings across Rwanda',
-          year: '2023',
-        },
-        {
-          id: 2,
-          image: 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=500',
-          title: 'Corporate Brand Campaign',
-          description: 'Photography for major corporate brand launches',
-          year: '2023',
-        },
-        {
-          id: 3,
-          image: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=500',
-          title: 'Portrait Collection',
-          description: 'Curated portrait series featuring diverse subjects',
-          year: '2022',
-        },
-      ],
+      beliefs: photographer?.professionalPhilosophy || '',
+      skills: photographer?.professionalSkills?.map((skill, index) => ({
+        name: skill,
+        level: Math.max(70, 95 - (index * 5)) // Calculate level based on order
+      })) || [],
+      qualifications: photographer?.certifications?.map((cert, index) => ({
+        id: index + 1,
+        title: cert.name,
+        issuer: cert.issuingOrganization,
+        year: new Date(cert.issueDate).getFullYear().toString(),
+        description: `Certification from ${cert.issuingOrganization}`,
+      })) || [],
+      education: photographer?.educationLevels?.map((edu, index) => ({
+        id: index + 1,
+        degree: edu.degree,
+        institution: edu.institution,
+        year: `${edu.startYear}${edu.endYear ? ` - ${edu.endYear}` : ''}`,
+        description: edu.fieldOfStudy || `Studied at ${edu.institution}`,
+      })) || [],
+      training: photographer?.trainings?.map((training, index) => ({
+        id: index + 1,
+        title: training.name,
+        institution: training.provider,
+        year: new Date(training.completionDate).getFullYear().toString(),
+        description: `Training completed at ${training.provider}`,
+      })) || [],
+      projects: photographer?.projects?.map((project, index) => ({
+        id: index + 1,
+        image: project.images?.[0] || '',
+        title: project.title,
+        description: project.description,
+        year: project.category || '',
+      })) || [],
     },
-    reviews: [
-      {
-        id: 1,
-        name: 'Moise caicedo',
-        avatar: 'https://i.pinimg.com/1200x/85/c5/96/85c596eec98acf0645c5c231f3f8b870.jpg',
-        rating: 5,
-        date: '2024-01-15',
-        comment: 'Cole did an amazing job at our wedding! The photos were stunning and he captured every special moment perfectly. Highly recommend!',
-      },
-      {
-        id: 2,
-        name: 'Enzo Fernandez',
-        avatar: 'https://i.pinimg.com/1200x/85/c5/96/85c596eec98acf0645c5c231f3f8b870.jpg',
-        rating: 4,
-        date: '2024-01-10',
-        comment: 'Great photographer with excellent attention to detail. Very professional and made everyone feel comfortable during the shoot.',
-      },
-      {
-        id: 3,
-        name: 'moses Grant',
-        avatar: 'https://i.pinimg.com/736x/4a/e1/fc/4ae1fc1554465849a9d897bbc7742024.jpg',
-        rating: 5,
-        date: '2023-12-28',
-        comment: 'Outstanding work! Cole was punctual, creative, and delivered beautiful photos ahead of schedule. Will definitely book again.',
-      },
-      {
-        id: 4,
-        name: 'Liam delap',
-        avatar: 'https://i.pinimg.com/736x/4a/e1/fc/4ae1fc1554465849a9d897bbc7742024.jpg',
-        rating: 4,
-        date: '2023-12-15',
-        comment: 'Very satisfied with the results. Cole has a great eye for composition and lighting. The edited photos exceeded our expectations.',
-      },
-    ],
-    experience: [
-      {
-        id: 1,
-        position: 'Lead Wedding Photographer',
-        company: 'Elegant Moments Photography',
-        location: 'Kigali, Rwanda',
-        startDate: '2020',
-        endDate: 'Present',
-        description: 'Specializing in wedding and engagement photography, managing a team of 3 photographers. Handled over 100 weddings with a focus on candid and creative shots.',
-      },
-      {
-        id: 2,
-        position: 'Event Photographer',
-        company: 'Rwanda Events & Co',
-        location: 'Kigali, Rwanda',
-        startDate: '2018',
-        endDate: '2020',
-        description: 'Covered corporate events, conferences, and private celebrations across Rwanda.',
-      },
-      {
-        id: 3,
-        position: 'Photography Assistant',
-        company: 'Studio Vision',
-        location: 'Kigali, Rwanda',
-        startDate: '2016',
-        endDate: '2018',
-        description: 'Assisted senior photographers in various projects and learned advanced photography techniques.',
-      },
-    ],
+    reviews: photographer?.reviews?.map((review, index) => ({
+      id: index + 1,
+      name: review.reviewer?.name || 'Anonymous',
+      avatar: 'https://i.pinimg.com/1200x/85/c5/96/85c596eec98acf0645c5c231f3f8b870.jpg',
+      rating: review.rating,
+      date: review.createdAt,
+      comment: review.comment,
+    })) || [],
+    experience: photographer ? [{
+      id: 1,
+      position: photographer.customerType || 'Photographer',
+      company: 'Self-employed',
+      location: photographer.address || '',
+      startDate: photographer.joinedFrom ? formatJoinDate(photographer.joinedFrom) : '',
+      endDate: 'Present',
+      description: photographer.about || '',
+    }] : [],
+    joinedFrom: photographer?.joinedFrom ? formatJoinDate(photographer.joinedFrom) : '',
+    customerType: photographer?.customerType || '',
+    phone: photographer?.phone || '',
+    email: photographer?.email || '',
   };
 
   const handleBookNow = () => {
@@ -548,6 +245,149 @@ function ViewProfileContent(): React.JSX.Element {
     }
     return stars;
   };
+
+  // Loading State
+  if (isLoading) {
+    return (
+      <>
+        <AmoriaKNavbar />
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '80vh',
+          backgroundColor: '#f9fafb',
+        }}>
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '1rem',
+          }}>
+            <div style={{
+              width: '48px',
+              height: '48px',
+              border: '4px solid #e5e7eb',
+              borderTopColor: '#083A85',
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite',
+            }}></div>
+            <p style={{ color: '#6b7280', fontSize: '1rem' }}>Loading photographer profile...</p>
+            <style>{`
+              @keyframes spin {
+                to { transform: rotate(360deg); }
+              }
+            `}</style>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // Error State
+  if (fetchError) {
+    return (
+      <>
+        <AmoriaKNavbar />
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '80vh',
+          backgroundColor: '#f9fafb',
+        }}>
+          <div style={{
+            textAlign: 'center',
+            padding: '2rem',
+            backgroundColor: '#fef2f2',
+            borderRadius: '12px',
+            border: '1px solid #fecaca',
+            maxWidth: '400px',
+          }}>
+            <i className="bi bi-exclamation-circle" style={{ fontSize: '3rem', color: '#dc2626' }}></i>
+            <h2 style={{ color: '#dc2626', marginTop: '1rem', fontSize: '1.25rem', fontWeight: '600' }}>
+              Error Loading Profile
+            </h2>
+            <p style={{ color: '#991b1b', marginTop: '0.5rem' }}>{fetchError}</p>
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '1.5rem' }}>
+              <button
+                onClick={() => window.location.reload()}
+                style={{
+                  padding: '0.5rem 1.5rem',
+                  backgroundColor: '#083A85',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontWeight: '500',
+                }}
+              >
+                Try Again
+              </button>
+              <button
+                onClick={() => window.history.back()}
+                style={{
+                  padding: '0.5rem 1.5rem',
+                  backgroundColor: '#ffffff',
+                  color: '#374151',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontWeight: '500',
+                }}
+              >
+                Go Back
+              </button>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // Not Found State
+  if (!photographer) {
+    return (
+      <>
+        <AmoriaKNavbar />
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '80vh',
+          backgroundColor: '#f9fafb',
+        }}>
+          <div style={{
+            textAlign: 'center',
+            padding: '2rem',
+          }}>
+            <i className="bi bi-person-x" style={{ fontSize: '4rem', color: '#9ca3af' }}></i>
+            <h2 style={{ color: '#374151', marginTop: '1rem', fontSize: '1.5rem', fontWeight: '600' }}>
+              Photographer Not Found
+            </h2>
+            <p style={{ color: '#6b7280', marginTop: '0.5rem' }}>
+              The photographer you're looking for doesn't exist or has been removed.
+            </p>
+            <button
+              onClick={() => window.location.href = '/user/photographers'}
+              style={{
+                marginTop: '1.5rem',
+                padding: '0.75rem 2rem',
+                backgroundColor: '#083A85',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontWeight: '500',
+              }}
+            >
+              Browse Photographers
+            </button>
+          </div>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
@@ -874,17 +714,19 @@ function ViewProfileContent(): React.JSX.Element {
             </h3>
 
             {/* Location */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              color: '#40444d',
-              fontSize: '15px',
-              marginBottom: '16px',
-            }}>
-              <i className="bi bi-geo-alt-fill" style={{ fontSize: '15px' }}></i>
-              <span>{photographerData.location}</span>
-            </div>
+            {photographerData.location && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                color: '#40444d',
+                fontSize: '15px',
+                marginBottom: '16px',
+              }}>
+                <i className="bi bi-geo-alt-fill" style={{ fontSize: '15px' }}></i>
+                <span>{photographerData.location}</span>
+              </div>
+            )}
 
             {/* Stats Row */}
             <div style={{
@@ -1207,17 +1049,23 @@ function ViewProfileContent(): React.JSX.Element {
                     {t('overview.about')}
                   </h3>
                 </div>
-                <p style={{
-                  fontSize: '16px',
-                  color: '#4b5563',
-                  lineHeight: '1.8',
-                  padding: '16px',
-                  backgroundColor: '#f9fafb',
-                  borderRadius: '10px',
-                  borderLeft: '3px solid #083A85',
-                }}>
-                  {photographerData.about}
-                </p>
+                {photographerData.about ? (
+                  <p style={{
+                    fontSize: '16px',
+                    color: '#4b5563',
+                    lineHeight: '1.8',
+                    padding: '16px',
+                    backgroundColor: '#f9fafb',
+                    borderRadius: '10px',
+                    borderLeft: '3px solid #083A85',
+                  }}>
+                    {photographerData.about}
+                  </p>
+                ) : (
+                  <p style={{ fontSize: '14px', color: '#9ca3af', fontStyle: 'italic', padding: '16px', backgroundColor: '#f9fafb', borderRadius: '10px' }}>
+                    No bio available yet.
+                  </p>
+                )}
               </div>
 
               {/* Specialties Section - Enhanced with Icons */}
@@ -1233,42 +1081,46 @@ function ViewProfileContent(): React.JSX.Element {
                     {t('overview.specialties')}
                   </h3>
                 </div>
-                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                  {photographerData.specialties.map((specialty, index) => (
-                    <span
-                      key={index}
-                      style={{
-                        padding: '12px 20px',
-                        backgroundColor: '#f0f9ff',
-                        border: '2px solid #dbeafe',
-                        borderRadius: '25px',
-                        fontSize: '15px',
-                        color: '#083A85',
-                        fontWeight: '600',
-                        cursor: 'default',
-                        transition: 'all 0.3s ease',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = '#083A85';
-                        e.currentTarget.style.color = '#fff';
-                        e.currentTarget.style.transform = 'translateY(-2px)';
-                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(8, 58, 133, 0.25)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = '#f0f9ff';
-                        e.currentTarget.style.color = '#083A85';
-                        e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = 'none';
-                      }}
-                    >
-                      <i className="bi bi-camera-fill" style={{ fontSize: '14px' }}></i>
-                      {specialty}
-                    </span>
-                  ))}
-                </div>
+                {photographerData.specialties.length > 0 ? (
+                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                    {photographerData.specialties.map((specialty, index) => (
+                      <span
+                        key={index}
+                        style={{
+                          padding: '12px 20px',
+                          backgroundColor: '#f0f9ff',
+                          border: '2px solid #dbeafe',
+                          borderRadius: '25px',
+                          fontSize: '15px',
+                          color: '#083A85',
+                          fontWeight: '600',
+                          cursor: 'default',
+                          transition: 'all 0.3s ease',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = '#083A85';
+                          e.currentTarget.style.color = '#fff';
+                          e.currentTarget.style.transform = 'translateY(-2px)';
+                          e.currentTarget.style.boxShadow = '0 4px 12px rgba(8, 58, 133, 0.25)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = '#f0f9ff';
+                          e.currentTarget.style.color = '#083A85';
+                          e.currentTarget.style.transform = 'translateY(0)';
+                          e.currentTarget.style.boxShadow = 'none';
+                        }}
+                      >
+                        <i className="bi bi-camera-fill" style={{ fontSize: '14px' }}></i>
+                        {specialty}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p style={{ fontSize: '14px', color: '#9ca3af', fontStyle: 'italic' }}>No specialties listed yet.</p>
+                )}
               </div>
 
               {/* Equipments Section - Enhanced Grid Layout */}
@@ -1335,46 +1187,48 @@ function ViewProfileContent(): React.JSX.Element {
           {activeTab === 'portfolio' && (
             <div>
               {/* Professional Beliefs - Enhanced with Quote Design */}
-              <div style={{ marginBottom: '36px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+              {photographerData.portfolio.beliefs && (
+                <div style={{ marginBottom: '36px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+                    <div style={{
+                      width: '4px',
+                      height: '24px',
+                      backgroundColor: '#083A85',
+                      borderRadius: '2px',
+                    }}></div>
+                    <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#000', margin: 0 }}>
+                      Professional Philosophy
+                    </h3>
+                  </div>
                   <div style={{
-                    width: '4px',
-                    height: '24px',
-                    backgroundColor: '#083A85',
-                    borderRadius: '2px',
-                  }}></div>
-                  <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#000', margin: 0 }}>
-                    Professional Philosophy
-                  </h3>
-                </div>
-                <div style={{
-                  position: 'relative',
-                  padding: '24px 28px',
-                  backgroundColor: 'linear-gradient(135deg, #f0f9ff 0%, #dbeafe 100%)',
-                  background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
-                  borderLeft: '4px solid #083A85',
-                  borderRadius: '12px',
-                  boxShadow: '0 4px 12px rgba(8, 58, 133, 0.1)',
-                }}>
-                  <i className="bi bi-quote" style={{
-                    position: 'absolute',
-                    top: '10px',
-                    left: '16px',
-                    fontSize: '36px',
-                    color: 'rgba(8, 58, 133, 0.15)',
-                  }}></i>
-                  <p style={{
-                    fontSize: '16px',
-                    color: '#1e3a8a',
-                    lineHeight: '1.8',
-                    fontStyle: 'italic',
-                    margin: 0,
-                    paddingLeft: '20px',
+                    position: 'relative',
+                    padding: '24px 28px',
+                    backgroundColor: 'linear-gradient(135deg, #f0f9ff 0%, #dbeafe 100%)',
+                    background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
+                    borderLeft: '4px solid #083A85',
+                    borderRadius: '12px',
+                    boxShadow: '0 4px 12px rgba(8, 58, 133, 0.1)',
                   }}>
-                    "{photographerData.portfolio.beliefs}"
-                  </p>
+                    <i className="bi bi-quote" style={{
+                      position: 'absolute',
+                      top: '10px',
+                      left: '16px',
+                      fontSize: '36px',
+                      color: 'rgba(8, 58, 133, 0.15)',
+                    }}></i>
+                    <p style={{
+                      fontSize: '16px',
+                      color: '#1e3a8a',
+                      lineHeight: '1.8',
+                      fontStyle: 'italic',
+                      margin: 0,
+                      paddingLeft: '20px',
+                    }}>
+                      "{photographerData.portfolio.beliefs}"
+                    </p>
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Skills - Enhanced with Better Visual Design */}
               <div style={{ marginBottom: '36px' }}>
@@ -1389,63 +1243,67 @@ function ViewProfileContent(): React.JSX.Element {
                     {t('portfolio.professionalSkills')}
                   </h3>
                 </div>
-                <div style={{ display: 'grid', gap: '16px' }}>
-                  {photographerData.portfolio.skills.map((skill, index) => (
-                    <div key={index} style={{
-                      padding: '18px',
-                      backgroundColor: '#f9fafb',
-                      borderRadius: '10px',
-                      border: '1px solid #e5e7eb',
-                      transition: 'all 0.3s ease',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = '#f0f9ff';
-                      e.currentTarget.style.borderColor = '#083A85';
-                      e.currentTarget.style.transform = 'translateX(4px)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = '#f9fafb';
-                      e.currentTarget.style.borderColor = '#e5e7eb';
-                      e.currentTarget.style.transform = 'translateX(0)';
-                    }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                        <span style={{ fontSize: '16px', fontWeight: '600', color: '#1f2937' }}>
-                          {skill.name}
-                        </span>
-                        <span style={{
-                          fontSize: '15px',
-                          fontWeight: '700',
-                          color: '#fff',
-                          backgroundColor: '#036920',
-                          padding: '4px 12px',
-                          borderRadius: '12px',
-                        }}>
-                          {skill.level}%
-                        </span>
-                      </div>
-                      <div style={{
-                        width: '100%',
-                        height: '10px',
-                        backgroundColor: '#e5e7eb',
+                {photographerData.portfolio.skills.length > 0 ? (
+                  <div style={{ display: 'grid', gap: '16px' }}>
+                    {photographerData.portfolio.skills.map((skill, index) => (
+                      <div key={index} style={{
+                        padding: '18px',
+                        backgroundColor: '#f9fafb',
                         borderRadius: '10px',
-                        overflow: 'hidden',
-                        position: 'relative',
-                      }}>
-                        <div
-                          style={{
-                            width: `${skill.level}%`,
-                            height: '100%',
-                            background: 'linear-gradient(90deg, #083A85 0%, #05a332 0%)',
-                            borderRadius: '10px',
-                            transition: 'width 0.8s ease',
-                            boxShadow: '0 0 10px rgba(8, 58, 133, 0.3)',
-                          }}
-                        ></div>
+                        border: '1px solid #e5e7eb',
+                        transition: 'all 0.3s ease',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#f0f9ff';
+                        e.currentTarget.style.borderColor = '#083A85';
+                        e.currentTarget.style.transform = 'translateX(4px)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = '#f9fafb';
+                        e.currentTarget.style.borderColor = '#e5e7eb';
+                        e.currentTarget.style.transform = 'translateX(0)';
+                      }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                          <span style={{ fontSize: '16px', fontWeight: '600', color: '#1f2937' }}>
+                            {skill.name}
+                          </span>
+                          <span style={{
+                            fontSize: '15px',
+                            fontWeight: '700',
+                            color: '#fff',
+                            backgroundColor: '#036920',
+                            padding: '4px 12px',
+                            borderRadius: '12px',
+                          }}>
+                            {skill.level}%
+                          </span>
+                        </div>
+                        <div style={{
+                          width: '100%',
+                          height: '10px',
+                          backgroundColor: '#e5e7eb',
+                          borderRadius: '10px',
+                          overflow: 'hidden',
+                          position: 'relative',
+                        }}>
+                          <div
+                            style={{
+                              width: `${skill.level}%`,
+                              height: '100%',
+                              background: 'linear-gradient(90deg, #083A85 0%, #05a332 0%)',
+                              borderRadius: '10px',
+                              transition: 'width 0.8s ease',
+                              boxShadow: '0 0 10px rgba(8, 58, 133, 0.3)',
+                            }}
+                          ></div>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p style={{ fontSize: '14px', color: '#9ca3af', fontStyle: 'italic' }}>No skills listed yet.</p>
+                )}
               </div>
 
               {/* Education */}
@@ -1453,34 +1311,38 @@ function ViewProfileContent(): React.JSX.Element {
                 <h3 style={{ fontSize: '19px', fontWeight: '700', color: '#000', marginBottom: '14px' }}>
                   {t('portfolio.education')}
                 </h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {photographerData.portfolio.education.map((edu) => (
-                    <div
-                      key={edu.id}
-                      style={{
-                        padding: '14px',
-                        backgroundColor: '#f9fafb',
-                        borderRadius: '6px',
-                        border: '1px solid #e5e7eb',
-                      }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
-                        <h4 style={{ fontSize: '15px', fontWeight: '700', color: '#000' }}>
-                          {edu.degree}
-                        </h4>
-                        <span style={{ fontSize: '13px', fontWeight: '600', color: '#083A85', backgroundColor: '#dbeafe', padding: '3px 8px', borderRadius: '4px' }}>
-                          {edu.year}
-                        </span>
+                {photographerData.portfolio.education.length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {photographerData.portfolio.education.map((edu) => (
+                      <div
+                        key={edu.id}
+                        style={{
+                          padding: '14px',
+                          backgroundColor: '#f9fafb',
+                          borderRadius: '6px',
+                          border: '1px solid #e5e7eb',
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
+                          <h4 style={{ fontSize: '15px', fontWeight: '700', color: '#000' }}>
+                            {edu.degree}
+                          </h4>
+                          <span style={{ fontSize: '13px', fontWeight: '600', color: '#083A85', backgroundColor: '#dbeafe', padding: '3px 8px', borderRadius: '4px' }}>
+                            {edu.year}
+                          </span>
+                        </div>
+                        <p style={{ fontSize: '14px', fontWeight: '600', color: '#6b7280', marginBottom: '6px' }}>
+                          {edu.institution}
+                        </p>
+                        <p style={{ fontSize: '13px', color: '#4b5563', lineHeight: '1.5' }}>
+                          {edu.description}
+                        </p>
                       </div>
-                      <p style={{ fontSize: '14px', fontWeight: '600', color: '#6b7280', marginBottom: '6px' }}>
-                        {edu.institution}
-                      </p>
-                      <p style={{ fontSize: '13px', color: '#4b5563', lineHeight: '1.5' }}>
-                        {edu.description}
-                      </p>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p style={{ fontSize: '14px', color: '#9ca3af', fontStyle: 'italic' }}>No education history listed yet.</p>
+                )}
               </div>
 
               {/* Qualifications & Certifications */}
@@ -1488,41 +1350,45 @@ function ViewProfileContent(): React.JSX.Element {
                 <h3 style={{ fontSize: '19px', fontWeight: '700', color: '#000', marginBottom: '14px' }}>
                   {t('portfolio.qualifications')}
                 </h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {photographerData.portfolio.qualifications.map((qual) => (
-                    <div
-                      key={qual.id}
-                      style={{
-                        padding: '14px',
-                        backgroundColor: '#ffffffff',
-                        borderRadius: '6px',
-                        border: '1px solid #083A85',
-                        display: 'flex',
-                        gap: '12px',
-                      }}
-                    >
-                      <div style={{ flexShrink: 0, width: '40px', height: '40px', backgroundColor: '#083A85', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <i className="bi bi-award-fill" style={{ color: '#fff', fontSize: '18px' }}></i>
-                      </div>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                          <h4 style={{ fontSize: '15px', fontWeight: '700', color: '#000' }}>
-                            {qual.title}
-                          </h4>
-                          <span style={{ fontSize: '15px', fontWeight: '600', color: '#083A85' }}>
-                            {qual.year}
-                          </span>
+                {photographerData.portfolio.qualifications.length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {photographerData.portfolio.qualifications.map((qual) => (
+                      <div
+                        key={qual.id}
+                        style={{
+                          padding: '14px',
+                          backgroundColor: '#ffffffff',
+                          borderRadius: '6px',
+                          border: '1px solid #083A85',
+                          display: 'flex',
+                          gap: '12px',
+                        }}
+                      >
+                        <div style={{ flexShrink: 0, width: '40px', height: '40px', backgroundColor: '#083A85', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <i className="bi bi-award-fill" style={{ color: '#fff', fontSize: '18px' }}></i>
                         </div>
-                        <p style={{ fontSize: '14px', fontWeight: '600', color: '#083A85', marginBottom: '4px' }}>
-                          {qual.issuer}
-                        </p>
-                        <p style={{ fontSize: '13px', color: '#083A85', lineHeight: '1.5' }}>
-                          {qual.description}
-                        </p>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                            <h4 style={{ fontSize: '15px', fontWeight: '700', color: '#000' }}>
+                              {qual.title}
+                            </h4>
+                            <span style={{ fontSize: '15px', fontWeight: '600', color: '#083A85' }}>
+                              {qual.year}
+                            </span>
+                          </div>
+                          <p style={{ fontSize: '14px', fontWeight: '600', color: '#083A85', marginBottom: '4px' }}>
+                            {qual.issuer}
+                          </p>
+                          <p style={{ fontSize: '13px', color: '#083A85', lineHeight: '1.5' }}>
+                            {qual.description}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p style={{ fontSize: '14px', color: '#9ca3af', fontStyle: 'italic' }}>No certifications listed yet.</p>
+                )}
               </div>
 
               {/* Training */}
@@ -1530,50 +1396,54 @@ function ViewProfileContent(): React.JSX.Element {
                 <h3 style={{ fontSize: '19px', fontWeight: '700', color: '#000', marginBottom: '14px' }}>
                   Professional Training
                 </h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {photographerData.portfolio.training.map((training) => (
-                    <div
-                      key={training.id}
-                      style={{
-                        padding: '16px',
-                        backgroundColor: '#f0f9ff',
-                        borderRadius: '10px',
-                        borderLeft: '4px solid #083A85',
-                        position: 'relative',
-                        overflow: 'hidden',
-                      }}
-                    >
-                      <div style={{
-                        position: 'absolute',
-                        top: '12px',
-                        right: '12px',
-                        backgroundColor: '#083A85',
-                        color: '#fff',
-                        fontSize: '12px',
-                        fontWeight: '600',
-                        padding: '4px 10px',
-                        borderRadius: '12px',
-                      }}>
-                        {training.year}
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                        <i className="bi bi-journal-bookmark-fill" style={{ color: '#083A85', fontSize: '18px' }}></i>
-                        <h4 style={{ fontSize: '15px', fontWeight: '700', color: '#1e293b', margin: 0 }}>
-                          {training.title}
-                        </h4>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
-                        <i className="bi bi-building" style={{ color: '#64748b', fontSize: '13px' }}></i>
-                        <p style={{ fontSize: '14px', fontWeight: '600', color: '#475569', margin: 0 }}>
-                          {training.institution}
+                {photographerData.portfolio.training.length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {photographerData.portfolio.training.map((training) => (
+                      <div
+                        key={training.id}
+                        style={{
+                          padding: '16px',
+                          backgroundColor: '#f0f9ff',
+                          borderRadius: '10px',
+                          borderLeft: '4px solid #083A85',
+                          position: 'relative',
+                          overflow: 'hidden',
+                        }}
+                      >
+                        <div style={{
+                          position: 'absolute',
+                          top: '12px',
+                          right: '12px',
+                          backgroundColor: '#083A85',
+                          color: '#fff',
+                          fontSize: '12px',
+                          fontWeight: '600',
+                          padding: '4px 10px',
+                          borderRadius: '12px',
+                        }}>
+                          {training.year}
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                          <i className="bi bi-journal-bookmark-fill" style={{ color: '#083A85', fontSize: '18px' }}></i>
+                          <h4 style={{ fontSize: '15px', fontWeight: '700', color: '#1e293b', margin: 0 }}>
+                            {training.title}
+                          </h4>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+                          <i className="bi bi-building" style={{ color: '#64748b', fontSize: '13px' }}></i>
+                          <p style={{ fontSize: '14px', fontWeight: '600', color: '#475569', margin: 0 }}>
+                            {training.institution}
+                          </p>
+                        </div>
+                        <p style={{ fontSize: '13px', color: '#64748b', lineHeight: '1.6', margin: 0, paddingLeft: '26px' }}>
+                          {training.description}
                         </p>
                       </div>
-                      <p style={{ fontSize: '13px', color: '#64748b', lineHeight: '1.6', margin: 0, paddingLeft: '26px' }}>
-                        {training.description}
-                      </p>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p style={{ fontSize: '14px', color: '#9ca3af', fontStyle: 'italic' }}>No training history listed yet.</p>
+                )}
               </div>
 
               {/* Featured Projects - Modern Card Grid */}
@@ -1589,80 +1459,85 @@ function ViewProfileContent(): React.JSX.Element {
                     Featured Projects
                   </h3>
                 </div>
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: isMobile
-                    ? 'repeat(auto-fill, minmax(min(240px, 100%), 1fr))'
-                    : 'repeat(auto-fill, minmax(250px, 1fr))',
-                  gap: isMobile ? 'clamp(16px, 4vw, 20px)' : '20px'
-                }}>
-                  {photographerData.portfolio.projects.map((project) => (
-                    <div
-                      key={project.id}
-                      style={{
-                        borderRadius: '16px',
-                        overflow: 'hidden',
-                        border: '2px solid #e5e7eb',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                        transition: 'all 0.3s ease',
-                        cursor: 'pointer',
-                        backgroundColor: '#fff',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = 'translateY(-8px)';
-                        e.currentTarget.style.boxShadow = '0 12px 28px rgba(8, 58, 133, 0.2)';
-                        e.currentTarget.style.borderColor = '#083A85';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)';
-                        e.currentTarget.style.borderColor = '#e5e7eb';
-                      }}
-                    >
-                      <div style={{ position: 'relative', overflow: 'hidden' }}>
-                        <img
-                          src={project.image}
-                          alt={project.title}
-                          style={{
-                            width: '100%',
-                            height: '180px',
-                            objectFit: 'cover',
-                            transition: 'transform 0.3s ease',
-                          }}
-                          loading="lazy"
-                          onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
-                          onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                        />
-                        <div style={{
-                          position: 'absolute',
-                          top: '12px',
-                          right: '12px',
-                          backgroundColor: '#083A85',
-                          color: '#fff',
-                          padding: '6px 12px',
-                          borderRadius: '20px',
-                          fontSize: '13px',
-                          fontWeight: '700',
-                          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
-                        }}>
-                          {project.year}
-                        </div>
-                      </div>
-                      <div style={{ padding: '16px', backgroundColor: '#fff' }}>
-                        <h4 style={{
-                          fontSize: '15px',
-                          fontWeight: '700',
-                          color: '#000',
-                          marginBottom: '8px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '8px',
-                        }}>
-                          <i className="bi bi-image" style={{ color: '#083A85', fontSize: '16px' }}></i>
-                          {project.title}
-                        </h4>
-                        <p style={{
-                          fontSize: '14px',
+                {photographerData.portfolio.projects.length > 0 ? (
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: isMobile
+                      ? 'repeat(auto-fill, minmax(min(240px, 100%), 1fr))'
+                      : 'repeat(auto-fill, minmax(250px, 1fr))',
+                    gap: isMobile ? 'clamp(16px, 4vw, 20px)' : '20px'
+                  }}>
+                    {photographerData.portfolio.projects.map((project) => (
+                      <div
+                        key={project.id}
+                        style={{
+                          borderRadius: '16px',
+                          overflow: 'hidden',
+                          border: '2px solid #e5e7eb',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                          transition: 'all 0.3s ease',
+                          cursor: 'pointer',
+                          backgroundColor: '#fff',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.transform = 'translateY(-8px)';
+                          e.currentTarget.style.boxShadow = '0 12px 28px rgba(8, 58, 133, 0.2)';
+                          e.currentTarget.style.borderColor = '#083A85';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.transform = 'translateY(0)';
+                          e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)';
+                          e.currentTarget.style.borderColor = '#e5e7eb';
+                        }}
+                      >
+                        {project.image && (
+                          <div style={{ position: 'relative', overflow: 'hidden' }}>
+                            <img
+                              src={project.image}
+                              alt={project.title}
+                              style={{
+                                width: '100%',
+                                height: '180px',
+                                objectFit: 'cover',
+                                transition: 'transform 0.3s ease',
+                              }}
+                              loading="lazy"
+                              onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+                              onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                            />
+                            {project.year && (
+                              <div style={{
+                                position: 'absolute',
+                                top: '12px',
+                                right: '12px',
+                                backgroundColor: '#083A85',
+                                color: '#fff',
+                                padding: '6px 12px',
+                                borderRadius: '20px',
+                                fontSize: '13px',
+                                fontWeight: '700',
+                                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
+                              }}>
+                                {project.year}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        <div style={{ padding: '16px', backgroundColor: '#fff' }}>
+                          <h4 style={{
+                            fontSize: '15px',
+                            fontWeight: '700',
+                            color: '#000',
+                            marginBottom: '8px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                          }}>
+                            <i className="bi bi-image" style={{ color: '#083A85', fontSize: '16px' }}></i>
+                            {project.title}
+                          </h4>
+                          <p style={{
+                            fontSize: '14px',
                           color: '#6b7280',
                           lineHeight: '1.6',
                           margin: 0,
@@ -1672,7 +1547,10 @@ function ViewProfileContent(): React.JSX.Element {
                       </div>
                     </div>
                   ))}
-                </div>
+                  </div>
+                ) : (
+                  <p style={{ fontSize: '14px', color: '#9ca3af', fontStyle: 'italic' }}>No projects added yet.</p>
+                )}
               </div>
             </div>
           )}
@@ -1772,97 +1650,109 @@ function ViewProfileContent(): React.JSX.Element {
               </div>
 
               {/* Individual Reviews - Enhanced Cards */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                {photographerData.reviews.map((review) => (
-                  <div
-                    key={review.id}
-                    style={{
-                      padding: '20px',
-                      backgroundColor: '#fff',
-                      borderRadius: '16px',
-                      border: '2px solid #e5e7eb',
-                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
-                      transition: 'all 0.3s ease',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.borderColor = '#083A85';
-                      e.currentTarget.style.boxShadow = '0 8px 20px rgba(8, 58, 133, 0.15)';
-                      e.currentTarget.style.transform = 'translateX(4px)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.borderColor = '#e5e7eb';
-                      e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.04)';
-                      e.currentTarget.style.transform = 'translateX(0)';
-                    }}
-                  >
-                    {/* Reviewer Info */}
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '14px',
-                      marginBottom: '14px',
-                    }}>
-                      <img
-                        src={review.avatar}
-                        alt={review.name}
-                        style={{
-                          width: '52px',
-                          height: '52px',
-                          borderRadius: '50%',
-                          objectFit: 'cover',
-                          border: '3px solid #f0f9ff',
-                          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-                        }}
-                        loading="lazy"
-                      />
-                      <div style={{ flex: 1 }}>
-                        <h4 style={{
-                          fontSize: '15px',
-                          fontWeight: '700',
-                          color: '#000',
-                          marginBottom: '4px',
-                        }}>
-                          {review.name}
-                        </h4>
-                        <p style={{
-                          fontSize: '12px',
-                          color: '#6b7280',
-                          margin: 0,
-                        }}>
-                          {new Date(review.date).toLocaleDateString('en-US', {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
-                          })}
-                        </p>
-                      </div>
+              {photographerData.reviews.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  {photographerData.reviews.map((review) => (
+                    <div
+                      key={review.id}
+                      style={{
+                        padding: '20px',
+                        backgroundColor: '#fff',
+                        borderRadius: '16px',
+                        border: '2px solid #e5e7eb',
+                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
+                        transition: 'all 0.3s ease',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.borderColor = '#083A85';
+                        e.currentTarget.style.boxShadow = '0 8px 20px rgba(8, 58, 133, 0.15)';
+                        e.currentTarget.style.transform = 'translateX(4px)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.borderColor = '#e5e7eb';
+                        e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.04)';
+                        e.currentTarget.style.transform = 'translateX(0)';
+                      }}
+                    >
+                      {/* Reviewer Info */}
                       <div style={{
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '4px',
-                        padding: '8px 12px',
-                        backgroundColor: '#f0f9ff',
-                        borderRadius: '20px',
+                        gap: '14px',
+                        marginBottom: '14px',
                       }}>
-                        {renderStars(review.rating)}
+                        <img
+                          src={review.avatar}
+                          alt={review.name}
+                          style={{
+                            width: '52px',
+                            height: '52px',
+                            borderRadius: '50%',
+                            objectFit: 'cover',
+                            border: '3px solid #f0f9ff',
+                            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                          }}
+                          loading="lazy"
+                        />
+                        <div style={{ flex: 1 }}>
+                          <h4 style={{
+                            fontSize: '15px',
+                            fontWeight: '700',
+                            color: '#000',
+                            marginBottom: '4px',
+                          }}>
+                            {review.name}
+                          </h4>
+                          <p style={{
+                            fontSize: '12px',
+                            color: '#6b7280',
+                            margin: 0,
+                          }}>
+                            {new Date(review.date).toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric',
+                            })}
+                          </p>
+                        </div>
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          padding: '8px 12px',
+                          backgroundColor: '#f0f9ff',
+                          borderRadius: '20px',
+                        }}>
+                          {renderStars(review.rating)}
+                        </div>
                       </div>
-                    </div>
 
-                    {/* Review Comment */}
-                    <p style={{
-                      fontSize: '14px',
-                      color: '#4b5563',
-                      lineHeight: '1.7',
-                      margin: 0,
-                      padding: '12px',
-                      backgroundColor: '#f9fafb',
-                      borderRadius: '10px',
-                    }}>
-                      {review.comment}
-                    </p>
-                  </div>
-                ))}
-              </div>
+                      {/* Review Comment */}
+                      <p style={{
+                        fontSize: '14px',
+                        color: '#4b5563',
+                        lineHeight: '1.7',
+                        margin: 0,
+                        padding: '12px',
+                        backgroundColor: '#f9fafb',
+                        borderRadius: '10px',
+                      }}>
+                        {review.comment}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{
+                  textAlign: 'center',
+                  padding: '40px 20px',
+                  backgroundColor: '#f9fafb',
+                  borderRadius: '12px',
+                }}>
+                  <i className="bi bi-chat-square-text" style={{ fontSize: '48px', color: '#9ca3af', display: 'block', marginBottom: '16px' }}></i>
+                  <p style={{ fontSize: '16px', color: '#6b7280', margin: 0 }}>No reviews yet. Be the first to leave a review!</p>
+                </div>
+              )}
             </div>
           )}
 
@@ -1872,81 +1762,99 @@ function ViewProfileContent(): React.JSX.Element {
                 {t('workingExperience.title')}
               </h3>
 
-              {/* Timeline */}
-              <div style={{ position: 'relative', paddingLeft: '24px' }}>
-                {/* Timeline Line */}
-                <div
-                  style={{
-                    position: 'absolute',
-                    left: '7px',
-                    top: '8px',
-                    bottom: '8px',
-                    width: '2px',
-                    backgroundColor: '#e5e7eb',
-                  }}
-                ></div>
+              {photographerData.experience.length > 0 ? (
+                /* Timeline */
+                <div style={{ position: 'relative', paddingLeft: '24px' }}>
+                  {/* Timeline Line */}
+                  <div
+                    style={{
+                      position: 'absolute',
+                      left: '7px',
+                      top: '8px',
+                      bottom: '8px',
+                      width: '2px',
+                      backgroundColor: '#e5e7eb',
+                    }}
+                  ></div>
 
-                {/* Experience Items */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                  {photographerData.experience.map((exp, index) => (
-                    <div key={exp.id} style={{ position: 'relative' }}>
-                      {/* Timeline Dot */}
-                      <div
-                        style={{
-                          position: 'absolute',
-                          left: '-20px',
-                          top: '6px',
-                          width: '16px',
-                          height: '16px',
-                          borderRadius: '50%',
-                          backgroundColor: index === 0 ? '#083A85' : '#9ca3af',
-                          border: '2px solid #fff',
-                          boxShadow: '0 0 0 2px #e5e7eb',
-                        }}
-                      ></div>
+                  {/* Experience Items */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                    {photographerData.experience.map((exp, index) => (
+                      <div key={exp.id} style={{ position: 'relative' }}>
+                        {/* Timeline Dot */}
+                        <div
+                          style={{
+                            position: 'absolute',
+                            left: '-20px',
+                            top: '6px',
+                            width: '16px',
+                            height: '16px',
+                            borderRadius: '50%',
+                            backgroundColor: index === 0 ? '#083A85' : '#9ca3af',
+                            border: '2px solid #fff',
+                            boxShadow: '0 0 0 2px #e5e7eb',
+                          }}
+                        ></div>
 
-                      {/* Experience Card */}
-                      <div
-                        style={{
-                          padding: '14px 16px',
-                          backgroundColor: '#f9fafb',
-                          borderRadius: '8px',
-                          border: '1px solid #e5e7eb',
-                        }}
-                      >
-                        {/* Position & Company */}
-                        <h4 style={{ fontSize: '17px', fontWeight: '700', color: '#000', marginBottom: '4px' }}>
-                          {exp.position}
-                        </h4>
-                        <p style={{ fontSize: '15px', fontWeight: '600', color: '#083A85', marginBottom: '6px' }}>
-                          {exp.company}
-                        </p>
+                        {/* Experience Card */}
+                        <div
+                          style={{
+                            padding: '14px 16px',
+                            backgroundColor: '#f9fafb',
+                            borderRadius: '8px',
+                            border: '1px solid #e5e7eb',
+                          }}
+                        >
+                          {/* Position & Company */}
+                          <h4 style={{ fontSize: '17px', fontWeight: '700', color: '#000', marginBottom: '4px' }}>
+                            {exp.position}
+                          </h4>
+                          <p style={{ fontSize: '15px', fontWeight: '600', color: '#083A85', marginBottom: '6px' }}>
+                            {exp.company}
+                          </p>
 
-                        {/* Location & Date */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <i className="bi bi-geo-alt" style={{ color: '#6b7280', fontSize: '14px' }}></i>
-                            <span style={{ fontSize: '15px', color: '#6b7280' }}>
-                              {exp.location}
-                            </span>
+                          {/* Location & Date */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px', flexWrap: 'wrap' }}>
+                            {exp.location && (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <i className="bi bi-geo-alt" style={{ color: '#6b7280', fontSize: '14px' }}></i>
+                                <span style={{ fontSize: '15px', color: '#6b7280' }}>
+                                  {exp.location}
+                                </span>
+                              </div>
+                            )}
+                            {exp.startDate && (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <i className="bi bi-calendar3" style={{ color: '#6b7280', fontSize: '10px' }}></i>
+                                <span style={{ fontSize: '15px', color: '#6b7280' }}>
+                                  {exp.startDate} - {exp.endDate}
+                                </span>
+                              </div>
+                            )}
                           </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <i className="bi bi-calendar3" style={{ color: '#6b7280', fontSize: '10px' }}></i>
-                            <span style={{ fontSize: '15px', color: '#6b7280' }}>
-                              {exp.startDate} - {exp.endDate}
-                            </span>
-                          </div>
+
+                          {/* Description */}
+                          {exp.description && (
+                            <p style={{ fontSize: '14px', color: '#4b5563', lineHeight: '1.6' }}>
+                              {exp.description}
+                            </p>
+                          )}
                         </div>
-
-                        {/* Description */}
-                        <p style={{ fontSize: '14px', color: '#4b5563', lineHeight: '1.6' }}>
-                          {exp.description}
-                        </p>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div style={{
+                  textAlign: 'center',
+                  padding: '40px 20px',
+                  backgroundColor: '#f9fafb',
+                  borderRadius: '12px',
+                }}>
+                  <i className="bi bi-briefcase" style={{ fontSize: '48px', color: '#9ca3af', display: 'block', marginBottom: '16px' }}></i>
+                  <p style={{ fontSize: '16px', color: '#6b7280', margin: 0 }}>No work experience listed yet.</p>
+                </div>
+              )}
             </div>
           )}
         </div>

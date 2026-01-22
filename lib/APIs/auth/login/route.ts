@@ -21,8 +21,17 @@ export interface LoginRequest {
 export interface LoginResponse {
   action: number; // 0 = failure, 1 = success
   message: string;
-  otpVerified: boolean; // Indicates if email is verified
-  accountLocked: boolean; // Indicates if account is locked
+  // User data fields (from actual login response)
+  id?: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phone?: string;
+  token_expiry?: string;
+  // Status fields
+  otpVerified?: boolean | string; // Indicates if email is verified (backend may send boolean or string)
+  accountLocked?: boolean | string; // Indicates if account is locked
+  otpExpiry?: string; // OTP expiry timestamp (when OTP is resent)
   // Backend may return different ID field names
   applicantId?: string | null;
   applicant_id?: string | null;
