@@ -147,7 +147,13 @@ function VerifyOtpContent(): React.JSX.Element {
     }
 
     try {
-      const response = await resendOtp({ applicantId });
+      // Debug: Log the request
+      console.log('[ResendOTP] Sending request with customerId:', applicantId);
+
+      const response = await resendOtp({ customerId: applicantId });
+
+      // Debug: Log full response
+      console.log('[ResendOTP] Full API response:', JSON.stringify(response, null, 2));
 
       if (response.success) {
         showSuccess('Verification code sent successfully!');
