@@ -923,7 +923,7 @@ function ViewEventContent(): React.JSX.Element {
             >
               <button
                 className="live-stream-button"
-                onClick={() => (window.location.href = '/user/events/join-event')}
+                onClick={() => (window.location.href = `/user/events/join-event?id=${selectedEvent.id}`)}
                 style={{
                   padding: '16px 40px',
                   backgroundColor: '#039130',
