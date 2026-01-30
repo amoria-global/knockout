@@ -1,12 +1,14 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { signup } from '@/lib/APIs/auth/signup/route';
 
 export default function SignupPage(): React.JSX.Element {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const userType = searchParams.get('userType') || 'client';
   const t = useTranslations('auth.signupPage');
   const tAuth = useTranslations('auth');
   const [showPassword, setShowPassword] = useState(false);
@@ -102,7 +104,7 @@ export default function SignupPage(): React.JSX.Element {
           lastName,
           email,
           phone: `${countryCode}${phoneNumber}`, // Combine country code and phone number
-          customerType: 'client', // Backend expects 'customerType'
+          customerType: userType, // Backend expects 'customerType' - defaults to 'client', or 'photographer' from URL param
           password,
         });
 
