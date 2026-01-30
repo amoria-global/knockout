@@ -1,20 +1,15 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 
-// Component that uses useSearchParams - needs to be wrapped in Suspense
-function SignupTypeContent() {
+export default function SignupTypePage() {
   const t = useTranslations('auth.signupType');
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [selectedType, setSelectedType] = useState<string>('');
   const [screenSize, setScreenSize] = useState<'mobile' | 'tablet' | 'desktop'>('desktop');
-
-  // Check if user came from photographer-specific link
-  const isPhotographerFlow = searchParams.get('type') === 'photographer';
 
   // Screen size detection for responsive design
   useEffect(() => {
@@ -34,7 +29,19 @@ function SignupTypeContent() {
   const isTablet = screenSize === 'tablet';
 
   // Define user type options
-  const allOptions = [
+  const userOptions = [
+    {
+      id: 'photographer',
+      icon: (
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+          <circle cx="12" cy="13" r="4" />
+          <path d="M18 8h.01" />
+        </svg>
+      ),
+      title: t('photographerTitle'),
+      description: t('photographerDescription')
+    },
     {
       id: 'client',
       icon: (
@@ -47,41 +54,24 @@ function SignupTypeContent() {
       description: t('clientDescription')
     },
     {
-      id: 'hired-photographer',
+      id: 'event-coordinator',
       icon: (
         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-          <circle cx="12" cy="13" r="4" />
-          <path d="M18 8h.01" />
+          <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+          <path d="M8 21h8" />
+          <path d="M12 17v4" />
+          <circle cx="12" cy="10" r="2" />
+          <path d="M7 10h.01" />
+          <path d="M17 10h.01" />
         </svg>
       ),
-      title: t('hiredPhotographerTitle'),
-      description: t('hiredPhotographerDescription')
-    },
-    {
-      id: 'freelancer',
-      icon: (
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-          <circle cx="12" cy="7" r="4" />
-          <path d="M22 8.5V14" />
-          <path d="M22 11h-4" />
-        </svg>
-      ),
-      title: t('freelancerTitle'),
-      description: t('freelancerDescription')
+      title: t('coordinatorTitle'),
+      description: t('coordinatorDescription')
     }
   ];
 
-  // Filter options based on flow
-  const displayOptions = isPhotographerFlow
-    ? allOptions.filter(opt => opt.id !== 'client')
-    : allOptions;
-
   const handleContinue = () => {
     if (!selectedType) return;
-
-    // Redirect to signup form with selected type
     router.push(`/user/auth/signup?userType=${selectedType}`);
   };
 
@@ -96,7 +86,7 @@ function SignupTypeContent() {
       fontFamily: "'Pragati Narrow', sans-serif"
     }}>
       <div style={{
-        maxWidth: isMobile ? '100%' : (isTablet ? '700px' : '900px'),
+        maxWidth: isMobile ? '100%' : (isTablet ? '700px' : '1100px'),
         width: '100%',
         textAlign: 'center'
       }}>
@@ -144,22 +134,28 @@ function SignupTypeContent() {
           lineHeight: '1.2',
           padding: isMobile ? '0 10px' : '0'
         }}>
-          {t('title')} {isPhotographerFlow ? t('titlePhotographer') : t('titleClient')}
+          {t('title')}
         </h1>
+
+        {/* Subtitle */}
+        <p style={{
+          fontSize: isMobile ? '16px' : '18px',
+          color: '#6B7280',
+          marginBottom: isMobile ? '24px' : '32px',
+          fontWeight: 500
+        }}>
+          {t('subtitle')}
+        </p>
 
         {/* Selection Cards */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: isMobile
-            ? '1fr'
-            : (isTablet
-              ? (isPhotographerFlow ? 'repeat(2, 1fr)' : 'repeat(2, 1fr)')
-              : (isPhotographerFlow ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)')),
-          gap: isMobile ? '16px' : '20px',
-          marginTop: isMobile ? '32px' : '48px',
+          gridTemplateColumns: isMobile ? '1fr' : (isTablet ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)'),
+          gap: isMobile ? '16px' : '24px',
+          marginTop: isMobile ? '24px' : '40px',
           marginBottom: isMobile ? '24px' : '32px'
         }}>
-          {displayOptions.map((option) => (
+          {userOptions.map((option) => (
             <button
               key={option.id}
               onClick={() => setSelectedType(option.id)}
@@ -227,10 +223,10 @@ function SignupTypeContent() {
 
               {/* Title */}
               <h3 style={{
-                fontSize: isMobile ? '18px' : '20px',
+                fontSize: isMobile ? '22px' : '26px',
                 fontWeight: 700,
                 color: '#000',
-                marginBottom: isMobile ? '8px' : '12px',
+                marginBottom: isMobile ? '10px' : '14px',
                 lineHeight: '1.3'
               }}>
                 {option.title}
@@ -271,9 +267,9 @@ function SignupTypeContent() {
           }}
           onMouseEnter={(e) => {
             if (selectedType && !isMobile) {
-              e.currentTarget.style.backgroundColor = '#083A85';
+              e.currentTarget.style.backgroundColor = '#062d6b';
               e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.boxShadow = '0 6px 16px rgba(255, 255, 255, 0.3)';
+              e.currentTarget.style.boxShadow = '0 6px 16px rgba(8, 58, 133, 0.3)';
             }
           }}
           onMouseLeave={(e) => {
@@ -284,10 +280,7 @@ function SignupTypeContent() {
             }
           }}
         >
-          {selectedType
-            ? (displayOptions.find(opt => opt.id === selectedType)?.id === 'client' ? t('continueAsClient') : t('continueAsPhotographer'))
-            : t('selectOption')
-          }
+          {t('continue')}
         </button>
 
         {/* Already have account link */}
@@ -306,52 +299,13 @@ function SignupTypeContent() {
               textDecoration: 'none',
               transition: 'color 0.2s ease'
             }}
-            onMouseEnter={(e) => e.currentTarget.style.color = '#083A85'}
-            onMouseLeave={(e) => e.currentTarget.style.color = 'blue'}
+            onMouseEnter={(e) => e.currentTarget.style.color = '#062d6b'}
+            onMouseLeave={(e) => e.currentTarget.style.color = '#083A85'}
           >
             {t('login')}
           </Link>
         </p>
       </div>
     </div>
-  );
-}
-
-// Loading component with translations
-function LoadingFallback() {
-  const t = useTranslations('auth.signupType');
-  return (
-    <div style={{
-      minHeight: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: '#DBDBDB'
-    }}>
-      <div style={{
-        textAlign: 'center',
-        color: '#083A85'
-      }}>
-        <div style={{
-          fontSize: '48px',
-          marginBottom: '16px'
-        }}>
-          <i className="bi bi-hourglass-split"></i>
-        </div>
-        <p style={{
-          fontSize: '18px',
-          fontWeight: '600'
-        }}>{t('loading')}</p>
-      </div>
-    </div>
-  );
-}
-
-// Main page component with Suspense boundary
-export default function SignupTypePage() {
-  return (
-    <Suspense fallback={<LoadingFallback />}>
-      <SignupTypeContent />
-    </Suspense>
   );
 }
