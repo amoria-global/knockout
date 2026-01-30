@@ -129,7 +129,7 @@ export default function Footer() {
     {
       title: t('forPhotographers'),
       links: [
-        { text: t('links.joinPhotographer'), href: '/user/auth/signup-type?type=photographer' },
+        { text: t('links.joinPhotographer'), href: '/user/auth/signup?userType=photographer' },
         { text: t('links.photographerGuide'), href: '/user/photographer-guide' },
       ],
     },

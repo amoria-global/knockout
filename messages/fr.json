@@ -187,21 +187,17 @@
       "passwordsNotMatch": "Les mots de passe ne correspondent pas"
     },
     "signupType": {
-      "title": "Rejoindre en tant que",
-      "titleClient": "Client ou Photographe",
-      "titlePhotographer": "Photographe",
-      "clientTitle": "Je suis un client, j'embauche pour un travail",
+      "title": "Comment souhaitez-vous utiliser Connekyt?",
+      "subtitle": "Sélectionnez l'option qui vous décrit le mieux",
+      "photographerTitle": "Je suis un Photographe à la recherche d'un emploi",
+      "photographerDescription": "Présentez votre portfolio, trouvez des missions et développez votre activité de photographe",
+      "clientTitle": "Je suis un Client qui embauche pour un événement",
       "clientDescription": "Trouvez et engagez des photographes professionnels pour vos événements",
-      "hiredPhotographerTitle": "Je suis un photographe embauché",
-      "hiredPhotographerDescription": "Travaillez avec des clients via la plateforme et développez votre entreprise",
-      "freelancerTitle": "Je suis un photographe indépendant/travailleur autonome",
-      "freelancerDescription": "Présentez votre portfolio et connectez-vous avec des clients potentiels",
-      "continueAsClient": "Continuer en tant que Client",
-      "continueAsPhotographer": "Continuer en tant que Photographe",
-      "selectOption": "Sélectionnez une option pour continuer",
+      "coordinatorTitle": "Je suis un Coordinateur d'Événements",
+      "coordinatorDescription": "Créez des événements de diffusion en direct commerciaux et gérez la billetterie en streaming",
+      "continue": "Continuer",
       "alreadyHaveAccount": "Vous avez déjà un compte?",
-      "login": "Se connecter",
-      "loading": "Chargement..."
+      "login": "Se connecter"
     }
   },
   "events": {
