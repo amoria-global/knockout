@@ -53,7 +53,7 @@ export default function LoginPage(): React.JSX.Element {
 
   const handleGoToDashboard = () => {
     const token = getAuthToken();
-    const dashboardUrl = getDashboardUrlWithToken(loggedInUserType, token || undefined);
+    const dashboardUrl = getDashboardUrlWithToken(loggedInUserType, token || undefined, email || undefined);
 
     if (dashboardUrl && token) {
       // Open dashboard in new tab with type-based route
