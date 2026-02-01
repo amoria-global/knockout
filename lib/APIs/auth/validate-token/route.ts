@@ -1,9 +1,17 @@
 /**
  * Validate Token API
  * GET /api/remote/auth/validate-token
+ *
+ * Enhanced with new API client featuring:
+ * - Automatic retry with exponential backoff
+ * - Request timeout handling
+ * - Rate limiting protection
+ * - Production-safe logging
  */
 
-import { apiRequest, API_ENDPOINTS, getAuthToken, removeAuthToken } from '../../../db';
+import { apiClient, getAuthToken, removeAuthToken } from '@/lib/api/client';
+import { API_ENDPOINTS } from '@/lib/api/config';
+import type { ApiResponse } from '@/lib/api/types';
 
 export interface ValidateTokenResponse {
   valid: boolean;
@@ -17,8 +25,9 @@ export interface ValidateTokenResponse {
 
 /**
  * Validate Token
+ * Uses enhanced API client with automatic retry and error handling
  */
-export async function validateToken() {
+export async function validateToken(): Promise<ApiResponse<ValidateTokenResponse>> {
   const token = getAuthToken();
 
   if (!token) {
@@ -28,11 +37,10 @@ export async function validateToken() {
     };
   }
 
-  const response = await apiRequest<ValidateTokenResponse>(
-    `${API_ENDPOINTS.AUTH}/validate-token`,
+  const response = await apiClient.get<ValidateTokenResponse>(
+    API_ENDPOINTS.AUTH.VALIDATE_TOKEN,
     {
-      method: 'GET',
-      token,
+      retries: 1,
     }
   );
 

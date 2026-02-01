@@ -1,9 +1,17 @@
 /**
  * Get Conversations API
  * GET /api/remote/messages/conversations
+ *
+ * Enhanced with new API client featuring:
+ * - Automatic retry with exponential backoff
+ * - Request timeout handling
+ * - Rate limiting protection
+ * - Production-safe logging
  */
 
-import { apiRequest, API_ENDPOINTS, getAuthToken } from '../../../db';
+import { apiClient, isAuthenticated } from '@/lib/api/client';
+import { API_ENDPOINTS } from '@/lib/api/config';
+import type { ApiResponse } from '@/lib/api/types';
 
 export interface Conversation {
   id: string;
@@ -46,11 +54,11 @@ export interface GetConversationsResponse {
 
 /**
  * Get All Conversations
+ * Uses enhanced API client with automatic retry and error handling
+ * Requires authentication
  */
-export async function getConversations(params?: GetConversationsRequest) {
-  const token = getAuthToken();
-
-  if (!token) {
+export async function getConversations(params?: GetConversationsRequest): Promise<ApiResponse<GetConversationsResponse>> {
+  if (!isAuthenticated()) {
     return {
       success: false,
       error: 'Authentication required',
@@ -69,12 +77,11 @@ export async function getConversations(params?: GetConversationsRequest) {
 
   const queryString = queryParams.toString();
   const endpoint = queryString
-    ? `${API_ENDPOINTS.MESSAGES}/conversations?${queryString}`
-    : `${API_ENDPOINTS.MESSAGES}/conversations`;
+    ? `${API_ENDPOINTS.LEGACY.MESSAGES}/conversations?${queryString}`
+    : `${API_ENDPOINTS.LEGACY.MESSAGES}/conversations`;
 
-  const response = await apiRequest<GetConversationsResponse>(endpoint, {
-    method: 'GET',
-    token,
+  const response = await apiClient.get<GetConversationsResponse>(endpoint, {
+    retries: 2,
   });
 
   return response;
