@@ -5,11 +5,32 @@ import { useState, useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter, usePathname } from 'next/navigation';
 import { useLanguage } from '../providers/LanguageProvider';
+import { useAuth } from '../providers/AuthProvider';
+import { getAuthToken } from '@/lib/api/client';
+import { getDashboardUrlWithToken } from '@/lib/utils/dashboard-url';
 import { locales, languageNames, type Locale } from '../../i18n';
+import { getCategories, type PhotographerCategory } from '@/lib/APIs/public';
 import 'bootstrap-icons/font/bootstrap-icons.css';
+
+// Map category names to icons
+const categoryIcons: Record<string, string> = {
+  'wedding': 'bi-heart-fill',
+  'weeding': 'bi-heart-fill', // typo in backend
+  'portrait': 'bi-person-fill',
+  'event': 'bi-calendar-event-fill',
+  'commercial': 'bi-briefcase-fill',
+  'fashion': 'bi-camera-fill',
+  'product': 'bi-box-fill',
+};
+
+const getIconForCategory = (name: string): string => {
+  const normalized = name.toLowerCase();
+  return categoryIcons[normalized] || 'bi-camera-fill';
+};
 
 const AmoriaKNavbar = () => {
   const { locale, setLocale } = useLanguage();
+  const { user, isAuthenticated, logout } = useAuth();
   const t = useTranslations('nav');
   const router = useRouter();
   const pathname = usePathname();
@@ -20,13 +41,17 @@ const AmoriaKNavbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isPhotographersDropdownOpen, setIsPhotographersDropdownOpen] = useState(false);
   const [isEventsDropdownOpen, setIsEventsDropdownOpen] = useState(false);
+  const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [photographerCategories, setPhotographerCategories] = useState<{ value: string; label: string; icon: string }[]>([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
 
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
   const langMenuRef = useRef<HTMLDivElement>(null);
   const photographersDropdownRef = useRef<HTMLDivElement>(null);
   const eventsDropdownRef = useRef<HTMLDivElement>(null);
+  const profileDropdownRef = useRef<HTMLDivElement>(null);
 
   const languages = locales.map((code) => ({
     code,
@@ -38,14 +63,30 @@ const AmoriaKNavbar = () => {
     return path;
   };
 
-  const photographerCategories = [
-    { value: 'wedding', label: t('photographerCategories.wedding'), icon: 'bi-heart-fill' },
-    { value: 'portrait', label: t('photographerCategories.portrait'), icon: 'bi-person-fill' },
-    { value: 'event', label: t('photographerCategories.event'), icon: 'bi-calendar-event-fill' },
-    { value: 'commercial', label: t('photographerCategories.commercial'), icon: 'bi-briefcase-fill' },
-    { value: 'fashion', label: t('photographerCategories.fashion'), icon: 'bi-camera-fill' },
-    { value: 'product', label: t('photographerCategories.product'), icon: 'bi-box-fill' },
-  ];
+  // Fetch photographer categories from API
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await getCategories();
+        if (response.success && response.data) {
+          const categories = response.data
+            .filter((cat: PhotographerCategory) => cat.isActive)
+            .map((cat: PhotographerCategory) => ({
+              value: cat.name.toLowerCase(),
+              label: cat.name,
+              icon: getIconForCategory(cat.name),
+            }));
+          setPhotographerCategories(categories);
+        }
+      } catch (error) {
+        console.error('Failed to fetch categories:', error);
+      } finally {
+        setCategoriesLoading(false);
+      }
+    };
+
+    fetchCategories();
+  }, []);
 
   const eventCategories = [
     { value: 'wedding', label: t('eventCategories.weddings'), icon: 'bi-heart-fill' },
@@ -81,7 +122,7 @@ const AmoriaKNavbar = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Effect to handle clicks outside of the mobile menu and language dropdown
+  // Effect to handle clicks outside of the mobile menu, language dropdown, and profile dropdown
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       // Close mobile menu (but not if clicking the menu button)
@@ -96,6 +137,10 @@ const AmoriaKNavbar = () => {
       // Close language dropdown
       if (langMenuRef.current && !langMenuRef.current.contains(event.target as Node)) {
         setIsLangMenuOpen(false);
+      }
+      // Close profile dropdown
+      if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target as Node)) {
+        setIsProfileDropdownOpen(false);
       }
     };
 
@@ -121,6 +166,19 @@ const AmoriaKNavbar = () => {
 
   const handleLinkClick = () => {
     setIsMobileMenuOpen(false);
+  };
+
+  const handleLogout = () => {
+    logout();
+    setIsProfileDropdownOpen(false);
+    setIsMobileMenuOpen(false);
+    router.push('/');
+  };
+
+  const getDashboardUrl = () => {
+    const token = getAuthToken();
+    // Use type-based URL with user's customerType
+    return getDashboardUrlWithToken(user?.customerType, token || undefined, user?.email || undefined) || '/user/dashboard';
   };
 
   return (
@@ -507,8 +565,112 @@ const AmoriaKNavbar = () => {
               )}
             </div>
 
-            <Link href={getLocalePath('/user/auth/login')} className="text-gray-900 text-base font-semibold hover:text-[#083A85] transition-colors duration-200 whitespace-nowrap cursor-pointer">{t('login')}</Link>
-            <Link href={getLocalePath('/user/auth/signup-type')} className="bg-[#083A85] text-white text-base font-medium rounded-full hover:bg-[#001f4d] transition-all duration-300 whitespace-nowrap cursor-pointer" style={{ paddingLeft: '1.25rem', paddingRight: '1.25rem', paddingTop: '0.375rem', paddingBottom: '0.375rem' }}>{t('signup')}</Link>
+            {isAuthenticated && user ? (
+              <div ref={profileDropdownRef} className="relative">
+                <button
+                  onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
+                  className="flex items-center gap-2 cursor-pointer border-none bg-transparent"
+                >
+                  <div
+                    className="w-9 h-9 rounded-full bg-[#083A85] flex items-center justify-center"
+                    style={{ boxShadow: '0 2px 8px rgba(8, 58, 133, 0.25)' }}
+                  >
+                    <span className="text-white font-semibold text-sm">
+                      {user.firstName?.[0]?.toUpperCase()}{user.lastName?.[0]?.toUpperCase()}
+                    </span>
+                  </div>
+                  <i className={`bi bi-chevron-down text-gray-600 transition-transform duration-200 ${isProfileDropdownOpen ? 'rotate-180' : ''}`} style={{ fontSize: '12px' }}></i>
+                </button>
+
+                {isProfileDropdownOpen && (
+                  <div
+                    className="absolute right-0 mt-2 w-56"
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.98)',
+                      backdropFilter: 'blur(12px)',
+                      WebkitBackdropFilter: 'blur(12px)',
+                      borderRadius: '12px',
+                      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08)',
+                      border: '1px solid rgba(255, 255, 255, 0.3)',
+                      overflow: 'hidden',
+                      zIndex: 10000,
+                    }}
+                  >
+                    <div style={{ padding: '14px 16px', borderBottom: '1px solid #e5e7eb' }}>
+                      <p style={{ fontWeight: '600', color: '#1f2937', fontSize: '14px', marginBottom: '2px' }}>
+                        {user.firstName} {user.lastName}
+                      </p>
+                      <p style={{ fontSize: '12px', color: '#6b7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {user.email}
+                      </p>
+                    </div>
+                    <div style={{ padding: '8px' }}>
+                      <a
+                        href={getDashboardUrl()}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block cursor-pointer"
+                        style={{
+                          padding: '10px 12px',
+                          borderRadius: '8px',
+                          fontSize: '14px',
+                          fontWeight: '500',
+                          color: '#374151',
+                          backgroundColor: 'transparent',
+                          transition: 'all 0.2s ease',
+                          textDecoration: 'none',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = 'rgba(8, 58, 133, 0.05)';
+                          e.currentTarget.style.color = '#083A85';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = 'transparent';
+                          e.currentTarget.style.color = '#374151';
+                        }}
+                      >
+                        <i className="bi bi-speedometer2" style={{ fontSize: '16px' }}></i>
+                        Dashboard
+                      </a>
+                      <button
+                        onClick={handleLogout}
+                        className="w-full text-left cursor-pointer"
+                        style={{
+                          padding: '10px 12px',
+                          borderRadius: '8px',
+                          fontSize: '14px',
+                          fontWeight: '500',
+                          color: '#dc2626',
+                          backgroundColor: 'transparent',
+                          transition: 'all 0.2s ease',
+                          border: 'none',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = 'rgba(220, 38, 38, 0.05)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = 'transparent';
+                        }}
+                      >
+                        <i className="bi bi-box-arrow-right" style={{ fontSize: '16px' }}></i>
+                        Logout
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <>
+                <Link href={getLocalePath('/user/auth/login')} className="text-gray-900 text-base font-semibold hover:text-[#083A85] transition-colors duration-200 whitespace-nowrap cursor-pointer">{t('login')}</Link>
+                <Link href={getLocalePath('/user/auth/signup-type')} className="bg-[#083A85] text-white text-base font-medium rounded-full hover:bg-[#001f4d] transition-all duration-300 whitespace-nowrap cursor-pointer" style={{ paddingLeft: '1.25rem', paddingRight: '1.25rem', paddingTop: '0.375rem', paddingBottom: '0.375rem' }}>{t('signup')}</Link>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -722,8 +884,92 @@ const AmoriaKNavbar = () => {
 
             <div className="border-t border-gray-200" style={{ marginTop: isMobile ? '0.5rem' : '0.75rem', marginBottom: isMobile ? '0.5rem' : '0.75rem' }}></div>
 
-            <Link href={getLocalePath('/user/auth/login')} onClick={handleLinkClick} className="block text-center rounded-md text-gray-900 hover:bg-gray-50 font-medium transition-colors cursor-pointer" style={{ padding: isMobile ? '0.5rem 0.75rem' : '0.625rem 0.75rem', fontSize: isMobile ? '0.9375rem' : '1rem' }}>{t('login')}</Link>
-            <Link href={getLocalePath('/user/auth/signup-type')} onClick={handleLinkClick} className="block text-center bg-[#002D72] text-white rounded-full hover:bg-[#001f4d] font-semibold transition-all duration-300 shadow-sm cursor-pointer" style={{ padding: isMobile ? '0.5rem 0.75rem' : '0.625rem 0.75rem', fontSize: isMobile ? '0.9375rem' : '1rem' }}>{t('signup')}</Link>
+            {isAuthenticated && user ? (
+              <>
+                {/* User Info */}
+                <div style={{
+                  padding: isMobile ? '0.75rem' : '1rem',
+                  backgroundColor: 'rgba(8, 58, 133, 0.05)',
+                  borderRadius: isMobile ? '8px' : '10px',
+                  marginBottom: isMobile ? '0.5rem' : '0.75rem',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div
+                      style={{
+                        width: isMobile ? '36px' : '40px',
+                        height: isMobile ? '36px' : '40px',
+                        borderRadius: '50%',
+                        backgroundColor: '#083A85',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                      }}
+                    >
+                      <span style={{ color: '#fff', fontWeight: '600', fontSize: isMobile ? '12px' : '14px' }}>
+                        {user.firstName?.[0]?.toUpperCase()}{user.lastName?.[0]?.toUpperCase()}
+                      </span>
+                    </div>
+                    <div style={{ overflow: 'hidden' }}>
+                      <p style={{ fontWeight: '600', color: '#1f2937', fontSize: isMobile ? '13px' : '14px', marginBottom: '2px' }}>
+                        {user.firstName} {user.lastName}
+                      </p>
+                      <p style={{ fontSize: isMobile ? '11px' : '12px', color: '#6b7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {user.email}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Dashboard Link */}
+                <a
+                  href={getDashboardUrl()}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={handleLinkClick}
+                  className="block text-center rounded-md text-gray-900 hover:bg-gray-50 font-medium transition-colors cursor-pointer"
+                  style={{
+                    padding: isMobile ? '0.5rem 0.75rem' : '0.625rem 0.75rem',
+                    fontSize: isMobile ? '0.9375rem' : '1rem',
+                    textDecoration: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                  }}
+                >
+                  <i className="bi bi-speedometer2"></i>
+                  Dashboard
+                </a>
+
+                {/* Logout Button */}
+                <button
+                  onClick={handleLogout}
+                  className="w-full text-center rounded-md font-medium transition-colors cursor-pointer"
+                  style={{
+                    padding: isMobile ? '0.5rem 0.75rem' : '0.625rem 0.75rem',
+                    fontSize: isMobile ? '0.9375rem' : '1rem',
+                    border: '1px solid #dc2626',
+                    backgroundColor: 'transparent',
+                    color: '#dc2626',
+                    borderRadius: '9999px',
+                    marginTop: isMobile ? '0.25rem' : '0.5rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                  }}
+                >
+                  <i className="bi bi-box-arrow-right"></i>
+                  Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <Link href={getLocalePath('/user/auth/login')} onClick={handleLinkClick} className="block text-center rounded-md text-gray-900 hover:bg-gray-50 font-medium transition-colors cursor-pointer" style={{ padding: isMobile ? '0.5rem 0.75rem' : '0.625rem 0.75rem', fontSize: isMobile ? '0.9375rem' : '1rem' }}>{t('login')}</Link>
+                <Link href={getLocalePath('/user/auth/signup-type')} onClick={handleLinkClick} className="block text-center bg-[#002D72] text-white rounded-full hover:bg-[#001f4d] font-semibold transition-all duration-300 shadow-sm cursor-pointer" style={{ padding: isMobile ? '0.5rem 0.75rem' : '0.625rem 0.75rem', fontSize: isMobile ? '0.9375rem' : '1rem' }}>{t('signup')}</Link>
+              </>
+            )}
           </div>
         </div>
       )}
