@@ -9,6 +9,12 @@ import type { ApiClientConfig, RetryConfig, RateLimitConfig } from './types';
  * Get the API base URL from environment or default
  */
 function getBaseUrl(): string {
+  // In production (Vercel), use the proxy to avoid mixed content
+  if (typeof window !== 'undefined' && process.env.NODE_ENV === 'production') {
+    return '/api/proxy/';
+  }
+
+  // In development or server-side, use direct URL
   const url = process.env.NEXT_PUBLIC_API_URL || 'http://197.243.24.101/';
 
   // Ensure URL ends with slash for consistent path joining
