@@ -2,39 +2,33 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://197.243.24.101/';
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { path: string[] } }
-) {
-  return proxyRequest(request, params.path, 'GET');
+type RouteContext = {
+  params: Promise<{ path: string[] }>;
+};
+
+export async function GET(request: NextRequest, context: RouteContext) {
+  const { path } = await context.params;
+  return proxyRequest(request, path, 'GET');
 }
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { path: string[] } }
-) {
-  return proxyRequest(request, params.path, 'POST');
+export async function POST(request: NextRequest, context: RouteContext) {
+  const { path } = await context.params;
+  return proxyRequest(request, path, 'POST');
 }
 
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: { path: string[] } }
-) {
-  return proxyRequest(request, params.path, 'PUT');
+export async function PUT(request: NextRequest, context: RouteContext) {
+  const { path } = await context.params;
+  return proxyRequest(request, path, 'PUT');
 }
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: { path: string[] } }
-) {
-  return proxyRequest(request, params.path, 'PATCH');
+export async function PATCH(request: NextRequest, context: RouteContext) {
+  const { path } = await context.params;
+  return proxyRequest(request, path, 'PATCH');
 }
 
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { path: string[] } }
-) {
-  return proxyRequest(request, params.path, 'DELETE');
+export async function DELETE(request: NextRequest, context: RouteContext) {
+  const { path } = await context.params;
+  return proxyRequest(request, path, 'DELETE');
 }
 
 async function proxyRequest(
