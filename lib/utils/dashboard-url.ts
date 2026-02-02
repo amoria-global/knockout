@@ -12,21 +12,15 @@ export function getDashboardUrl(customerType?: string): string {
 }
 
 /**
- * Generate dashboard URL with token and email attached
+ * Generate dashboard URL with token attached
  * @param customerType - The user's customer type
  * @param token - The auth token to attach
- * @param email - The user's email to attach
- * @returns Full dashboard URL with token and email query parameters
+ * @returns Full dashboard URL with token query parameter
  */
-export function getDashboardUrlWithToken(customerType?: string, token?: string, email?: string): string {
+export function getDashboardUrlWithToken(customerType?: string, token?: string): string {
   const dashboardUrl = getDashboardUrl(customerType);
   if (token) {
-    const params = new URLSearchParams();
-    params.set('token', token);
-    if (email) {
-      params.set('email', email);
-    }
-    return `${dashboardUrl}?${params.toString()}`;
+    return `${dashboardUrl}?token=${encodeURIComponent(token)}`;
   }
   return dashboardUrl;
 }
