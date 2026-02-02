@@ -177,8 +177,8 @@ const AmoriaKNavbar = () => {
 
   const getDashboardUrl = () => {
     const token = getAuthToken();
-    // Use type-based URL with user's customerType
-    return getDashboardUrlWithToken(user?.customerType, token || undefined, user?.email || undefined) || '/user/dashboard';
+    // Use type-based URL with user's customerType (token-only, no email needed)
+    return getDashboardUrlWithToken(user?.customerType, token || undefined) || '/user/dashboard';
   };
 
   return (
