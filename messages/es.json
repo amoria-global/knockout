@@ -71,7 +71,21 @@
     "tablet": "Tableta",
     "laptop": "Portátil",
     "concerts": "Conciertos",
-    "weddings": "Bodas"
+    "weddings": "Bodas",
+    "mockupHeadings": {
+      "phone": {
+        "line1": "Deseos.",
+        "line2": "¡Cumpleaños!"
+      },
+      "tablet": {
+        "line1": "Amor.",
+        "line2": "¡Bodas!"
+      },
+      "laptop": {
+        "line1": "Vibras.",
+        "line2": "¡Conciertos!"
+      }
+    }
   },
   "whyAmoria": {
     "title": "¿Por Qué Solo Amoria Connekyt?",
@@ -82,7 +96,7 @@
     },
     "liveStreaming": {
       "title": "Transmisión en Vivo",
-      "description": "Ve más allá de los recuerdos—organiza y comparte tu evento en vivo con reacciones en tiempo real y transmisión en pantalla dividida de eventos duales"
+      "description": "Ve más allá de los recuerdos, organiza y comparte tu evento en vivo con reacciones en tiempo real y transmisión en pantalla dividida de eventos duales"
     },
     "securePayments": {
       "title": "Pagos Seguros",
