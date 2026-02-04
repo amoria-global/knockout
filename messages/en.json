@@ -71,7 +71,21 @@
     "tablet": "Tablet",
     "laptop": "Laptop",
     "concerts": "Concerts",
-    "weddings": "Weddings"
+    "weddings": "Weddings",
+    "mockupHeadings": {
+      "phone": {
+        "line1": "Wishings.",
+        "line2": "Birthdays!"
+      },
+      "tablet": {
+        "line1": "Love.",
+        "line2": "Weddings!"
+      },
+      "laptop": {
+        "line1": "Vybes.",
+        "line2": "Concerts!"
+      }
+    }
   },
   "whyAmoria": {
     "title": "Why Amoria Connekyt Only?",
@@ -82,7 +96,7 @@
     },
     "liveStreaming": {
       "title": "Live Streaming",
-      "description": "Go beyond memories—host and share your event live with real-time reactions and over dual-event split-screen streaming!"
+      "description": "Go beyond memories, host and share your event live with real-time reactions and over dual-event split-screen streaming!"
     },
     "securePayments": {
       "title": "Secure Payments",
