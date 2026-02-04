@@ -1003,7 +1003,7 @@ const PhotographerGuide = () => {
 
               <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
                 <a
-                  href="/user/auth/signup?userType=photographer"
+                  href="/user/auth/signup?userType=Photographer"
                   style={{
                     display: 'inline-block',
                     background: '#fff',

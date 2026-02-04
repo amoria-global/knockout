@@ -1,8 +1,10 @@
 'use client';
 import React, { useState, useEffect, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import AmoriaKNavbar from '../../components/navbar';
+import { useAuth } from '@/app/providers/AuthProvider';
+import { createEventBooking } from '@/lib/APIs/bookings/create-booking/route';
 
 // Shared photographer data - same as view-profile.tsx
 const photographersData = [
@@ -106,10 +108,42 @@ const photographersData = [
 
 function BookNowContent(): React.JSX.Element {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const photographerId = searchParams.get('id');
   const t = useTranslations('booking.step1');
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+
   const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [bookingInProgress, setBookingInProgress] = useState(false);
+  const [bookingError, setBookingError] = useState<string | null>(null);
+  const [validationError, setValidationError] = useState<string | null>(null);
+
+  // Validation checks
+  useEffect(() => {
+    if (authLoading) return;
+
+    // Check if user is authenticated
+    if (!isAuthenticated) {
+      const returnUrl = encodeURIComponent(`/user/book-now?id=${photographerId}`);
+      router.push(`/user/auth/login?redirect=${returnUrl}`);
+      return;
+    }
+
+    // Check if user is a client (not a photographer)
+    if (user?.customerType === 'Photographer') {
+      setValidationError('Only clients can book photographers. Please log in with a client account.');
+      return;
+    }
+
+    // Check if user is trying to book themselves
+    if (user?.customerId === photographerId || user?.id === photographerId) {
+      setValidationError('You cannot book yourself.');
+      return;
+    }
+
+    setValidationError(null);
+  }, [authLoading, isAuthenticated, user, photographerId, router]);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -206,7 +240,133 @@ function BookNowContent(): React.JSX.Element {
 
   const handleCancel = () => {
     setSelectedPackage(null);
+    setBookingError(null);
   };
+
+  const handleBooking = async () => {
+    if (!selectedPackage || !photographerId || !user) {
+      setBookingError('Please select a package to continue.');
+      return;
+    }
+
+    // Clear previous errors
+    setBookingError(null);
+    setBookingInProgress(true);
+
+    try {
+      const response = await createEventBooking(
+        {
+          photographerId: photographerId,
+          packageId: selectedPackage,
+          eventDate: '', // Will be filled in next step
+          eventTime: '',
+          eventType: '',
+          location: '',
+        },
+        user.customerId || user.id
+      );
+
+      if (response.success) {
+        // Redirect to events page on success
+        const dashboardUrl = process.env.NEXT_PUBLIC_DASHBOARD_URL || 'https://connekt-dashboard.vercel.app';
+        window.location.href = `${dashboardUrl}/user/client/events`;
+      } else {
+        setBookingError(response.error || 'Failed to create booking. Please try again.');
+      }
+    } catch (error) {
+      console.error('Booking error:', error);
+      setBookingError('An unexpected error occurred. Please try again.');
+    } finally {
+      setBookingInProgress(false);
+    }
+  };
+
+  // Show loading state while checking authentication
+  if (authLoading) {
+    return (
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '100vh',
+        backgroundColor: '#f0f4f8'
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{
+            width: '40px',
+            height: '40px',
+            border: '3px solid #e5e7eb',
+            borderTopColor: '#083A85',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+            margin: '0 auto 16px'
+          }} />
+          <p style={{ color: '#6b7280', fontSize: '14px' }}>Loading...</p>
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        </div>
+      </div>
+    );
+  }
+
+  // Show validation error if user cannot book
+  if (validationError) {
+    return (
+      <>
+        <AmoriaKNavbar />
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: 'calc(100vh - 80px)',
+          backgroundColor: '#f0f4f8',
+          padding: '20px'
+        }}>
+          <div style={{
+            backgroundColor: '#fff',
+            padding: '40px',
+            borderRadius: '16px',
+            textAlign: 'center',
+            maxWidth: '400px',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
+          }}>
+            <div style={{
+              width: '60px',
+              height: '60px',
+              backgroundColor: '#FEE2E2',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 20px'
+            }}>
+              <i className="bi bi-exclamation-triangle-fill" style={{ fontSize: '28px', color: '#DC2626' }}></i>
+            </div>
+            <h2 style={{ fontSize: '20px', fontWeight: '700', color: '#111827', marginBottom: '12px' }}>
+              Cannot Complete Booking
+            </h2>
+            <p style={{ fontSize: '15px', color: '#6b7280', marginBottom: '24px' }}>
+              {validationError}
+            </p>
+            <button
+              onClick={() => window.history.back()}
+              style={{
+                padding: '12px 32px',
+                backgroundColor: '#083A85',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '15px',
+                fontWeight: '600',
+                cursor: 'pointer'
+              }}
+            >
+              Go Back
+            </button>
+          </div>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
@@ -942,19 +1102,19 @@ function BookNowContent(): React.JSX.Element {
               {t('cancel')}
             </button>
             <button
-              onClick={() => (window.location.href = 'https://connekt-dashboard.vercel.app/user/client/events')}
-              disabled={!selectedPackage}
+              onClick={handleBooking}
+              disabled={!selectedPackage || bookingInProgress}
               style={{
                 padding: '14px 40px',
-                backgroundColor: selectedPackage ? '#083A85' : '#d1d5db',
+                backgroundColor: selectedPackage && !bookingInProgress ? '#083A85' : '#d1d5db',
                 color: '#fff',
                 border: 'none',
                 borderRadius: '12px',
                 fontSize: '15px',
                 fontWeight: '700',
-                cursor: selectedPackage ? 'pointer' : 'not-allowed',
+                cursor: selectedPackage && !bookingInProgress ? 'pointer' : 'not-allowed',
                 transition: 'all 0.3s ease',
-                boxShadow: selectedPackage ? '0 8px 20px rgba(8, 58, 133, 0.35)' : 'none',
+                boxShadow: selectedPackage && !bookingInProgress ? '0 8px 20px rgba(8, 58, 133, 0.35)' : 'none',
                 minWidth: isMobile ? '100%' : '200px',
                 display: 'flex',
                 alignItems: 'center',
@@ -962,24 +1122,60 @@ function BookNowContent(): React.JSX.Element {
                 gap: '8px',
               }}
               onMouseEnter={(e) => {
-                if (selectedPackage) {
+                if (selectedPackage && !bookingInProgress) {
                   e.currentTarget.style.backgroundColor = '#062d6b';
                   e.currentTarget.style.transform = 'translateY(-2px)';
                   e.currentTarget.style.boxShadow = '0 12px 28px rgba(8, 58, 133, 0.45)';
                 }
               }}
               onMouseLeave={(e) => {
-                if (selectedPackage) {
+                if (selectedPackage && !bookingInProgress) {
                   e.currentTarget.style.backgroundColor = '#083A85';
                   e.currentTarget.style.transform = 'translateY(0)';
                   e.currentTarget.style.boxShadow = '0 8px 20px rgba(8, 58, 133, 0.35)';
                 }
               }}
             >
-              {t('next')}
-              <i className="bi bi-arrow-right"></i>
+              {bookingInProgress ? (
+                <>
+                  <div style={{
+                    width: '16px',
+                    height: '16px',
+                    border: '2px solid rgba(255,255,255,0.3)',
+                    borderTopColor: '#fff',
+                    borderRadius: '50%',
+                    animation: 'spin 1s linear infinite'
+                  }} />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  {t('next')}
+                  <i className="bi bi-arrow-right"></i>
+                </>
+              )}
             </button>
           </div>
+
+          {/* Booking Error Message */}
+          {bookingError && (
+            <div style={{
+              textAlign: 'center',
+              padding: '12px 20px',
+              backgroundColor: '#FEE2E2',
+              color: '#DC2626',
+              borderRadius: '8px',
+              marginTop: '16px',
+              fontSize: '14px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px'
+            }}>
+              <i className="bi bi-exclamation-circle-fill"></i>
+              {bookingError}
+            </div>
+          )}
 
           {/* Footer Note */}
           <p
