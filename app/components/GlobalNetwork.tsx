@@ -27,6 +27,7 @@ interface GlowNode {
 const GlobalNetwork: React.FC = () => {
   const [mounted, setMounted] = useState(false);
   const [geographies, setGeographies] = useState<Feature<Geometry>[]>([]);
+  const [hoveredCountry, setHoveredCountry] = useState<number | null>(null);
 
   const geoUrl = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
 
@@ -227,15 +228,37 @@ const GlobalNetwork: React.FC = () => {
 
         {/* World Map */}
         {mounted && (
-          <g opacity="0.7">
+          <g>
             {geographies.map((geo, i) => (
               <path
                 key={`geo-${i}`}
                 d={pathGenerator(geo) || ''}
-                fill="#3A6B7C"
-                stroke="#4A8FA8"
-                strokeWidth={1}
-                style={{ outline: 'none' }}
+                fill={hoveredCountry === i ? '#4A8FA8' : '#3A6B7C'}
+                stroke={hoveredCountry === i ? '#6BB8D0' : '#5A9AAB'}
+                strokeWidth={hoveredCountry === i ? 2.5 : 0.9}
+                opacity={hoveredCountry === i ? 1 : 0.9}
+                style={{
+                  outline: 'none',
+                  cursor: 'pointer',
+                  transition: 'all 0.05s linear',
+                  filter: hoveredCountry === i ? 'brightness(1.4) contrast(1.0)' : 'none',
+                  willChange: 'fill, stroke-width, opacity, filter',
+                  pointerEvents: 'fill'
+                }}
+                onMouseEnter={(e) => {
+                  e.stopPropagation();
+                  setHoveredCountry(i);
+                }}
+                onMouseLeave={(e) => {
+                  e.stopPropagation();
+                  setHoveredCountry(null);
+                }}
+                onMouseOver={(e) => {
+                  e.stopPropagation();
+                  if (hoveredCountry !== i) {
+                    setHoveredCountry(i);
+                  }
+                }}
               />
             ))}
           </g>
@@ -250,13 +273,13 @@ const GlobalNetwork: React.FC = () => {
           const pathData = generatePath(start, end, conn.controlOffset);
 
           return (
-            <g key={`conn-${conn.id}`}>
+            <g key={`conn-${conn.id}`} style={{ pointerEvents: 'none' }}>
               {/* Main line with glow */}
               <path
                 d={pathData}
                 stroke="#00D4FF"
-                strokeWidth="0.9"
-                opacity="1.0"
+                strokeWidth="0.7"
+                opacity="1.5"
                 fill="none"
                 strokeLinecap="round"
                 filter="url(#lineGlow)"
@@ -285,7 +308,7 @@ const GlobalNetwork: React.FC = () => {
 
           if (node.type === 'solid') {
             return (
-              <g key={`node-${node.id}`}>
+              <g key={`node-${node.id}`} style={{ pointerEvents: 'none' }}>
                 {/* Glow */}
                 <circle
                   cx={pos[0]}
@@ -313,7 +336,7 @@ const GlobalNetwork: React.FC = () => {
             );
           } else {
             return (
-              <g key={`node-${node.id}`}>
+              <g key={`node-${node.id}`} style={{ pointerEvents: 'none' }}>
                 {/* Glow */}
                 <circle
                   cx={pos[0]}
