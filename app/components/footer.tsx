@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   FaFacebookF,
   FaLinkedinIn,
@@ -12,6 +12,22 @@ import {
 export default function Footer() {
   const t = useTranslations('footer');
   const [email, setEmail] = useState('');
+  const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(null);
+  const footerRef = useRef<HTMLDivElement>(null);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (footerRef.current) {
+      const rect = footerRef.current.getBoundingClientRect();
+      setMousePos({
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
+      });
+    }
+  };
+
+  const handleMouseLeave = () => {
+    setMousePos(null);
+  };
 
   const handleSubscribe = (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,7 +51,9 @@ export default function Footer() {
     .subscribe-input { width: 100%; padding: 0.44rem 1.2rem; background: transparent; color: #000; border: none; outline: none; font-size: 0.96rem; font-weight: 500; }
     .subscribe-button { background: #103E83; color: white; font-weight: 600; border-radius: 1.6rem; letter-spacing: 0.05em; font-size: 0.9rem; padding: 0.6rem 1.6rem; flex-shrink: 0; cursor: pointer; border: none; transition: background-color 0.2s; }
     .subscribe-button:hover { background-color: #0d3268; }
-    .footer-body { background: linear-gradient(to right, #052047, #052047, #103E83); border-radius: 2rem 2rem 0 0; color: white; }
+    .footer-body { background: linear-gradient(to right, #052047, #052047, #103E83); border-radius: 2rem 2rem 0 0; color: white; position: relative; overflow: hidden; }
+    .footer-dotted-bg { position: absolute; inset: 0; background-image: radial-gradient(circle, rgba(255, 255, 255, 0.15) 1px, transparent 1px); background-size: 25px 25px; opacity: 0.4; z-index: 0; pointer-events: none; transition: opacity 0.3s ease; }
+    .footer-dotted-highlight { position: absolute; width: 300px; height: 300px; border-radius: 50%; background: radial-gradient(circle, rgba(255, 255, 255, 0.25) 0%, transparent 70%); pointer-events: none; z-index: 1; transform: translate(-50%, -50%); transition: opacity 0.15s ease; }
     .footer-content { max-width: 90rem; margin: 0 auto; padding: 3.2rem 3rem 1.6rem; }
     .footer-grid { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr 1fr; gap: 4rem; margin-bottom: 4rem; }
     .footer-brand { padding-right: 1.6rem; }
@@ -185,14 +203,54 @@ export default function Footer() {
 
       {/* Main Footer Body */}
       <div
+        ref={footerRef}
         className="footer-body"
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
         style={{
           background: 'linear-gradient(to right, #052047, #052047, #103E83)',
           borderTopLeftRadius: '2rem',
           borderTopRightRadius: '2rem',
           color: 'white',
+          position: 'relative',
+          overflow: 'hidden',
         }}
       >
+        {/* Dotted pattern background - base layer (dim) */}
+        <div
+          className="footer-dotted-bg"
+          style={{
+            position: 'absolute',
+            inset: 0,
+            backgroundImage: 'radial-gradient(circle, rgba(255, 255, 255, 0.3) 1px, transparent 1px)',
+            backgroundSize: '20px 20px',
+            opacity: 0.3,
+            zIndex: 0,
+            pointerEvents: 'none'
+          }}
+        />
+
+        {/* Spotlight layer - reveals brighter dots where cursor is */}
+        <div
+          className="footer-dotted-spotlight"
+          style={{
+            position: 'absolute',
+            inset: 0,
+            backgroundImage: 'radial-gradient(circle, rgba(255, 255, 255, 0.85) 1.5px, transparent 0.5px)',
+            backgroundSize: '20px 20px',
+            opacity: mousePos ? 0.7 : 0,
+            zIndex: 1,
+            pointerEvents: 'none',
+            maskImage: mousePos
+              ? `radial-gradient(circle 80px at ${mousePos.x}px ${mousePos.y}px, black 0%, black 50%, transparent 80%)`
+              : 'none',
+            WebkitMaskImage: mousePos
+              ? `radial-gradient(circle 80px at ${mousePos.x}px ${mousePos.y}px, black 0%, black 50%, transparent 80%)`
+              : 'none',
+            transition: 'opacity 0s ease'
+          }}
+        />
+
         <div
           className="footer-content"
           style={{
@@ -202,6 +260,8 @@ export default function Footer() {
             paddingRight: '3rem',
             paddingTop: '3.2rem',
             paddingBottom: '1.6rem',
+            position: 'relative',
+            zIndex: 2,
           }}
         >
           {/* Main Footer Content Grid */}

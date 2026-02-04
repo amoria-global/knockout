@@ -76,8 +76,31 @@ export default function SignupTypePage() {
   };
 
   return (
-    <div style={{
-      minHeight: '100vh',
+    <>
+      <style>{`
+        @keyframes bounceZoom {
+          0% {
+            transform: scale(1);
+          }
+          30% {
+            transform: scale(1.08);
+          }
+          50% {
+            transform: scale(1.03);
+          }
+          70% {
+            transform: scale(1.06);
+          }
+          100% {
+            transform: scale(1.05);
+          }
+        }
+        .card-hover:hover {
+          animation: bounceZoom 0.7s ease-out forwards;
+        }
+      `}</style>
+      <div style={{
+        minHeight: '100vh',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -158,6 +181,7 @@ export default function SignupTypePage() {
           {userOptions.map((option) => (
             <button
               key={option.id}
+              className={!isMobile ? 'card-hover' : ''}
               onClick={() => setSelectedType(option.id)}
               style={{
                 position: 'relative',
@@ -166,7 +190,7 @@ export default function SignupTypePage() {
                 border: selectedType === option.id ? '3px solid #083A85' : '2px solid #D1D5DB',
                 borderRadius: isMobile ? '12px' : '16px',
                 cursor: 'pointer',
-                transition: 'all 0.3s ease',
+                transition: 'all 0.3s ease, transform 0.1s ease',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
@@ -180,15 +204,14 @@ export default function SignupTypePage() {
               onMouseEnter={(e) => {
                 if (selectedType !== option.id && !isMobile) {
                   e.currentTarget.style.borderColor = '#083A85';
-                  e.currentTarget.style.transform = 'translateY(-4px)';
-                  e.currentTarget.style.boxShadow = '0 8px 20px rgba(8, 58, 133, 0.15)';
+                  e.currentTarget.style.boxShadow = '0 12px 28px rgba(8, 58, 133, 0.25)';
                 }
               }}
               onMouseLeave={(e) => {
                 if (selectedType !== option.id && !isMobile) {
                   e.currentTarget.style.borderColor = '#D1D5DB';
-                  e.currentTarget.style.transform = 'translateY(0)';
                   e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.08)';
+                  e.currentTarget.style.transform = 'scale(1)';
                 }
               }}
             >
@@ -307,5 +330,6 @@ export default function SignupTypePage() {
         </p>
       </div>
     </div>
+    </>
   );
 }
