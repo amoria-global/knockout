@@ -32,6 +32,7 @@ export {
 } from './get-photographers/route';
 export type {
   Photographer,
+  ProfessionalSkill,
   PaginatedPhotographers,
   GetPhotographersRequest,
   Review,

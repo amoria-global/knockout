@@ -270,7 +270,7 @@ export default function Home() {
                   {t('hero.findPhotographer')}
                 </button>
                 <button
-                  onClick={() => window.location.href = '/user/auth/signup?userType=photographer'}
+                  onClick={() => window.location.href = '/user/auth/signup?userType=Photographer'}
                   style={{
                   backgroundColor: 'transparent',
                   color: '#083A85',
@@ -865,7 +865,7 @@ export default function Home() {
               {/* Button - Now after video */}
               <button
                 className="photographer-button"
-                onClick={() => window.location.href = '/user/auth/signup?userType=photographer'}
+                onClick={() => window.location.href = '/user/auth/signup?userType=Photographer'}
                 style={{
                   background: 'linear-gradient(90deg, #041DC0 0%, #FF6363 0%, #7763FF 100%)',
                   color: '#000',
