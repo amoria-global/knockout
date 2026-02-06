@@ -8,7 +8,7 @@ export function getDashboardUrl(customerType?: string): string {
   const route = customerType === 'client'
     ? '/user/client/home'
     : '/user/photographer/dashboard';
-  return `${baseUrl}${route}`;
+  return `${baseUrl}${route}`; 
 }
 
 /**
