@@ -24,7 +24,9 @@ export default function PostLoginModal({
   // Determine dashboard label based on user type
   const dashboardLabel = customerType === 'client'
     ? 'Continue to Client Portal'
-    : 'Continue to Dashboard';
+    : customerType === 'event-coordinator'
+      ? 'Continue to Event Dashboard'
+      : 'Continue to Dashboard';
   if (!isOpen) return null;
 
   return (

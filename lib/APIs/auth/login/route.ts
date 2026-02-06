@@ -27,6 +27,8 @@ export interface LoginResponse {
   lastName?: string;
   email?: string;
   phone?: string;
+  userType?: string;
+  customerType?: string;
   token_expiry?: string;
   // Status fields
   otpVerified?: boolean | string; // Indicates if email is verified (backend may send boolean or string)
