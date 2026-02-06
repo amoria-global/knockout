@@ -4,6 +4,7 @@ import "bootstrap-icons/font/bootstrap-icons.css";
 import BackToTop from "./components/BackToTop";
 import { LanguageProvider } from "./providers/LanguageProvider";
 import { AuthProvider } from "./providers/AuthProvider";
+import GoogleOAuthProvider from "./providers/GoogleOAuthProvider";
 import { ToastProvider } from "@/lib/notifications/ToastProvider";
 import { ToastContainer } from "./components/Toast";
 import { ErrorBoundary } from "./components/ErrorBoundary";
@@ -31,15 +32,17 @@ export default function RootLayout({
     <html lang="en">
       <body className="antialiased">
         <LanguageProvider>
-          <AuthProvider>
-            <ToastProvider>
-              <ErrorBoundary>
-                {children}
-                <BackToTop />
-                <ToastContainer />
-              </ErrorBoundary>
-            </ToastProvider>
-          </AuthProvider>
+          <GoogleOAuthProvider>
+            <AuthProvider>
+              <ToastProvider>
+                <ErrorBoundary>
+                  {children}
+                  <BackToTop />
+                  <ToastContainer />
+                </ErrorBoundary>
+              </ToastProvider>
+            </AuthProvider>
+          </GoogleOAuthProvider>
         </LanguageProvider>
       </body>
     </html>

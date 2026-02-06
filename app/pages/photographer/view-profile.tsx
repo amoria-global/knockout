@@ -160,8 +160,8 @@ function ViewProfileContent(): React.JSX.Element {
     portfolio: {
       beliefs: photographer?.professionalPhilosophy || '',
       skills: photographer?.professionalSkills?.map((skill, index) => ({
-        name: skill,
-        level: Math.max(70, 95 - (index * 5)) // Calculate level based on order
+        name: skill.name,
+        level: skill.proficiencyLevel || skill.skillPercentage || Math.max(70, 95 - (index * 5))
       })) || [],
       qualifications: photographer?.certifications?.map((cert, index) => ({
         id: index + 1,

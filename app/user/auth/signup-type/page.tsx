@@ -8,7 +8,6 @@ import { useTranslations } from 'next-intl';
 export default function SignupTypePage() {
   const t = useTranslations('auth.signupType');
   const router = useRouter();
-  const [selectedType, setSelectedType] = useState<string>('');
   const [screenSize, setScreenSize] = useState<'mobile' | 'tablet' | 'desktop'>('desktop');
 
   // Screen size detection for responsive design
@@ -31,7 +30,7 @@ export default function SignupTypePage() {
   // Define user type options
   const userOptions = [
     {
-      id: 'photographer',
+      id: 'Photographer',
       icon: (
         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
@@ -43,7 +42,7 @@ export default function SignupTypePage() {
       description: t('photographerDescription')
     },
     {
-      id: 'client',
+      id: 'Client',
       icon: (
         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
@@ -54,7 +53,7 @@ export default function SignupTypePage() {
       description: t('clientDescription')
     },
     {
-      id: 'event-coordinator',
+      id: 'Event-coordinator',
       icon: (
         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
@@ -70,9 +69,9 @@ export default function SignupTypePage() {
     }
   ];
 
-  const handleContinue = () => {
-    if (!selectedType) return;
-    router.push(`/user/auth/signup?userType=${selectedType}`);
+  // Navigate directly to signup with selected type
+  const handleSelectType = (typeId: string) => {
+    router.push(`/user/auth/signup?userType=${typeId}`);
   };
 
   return (
@@ -182,12 +181,12 @@ export default function SignupTypePage() {
             <button
               key={option.id}
               className={!isMobile ? 'card-hover' : ''}
-              onClick={() => setSelectedType(option.id)}
+              onClick={() => handleSelectType(option.id)}
               style={{
                 position: 'relative',
                 padding: isMobile ? '24px 20px' : '32px 24px',
                 backgroundColor: '#fff',
-                border: selectedType === option.id ? '3px solid #083A85' : '2px solid #D1D5DB',
+                border: '2px solid #D1D5DB',
                 borderRadius: isMobile ? '12px' : '16px',
                 cursor: 'pointer',
                 transition: 'all 0.3s ease, transform 0.1s ease',
@@ -196,37 +195,35 @@ export default function SignupTypePage() {
                 alignItems: 'center',
                 textAlign: 'center',
                 minHeight: isMobile ? '180px' : '240px',
-                boxShadow: selectedType === option.id
-                  ? '0 8px 24px rgba(8, 58, 133, 0.2)'
-                  : '0 2px 8px rgba(0, 0, 0, 0.08)',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
                 width: '100%'
               }}
               onMouseEnter={(e) => {
-                if (selectedType !== option.id && !isMobile) {
+                if (!isMobile) {
                   e.currentTarget.style.borderColor = '#083A85';
                   e.currentTarget.style.boxShadow = '0 12px 28px rgba(8, 58, 133, 0.25)';
                 }
               }}
               onMouseLeave={(e) => {
-                if (selectedType !== option.id && !isMobile) {
+                if (!isMobile) {
                   e.currentTarget.style.borderColor = '#D1D5DB';
                   e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.08)';
                   e.currentTarget.style.transform = 'scale(1)';
                 }
               }}
             >
-              {/* Radio Button Indicator */}
+              {/* Arrow Indicator */}
               <div style={{
                 position: 'absolute',
                 top: isMobile ? '16px' : '20px',
                 right: isMobile ? '16px' : '20px',
-                width: isMobile ? '20px' : '24px',
-                height: isMobile ? '20px' : '24px',
-                borderRadius: '50%',
-                border: selectedType === option.id ? (isMobile ? '6px solid #083A85' : '7px solid #083A85') : '2px solid #D1D5DB',
-                backgroundColor: '#fff',
+                color: '#9ca3af',
                 transition: 'all 0.3s ease'
-              }} />
+              }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M9 18l6-6-6-6" />
+                </svg>
+              </div>
 
               {/* Icon */}
               <div style={{
@@ -236,7 +233,7 @@ export default function SignupTypePage() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: selectedType === option.id ? '#083A85' : '#6B7280',
+                color: '#6B7280',
                 transition: 'color 0.3s ease'
               }}>
                 <div style={{ transform: isMobile ? 'scale(0.75)' : 'scale(1)' }}>
@@ -267,44 +264,6 @@ export default function SignupTypePage() {
             </button>
           ))}
         </div>
-
-        {/* Continue Button */}
-        <button
-          onClick={handleContinue}
-          disabled={!selectedType}
-          style={{
-            width: isMobile ? '100%' : '50%',
-            maxWidth: isMobile ? '100%' : '300px',
-            padding: isMobile ? '16px 24px' : '14px 12px',
-            backgroundColor: selectedType ? '#083A85' : '#D1D5DB',
-            color: '#fff',
-            fontSize: isMobile ? '17px' : '18px',
-            fontWeight: 700,
-            borderRadius: '50px',
-            border: 'none',
-            cursor: selectedType ? 'pointer' : 'not-allowed',
-            transition: 'all 0.3s ease',
-            boxShadow: selectedType ? '0 4px 12px rgba(255, 255, 255, 0.3)' : 'none',
-            marginBottom: isMobile ? '20px' : '24px',
-            minHeight: isMobile ? '52px' : 'auto'
-          }}
-          onMouseEnter={(e) => {
-            if (selectedType && !isMobile) {
-              e.currentTarget.style.backgroundColor = '#062d6b';
-              e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.boxShadow = '0 6px 16px rgba(8, 58, 133, 0.3)';
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (selectedType && !isMobile) {
-              e.currentTarget.style.backgroundColor = '#083A85';
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 4px 12px rgba(255, 255, 255, 0.3)';
-            }
-          }}
-        >
-          {t('continue')}
-        </button>
 
         {/* Already have account link */}
         <p style={{

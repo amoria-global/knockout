@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import { useGoogleLogin } from '@react-oauth/google';
 import { login } from '@/lib/APIs/auth/login/route';
 import { useToast } from '@/lib/notifications/ToastProvider';
 import { useAuth } from '@/app/providers/AuthProvider';
@@ -14,7 +15,7 @@ export default function LoginPage(): React.JSX.Element {
   const router = useRouter();
   const t = useTranslations('auth.loginPage');
   const tAuth = useTranslations('auth');
-  const { success: showSuccess, error: showError, warning: showWarning, isOnline } = useToast();
+  const { success: showSuccess, error: showError, warning: showWarning, info: showInfo, isOnline } = useToast();
   const { login: loginUser } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
@@ -480,20 +481,37 @@ export default function LoginPage(): React.JSX.Element {
 
             {/* Social Login Buttons */}
             <div style={{ display: 'flex', gap: '12px', marginBottom: isMobile ? '8px' : '16px' }}>
-              {/* Google Button */}
-              <button style={{
-                flex: '1',
-                padding: '10px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: '20px',
-                border: '2px solid #d1d5db',
-                backgroundColor: '#ffffff',
-                cursor: 'pointer',
-                transition: 'all 0.3s'
-              }}>
+              {/* Google Button - Redirects to signup since no backend OAuth */}
+              <button
+                type="button"
+                onClick={() => {
+                  showInfo('Please sign up with Google first to create your account.');
+                  router.push('/user/auth/signup');
+                }}
+                style={{
+                  flex: '1',
+                  padding: isMobile ? '14px 20px' : '12px 20px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '10px',
+                  borderRadius: '20px',
+                  border: '2px solid #d1d5db',
+                  backgroundColor: '#ffffff',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = '#083A85';
+                  e.currentTarget.style.backgroundColor = '#f9fafb';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = '#d1d5db';
+                  e.currentTarget.style.backgroundColor = '#ffffff';
+                }}
+              >
                 <img src="https://www.svgrepo.com/show/355037/google.svg" alt="Google" style={{ width: '22px', height: '22px' }} />
+                <span style={{ fontSize: isMobile ? '15px' : '14px', fontWeight: '600', color: '#374151' }}>Login with Google</span>
               </button>
             </div>
 
