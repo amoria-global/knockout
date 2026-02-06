@@ -10,6 +10,13 @@ import type { ApiResponse } from '@/lib/api/types';
 /**
  * Photographer data returned from the API
  */
+export interface ProfessionalSkill {
+  id?: string;
+  name: string;
+  proficiencyLevel?: number;
+  skillPercentage?: number;
+}
+
 export interface Photographer {
   id: string;
   firstName: string;
@@ -28,7 +35,7 @@ export interface Photographer {
   reviews: Review[];
   availabilities: Availability[];
   projects: Project[];
-  professionalSkills: string[];
+  professionalSkills: ProfessionalSkill[];
   equipments: Equipment[];
   educationLevels: Education[];
   certifications: Certification[];

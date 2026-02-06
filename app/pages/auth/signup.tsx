@@ -3,13 +3,26 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import { useGoogleLogin } from '@react-oauth/google';
 import { signup } from '@/lib/APIs/auth/signup/route';
 import { useToast } from '@/lib/notifications/ToastProvider';
+import UserTypeModal from '@/app/components/UserTypeModal';
+
+interface GoogleUserInfo {
+  email: string;
+  given_name: string;
+  family_name: string;
+  picture?: string;
+  name?: string;
+}
 
 export default function SignupPage(): React.JSX.Element {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const userType = searchParams.get('userType') || 'client';
+  const urlUserType = searchParams.get('userType');
+  const [selectedUserType, setSelectedUserType] = useState<string | null>(urlUserType);
+  const [showUserTypeModal, setShowUserTypeModal] = useState(!urlUserType);
+  const userType = selectedUserType || 'Client';
   const t = useTranslations('auth.signupPage');
   const tAuth = useTranslations('auth');
   const { success: showSuccess, error: showError, warning: showWarning, info: showInfo, isOnline } = useToast();
@@ -20,6 +33,58 @@ export default function SignupPage(): React.JSX.Element {
   const [countryCode, setCountryCode] = useState('+250');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [isGooglePreFilled, setIsGooglePreFilled] = useState(false);
+
+  // Google OAuth login handler
+  const googleLogin = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      setGoogleLoading(true);
+      try {
+        // Fetch user info from Google using the access token
+        const response = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+          headers: {
+            Authorization: `Bearer ${tokenResponse.access_token}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch Google user info');
+        }
+
+        const userInfo: GoogleUserInfo = await response.json();
+
+        // Pre-fill form fields with Google data
+        if (userInfo.given_name) setFirstName(userInfo.given_name);
+        if (userInfo.family_name) setLastName(userInfo.family_name);
+        if (userInfo.email) setEmail(userInfo.email);
+
+        setIsGooglePreFilled(true);
+        showSuccess('Google account connected! Please complete your registration.');
+        showInfo('Enter your phone number and create a password to finish signing up.');
+      } catch (error) {
+        console.error('Google login error:', error);
+        showError('Failed to connect Google account. Please try again.');
+      } finally {
+        setGoogleLoading(false);
+      }
+    },
+    onError: (error) => {
+      console.error('Google OAuth error:', error);
+      showError('Google sign-in was cancelled or failed. Please try again.');
+      setGoogleLoading(false);
+    },
+  });
+
+  // Auto-scroll to phone field after Google pre-fill
+  useEffect(() => {
+    if (isGooglePreFilled) {
+      setTimeout(() => {
+        document.getElementById('phoneNumber')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        document.getElementById('phoneNumber')?.focus();
+      }, 300);
+    }
+  }, [isGooglePreFilled]);
 
   // Screen size detection for responsive design
   const [screenSize, setScreenSize] = useState<'mobile' | 'tablet' | 'desktop' | 'large' | 'xlarge'>('desktop');
@@ -205,8 +270,19 @@ export default function SignupPage(): React.JSX.Element {
     marginTop: isMobile ? '4px' : '4px'
   };
 
+  const handleUserTypeSelect = (type: string) => {
+    setSelectedUserType(type);
+    setShowUserTypeModal(false);
+  };
+
   return (
     <>
+      {/* User Type Selection Modal - appears when no userType in URL */}
+      <UserTypeModal
+        isOpen={showUserTypeModal}
+        onSelect={handleUserTypeSelect}
+      />
+
       <style>{`
         /* Safe area insets for mobile devices with notches */
         @supports (padding: env(safe-area-inset-top)) {
@@ -424,22 +500,99 @@ export default function SignupPage(): React.JSX.Element {
               width: '100%'
             }}>
               {/* Google Button */}
-              <button style={{
-                flex: '1',
-                padding: isMobile ? '14px' : '10px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: isMobile ? '16px' : '20px',
-                border: '2px solid #d1d5db',
-                backgroundColor: '#ffffff',
-                cursor: 'pointer',
-                transition: 'all 0.3s',
-                minHeight: isMobile ? '50px' : 'auto'
-              }}>
-                <img src="https://www.svgrepo.com/show/355037/google.svg" alt="Google" style={{ width: isMobile ? '24px' : '22px', height: isMobile ? '24px' : '22px' }} />
+              <button
+                type="button"
+                onClick={() => googleLogin()}
+                disabled={googleLoading || isGooglePreFilled}
+                style={{
+                  flex: '1',
+                  padding: isMobile ? '14px 20px' : '12px 20px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '10px',
+                  borderRadius: isMobile ? '16px' : '20px',
+                  border: isGooglePreFilled ? '2px solid #10b981' : '2px solid #d1d5db',
+                  backgroundColor: isGooglePreFilled ? '#ecfdf5' : '#ffffff',
+                  cursor: (googleLoading || isGooglePreFilled) ? 'not-allowed' : 'pointer',
+                  transition: 'all 0.3s',
+                  minHeight: isMobile ? '50px' : 'auto',
+                  opacity: googleLoading ? 0.7 : 1
+                }}
+                onMouseEnter={(e) => {
+                  if (!googleLoading && !isGooglePreFilled) {
+                    e.currentTarget.style.borderColor = '#083A85';
+                    e.currentTarget.style.backgroundColor = '#f9fafb';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!googleLoading && !isGooglePreFilled) {
+                    e.currentTarget.style.borderColor = '#d1d5db';
+                    e.currentTarget.style.backgroundColor = '#ffffff';
+                  }
+                }}
+              >
+                {googleLoading ? (
+                  <>
+                    <div style={{
+                      width: isMobile ? '22px' : '20px',
+                      height: isMobile ? '22px' : '20px',
+                      border: '2px solid #d1d5db',
+                      borderTopColor: '#083A85',
+                      borderRadius: '50%',
+                      animation: 'spin 1s linear infinite'
+                    }} />
+                    <span style={{ fontSize: isMobile ? '15px' : '14px', fontWeight: '600', color: '#374151' }}>Connecting...</span>
+                  </>
+                ) : isGooglePreFilled ? (
+                  <>
+                    <svg width={isMobile ? '22' : '20'} height={isMobile ? '22' : '20'} viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2">
+                      <path d="M20 6L9 17l-5-5" />
+                    </svg>
+                    <span style={{ fontSize: isMobile ? '15px' : '14px', fontWeight: '600', color: '#10b981' }}>Google Connected</span>
+                  </>
+                ) : (
+                  <>
+                    <img src="https://www.svgrepo.com/show/355037/google.svg" alt="Google" style={{ width: isMobile ? '22px' : '20px', height: isMobile ? '22px' : '20px' }} />
+                    <span style={{ fontSize: isMobile ? '15px' : '14px', fontWeight: '600', color: '#374151' }}>Sign up with Google</span>
+                  </>
+                )}
               </button>
             </div>
+
+            {/* CSS for spinner animation */}
+            <style>{`
+              @keyframes spin {
+                to { transform: rotate(360deg); }
+              }
+              @keyframes pulseHighlight {
+                0%, 100% { border-color: #d1d5db; }
+                50% { border-color: #083A85; }
+              }
+            `}</style>
+
+            {/* Helper message after Google pre-fill */}
+            {isGooglePreFilled && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '10px 14px',
+                backgroundColor: '#eff6ff',
+                borderRadius: '10px',
+                border: '1px solid #bfdbfe',
+                marginTop: '4px',
+              }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M12 16v-4" />
+                  <path d="M12 8h.01" />
+                </svg>
+                <span style={{ fontSize: '13px', color: '#1e40af', fontWeight: '500' }}>
+                  Complete your phone number and password below to create your account.
+                </span>
+              </div>
+            )}
 
             {/* Divider */}
             <div style={{
@@ -465,15 +618,20 @@ export default function SignupPage(): React.JSX.Element {
                 {/* First Name */}
                 <div>
                   <label htmlFor="firstName" style={labelStyle}>
-                    {t('firstName')}
+                    {t('firstName')} {isGooglePreFilled && <span style={{ fontSize: '12px', color: '#10b981' }}>(from Google)</span>}
                   </label>
                   <input
                     type="text"
                     id="firstName"
                     value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
+                    onChange={(e) => !isGooglePreFilled && setFirstName(e.target.value)}
                     placeholder={t('firstNamePlaceholder')}
-                    style={inputStyle}
+                    readOnly={isGooglePreFilled}
+                    style={{
+                      ...inputStyle,
+                      backgroundColor: isGooglePreFilled ? '#f9fafb' : '#ffffff',
+                      cursor: isGooglePreFilled ? 'not-allowed' : 'text'
+                    }}
                   />
                   {errors.firstName && <p style={errorStyle}>{errors.firstName}</p>}
                 </div>
@@ -481,15 +639,20 @@ export default function SignupPage(): React.JSX.Element {
                 {/* Last Name */}
                 <div>
                   <label htmlFor="lastName" style={labelStyle}>
-                    {t('lastName')}
+                    {t('lastName')} {isGooglePreFilled && <span style={{ fontSize: '12px', color: '#10b981' }}>(from Google)</span>}
                   </label>
                   <input
                     type="text"
                     id="lastName"
                     value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
+                    onChange={(e) => !isGooglePreFilled && setLastName(e.target.value)}
                     placeholder={t('lastNamePlaceholder')}
-                    style={inputStyle}
+                    readOnly={isGooglePreFilled}
+                    style={{
+                      ...inputStyle,
+                      backgroundColor: isGooglePreFilled ? '#f9fafb' : '#ffffff',
+                      cursor: isGooglePreFilled ? 'not-allowed' : 'text'
+                    }}
                   />
                   {errors.lastName && <p style={errorStyle}>{errors.lastName}</p>}
                 </div>
@@ -497,15 +660,20 @@ export default function SignupPage(): React.JSX.Element {
                 {/* Email */}
                 <div>
                   <label htmlFor="email" style={labelStyle}>
-                    {t('yourEmail')}
+                    {t('yourEmail')} {isGooglePreFilled && <span style={{ fontSize: '12px', color: '#10b981' }}>(from Google)</span>}
                   </label>
                   <input
                     type="email"
                     id="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => !isGooglePreFilled && setEmail(e.target.value)}
                     placeholder={t('emailPlaceholder')}
-                    style={inputStyle}
+                    readOnly={isGooglePreFilled}
+                    style={{
+                      ...inputStyle,
+                      backgroundColor: isGooglePreFilled ? '#f9fafb' : '#ffffff',
+                      cursor: isGooglePreFilled ? 'not-allowed' : 'text'
+                    }}
                   />
                   {errors.email && <p style={errorStyle}>{errors.email}</p>}
                 </div>
@@ -513,18 +681,19 @@ export default function SignupPage(): React.JSX.Element {
                 {/* Phone Number */}
                 <div style={{ width: '100%' }}>
                   <label htmlFor="phoneNumber" style={labelStyle}>
-                    {t('phone')}
+                    {t('phone')} {isGooglePreFilled && !phoneNumber && <span style={{ fontSize: '12px', color: '#2563eb' }}>(required)</span>}
                   </label>
                   <div style={{
                     position: 'relative',
                     display: 'flex',
                     alignItems: 'center',
-                    border: '2px solid #d1d5db',
+                    border: isGooglePreFilled && !phoneNumber ? '2px solid #083A85' : '2px solid #d1d5db',
                     borderRadius: isMobile ? '16px' : '20px',
                     overflow: 'hidden',
                     backgroundColor: '#ffffff',
                     minHeight: isMobile ? '50px' : 'auto',
-                    width: '100%'
+                    width: '100%',
+                    animation: isGooglePreFilled && !phoneNumber ? 'pulseHighlight 2s ease-in-out 3' : 'none',
                   }}>
                     <select
                       value={countryCode}
@@ -571,7 +740,7 @@ export default function SignupPage(): React.JSX.Element {
                 {/* Password */}
                 <div>
                   <label htmlFor="password" style={labelStyle}>
-                    {tAuth('password')}
+                    {tAuth('password')} {isGooglePreFilled && !password && <span style={{ fontSize: '12px', color: '#2563eb' }}>(required)</span>}
                   </label>
                   <div style={{ position: 'relative' }}>
                     <input
@@ -582,7 +751,9 @@ export default function SignupPage(): React.JSX.Element {
                       placeholder={t('passwordPlaceholder')}
                       style={{
                         ...inputStyle,
-                        paddingRight: '44px'
+                        paddingRight: '44px',
+                        borderColor: isGooglePreFilled && !password ? '#083A85' : undefined,
+                        animation: isGooglePreFilled && !password ? 'pulseHighlight 2s ease-in-out 3' : 'none'
                       }}
                     />
                     <button
@@ -612,7 +783,7 @@ export default function SignupPage(): React.JSX.Element {
                 {/* Confirm Password */}
                 <div>
                   <label htmlFor="confirmPassword" style={labelStyle}>
-                    {t('confirmPasswordLabel')}
+                    {t('confirmPasswordLabel')} {isGooglePreFilled && !confirmPassword && <span style={{ fontSize: '12px', color: '#2563eb' }}>(required)</span>}
                   </label>
                   <div style={{ position: 'relative' }}>
                     <input
@@ -623,7 +794,9 @@ export default function SignupPage(): React.JSX.Element {
                       placeholder={t('confirmPasswordPlaceholder')}
                       style={{
                         ...inputStyle,
-                        paddingRight: '44px'
+                        paddingRight: '44px',
+                        borderColor: isGooglePreFilled && !confirmPassword ? '#083A85' : undefined,
+                        animation: isGooglePreFilled && !confirmPassword ? 'pulseHighlight 2s ease-in-out 3' : 'none'
                       }}
                     />
                     <button

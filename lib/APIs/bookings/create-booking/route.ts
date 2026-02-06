@@ -91,7 +91,7 @@ export interface CreateBookingResponse {
 }
 
 /**
- * Create Booking
+ * Create Booking (Legacy)
  * Uses enhanced API client with automatic retry and error handling
  * Requires authentication
  */
@@ -108,6 +108,65 @@ export async function createBooking(data: CreateBookingRequest): Promise<ApiResp
     data,
     {
       retries: 1, // Less retries for write operations
+    }
+  );
+
+  return response;
+}
+
+/**
+ * Event Booking Request for customer/events/book endpoint
+ */
+export interface EventBookingRequest {
+  photographerId: string;
+  packageId: string;
+  eventDate: string;
+  eventTime: string;
+  eventType: string;
+  location: string;
+  guestCount?: number;
+  notes?: string;
+}
+
+/**
+ * Event Booking Response
+ */
+export interface EventBookingResponse {
+  id: string;
+  status: string;
+  message: string;
+  booking?: Booking;
+}
+
+/**
+ * Create Event Booking
+ * POST /api/remote/customer/events/book
+ * Requires authentication and client user type
+ */
+export async function createEventBooking(
+  data: EventBookingRequest,
+  clientId: string
+): Promise<ApiResponse<EventBookingResponse>> {
+  if (!isAuthenticated()) {
+    return {
+      success: false,
+      error: 'Authentication required to create bookings',
+    };
+  }
+
+  // Validate that client is not booking themselves
+  if (clientId === data.photographerId) {
+    return {
+      success: false,
+      error: 'You cannot book yourself',
+    };
+  }
+
+  const response = await apiClient.post<EventBookingResponse>(
+    API_ENDPOINTS.CUSTOMER.EVENTS_BOOK,
+    data,
+    {
+      retries: 1,
     }
   );
 

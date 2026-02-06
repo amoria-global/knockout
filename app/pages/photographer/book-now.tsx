@@ -1,8 +1,10 @@
 'use client';
 import React, { useState, useEffect, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import AmoriaKNavbar from '../../components/navbar';
+import { useAuth } from '@/app/providers/AuthProvider';
+import { createEventBooking } from '@/lib/APIs/bookings/create-booking/route';
 
 // Shared photographer data - same as view-profile.tsx
 const photographersData = [
@@ -106,10 +108,62 @@ const photographersData = [
 
 function BookNowContent(): React.JSX.Element {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const photographerId = searchParams.get('id');
   const t = useTranslations('booking.step1');
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+
   const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [bookingInProgress, setBookingInProgress] = useState(false);
+  const [bookingError, setBookingError] = useState<string | null>(null);
+  const [validationError, setValidationError] = useState<string | null>(null);
+
+  // Event details form state
+  const [eventDate, setEventDate] = useState('');
+  const [eventTime, setEventTime] = useState('');
+  const [eventType, setEventType] = useState('');
+  const [eventLocation, setEventLocation] = useState('');
+  const [eventNotes, setEventNotes] = useState('');
+
+  const eventTypes = [
+    'Wedding',
+    'Birthday',
+    'Corporate Event',
+    'Concert',
+    'Graduation',
+    'Portrait Session',
+    'Engagement',
+    'Baby Shower',
+    'Anniversary',
+    'Other',
+  ];
+
+  // Validation checks
+  useEffect(() => {
+    if (authLoading) return;
+
+    // Check if user is authenticated
+    if (!isAuthenticated) {
+      const returnUrl = encodeURIComponent(`/user/book-now?id=${photographerId}`);
+      router.push(`/user/auth/login?redirect=${returnUrl}`);
+      return;
+    }
+
+    // Check if user is a client (not a photographer)
+    if (user?.customerType === 'Photographer') {
+      setValidationError('Only clients can book photographers. Please log in with a client account.');
+      return;
+    }
+
+    // Check if user is trying to book themselves
+    if (user?.customerId === photographerId || user?.id === photographerId) {
+      setValidationError('You cannot book yourself.');
+      return;
+    }
+
+    setValidationError(null);
+  }, [authLoading, isAuthenticated, user, photographerId, router]);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -200,7 +254,140 @@ function BookNowContent(): React.JSX.Element {
 
   const handleCancel = () => {
     setSelectedPackage(null);
+    setBookingError(null);
   };
+
+  const isFormComplete = selectedPackage && eventDate && eventTime && eventType && eventLocation;
+
+  const handleBooking = async () => {
+    if (!selectedPackage || !photographerId || !user) {
+      setBookingError('Please select a package to continue.');
+      return;
+    }
+
+    if (!eventDate || !eventTime || !eventType || !eventLocation) {
+      setBookingError('Please fill in all event details.');
+      return;
+    }
+
+    // Clear previous errors
+    setBookingError(null);
+    setBookingInProgress(true);
+
+    try {
+      const response = await createEventBooking(
+        {
+          photographerId: photographerId,
+          packageId: selectedPackage,
+          eventDate: eventDate,
+          eventTime: eventTime,
+          eventType: eventType,
+          location: eventLocation,
+        },
+        user.customerId || user.id
+      );
+
+      if (response.success) {
+        // Redirect to events page on success
+        const dashboardUrl = process.env.NEXT_PUBLIC_DASHBOARD_URL || 'https://connekt-dashboard.vercel.app';
+        window.location.href = `${dashboardUrl}/user/client/events`;
+      } else {
+        setBookingError(response.error || 'Failed to create booking. Please try again.');
+      }
+    } catch (error) {
+      console.error('Booking error:', error);
+      setBookingError('An unexpected error occurred. Please try again.');
+    } finally {
+      setBookingInProgress(false);
+    }
+  };
+
+  // Show loading state while checking authentication
+  if (authLoading) {
+    return (
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '100vh',
+        backgroundColor: '#f0f4f8'
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{
+            width: '40px',
+            height: '40px',
+            border: '3px solid #e5e7eb',
+            borderTopColor: '#083A85',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+            margin: '0 auto 16px'
+          }} />
+          <p style={{ color: '#6b7280', fontSize: '14px' }}>Loading...</p>
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        </div>
+      </div>
+    );
+  }
+
+  // Show validation error if user cannot book
+  if (validationError) {
+    return (
+      <>
+        <AmoriaKNavbar />
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: 'calc(100vh - 80px)',
+          backgroundColor: '#f0f4f8',
+          padding: '20px'
+        }}>
+          <div style={{
+            backgroundColor: '#fff',
+            padding: '40px',
+            borderRadius: '16px',
+            textAlign: 'center',
+            maxWidth: '400px',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
+          }}>
+            <div style={{
+              width: '60px',
+              height: '60px',
+              backgroundColor: '#FEE2E2',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 20px'
+            }}>
+              <i className="bi bi-exclamation-triangle-fill" style={{ fontSize: '28px', color: '#DC2626' }}></i>
+            </div>
+            <h2 style={{ fontSize: '20px', fontWeight: '700', color: '#111827', marginBottom: '12px' }}>
+              Cannot Complete Booking
+            </h2>
+            <p style={{ fontSize: '15px', color: '#6b7280', marginBottom: '24px' }}>
+              {validationError}
+            </p>
+            <button
+              onClick={() => window.history.back()}
+              style={{
+                padding: '12px 32px',
+                backgroundColor: '#083A85',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '15px',
+                fontWeight: '600',
+                cursor: 'pointer'
+              }}
+            >
+              Go Back
+            </button>
+          </div>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
@@ -863,6 +1050,246 @@ function BookNowContent(): React.JSX.Element {
             ))}
           </div>
 
+          {/* Event Details Form - appears after package selection */}
+          {selectedPackage && (
+            <div
+              style={{
+                marginTop: '32px',
+                padding: isMobile ? '20px 16px' : '28px 24px',
+                backgroundColor: '#fff',
+                borderRadius: '16px',
+                border: '2px solid #e5e7eb',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
+              }}
+            >
+              <h3
+                style={{
+                  fontSize: isMobile ? '18px' : '20px',
+                  fontWeight: '700',
+                  color: '#1f2937',
+                  marginBottom: '6px',
+                }}
+              >
+                Event Details
+              </h3>
+              <p
+                style={{
+                  fontSize: '14px',
+                  color: '#6b7280',
+                  marginBottom: '20px',
+                }}
+              >
+                Tell us about your event so the photographer can prepare
+              </p>
+
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
+                  gap: '16px',
+                }}
+              >
+                {/* Event Type */}
+                <div>
+                  <label
+                    htmlFor="eventType"
+                    style={{
+                      display: 'block',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      color: '#374151',
+                      marginBottom: '6px',
+                    }}
+                  >
+                    Event Type *
+                  </label>
+                  <select
+                    id="eventType"
+                    value={eventType}
+                    onChange={(e) => setEventType(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      fontSize: '15px',
+                      border: '2px solid #d1d5db',
+                      borderRadius: '12px',
+                      backgroundColor: '#fff',
+                      color: eventType ? '#1f2937' : '#9ca3af',
+                      cursor: 'pointer',
+                      outline: 'none',
+                      transition: 'border-color 0.2s ease',
+                      appearance: 'none',
+                      backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23374151' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e")`,
+                      backgroundRepeat: 'no-repeat',
+                      backgroundPosition: 'right 12px center',
+                      backgroundSize: '16px',
+                    }}
+                    onFocus={(e) => (e.currentTarget.style.borderColor = '#083A85')}
+                    onBlur={(e) => (e.currentTarget.style.borderColor = '#d1d5db')}
+                  >
+                    <option value="" disabled>
+                      Select event type
+                    </option>
+                    {eventTypes.map((type) => (
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Event Date */}
+                <div>
+                  <label
+                    htmlFor="eventDate"
+                    style={{
+                      display: 'block',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      color: '#374151',
+                      marginBottom: '6px',
+                    }}
+                  >
+                    Event Date *
+                  </label>
+                  <input
+                    type="date"
+                    id="eventDate"
+                    value={eventDate}
+                    onChange={(e) => setEventDate(e.target.value)}
+                    min={new Date(Date.now() + 86400000).toISOString().split('T')[0]}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      fontSize: '15px',
+                      border: '2px solid #d1d5db',
+                      borderRadius: '12px',
+                      backgroundColor: '#fff',
+                      color: '#1f2937',
+                      outline: 'none',
+                      transition: 'border-color 0.2s ease',
+                      boxSizing: 'border-box',
+                    }}
+                    onFocus={(e) => (e.currentTarget.style.borderColor = '#083A85')}
+                    onBlur={(e) => (e.currentTarget.style.borderColor = '#d1d5db')}
+                  />
+                </div>
+
+                {/* Event Time */}
+                <div>
+                  <label
+                    htmlFor="eventTime"
+                    style={{
+                      display: 'block',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      color: '#374151',
+                      marginBottom: '6px',
+                    }}
+                  >
+                    Event Time *
+                  </label>
+                  <input
+                    type="time"
+                    id="eventTime"
+                    value={eventTime}
+                    onChange={(e) => setEventTime(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      fontSize: '15px',
+                      border: '2px solid #d1d5db',
+                      borderRadius: '12px',
+                      backgroundColor: '#fff',
+                      color: '#1f2937',
+                      outline: 'none',
+                      transition: 'border-color 0.2s ease',
+                      boxSizing: 'border-box',
+                    }}
+                    onFocus={(e) => (e.currentTarget.style.borderColor = '#083A85')}
+                    onBlur={(e) => (e.currentTarget.style.borderColor = '#d1d5db')}
+                  />
+                </div>
+
+                {/* Event Location */}
+                <div>
+                  <label
+                    htmlFor="eventLocation"
+                    style={{
+                      display: 'block',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      color: '#374151',
+                      marginBottom: '6px',
+                    }}
+                  >
+                    Event Location *
+                  </label>
+                  <input
+                    type="text"
+                    id="eventLocation"
+                    value={eventLocation}
+                    onChange={(e) => setEventLocation(e.target.value)}
+                    placeholder="e.g., Kigali Convention Center"
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      fontSize: '15px',
+                      border: '2px solid #d1d5db',
+                      borderRadius: '12px',
+                      backgroundColor: '#fff',
+                      color: '#1f2937',
+                      outline: 'none',
+                      transition: 'border-color 0.2s ease',
+                      boxSizing: 'border-box',
+                    }}
+                    onFocus={(e) => (e.currentTarget.style.borderColor = '#083A85')}
+                    onBlur={(e) => (e.currentTarget.style.borderColor = '#d1d5db')}
+                  />
+                </div>
+              </div>
+
+              {/* Notes - full width */}
+              <div style={{ marginTop: '16px' }}>
+                <label
+                  htmlFor="eventNotes"
+                  style={{
+                    display: 'block',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    color: '#374151',
+                    marginBottom: '6px',
+                  }}
+                >
+                  Additional Notes <span style={{ fontWeight: '400', color: '#9ca3af' }}>(optional)</span>
+                </label>
+                <textarea
+                  id="eventNotes"
+                  value={eventNotes}
+                  onChange={(e) => setEventNotes(e.target.value)}
+                  placeholder="Any special requirements, preferred locations for shots, etc."
+                  rows={3}
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    fontSize: '15px',
+                    border: '2px solid #d1d5db',
+                    borderRadius: '12px',
+                    backgroundColor: '#fff',
+                    color: '#1f2937',
+                    outline: 'none',
+                    transition: 'border-color 0.2s ease',
+                    resize: 'vertical',
+                    fontFamily: 'inherit',
+                    boxSizing: 'border-box',
+                  }}
+                  onFocus={(e) => (e.currentTarget.style.borderColor = '#083A85')}
+                  onBlur={(e) => (e.currentTarget.style.borderColor = '#d1d5db')}
+                />
+              </div>
+            </div>
+          )}
+
           {/* Action Buttons */}
           <div
             style={{
@@ -899,19 +1326,19 @@ function BookNowContent(): React.JSX.Element {
               {t('cancel')}
             </button>
             <button
-              onClick={() => (window.location.href = 'https://connekt-dashboard.vercel.app/user/client/events')}
-              disabled={!selectedPackage}
+              onClick={handleBooking}
+              disabled={!isFormComplete || bookingInProgress}
               style={{
                 padding: '14px 40px',
-                backgroundColor: selectedPackage ? '#083A85' : '#d1d5db',
+                backgroundColor: isFormComplete && !bookingInProgress ? '#083A85' : '#d1d5db',
                 color: '#fff',
                 border: 'none',
                 borderRadius: '12px',
                 fontSize: '15px',
                 fontWeight: '700',
-                cursor: selectedPackage ? 'pointer' : 'not-allowed',
+                cursor: isFormComplete && !bookingInProgress ? 'pointer' : 'not-allowed',
                 transition: 'all 0.3s ease',
-                boxShadow: selectedPackage ? '0 8px 20px rgba(8, 58, 133, 0.35)' : 'none',
+                boxShadow: isFormComplete && !bookingInProgress ? '0 8px 20px rgba(8, 58, 133, 0.35)' : 'none',
                 minWidth: isMobile ? '100%' : '200px',
                 display: 'flex',
                 alignItems: 'center',
@@ -919,24 +1346,60 @@ function BookNowContent(): React.JSX.Element {
                 gap: '8px',
               }}
               onMouseEnter={(e) => {
-                if (selectedPackage) {
+                if (isFormComplete && !bookingInProgress) {
                   e.currentTarget.style.backgroundColor = '#062d6b';
                   e.currentTarget.style.transform = 'translateY(-2px)';
                   e.currentTarget.style.boxShadow = '0 12px 28px rgba(8, 58, 133, 0.45)';
                 }
               }}
               onMouseLeave={(e) => {
-                if (selectedPackage) {
+                if (isFormComplete && !bookingInProgress) {
                   e.currentTarget.style.backgroundColor = '#083A85';
                   e.currentTarget.style.transform = 'translateY(0)';
                   e.currentTarget.style.boxShadow = '0 8px 20px rgba(8, 58, 133, 0.35)';
                 }
               }}
             >
-              {t('next')}
-              <i className="bi bi-arrow-right"></i>
+              {bookingInProgress ? (
+                <>
+                  <div style={{
+                    width: '16px',
+                    height: '16px',
+                    border: '2px solid rgba(255,255,255,0.3)',
+                    borderTopColor: '#fff',
+                    borderRadius: '50%',
+                    animation: 'spin 1s linear infinite'
+                  }} />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  {t('next')}
+                  <i className="bi bi-arrow-right"></i>
+                </>
+              )}
             </button>
           </div>
+
+          {/* Booking Error Message */}
+          {bookingError && (
+            <div style={{
+              textAlign: 'center',
+              padding: '12px 20px',
+              backgroundColor: '#FEE2E2',
+              color: '#DC2626',
+              borderRadius: '8px',
+              marginTop: '16px',
+              fontSize: '14px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px'
+            }}>
+              <i className="bi bi-exclamation-circle-fill"></i>
+              {bookingError}
+            </div>
+          )}
 
           {/* Footer Note */}
           <p
