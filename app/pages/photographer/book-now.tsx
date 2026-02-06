@@ -201,17 +201,15 @@ function BookNowContent(): React.JSX.Element {
       badge: 'Essential',
       badgeColor: '#22D3EE',
       badgeGradient: 'linear-gradient(135deg, #22D3EE 0%, #3B82F6 100%)',
-      hours: t('packages.essential.hours'),
       description: t('packages.essential.description'),
       features: [
-        { text: t('packages.features.coverage3h'), available: true },
         { text: t('packages.features.unlimitedPhotos'), available: true },
-        { text: t('packages.features.onlineGallery'), available: true },
+        { text: 'Online gallery storage (provided by platform)', available: true },
         { text: t('packages.features.sameDayPreview'), available: true },
         { text: t('packages.features.professionalEditing'), available: false },
         { text: t('packages.features.printedAlbum'), available: false },
         { text: t('packages.features.liveStreaming'), available: false },
-        { text: t('packages.features.dronePhotography'), available: false },
+        { text: 'Other preferences', available: false },
       ],
     },
     {
@@ -222,17 +220,15 @@ function BookNowContent(): React.JSX.Element {
       badge: 'Custom',
       badgeColor: '#FBBF24',
       badgeGradient: 'linear-gradient(135deg, #FDE047 0%, #FBBF24 50%, #F59E0B 100%)',
-      hours: t('packages.custom.hours'),
       description: t('packages.custom.description'),
       features: [
-        { text: t('packages.features.coverage4h'), available: true },
         { text: t('packages.features.unlimitedPhotos'), available: true },
-        { text: t('packages.features.onlineGallery'), available: true },
+        { text: 'Online gallery storage (provided by platform)', available: true },
         { text: t('packages.features.sameDayPreview'), available: true },
         { text: t('packages.features.professionalEditing'), available: true },
         { text: t('packages.features.printedAlbum'), available: true },
         { text: t('packages.features.liveStreaming'), available: false },
-        { text: t('packages.features.dronePhotography'), available: false },
+        { text: 'Other preferences', available: false },
       ],
     },
     {
@@ -243,17 +239,15 @@ function BookNowContent(): React.JSX.Element {
       badge: 'Premium',
       badgeColor: '#A855F7',
       badgeGradient: 'linear-gradient(135deg, #C084FC 0%, #A855F7 50%, #7C3AED 100%)',
-      hours: t('packages.premium.hours'),
       description: t('packages.premium.description'),
       features: [
-        { text: t('packages.features.coverage5h'), available: true },
         { text: t('packages.features.unlimitedPhotos'), available: true },
-        { text: t('packages.features.onlineGallery'), available: true },
+        { text: 'Online gallery storage (provided by platform)', available: true },
         { text: t('packages.features.sameDayPreview'), available: true },
         { text: t('packages.features.professionalEditing'), available: true },
         { text: t('packages.features.printedAlbum'), available: true },
         { text: t('packages.features.liveStreaming'), available: true },
-        { text: t('packages.features.dronePhotography'), available: true },
+        { text: 'Other preferences', available: true },
       ],
     },
   ];
@@ -749,7 +743,7 @@ function BookNowContent(): React.JSX.Element {
           <div style={{ marginBottom: isMobile ? '24px' : '32px', textAlign: 'center' }}>
             <h1
               style={{
-                fontSize: isMobile ? '26px' : '34px',
+                fontSize: isMobile ? '26px' : '54px',
                 fontWeight: '900',
                 color: '#083A85',
                 marginBottom: '8px',
@@ -757,7 +751,7 @@ function BookNowContent(): React.JSX.Element {
             >
               {t('title')}
             </h1>
-            <p style={{ fontSize: isMobile ? '14px' : '16px', color: '#40444d', maxWidth: '600px', margin: '0 auto' }}>
+            <p style={{ fontSize: isMobile ? '14px' : '18px', color: '#40444d', maxWidth: '600px', margin: '0 auto' }}>
               Choose the perfect package that suits your needs and budget
             </p>
           </div>
@@ -891,17 +885,6 @@ function BookNowContent(): React.JSX.Element {
                   >
                     {pkg.period}
                   </div>
-                  <div
-                    style={{
-                      fontSize: selectedPackage === pkg.id ? '17px' : '16px',
-                      color: selectedPackage === pkg.id ? '#083A85' : '#374151',
-                      fontWeight: '700',
-                      fontStyle: 'italic',
-                      transition: 'all 0.3s ease',
-                    }}
-                  >
-                    *{pkg.hours}
-                  </div>
 
                   {/* Divider */}
                   <div
@@ -1005,32 +988,6 @@ function BookNowContent(): React.JSX.Element {
                         >
                           <i className="bi bi-camera-fill" style={{ marginRight: '4px' }}></i>
                           HD Photos
-                        </span>
-                        <span
-                          style={{
-                            backgroundColor: '#dcfce7',
-                            color: '#15803d',
-                            padding: '6px 12px',
-                            borderRadius: '20px',
-                            fontSize: '12px',
-                            fontWeight: '600',
-                          }}
-                        >
-                          <i className="bi bi-clock-fill" style={{ marginRight: '4px' }}></i>
-                          {pkg.hours}
-                        </span>
-                        <span
-                          style={{
-                            backgroundColor: '#fef3c7',
-                            color: '#b45309',
-                            padding: '6px 12px',
-                            borderRadius: '20px',
-                            fontSize: '12px',
-                            fontWeight: '600',
-                          }}
-                        >
-                          <i className="bi bi-lightning-fill" style={{ marginRight: '4px' }}></i>
-                          Fast Delivery
                         </span>
                       </div>
                     </div>
@@ -1448,7 +1405,7 @@ function BookNowContent(): React.JSX.Element {
           <p
             style={{
               textAlign: 'center',
-              fontSize: '12px',
+              fontSize: '14px',
               color: '#9ca3af',
               marginTop: '24px',
             }}
