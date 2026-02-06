@@ -76,6 +76,16 @@ export default function SignupPage(): React.JSX.Element {
     },
   });
 
+  // Auto-scroll to phone field after Google pre-fill
+  useEffect(() => {
+    if (isGooglePreFilled) {
+      setTimeout(() => {
+        document.getElementById('phoneNumber')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        document.getElementById('phoneNumber')?.focus();
+      }, 300);
+    }
+  }, [isGooglePreFilled]);
+
   // Screen size detection for responsive design
   const [screenSize, setScreenSize] = useState<'mobile' | 'tablet' | 'desktop' | 'large' | 'xlarge'>('desktop');
 
@@ -555,7 +565,34 @@ export default function SignupPage(): React.JSX.Element {
               @keyframes spin {
                 to { transform: rotate(360deg); }
               }
+              @keyframes pulseHighlight {
+                0%, 100% { border-color: #d1d5db; }
+                50% { border-color: #083A85; }
+              }
             `}</style>
+
+            {/* Helper message after Google pre-fill */}
+            {isGooglePreFilled && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '10px 14px',
+                backgroundColor: '#eff6ff',
+                borderRadius: '10px',
+                border: '1px solid #bfdbfe',
+                marginTop: '4px',
+              }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M12 16v-4" />
+                  <path d="M12 8h.01" />
+                </svg>
+                <span style={{ fontSize: '13px', color: '#1e40af', fontWeight: '500' }}>
+                  Complete your phone number and password below to create your account.
+                </span>
+              </div>
+            )}
 
             {/* Divider */}
             <div style={{
@@ -644,18 +681,19 @@ export default function SignupPage(): React.JSX.Element {
                 {/* Phone Number */}
                 <div style={{ width: '100%' }}>
                   <label htmlFor="phoneNumber" style={labelStyle}>
-                    {t('phone')}
+                    {t('phone')} {isGooglePreFilled && !phoneNumber && <span style={{ fontSize: '12px', color: '#2563eb' }}>(required)</span>}
                   </label>
                   <div style={{
                     position: 'relative',
                     display: 'flex',
                     alignItems: 'center',
-                    border: '2px solid #d1d5db',
+                    border: isGooglePreFilled && !phoneNumber ? '2px solid #083A85' : '2px solid #d1d5db',
                     borderRadius: isMobile ? '16px' : '20px',
                     overflow: 'hidden',
                     backgroundColor: '#ffffff',
                     minHeight: isMobile ? '50px' : 'auto',
-                    width: '100%'
+                    width: '100%',
+                    animation: isGooglePreFilled && !phoneNumber ? 'pulseHighlight 2s ease-in-out 3' : 'none',
                   }}>
                     <select
                       value={countryCode}
@@ -702,7 +740,7 @@ export default function SignupPage(): React.JSX.Element {
                 {/* Password */}
                 <div>
                   <label htmlFor="password" style={labelStyle}>
-                    {tAuth('password')}
+                    {tAuth('password')} {isGooglePreFilled && !password && <span style={{ fontSize: '12px', color: '#2563eb' }}>(required)</span>}
                   </label>
                   <div style={{ position: 'relative' }}>
                     <input
@@ -713,7 +751,9 @@ export default function SignupPage(): React.JSX.Element {
                       placeholder={t('passwordPlaceholder')}
                       style={{
                         ...inputStyle,
-                        paddingRight: '44px'
+                        paddingRight: '44px',
+                        borderColor: isGooglePreFilled && !password ? '#083A85' : undefined,
+                        animation: isGooglePreFilled && !password ? 'pulseHighlight 2s ease-in-out 3' : 'none'
                       }}
                     />
                     <button
@@ -743,7 +783,7 @@ export default function SignupPage(): React.JSX.Element {
                 {/* Confirm Password */}
                 <div>
                   <label htmlFor="confirmPassword" style={labelStyle}>
-                    {t('confirmPasswordLabel')}
+                    {t('confirmPasswordLabel')} {isGooglePreFilled && !confirmPassword && <span style={{ fontSize: '12px', color: '#2563eb' }}>(required)</span>}
                   </label>
                   <div style={{ position: 'relative' }}>
                     <input
@@ -754,7 +794,9 @@ export default function SignupPage(): React.JSX.Element {
                       placeholder={t('confirmPasswordPlaceholder')}
                       style={{
                         ...inputStyle,
-                        paddingRight: '44px'
+                        paddingRight: '44px',
+                        borderColor: isGooglePreFilled && !confirmPassword ? '#083A85' : undefined,
+                        animation: isGooglePreFilled && !confirmPassword ? 'pulseHighlight 2s ease-in-out 3' : 'none'
                       }}
                     />
                     <button
