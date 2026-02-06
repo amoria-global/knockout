@@ -28,6 +28,14 @@ const getIconForCategory = (name: string): string => {
   return categoryIcons[normalized] || 'bi-camera-fill';
 };
 
+// Map category names to translation keys
+const getCategoryTranslationKey = (name: string): string => {
+  const normalized = name.toLowerCase();
+  // Handle common typos from backend
+  if (normalized === 'weeding') return 'wedding';
+  return normalized;
+};
+
 const AmoriaKNavbar = () => {
   const { locale, setLocale } = useLanguage();
   const { user, isAuthenticated, logout } = useAuth();
@@ -43,7 +51,7 @@ const AmoriaKNavbar = () => {
   const [isEventsDropdownOpen, setIsEventsDropdownOpen] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const [photographerCategories, setPhotographerCategories] = useState<{ value: string; label: string; icon: string }[]>([]);
+  const [photographerCategories, setPhotographerCategories] = useState<{ value: string; translationKey: string; icon: string }[]>([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
 
   const mobileMenuRef = useRef<HTMLDivElement>(null);
@@ -73,7 +81,7 @@ const AmoriaKNavbar = () => {
             .filter((cat: PhotographerCategory) => cat.isActive)
             .map((cat: PhotographerCategory) => ({
               value: cat.name.toLowerCase(),
-              label: cat.name,
+              translationKey: getCategoryTranslationKey(cat.name),
               icon: getIconForCategory(cat.name),
             }));
           setPhotographerCategories(categories);
@@ -89,12 +97,12 @@ const AmoriaKNavbar = () => {
   }, []);
 
   const eventCategories = [
-    { value: 'wedding', label: t('eventCategories.weddings'), icon: 'bi-heart-fill' },
-    { value: 'concert', label: t('eventCategories.concerts'), icon: 'bi-music-note-beamed' },
-    { value: 'corporate', label: t('eventCategories.corporate'), icon: 'bi-briefcase-fill' },
-    { value: 'sports', label: t('eventCategories.sports'), icon: 'bi-trophy-fill' },
-    { value: 'cultural', label: t('eventCategories.cultural'), icon: 'bi-globe' },
-    { value: 'conference', label: t('eventCategories.conferences'), icon: 'bi-people-fill' },
+    { value: 'wedding', label: t('eventCategories.weddings'), icon: 'bi-heart-fill', isLive: true },
+    { value: 'concert', label: t('eventCategories.concerts'), icon: 'bi-music-note-beamed', isLive: false },
+    { value: 'corporate', label: t('eventCategories.corporate'), icon: 'bi-briefcase-fill', isLive: true },
+    { value: 'sports', label: t('eventCategories.sports'), icon: 'bi-trophy-fill', isLive: false },
+    { value: 'cultural', label: t('eventCategories.cultural'), icon: 'bi-globe', isLive: true },
+    { value: 'conference', label: t('eventCategories.conferences'), icon: 'bi-people-fill', isLive: false },
   ];
 
   // Effect to detect screen size
@@ -191,6 +199,106 @@ const AmoriaKNavbar = () => {
         backgroundColor: isScrolled ? 'transparent/1' : '#DBDBDB'
       }}
     >
+      {/* Live Animation Styles for Event Category Cards */}
+      <style>{`
+        @keyframes nav-sound-wave-pulse {
+          0% {
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7),
+                        0 0 0 0 rgba(16, 185, 129, 0.5),
+                        0 0 12px rgba(16, 185, 129, 0.5);
+          }
+          50% {
+            box-shadow: 0 0 0 12px rgba(16, 185, 129, 0),
+                        0 0 0 20px rgba(16, 185, 129, 0),
+                        0 0 18px rgba(16, 185, 129, 0.7);
+          }
+          100% {
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0),
+                        0 0 0 0 rgba(16, 185, 129, 0),
+                        0 0 12px rgba(16, 185, 129, 0.5);
+          }
+        }
+
+        @keyframes nav-border-beep {
+          0%, 100% {
+            border-color: rgba(16, 185, 129, 0.6);
+          }
+          50% {
+            border-color: rgba(52, 211, 153, 1);
+          }
+        }
+
+        @keyframes nav-icon-pulse {
+          0%, 100% {
+            transform: scale(1);
+            opacity: 1;
+          }
+          50% {
+            transform: scale(1.15);
+            opacity: 0.9;
+          }
+        }
+
+        .nav-live-card {
+          animation: nav-sound-wave-pulse 1s ease-out infinite, nav-border-beep 1s ease-in-out infinite;
+          border: 2px solid rgba(16, 185, 129, 0.6) !important;
+        }
+
+        .nav-live-card:hover {
+          animation: none;
+          border-color: rgba(16, 185, 129, 0.6) !important;
+        }
+
+        .nav-live-icon {
+          animation: nav-icon-pulse 1s ease-in-out infinite;
+        }
+
+        .nav-live-card:hover .nav-live-icon {
+          animation: none;
+        }
+
+        .nav-live-text {
+          color: #059669 !important;
+        }
+
+        .nav-live-card:hover .nav-live-text {
+          color: #03803f !important;
+        }
+
+        @keyframes nav-events-border-vibrate {
+          0%, 100% {
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7),
+                        0 0 0 0 rgba(16, 185, 129, 0.5);
+          }
+          25% {
+            box-shadow: 0 0 0 8px rgba(16, 185, 129, 0),
+                        0 0 0 16px rgba(16, 185, 129, 0);
+          }
+          50% {
+            box-shadow: 0 0 0 16px rgba(16, 185, 129, 0),
+                        0 0 0 28px rgba(16, 185, 129, 0);
+          }
+          75% {
+            box-shadow: 0 0 0 8px rgba(16, 185, 129, 0),
+                        0 0 0 16px rgba(16, 185, 129, 0);
+          }
+        }
+
+        .nav-events-link {
+          color: #059669 !important;
+          border: 1px solid rgba(16, 185, 129, 0.7);
+          border-radius: 12px;
+          padding: 6px 12px !important;
+          animation: nav-events-border-vibrate 1s ease-out infinite;
+        }
+
+        .nav-events-link:hover {
+          color: #047857 !important;
+          animation: none;
+          border-color: rgba(16, 185, 129, 1);
+          background-color: rgba(16, 185, 129, 0.08);
+        }
+      `}</style>
       {/* Increased horizontal padding for more space */}
       <div className="max-w-7xl mx-4 sm:mx-6 lg:mx-8" style={{ paddingLeft: isMobile ? '0.5rem' : '1rem', paddingRight: isMobile ? '0.5rem' : '1rem' }}>
         <div className="flex items-center justify-between h-16">
@@ -230,10 +338,11 @@ const AmoriaKNavbar = () => {
                     }}
                   />
                   <div
-                    className="absolute"
                     style={{
-                      top: 'calc(100% + 20px)',
-                      left: '0',
+                      position: 'fixed',
+                      top: '44px',
+                      left: '20%',
+                      transform: 'translateX(-50%)',
                       width: '55vw',
                       height: '555px',
                       background: 'rgba(255, 255, 255, 0.70)',
@@ -242,9 +351,7 @@ const AmoriaKNavbar = () => {
                       boxShadow: '0 15px 50px rgba(0, 0, 0, 0.12)',
                       borderBottom: '2px solid rgba(8, 58, 133, 0.15)',
                       zIndex: 9999,
-                      overflow: 'hidden',
-                      marginLeft: 'calc(-50vw + 50%)',
-                      transform: 'translateX(calc(-50% + 50vw))'
+                      overflow: 'hidden'
                     }}
                   >
                   <div style={{
@@ -291,8 +398,8 @@ const AmoriaKNavbar = () => {
                           onClick={() => setIsPhotographersDropdownOpen(false)}
                           className="block cursor-pointer group"
                           style={{
-                            padding: '1rem 1.5rem',
-                            fontSize: '17px',
+                            padding: '1rem 1.25rem',
+                            fontSize: '16px',
                             fontWeight: '600',
                             color: '#1f2937',
                             backgroundColor: 'rgba(255, 255, 255, 0.90)',
@@ -301,10 +408,10 @@ const AmoriaKNavbar = () => {
                             display: 'flex',
                             flexDirection: 'column',
                             alignItems: 'flex-start',
-                            gap: '1rem',
+                            gap: '0.875rem',
                             border: '1px solid rgba(8, 58, 133, 0.12)',
                             boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
-                            height: 'fit-content',
+                            minHeight: '120px',
                             position: 'relative',
                             overflow: 'hidden'
                           }}
@@ -337,7 +444,7 @@ const AmoriaKNavbar = () => {
                           }}>
                             <i className={`bi ${category.icon}`} style={{ fontSize: '22px', color: 'white' }}></i>
                           </div>
-                          <span style={{ lineHeight: '1.4' }}>{category.label}</span>
+                          <span style={{ lineHeight: '1.4' }}>{t(`photographerCategories.${category.translationKey}`)}</span>
                         </Link>
                       ))}
                     </div>
@@ -356,7 +463,7 @@ const AmoriaKNavbar = () => {
             >
               <Link
                 href={getLocalePath('/user/events')}
-                className="flex items-center gap-1 text-gray-700 hover:text-[#083A85] text-base font-semibold transition-colors duration-200 whitespace-nowrap cursor-pointer"
+                className="nav-events-link flex items-center gap-1 text-base font-semibold transition-colors duration-200 whitespace-nowrap cursor-pointer"
               >
                 <span>{t('events')}</span>
                 <i className={`bi bi-chevron-down transition-transform duration-200 ${isEventsDropdownOpen ? 'rotate-180' : ''}`}></i>
@@ -376,11 +483,12 @@ const AmoriaKNavbar = () => {
                     }}
                   />
                   <div
-                    className="absolute"
                     style={{
-                      top: 'calc(100% + 20px)',
-                      left: '-350%',
-                      width: '75vw',
+                      position: 'fixed',
+                      top: '44px',
+                      left: '30%',
+                      transform: 'translateX(-50%)',
+                      width: '55vw',
                       height: '555px',
                       background: 'rgba(255, 255, 255, 0.70)',
                       backdropFilter: 'blur(25px)',
@@ -388,20 +496,17 @@ const AmoriaKNavbar = () => {
                       boxShadow: '0 15px 50px rgba(0, 0, 0, 0.12)',
                       borderBottom: '2px solid rgba(8, 58, 133, 0.15)',
                       zIndex: 9999,
-                      overflow: 'hidden',
-                      marginLeft: 'calc(-50vw + 50%)',
-                      transform: 'translateX(calc(-50% + 50vw))'
+                      overflow: 'hidden'
                     }}
                   >
                   <div style={{
-                    width: '55vw',
+                    width: '100%',
                     height: '100%',
                     padding: '4rem 5rem',
                     display: 'flex',
                     flexDirection: 'column',
                     maxWidth: '1400px',
-                    marginLeft: 'auto',
-                    marginRight: '0'
+                    margin: '0 auto'
                   }}>
                     <div style={{ marginBottom: '0.5rem', flexShrink: 0 }}>
                       <h3 style={{
@@ -436,22 +541,22 @@ const AmoriaKNavbar = () => {
                           key={category.value}
                           href={getLocalePath(`/user/events?category=${category.value}`)}
                           onClick={() => setIsEventsDropdownOpen(false)}
-                          className="block cursor-pointer group"
+                          className={`block cursor-pointer group ${category.isLive ? 'nav-live-card' : ''}`}
                           style={{
-                            padding: '1rem 1.5rem',
-                            fontSize: '17px',
+                            padding: '1rem 1.25rem',
+                            fontSize: '16px',
                             fontWeight: '600',
                             color: '#1f2937',
-                            backgroundColor: 'rgba(255, 255, 255, 0.90)',
+                            backgroundColor: category.isLive ? 'rgba(240, 253, 244, 0.95)' : 'rgba(255, 255, 255, 0.90)',
                             borderRadius: '20px',
                             transition: 'all 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
                             display: 'flex',
                             flexDirection: 'column',
                             alignItems: 'flex-start',
-                            gap: '1rem',
-                            border: '1px solid rgba(8, 58, 133, 0.12)',
+                            gap: '0.875rem',
+                            border: category.isLive ? '2px solid rgba(16, 185, 129, 0.5)' : '1px solid rgba(8, 58, 133, 0.12)',
                             boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
-                            height: 'fit-content',
+                            minHeight: '120px',
                             position: 'relative',
                             overflow: 'hidden'
                           }}
@@ -463,28 +568,32 @@ const AmoriaKNavbar = () => {
                             e.currentTarget.style.borderColor = 'rgba(8, 58, 133, 0.25)';
                           }}
                           onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.90)';
+                            e.currentTarget.style.backgroundColor = category.isLive ? 'rgba(240, 253, 244, 0.95)' : 'rgba(255, 255, 255, 0.90)';
                             e.currentTarget.style.color = '#1f2937';
                             e.currentTarget.style.transform = 'translateY(0)';
                             e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.04)';
-                            e.currentTarget.style.borderColor = 'rgba(8, 58, 133, 0.12)';
+                            e.currentTarget.style.borderColor = category.isLive ? 'rgba(16, 185, 129, 0.5)' : 'rgba(8, 58, 133, 0.12)';
                           }}
                         >
                           <div style={{
                             width: '56px',
                             height: '56px',
                             borderRadius: '16px',
-                            background: 'linear-gradient(135deg, #083A85 0%, #0d4ea8 50%, #1059bd 100%)',
+                            background: category.isLive
+                              ? 'linear-gradient(135deg, #059669 0%, #10b981 50%, #34d399 100%)'
+                              : 'linear-gradient(135deg, #083A85 0%, #0d4ea8 50%, #1059bd 100%)',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
                             flexShrink: 0,
-                            boxShadow: '0 6px 16px rgba(8, 58, 133, 0.25)',
+                            boxShadow: category.isLive
+                              ? '0 6px 16px rgba(16, 185, 129, 0.35)'
+                              : '0 6px 16px rgba(8, 58, 133, 0.25)',
                             transition: 'transform 0.3s ease'
                           }}>
-                            <i className={`bi ${category.icon}`} style={{ fontSize: '22px', color: 'white' }}></i>
+                            <i className={`bi ${category.icon} ${category.isLive ? 'nav-live-icon' : ''}`} style={{ fontSize: '22px', color: 'white' }}></i>
                           </div>
-                          <span style={{ lineHeight: '1.4' }}>{category.label}</span>
+                          <span className={category.isLive ? 'nav-live-text' : ''} style={{ lineHeight: '1.4', fontWeight: category.isLive ? '700' : '600' }}>{category.label}</span>
                         </Link>
                       ))}
                     </div>
@@ -745,7 +854,7 @@ const AmoriaKNavbar = () => {
                       }}
                     >
                       <i className={`bi ${category.icon}`} style={{ fontSize: isMobile ? '0.8125rem' : '0.875rem' }}></i>
-                      <span>{category.label}</span>
+                      <span>{t(`photographerCategories.${category.translationKey}`)}</span>
                     </Link>
                   ))}
                 </div>
@@ -789,8 +898,8 @@ const AmoriaKNavbar = () => {
                         borderRadius: isMobile ? '6px' : '8px',
                         fontSize: isMobile ? '0.8125rem' : '0.875rem',
                         fontWeight: '500',
-                        color: '#374151',
-                        backgroundColor: 'transparent',
+                        color: category.isLive ? '#059669' : '#374151',
+                        backgroundColor: category.isLive ? 'rgba(240, 253, 244, 0.8)' : 'transparent',
                         transition: 'all 0.2s ease',
                         marginBottom: isMobile ? '2px' : '4px',
                         display: 'flex',
@@ -798,16 +907,26 @@ const AmoriaKNavbar = () => {
                         gap: isMobile ? '6px' : '8px'
                       }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = 'rgba(8, 58, 133, 0.1)';
-                        e.currentTarget.style.color = '#083A85';
+                        e.currentTarget.style.backgroundColor = category.isLive ? 'rgba(220, 252, 231, 0.9)' : 'rgba(8, 58, 133, 0.1)';
+                        e.currentTarget.style.color = category.isLive ? '#047857' : '#083A85';
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = 'transparent';
-                        e.currentTarget.style.color = '#374151';
+                        e.currentTarget.style.backgroundColor = category.isLive ? 'rgba(240, 253, 244, 0.8)' : 'transparent';
+                        e.currentTarget.style.color = category.isLive ? '#059669' : '#374151';
                       }}
                     >
-                      <i className={`bi ${category.icon}`} style={{ fontSize: isMobile ? '0.8125rem' : '0.875rem' }}></i>
+                      <i className={`bi ${category.icon}`} style={{ fontSize: isMobile ? '0.8125rem' : '0.875rem', color: category.isLive ? '#10b981' : 'inherit' }}></i>
                       <span>{category.label}</span>
+                      {category.isLive && (
+                        <span style={{
+                          marginLeft: 'auto',
+                          width: '8px',
+                          height: '8px',
+                          borderRadius: '50%',
+                          backgroundColor: '#10b981',
+                          animation: 'nav-icon-pulse 1.2s ease-in-out infinite'
+                        }}></span>
+                      )}
                     </Link>
                   ))}
                 </div>

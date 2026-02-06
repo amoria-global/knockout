@@ -2758,6 +2758,34 @@ export default function Home() {
               opacity: 0.3;
             }
           }
+
+          @keyframes find-events-border-vibrate {
+            0%, 100% {
+              box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7),
+                          0 0 0 0 rgba(255, 255, 255, 0.5);
+            }
+            25% {
+              box-shadow: 0 0 0 8px rgba(255, 255, 255, 0),
+                          0 0 0 16px rgba(255, 255, 255, 0);
+            }
+            50% {
+              box-shadow: 0 0 0 16px rgba(255, 255, 255, 0),
+                          0 0 0 28px rgba(255, 255, 255, 0);
+            }
+            75% {
+              box-shadow: 0 0 0 8px rgba(255, 255, 255, 0),
+                          0 0 0 16px rgba(255, 255, 255, 0);
+            }
+          }
+
+          .find-events-btn {
+            animation: find-events-border-vibrate 1s ease-out infinite;
+          }
+
+          .find-events-btn:hover {
+            animation: none;
+            background-color: rgba(255, 255, 255, 0.1) !important;
+          }
         `}</style>
 
         {/* Global Network Section */}
@@ -2865,6 +2893,7 @@ export default function Home() {
                   {t('globalNetwork.connectNow')}
                 </button>
                 <button
+                  className="find-events-btn"
                   onClick={() => window.location.href = '/user/events'}
                   style={{
                     backgroundColor: 'transparent',
@@ -2875,7 +2904,6 @@ export default function Home() {
                     fontSize: '15px',
                     fontWeight: 600,
                     cursor: 'pointer',
-                    boxShadow: '0 3px 9px rgba(8, 58, 133, 0.2)',
                     whiteSpace: 'nowrap'
                   }}
                 >
