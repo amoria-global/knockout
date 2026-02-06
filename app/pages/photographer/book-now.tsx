@@ -119,6 +119,26 @@ function BookNowContent(): React.JSX.Element {
   const [bookingError, setBookingError] = useState<string | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
 
+  // Event details form state
+  const [eventDate, setEventDate] = useState('');
+  const [eventTime, setEventTime] = useState('');
+  const [eventType, setEventType] = useState('');
+  const [eventLocation, setEventLocation] = useState('');
+  const [eventNotes, setEventNotes] = useState('');
+
+  const eventTypes = [
+    'Wedding',
+    'Birthday',
+    'Corporate Event',
+    'Concert',
+    'Graduation',
+    'Portrait Session',
+    'Engagement',
+    'Baby Shower',
+    'Anniversary',
+    'Other',
+  ];
+
   // Validation checks
   useEffect(() => {
     if (authLoading) return;
@@ -243,9 +263,16 @@ function BookNowContent(): React.JSX.Element {
     setBookingError(null);
   };
 
+  const isFormComplete = selectedPackage && eventDate && eventTime && eventType && eventLocation;
+
   const handleBooking = async () => {
     if (!selectedPackage || !photographerId || !user) {
       setBookingError('Please select a package to continue.');
+      return;
+    }
+
+    if (!eventDate || !eventTime || !eventType || !eventLocation) {
+      setBookingError('Please fill in all event details.');
       return;
     }
 
@@ -258,10 +285,10 @@ function BookNowContent(): React.JSX.Element {
         {
           photographerId: photographerId,
           packageId: selectedPackage,
-          eventDate: '', // Will be filled in next step
-          eventTime: '',
-          eventType: '',
-          location: '',
+          eventDate: eventDate,
+          eventTime: eventTime,
+          eventType: eventType,
+          location: eventLocation,
         },
         user.customerId || user.id
       );
@@ -1066,6 +1093,246 @@ function BookNowContent(): React.JSX.Element {
             ))}
           </div>
 
+          {/* Event Details Form - appears after package selection */}
+          {selectedPackage && (
+            <div
+              style={{
+                marginTop: '32px',
+                padding: isMobile ? '20px 16px' : '28px 24px',
+                backgroundColor: '#fff',
+                borderRadius: '16px',
+                border: '2px solid #e5e7eb',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
+              }}
+            >
+              <h3
+                style={{
+                  fontSize: isMobile ? '18px' : '20px',
+                  fontWeight: '700',
+                  color: '#1f2937',
+                  marginBottom: '6px',
+                }}
+              >
+                Event Details
+              </h3>
+              <p
+                style={{
+                  fontSize: '14px',
+                  color: '#6b7280',
+                  marginBottom: '20px',
+                }}
+              >
+                Tell us about your event so the photographer can prepare
+              </p>
+
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
+                  gap: '16px',
+                }}
+              >
+                {/* Event Type */}
+                <div>
+                  <label
+                    htmlFor="eventType"
+                    style={{
+                      display: 'block',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      color: '#374151',
+                      marginBottom: '6px',
+                    }}
+                  >
+                    Event Type *
+                  </label>
+                  <select
+                    id="eventType"
+                    value={eventType}
+                    onChange={(e) => setEventType(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      fontSize: '15px',
+                      border: '2px solid #d1d5db',
+                      borderRadius: '12px',
+                      backgroundColor: '#fff',
+                      color: eventType ? '#1f2937' : '#9ca3af',
+                      cursor: 'pointer',
+                      outline: 'none',
+                      transition: 'border-color 0.2s ease',
+                      appearance: 'none',
+                      backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23374151' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e")`,
+                      backgroundRepeat: 'no-repeat',
+                      backgroundPosition: 'right 12px center',
+                      backgroundSize: '16px',
+                    }}
+                    onFocus={(e) => (e.currentTarget.style.borderColor = '#083A85')}
+                    onBlur={(e) => (e.currentTarget.style.borderColor = '#d1d5db')}
+                  >
+                    <option value="" disabled>
+                      Select event type
+                    </option>
+                    {eventTypes.map((type) => (
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Event Date */}
+                <div>
+                  <label
+                    htmlFor="eventDate"
+                    style={{
+                      display: 'block',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      color: '#374151',
+                      marginBottom: '6px',
+                    }}
+                  >
+                    Event Date *
+                  </label>
+                  <input
+                    type="date"
+                    id="eventDate"
+                    value={eventDate}
+                    onChange={(e) => setEventDate(e.target.value)}
+                    min={new Date(Date.now() + 86400000).toISOString().split('T')[0]}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      fontSize: '15px',
+                      border: '2px solid #d1d5db',
+                      borderRadius: '12px',
+                      backgroundColor: '#fff',
+                      color: '#1f2937',
+                      outline: 'none',
+                      transition: 'border-color 0.2s ease',
+                      boxSizing: 'border-box',
+                    }}
+                    onFocus={(e) => (e.currentTarget.style.borderColor = '#083A85')}
+                    onBlur={(e) => (e.currentTarget.style.borderColor = '#d1d5db')}
+                  />
+                </div>
+
+                {/* Event Time */}
+                <div>
+                  <label
+                    htmlFor="eventTime"
+                    style={{
+                      display: 'block',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      color: '#374151',
+                      marginBottom: '6px',
+                    }}
+                  >
+                    Event Time *
+                  </label>
+                  <input
+                    type="time"
+                    id="eventTime"
+                    value={eventTime}
+                    onChange={(e) => setEventTime(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      fontSize: '15px',
+                      border: '2px solid #d1d5db',
+                      borderRadius: '12px',
+                      backgroundColor: '#fff',
+                      color: '#1f2937',
+                      outline: 'none',
+                      transition: 'border-color 0.2s ease',
+                      boxSizing: 'border-box',
+                    }}
+                    onFocus={(e) => (e.currentTarget.style.borderColor = '#083A85')}
+                    onBlur={(e) => (e.currentTarget.style.borderColor = '#d1d5db')}
+                  />
+                </div>
+
+                {/* Event Location */}
+                <div>
+                  <label
+                    htmlFor="eventLocation"
+                    style={{
+                      display: 'block',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      color: '#374151',
+                      marginBottom: '6px',
+                    }}
+                  >
+                    Event Location *
+                  </label>
+                  <input
+                    type="text"
+                    id="eventLocation"
+                    value={eventLocation}
+                    onChange={(e) => setEventLocation(e.target.value)}
+                    placeholder="e.g., Kigali Convention Center"
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      fontSize: '15px',
+                      border: '2px solid #d1d5db',
+                      borderRadius: '12px',
+                      backgroundColor: '#fff',
+                      color: '#1f2937',
+                      outline: 'none',
+                      transition: 'border-color 0.2s ease',
+                      boxSizing: 'border-box',
+                    }}
+                    onFocus={(e) => (e.currentTarget.style.borderColor = '#083A85')}
+                    onBlur={(e) => (e.currentTarget.style.borderColor = '#d1d5db')}
+                  />
+                </div>
+              </div>
+
+              {/* Notes - full width */}
+              <div style={{ marginTop: '16px' }}>
+                <label
+                  htmlFor="eventNotes"
+                  style={{
+                    display: 'block',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    color: '#374151',
+                    marginBottom: '6px',
+                  }}
+                >
+                  Additional Notes <span style={{ fontWeight: '400', color: '#9ca3af' }}>(optional)</span>
+                </label>
+                <textarea
+                  id="eventNotes"
+                  value={eventNotes}
+                  onChange={(e) => setEventNotes(e.target.value)}
+                  placeholder="Any special requirements, preferred locations for shots, etc."
+                  rows={3}
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    fontSize: '15px',
+                    border: '2px solid #d1d5db',
+                    borderRadius: '12px',
+                    backgroundColor: '#fff',
+                    color: '#1f2937',
+                    outline: 'none',
+                    transition: 'border-color 0.2s ease',
+                    resize: 'vertical',
+                    fontFamily: 'inherit',
+                    boxSizing: 'border-box',
+                  }}
+                  onFocus={(e) => (e.currentTarget.style.borderColor = '#083A85')}
+                  onBlur={(e) => (e.currentTarget.style.borderColor = '#d1d5db')}
+                />
+              </div>
+            </div>
+          )}
+
           {/* Action Buttons */}
           <div
             style={{
@@ -1103,18 +1370,18 @@ function BookNowContent(): React.JSX.Element {
             </button>
             <button
               onClick={handleBooking}
-              disabled={!selectedPackage || bookingInProgress}
+              disabled={!isFormComplete || bookingInProgress}
               style={{
                 padding: '14px 40px',
-                backgroundColor: selectedPackage && !bookingInProgress ? '#083A85' : '#d1d5db',
+                backgroundColor: isFormComplete && !bookingInProgress ? '#083A85' : '#d1d5db',
                 color: '#fff',
                 border: 'none',
                 borderRadius: '12px',
                 fontSize: '15px',
                 fontWeight: '700',
-                cursor: selectedPackage && !bookingInProgress ? 'pointer' : 'not-allowed',
+                cursor: isFormComplete && !bookingInProgress ? 'pointer' : 'not-allowed',
                 transition: 'all 0.3s ease',
-                boxShadow: selectedPackage && !bookingInProgress ? '0 8px 20px rgba(8, 58, 133, 0.35)' : 'none',
+                boxShadow: isFormComplete && !bookingInProgress ? '0 8px 20px rgba(8, 58, 133, 0.35)' : 'none',
                 minWidth: isMobile ? '100%' : '200px',
                 display: 'flex',
                 alignItems: 'center',
@@ -1122,14 +1389,14 @@ function BookNowContent(): React.JSX.Element {
                 gap: '8px',
               }}
               onMouseEnter={(e) => {
-                if (selectedPackage && !bookingInProgress) {
+                if (isFormComplete && !bookingInProgress) {
                   e.currentTarget.style.backgroundColor = '#062d6b';
                   e.currentTarget.style.transform = 'translateY(-2px)';
                   e.currentTarget.style.boxShadow = '0 12px 28px rgba(8, 58, 133, 0.45)';
                 }
               }}
               onMouseLeave={(e) => {
-                if (selectedPackage && !bookingInProgress) {
+                if (isFormComplete && !bookingInProgress) {
                   e.currentTarget.style.backgroundColor = '#083A85';
                   e.currentTarget.style.transform = 'translateY(0)';
                   e.currentTarget.style.boxShadow = '0 8px 20px rgba(8, 58, 133, 0.35)';
