@@ -125,8 +125,8 @@ export default function LoginPage(): React.JSX.Element {
 
         if (response.success && data) {
           // Successful login - store user in AuthContext and show modal
-          // Get customerType from user object or default to 'photographer'
-          const customerType = data.user?.userType || 'photographer';
+          // Get customerType from user object or root-level fields
+          const customerType = data.user?.userType || data.userType || data.customerType || '';
 
           const userData = {
             id: data.id || data.user?.id || '',
