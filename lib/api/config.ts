@@ -104,6 +104,7 @@ export const API_ENDPOINTS = {
     ADD_SKILLS: '/api/remote/photographer/add-professional-skills',
     ADD_PORTFOLIO: '/api/remote/photographer/add-project-portfolio',
     ADD_CERTIFICATION: '/api/remote/photographer/add-trainting-certification',
+    PROFILE_SUMMARY: '/api/remote/photographer/profile-summary',
     PACKAGES: '/api/remote/photographer/packages',
     PACKAGE_BY_ID: (id: string) => `/api/remote/photographer/packages/${id}`,
   },

@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { getAuthToken, setAuthToken, removeAuthToken, isAuthenticated as checkAuth } from '@/lib/api/client';
+import { API_CONFIG } from '@/lib/api/config';
 
 /**
  * User data stored in auth context
@@ -66,6 +67,38 @@ function clearStoredUser(): void {
 }
 
 /**
+ * Fetch user profile from profile-summary endpoint to get real customerType
+ */
+async function fetchUserProfile(token: string): Promise<Partial<AuthUser> | null> {
+  try {
+    const response = await fetch(
+      `${API_CONFIG.baseUrl}api/remote/photographer/profile-summary`,
+      {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'api-token': process.env.NEXT_PUBLIC_API_KEY || '',
+        },
+      }
+    );
+    if (!response.ok) return null;
+    const result = await response.json();
+    if (result.action !== 1 || !result.data) return null;
+    const data = result.data;
+    return {
+      id: data.id || '',
+      firstName: data.firstName || '',
+      lastName: data.lastName || '',
+      email: data.email || '',
+      customerType: data.customerType || '',
+      profilePicture: data.profilePicture || undefined,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
  * AuthProvider component
  * Manages authentication state globally across the app
  */
@@ -81,6 +114,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (hasToken && storedUser) {
         setUser(storedUser);
+        // Refresh customerType from profile-summary API
+        const token = getAuthToken();
+        if (token) {
+          fetchUserProfile(token).then(profile => {
+            if (profile?.customerType && profile.customerType !== storedUser.customerType) {
+              const updated = { ...storedUser, customerType: profile.customerType };
+              storeUser(updated);
+              setUser(updated);
+            }
+          });
+        }
       } else if (!hasToken) {
         // No token, clear any stale user data
         clearStoredUser();
@@ -126,14 +170,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   /**
    * Login function - stores user data and token
+   * Also fetches profile-summary in background to get real customerType
    */
-  const login = useCallback((userData: AuthUser, token: string) => {
+  const login = useCallback(async (userData: AuthUser, token: string) => {
     // Store token first
     setAuthToken(token);
     // Store user data
     storeUser(userData);
     // Update state
     setUser(userData);
+    // Fetch real profile to get customerType
+    const profile = await fetchUserProfile(token);
+    if (profile?.customerType) {
+      const updated = { ...userData, customerType: profile.customerType };
+      storeUser(updated);
+      setUser(updated);
+    }
   }, []);
 
   /**
