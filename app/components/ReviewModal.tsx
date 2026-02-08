@@ -9,15 +9,20 @@ interface ReviewModalProps {
     rating: number;
     comment: string;
     images: File[];
+    eventId: string;
   }) => void;
   photographerName: string;
+  events?: { id: string; title: string; eventDate: string }[];
+  eventsLoading?: boolean;
 }
 
 export default function ReviewModal({
   isOpen,
   onClose,
   onSubmit,
-  photographerName
+  photographerName,
+  events,
+  eventsLoading,
 }: ReviewModalProps): React.JSX.Element | null {
   const [name, setName] = useState('');
   const [rating, setRating] = useState(0);
@@ -25,6 +30,7 @@ export default function ReviewModal({
   const [comment, setComment] = useState('');
   const [images, setImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [selectedEventId, setSelectedEventId] = useState('');
 
   if (!isOpen) return null;
 
@@ -56,6 +62,11 @@ export default function ReviewModal({
       return;
     }
 
+    if (events && events.length > 0 && !selectedEventId) {
+      alert('Please select an event');
+      return;
+    }
+
     if (rating === 0) {
       alert('Please select a rating');
       return;
@@ -66,7 +77,7 @@ export default function ReviewModal({
       return;
     }
 
-    onSubmit({ name, rating, comment, images });
+    onSubmit({ name, rating, comment, images, eventId: selectedEventId });
 
     // Reset form
     setName('');
@@ -74,6 +85,7 @@ export default function ReviewModal({
     setComment('');
     setImages([]);
     setImagePreviews([]);
+    setSelectedEventId('');
     onClose();
   };
 
@@ -182,6 +194,73 @@ export default function ReviewModal({
                   }}
                 />
               </div>
+
+              {/* Event Selector (shown when events prop is provided) */}
+              {events !== undefined && (
+                <div style={{ marginBottom: '16px' }}>
+                  <label
+                    htmlFor="event-select"
+                    style={{ fontSize: '12px', fontWeight: '600', color: '#000', marginBottom: '6px', display: 'block' }}
+                  >
+                    Select event *
+                  </label>
+                  {eventsLoading ? (
+                    <div style={{ padding: '10px 12px', fontSize: '13px', color: '#6b7280', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div style={{
+                        width: '14px',
+                        height: '14px',
+                        border: '2px solid #e5e7eb',
+                        borderTopColor: '#083A85',
+                        borderRadius: '50%',
+                        animation: 'spin 0.8s linear infinite',
+                      }} />
+                      Loading completed events...
+                    </div>
+                  ) : events.length === 0 ? (
+                    <div style={{
+                      padding: '10px 12px',
+                      fontSize: '13px',
+                      color: '#9CA3AF',
+                      background: '#f9fafb',
+                      borderRadius: '6px',
+                      border: '1px solid #d1d5db',
+                    }}>
+                      No completed events with this photographer
+                    </div>
+                  ) : (
+                    <select
+                      id="event-select"
+                      value={selectedEventId}
+                      onChange={(e) => setSelectedEventId(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        border: '1px solid #d1d5db',
+                        borderRadius: '6px',
+                        fontSize: '13px',
+                        fontFamily: 'inherit',
+                        outline: 'none',
+                        cursor: 'pointer',
+                      }}
+                      onFocus={(e) => {
+                        e.target.style.borderColor = '#083A85';
+                        e.target.style.boxShadow = '0 0 0 3px rgba(8, 58, 133, 0.1)';
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = '#d1d5db';
+                        e.target.style.boxShadow = 'none';
+                      }}
+                    >
+                      <option value="">-- Select an event --</option>
+                      {events.map((evt) => (
+                        <option key={evt.id} value={evt.id}>
+                          {evt.title}{evt.eventDate ? ` (${new Date(evt.eventDate).toLocaleDateString()})` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+              )}
 
               {/* Rating Section */}
               <div style={{ marginBottom: '16px' }}>
