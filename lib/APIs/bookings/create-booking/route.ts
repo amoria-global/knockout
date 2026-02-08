@@ -120,10 +120,10 @@ export async function createBooking(data: CreateBookingRequest): Promise<ApiResp
 export interface EventBookingRequest {
   photographerId: string;
   packageId: string;
-  eventDate: string;
-  eventTime: string;
-  eventType: string;
-  location: string;
+  eventDate?: string;
+  eventTime?: string;
+  eventType?: string;
+  location?: string;
   guestCount?: number;
   notes?: string;
 }
