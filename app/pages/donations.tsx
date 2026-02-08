@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import Navbar from "../components/navbar";
 import Footer from "../components/footer";
+import { getCurrencies, type Currency as APICurrency } from '@/lib/APIs/public';
 
 // Hook for counting animation
 const useCountUp = (end: number, duration: number = 2000, startCounting: boolean = false) => {
@@ -43,13 +44,19 @@ const formatNumber = (num: number): string => {
   return num.toLocaleString();
 };
 
-// Currency types and exchange rates (approximate rates - RWF as base)
-type Currency = 'RWF' | 'USD' | 'EUR';
+// Currency type — accepts any string code from the API
+type Currency = string;
 
-const currencyConfig: Record<Currency, { symbol: string; rate: number; name: string }> = {
+// Known currency configs with exchange rates (approximate rates - RWF as base)
+const knownCurrencyConfig: Record<string, { symbol: string; rate: number; name: string }> = {
   RWF: { symbol: 'RWF', rate: 1, name: 'Rwandan Franc' },
-  USD: { symbol: '$', rate: 0.00075, name: 'US Dollar' }, // 1 RWF ≈ 0.00075 USD
-  EUR: { symbol: '€', rate: 0.00069, name: 'Euro' }, // 1 RWF ≈ 0.00069 EUR
+  USD: { symbol: '$', rate: 0.00075, name: 'US Dollar' },
+  EUR: { symbol: '€', rate: 0.00069, name: 'Euro' },
+};
+
+// Get config for a currency, with a sensible fallback for unknown codes
+const getCurrencyConfig = (code: string): { symbol: string; rate: number; name: string } => {
+  return knownCurrencyConfig[code] || { symbol: code, rate: 1, name: code };
 };
 
 // Base amounts in RWF
@@ -57,16 +64,16 @@ const baseAmountsRWF = [1000, 2000, 5000, 10000, 25000, 50000];
 
 // Convert amount from RWF to target currency
 const convertFromRWF = (amountRWF: number, currency: Currency): number => {
-  const converted = amountRWF * currencyConfig[currency].rate;
-  // Round appropriately based on currency
-  if (currency === 'RWF') return Math.round(converted);
-  return Math.round(converted * 100) / 100; // 2 decimal places for USD/EUR
+  const config = getCurrencyConfig(currency);
+  const converted = amountRWF * config.rate;
+  if (config.rate === 1) return Math.round(converted);
+  return Math.round(converted * 100) / 100;
 };
 
 // Format currency amount with symbol
 const formatCurrency = (amount: number, currency: Currency): string => {
-  const config = currencyConfig[currency];
-  if (currency === 'RWF') {
+  const config = getCurrencyConfig(currency);
+  if (config.rate === 1) {
     return `${formatNumber(Math.round(amount))} ${config.symbol}`;
   }
   return `${config.symbol}${formatNumber(amount)}`;
@@ -346,6 +353,7 @@ const Donations = () => {
   const [selectedAmount, setSelectedAmount] = useState<number>(baseAmountsRWF[2]); // Default 3,000 RWF
   const [customAmount, setCustomAmount] = useState('');
   const [currency, setCurrency] = useState<Currency>('RWF');
+  const [apiCurrencies, setApiCurrencies] = useState<APICurrency[]>([]);
   const [donationFrequency, setDonationFrequency] = useState<'one-time' | 'monthly'>('one-time');
   const [impactVisible, setImpactVisible] = useState(false);
   const [heroVisible, setHeroVisible] = useState(false);
@@ -450,6 +458,24 @@ const Donations = () => {
       document.body.style.overflow = '';
     };
   }, [showPaymentModal]);
+
+  // Fetch available currencies from API
+  useEffect(() => {
+    getCurrencies()
+      .then(res => {
+        if (res.success && res.data && Array.isArray(res.data) && res.data.length > 0) {
+          setApiCurrencies(res.data);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  // Build currency toggle list: use API currencies if available, otherwise fallback
+  const currencyToggleList: Currency[] = apiCurrencies.length > 0
+    ? apiCurrencies
+        .map(c => c.code as Currency)
+        .filter(code => code) // filter out empty codes
+    : (['RWF', 'USD', 'EUR'] as Currency[]);
 
   // Intersection Observer for hero counting animation
   useEffect(() => {
@@ -1277,7 +1303,7 @@ const Donations = () => {
                     padding: '4px',
                     borderRadius: '10px',
                   }}>
-                    {(['RWF', 'USD', 'EUR'] as Currency[]).map((curr) => (
+                    {currencyToggleList.map((curr) => (
                       <button
                         key={curr}
                         onClick={() => {
@@ -1330,7 +1356,7 @@ const Donations = () => {
                     color: '#666',
                     marginBottom: '10px',
                   }}>
-                    Or enter custom amount ({currencyConfig[currency].name})
+                    Or enter custom amount ({getCurrencyConfig(currency).name})
                   </label>
                   <div style={{
                     display: 'flex',
@@ -1341,7 +1367,7 @@ const Donations = () => {
                     transition: 'all 0.3s ease',
                   }}>
                     <span style={{ fontSize: '18px', color: '#666', fontWeight: 600, marginRight: '5px' }}>
-                      {currency === 'RWF' ? '' : currencyConfig[currency].symbol}
+                      {currency === 'RWF' ? '' : getCurrencyConfig(currency).symbol}
                     </span>
                     <input
                       type="number"

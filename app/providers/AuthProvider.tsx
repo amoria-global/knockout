@@ -81,6 +81,15 @@ async function fetchUserProfile(token: string): Promise<Partial<AuthUser> | null
         },
       }
     );
+    if (response.status === 401) {
+      // Session expired — clear auth and redirect to login
+      removeAuthToken();
+      clearStoredUser();
+      if (typeof window !== 'undefined') {
+        window.location.href = '/user/auth/login';
+      }
+      return null;
+    }
     if (!response.ok) return null;
     const result = await response.json();
     if (result.action !== 1 || !result.data) return null;

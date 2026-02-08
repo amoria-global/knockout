@@ -115,17 +115,29 @@ export async function createBooking(data: CreateBookingRequest): Promise<ApiResp
 }
 
 /**
+ * Convert "HH:mm" time string to "HH:mm:ss" LocalTime format expected by the API
+ */
+export function parseTimeToApiString(timeStr: string): string {
+  const [hours, minutes] = timeStr.split(':').map(Number);
+  return `${String(hours || 0).padStart(2, '0')}:${String(minutes || 0).padStart(2, '0')}:00`;
+}
+
+/**
  * Event Booking Request for customer/events/book endpoint
  */
 export interface EventBookingRequest {
+  title: string;
+  description: string;
+  startTime: string;
+  endTime: string;
+  eventDate: string;
+  location: string;
+  eventOrganizer: string;
+  eventVisibility: string;
+  eventTags: string;
   photographerId: string;
   packageId: string;
-  eventDate?: string;
-  eventTime?: string;
-  eventType?: string;
-  location?: string;
-  guestCount?: number;
-  notes?: string;
+  notes: string;
 }
 
 /**
