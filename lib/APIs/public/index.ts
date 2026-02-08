@@ -25,6 +25,15 @@ export type {
   GetCitiesResponse,
 } from './get-cities/route';
 
+// Currencies
+export {
+  getCurrencies,
+} from './get-currencies/route';
+export type {
+  Currency,
+  GetCurrenciesResponse,
+} from './get-currencies/route';
+
 // Photographers
 export {
   getPhotographers,
@@ -43,3 +52,13 @@ export type {
   Certification,
   Training,
 } from './get-photographers/route';
+
+// Events
+export {
+  getPublicEvents,
+} from './get-events/route';
+export type {
+  PublicEvent,
+  PaginatedEvents,
+  GetPublicEventsRequest,
+} from './get-events/route';

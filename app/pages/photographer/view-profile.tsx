@@ -4,8 +4,11 @@ import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import AmoriaKNavbar from '../../components/navbar';
 import ReviewModal from '../../components/ReviewModal';
-import { getPhotographers, type Photographer } from '@/lib/APIs/public';
+import { getPhotographers, type Photographer, getPublicEvents } from '@/lib/APIs/public';
+import { getPublicPhotographerPackages, type PublicPackage } from '@/lib/APIs/packages/get-packages/route';
 import { useToast } from '@/lib/notifications/ToastProvider';
+import { useAuth } from '@/app/providers/AuthProvider';
+import { apiClient } from '@/lib/api/client';
 
 // Default images for fallback
 const DEFAULT_PROFILE_IMAGE = 'https://i.pinimg.com/1200x/e9/1f/59/e91f59ed85a702d7252f2b0c8e02c7d2.jpg';
@@ -46,8 +49,11 @@ function ViewProfileContent(): React.JSX.Element {
   const photographerId = searchParams.get('id');
   const toast = useToast();
 
+  const { user, isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [reviewEvents, setReviewEvents] = useState<{id: string; title: string; eventDate: string}[]>([]);
+  const [reviewEventsLoading, setReviewEventsLoading] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [imageViewerOpen, setImageViewerOpen] = useState(false);
   const [currentImageType, setCurrentImageType] = useState<'profile' | 'cover' | null>(null);
@@ -57,6 +63,8 @@ function ViewProfileContent(): React.JSX.Element {
   // API data state
   const [photographer, setPhotographer] = useState<Photographer | null>(null);
   const [fetchError, setFetchError] = useState<string | null>(null);
+  const [packages, setPackages] = useState<PublicPackage[]>([]);
+  const [packagesLoading, setPackagesLoading] = useState(false);
 
   // Fetch photographer data from API by filtering from main list
   useEffect(() => {
@@ -98,6 +106,26 @@ function ViewProfileContent(): React.JSX.Element {
     fetchPhotographer();
   }, [photographerId, toast]);
 
+  // Fetch public packages for this photographer
+  useEffect(() => {
+    if (!photographerId) return;
+    setPackagesLoading(true);
+    getPublicPhotographerPackages(photographerId)
+      .then(res => {
+        if (res.success && res.data) {
+          // Handle both direct array and wrapped { action, data } response formats
+          const pkgs = Array.isArray(res.data)
+            ? res.data
+            : (res.data as Record<string, unknown>)?.data
+              ? (res.data as Record<string, unknown>).data as PublicPackage[]
+              : [];
+          setPackages((pkgs as PublicPackage[]).filter(p => p.isActive));
+        }
+      })
+      .catch(() => {})
+      .finally(() => setPackagesLoading(false));
+  }, [photographerId]);
+
   // Handle Book Now button click with success banner
   const handleBookNowClick = () => {
     setShowBookingBanner(true);
@@ -135,6 +163,40 @@ function ViewProfileContent(): React.JSX.Element {
       document.body.style.overflow = 'unset';
     };
   }, [imageViewerOpen]);
+
+  // Fetch completed events when review modal opens
+  useEffect(() => {
+    if (!isReviewModalOpen || !photographerId || !isAuthenticated) return;
+
+    const fetchReviewEvents = async () => {
+      setReviewEventsLoading(true);
+      try {
+        const response = await getPublicEvents({ page: 0, size: 100 });
+        if (response.success && response.data?.content) {
+          const completedEvents = response.data.content
+            .filter(evt =>
+              evt.photographerId === photographerId &&
+              (evt.status === 'COMPLETED' || evt.status === 'completed')
+            )
+            .map(evt => ({
+              id: evt.id,
+              title: evt.title || 'Untitled Event',
+              eventDate: evt.eventDate || '',
+            }));
+          setReviewEvents(completedEvents);
+        } else {
+          setReviewEvents([]);
+        }
+      } catch (err) {
+        console.error('Failed to fetch events for review:', err);
+        setReviewEvents([]);
+      } finally {
+        setReviewEventsLoading(false);
+      }
+    };
+
+    fetchReviewEvents();
+  }, [isReviewModalOpen, photographerId, isAuthenticated]);
 
   const openImageViewer = (type: 'profile' | 'cover') => {
     setCurrentImageType(type);
@@ -225,11 +287,29 @@ function ViewProfileContent(): React.JSX.Element {
     console.log('Start Chat clicked');
   };
 
-  const handleReviewSubmit = (review: { name: string; rating: number; comment: string; images: File[] }) => {
-    console.log('Review submitted:', review);
-    // Here you would typically send the review to your backend API
-    // Example: await api.submitReview(photographerId, review);
-    alert(`Thank you ${review.name} for your review! It has been submitted successfully.`);
+  const handleReviewSubmit = async (review: { name: string; rating: number; comment: string; images: File[]; eventId: string }) => {
+    if (!review.eventId) {
+      toast.error('Please select an event to review');
+      return;
+    }
+
+    try {
+      const response = await apiClient.post<Record<string, unknown>>('/api/remote/photographer-reviews', {
+        eventId: review.eventId,
+        rating: review.rating,
+        comment: review.comment,
+      });
+
+      if (response.success) {
+        toast.success('Review submitted successfully!');
+        setIsReviewModalOpen(false);
+      } else {
+        toast.error(response.error || 'Failed to submit review');
+      }
+    } catch (err) {
+      console.error('Failed to submit review:', err);
+      toast.error('Failed to submit review');
+    }
   };
 
   const renderStars = (rating: number) => {
@@ -968,7 +1048,7 @@ function ViewProfileContent(): React.JSX.Element {
         <div
           style={{
             display: isMobile ? 'grid' : 'flex',
-            gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : undefined,
+            gridTemplateColumns: isMobile ? 'repeat(3, 1fr)' : undefined,
             backgroundColor: '#f9fafb',
             padding: '0',
             gap: '0',
@@ -978,6 +1058,7 @@ function ViewProfileContent(): React.JSX.Element {
         >
           {[
             { key: 'overview', label: t('tabs.overview') },
+            { key: 'packages', label: 'Packages' },
             { key: 'portfolio', label: t('tabs.portfolio') },
             { key: 'reviews', label: t('tabs.reviews') },
             { key: 'working-experience', label: t('tabs.workingExperience') }
@@ -1181,6 +1262,245 @@ function ViewProfileContent(): React.JSX.Element {
                   <p style={{ fontSize: '14px', color: '#9ca3af', fontStyle: 'italic' }}>{t('overview.noEquipment')}</p>
                 )}
               </div>
+            </div>
+          )}
+
+          {activeTab === 'packages' && (
+            <div>
+              {/* Section Header */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '24px' }}>
+                <div style={{
+                  width: '4px',
+                  height: '24px',
+                  backgroundColor: '#083A85',
+                  borderRadius: '2px',
+                }}></div>
+                <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#000', margin: 0 }}>
+                  Service Packages
+                </h3>
+              </div>
+
+              {packagesLoading ? (
+                /* Loading skeleton */
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(300px, 1fr))',
+                  gap: '20px',
+                }}>
+                  {[1, 2, 3].map(i => (
+                    <div key={i} style={{
+                      backgroundColor: '#f9fafb',
+                      borderRadius: '16px',
+                      padding: '24px',
+                      border: '2px solid #e5e7eb',
+                    }}>
+                      <div style={{ height: '28px', width: '60%', backgroundColor: '#e5e7eb', borderRadius: '8px', marginBottom: '16px' }} />
+                      <div style={{ height: '36px', width: '40%', backgroundColor: '#e5e7eb', borderRadius: '8px', marginBottom: '12px' }} />
+                      <div style={{ height: '16px', width: '80%', backgroundColor: '#e5e7eb', borderRadius: '6px', marginBottom: '20px' }} />
+                      {[1, 2, 3, 4].map(j => (
+                        <div key={j} style={{ height: '14px', width: `${70 + j * 5}%`, backgroundColor: '#e5e7eb', borderRadius: '4px', marginBottom: '10px' }} />
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              ) : packages.length === 0 ? (
+                /* Empty state */
+                <div style={{
+                  textAlign: 'center',
+                  padding: isMobile ? '40px 20px' : '60px 40px',
+                  backgroundColor: '#f9fafb',
+                  borderRadius: '16px',
+                  border: '2px dashed #e5e7eb',
+                }}>
+                  <i className="bi bi-box-seam" style={{ fontSize: '48px', color: '#d1d5db', display: 'block', marginBottom: '16px' }}></i>
+                  <h4 style={{ fontSize: '18px', fontWeight: '600', color: '#6b7280', margin: '0 0 8px 0' }}>
+                    No packages available yet
+                  </h4>
+                  <p style={{ fontSize: '14px', color: '#9ca3af', margin: 0 }}>
+                    This photographer hasn&apos;t published any service packages yet.
+                  </p>
+                </div>
+              ) : (
+                /* Package cards grid */
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: isMobile ? '1fr' : packages.length === 1 ? '1fr' : packages.length === 2 ? 'repeat(2, 1fr)' : 'repeat(auto-fill, minmax(300px, 1fr))',
+                  gap: '20px',
+                }}>
+                  {packages.map((pkg, index) => {
+                    const badgeStyles = [
+                      { bg: 'linear-gradient(135deg, #22D3EE 0%, #3B82F6 100%)', color: '#fff' },
+                      { bg: 'linear-gradient(135deg, #FDE047 0%, #FBBF24 50%, #F59E0B 100%)', color: '#78350F' },
+                      { bg: 'linear-gradient(135deg, #C084FC 0%, #A855F7 50%, #7C3AED 100%)', color: '#fff' },
+                    ];
+                    const badge = badgeStyles[index % badgeStyles.length];
+                    const sortedFeatures = [...(pkg.features || [])].sort((a, b) => a.displayOrder - b.displayOrder);
+
+                    return (
+                      <div
+                        key={pkg.id || index}
+                        style={{
+                          backgroundColor: '#fff',
+                          borderRadius: '16px',
+                          border: '2px solid #e5e7eb',
+                          overflow: 'hidden',
+                          transition: 'all 0.3s ease',
+                          display: 'flex',
+                          flexDirection: 'column',
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!isMobile) {
+                            e.currentTarget.style.transform = 'translateY(-4px)';
+                            e.currentTarget.style.boxShadow = '0 12px 32px rgba(8, 58, 133, 0.15)';
+                            e.currentTarget.style.borderColor = '#083A85';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!isMobile) {
+                            e.currentTarget.style.transform = 'translateY(0)';
+                            e.currentTarget.style.boxShadow = 'none';
+                            e.currentTarget.style.borderColor = '#e5e7eb';
+                          }
+                        }}
+                      >
+                        {/* Package header with badge */}
+                        <div style={{ padding: '24px 24px 16px' }}>
+                          <span style={{
+                            display: 'inline-block',
+                            background: badge.bg,
+                            color: badge.color,
+                            padding: '6px 16px',
+                            borderRadius: '20px',
+                            fontSize: '13px',
+                            fontWeight: '700',
+                            letterSpacing: '0.5px',
+                            textTransform: 'uppercase',
+                            marginBottom: '16px',
+                          }}>
+                            {pkg.packageName}
+                          </span>
+
+                          {/* Price */}
+                          <div style={{ marginBottom: '8px' }}>
+                            <span style={{ fontSize: '32px', fontWeight: '800', color: '#083A85' }}>
+                              ${pkg.price}
+                            </span>
+                            {pkg.priceUnit && (
+                              <span style={{ fontSize: '14px', color: '#6b7280', marginLeft: '4px' }}>
+                                / {pkg.priceUnit}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Duration */}
+                          {pkg.durationHours > 0 && (
+                            <div style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              fontSize: '14px',
+                              color: '#6b7280',
+                              marginBottom: '12px',
+                            }}>
+                              <i className="bi bi-clock" style={{ fontSize: '14px' }}></i>
+                              {pkg.durationHours} {pkg.durationHours === 1 ? 'hour' : 'hours'}
+                            </div>
+                          )}
+
+                          {/* Description */}
+                          {pkg.description && (
+                            <p style={{
+                              fontSize: '14px',
+                              color: '#4b5563',
+                              lineHeight: '1.6',
+                              margin: '0 0 16px 0',
+                            }}>
+                              {pkg.description}
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Features list */}
+                        {sortedFeatures.length > 0 && (
+                          <div style={{
+                            padding: '0 24px 16px',
+                            flex: 1,
+                          }}>
+                            <div style={{
+                              borderTop: '1px solid #f3f4f6',
+                              paddingTop: '16px',
+                            }}>
+                              {sortedFeatures.map((feature, fIdx) => (
+                                <div
+                                  key={fIdx}
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '10px',
+                                    padding: '6px 0',
+                                    fontSize: '14px',
+                                  }}
+                                >
+                                  <i
+                                    className={feature.isIncluded ? 'bi bi-check-circle-fill' : 'bi bi-x-circle'}
+                                    style={{
+                                      color: feature.isIncluded ? '#16a34a' : '#d1d5db',
+                                      fontSize: '16px',
+                                      flexShrink: 0,
+                                    }}
+                                  ></i>
+                                  <span style={{
+                                    color: feature.isIncluded ? '#374151' : '#9ca3af',
+                                    textDecoration: feature.isIncluded ? 'none' : 'line-through',
+                                  }}>
+                                    {feature.featureName}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Book Now button */}
+                        <div style={{ padding: '0 24px 24px', marginTop: 'auto' }}>
+                          <button
+                            onClick={() => {
+                              window.location.href = `/user/photographers/book-now?id=${photographerId}`;
+                            }}
+                            style={{
+                              width: '100%',
+                              padding: '12px',
+                              backgroundColor: '#083A85',
+                              color: '#fff',
+                              border: 'none',
+                              borderRadius: '12px',
+                              fontSize: '15px',
+                              fontWeight: '600',
+                              cursor: 'pointer',
+                              transition: 'all 0.3s ease',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '8px',
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = '#0d4ea6';
+                              e.currentTarget.style.boxShadow = '0 4px 12px rgba(8, 58, 133, 0.3)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = '#083A85';
+                              e.currentTarget.style.boxShadow = 'none';
+                            }}
+                          >
+                            <i className="bi bi-calendar-check" style={{ fontSize: '16px' }}></i>
+                            Book Now
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
 
@@ -1867,6 +2187,8 @@ function ViewProfileContent(): React.JSX.Element {
       onClose={() => setIsReviewModalOpen(false)}
       onSubmit={handleReviewSubmit}
       photographerName={photographerData.name}
+      events={reviewEvents}
+      eventsLoading={reviewEventsLoading}
     />
 
     {/* Image Viewer Modal */}

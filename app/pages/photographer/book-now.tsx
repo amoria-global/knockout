@@ -4,7 +4,8 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import AmoriaKNavbar from '../../components/navbar';
 import { useAuth } from '@/app/providers/AuthProvider';
-import { createEventBooking } from '@/lib/APIs/bookings/create-booking/route';
+import { createEventBooking, parseTimeToApiString } from '@/lib/APIs/bookings/create-booking/route';
+import { getPublicPhotographerPackages, type PublicPackage } from '@/lib/APIs/packages/get-packages/route';
 
 // Shared photographer data - same as view-profile.tsx
 const photographersData = [
@@ -106,6 +107,20 @@ const photographersData = [
   },
 ];
 
+const eventTypes = [
+  'Wedding',
+  'Birthday',
+  'Corporate Event',
+  'Concert',
+  'Graduation',
+  'Baby Shower',
+  'Anniversary',
+  'Conference',
+  'Fashion Show',
+  'Sports Event',
+  'Other',
+];
+
 function BookNowContent(): React.JSX.Element {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -118,10 +133,24 @@ function BookNowContent(): React.JSX.Element {
   const [bookingInProgress, setBookingInProgress] = useState(false);
   const [bookingError, setBookingError] = useState<string | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [apiPackages, setApiPackages] = useState<PublicPackage[]>([]);
+  const [apiPackagesLoaded, setApiPackagesLoaded] = useState(false);
 
   // Extra photos & videos state per package
   const [extraPhotos, setExtraPhotos] = useState<Record<string, number | ''>>({ essential: '', custom: '', premium: '' });
   const [extraVideos, setExtraVideos] = useState<Record<string, number | ''>>({ essential: '', custom: '', premium: '' });
+
+  // Event details form state
+  const [eventDate, setEventDate] = useState('');
+  const [eventTime, setEventTime] = useState('');
+  const [eventEndTime, setEventEndTime] = useState('');
+  const [eventType, setEventType] = useState('');
+  const [eventLocation, setEventLocation] = useState('');
+  const [eventNotes, setEventNotes] = useState('');
+  const [eventTitle, setEventTitle] = useState('');
+  const [eventDescription, setEventDescription] = useState('');
+  const [eventOrganizer, setEventOrganizer] = useState('');
+  const [eventVisibility, setEventVisibility] = useState('PUBLIC');
 
 
   // Validation checks
@@ -161,6 +190,24 @@ function BookNowContent(): React.JSX.Element {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+  // Fetch real packages from API
+  useEffect(() => {
+    if (!photographerId) return;
+    getPublicPhotographerPackages(photographerId)
+      .then(res => {
+        if (res.success && res.data) {
+          const pkgs = Array.isArray(res.data)
+            ? res.data
+            : (res.data as Record<string, unknown>)?.data
+              ? (res.data as Record<string, unknown>).data as PublicPackage[]
+              : [];
+          setApiPackages((pkgs as PublicPackage[]).filter(p => p.isActive));
+        }
+      })
+      .catch(() => {})
+      .finally(() => setApiPackagesLoaded(true));
+  }, [photographerId]);
+
   // Get photographer data based on ID from URL
   const photographer = photographersData.find(p => p.id === Number(photographerId)) || photographersData[0];
 
@@ -177,7 +224,15 @@ function BookNowContent(): React.JSX.Element {
     minimumEarnings: '$200.00 / Event',
   };
 
-  const packages = [
+  // Badge styles for package cards (cycling)
+  const badgePresets = [
+    { badgeColor: '#22D3EE', badgeGradient: 'linear-gradient(135deg, #22D3EE 0%, #3B82F6 100%)' },
+    { badgeColor: '#FBBF24', badgeGradient: 'linear-gradient(135deg, #FDE047 0%, #FBBF24 50%, #F59E0B 100%)' },
+    { badgeColor: '#A855F7', badgeGradient: 'linear-gradient(135deg, #C084FC 0%, #A855F7 50%, #7C3AED 100%)' },
+  ];
+
+  // Default fallback packages (used when API returns empty)
+  const defaultPackages = [
     {
       id: 'essential',
       name: t('packages.essential.name'),
@@ -186,8 +241,7 @@ function BookNowContent(): React.JSX.Element {
       includedVideos: 20,
       period: 'per event*',
       badge: 'Essential',
-      badgeColor: '#22D3EE',
-      badgeGradient: 'linear-gradient(135deg, #22D3EE 0%, #3B82F6 100%)',
+      ...badgePresets[0],
       description: t('packages.essential.description'),
       features: [
         { text: 'HD 150 photos & 20 videos', available: true },
@@ -207,8 +261,7 @@ function BookNowContent(): React.JSX.Element {
       includedVideos: 50,
       period: 'per event*',
       badge: 'Custom',
-      badgeColor: '#FBBF24',
-      badgeGradient: 'linear-gradient(135deg, #FDE047 0%, #FBBF24 50%, #F59E0B 100%)',
+      ...badgePresets[1],
       description: t('packages.custom.description'),
       features: [
         { text: 'HD 350 photos & 50 videos', available: true },
@@ -228,8 +281,7 @@ function BookNowContent(): React.JSX.Element {
       includedVideos: 80,
       period: 'per event*',
       badge: 'Premium',
-      badgeColor: '#A855F7',
-      badgeGradient: 'linear-gradient(135deg, #C084FC 0%, #A855F7 50%, #7C3AED 100%)',
+      ...badgePresets[2],
       description: t('packages.premium.description'),
       features: [
         { text: 'HD 500 photos & 80 videos', available: true },
@@ -269,12 +321,35 @@ function BookNowContent(): React.JSX.Element {
     }));
   };
 
+  // Use real API packages when available, fall back to defaults
+  const packages = (apiPackagesLoaded && apiPackages.length > 0)
+    ? apiPackages.map((pkg, index) => ({
+        id: pkg.id,
+        name: pkg.packageName,
+        basePrice: pkg.price,
+        includedPhotos: 0,
+        includedVideos: 0,
+        period: pkg.priceUnit || 'per event',
+        badge: pkg.packageName,
+        ...badgePresets[index % badgePresets.length],
+        description: pkg.description || '',
+        features: [...(pkg.features || [])]
+          .sort((a, b) => a.displayOrder - b.displayOrder)
+          .map(f => ({ text: f.featureName, available: f.isIncluded })),
+      }))
+    : defaultPackages;
+
   const handleCancel = () => {
     setSelectedPackage(null);
     setBookingError(null);
+    setEventEndTime('');
+    setEventTitle('');
+    setEventDescription('');
+    setEventOrganizer('');
+    setEventVisibility('PUBLIC');
   };
 
-  const isFormComplete = !!selectedPackage;
+  const isFormComplete = selectedPackage && eventDate && eventTime && eventEndTime && eventType && eventLocation;
 
   const handleBooking = async () => {
     if (!selectedPackage || !photographerId || !user) {
@@ -289,8 +364,18 @@ function BookNowContent(): React.JSX.Element {
     try {
       const response = await createEventBooking(
         {
+          title: eventTitle || `${eventType} Photography Session`,
+          description: eventDescription || `${eventType} event at ${eventLocation}`,
+          startTime: parseTimeToApiString(eventTime),
+          endTime: parseTimeToApiString(eventEndTime),
+          eventDate: eventDate,
+          location: eventLocation,
+          eventOrganizer: eventOrganizer || `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Customer',
+          eventVisibility: eventVisibility,
+          eventTags: eventType,
           photographerId: photographerId,
           packageId: selectedPackage,
+          notes: eventNotes || '',
         },
         user.customerId || user.id
       );
@@ -951,8 +1036,8 @@ function BookNowContent(): React.JSX.Element {
                     ))}
                   </div>
 
-                  {/* Extra Photos & Videos Input - Only shows when selected */}
-                  {selectedPackage === pkg.id && (
+                  {/* Extra Photos & Videos Input - Only shows when selected and package has included counts */}
+                  {selectedPackage === pkg.id && (pkg.includedPhotos > 0 || pkg.includedVideos > 0) && (
                     <div
                       style={{
                         marginTop: '20px',
@@ -1256,6 +1341,438 @@ function BookNowContent(): React.JSX.Element {
               </div>
             ))}
           </div>
+
+          {/* Event Details Form - appears after package selection */}
+          {selectedPackage && (
+            <div
+              style={{
+                marginTop: '32px',
+                padding: isMobile ? '20px 16px' : '28px 24px',
+                backgroundColor: '#fff',
+                borderRadius: '16px',
+                border: '2px solid #e5e7eb',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
+              }}
+            >
+              <h3
+                style={{
+                  fontSize: isMobile ? '18px' : '20px',
+                  fontWeight: '700',
+                  color: '#1f2937',
+                  marginBottom: '6px',
+                }}
+              >
+                Event Details
+              </h3>
+              <p
+                style={{
+                  fontSize: '14px',
+                  color: '#6b7280',
+                  marginBottom: '20px',
+                }}
+              >
+                Tell us about your event so the photographer can prepare
+              </p>
+
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
+                  gap: '16px',
+                }}
+              >
+                {/* Event Title */}
+                <div>
+                  <label
+                    htmlFor="eventTitle"
+                    style={{
+                      display: 'block',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      color: '#374151',
+                      marginBottom: '6px',
+                    }}
+                  >
+                    Event Title <span style={{ fontWeight: '400', color: '#9ca3af' }}>(optional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    id="eventTitle"
+                    value={eventTitle}
+                    onChange={(e) => setEventTitle(e.target.value)}
+                    placeholder="e.g., My Wedding Photography"
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      fontSize: '15px',
+                      border: '2px solid #d1d5db',
+                      borderRadius: '12px',
+                      backgroundColor: '#fff',
+                      color: '#1f2937',
+                      outline: 'none',
+                      transition: 'border-color 0.2s ease',
+                      boxSizing: 'border-box',
+                    }}
+                    onFocus={(e) => (e.currentTarget.style.borderColor = '#083A85')}
+                    onBlur={(e) => (e.currentTarget.style.borderColor = '#d1d5db')}
+                  />
+                </div>
+
+                {/* Event Type */}
+                <div>
+                  <label
+                    htmlFor="eventType"
+                    style={{
+                      display: 'block',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      color: '#374151',
+                      marginBottom: '6px',
+                    }}
+                  >
+                    Event Type *
+                  </label>
+                  <select
+                    id="eventType"
+                    value={eventType}
+                    onChange={(e) => setEventType(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      fontSize: '15px',
+                      border: '2px solid #d1d5db',
+                      borderRadius: '12px',
+                      backgroundColor: '#fff',
+                      color: eventType ? '#1f2937' : '#9ca3af',
+                      cursor: 'pointer',
+                      outline: 'none',
+                      transition: 'border-color 0.2s ease',
+                      appearance: 'none',
+                      backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23374151' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e")`,
+                      backgroundRepeat: 'no-repeat',
+                      backgroundPosition: 'right 12px center',
+                      backgroundSize: '16px',
+                    }}
+                    onFocus={(e) => (e.currentTarget.style.borderColor = '#083A85')}
+                    onBlur={(e) => (e.currentTarget.style.borderColor = '#d1d5db')}
+                  >
+                    <option value="" disabled>
+                      Select event type
+                    </option>
+                    {eventTypes.map((type) => (
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Event Date */}
+                <div>
+                  <label
+                    htmlFor="eventDate"
+                    style={{
+                      display: 'block',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      color: '#374151',
+                      marginBottom: '6px',
+                    }}
+                  >
+                    Event Date *
+                  </label>
+                  <input
+                    type="date"
+                    id="eventDate"
+                    value={eventDate}
+                    onChange={(e) => setEventDate(e.target.value)}
+                    min={new Date(Date.now() + 86400000).toISOString().split('T')[0]}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      fontSize: '15px',
+                      border: '2px solid #d1d5db',
+                      borderRadius: '12px',
+                      backgroundColor: '#fff',
+                      color: '#1f2937',
+                      outline: 'none',
+                      transition: 'border-color 0.2s ease',
+                      boxSizing: 'border-box',
+                    }}
+                    onFocus={(e) => (e.currentTarget.style.borderColor = '#083A85')}
+                    onBlur={(e) => (e.currentTarget.style.borderColor = '#d1d5db')}
+                  />
+                </div>
+
+                {/* Start Time */}
+                <div>
+                  <label
+                    htmlFor="eventTime"
+                    style={{
+                      display: 'block',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      color: '#374151',
+                      marginBottom: '6px',
+                    }}
+                  >
+                    Start Time *
+                  </label>
+                  <input
+                    type="time"
+                    id="eventTime"
+                    value={eventTime}
+                    onChange={(e) => setEventTime(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      fontSize: '15px',
+                      border: '2px solid #d1d5db',
+                      borderRadius: '12px',
+                      backgroundColor: '#fff',
+                      color: '#1f2937',
+                      outline: 'none',
+                      transition: 'border-color 0.2s ease',
+                      boxSizing: 'border-box',
+                    }}
+                    onFocus={(e) => (e.currentTarget.style.borderColor = '#083A85')}
+                    onBlur={(e) => (e.currentTarget.style.borderColor = '#d1d5db')}
+                  />
+                </div>
+
+                {/* End Time */}
+                <div>
+                  <label
+                    htmlFor="eventEndTime"
+                    style={{
+                      display: 'block',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      color: '#374151',
+                      marginBottom: '6px',
+                    }}
+                  >
+                    End Time *
+                  </label>
+                  <input
+                    type="time"
+                    id="eventEndTime"
+                    value={eventEndTime}
+                    onChange={(e) => setEventEndTime(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      fontSize: '15px',
+                      border: '2px solid #d1d5db',
+                      borderRadius: '12px',
+                      backgroundColor: '#fff',
+                      color: '#1f2937',
+                      outline: 'none',
+                      transition: 'border-color 0.2s ease',
+                      boxSizing: 'border-box',
+                    }}
+                    onFocus={(e) => (e.currentTarget.style.borderColor = '#083A85')}
+                    onBlur={(e) => (e.currentTarget.style.borderColor = '#d1d5db')}
+                  />
+                </div>
+
+                {/* Event Location */}
+                <div>
+                  <label
+                    htmlFor="eventLocation"
+                    style={{
+                      display: 'block',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      color: '#374151',
+                      marginBottom: '6px',
+                    }}
+                  >
+                    Event Location *
+                  </label>
+                  <input
+                    type="text"
+                    id="eventLocation"
+                    value={eventLocation}
+                    onChange={(e) => setEventLocation(e.target.value)}
+                    placeholder="e.g., Kigali Convention Center"
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      fontSize: '15px',
+                      border: '2px solid #d1d5db',
+                      borderRadius: '12px',
+                      backgroundColor: '#fff',
+                      color: '#1f2937',
+                      outline: 'none',
+                      transition: 'border-color 0.2s ease',
+                      boxSizing: 'border-box',
+                    }}
+                    onFocus={(e) => (e.currentTarget.style.borderColor = '#083A85')}
+                    onBlur={(e) => (e.currentTarget.style.borderColor = '#d1d5db')}
+                  />
+                </div>
+
+                {/* Event Organizer */}
+                <div>
+                  <label
+                    htmlFor="eventOrganizer"
+                    style={{
+                      display: 'block',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      color: '#374151',
+                      marginBottom: '6px',
+                    }}
+                  >
+                    Event Organizer <span style={{ fontWeight: '400', color: '#9ca3af' }}>(optional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    id="eventOrganizer"
+                    value={eventOrganizer}
+                    onChange={(e) => setEventOrganizer(e.target.value)}
+                    placeholder={`${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Your name'}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      fontSize: '15px',
+                      border: '2px solid #d1d5db',
+                      borderRadius: '12px',
+                      backgroundColor: '#fff',
+                      color: '#1f2937',
+                      outline: 'none',
+                      transition: 'border-color 0.2s ease',
+                      boxSizing: 'border-box',
+                    }}
+                    onFocus={(e) => (e.currentTarget.style.borderColor = '#083A85')}
+                    onBlur={(e) => (e.currentTarget.style.borderColor = '#d1d5db')}
+                  />
+                </div>
+
+                {/* Event Visibility */}
+                <div>
+                  <label
+                    htmlFor="eventVisibility"
+                    style={{
+                      display: 'block',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      color: '#374151',
+                      marginBottom: '6px',
+                    }}
+                  >
+                    Event Visibility
+                  </label>
+                  <select
+                    id="eventVisibility"
+                    value={eventVisibility}
+                    onChange={(e) => setEventVisibility(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      fontSize: '15px',
+                      border: '2px solid #d1d5db',
+                      borderRadius: '12px',
+                      backgroundColor: '#fff',
+                      color: '#1f2937',
+                      cursor: 'pointer',
+                      outline: 'none',
+                      transition: 'border-color 0.2s ease',
+                      appearance: 'none',
+                      backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23374151' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e")`,
+                      backgroundRepeat: 'no-repeat',
+                      backgroundPosition: 'right 12px center',
+                      backgroundSize: '16px',
+                    }}
+                    onFocus={(e) => (e.currentTarget.style.borderColor = '#083A85')}
+                    onBlur={(e) => (e.currentTarget.style.borderColor = '#d1d5db')}
+                  >
+                    <option value="PUBLIC">Public</option>
+                    <option value="PRIVATE">Private</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Event Description - full width */}
+              <div style={{ marginTop: '16px' }}>
+                <label
+                  htmlFor="eventDescription"
+                  style={{
+                    display: 'block',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    color: '#374151',
+                    marginBottom: '6px',
+                  }}
+                >
+                  Event Description <span style={{ fontWeight: '400', color: '#9ca3af' }}>(optional)</span>
+                </label>
+                <textarea
+                  id="eventDescription"
+                  value={eventDescription}
+                  onChange={(e) => setEventDescription(e.target.value)}
+                  placeholder="Describe your event..."
+                  rows={2}
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    fontSize: '15px',
+                    border: '2px solid #d1d5db',
+                    borderRadius: '12px',
+                    backgroundColor: '#fff',
+                    color: '#1f2937',
+                    outline: 'none',
+                    transition: 'border-color 0.2s ease',
+                    resize: 'vertical',
+                    fontFamily: 'inherit',
+                    boxSizing: 'border-box',
+                  }}
+                  onFocus={(e) => (e.currentTarget.style.borderColor = '#083A85')}
+                  onBlur={(e) => (e.currentTarget.style.borderColor = '#d1d5db')}
+                />
+              </div>
+
+              {/* Notes - full width */}
+              <div style={{ marginTop: '16px' }}>
+                <label
+                  htmlFor="eventNotes"
+                  style={{
+                    display: 'block',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    color: '#374151',
+                    marginBottom: '6px',
+                  }}
+                >
+                  Additional Notes <span style={{ fontWeight: '400', color: '#9ca3af' }}>(optional)</span>
+                </label>
+                <textarea
+                  id="eventNotes"
+                  value={eventNotes}
+                  onChange={(e) => setEventNotes(e.target.value)}
+                  placeholder="Any special requirements, preferred locations for shots, etc."
+                  rows={3}
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    fontSize: '15px',
+                    border: '2px solid #d1d5db',
+                    borderRadius: '12px',
+                    backgroundColor: '#fff',
+                    color: '#1f2937',
+                    outline: 'none',
+                    transition: 'border-color 0.2s ease',
+                    resize: 'vertical',
+                    fontFamily: 'inherit',
+                    boxSizing: 'border-box',
+                  }}
+                  onFocus={(e) => (e.currentTarget.style.borderColor = '#083A85')}
+                  onBlur={(e) => (e.currentTarget.style.borderColor = '#d1d5db')}
+                />
+              </div>
+            </div>
+          )}
 
           {/* Action Buttons */}
           <div

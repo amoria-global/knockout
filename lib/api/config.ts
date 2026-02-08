@@ -91,6 +91,9 @@ export const API_ENDPOINTS = {
     PHOTOGRAPHERS_LIST: '/api/remote/public/photographers/list',
     PHOTOGRAPHER_CATEGORIES: '/api/remote/photographer-categories',
     CITIES: '/api/remote/cities',
+    CURRENCIES: '/api/remote/public/currencies',
+    PHOTOGRAPHER_PACKAGES: (id: string) => `/api/remote/public/photographers/${id}/packages`,
+    EVENTS_LIST: '/api/remote/public/events/list',
   },
 
   // Protected photographer endpoints
@@ -112,6 +115,8 @@ export const API_ENDPOINTS = {
   // Customer endpoints
   CUSTOMER: {
     EVENTS_BOOK: '/api/remote/customer/events/book',
+    EVENTS_PUBLISH: (eventId: string) => `/api/remote/customer/events/${eventId}/publish`,
+    EVENTS_CONFIRM_COMPLETION: (eventId: string) => `/api/remote/customer/events/${eventId}/confirm-completion`,
   },
 
   // Legacy endpoint paths (for backward compatibility)
