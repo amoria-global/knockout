@@ -119,25 +119,10 @@ function BookNowContent(): React.JSX.Element {
   const [bookingError, setBookingError] = useState<string | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
 
-  // Event details form state
-  const [eventDate, setEventDate] = useState('');
-  const [eventTime, setEventTime] = useState('');
-  const [eventType, setEventType] = useState('');
-  const [eventLocation, setEventLocation] = useState('');
-  const [eventNotes, setEventNotes] = useState('');
+  // Extra photos & videos state per package
+  const [extraPhotos, setExtraPhotos] = useState<Record<string, number | ''>>({ essential: '', custom: '', premium: '' });
+  const [extraVideos, setExtraVideos] = useState<Record<string, number | ''>>({ essential: '', custom: '', premium: '' });
 
-  const eventTypes = [
-    'Wedding',
-    'Birthday',
-    'Corporate Event',
-    'Concert',
-    'Graduation',
-    'Portrait Session',
-    'Engagement',
-    'Baby Shower',
-    'Anniversary',
-    'Other',
-  ];
 
   // Validation checks
   useEffect(() => {
@@ -196,14 +181,16 @@ function BookNowContent(): React.JSX.Element {
     {
       id: 'essential',
       name: t('packages.essential.name'),
-      price: '$90',
+      basePrice: 190,
+      includedPhotos: 150,
+      includedVideos: 20,
       period: 'per event*',
       badge: 'Essential',
       badgeColor: '#22D3EE',
       badgeGradient: 'linear-gradient(135deg, #22D3EE 0%, #3B82F6 100%)',
       description: t('packages.essential.description'),
       features: [
-        { text: t('packages.features.unlimitedPhotos'), available: true },
+        { text: 'HD 150 photos & 20 videos', available: true },
         { text: 'Online gallery storage (provided by platform)', available: true },
         { text: t('packages.features.sameDayPreview'), available: true },
         { text: t('packages.features.professionalEditing'), available: false },
@@ -215,14 +202,16 @@ function BookNowContent(): React.JSX.Element {
     {
       id: 'custom',
       name: t('packages.custom.name'),
-      price: '$150',
+      basePrice: 450,
+      includedPhotos: 350,
+      includedVideos: 50,
       period: 'per event*',
       badge: 'Custom',
       badgeColor: '#FBBF24',
       badgeGradient: 'linear-gradient(135deg, #FDE047 0%, #FBBF24 50%, #F59E0B 100%)',
       description: t('packages.custom.description'),
       features: [
-        { text: t('packages.features.unlimitedPhotos'), available: true },
+        { text: 'HD 350 photos & 50 videos', available: true },
         { text: 'Online gallery storage (provided by platform)', available: true },
         { text: t('packages.features.sameDayPreview'), available: true },
         { text: t('packages.features.professionalEditing'), available: true },
@@ -234,14 +223,16 @@ function BookNowContent(): React.JSX.Element {
     {
       id: 'premium',
       name: t('packages.premium.name'),
-      price: '$200',
+      basePrice: 660,
+      includedPhotos: 500,
+      includedVideos: 80,
       period: 'per event*',
       badge: 'Premium',
       badgeColor: '#A855F7',
       badgeGradient: 'linear-gradient(135deg, #C084FC 0%, #A855F7 50%, #7C3AED 100%)',
       description: t('packages.premium.description'),
       features: [
-        { text: t('packages.features.unlimitedPhotos'), available: true },
+        { text: 'HD 500 photos & 80 videos', available: true },
         { text: 'Online gallery storage (provided by platform)', available: true },
         { text: t('packages.features.sameDayPreview'), available: true },
         { text: t('packages.features.professionalEditing'), available: true },
@@ -252,21 +243,42 @@ function BookNowContent(): React.JSX.Element {
     },
   ];
 
+  // Calculate total price for a package including extras
+  const getPackageTotal = (pkgId: string, basePrice: number) => {
+    const photosCount = typeof extraPhotos[pkgId] === 'number' ? extraPhotos[pkgId] : 0;
+    const videosCount = typeof extraVideos[pkgId] === 'number' ? extraVideos[pkgId] : 0;
+    return basePrice + (photosCount * 1) + (videosCount * 2);
+  };
+
+  const getExtrasTotal = (pkgId: string) => {
+    const photosCount = typeof extraPhotos[pkgId] === 'number' ? extraPhotos[pkgId] : 0;
+    const videosCount = typeof extraVideos[pkgId] === 'number' ? extraVideos[pkgId] : 0;
+    return (photosCount * 1) + (videosCount * 2);
+  };
+
+  const handleExtraChange = (
+    pkgId: string,
+    type: 'photos' | 'videos',
+    value: string
+  ) => {
+    if (value !== '' && !/^\d+$/.test(value)) return;
+    const setter = type === 'photos' ? setExtraPhotos : setExtraVideos;
+    setter(prev => ({
+      ...prev,
+      [pkgId]: value === '' ? '' : parseInt(value, 10),
+    }));
+  };
+
   const handleCancel = () => {
     setSelectedPackage(null);
     setBookingError(null);
   };
 
-  const isFormComplete = selectedPackage && eventDate && eventTime && eventType && eventLocation;
+  const isFormComplete = !!selectedPackage;
 
   const handleBooking = async () => {
     if (!selectedPackage || !photographerId || !user) {
       setBookingError('Please select a package to continue.');
-      return;
-    }
-
-    if (!eventDate || !eventTime || !eventType || !eventLocation) {
-      setBookingError('Please fill in all event details.');
       return;
     }
 
@@ -279,10 +291,6 @@ function BookNowContent(): React.JSX.Element {
         {
           photographerId: photographerId,
           packageId: selectedPackage,
-          eventDate: eventDate,
-          eventTime: eventTime,
-          eventType: eventType,
-          location: eventLocation,
         },
         user.customerId || user.id
       );
@@ -872,7 +880,7 @@ function BookNowContent(): React.JSX.Element {
                       transition: 'all 0.3s ease',
                     }}
                   >
-                    {pkg.price}
+                    ${getPackageTotal(pkg.id, pkg.basePrice)}
                   </div>
                   <div
                     style={{
@@ -943,7 +951,7 @@ function BookNowContent(): React.JSX.Element {
                     ))}
                   </div>
 
-                  {/* Expanded Section - Only shows when selected */}
+                  {/* Extra Photos & Videos Input - Only shows when selected */}
                   {selectedPackage === pkg.id && (
                     <div
                       style={{
@@ -960,36 +968,235 @@ function BookNowContent(): React.JSX.Element {
                           justifyContent: 'center',
                           gap: '8px',
                           color: '#083A85',
-                          fontSize: '14px',
+                          fontSize: '15px',
                           fontWeight: '600',
-                          marginBottom: '12px',
+                          marginBottom: '4px',
                         }}
                       >
-                        <i className="bi bi-info-circle-fill"></i>
-                        Package Includes
+                        <i className="bi bi-plus-circle-fill"></i>
+                        Need More Than What&apos;s Included?
                       </div>
-                      <div
-                        style={{
-                          display: 'flex',
-                          flexWrap: 'wrap',
-                          justifyContent: 'center',
-                          gap: '8px',
-                        }}
-                      >
-                        <span
+                      <p style={{
+                        fontSize: '13px',
+                        color: '#6b7280',
+                        textAlign: 'center',
+                        marginBottom: '6px',
+                      }}>
+                        This package already includes <strong style={{ color: '#083A85' }}>{pkg.includedPhotos} photos</strong> &amp; <strong style={{ color: '#083A85' }}>{pkg.includedVideos} videos</strong>.
+                      </p>
+                      <p style={{
+                        fontSize: '13px',
+                        color: '#6b7280',
+                        textAlign: 'center',
+                        marginBottom: '16px',
+                      }}>
+                        Want even more? Add extras below. They&apos;ll be added on top of your included set at <strong style={{ color: '#10b981' }}>$1/photo</strong> &amp; <strong style={{ color: '#10b981' }}>$2/video</strong>.
+                      </p>
+
+                      {/* Extra Photos Input */}
+                      <div style={{ marginBottom: '12px' }}>
+                        <label
                           style={{
-                            backgroundColor: '#e0f2fe',
-                            color: '#0369a1',
-                            padding: '6px 12px',
-                            borderRadius: '20px',
-                            fontSize: '12px',
-                            fontWeight: '600',
+                            display: 'block',
+                            fontSize: '13px',
+                            fontWeight: '700',
+                            color: '#083A85',
+                            marginBottom: '6px',
+                            textAlign: 'left',
                           }}
                         >
-                          <i className="bi bi-camera-fill" style={{ marginRight: '4px' }}></i>
-                          HD Photos
-                        </span>
+                          <i className="bi bi-camera-fill" style={{ marginRight: '6px', fontSize: '14px' }}></i>
+                          Extra Photos <span style={{ fontWeight: '400', color: '#9ca3af' }}>(optional)</span>
+                        </label>
+                        <div style={{ position: 'relative' }}>
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            placeholder={`e.g. 50 → you'll get ${pkg.includedPhotos + 50} total photos`}
+                            value={extraPhotos[pkg.id]}
+                            onChange={(e) => handleExtraChange(pkg.id, 'photos', e.target.value)}
+                            onClick={(e) => e.stopPropagation()}
+                            onKeyDown={(e) => {
+                              if (!/[0-9]/.test(e.key) && !['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.key)) {
+                                e.preventDefault();
+                              }
+                            }}
+                            style={{
+                              width: '100%',
+                              padding: '10px 20px',
+                              fontSize: '15px',
+                              fontWeight: '800',
+                              textAlign: 'center',
+                              backgroundColor: '#f0fdf4',
+                              border: '3px solid #10b981',
+                              borderRadius: '14px',
+                              color: '#083A85',
+                              outline: 'none',
+                              boxSizing: 'border-box',
+                              boxShadow: '0 0 0 4px rgba(16, 185, 129, 0.15), 0 4px 12px rgba(16, 185, 129, 0.2)',
+                              transition: 'all 0.3s ease',
+                            }}
+                          />
+                          {typeof extraPhotos[pkg.id] === 'number' && (extraPhotos[pkg.id] as number) > 0 && (
+                            <div
+                              style={{
+                                position: 'absolute',
+                                right: '16px',
+                                top: '50%',
+                                transform: 'translateY(-50%)',
+                                fontSize: '13px',
+                                fontWeight: '700',
+                                color: '#10b981',
+                              }}
+                            >
+                              +${extraPhotos[pkg.id]}
+                            </div>
+                          )}
+                        </div>
+                        {typeof extraPhotos[pkg.id] === 'number' && (extraPhotos[pkg.id] as number) > 0 && (
+                          <p style={{ fontSize: '12px', color: '#10b981', marginTop: '4px', fontWeight: '600', textAlign: 'center' }}>
+                            Total: {pkg.includedPhotos} included + {extraPhotos[pkg.id]} extra = <strong>{pkg.includedPhotos + (extraPhotos[pkg.id] as number)} photos</strong>
+                          </p>
+                        )}
                       </div>
+
+                      {/* Extra Videos Input */}
+                      <div style={{ marginBottom: '12px' }}>
+                        <label
+                          style={{
+                            display: 'block',
+                            fontSize: '13px',
+                            fontWeight: '700',
+                            color: '#083A85',
+                            marginBottom: '6px',
+                            textAlign: 'left',
+                          }}
+                        >
+                          <i className="bi bi-camera-video-fill" style={{ marginRight: '6px', fontSize: '14px' }}></i>
+                          Extra Videos <span style={{ fontWeight: '400', color: '#9ca3af' }}>(optional)</span>
+                        </label>
+                        <div style={{ position: 'relative' }}>
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            placeholder={`e.g. 10 → you'll get ${pkg.includedVideos + 10} total videos`}
+                            value={extraVideos[pkg.id]}
+                            onChange={(e) => handleExtraChange(pkg.id, 'videos', e.target.value)}
+                            onClick={(e) => e.stopPropagation()}
+                            onKeyDown={(e) => {
+                              if (!/[0-9]/.test(e.key) && !['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.key)) {
+                                e.preventDefault();
+                              }
+                            }}
+                            style={{
+                              width: '100%',
+                              padding: '10px 20px',
+                              fontSize: '15px',
+                              fontWeight: '800',
+                              textAlign: 'center',
+                              backgroundColor: '#f0fdf4',
+                              border: '3px solid #10b981',
+                              borderRadius: '14px',
+                              color: '#083A85',
+                              outline: 'none',
+                              boxSizing: 'border-box',
+                              boxShadow: '0 0 0 4px rgba(16, 185, 129, 0.15), 0 4px 12px rgba(16, 185, 129, 0.2)',
+                              transition: 'all 0.3s ease',
+                            }}
+                          />
+                          {typeof extraVideos[pkg.id] === 'number' && (extraVideos[pkg.id] as number) > 0 && (
+                            <div
+                              style={{
+                                position: 'absolute',
+                                right: '16px',
+                                top: '50%',
+                                transform: 'translateY(-50%)',
+                                fontSize: '13px',
+                                fontWeight: '700',
+                                color: '#10b981',
+                              }}
+                            >
+                              +${(extraVideos[pkg.id] as number) * 2}
+                            </div>
+                          )}
+                        </div>
+                        {typeof extraVideos[pkg.id] === 'number' && (extraVideos[pkg.id] as number) > 0 && (
+                          <p style={{ fontSize: '12px', color: '#10b981', marginTop: '4px', fontWeight: '600', textAlign: 'center' }}>
+                            Total: {pkg.includedVideos} included + {extraVideos[pkg.id]} extra = <strong>{pkg.includedVideos + (extraVideos[pkg.id] as number)} videos</strong>
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Price Breakdown - only show when extras are entered */}
+                      {getExtrasTotal(pkg.id) > 0 && (
+                        <div
+                          style={{
+                            marginTop: '16px',
+                            padding: '16px',
+                            backgroundColor: '#ecfdf5',
+                            borderRadius: '12px',
+                            border: '2px solid #10b981',
+                            animation: 'fadeIn 0.3s ease',
+                          }}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                            <span style={{ fontSize: '14px', color: '#374151' }}>Base package ({pkg.includedPhotos} photos &amp; {pkg.includedVideos} videos)</span>
+                            <span style={{ fontSize: '14px', color: '#374151' }}>${pkg.basePrice}</span>
+                          </div>
+                          {typeof extraPhotos[pkg.id] === 'number' && (extraPhotos[pkg.id] as number) > 0 && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                              <span style={{ fontSize: '14px', color: '#10b981', fontWeight: '600' }}>
+                                +{extraPhotos[pkg.id]} extra photos x $1
+                              </span>
+                              <span style={{ fontSize: '14px', color: '#10b981', fontWeight: '600' }}>
+                                +${extraPhotos[pkg.id]}
+                              </span>
+                            </div>
+                          )}
+                          {typeof extraVideos[pkg.id] === 'number' && (extraVideos[pkg.id] as number) > 0 && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                              <span style={{ fontSize: '14px', color: '#10b981', fontWeight: '600' }}>
+                                +{extraVideos[pkg.id]} extra videos x $2
+                              </span>
+                              <span style={{ fontSize: '14px', color: '#10b981', fontWeight: '600' }}>
+                                +${(extraVideos[pkg.id] as number) * 2}
+                              </span>
+                            </div>
+                          )}
+                          <div
+                            style={{
+                              height: '1px',
+                              backgroundColor: '#10b981',
+                              margin: '8px 0',
+                            }}
+                          ></div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                            <span style={{ fontSize: '16px', color: '#047857', fontWeight: '700' }}>New Total</span>
+                            <span style={{ fontSize: '18px', color: '#047857', fontWeight: '800' }}>
+                              ${getPackageTotal(pkg.id, pkg.basePrice)}
+                            </span>
+                          </div>
+                          <div style={{
+                            fontSize: '12px',
+                            color: '#047857',
+                            textAlign: 'center',
+                            fontWeight: '600',
+                            paddingTop: '4px',
+                            borderTop: '1px dashed #a7f3d0',
+                          }}>
+                            You&apos;ll get{' '}
+                            {typeof extraPhotos[pkg.id] === 'number' && (extraPhotos[pkg.id] as number) > 0
+                              ? `${pkg.includedPhotos + (extraPhotos[pkg.id] as number)} total photos`
+                              : `${pkg.includedPhotos} photos`}
+                            {' '}&amp;{' '}
+                            {typeof extraVideos[pkg.id] === 'number' && (extraVideos[pkg.id] as number) > 0
+                              ? `${pkg.includedVideos + (extraVideos[pkg.id] as number)} total videos`
+                              : `${pkg.includedVideos} videos`}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -1049,246 +1256,6 @@ function BookNowContent(): React.JSX.Element {
               </div>
             ))}
           </div>
-
-          {/* Event Details Form - appears after package selection */}
-          {selectedPackage && (
-            <div
-              style={{
-                marginTop: '32px',
-                padding: isMobile ? '20px 16px' : '28px 24px',
-                backgroundColor: '#fff',
-                borderRadius: '16px',
-                border: '2px solid #e5e7eb',
-                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
-              }}
-            >
-              <h3
-                style={{
-                  fontSize: isMobile ? '18px' : '20px',
-                  fontWeight: '700',
-                  color: '#1f2937',
-                  marginBottom: '6px',
-                }}
-              >
-                Event Details
-              </h3>
-              <p
-                style={{
-                  fontSize: '14px',
-                  color: '#6b7280',
-                  marginBottom: '20px',
-                }}
-              >
-                Tell us about your event so the photographer can prepare
-              </p>
-
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
-                  gap: '16px',
-                }}
-              >
-                {/* Event Type */}
-                <div>
-                  <label
-                    htmlFor="eventType"
-                    style={{
-                      display: 'block',
-                      fontSize: '14px',
-                      fontWeight: '600',
-                      color: '#374151',
-                      marginBottom: '6px',
-                    }}
-                  >
-                    Event Type *
-                  </label>
-                  <select
-                    id="eventType"
-                    value={eventType}
-                    onChange={(e) => setEventType(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '12px 16px',
-                      fontSize: '15px',
-                      border: '2px solid #d1d5db',
-                      borderRadius: '12px',
-                      backgroundColor: '#fff',
-                      color: eventType ? '#1f2937' : '#9ca3af',
-                      cursor: 'pointer',
-                      outline: 'none',
-                      transition: 'border-color 0.2s ease',
-                      appearance: 'none',
-                      backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23374151' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e")`,
-                      backgroundRepeat: 'no-repeat',
-                      backgroundPosition: 'right 12px center',
-                      backgroundSize: '16px',
-                    }}
-                    onFocus={(e) => (e.currentTarget.style.borderColor = '#083A85')}
-                    onBlur={(e) => (e.currentTarget.style.borderColor = '#d1d5db')}
-                  >
-                    <option value="" disabled>
-                      Select event type
-                    </option>
-                    {eventTypes.map((type) => (
-                      <option key={type} value={type}>
-                        {type}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Event Date */}
-                <div>
-                  <label
-                    htmlFor="eventDate"
-                    style={{
-                      display: 'block',
-                      fontSize: '14px',
-                      fontWeight: '600',
-                      color: '#374151',
-                      marginBottom: '6px',
-                    }}
-                  >
-                    Event Date *
-                  </label>
-                  <input
-                    type="date"
-                    id="eventDate"
-                    value={eventDate}
-                    onChange={(e) => setEventDate(e.target.value)}
-                    min={new Date(Date.now() + 86400000).toISOString().split('T')[0]}
-                    style={{
-                      width: '100%',
-                      padding: '12px 16px',
-                      fontSize: '15px',
-                      border: '2px solid #d1d5db',
-                      borderRadius: '12px',
-                      backgroundColor: '#fff',
-                      color: '#1f2937',
-                      outline: 'none',
-                      transition: 'border-color 0.2s ease',
-                      boxSizing: 'border-box',
-                    }}
-                    onFocus={(e) => (e.currentTarget.style.borderColor = '#083A85')}
-                    onBlur={(e) => (e.currentTarget.style.borderColor = '#d1d5db')}
-                  />
-                </div>
-
-                {/* Event Time */}
-                <div>
-                  <label
-                    htmlFor="eventTime"
-                    style={{
-                      display: 'block',
-                      fontSize: '14px',
-                      fontWeight: '600',
-                      color: '#374151',
-                      marginBottom: '6px',
-                    }}
-                  >
-                    Event Time *
-                  </label>
-                  <input
-                    type="time"
-                    id="eventTime"
-                    value={eventTime}
-                    onChange={(e) => setEventTime(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '12px 16px',
-                      fontSize: '15px',
-                      border: '2px solid #d1d5db',
-                      borderRadius: '12px',
-                      backgroundColor: '#fff',
-                      color: '#1f2937',
-                      outline: 'none',
-                      transition: 'border-color 0.2s ease',
-                      boxSizing: 'border-box',
-                    }}
-                    onFocus={(e) => (e.currentTarget.style.borderColor = '#083A85')}
-                    onBlur={(e) => (e.currentTarget.style.borderColor = '#d1d5db')}
-                  />
-                </div>
-
-                {/* Event Location */}
-                <div>
-                  <label
-                    htmlFor="eventLocation"
-                    style={{
-                      display: 'block',
-                      fontSize: '14px',
-                      fontWeight: '600',
-                      color: '#374151',
-                      marginBottom: '6px',
-                    }}
-                  >
-                    Event Location *
-                  </label>
-                  <input
-                    type="text"
-                    id="eventLocation"
-                    value={eventLocation}
-                    onChange={(e) => setEventLocation(e.target.value)}
-                    placeholder="e.g., Kigali Convention Center"
-                    style={{
-                      width: '100%',
-                      padding: '12px 16px',
-                      fontSize: '15px',
-                      border: '2px solid #d1d5db',
-                      borderRadius: '12px',
-                      backgroundColor: '#fff',
-                      color: '#1f2937',
-                      outline: 'none',
-                      transition: 'border-color 0.2s ease',
-                      boxSizing: 'border-box',
-                    }}
-                    onFocus={(e) => (e.currentTarget.style.borderColor = '#083A85')}
-                    onBlur={(e) => (e.currentTarget.style.borderColor = '#d1d5db')}
-                  />
-                </div>
-              </div>
-
-              {/* Notes - full width */}
-              <div style={{ marginTop: '16px' }}>
-                <label
-                  htmlFor="eventNotes"
-                  style={{
-                    display: 'block',
-                    fontSize: '14px',
-                    fontWeight: '600',
-                    color: '#374151',
-                    marginBottom: '6px',
-                  }}
-                >
-                  Additional Notes <span style={{ fontWeight: '400', color: '#9ca3af' }}>(optional)</span>
-                </label>
-                <textarea
-                  id="eventNotes"
-                  value={eventNotes}
-                  onChange={(e) => setEventNotes(e.target.value)}
-                  placeholder="Any special requirements, preferred locations for shots, etc."
-                  rows={3}
-                  style={{
-                    width: '100%',
-                    padding: '12px 16px',
-                    fontSize: '15px',
-                    border: '2px solid #d1d5db',
-                    borderRadius: '12px',
-                    backgroundColor: '#fff',
-                    color: '#1f2937',
-                    outline: 'none',
-                    transition: 'border-color 0.2s ease',
-                    resize: 'vertical',
-                    fontFamily: 'inherit',
-                    boxSizing: 'border-box',
-                  }}
-                  onFocus={(e) => (e.currentTarget.style.borderColor = '#083A85')}
-                  onBlur={(e) => (e.currentTarget.style.borderColor = '#d1d5db')}
-                />
-              </div>
-            </div>
-          )}
 
           {/* Action Buttons */}
           <div
