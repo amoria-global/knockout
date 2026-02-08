@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import AmoriaKNavbar from '../../components/navbar';
 import { useTranslations } from 'next-intl';
 import {
@@ -8,6 +8,7 @@ import {
   getDistrictsForCountry,
   type LocationData,
 } from '../../utils/locationUtils';
+import { getPublicEvents, type PublicEvent } from '@/lib/APIs/public';
 
 const Events: React.FC = () => {
   const t = useTranslations('events');
@@ -44,8 +45,40 @@ const Events: React.FC = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Mock events data
-  const eventsData = [
+  // API-driven events data
+  const [eventsData, setEventsData] = useState<PublicEvent[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [apiTotalPages, setApiTotalPages] = useState(0);
+
+  const fetchEvents = useCallback(async () => {
+    setIsLoading(true);
+    setLoadError(null);
+    try {
+      const response = await getPublicEvents({
+        page: currentPage - 1,
+        size: itemsPerPage,
+        sortColumn: 'createdAt',
+        sortDirection: 'desc',
+      });
+      if (response.success && response.data) {
+        setEventsData(response.data.content);
+        setApiTotalPages(response.data.totalPages);
+      } else {
+        setLoadError(response.error || 'Failed to fetch events');
+      }
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : 'An error occurred');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [currentPage, itemsPerPage]);
+
+  useEffect(() => {
+    fetchEvents();
+  }, [fetchEvents]);
+
+  const _mockEventsData = [
     {
       id: 1,
       title: 'APR BBC Vs Espoir BCC',
@@ -337,10 +370,10 @@ const Events: React.FC = () => {
   ];
 
   // Trending Events Data - Filter only LIVE events
-  const allTrendingEvents = eventsData.filter(event => event.status === 'LIVE').map(event => ({
+  const allTrendingEvents = eventsData.filter(event => (event.status || '').toUpperCase() === 'LIVE').map(event => ({
     id: event.id,
     name: event.title,
-    image: event.image
+    image: event.coverImage || event.bannerImage || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=500&q=80'
   }));
 
   // Limit trending events on mobile for better UX
@@ -352,22 +385,9 @@ const Events: React.FC = () => {
     console.log('Searching for:', searchTerm);
   };
 
-  // Filter events based on selected location
-  const filteredEvents = eventsData.filter((event) => {
-    // Filter by location (district)
-    if (selectedLocation !== 'all') {
-      // Check if the event location contains the selected district
-      const locationMatch = event.location.toLowerCase().includes(selectedLocation.toLowerCase());
-      if (!locationMatch) return false;
-    }
-    return true;
-  });
-
-  // Pagination logic
-  const totalPages = Math.ceil(filteredEvents.length / itemsPerPage);
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentEvents = filteredEvents.slice(indexOfFirstItem, indexOfLastItem);
+  // Server-side pagination — events are already fetched per page
+  const currentEvents = eventsData;
+  const totalPages = apiTotalPages;
 
   const goToNextPage = () => {
     setCurrentPage(prev => Math.min(prev + 1, totalPages));
@@ -819,7 +839,45 @@ const Events: React.FC = () => {
           margin: '0 auto',
           padding: '2rem clamp(0.5rem, 2vw, 1rem) 4rem clamp(0.5rem, 2vw, 1rem)'
         }}>
+          {/* Loading State */}
+          {isLoading && (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '4rem 0' }}>
+              <div style={{
+                width: '40px', height: '40px', border: '4px solid #e5e7eb',
+                borderTopColor: '#083A85', borderRadius: '50%',
+                animation: 'spin 1s linear infinite'
+              }} />
+              <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+            </div>
+          )}
+
+          {/* Error State */}
+          {loadError && !isLoading && (
+            <div style={{ textAlign: 'center', padding: '3rem 1rem', color: '#DC2626' }}>
+              <p style={{ marginBottom: '1rem' }}>{loadError}</p>
+              <button
+                onClick={fetchEvents}
+                style={{
+                  padding: '0.5rem 1.5rem', borderRadius: '0.5rem',
+                  backgroundColor: '#083A85', color: '#fff', border: 'none',
+                  cursor: 'pointer', fontWeight: '600'
+                }}
+              >
+                Retry
+              </button>
+            </div>
+          )}
+
+          {/* Empty State */}
+          {!isLoading && !loadError && currentEvents.length === 0 && (
+            <div style={{ textAlign: 'center', padding: '3rem 1rem', color: '#6b7280' }}>
+              <p style={{ fontSize: '1.1rem', fontWeight: '500' }}>No events found</p>
+              <p style={{ fontSize: '0.9rem', marginTop: '0.5rem' }}>Check back later for upcoming events.</p>
+            </div>
+          )}
+
           {/* Event Cards Grid */}
+          {!isLoading && !loadError && currentEvents.length > 0 && (
           <div style={{
             display: 'grid',
             gridTemplateColumns: isMobile
@@ -854,7 +912,7 @@ const Events: React.FC = () => {
                     marginBottom: '1rem'
                   }}>
                     <img
-                      src={event.image}
+                      src={event.coverImage || event.bannerImage || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=500&q=80'}
                       alt={event.title}
                       style={{
                         width: '100%',
@@ -888,7 +946,7 @@ const Events: React.FC = () => {
                     </div>
 
                     {/* Status Badge - LIVE NOW or UPCOMING */}
-                    {event.status === 'LIVE' ? (
+                    {(event.status || '').toUpperCase() === 'LIVE' ? (
                       <div
                         className="live-badge"
                         style={{
@@ -955,7 +1013,7 @@ const Events: React.FC = () => {
                       <i className="bi bi-geo-alt-fill" style={{ fontSize: '0.85rem', color: '#3b82f6', flexShrink: 0 }}></i>
                       <span style={{
                         textAlign: 'center'
-                      }}>{event.location}</span>
+                      }}>{event.location || 'Location TBA'}</span>
                     </div>
 
                     {/* Time */}
@@ -971,7 +1029,7 @@ const Events: React.FC = () => {
                       width: '100%'
                     }}>
                       <i className="bi bi-clock-fill" style={{ fontSize: '0.85rem', color: '#3b82f6', flexShrink: 0 }}></i>
-                      <span style={{ textAlign: 'center' }}>{event.time}</span>
+                      <span style={{ textAlign: 'center' }}>{event.startTime ? `${event.startTime}${event.endTime ? ` - ${event.endTime}` : ''}` : event.eventDate || 'Time TBA'}</span>
                     </div>
 
                     {/* Stream Now Button */}
@@ -982,8 +1040,8 @@ const Events: React.FC = () => {
                         alignItems: 'center',
                         justifyContent: 'center',
                         gap: '0.4rem',
-                        background: event.status === 'LIVE' ? '#039130' : '#083A85',
-                        border: `2.5px solid ${event.status === 'LIVE' ? '#059669' : '#083A85'}`,
+                        background: (event.status || '').toUpperCase() === 'LIVE' ? '#039130' : '#083A85',
+                        border: `2.5px solid ${(event.status || '').toUpperCase() === 'LIVE' ? '#059669' : '#083A85'}`,
                         color: '#FFFFFF',
                         padding: 'clamp(0.625rem, 2.5vw, 0.75rem) clamp(1rem, 3vw, 1.25rem)',
                         borderRadius: '20px',
@@ -1018,7 +1076,7 @@ const Events: React.FC = () => {
                         textOverflow: 'ellipsis',
                         minWidth: '0'
                       }}>
-                        {event.status === 'LIVE'
+                        {(event.status || '').toUpperCase() === 'LIVE'
                           ? (isMobile ? 'JOIN' : t('joinEvent').toUpperCase())
                           : (isMobile ? 'DETAILS' : t('viewDetails').toUpperCase())
                         }
@@ -1028,6 +1086,7 @@ const Events: React.FC = () => {
                 </div>
             ))}
           </div>
+          )}
 
           {/* Pagination */}
           {totalPages > 1 && (
