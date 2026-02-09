@@ -2,6 +2,9 @@
 
 import Navbar from "../components/navbar";
 import Footer from "../components/footer";
+import MissionStatement from "../components/MissionStatement";
+import RotatingGlobe from "../components/RotatingGlobe";
+import { motion } from "framer-motion";
 
 const About = () => {
   return (
@@ -226,10 +229,19 @@ const About = () => {
         .core-value-icon {
           animation: none !important;
         }
+        @keyframes coreValueLineFlow {
+          0% {
+            background-position: 0% 50%;
+          }
+          100% {
+            background-position: 200% 50%;
+          }
+        }
         .core-value-line {
-          background: linear-gradient(90deg, #d1d5db 0%, #F97316 20%, #FBBF24 40%, #34D399 60%, #2DD4BF 80%, #3B82F6 100%);
+          background: linear-gradient(90deg, #F97316, #FBBF24, #34D399, #2DD4BF, #3B82F6, #8B5CF6, #F97316, #FBBF24, #34D399, #2DD4BF, #3B82F6);
+          background-size: 200% 100%;
           width: 80%;
-          animation: none !important;
+          animation: coreValueLineFlow 4s linear infinite !important;
         }
         .core-value-number {
           animation: none !important;
@@ -283,36 +295,49 @@ const About = () => {
           box-shadow: inset -1px -1px 2px rgba(255, 255, 255, 0.8), 0 2px 4px rgba(0, 100, 150, 0.2);
         }
 
-        /* Default desktop font sizes */
+        /* Default desktop font sizes - matched to homepage */
         .about-hero-title {
-          font-size: 60px;
-          line-height: 1.15;
+          font-size: 57px;
+          line-height: 1.05;
         }
         .about-journey-title {
-          font-size: 60px;
+          font-size: 50px;
           line-height: 1.05;
         }
         .about-journey-card-title {
-          font-size: 40px;
+          font-size: 38px;
           line-height: 1.05;
         }
         .about-section-title {
-          font-size: 40px;
+          font-size: 38px;
           line-height: 1.05;
         }
         .about-mock-title {
-          font-size: 60px;
+          font-size: 55px;
           line-height: 1.0;
         }
         .about-cta-title {
-          font-size: 65px;
-          line-height: 1.05;
+          font-size: 55px;
+          line-height: 1.1;
         }
 
         /* Mobile Responsive Styles */
         @media (max-width: 1200px) {
           .about-hero-section {
             min-height: 100vh !important;
+          }
+          .about-hero-globe {
+            top: 60px !important;
+            left: 20px !important;
+            opacity: 0.45 !important;
+          }
+          .about-hero-globe .rotating-globe {
+            width: 300px !important;
+            height: 300px !important;
+          }
+          .about-hero-globe .rotating-globe svg {
+            width: 300px !important;
+            height: 300px !important;
           }
           .about-hero-content {
             padding: 80px 50px !important;
@@ -321,17 +346,23 @@ const About = () => {
           .about-hero-image-container {
             width: 45% !important;
           }
-          .about-hero-title,
+          .about-hero-title {
+            font-size: 48px !important;
+            line-height: 1.05 !important;
+          }
           .about-journey-title,
-          .about-journey-card-title,
-          .about-section-title,
           .about-mock-title,
           .about-cta-title {
-            font-size: 42px !important;
+            font-size: 45px !important;
+            line-height: 1.1 !important;
+          }
+          .about-journey-card-title,
+          .about-section-title {
+            font-size: 36px !important;
             line-height: 1.15 !important;
           }
           .about-hero-section p {
-            font-size: 16px !important;
+            font-size: 15px !important;
           }
           .about-journey-container {
             padding: 40px 30px !important;
@@ -351,6 +382,19 @@ const About = () => {
         }
 
         @media (max-width: 992px) {
+          .about-hero-globe {
+            top: 40px !important;
+            left: 10px !important;
+            opacity: 0.35 !important;
+          }
+          .about-hero-globe .rotating-globe {
+            width: 220px !important;
+            height: 220px !important;
+          }
+          .about-hero-globe .rotating-globe svg {
+            width: 220px !important;
+            height: 220px !important;
+          }
           .about-hero-content {
             padding: 80px 40px !important;
             max-width: 450px !important;
@@ -358,13 +402,19 @@ const About = () => {
           .about-hero-image-container {
             width: 42% !important;
           }
-          .about-hero-title,
+          .about-hero-title {
+            font-size: 40px !important;
+            line-height: 1.1 !important;
+          }
           .about-journey-title,
-          .about-journey-card-title,
-          .about-section-title,
           .about-mock-title,
           .about-cta-title {
-            font-size: 36px !important;
+            font-size: 38px !important;
+            line-height: 1.15 !important;
+          }
+          .about-journey-card-title,
+          .about-section-title {
+            font-size: 32px !important;
             line-height: 1.15 !important;
           }
           .about-hero-section p {
@@ -373,7 +423,7 @@ const About = () => {
           }
           .about-journey-container h2,
           .about-journey-container h3 {
-            font-size: 32px !important;
+            font-size: 30px !important;
           }
           .mission-vision-grid {
             grid-template-columns: 1fr !important;
@@ -399,6 +449,21 @@ const About = () => {
         }
 
         @media (max-width: 768px) {
+          .about-hero-globe {
+            top: auto !important;
+            bottom: 20px !important;
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+            opacity: 0.2 !important;
+          }
+          .about-hero-globe .rotating-globe {
+            width: 180px !important;
+            height: 180px !important;
+          }
+          .about-hero-globe .rotating-globe svg {
+            width: 180px !important;
+            height: 180px !important;
+          }
           .about-hero-section {
             min-height: 100vh !important;
             padding: 0 !important;
@@ -407,13 +472,19 @@ const About = () => {
             padding: 100px 30px 80px !important;
             max-width: 100% !important;
           }
-          .about-hero-title,
+          .about-hero-title {
+            font-size: 32px !important;
+            line-height: 1.1 !important;
+          }
           .about-journey-title,
-          .about-journey-card-title,
-          .about-section-title,
           .about-mock-title,
           .about-cta-title {
-            font-size: 48px !important;
+            font-size: 28px !important;
+            line-height: 1.15 !important;
+          }
+          .about-journey-card-title,
+          .about-section-title {
+            font-size: 24px !important;
             line-height: 1.15 !important;
           }
           .about-hero-section p {
@@ -501,6 +572,9 @@ const About = () => {
         }
 
         @media (max-width: 480px) {
+          .about-hero-globe {
+            display: none !important;
+          }
           .about-hero-section {
             min-height: 100vh !important;
             padding: 0 !important;
@@ -509,13 +583,19 @@ const About = () => {
             padding: 80px 20px 60px !important;
             max-width: 100% !important;
           }
-          .about-hero-title,
+          .about-hero-title {
+            font-size: 28px !important;
+            line-height: 1.1 !important;
+          }
           .about-journey-title,
-          .about-journey-card-title,
-          .about-section-title,
           .about-mock-title,
           .about-cta-title {
-            font-size: 36px !important;
+            font-size: 26px !important;
+            line-height: 1.15 !important;
+          }
+          .about-journey-card-title,
+          .about-section-title {
+            font-size: 22px !important;
             line-height: 1.15 !important;
           }
           .about-hero-section p {
@@ -1086,6 +1166,29 @@ const About = () => {
           }}
         />
 
+        {/* Rotating Globe - Top Left */}
+        <div
+          className="about-hero-globe"
+          style={{
+            position: 'absolute',
+            top: '50px',
+            left: '30px',
+            zIndex: 5,
+            opacity: 0.65,
+            pointerEvents: 'none',
+          }}
+        >
+          <RotatingGlobe
+            size={380}
+            rotationSpeed={0.3}
+            landColor="rgba(139, 92, 246, 0.35)"
+            oceanColor="rgba(8, 58, 133, 0.15)"
+            borderColor="rgba(139, 92, 246, 0.5)"
+            graticuleColor="rgba(255, 255, 255, 0.07)"
+            glowColor="rgba(139, 92, 246, 0.4)"
+          />
+        </div>
+
         {/* Content - Left Side */}
         <div
           className="about-hero-content"
@@ -1124,9 +1227,9 @@ const About = () => {
           <p
             className="about-hero-subtitle"
             style={{
-              fontSize: '16px',
+              fontSize: '15px',
               fontWeight: 400,
-              lineHeight: '1.7',
+              lineHeight: '1.65',
               color: 'rgba(255, 255, 255, 0.85)',
               maxWidth: '500px',
               margin: '0 0 32px 0',
@@ -1841,7 +1944,7 @@ const About = () => {
           }}
         >
           {/* Section Title */}
-          <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+          <div style={{ textAlign: 'center', marginBottom: '20px', overflow: 'hidden' }}>
             <h2
               style={{
                 fontSize: '48px',
@@ -1850,14 +1953,41 @@ const About = () => {
                 margin: 0,
                 color: '#1a1a2e',
                 letterSpacing: '2px',
+                display: 'flex',
+                justifyContent: 'center',
+                gap: '0px',
               }}
             >
-              CORE VALUES
+              {'CORE VALUES'.split('').map((char, i) => (
+                <motion.span
+                  key={i}
+                  initial={{ opacity: 0, y: 40, rotateX: -90 }}
+                  whileInView={{ opacity: 1, y: 0, rotateX: 0 }}
+                  transition={{
+                    duration: 0.4,
+                    delay: i * 0.05,
+                    ease: [0.22, 1, 0.36, 1],
+                  }}
+                  viewport={{ once: false, amount: 0.5 }}
+                  style={{
+                    display: 'inline-block',
+                    minWidth: char === ' ' ? '16px' : 'auto',
+                  }}
+                >
+                  {char}
+                </motion.span>
+              ))}
             </h2>
           </div>
 
           {/* Description */}
-          <div style={{ textAlign: 'center', marginBottom: '30px', maxWidth: '600px', margin: '0 auto 30px' }}>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.15, ease: 'easeOut' }}
+            viewport={{ once: false, amount: 0.5 }}
+            style={{ textAlign: 'center', marginBottom: '30px', maxWidth: '600px', margin: '0 auto 30px' }}
+          >
             <p
               style={{
                 fontSize: '14px',
@@ -1868,14 +1998,24 @@ const About = () => {
             >
               Our values define who we are and guide every decision we make. They represent our commitment to excellence, innovation, and the well-being of our creative community.
             </p>
-          </div>
+          </motion.div>
 
           {/* Colored Dots */}
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', marginBottom: '60px' }}>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5, delay: 0.3, ease: 'easeOut' }}
+            viewport={{ once: false, amount: 0.5 }}
+            style={{ display: 'flex', justifyContent: 'center', gap: '12px', marginBottom: '60px' }}
+          >
             {['#F97316', '#FBBF24', '#34D399', '#2DD4BF', '#3B82F6'].map((color, i) => (
-              <div
+              <motion.div
                 key={i}
                 className="colored-dot"
+                initial={{ scale: 0 }}
+                whileInView={{ scale: 1 }}
+                transition={{ duration: 0.3, delay: 0.4 + i * 0.1, type: 'spring', stiffness: 300 }}
+                viewport={{ once: false }}
                 style={{
                   width: '14px',
                   height: '14px',
@@ -1885,20 +2025,25 @@ const About = () => {
                 }}
               />
             ))}
-          </div>
+          </motion.div>
 
           {/* Values Cards with Timeline */}
           <div className="core-values-timeline" style={{ position: 'relative', paddingBottom: '80px' }}>
             {/* Horizontal connecting line */}
-            <div
+            <motion.div
               className="core-value-line"
+              initial={{ scaleX: 0 }}
+              whileInView={{ scaleX: 1 }}
+              transition={{ duration: 1, delay: 0.5, ease: 'easeOut' }}
+              viewport={{ once: false, amount: 0.3 }}
               style={{
                 position: 'absolute',
                 bottom: '15px',
                 left: '10%',
-                height: '2px',
-                backgroundColor: '#d1d5db',
+                height: '3px',
+                borderRadius: '2px',
                 zIndex: 1,
+                transformOrigin: 'left center',
               }}
             />
 
@@ -1949,9 +2094,14 @@ const About = () => {
                   offset: 0,
                 },
               ].map((value, index) => (
-                <div
+                <motion.div
                   key={index}
                   className="core-value-card"
+                  initial={{ opacity: 0, y: 50 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.2 + index * 0.15, ease: 'easeOut' }}
+                  viewport={{ once: false, amount: 0.2 }}
+                  whileHover={{ y: -8 }}
                   style={{
                     display: 'flex',
                     flexDirection: 'column',
@@ -1961,8 +2111,13 @@ const About = () => {
                   }}
                 >
                   {/* Circle Card */}
-                  <div
+                  <motion.div
                     className="core-value-circle"
+                    initial={{ opacity: 0, scale: 0.5 }}
+                    whileInView={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.5, delay: 0.1 + index * 0.15, type: 'spring', stiffness: 200 }}
+                    viewport={{ once: false, amount: 0.2 }}
+                    whileHover={{ scale: 1.1, boxShadow: `0 10px 30px ${value.color}30` }}
                     style={{
                       width: '120px',
                       height: '120px',
@@ -1972,26 +2127,33 @@ const About = () => {
                       alignItems: 'center',
                       justifyContent: 'center',
                       marginBottom: '0',
-                      transition: 'all 0.3s ease',
                       cursor: 'pointer',
                       position: 'relative',
                       // @ts-ignore
                       '--hover-color': `${value.color}50`,
                     }}
                   >
-                    <i
+                    <motion.i
                       className={`bi ${value.icon} core-value-icon`}
+                      initial={{ opacity: 0, rotate: -30 }}
+                      whileInView={{ opacity: 1, rotate: 0 }}
+                      transition={{ duration: 0.4, delay: 0.3 + index * 0.15 }}
+                      viewport={{ once: false }}
                       style={{
                         fontSize: '40px',
                         color: value.color,
-                        transition: 'all 0.3s ease',
+                        display: 'inline-block',
                       }}
                     />
-                  </div>
+                  </motion.div>
 
                   {/* Vertical Line */}
-                  <div
+                  <motion.div
                     className="core-value-vertical-line"
+                    initial={{ scaleY: 0 }}
+                    whileInView={{ scaleY: 1 }}
+                    transition={{ duration: 0.4, delay: 0.4 + index * 0.15, ease: 'easeOut' }}
+                    viewport={{ once: false }}
                     style={{
                       width: '2px',
                       backgroundColor: value.color,
@@ -1999,12 +2161,17 @@ const About = () => {
                       // @ts-ignore
                       '--line-height': value.offset === 0 ? '60px' : '100px',
                       height: value.offset === 0 ? '60px' : '100px',
+                      transformOrigin: 'top center',
                     }}
                   />
 
                   {/* Number Circle */}
-                  <div
+                  <motion.div
                     className="core-value-number"
+                    initial={{ opacity: 0, scale: 0 }}
+                    whileInView={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.3, delay: 0.6 + index * 0.15, type: 'spring', stiffness: 400 }}
+                    viewport={{ once: false }}
                     style={{
                       width: '32px',
                       height: '32px',
@@ -2022,10 +2189,14 @@ const About = () => {
                     }}
                   >
                     {value.number}
-                  </div>
+                  </motion.div>
 
                   {/* Label */}
-                  <span
+                  <motion.span
+                    initial={{ opacity: 0, y: 10 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: 0.7 + index * 0.15 }}
+                    viewport={{ once: false }}
                     style={{
                       fontSize: '12px',
                       fontWeight: 600,
@@ -2035,8 +2206,8 @@ const About = () => {
                     }}
                   >
                     {value.title}
-                  </span>
-                </div>
+                  </motion.span>
+                </motion.div>
               ))}
             </div>
           </div>
@@ -2524,7 +2695,7 @@ const About = () => {
                   color: '#fff',
                   fontSize: '16px',
                   fontWeight: 600,
-                  padding: '14px 32px',
+                  padding: '14px 32px', 
                   border: '2px solid #8B5CF6',
                   borderRadius: '40px',
                   cursor: 'pointer',
