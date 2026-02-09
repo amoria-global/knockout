@@ -12,9 +12,11 @@ import {
 import {
   getPhotographers,
   getCategories,
+  getCities,
   type Photographer,
   type PaginatedPhotographers,
   type PhotographerCategory,
+  type City,
 } from '@/lib/APIs/public';
 import { useToast } from '@/lib/notifications/ToastProvider';
 
@@ -34,6 +36,7 @@ const Photographers: React.FC = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [userLocation, setUserLocation] = useState<LocationData | null>(null);
   const [availableDistricts, setAvailableDistricts] = useState<string[]>([]);
+  const [cities, setCities] = useState<City[]>([]);
 
   // API data states
   const [photographers, setPhotographers] = useState<Photographer[]>([]);
@@ -66,7 +69,7 @@ const Photographers: React.FC = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Fetch categories on mount
+  // Fetch categories and cities on mount
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -78,7 +81,19 @@ const Photographers: React.FC = () => {
         console.error('Failed to fetch categories:', err);
       }
     };
+    const fetchCities = async () => {
+      try {
+        const response = await getCities();
+        if (response.success && response.data) {
+          const cityList = Array.isArray(response.data) ? response.data : [];
+          setCities(cityList.filter((c) => c.isActive !== false));
+        }
+      } catch (err) {
+        console.error('Failed to fetch cities:', err);
+      }
+    };
     fetchCategories();
+    fetchCities();
   }, []);
 
   // Fetch photographers from API
@@ -388,11 +403,17 @@ const Photographers: React.FC = () => {
                 }}
               >
                 <option value="all">{t('allLocations')}</option>
-                {availableDistricts.map((district) => (
-                  <option key={district} value={district}>
-                    {district}
-                  </option>
-                ))}
+                {cities.length > 0
+                  ? cities.map((city) => (
+                      <option key={city.id} value={city.name}>
+                        {city.name}
+                      </option>
+                    ))
+                  : availableDistricts.map((district) => (
+                      <option key={district} value={district}>
+                        {district}
+                      </option>
+                    ))}
               </select>
             </div>
 
