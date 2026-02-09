@@ -141,6 +141,7 @@ const AmoriaKNavbar = () => {
         !mobileMenuButtonRef.current.contains(event.target as Node)
       ) {
         setIsMobileMenuOpen(false);
+        document.body.style.overflow = '';
       }
       // Close language dropdown
       if (langMenuRef.current && !langMenuRef.current.contains(event.target as Node)) {
@@ -156,8 +157,23 @@ const AmoriaKNavbar = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Restore body scroll on unmount
+  useEffect(() => {
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, []);
+
   const toggleMobileMenu = () => {
-    setIsMobileMenuOpen(prev => !prev);
+    setIsMobileMenuOpen(prev => {
+      const next = !prev;
+      if (next) {
+        document.body.style.overflow = 'hidden';
+      } else {
+        document.body.style.overflow = '';
+      }
+      return next;
+    });
   };
 
   const toggleLangMenu = () => {
@@ -174,12 +190,14 @@ const AmoriaKNavbar = () => {
 
   const handleLinkClick = () => {
     setIsMobileMenuOpen(false);
+    document.body.style.overflow = '';
   };
 
   const handleLogout = () => {
     logout();
     setIsProfileDropdownOpen(false);
     setIsMobileMenuOpen(false);
+    document.body.style.overflow = '';
     router.push('/');
   };
 
@@ -798,8 +816,47 @@ const AmoriaKNavbar = () => {
 
       {/* Mobile Menu */}
       {isMobileMenuOpen && (
-        <div ref={mobileMenuRef} className="md:hidden bg-white/95 backdrop-blur-sm border-t border-gray-100/20 shadow-lg">
-          <div style={{ paddingLeft: isMobile ? '0.75rem' : '1rem', paddingRight: isMobile ? '0.75rem' : '1rem', paddingTop: '0.5rem', paddingBottom: isMobile ? '0.75rem' : '1rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+        <>
+          {/* Backdrop overlay */}
+          <div
+            onClick={() => {
+              setIsMobileMenuOpen(false);
+              document.body.style.overflow = '';
+            }}
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.3)',
+              zIndex: 40,
+            }}
+          />
+        </>
+      )}
+      <div
+        ref={mobileMenuRef}
+        className="md:hidden"
+        style={{
+          position: 'fixed',
+          top: '64px',
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(255, 255, 255, 0.97)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          borderTop: '1px solid rgba(0, 0, 0, 0.08)',
+          boxShadow: '0 8px 30px rgba(0, 0, 0, 0.12)',
+          zIndex: 45,
+          overflowY: 'auto',
+          transform: isMobileMenuOpen ? 'translateX(0)' : 'translateX(100%)',
+          transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          pointerEvents: isMobileMenuOpen ? 'auto' : 'none',
+        }}
+      >
+          <div style={{ paddingLeft: isMobile ? '0.75rem' : '1rem', paddingRight: isMobile ? '0.75rem' : '1rem', paddingTop: '0.75rem', paddingBottom: isMobile ? '1.5rem' : '2rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
             {/* Photographers Dropdown - Mobile */}
             <div>
               <button
@@ -1092,8 +1149,7 @@ const AmoriaKNavbar = () => {
               </>
             )}
           </div>
-        </div>
-      )}
+      </div>
     </nav>
   );
 };
