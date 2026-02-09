@@ -307,6 +307,8 @@ const AmountButton = ({
       transition: 'all 0.3s ease',
       minWidth: '100px',
     }}
+    onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
+    onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
   >
     {formatCurrency(amount, currency)}
   </button>
@@ -591,9 +593,10 @@ const Donations = () => {
         .amount-btn:hover {
           border-color: #083A85 !important;
           background-color: #f0f4f8 !important;
+          transform: translateY(-2px) !important;
         }
         .donate-btn:hover {
-          transform: translateY(-3px) !important;
+          transform: translateY(-2px) !important;
           box-shadow: 0 10px 30px rgba(8, 58, 133, 0.4) !important;
         }
         .impact-card:hover {
@@ -695,7 +698,7 @@ const Donations = () => {
             </div>
 
             <h1 className="hero-title" style={{
-              fontSize: '52px',
+              fontSize: '59px',
               fontWeight: 700,
               color: '#fff',
               lineHeight: 1.1,
@@ -731,6 +734,8 @@ const Donations = () => {
                   transition: 'all 0.3s ease',
                   boxShadow: '0 4px 20px rgba(255, 107, 107, 0.4)',
                 }}
+                onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
               >
                 Donate Now
               </button>
@@ -747,6 +752,8 @@ const Donations = () => {
                   cursor: 'pointer',
                   transition: 'all 0.3s ease',
                 }}
+                onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
               >
                 See Our Impact
               </button>
@@ -884,7 +891,7 @@ const Donations = () => {
             </div>
 
             <h2 style={{
-              fontSize: '50px',
+              fontSize: '59px',
               fontWeight: 700,
               marginBottom: '18px',
               lineHeight: 1.1,
@@ -996,7 +1003,7 @@ const Donations = () => {
           }}>
             <div className="mission-left" style={{ flex: 1, maxWidth: '550px' }}>
               <h2 style={{
-                fontSize: '50px',
+                fontSize: '57px',
                 fontWeight: 700,
                 color: '#fff',
                 marginBottom: '25px',
@@ -1033,6 +1040,8 @@ const Donations = () => {
                   cursor: 'pointer',
                   transition: 'all 0.3s ease',
                 }}
+                onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
               >
                 Support Education
               </button>
@@ -1095,7 +1104,7 @@ const Donations = () => {
         }}>
           <div className="mission-left" style={{ flex: 1, maxWidth: '550px' }}>
             <h2 style={{
-              fontSize: '50px',
+              fontSize: '59px',
               fontWeight: 700,
               color: '#000',
               marginBottom: '25px',
@@ -1192,7 +1201,7 @@ const Donations = () => {
         }}>
           <div style={{ textAlign: 'center', marginBottom: '50px' }}>
             <h2 className="categories-title" style={{
-              fontSize: '50px',
+              fontSize: '59px',
               fontWeight: 700,
               marginBottom: '15px',
               lineHeight: 1.1,
@@ -1248,7 +1257,7 @@ const Donations = () => {
         }}>
           <div style={{ textAlign: 'center', marginBottom: '50px' }}>
             <h2 style={{
-              fontSize: '50px',
+              fontSize: '59px',
               fontWeight: 700,
               marginBottom: '15px',
               lineHeight: 1.1,
@@ -1321,6 +1330,8 @@ const Donations = () => {
                           cursor: 'pointer',
                           transition: 'all 0.2s ease',
                         }}
+                        onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
                       >
                         {curr}
                       </button>
@@ -1408,6 +1419,8 @@ const Donations = () => {
                       cursor: 'pointer',
                       transition: 'all 0.2s ease',
                     }}
+                    onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
                   >
                     One-time
                   </button>
@@ -1425,6 +1438,8 @@ const Donations = () => {
                       cursor: 'pointer',
                       transition: 'all 0.2s ease',
                     }}
+                    onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
                   >
                     Monthly
                   </button>
@@ -1591,7 +1606,7 @@ const Donations = () => {
           margin: '0 auto',
         }}>
           <h2 className="cta-title" style={{
-            fontSize: '50px',
+            fontSize: '59px',
             fontWeight: 700,
             marginBottom: '20px',
             lineHeight: 1.1,
@@ -1639,6 +1654,8 @@ const Donations = () => {
                 transition: 'all 0.3s ease',
                 boxShadow: '0 4px 15px rgba(8, 58, 133, 0.3)',
               }}
+              onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
             >
               Start Donating
             </button>
@@ -1713,9 +1730,11 @@ const Donations = () => {
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.backgroundColor = '#e0e0e0';
+                e.currentTarget.style.transform = 'translateY(-2px)';
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.backgroundColor = '#f5f5f5';
+                e.currentTarget.style.transform = 'translateY(0)';
               }}
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -1783,6 +1802,8 @@ const Donations = () => {
                       width: '100%',
                       textAlign: 'left'
                     }}
+                    onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
                   >
                     <div style={{
                       width: '48px',
@@ -2111,6 +2132,8 @@ const Donations = () => {
                   ? 'none'
                   : '0 4px 15px rgba(8, 58, 133, 0.3)'
               }}
+              onMouseEnter={(e) => { if (isPaymentDetailsValid()) e.currentTarget.style.transform = 'translateY(-2px)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>

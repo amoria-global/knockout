@@ -333,8 +333,11 @@ const HelpSupportCenter: React.FC = () => {
                   border: 'none',
                   color: '#9ca3af',
                   cursor: 'pointer',
-                  fontSize: isMobile ? '1rem' : '1.25rem'
+                  fontSize: isMobile ? '1rem' : '1.25rem',
+                  transition: 'all 0.3s ease'
                 }}
+                onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(calc(-50% - 2px))'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(-50%)'; }}
               >
                 <i className="bi bi-search"></i>
               </button>
@@ -356,6 +359,9 @@ const HelpSupportCenter: React.FC = () => {
               <button
                 onClick={() => setSuccessMessage(null)}
                 className="ml-auto text-green-500 hover:text-green-700"
+                style={{ transition: 'all 0.3s ease' }}
+                onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
               >
                 <i className="bi bi-x-lg"></i>
               </button>
@@ -457,6 +463,9 @@ const HelpSupportCenter: React.FC = () => {
                 setSelectedCategory(null);
               }}
               className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
+              style={{ transition: 'all 0.3s ease' }}
+              onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
             >
               <i className="bi bi-x-circle"></i>
               Clear filters
@@ -560,8 +569,11 @@ const HelpSupportCenter: React.FC = () => {
                     className="w-full text-left flex items-center justify-between gap-4 hover:bg-blue-50/30 transition-all duration-200"
                     style={{
                       cursor: 'pointer',
-                      padding: isMobile ? '1rem 1rem' : '1.25rem 1.75rem'
+                      padding: isMobile ? '1rem 1rem' : '1.25rem 1.75rem',
+                      transition: 'all 0.3s ease'
                     }}
+                    onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
                   >
                     <div className="flex items-start flex-1" style={{ gap: isMobile ? '0.75rem' : '1rem' }}>
                       <div
@@ -665,11 +677,13 @@ const HelpSupportCenter: React.FC = () => {
                               e.currentTarget.style.backgroundColor = '#083A85';
                               e.currentTarget.style.color = '#ffffff';
                               e.currentTarget.style.borderColor = '#083A85';
+                              e.currentTarget.style.transform = 'translateY(-2px)';
                             }}
                             onMouseLeave={(e) => {
                               e.currentTarget.style.backgroundColor = 'rgba(8, 58, 133, 0.08)';
                               e.currentTarget.style.color = '#083A85';
                               e.currentTarget.style.borderColor = 'rgba(8, 58, 133, 0.2)';
+                              e.currentTarget.style.transform = 'translateY(0)';
                             }}
                           >
                             <i className="bi bi-hand-thumbs-up"></i>
@@ -694,11 +708,13 @@ const HelpSupportCenter: React.FC = () => {
                               e.currentTarget.style.backgroundColor = 'rgba(107, 114, 128, 0.15)';
                               e.currentTarget.style.color = '#374151';
                               e.currentTarget.style.borderColor = 'rgba(107, 114, 128, 0.3)';
+                              e.currentTarget.style.transform = 'translateY(-2px)';
                             }}
                             onMouseLeave={(e) => {
                               e.currentTarget.style.backgroundColor = 'rgba(107, 114, 128, 0.08)';
                               e.currentTarget.style.color = '#6B7280';
                               e.currentTarget.style.borderColor = 'rgba(107, 114, 128, 0.2)';
+                              e.currentTarget.style.transform = 'translateY(0)';
                             }}
                           >
                             <i className="bi bi-hand-thumbs-down"></i>
@@ -844,22 +860,28 @@ const HelpSupportCenter: React.FC = () => {
 
               <button
                 type="submit"
-                disabled={contactForm.loading}
+                disabled={contactForm.loading || !contactForm.name.trim() || !contactForm.email.trim() || !contactForm.message.trim()}
                 style={{
                   width: '100%',
                   padding: isMobile ? '14px 20px' : '16px 24px',
-                  background: 'linear-gradient(135deg, #083A85 0%, #0a4aa3 100%)',
+                  background: (!contactForm.name.trim() || !contactForm.email.trim() || !contactForm.message.trim())
+                    ? '#9ca3af'
+                    : 'linear-gradient(135deg, #083A85 0%, #0a4aa3 100%)',
                   color: '#ffffff',
                   fontWeight: '600',
                   borderRadius: isMobile ? '10px' : '12px',
                   border: 'none',
                   fontSize: isMobile ? '0.9375rem' : '1rem',
-                  cursor: contactForm.loading ? 'not-allowed' : 'pointer',
+                  cursor: (contactForm.loading || !contactForm.name.trim() || !contactForm.email.trim() || !contactForm.message.trim()) ? 'not-allowed' : 'pointer',
                   transition: 'all 0.3s ease',
-                  boxShadow: '0 4px 16px rgba(8, 58, 133, 0.3)',
+                  boxShadow: (!contactForm.name.trim() || !contactForm.email.trim() || !contactForm.message.trim())
+                    ? 'none'
+                    : '0 4px 16px rgba(8, 58, 133, 0.3)',
                   opacity: contactForm.loading ? 0.6 : 1
                 }}
-                className="hover:shadow-xl hover:scale-[1.02]"
+                className={(!contactForm.name.trim() || !contactForm.email.trim() || !contactForm.message.trim()) ? '' : 'hover:shadow-xl hover:scale-[1.02]'}
+                onMouseEnter={(e) => { if (!contactForm.loading && contactForm.name.trim() && contactForm.email.trim() && contactForm.message.trim()) e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
               >
                 {contactForm.loading ? (
                   <span className="flex items-center justify-center gap-2">
