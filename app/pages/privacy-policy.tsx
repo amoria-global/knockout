@@ -1279,6 +1279,9 @@ Previous versions available upon request for comparison and transparency purpose
         className="mobile-menu-toggle"
         onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         aria-label="Toggle navigation menu"
+        style={{ transition: 'all 0.3s ease' }}
+        onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
+        onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
       >
         <div className={`hamburger ${isMobileMenuOpen ? 'active' : ''}`}>
           <span></span>

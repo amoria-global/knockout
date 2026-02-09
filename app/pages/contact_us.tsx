@@ -504,6 +504,8 @@ export default function ContactUsPage(): React.JSX.Element {
                     gap: isMobile ? 'clamp(0.4rem, 1vw, 0.5rem)' : '0.5rem',
                     opacity: isSubmitting || !isFormComplete() ? 0.6 : 1
                   }}
+                  onMouseEnter={(e) => { if (!(isSubmitting || !isFormComplete())) e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                  onMouseLeave={(e) => { if (!(isSubmitting || !isFormComplete())) e.currentTarget.style.transform = 'translateY(0)'; }}
                 >
                   {isSubmitting ? (
                     <>

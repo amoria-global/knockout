@@ -1383,6 +1383,9 @@ Thank you for taking the time to understand these legal terms. While legal langu
         className="mobile-menu-toggle"
         onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         aria-label="Toggle navigation menu"
+        style={{ transition: 'all 0.3s ease' }}
+        onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
+        onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
       >
         <div className={`hamburger ${isMobileMenuOpen ? 'active' : ''}`}>
           <span></span>
