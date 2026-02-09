@@ -2313,6 +2313,9 @@ Trust and safety work is never finished. As long as Amoria Connekyt serves users
         className="mobile-menu-toggle"
         onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         aria-label="Toggle navigation menu"
+        style={{ transition: 'all 0.3s ease' }}
+        onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
+        onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
       >
         <div className={`hamburger ${isMobileMenuOpen ? 'active' : ''}`}>
           <span></span>
