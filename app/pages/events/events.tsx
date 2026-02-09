@@ -590,8 +590,11 @@ const Events: React.FC = () => {
                   border: 'none',
                   color: '#9ca3af',
                   cursor: 'pointer',
-                  fontSize: '1.25rem'
+                  fontSize: '1.25rem',
+                  transition: 'all 0.3s ease'
                 }}
+                onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(calc(-50% - 2px))'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(-50%)'; }}
               >
                 <i className="bi bi-search"></i>
               </button>
@@ -1122,12 +1125,14 @@ const Events: React.FC = () => {
                   if (currentPage !== 1) {
                     e.currentTarget.style.backgroundColor = '#f9fafb';
                     e.currentTarget.style.borderColor = '#083A85';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (currentPage !== 1) {
                     e.currentTarget.style.backgroundColor = '#ffffff';
                     e.currentTarget.style.borderColor = '#bab8b8';
+                    e.currentTarget.style.transform = 'translateY(0)';
                   }
                 }}
               >
@@ -1181,12 +1186,14 @@ const Events: React.FC = () => {
                         if (currentPage !== page) {
                           e.currentTarget.style.backgroundColor = '#f9fafb';
                           e.currentTarget.style.borderColor = '#083A85';
+                          e.currentTarget.style.transform = 'translateY(-2px)';
                         }
                       }}
                       onMouseLeave={(e) => {
                         if (currentPage !== page) {
                           e.currentTarget.style.backgroundColor = '#ffffff';
                           e.currentTarget.style.borderColor = '#bab8b8';
+                          e.currentTarget.style.transform = 'translateY(0)';
                         }
                       }}
                     >
@@ -1219,12 +1226,14 @@ const Events: React.FC = () => {
                   if (currentPage !== totalPages) {
                     e.currentTarget.style.backgroundColor = '#f9fafb';
                     e.currentTarget.style.borderColor = '#083A85';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (currentPage !== totalPages) {
                     e.currentTarget.style.backgroundColor = '#ffffff';
                     e.currentTarget.style.borderColor = '#bab8b8';
+                    e.currentTarget.style.transform = 'translateY(0)';
                   }
                 }}
               >

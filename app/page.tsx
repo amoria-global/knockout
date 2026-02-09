@@ -416,7 +416,7 @@ export default function Home() {
               }} />
 
               {/* Twitter Handle Badge */}
-              <div className="twitter-badge" style={{
+              <button className="twitter-badge" style={{
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '7.5px',
@@ -425,13 +425,20 @@ export default function Home() {
                 borderRadius: '37.5px',
                 marginBottom: '24px',
                 backgroundColor: '#101012',
-                color: '#fff'
-              }}>
+                color: '#fff',
+                fontWeight: 600,
+                fontSize: '13px',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+              }}
+                onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
+              >
                 <svg width="15.5" height="15.5" viewBox="0 0 24 24" fill="none">
                   <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" fill="#fff"/>
                 </svg>
-                <button style={{ fontWeight: 600, fontSize: '13px', color: '#fff', cursor: 'pointer', backgroundColor: 'transparent', border: 'none' }}>{t('hero.twitter')}</button>
-              </div>
+                {t('hero.twitter')}
+              </button>
 
               {/* Main Heading */}
               <h1 className="hero-title" style={{
@@ -473,6 +480,8 @@ export default function Home() {
                     transition: 'all 0.3s ease',
                     boxShadow: '0 3px 9px rgba(8, 58, 133, 0.2)'
                   }}
+                  onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
                 >
                   {t('hero.findPhotographer')}
                 </button>
@@ -488,7 +497,10 @@ export default function Home() {
                   fontWeight: 600,
                   cursor: 'pointer',
                   transition: 'all 0.3s ease'
-                }}>
+                }}
+                  onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
+                >
                   {t('hero.joinPhotographer')}
                 </button>
               </div>
@@ -576,7 +588,7 @@ export default function Home() {
                   zIndex: 15
                 }}>
                   <img
-                    src="/lady.png"
+                    src="/lady.gif"
                     alt="Smiling woman"
                     style={{
                       width: '90px',
@@ -1198,13 +1210,13 @@ export default function Home() {
                   boxShadow: '0 4px 15px rgba(0,0,0,0.2)'
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'scale(1.08)';
+                  e.currentTarget.style.transform = 'scale(1.08) translateY(-2px)';
                   e.currentTarget.style.background = 'linear-gradient(90deg, #FFFFFF 0%, #FFFFFF 100%)';
                   e.currentTarget.style.color = '#083A85';
                   e.currentTarget.style.boxShadow = '0 8px 25px rgba(255,255,255,0.4)';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'scale(1)';
+                  e.currentTarget.style.transform = 'scale(1) translateY(0)';
                   e.currentTarget.style.background = 'linear-gradient(90deg, #041DC0 0%, #FF6363 0%, #7763FF 100%)';
                   e.currentTarget.style.color = '#000';
                   e.currentTarget.style.boxShadow = '0 4px 15px rgba(0,0,0,0.2)';
@@ -2887,8 +2899,11 @@ export default function Home() {
                     fontWeight: 600,
                     cursor: 'pointer',
                     boxShadow: '0 3px 9px rgba(8, 58, 133, 0.2)',
-                    whiteSpace: 'nowrap'
+                    whiteSpace: 'nowrap',
+                    transition: 'all 0.3s ease'
                   }}
+                  onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
                 >
                   {t('globalNetwork.connectNow')}
                 </button>
@@ -2904,8 +2919,11 @@ export default function Home() {
                     fontSize: '15px',
                     fontWeight: 600,
                     cursor: 'pointer',
-                    whiteSpace: 'nowrap'
+                    whiteSpace: 'nowrap',
+                    transition: 'all 0.3s ease'
                   }}
+                  onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
                 >
                   {t('globalNetwork.findEvents')}
                 </button>
