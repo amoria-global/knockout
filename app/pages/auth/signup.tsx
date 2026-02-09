@@ -523,12 +523,14 @@ export default function SignupPage(): React.JSX.Element {
                   if (!googleLoading && !isGooglePreFilled) {
                     e.currentTarget.style.borderColor = '#083A85';
                     e.currentTarget.style.backgroundColor = '#f9fafb';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (!googleLoading && !isGooglePreFilled) {
                     e.currentTarget.style.borderColor = '#d1d5db';
                     e.currentTarget.style.backgroundColor = '#ffffff';
+                    e.currentTarget.style.transform = 'translateY(0)';
                   }
                 }}
               >
@@ -768,8 +770,11 @@ export default function SignupPage(): React.JSX.Element {
                         cursor: 'pointer',
                         border: 'none',
                         background: 'transparent',
-                        padding: '4px'
+                        padding: '4px',
+                        transition: 'all 0.3s ease'
                       }}
+                      onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-50%) translateY(-2px)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(-50%)'; }}
                     >
                       <i className={`bi ${showPassword ? 'bi-eye-slash' : 'bi-eye'}`} style={{ fontSize: '16px' }}></i>
                     </button>
@@ -811,8 +816,11 @@ export default function SignupPage(): React.JSX.Element {
                         cursor: 'pointer',
                         border: 'none',
                         background: 'transparent',
-                        padding: '4px'
+                        padding: '4px',
+                        transition: 'all 0.3s ease'
                       }}
+                      onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-50%) translateY(-2px)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(-50%)'; }}
                     >
                       <i className={`bi ${showConfirmPassword ? 'bi-eye-slash' : 'bi-eye'}`} style={{ fontSize: '16px' }}></i>
                     </button>
@@ -854,6 +862,8 @@ export default function SignupPage(): React.JSX.Element {
                     border: 'none',
                     minHeight: isMobile ? '52px' : 'auto'
                   }}
+                  onMouseEnter={(e) => { if (!isDisabled && !loading) e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
                 >
                   {loading ? 'Creating Account...' : t('createAccountButton')}
                 </button>

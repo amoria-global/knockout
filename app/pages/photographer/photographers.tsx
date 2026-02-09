@@ -313,8 +313,11 @@ const Photographers: React.FC = () => {
                   border: 'none',
                   color: '#9ca3af',
                   cursor: 'pointer',
-                  fontSize: '1.25rem'
+                  fontSize: '1.25rem',
+                  transition: 'all 0.3s ease'
                 }}
+                onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(calc(-50% - 2px))'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(-50%)'; }}
               >
                 <i className="bi bi-search"></i>
               </button>
@@ -520,8 +523,11 @@ const Photographers: React.FC = () => {
                     color: 'white',
                     border: 'none',
                     borderRadius: '8px',
-                    cursor: 'pointer'
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease'
                   }}
+                  onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
                 >
                   Try Again
                 </button>
@@ -658,9 +664,12 @@ const Photographers: React.FC = () => {
                         alignItems: 'center',
                         justifyContent: 'center',
                         flexShrink: 0,
-                        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+                        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                        transition: 'all 0.3s ease'
                       }}
                       onClick={() => toggleBookmark(photographer.id)}
+                      onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
                     >
                       <i className={isBookmarked ? "bi bi-bookmark-fill" : "bi bi-bookmark"}></i>
                     </button>
@@ -843,7 +852,7 @@ const Photographers: React.FC = () => {
                     onClick={() => window.location.href = `/user/photographers/view-profile?id=${photographer.id}`}
                     onMouseEnter={(e) => {
                         e.currentTarget.style.backgroundColor = '#2d2d2d';
-                        e.currentTarget.style.transform = 'translateY(-1px)';
+                        e.currentTarget.style.transform = 'translateY(-2px)';
                         e.currentTarget.style.boxShadow = '0 4px 10px rgba(0, 0, 0, 0.18)';
                     }}
                     onMouseLeave={(e) => {
@@ -896,12 +905,14 @@ const Photographers: React.FC = () => {
                   if (currentPage !== 0) {
                     e.currentTarget.style.backgroundColor = '#f9fafb';
                     e.currentTarget.style.borderColor = '#083A85';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (currentPage !== 0) {
                     e.currentTarget.style.backgroundColor = '#ffffff';
                     e.currentTarget.style.borderColor = '#bab8b8';
+                    e.currentTarget.style.transform = 'translateY(0)';
                   }
                 }}
               >
@@ -936,12 +947,14 @@ const Photographers: React.FC = () => {
                       if (currentPage !== pageIndex) {
                         e.currentTarget.style.backgroundColor = '#f9fafb';
                         e.currentTarget.style.borderColor = '#083A85';
+                        e.currentTarget.style.transform = 'translateY(-2px)';
                       }
                     }}
                     onMouseLeave={(e) => {
                       if (currentPage !== pageIndex) {
                         e.currentTarget.style.backgroundColor = '#ffffff';
                         e.currentTarget.style.borderColor = '#bab8b8';
+                        e.currentTarget.style.transform = 'translateY(0)';
                       }
                     }}
                   >
@@ -973,12 +986,14 @@ const Photographers: React.FC = () => {
                   if (currentPage < totalPages - 1) {
                     e.currentTarget.style.backgroundColor = '#f9fafb';
                     e.currentTarget.style.borderColor = '#083A85';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (currentPage < totalPages - 1) {
                     e.currentTarget.style.backgroundColor = '#ffffff';
                     e.currentTarget.style.borderColor = '#bab8b8';
+                    e.currentTarget.style.transform = 'translateY(0)';
                   }
                 }}
               >
