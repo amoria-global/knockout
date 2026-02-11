@@ -6,106 +6,49 @@ import AmoriaKNavbar from '../../components/navbar';
 import { useAuth } from '@/app/providers/AuthProvider';
 import { createEventBooking, parseTimeToApiString } from '@/lib/APIs/bookings/create-booking/route';
 import { getPublicPhotographerPackages, type PublicPackage } from '@/lib/APIs/packages/get-packages/route';
+import { getPhotographers, type Photographer } from '@/lib/APIs/public';
 
-// Shared photographer data - same as view-profile.tsx
-const photographersData = [
-  {
-    id: 1,
-    name: 'Cole Palmer',
-    image: 'https://i.pinimg.com/1200x/e9/1f/59/e91f59ed85a702d7252f2b0c8e02c7d2.jpg',
-    bannerImage: 'https://i.pinimg.com/736x/8b/89/70/8b8970fb8745252e4d36f60305967d37.jpg',
-    verified: true,
-    location: 'Kigali - Rwanda, Gasabo',
-    specialty: 'Videographer',
-    rating: 4.9,
-    reviews: 127,
-    completedJobs: 50,
-  },
-  {
-    id: 2,
-    name: 'Enzo Fernandez',
-    image: 'https://i.pinimg.com/1200x/8e/5e/69/8e5e6976723a4d5f4e0999a9dd5ac8c6.jpg',
-    bannerImage: 'https://i.pinimg.com/1200x/8e/5e/69/8e5e6976723a4d5f4e0999a9dd5ac8c6.jpg',
-    verified: true,
-    location: 'Musanze - Rwanda, Musanze',
-    specialty: 'Photographer',
-    rating: 4.8,
-    reviews: 98,
-    completedJobs: 65,
-  },
-  {
-    id: 3,
-    name: 'Liam delap',
-    image: 'https://i.pinimg.com/1200x/09/23/45/092345eac1919407e0c49f67e285b831.jpg',
-    bannerImage: 'https://i.pinimg.com/1200x/09/23/45/092345eac1919407e0c49f67e285b831.jpg',
-    verified: true,
-    location: 'Kigali - Rwanda, Kicukiro',
-    specialty: 'Photographer',
-    rating: 4.7,
-    reviews: 156,
-    completedJobs: 80,
-  },
-  {
-    id: 4,
-    name: 'Moises Caicedo',
-    image: 'https://i.pinimg.com/1200x/84/1b/a6/841ba626d4bb44b8906d8c25400e261f.jpg',
-    bannerImage: 'https://i.pinimg.com/1200x/84/1b/a6/841ba626d4bb44b8906d8c25400e261f.jpg',
-    verified: true,
-    location: 'Huye - Rwanda, Huye',
-    specialty: 'Videographer',
-    rating: 4.9,
-    reviews: 143,
-    completedJobs: 72,
-  },
-  {
-    id: 5,
-    name: 'Pedro neto',
-    image: 'https://i.pinimg.com/736x/0f/22/d0/0f22d09fadd8a310fa484d1e94c8c55f.jpg',
-    bannerImage: 'https://i.pinimg.com/736x/0f/22/d0/0f22d09fadd8a310fa484d1e94c8c55f.jpg',
-    verified: true,
-    location: 'Rubavu - Rwanda, Rubavu',
-    specialty: 'Photographer',
-    rating: 4.8,
-    reviews: 134,
-    completedJobs: 58,
-  },
-  {
-    id: 6,
-    name: 'Reece James',
-    image: 'https://i.pinimg.com/1200x/7c/85/39/7c8539e01282b4f5d555f9182a4acf44.jpg',
-    bannerImage: 'https://i.pinimg.com/1200x/7c/85/39/7c8539e01282b4f5d555f9182a4acf44.jpg',
-    verified: true,
-    location: 'Kigali - Rwanda, Nyarugenge',
-    specialty: 'Photographer',
-    rating: 4.9,
-    reviews: 167,
-    completedJobs: 91,
-  },
-  {
-    id: 7,
-    name: 'Levi Colwill',
-    image: 'https://i.pinimg.com/736x/e2/a6/5d/e2a65d23bea44eae43bd4c5965e4ff56.jpg',
-    bannerImage: 'https://i.pinimg.com/736x/e2/a6/5d/e2a65d23bea44eae43bd4c5965e4ff56.jpg',
-    verified: true,
-    location: 'Nyanza - Rwanda, Nyanza',
-    specialty: 'Videographer',
-    rating: 4.7,
-    reviews: 92,
-    completedJobs: 55,
-  },
-  {
-    id: 8,
-    name: 'Malo Gusto',
-    image: 'https://i.pinimg.com/736x/ca/0c/1b/ca0c1beee4be6b1dfe93c67ac02bdb49.jpg',
-    bannerImage: 'https://i.pinimg.com/736x/ca/0c/1b/ca0c1beee4be6b1dfe93c67ac02bdb49.jpg',
-    verified: true,
-    location: 'Kigali - Rwanda, Gasabo',
-    specialty: 'Photographer',
-    rating: 4.8,
-    reviews: 118,
-    completedJobs: 63,
-  },
-];
+// Default images for fallback
+const DEFAULT_PROFILE_IMAGE = 'https://i.pinimg.com/1200x/e9/1f/59/e91f59ed85a702d7252f2b0c8e02c7d2.jpg';
+const DEFAULT_COVER_IMAGE = 'https://i.pinimg.com/736x/8b/89/70/8b8970fb8745252e4d36f60305967d37.jpg';
+
+// Helper function to get valid profile image
+const getProfileImage = (photographer: Photographer | null): string => {
+  if (!photographer) return DEFAULT_PROFILE_IMAGE;
+  if (photographer.profilePicture && !photographer.profilePicture.includes('/null')) {
+    return photographer.profilePicture;
+  }
+  return DEFAULT_PROFILE_IMAGE;
+};
+
+// Helper function to get valid cover image
+const getCoverImage = (photographer: Photographer | null): string => {
+  if (!photographer) return DEFAULT_COVER_IMAGE;
+  if (photographer.coverPicture && !photographer.coverPicture.includes('/null')) {
+    return photographer.coverPicture;
+  }
+  return DEFAULT_COVER_IMAGE;
+};
+
+// Helper function to format availability from API data
+const formatAvailability = (availabilities: { dayOfWeek: string; isAvailable: boolean }[]): string => {
+  if (!availabilities || availabilities.length === 0) return 'Contact for availability';
+  const availableDays = availabilities
+    .filter(a => a.isAvailable)
+    .map(a => a.dayOfWeek);
+  if (availableDays.length === 0) return 'Contact for availability';
+  if (availableDays.length === 7) return 'Monday - Sunday';
+  return `${availableDays[0]} - ${availableDays[availableDays.length - 1]}`;
+};
+
+// Helper function to format working hours from availability data
+const formatWorkingHours = (availabilities: { startTime: string; endTime: string; isAvailable: boolean }[]): string => {
+  if (!availabilities || availabilities.length === 0) return 'Contact for hours';
+  const availableSlots = availabilities.filter(a => a.isAvailable);
+  if (availableSlots.length === 0) return 'Contact for hours';
+  const first = availableSlots[0];
+  return `${first.startTime} - ${first.endTime}`;
+};
 
 const eventTypes = [
   'Wedding',
@@ -135,6 +78,11 @@ function BookNowContent(): React.JSX.Element {
   const [validationError, setValidationError] = useState<string | null>(null);
   const [apiPackages, setApiPackages] = useState<PublicPackage[]>([]);
   const [apiPackagesLoaded, setApiPackagesLoaded] = useState(false);
+
+  // Photographer API data state
+  const [photographer, setPhotographer] = useState<Photographer | null>(null);
+  const [photographerLoading, setPhotographerLoading] = useState(true);
+  const [photographerError, setPhotographerError] = useState<string | null>(null);
 
   // Extra photos & videos state per package
   const [extraPhotos, setExtraPhotos] = useState<Record<string, number | ''>>({ essential: '', custom: '', premium: '' });
@@ -179,6 +127,43 @@ function BookNowContent(): React.JSX.Element {
     setValidationError(null);
   }, [authLoading, isAuthenticated, user, photographerId, router]);
 
+  // Fetch photographer data from API by filtering from main list
+  useEffect(() => {
+    const fetchPhotographer = async () => {
+      if (!photographerId) {
+        setPhotographerError('No photographer ID provided');
+        setPhotographerLoading(false);
+        return;
+      }
+
+      setPhotographerLoading(true);
+      setPhotographerError(null);
+
+      try {
+        // Fetch all photographers and filter by ID (same as view-profile.tsx)
+        const response = await getPhotographers({ size: 100 });
+
+        if (response.success && response.data?.content) {
+          const found = response.data.content.find(p => p.id === photographerId);
+          if (found) {
+            setPhotographer(found);
+          } else {
+            setPhotographerError('Photographer not found');
+          }
+        } else {
+          setPhotographerError(response.error || 'Failed to load photographer profile');
+        }
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'An error occurred';
+        setPhotographerError(errorMessage);
+      } finally {
+        setPhotographerLoading(false);
+      }
+    };
+
+    fetchPhotographer();
+  }, [photographerId]);
+
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
@@ -208,20 +193,23 @@ function BookNowContent(): React.JSX.Element {
       .finally(() => setApiPackagesLoaded(true));
   }, [photographerId]);
 
-  // Get photographer data based on ID from URL
-  const photographer = photographersData.find(p => p.id === Number(photographerId)) || photographersData[0];
+  // Compute minimum price from loaded packages
+  const minimumPrice = (apiPackagesLoaded && apiPackages.length > 0)
+    ? `$${Math.min(...apiPackages.map(p => p.price)).toFixed(2)} / Event`
+    : null;
 
+  // Build display data from API response
   const photographerData = {
-    name: photographer.name,
-    profileImage: photographer.image,
-    backgroundImage: photographer.bannerImage,
-    location: photographer.location,
-    rating: photographer.rating,
-    completedJobs: photographer.completedJobs,
-    verified: photographer.verified,
-    availability: 'Monday - Sunday',
-    hours: '08:00 AM - 11:50 PM',
-    minimumEarnings: '$200.00 / Event',
+    name: photographer ? `${photographer.firstName} ${photographer.lastName}` : '',
+    profileImage: getProfileImage(photographer),
+    backgroundImage: getCoverImage(photographer),
+    location: photographer?.address || '',
+    rating: photographer?.rating || 0,
+    completedJobs: photographer?.projects?.length || 0,
+    verified: true,
+    availability: photographer ? formatAvailability(photographer.availabilities) : 'Contact for availability',
+    hours: photographer ? formatWorkingHours(photographer.availabilities) : 'Contact for hours',
+    minimumEarnings: minimumPrice || 'Contact for pricing',
   };
 
   // Badge styles for package cards (cycling)
@@ -229,70 +217,6 @@ function BookNowContent(): React.JSX.Element {
     { badgeColor: '#22D3EE', badgeGradient: 'linear-gradient(135deg, #22D3EE 0%, #3B82F6 100%)' },
     { badgeColor: '#FBBF24', badgeGradient: 'linear-gradient(135deg, #FDE047 0%, #FBBF24 50%, #F59E0B 100%)' },
     { badgeColor: '#A855F7', badgeGradient: 'linear-gradient(135deg, #C084FC 0%, #A855F7 50%, #7C3AED 100%)' },
-  ];
-
-  // Default fallback packages (used when API returns empty)
-  const defaultPackages = [
-    {
-      id: 'essential',
-      name: t('packages.essential.name'),
-      basePrice: 190,
-      includedPhotos: 150,
-      includedVideos: 20,
-      period: 'per event*',
-      badge: 'Essential',
-      ...badgePresets[0],
-      description: t('packages.essential.description'),
-      features: [
-        { text: 'HD 150 photos & 20 videos', available: true },
-        { text: 'Online gallery storage (provided by platform)', available: true },
-        { text: t('packages.features.sameDayPreview'), available: true },
-        { text: t('packages.features.professionalEditing'), available: false },
-        { text: t('packages.features.printedAlbum'), available: false },
-        { text: t('packages.features.liveStreaming'), available: false },
-        { text: 'Other preferences', available: false },
-      ],
-    },
-    {
-      id: 'custom',
-      name: t('packages.custom.name'),
-      basePrice: 450,
-      includedPhotos: 350,
-      includedVideos: 50,
-      period: 'per event*',
-      badge: 'Custom',
-      ...badgePresets[1],
-      description: t('packages.custom.description'),
-      features: [
-        { text: 'HD 350 photos & 50 videos', available: true },
-        { text: 'Online gallery storage (provided by platform)', available: true },
-        { text: t('packages.features.sameDayPreview'), available: true },
-        { text: t('packages.features.professionalEditing'), available: true },
-        { text: t('packages.features.printedAlbum'), available: true },
-        { text: t('packages.features.liveStreaming'), available: false },
-        { text: 'Other preferences', available: false },
-      ],
-    },
-    {
-      id: 'premium',
-      name: t('packages.premium.name'),
-      basePrice: 660,
-      includedPhotos: 500,
-      includedVideos: 80,
-      period: 'per event*',
-      badge: 'Premium',
-      ...badgePresets[2],
-      description: t('packages.premium.description'),
-      features: [
-        { text: 'HD 500 photos & 80 videos', available: true },
-        { text: 'Online gallery storage (provided by platform)', available: true },
-        { text: t('packages.features.sameDayPreview'), available: true },
-        { text: t('packages.features.professionalEditing'), available: true },
-        { text: t('packages.features.printedAlbum'), available: true },
-        { text: t('packages.features.liveStreaming'), available: true },
-        { text: 'Other preferences', available: true },
-      ],
-    },
   ];
 
   // Calculate total price for a package including extras
@@ -321,23 +245,21 @@ function BookNowContent(): React.JSX.Element {
     }));
   };
 
-  // Use real API packages when available, fall back to defaults
-  const packages = (apiPackagesLoaded && apiPackages.length > 0)
-    ? apiPackages.map((pkg, index) => ({
-        id: pkg.id,
-        name: pkg.packageName,
-        basePrice: pkg.price,
-        includedPhotos: 0,
-        includedVideos: 0,
-        period: pkg.priceUnit || 'per event',
-        badge: pkg.packageName,
-        ...badgePresets[index % badgePresets.length],
-        description: pkg.description || '',
-        features: [...(pkg.features || [])]
-          .sort((a, b) => a.displayOrder - b.displayOrder)
-          .map(f => ({ text: f.featureName, available: f.isIncluded })),
-      }))
-    : defaultPackages;
+  // Use real API packages only
+  const packages = apiPackages.map((pkg, index) => ({
+    id: pkg.id,
+    name: pkg.packageName,
+    basePrice: pkg.price,
+    includedPhotos: 0,
+    includedVideos: 0,
+    period: pkg.priceUnit || 'per event',
+    badge: pkg.packageName,
+    ...badgePresets[index % badgePresets.length],
+    description: pkg.description || '',
+    features: [...(pkg.features || [])]
+      .sort((a, b) => a.displayOrder - b.displayOrder)
+      .map(f => ({ text: f.featureName, available: f.isIncluded })),
+  }));
 
   const handleCancel = () => {
     setSelectedPackage(null);
@@ -476,6 +398,103 @@ function BookNowContent(): React.JSX.Element {
             >
               Go Back
             </button>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // Show loading state while fetching photographer data
+  if (photographerLoading) {
+    return (
+      <>
+        <AmoriaKNavbar />
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '80vh',
+          backgroundColor: '#f0f4f8',
+        }}>
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '1rem',
+          }}>
+            <div style={{
+              width: '48px',
+              height: '48px',
+              border: '4px solid #e5e7eb',
+              borderTopColor: '#083A85',
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite',
+            }}></div>
+            <p style={{ color: '#6b7280', fontSize: '1rem' }}>Loading photographer profile...</p>
+            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // Show error state if photographer data failed to load
+  if (photographerError || !photographer) {
+    return (
+      <>
+        <AmoriaKNavbar />
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '80vh',
+          backgroundColor: '#f0f4f8',
+        }}>
+          <div style={{
+            textAlign: 'center',
+            padding: '2rem',
+            backgroundColor: '#fef2f2',
+            borderRadius: '12px',
+            border: '1px solid #fecaca',
+            maxWidth: '400px',
+          }}>
+            <i className="bi bi-exclamation-circle" style={{ fontSize: '3rem', color: '#dc2626' }}></i>
+            <h2 style={{ color: '#dc2626', marginTop: '1rem', fontSize: '1.25rem', fontWeight: '600' }}>
+              Error Loading Profile
+            </h2>
+            <p style={{ color: '#991b1b', marginTop: '0.5rem' }}>
+              {photographerError || 'Photographer not found'}
+            </p>
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '1.5rem' }}>
+              <button
+                onClick={() => window.location.reload()}
+                style={{
+                  padding: '0.5rem 1.5rem',
+                  backgroundColor: '#083A85',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontWeight: '500',
+                }}
+              >
+                Try Again
+              </button>
+              <button
+                onClick={() => window.history.back()}
+                style={{
+                  padding: '0.5rem 1.5rem',
+                  backgroundColor: '#ffffff',
+                  color: '#374151',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontWeight: '500',
+                }}
+              >
+                Go Back
+              </button>
+            </div>
           </div>
         </div>
       </>

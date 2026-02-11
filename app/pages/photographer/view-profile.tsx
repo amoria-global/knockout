@@ -4,7 +4,7 @@ import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import AmoriaKNavbar from '../../components/navbar';
 import ReviewModal from '../../components/ReviewModal';
-import { getPhotographers, type Photographer, getPublicEvents } from '@/lib/APIs/public';
+import { getPhotographers, type Photographer, getPublicEvents, getCities, type City } from '@/lib/APIs/public';
 import { getPublicPhotographerPackages, type PublicPackage } from '@/lib/APIs/packages/get-packages/route';
 import { useToast } from '@/lib/notifications/ToastProvider';
 import { useAuth } from '@/app/providers/AuthProvider';
@@ -65,6 +65,7 @@ function ViewProfileContent(): React.JSX.Element {
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [packages, setPackages] = useState<PublicPackage[]>([]);
   const [packagesLoading, setPackagesLoading] = useState(false);
+  const [cities, setCities] = useState<City[]>([]);
 
   // Fetch photographer data from API by filtering from main list
   useEffect(() => {
@@ -105,6 +106,20 @@ function ViewProfileContent(): React.JSX.Element {
 
     fetchPhotographer();
   }, [photographerId, toast]);
+
+  // Fetch cities for location display
+  useEffect(() => {
+    const fetchCities = async () => {
+      try {
+        const response = await getCities();
+        if (response.success && response.data) {
+          const cityList = Array.isArray(response.data) ? response.data : [];
+          setCities(cityList);
+        }
+      } catch { /* silent */ }
+    };
+    fetchCities();
+  }, []);
 
   // Fetch public packages for this photographer
   useEffect(() => {
@@ -211,7 +226,21 @@ function ViewProfileContent(): React.JSX.Element {
   // Build photographer display data from API response - NO mock data, only real API data
   const photographerData = {
     name: photographer ? `${photographer.firstName} ${photographer.lastName}` : '',
-    location: photographer?.address || '',
+    location: (() => {
+      if (!photographer) return '';
+      // Try to match address to a city name from the API
+      if (photographer.address && cities.length > 0) {
+        const matchedCity = cities.find(c =>
+          photographer.address?.toLowerCase().includes(c.name.toLowerCase())
+        );
+        if (matchedCity) {
+          return matchedCity.country
+            ? `${matchedCity.name}, ${matchedCity.country}`
+            : matchedCity.name;
+        }
+      }
+      return photographer.address || '';
+    })(),
     eventsCompleted: photographer?.projects?.length || 0,
     rating: photographer?.rating || 0,
     profileImage: getProfileImage(photographer),

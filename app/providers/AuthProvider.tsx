@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { getAuthToken, setAuthToken, removeAuthToken, isAuthenticated as checkAuth } from '@/lib/api/client';
 import { API_CONFIG } from '@/lib/api/config';
+import { refreshToken as attemptRefreshToken } from '@/lib/APIs/auth/refresh-token/route';
 
 /**
  * User data stored in auth context
@@ -82,7 +83,36 @@ async function fetchUserProfile(token: string): Promise<Partial<AuthUser> | null
       }
     );
     if (response.status === 401) {
-      // Session expired — clear auth and redirect to login
+      // Attempt token refresh before giving up
+      const refreshResult = await attemptRefreshToken();
+      if (refreshResult.success && refreshResult.data?.token) {
+        // Retry profile fetch with the new token
+        const retryResponse = await fetch(
+          `${API_CONFIG.baseUrl}api/remote/photographer/profile-summary`,
+          {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${refreshResult.data.token}`,
+              'api-token': process.env.NEXT_PUBLIC_API_KEY || '',
+            },
+          }
+        );
+        if (retryResponse.ok) {
+          const retryResult = await retryResponse.json();
+          if (retryResult.action === 1 && retryResult.data) {
+            const retryData = retryResult.data;
+            return {
+              id: retryData.id || '',
+              firstName: retryData.firstName || '',
+              lastName: retryData.lastName || '',
+              email: retryData.email || '',
+              customerType: retryData.customerType || '',
+              profilePicture: retryData.profilePicture || undefined,
+            };
+          }
+        }
+      }
+      // Refresh failed — clear auth and redirect to login
       removeAuthToken();
       clearStoredUser();
       if (typeof window !== 'undefined') {
