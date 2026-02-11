@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import Navbar from "../components/navbar";
 import Footer from "../components/footer";
 import { getCurrencies, type Currency as APICurrency } from '@/lib/APIs/public';
+import { apiClient } from '@/lib/api/client';
 
 // Hook for counting animation
 const useCountUp = (end: number, duration: number = 2000, startCounting: boolean = false) => {
@@ -378,6 +379,9 @@ const Donations = () => {
   const [donorEmail, setDonorEmail] = useState('');
   const [donorMessage, setDonorMessage] = useState('');
   const [isAnonymous, setIsAnonymous] = useState(false);
+  const [donationLoading, setDonationLoading] = useState(false);
+  const [donationError, setDonationError] = useState<string | null>(null);
+  const [donationSuccess, setDonationSuccess] = useState(false);
 
   // Reset payment modal state
   const resetPaymentModal = () => {
@@ -414,28 +418,48 @@ const Donations = () => {
   };
 
   // Handle donation submission
-  const handleDonation = () => {
+  const handleDonation = async () => {
     if (!isPaymentDetailsValid()) {
       alert('Please fill in all required payment details');
       return;
     }
 
-    const donationData = {
-      amount: getDisplayAmount(),
-      currency,
-      frequency: donationFrequency,
-      category: categories[activeCategory].title,
-      paymentMethod: selectedPaymentMethod,
-      donor: isAnonymous ? 'Anonymous' : { firstName: donorFirstName, lastName: donorLastName, email: donorEmail },
-      message: donorMessage,
-    };
+    setDonationLoading(true);
+    setDonationError(null);
+    setDonationSuccess(false);
 
-    console.log('Processing donation:', donationData);
+    try {
+      const amount = getDisplayAmount();
+      // Find the currency ID from API currencies matching current code
+      const matchedCurrency = apiCurrencies.find(c => c.code === currency);
+      const currencyId = matchedCurrency?.id || '';
 
-    const methodName = paymentMethods.find(m => m.id === selectedPaymentMethod)?.name || selectedPaymentMethod;
-    alert(`Thank you for your donation of ${formatCurrency(getDisplayAmount(), currency)}!\n\nPayment method: ${methodName}\nFrequency: ${donationFrequency === 'monthly' ? 'Monthly' : 'One-time'}`);
+      const queryParams = new URLSearchParams();
+      queryParams.append('amount', amount.toString());
+      if (currencyId) queryParams.append('currencyId', currencyId);
+      const remarks = donorMessage || `${categories[activeCategory].title} donation via ${selectedPaymentMethod}`;
+      queryParams.append('remarks', remarks);
 
-    resetPaymentModal();
+      const response = await apiClient.post(
+        `/api/remote/payments/record-tip?${queryParams.toString()}`,
+        undefined,
+        { retries: 1 }
+      );
+
+      if (!response.success) {
+        throw new Error(response.error || 'Donation failed');
+      }
+
+      setDonationSuccess(true);
+      setTimeout(() => {
+        resetPaymentModal();
+        setDonationSuccess(false);
+      }, 2000);
+    } catch (err) {
+      setDonationError(err instanceof Error ? err.message : 'Donation failed. Please try again.');
+    } finally {
+      setDonationLoading(false);
+    }
   };
 
   // Get display amounts based on selected currency
@@ -2107,38 +2131,69 @@ const Donations = () => {
               </div>
             )}
 
+            {/* Error message */}
+            {donationError && (
+              <div style={{
+                padding: '12px 16px',
+                marginBottom: '16px',
+                backgroundColor: '#FEF2F2',
+                border: '1px solid #EF4444',
+                borderRadius: '12px',
+                color: '#EF4444',
+                fontSize: '14px',
+              }}>
+                {donationError}
+              </div>
+            )}
+
+            {/* Success message */}
+            {donationSuccess && (
+              <div style={{
+                padding: '12px 16px',
+                marginBottom: '16px',
+                backgroundColor: '#F0FDF4',
+                border: '1px solid #22C55E',
+                borderRadius: '12px',
+                color: '#16A34A',
+                fontSize: '14px',
+                fontWeight: 500,
+              }}>
+                Donation successful! Thank you for your generosity.
+              </div>
+            )}
+
             {/* Confirm Donation Button */}
             <button
               onClick={handleDonation}
-              disabled={!isPaymentDetailsValid()}
+              disabled={!isPaymentDetailsValid() || donationLoading}
               style={{
                 width: '100%',
                 padding: '16px 24px',
-                background: !isPaymentDetailsValid()
+                background: (!isPaymentDetailsValid() || donationLoading)
                   ? '#e0e0e0'
                   : 'linear-gradient(135deg, #083A85 0%, #0d4a9e 100%)',
                 border: 'none',
                 borderRadius: '14px',
-                color: !isPaymentDetailsValid() ? '#999' : '#fff',
+                color: (!isPaymentDetailsValid() || donationLoading) ? '#999' : '#fff',
                 fontSize: '16px',
                 fontWeight: 600,
-                cursor: !isPaymentDetailsValid() ? 'not-allowed' : 'pointer',
+                cursor: (!isPaymentDetailsValid() || donationLoading) ? 'not-allowed' : 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '10px',
                 transition: 'all 0.3s ease',
-                boxShadow: !isPaymentDetailsValid()
+                boxShadow: (!isPaymentDetailsValid() || donationLoading)
                   ? 'none'
                   : '0 4px 15px rgba(8, 58, 133, 0.3)'
               }}
-              onMouseEnter={(e) => { if (isPaymentDetailsValid()) e.currentTarget.style.transform = 'translateY(-2px)'; }}
+              onMouseEnter={(e) => { if (isPaymentDetailsValid() && !donationLoading) e.currentTarget.style.transform = 'translateY(-2px)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
               </svg>
-              Confirm Donation {formatCurrency(getDisplayAmount(), currency)}
+              {donationLoading ? 'Processing...' : `Confirm Donation ${formatCurrency(getDisplayAmount(), currency)}`}
             </button>
 
             {/* Security Note */}
