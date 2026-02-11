@@ -2,6 +2,8 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import dynamic from 'next/dynamic';
+import { apiClient } from '@/lib/api/client';
+import { getCurrencies, type Currency as APICurrency } from '@/lib/APIs/public';
 
 // Dynamically import VideoMessageRecorder to avoid SSR issues
 const VideoMessageRecorder = dynamic(() => import('../../components/VideoMessageRecorder'), { ssr: false });
@@ -189,6 +191,23 @@ const App = () => {
   const [cardExpiry, setCardExpiry] = useState("");
   const [cardCvv, setCardCvv] = useState("");
   const [cardHolderName, setCardHolderName] = useState("");
+  // API currencies & gift/donation loading state
+  const [streamCurrencies, setStreamCurrencies] = useState<APICurrency[]>([]);
+  const [giftLoading, setGiftLoading] = useState(false);
+  const [giftError, setGiftError] = useState<string | null>(null);
+  const [donationApiLoading, setDonationApiLoading] = useState(false);
+  const [donationApiError, setDonationApiError] = useState<string | null>(null);
+
+  // Fetch currencies on mount
+  useEffect(() => {
+    getCurrencies()
+      .then(res => {
+        if (res.success && res.data && Array.isArray(res.data) && res.data.length > 0) {
+          setStreamCurrencies(res.data);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // Giftable ceremony categories
   const giftableCategories = [
@@ -254,7 +273,7 @@ const App = () => {
   };
 
   // Handle sending donation
-  const handleSendDonation = () => {
+  const handleSendDonation = async () => {
     if (!donationPaymentMethod || !donationAmount) {
       alert('Please select a payment method and enter an amount');
       return;
@@ -265,45 +284,32 @@ const App = () => {
       return;
     }
 
-    let paymentDetails = {};
-    switch (donationPaymentMethod) {
-      case 'mtn':
-      case 'airtel':
-        paymentDetails = { phone: donationPhone };
-        break;
-      case 'bank':
-        paymentDetails = {
-          accountName: donationBankAccountName,
-          accountNumber: donationBankAccountNumber,
-          bankName: donationBankName
-        };
-        break;
-      case 'card':
-        paymentDetails = {
-          cardNumber: donationCardNumber,
-          expiry: donationCardExpiry,
-          cvv: donationCardCvv,
-          holderName: donationCardHolderName
-        };
-        break;
+    setDonationApiLoading(true);
+    setDonationApiError(null);
+
+    try {
+      const queryParams = new URLSearchParams();
+      queryParams.append('amount', donationAmount);
+      const currencyId = streamCurrencies.length > 0 ? streamCurrencies[0].id : '';
+      if (currencyId) queryParams.append('currencyId', currencyId);
+      queryParams.append('remarks', `Donation via ${donationPaymentMethod}`);
+
+      const response = await apiClient.post(
+        `/api/remote/payments/record-tip?${queryParams.toString()}`,
+        undefined,
+        { retries: 1 }
+      );
+
+      if (!response.success) {
+        throw new Error(response.error || 'Donation failed');
+      }
+
+      resetDonationModal();
+    } catch (err) {
+      setDonationApiError(err instanceof Error ? err.message : 'Donation failed. Please try again.');
+    } finally {
+      setDonationApiLoading(false);
     }
-
-    const methodNames: { [key: string]: string } = {
-      'mtn': 'MTN Mobile Money',
-      'airtel': 'Airtel Money',
-      'bank': 'Bank Transfer',
-      'card': 'Card Payment'
-    };
-    const methodName = methodNames[donationPaymentMethod] || donationPaymentMethod;
-
-    console.log('Sending donation:', {
-      amount: donationAmount,
-      method: donationPaymentMethod,
-      paymentDetails,
-    });
-
-    alert(`Thank you! Your donation of UGX ${parseInt(donationAmount).toLocaleString()} has been sent via ${methodName}!`);
-    resetDonationModal();
   };
 
   // Payment methods
@@ -349,7 +355,7 @@ const App = () => {
   };
 
   // Handle sending gift
-  const handleSendGift = () => {
+  const handleSendGift = async () => {
     if (!selectedPaymentMethod || !giftAmount) {
       alert('Please select a payment method and enter an amount');
       return;
@@ -360,47 +366,38 @@ const App = () => {
       return;
     }
 
-    // Build payment details based on method
-    let paymentDetails = {};
-    switch (selectedPaymentMethod) {
-      case 'mtn':
-      case 'airtel':
-        paymentDetails = { phone: paymentPhone };
-        break;
-      case 'bank':
-        paymentDetails = {
-          accountName: bankAccountName,
-          accountNumber: bankAccountNumber,
-          bankName: bankName
-        };
-        break;
-      case 'card':
-        paymentDetails = {
-          cardNumber: cardNumber,
-          expiry: cardExpiry,
-          cvv: cardCvv,
-          holderName: cardHolderName
-        };
-        break;
+    setGiftLoading(true);
+    setGiftError(null);
+
+    try {
+      // Use target event or fallback to main event
+      const targetEvent = giftTargetEvent || mainEvent;
+
+      const queryParams = new URLSearchParams();
+      queryParams.append('eventId', targetEvent.id);
+      queryParams.append('amount', giftAmount);
+      // Use first available currency ID
+      const currencyId = streamCurrencies.length > 0 ? streamCurrencies[0].id : '';
+      if (currencyId) queryParams.append('currencyId', currencyId);
+      const remarks = giftMessage || `Gift to ${targetEvent.photographer} via ${selectedPaymentMethod}`;
+      queryParams.append('remarks', remarks);
+
+      const response = await apiClient.post(
+        `/api/remote/payments/record-streaming-payment?${queryParams.toString()}`,
+        undefined,
+        { retries: 1 }
+      );
+
+      if (!response.success) {
+        throw new Error(response.error || 'Gift payment failed');
+      }
+
+      resetGiftModal();
+    } catch (err) {
+      setGiftError(err instanceof Error ? err.message : 'Gift payment failed. Please try again.');
+    } finally {
+      setGiftLoading(false);
     }
-
-    // Use target event or fallback to main event
-    const targetEvent = giftTargetEvent || mainEvent;
-
-    // Here you would integrate with actual payment processing
-    console.log('Sending gift:', {
-      amount: giftAmount,
-      method: selectedPaymentMethod,
-      paymentDetails,
-      message: giftMessage,
-      eventId: targetEvent.id,
-      eventTitle: targetEvent.title,
-      photographer: targetEvent.photographer
-    });
-
-    const methodName = paymentMethods.find(m => m.id === selectedPaymentMethod)?.name || selectedPaymentMethod;
-    alert(`Gift of UGX ${parseInt(giftAmount).toLocaleString()} sent to ${targetEvent.photographer} via ${methodName}!`);
-    resetGiftModal();
   };
 
   // Get current time
@@ -5614,32 +5611,47 @@ const App = () => {
               </div>
             )}
 
+            {/* Donation error message */}
+            {donationApiError && (
+              <div style={{
+                padding: '10px 14px',
+                marginBottom: '12px',
+                backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                border: '1px solid #EF4444',
+                borderRadius: '10px',
+                color: '#EF4444',
+                fontSize: '13px',
+              }}>
+                {donationApiError}
+              </div>
+            )}
+
             {/* Submit Button */}
             <button
               onClick={handleSendDonation}
-              disabled={!isDonationPaymentValid()}
+              disabled={!isDonationPaymentValid() || donationApiLoading}
               style={{
                 width: '100%',
                 padding: '16px',
                 fontSize: '16px',
                 fontWeight: '700',
                 color: '#fff',
-                background: isDonationPaymentValid()
+                background: (isDonationPaymentValid() && !donationApiLoading)
                   ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'
                   : '#3f3f46',
                 border: 'none',
                 borderRadius: '12px',
-                cursor: isDonationPaymentValid() ? 'pointer' : 'not-allowed',
+                cursor: (isDonationPaymentValid() && !donationApiLoading) ? 'pointer' : 'not-allowed',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '10px',
                 transition: 'all 0.3s ease',
-                boxShadow: isDonationPaymentValid() ? '0 4px 20px rgba(245, 158, 11, 0.4)' : 'none',
+                boxShadow: (isDonationPaymentValid() && !donationApiLoading) ? '0 4px 20px rgba(245, 158, 11, 0.4)' : 'none',
               }}
             >
               <i className="bi bi-heart-fill" style={{ color: '#ef4444' }}></i>
-              Donate {donationAmount ? `(UGX ${parseInt(donationAmount).toLocaleString()})` : ''}
+              {donationApiLoading ? 'Processing...' : `Donate ${donationAmount ? `(UGX ${parseInt(donationAmount).toLocaleString()})` : ''}`}
             </button>
           </div>
         </div>
@@ -6187,46 +6199,61 @@ const App = () => {
               />
             </div>
 
+            {/* Gift error message */}
+            {giftError && (
+              <div style={{
+                padding: '10px 14px',
+                marginBottom: '12px',
+                backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                border: '1px solid #EF4444',
+                borderRadius: '10px',
+                color: '#EF4444',
+                fontSize: '13px',
+              }}>
+                {giftError}
+              </div>
+            )}
+
             {/* Send Gift Button */}
             <button
               onClick={handleSendGift}
-              disabled={!isPaymentDetailsValid()}
+              disabled={!isPaymentDetailsValid() || giftLoading}
               style={{
                 width: '100%',
                 padding: '14px 24px',
-                background: !isPaymentDetailsValid()
+                background: (!isPaymentDetailsValid() || giftLoading)
                   ? '#3f3f46'
                   : 'linear-gradient(135deg, #03969c 0%, #026d72 100%)',
                 border: 'none',
                 borderRadius: '12px',
-                color: !isPaymentDetailsValid() ? '#71717a' : '#fff',
+                color: (!isPaymentDetailsValid() || giftLoading) ? '#71717a' : '#fff',
                 fontSize: '15px',
                 fontWeight: '600',
-                cursor: !isPaymentDetailsValid() ? 'not-allowed' : 'pointer',
+                cursor: (!isPaymentDetailsValid() || giftLoading) ? 'not-allowed' : 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '8px',
                 transition: 'all 0.3s ease',
-                boxShadow: !isPaymentDetailsValid()
+                boxShadow: (!isPaymentDetailsValid() || giftLoading)
                   ? 'none'
                   : '0 4px 15px rgba(3, 150, 156, 0.3)'
               }}
               onMouseEnter={(e) => {
-                if (isPaymentDetailsValid()) {
+                if (isPaymentDetailsValid() && !giftLoading) {
                   e.currentTarget.style.transform = 'scale(1.02)';
                   e.currentTarget.style.boxShadow = '0 6px 20px rgba(3, 150, 156, 0.4)';
                 }
               }}
               onMouseLeave={(e) => {
-                if (isPaymentDetailsValid()) {
+                if (isPaymentDetailsValid() && !giftLoading) {
                   e.currentTarget.style.transform = 'scale(1)';
                   e.currentTarget.style.boxShadow = '0 4px 15px rgba(3, 150, 156, 0.3)';
                 }
               }}
             >
               <i className="bi bi-gift-fill" style={{ fontSize: '18px' }}></i>
-              Send Gift {giftAmount && `(UGX ${parseInt(giftAmount).toLocaleString()})`}
+              {giftLoading ? 'Processing...' : `Send Gift ${giftAmount ? `(UGX ${parseInt(giftAmount).toLocaleString()})` : ''}`}
             </button>
           </div>
         </div>
