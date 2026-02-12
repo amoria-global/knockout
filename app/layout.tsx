@@ -10,7 +10,7 @@ import { ToastContainer } from "./components/Toast";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 
 export const metadata: Metadata = {
-  title: "Amoria connekyt",
+  title: "Amoria Connekyt",
   description: "Connecting moments, creating memories. Your trusted platform for professional event photography and live streaming.",
 };
 
