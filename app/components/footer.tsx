@@ -1,7 +1,8 @@
 'use client';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   FaFacebookF,
   FaLinkedinIn,
@@ -11,9 +12,19 @@ import {
 
 export default function Footer() {
   const t = useTranslations('footer');
+  const pathname = usePathname();
+  const isLandingPage = pathname === '/' || pathname === '';
   const [email, setEmail] = useState('');
   const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
   const footerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (footerRef.current) {
@@ -58,8 +69,8 @@ export default function Footer() {
     .footer-grid { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr 1fr; gap: 4rem; margin-bottom: 4rem; }
     .footer-brand { padding-right: 1.6rem; }
     .footer-logo { display: flex; align-items: center; margin: -1.9rem 0 1.9rem -1rem; cursor: pointer; text-decoration: none; color: inherit; }
-    .footer-logo h3 { font-size: 1.6rem; font-weight: 700; margin: -1.9rem 0 0 16px; }
-    .footer-logo img { height: 40px; width: 40px; border-radius: 50%; margin: -1.9rem 0 0 -5px; }
+    .footer-logo span { font-weight: 700; }
+    .footer-logo img { border-radius: 50%; }
     .footer-description { color: #D1D5DB; font-size: 0.96rem; line-height: 1.625; margin-bottom: 2rem; }
     .social-section { margin: 5.4rem 0 -2.2rem; }
     .social-title { color: #D1D5DB; font-size: 1.04rem; display: block; margin-bottom: 0.8rem; }
@@ -97,8 +108,6 @@ export default function Footer() {
       .footer-section:nth-child(4) { order: 4 !important; }
       .footer-section:nth-child(5) { order: 3 !important; }
       .footer-logo { margin-bottom: 1rem !important; justify-content: center !important; margin-left: 0 !important; }
-      .footer-logo h3 { font-size: 1.4rem !important; margin-left: 12px !important; }
-      .footer-logo img { height: 35px !important; width: 35px !important; }
       .footer-description { font-size: 0.875rem !important; margin-bottom: 1.5rem !important; text-align: center; max-width: 100%; }
       .social-section { margin: 1.5rem 0 0 !important; text-align: center; }
       .social-title { font-size: 0.95rem !important; text-align: center; }
@@ -121,8 +130,6 @@ export default function Footer() {
       .footer-brand { padding-top: 1.5rem !important; margin-bottom: 1.5rem !important; }
       .footer-section { flex: 0 0 calc(50% - 1rem) !important; min-width: 120px !important; }~
       .footer-logo { justify-content: center !important; }
-      .footer-logo h3 { font-size: 1.25rem !important; margin-left: 10px !important; }
-      .footer-logo img { height: 30px !important; width: 30px !important; }
       .footer-description { font-size: 0.825rem !important; line-height: 1.5 !important; padding: 0 0.5rem; }
       .social-section { margin: 1.25rem 0 0 !important; }
       .social-title { font-size: 0.9rem !important; }
@@ -140,7 +147,7 @@ export default function Footer() {
       title: t('forClients'),
       links: [
         { text: t('links.findPhotographer'), href: '/user/photographers' },
-        { text: t('links.howItWorks'), href: '/#how-it-works', onClick: (e: React.MouseEvent<HTMLAnchorElement>) => handleScrollToSection(e, 'how-it-works') },
+        ...(isLandingPage ? [{ text: t('links.howItWorks'), href: '/#how-it-works', onClick: (e: React.MouseEvent<HTMLAnchorElement>) => handleScrollToSection(e, 'how-it-works') }] : []),
         { text: t('links.browseEvents'), href: '/user/events' },
       ],
     },
@@ -223,8 +230,8 @@ export default function Footer() {
             position: 'absolute',
             inset: 0,
             backgroundImage: 'radial-gradient(circle, rgba(255, 255, 255, 0.3) 1px, transparent 1px)',
-            backgroundSize: '20px 20px',
-            opacity: 0.3,
+            backgroundSize: '10px 10px',
+            opacity: 0.2,
             zIndex: 0,
             pointerEvents: 'none'
           }}
@@ -236,16 +243,16 @@ export default function Footer() {
           style={{
             position: 'absolute',
             inset: 0,
-            backgroundImage: 'radial-gradient(circle, rgba(255, 255, 255, 0.85) 1.5px, transparent 0.5px)',
-            backgroundSize: '20px 20px',
-            opacity: mousePos ? 0.7 : 0,
+            backgroundImage: 'radial-gradient(circle, rgba(255, 255, 255, 0.85) 1px, transparent 0.5px)',
+            backgroundSize: '10px 10px',
+            opacity: mousePos ? 0.5 : 0,
             zIndex: 1,
             pointerEvents: 'none',
             maskImage: mousePos
-              ? `radial-gradient(circle 80px at ${mousePos.x}px ${mousePos.y}px, black 0%, black 50%, transparent 80%)`
+              ? `radial-gradient(circle 60px at ${mousePos.x}px ${mousePos.y}px, black 0%, black 50%, transparent 80%)`
               : 'none',
             WebkitMaskImage: mousePos
-              ? `radial-gradient(circle 80px at ${mousePos.x}px ${mousePos.y}px, black 0%, black 50%, transparent 80%)`
+              ? `radial-gradient(circle 60px at ${mousePos.x}px ${mousePos.y}px, black 0%, black 50%, transparent 80%)`
               : 'none',
             transition: 'opacity 0s ease'
           }}
@@ -275,25 +282,12 @@ export default function Footer() {
             }}
           >
             {/* Amoria connekyt Section */}
-            <div className="footer-brand" style={{ paddingRight: '1.6rem' }}>
+            <div className="footer-brand" style={{ paddingRight: '1.6rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
               <Link href="/" className="footer-logo" style={{ display: 'flex', alignItems: 'center', marginBottom: '3rem', marginLeft: '-1rem', cursor: 'pointer', textDecoration: 'none', color: 'inherit' }}>
-                <h3 style={{ fontSize: '1.6rem', fontWeight: 700, marginLeft: '16px', marginTop: '-0.5rem' }}>
-                  Amoria
-                </h3>
-                <img src="/fav.png" alt="AmoriaK Logo" style={{ height: '40px', width: '40px', borderRadius: '9999px', marginTop: '-0.5rem', marginLeft: '-5px' }} />
+                <img src="/log.png" alt="Connekyt Logo" style={{ width: isMobile ? '36px' : '50px', height: isMobile ? '36px' : '50px', objectFit: 'contain', position: 'relative', top: isMobile ? '-4px' : '-5px', left: isMobile ? '-1px' : '-14px' }} />
+                <span style={{ fontWeight: 700, color: '#fff', fontSize: isMobile ? '1.25rem' : '1.4rem', marginLeft: isMobile ? '-10px' : '-26px', marginTop: isMobile ? '-1px' : '-2px', letterSpacing: '0.5px' }}>onnekyt</span>
               </Link>
-              <p
-                className="footer-description"
-                style={{
-                  color: '#D1D5DB',
-                  fontSize: '0.96rem',
-                  lineHeight: '1.625',
-                  marginBottom: '2rem',
-                }}
-              >
-                {t('description')}
-              </p>
-              <div className="social-section" style={{ marginTop: '5.4rem', marginBottom: '-2.2rem' }}>
+              <div className="social-section" style={{ marginTop: 'auto', marginBottom: '-3.5rem' }}>
                 <span className="social-title" style={{ color: '#D1D5DB', fontSize: '1.04rem', display: 'block', marginBottom: '0.8rem', gap: '2.4rem' }}>
                   {t('followUs')}
                 </span>
@@ -340,7 +334,7 @@ export default function Footer() {
 
             {/* Copyright Section */}
             <div className="footer-copyright">
-              <p>{t('copyright')}</p>
+              <p>{t('copyright', { year: new Date().getFullYear() })}</p>
             </div>
           </div>
         </div>
