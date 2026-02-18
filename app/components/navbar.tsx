@@ -61,9 +61,16 @@ const AmoriaKNavbar = () => {
   const eventsDropdownRef = useRef<HTMLDivElement>(null);
   const profileDropdownRef = useRef<HTMLDivElement>(null);
 
+  const languageFlags: Record<string, string> = {
+    en: 'gb',
+    fr: 'fr',
+    es: 'es',
+  };
+
   const languages = locales.map((code) => ({
     code,
     name: languageNames[code],
+    flagCode: languageFlags[code] || '',
   }));
 
   // Helper function - no locale prefix needed now
@@ -662,7 +669,7 @@ const AmoriaKNavbar = () => {
                         e.preventDefault();
                         handleLangSelect(lang.code, lang.name);
                       }}
-                      className="block cursor-pointer"
+                      className="cursor-pointer"
                       style={{
                         padding: '10px 14px',
                         fontSize: '14px',
@@ -671,7 +678,9 @@ const AmoriaKNavbar = () => {
                         backgroundColor: lang.name === selectedLang ? 'rgba(8, 58, 133, 0.08)' : 'transparent',
                         borderRadius: '8px',
                         transition: 'all 0.2s ease',
-                        marginBottom: '2px'
+                        marginBottom: '2px',
+                        display: 'flex',
+                        alignItems: 'center',
                       }}
                       onMouseEnter={(e) => {
                         if (lang.name !== selectedLang) {
@@ -687,6 +696,11 @@ const AmoriaKNavbar = () => {
                       }}
                     >
                       {lang.name}
+                      <img
+                        src={`https://flagcdn.com/w40/${lang.flagCode}.png`}
+                        alt={lang.name}
+                        style={{ width: '20px', height: '14px', marginLeft: '8px', borderRadius: '2px', objectFit: 'cover' }}
+                      />
                     </a>
                   ))}
                 </div>
@@ -1029,7 +1043,7 @@ const AmoriaKNavbar = () => {
                                 e.preventDefault();
                                 handleLangSelect(lang.code, lang.name);
                             }}
-                            className="block cursor-pointer"
+                            className="cursor-pointer"
                             style={{
                               padding: isMobile ? '8px 10px' : '8px 12px',
                               borderRadius: isMobile ? '6px' : '8px',
@@ -1038,7 +1052,9 @@ const AmoriaKNavbar = () => {
                               color: lang.name === selectedLang ? '#083A85' : '#374151',
                               backgroundColor: lang.name === selectedLang ? 'rgba(8, 58, 133, 0.1)' : 'transparent',
                               transition: 'all 0.2s ease',
-                              marginBottom: '2px'
+                              marginBottom: '2px',
+                              display: 'flex',
+                              alignItems: 'center',
                             }}
                             onMouseEnter={(e) => {
                               if (lang.name !== selectedLang) {
@@ -1054,6 +1070,11 @@ const AmoriaKNavbar = () => {
                             }}
                         >
                             {lang.name}
+                            <img
+                              src={`https://flagcdn.com/w40/${lang.flagCode}.png`}
+                              alt={lang.name}
+                              style={{ width: '20px', height: '14px', marginLeft: '8px', borderRadius: '2px', objectFit: 'cover' }}
+                            />
                         </a>
                     ))}
                 </div>
