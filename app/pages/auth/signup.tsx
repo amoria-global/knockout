@@ -281,6 +281,7 @@ export default function SignupPage(): React.JSX.Element {
       <UserTypeModal
         isOpen={showUserTypeModal}
         onSelect={handleUserTypeSelect}
+        onClose={() => router.back()}
       />
 
       <style>{`
@@ -324,34 +325,14 @@ export default function SignupPage(): React.JSX.Element {
           display: 'flex',
           alignItems: 'center',
           position: 'absolute',
-          left: isMobile ? '0.5rem' : '-15px',
-          top: isMobile ? '0.5rem' : '10px',
+          left: isMobile ? '0.5rem' : '15px',
+          top: isMobile ? '0.5rem' : '6px',
           textDecoration: 'none',
           flexShrink: 0,
           zIndex: 1000
         }}>
-          <span style={{
-            fontSize: isMobile ? '18px' : '24px',
-            fontWeight: 700,
-            color: '#000',
-            marginLeft: isMobile ? '0' : '38px',
-            transition: 'color 0.3s ease'
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.color = '#083A85'}
-          onMouseLeave={(e) => e.currentTarget.style.color = '#000'}
-          >
-            Amoria
-          </span>
-          <img
-            src="/logo.png"
-            alt="Amoria Logo"
-            style={{
-              height: isMobile ? '28px' : '40px',
-              width: isMobile ? '28px' : '40px',
-              borderRadius: '50%',
-              marginLeft: isMobile ? '4px' : '-8px'
-            }}
-          />
+          <img src="/logo.png" alt="Connekyt Logo" style={{ width: isMobile ? '36px' : '50px', height: isMobile ? '36px' : '50px', objectFit: 'contain', position: 'relative', top: isMobile ? '0px' : '-9px', left: isMobile ? '0px' : '-13px' }} />
+          <span className="font-bold" style={{ color: '#083A85', fontSize: isMobile ? '1.25rem' : '1.4rem', marginLeft: isMobile ? '-6px' : '-26px', marginTop: isMobile ? '0px' : '-2px', letterSpacing: '0.5px' }}>onnekyt</span>
         </Link>
 
       <div

@@ -5,6 +5,7 @@ import React, { useState, useEffect } from 'react';
 interface UserTypeModalProps {
   isOpen: boolean;
   onSelect: (userType: string) => void;
+  onClose?: () => void;
 }
 
 /**
@@ -15,6 +16,7 @@ interface UserTypeModalProps {
 export default function UserTypeModal({
   isOpen,
   onSelect,
+  onClose,
 }: UserTypeModalProps): React.JSX.Element | null {
   const [isMobile, setIsMobile] = useState(false);
 
@@ -72,6 +74,7 @@ export default function UserTypeModal({
 
   return (
     <div
+      onClick={(e) => e.stopPropagation()}
       style={{
         position: 'fixed',
         top: 0,
@@ -104,8 +107,43 @@ export default function UserTypeModal({
           style={{
             padding: isMobile ? '20px 16px 12px' : '24px 24px 16px',
             textAlign: 'center',
+            position: 'relative',
           }}
         >
+          {onClose && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onClose(); }}
+              style={{
+                position: 'absolute',
+                top: isMobile ? '12px' : '16px',
+                right: isMobile ? '12px' : '16px',
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                border: 'none',
+                backgroundColor: '#f3f4f6',
+                color: '#6b7280',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#e5e7eb';
+                e.currentTarget.style.color = '#1f2937';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '#f3f4f6';
+                e.currentTarget.style.color = '#6b7280';
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <path d="M18 6L6 18" />
+                <path d="M6 6l12 12" />
+              </svg>
+            </button>
+          )}
           <div
             style={{
               width: '48px',
@@ -130,7 +168,7 @@ export default function UserTypeModal({
               marginBottom: '4px',
             }}
           >
-            How will you use Amoria?
+            How will you use Connekyt?
           </h2>
           <p
             style={{

@@ -321,12 +321,12 @@ const AmoriaKNavbar = () => {
       <div className="max-w-7xl mx-4 sm:mx-6 lg:mx-8" style={{ paddingLeft: isMobile ? '0.5rem' : '1rem', paddingRight: isMobile ? '0.5rem' : '1rem' }}>
         <div className="flex items-center justify-between h-16">
           <Link href="/" onClick={handleLinkClick} className="flex items-center flex-shrink-0">
-          <span className="font-bold text-gray-900 hover:text-[#083A85]" style={{ marginLeft: isMobile ? '0' : '38px', fontSize: isMobile ? '1.25rem' : '1.5rem' }}>Amoria</span>
-            <img src="/logo.png" alt="AmoriaK Logo" className="rounded-full" style={{ marginLeft: '-7px', width: isMobile ? '32px' : '40px', height: isMobile ? '32px' : '40px' }} />
+            <img src="/logo.png" alt="Connekyt Logo" style={{ width: isMobile ? '36px' : '50px', height: isMobile ? '36px' : '50px', objectFit: 'contain', position: 'relative', top: isMobile ? '-6px' : '-9px', left: isMobile ? '-1px' : '-13px' }} />
+            <span className="font-bold" style={{ color: '#083A85', fontSize: isMobile ? '1.25rem' : '1.4rem', marginLeft: isMobile ? '-10px' : '-26px', marginTop: isMobile ? '-1px' : '-2px', letterSpacing: '0.5px' }}>onnekyt</span>
           </Link>
 
           {/* Center: Navigation Links (Desktop) */}
-          <div className="hidden md:flex items-center gap-12 absolute left-1/3 transform -translate-x-1/2">
+          <div className="hidden md:flex items-center gap-6 lg:gap-12 absolute left-1/3 transform -translate-x-1/2">
             {/* Photographers Dropdown */}
             <div
               ref={photographersDropdownRef}
@@ -336,7 +336,7 @@ const AmoriaKNavbar = () => {
             >
               <Link
                 href={getLocalePath('/user/photographers')}
-                className="flex items-center gap-1 text-gray-700 hover:text-[#083A85] text-base font-semibold transition-colors duration-200 whitespace-nowrap cursor-pointer"
+                className="flex items-center gap-1 text-gray-700 hover:text-[#083A85] text-sm lg:text-base font-semibold transition-colors duration-200 whitespace-nowrap cursor-pointer"
               >
                 <span>{t('photographers')}</span>
                 <i className={`bi bi-chevron-down transition-transform duration-200 ${isPhotographersDropdownOpen ? 'rotate-180' : ''}`}></i>
@@ -481,7 +481,7 @@ const AmoriaKNavbar = () => {
             >
               <Link
                 href={getLocalePath('/user/events')}
-                className="nav-events-link flex items-center gap-1 text-base font-semibold transition-colors duration-200 whitespace-nowrap cursor-pointer"
+                className="nav-events-link flex items-center gap-1 text-sm lg:text-base font-semibold transition-colors duration-200 whitespace-nowrap cursor-pointer"
               >
                 <span>{t('events')}</span>
                 <i className={`bi bi-chevron-down transition-transform duration-200 ${isEventsDropdownOpen ? 'rotate-180' : ''}`}></i>
@@ -621,9 +621,9 @@ const AmoriaKNavbar = () => {
               )}
             </div>
 
-            <Link href={getLocalePath('/user/about')} className="text-gray-700 hover:text-[#083A85] text-base font-semibold transition-colors duration-200 whitespace-nowrap cursor-pointer">{t('about')}</Link>
-            <Link href={getLocalePath('/user/donations')} className="text-gray-700 hover:text-[#083A85] text-base font-semibold transition-colors duration-200 whitespace-nowrap cursor-pointer">Donate</Link>
-            <Link href={getLocalePath('/user/find-my-photos')} className="text-gray-700 hover:text-[#083A85] text-base font-semibold transition-colors duration-200 whitespace-nowrap cursor-pointer">Find My Photos</Link>
+            <Link href={getLocalePath('/user/about')} className="text-gray-700 hover:text-[#083A85] text-sm lg:text-base font-semibold transition-colors duration-200 whitespace-nowrap cursor-pointer">{t('about')}</Link>
+            <Link href={getLocalePath('/user/donations')} className="text-gray-700 hover:text-[#083A85] text-sm lg:text-base font-semibold transition-colors duration-200 whitespace-nowrap cursor-pointer">Donate</Link>
+            <Link href={getLocalePath('/user/find-my-photos')} className="text-gray-700 hover:text-[#083A85] text-sm lg:text-base font-semibold transition-colors duration-200 whitespace-nowrap cursor-pointer">Find My Photos</Link>
           </div>
 
           {/* Right: Language and Auth Buttons (Desktop) */}
@@ -795,8 +795,8 @@ const AmoriaKNavbar = () => {
               </div>
             ) : (
               <>
-                <Link href={getLocalePath('/user/auth/login')} className="text-gray-900 text-base font-semibold hover:text-[#083A85] transition-colors duration-200 whitespace-nowrap cursor-pointer">{t('login')}</Link>
-                <Link href={getLocalePath('/user/auth/signup')} className="bg-[#083A85] text-white text-base font-medium rounded-full hover:bg-[#001f4d] transition-all duration-300 whitespace-nowrap cursor-pointer" style={{ paddingLeft: '1.25rem', paddingRight: '1.25rem', paddingTop: '0.375rem', paddingBottom: '0.375rem' }}>{t('signup')}</Link>
+                <Link href={getLocalePath('/user/auth/login')} className="text-gray-900 text-sm lg:text-base font-semibold hover:text-[#083A85] transition-colors duration-200 whitespace-nowrap cursor-pointer">{t('login')}</Link>
+                <Link href={getLocalePath('/user/auth/signup')} className="bg-[#083A85] text-white text-sm lg:text-base font-medium rounded-full hover:bg-[#001f4d] transition-all duration-300 whitespace-nowrap cursor-pointer" style={{ paddingLeft: '1.25rem', paddingRight: '1.25rem', paddingTop: '0.375rem', paddingBottom: '0.375rem' }}>{t('signup')}</Link>
               </>
             )}
           </div>

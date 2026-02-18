@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import Navbar from '../components/navbar';
+import Footer from '../components/footer';
 
 const TrustSafetyPage = () => {
   const [selectedSection, setSelectedSection] = useState('privacy-policy');
@@ -2097,6 +2098,7 @@ Trust and safety work is never finished. As long as Amoria Connekyt serves users
   }, [selectedSection]);
 
   return (
+    <>
     <div style={{ width: '100%', minHeight: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
       <style>
         {`
@@ -2510,6 +2512,8 @@ Trust and safety work is never finished. As long as Amoria Connekyt serves users
         </div>
       </div>
     </div>
+    <Footer />
+    </>
   );
 };
 

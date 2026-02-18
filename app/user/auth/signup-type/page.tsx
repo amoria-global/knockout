@@ -122,28 +122,8 @@ export default function SignupTypePage() {
           textDecoration: 'none',
           flexShrink: 0
         }}>
-          <span style={{
-            fontSize: '24px',
-            fontWeight: 700,
-            color: '#000',
-            marginLeft: '38px',
-            transition: 'color 0.3s ease'
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.color = '#083A85'}
-          onMouseLeave={(e) => e.currentTarget.style.color = '#000'}
-          >
-            Amoria
-          </span>
-          <img
-            src="/logo.png"
-            alt="Amoria Logo"
-            style={{
-              height: '40px',
-              width: '40px',
-              borderRadius: '50%',
-              marginLeft: '-8px'
-            }}
-          />
+          <img src="/logo.png" alt="Connekyt Logo" style={{ width: '50px', height: '50px', objectFit: 'contain', position: 'relative', top: '-9px', left: '-13px' }} />
+          <span className="font-bold" style={{ color: '#083A85', fontSize: '1.4rem', marginLeft: '-26px', marginTop: '-2px', letterSpacing: '0.5px' }}>onnekyt</span>
         </Link>
 
         {/* Title */}
