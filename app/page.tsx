@@ -348,6 +348,13 @@ export default function Home() {
             .why-amoria-title { font-size: 45px !important; }
             .global-network-title { font-size: 45px !important; }
           }
+
+          .step-img {
+            transition: transform 0.3s ease;
+          }
+          .step-img:hover {
+            transform: scale(1.45);
+          }
         `}</style>
         {/* Hero Section */}
         <section
@@ -2338,8 +2345,8 @@ export default function Home() {
             position: 'absolute',
             inset: 0,
             backgroundImage: 'radial-gradient(circle, #94a3b8 1px, transparent 1px)',
-            backgroundSize: '20px 20px',
-            opacity: 0.5,
+            backgroundSize: '10px 10px',
+            opacity: 0.2,
             zIndex: 0,
             pointerEvents: 'none'
           }} />
@@ -2349,15 +2356,15 @@ export default function Home() {
             position: 'absolute',
             inset: 0,
             backgroundImage: 'radial-gradient(circle, #64748b 1.5px, transparent 0.5px)',
-            backgroundSize: '20px 20px',
-            opacity: whyAmoriaMousePos ? 0.8 : 0,
+            backgroundSize: '10px 10px',
+            opacity: whyAmoriaMousePos ? 0.7 : 0,
             zIndex: 1,
             pointerEvents: 'none',
             maskImage: whyAmoriaMousePos
-              ? `radial-gradient(circle 100px at ${whyAmoriaMousePos.x}px ${whyAmoriaMousePos.y}px, black 0%, black 50%, transparent 80%)`
+              ? `radial-gradient(circle 70px at ${whyAmoriaMousePos.x}px ${whyAmoriaMousePos.y}px, black 0%, black 50%, transparent 80%)`
               : 'none',
             WebkitMaskImage: whyAmoriaMousePos
-              ? `radial-gradient(circle 100px at ${whyAmoriaMousePos.x}px ${whyAmoriaMousePos.y}px, black 0%, black 50%, transparent 80%)`
+              ? `radial-gradient(circle 70px at ${whyAmoriaMousePos.x}px ${whyAmoriaMousePos.y}px, black 0%, black 50%, transparent 80%)`
               : 'none',
             transition: 'opacity 0s ease'
           }} />
@@ -2819,8 +2826,8 @@ export default function Home() {
               position: 'absolute',
               inset: 0,
               backgroundImage: 'radial-gradient(circle, rgba(255, 255, 255, 0.3) 1px, transparent 1px)',
-              backgroundSize: '20px 20px',
-              opacity: 0.3,
+              backgroundSize: '10px 10px',
+              opacity: 0.2,
               zIndex: 0,
               pointerEvents: 'none'
             }}
@@ -2832,15 +2839,15 @@ export default function Home() {
               position: 'absolute',
               inset: 0,
               backgroundImage: 'radial-gradient(circle, rgba(255, 255, 255, 0.85) 1.5px, transparent 0.5px)',
-              backgroundSize: '20px 20px',
-              opacity: networkMousePos ? 0.7 : 0,
+              backgroundSize: '10px 10px',
+              opacity: networkMousePos ? 0.5 : 0,
               zIndex: 1,
               pointerEvents: 'none',
               maskImage: networkMousePos
-                ? `radial-gradient(circle 80px at ${networkMousePos.x}px ${networkMousePos.y}px, black 0%, black 50%, transparent 80%)`
+                ? `radial-gradient(circle 60px at ${networkMousePos.x}px ${networkMousePos.y}px, black 0%, black 50%, transparent 80%)`
                 : 'none',
               WebkitMaskImage: networkMousePos
-                ? `radial-gradient(circle 80px at ${networkMousePos.x}px ${networkMousePos.y}px, black 0%, black 50%, transparent 80%)`
+                ? `radial-gradient(circle 60px at ${networkMousePos.x}px ${networkMousePos.y}px, black 0%, black 50%, transparent 80%)`
                 : 'none',
               transition: 'opacity 0s ease'
             }}

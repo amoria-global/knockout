@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import Navbar from '../components/navbar';
+import Footer from '../components/footer';
 
 const TermsAndConditionsPage = () => {
   const [selectedSection, setSelectedSection] = useState('terms-of-use');
@@ -1159,6 +1160,7 @@ Thank you for taking the time to understand these legal terms. While legal langu
   };
 
   return (
+    <>
     <div style={{ width: '100%', minHeight: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
       <style>
         {`
@@ -1610,6 +1612,8 @@ Thank you for taking the time to understand these legal terms. While legal langu
         </div>
       </div>
     </div>
+    <Footer />
+    </>
   );
 };
 

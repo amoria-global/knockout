@@ -227,7 +227,12 @@ const RotatingGlobe: React.FC<RotatingGlobeProps> = ({
         }
         @media (max-width: 480px) {
           .rotating-globe {
-            display: none !important;
+            width: ${size * 0.45}px !important;
+            height: ${size * 0.45}px !important;
+          }
+          .rotating-globe svg {
+            width: ${size * 0.45}px !important;
+            height: ${size * 0.45}px !important;
           }
         }
       `}</style>
