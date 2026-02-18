@@ -137,7 +137,7 @@
       "termsOfService": "Términos de Servicio",
       "trustSafety": "Confianza y Seguridad"
     },
-    "copyright": "© 2025 Amoria Connekyt. Todos los derechos reservados."
+    "copyright": "© {year} Amoria Connekyt. Todos los derechos reservados."
   },
   "auth": {
     "email": "Email",

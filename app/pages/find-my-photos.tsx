@@ -196,8 +196,8 @@ const FindMyPhotos = () => {
             position: 'absolute',
             inset: 0,
             backgroundImage: 'radial-gradient(circle, rgba(255, 255, 255, 0.3) 1px, transparent 1px)',
-            backgroundSize: '20px 20px',
-            opacity: 0.3,
+            backgroundSize: '10px 10px',
+            opacity: 0.2,
             zIndex: 0,
             pointerEvents: 'none',
           }} />
@@ -206,15 +206,15 @@ const FindMyPhotos = () => {
             position: 'absolute',
             inset: 0,
             backgroundImage: 'radial-gradient(circle, rgba(255, 255, 255, 0.85) 1.5px, transparent 0.5px)',
-            backgroundSize: '20px 20px',
-            opacity: heroMousePos ? 0.7 : 0,
+            backgroundSize: '10px 10px',
+            opacity: heroMousePos ? 0.5 : 0,
             zIndex: 1,
             pointerEvents: 'none',
             maskImage: heroMousePos
-              ? `radial-gradient(circle 80px at ${heroMousePos.x}px ${heroMousePos.y}px, black 0%, black 50%, transparent 80%)`
+              ? `radial-gradient(circle 60px at ${heroMousePos.x}px ${heroMousePos.y}px, black 0%, black 50%, transparent 80%)`
               : 'none',
             WebkitMaskImage: heroMousePos
-              ? `radial-gradient(circle 80px at ${heroMousePos.x}px ${heroMousePos.y}px, black 0%, black 50%, transparent 80%)`
+              ? `radial-gradient(circle 60px at ${heroMousePos.x}px ${heroMousePos.y}px, black 0%, black 50%, transparent 80%)`
               : 'none',
             transition: 'opacity 0s ease',
           }} />

@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import Navbar from '../components/navbar';
+import Footer from '../components/footer';
 
 const PrivacyPolicyPage = () => {
   const [selectedSection, setSelectedSection] = useState('privacy-policy');
@@ -1064,6 +1065,7 @@ Previous versions available upon request for comparison and transparency purpose
   const currentSection = sections.find(section => section.id === selectedSection) || sections[0];
 
   return (
+    <>
     <div style={{ width: '100%', minHeight: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
       <style>
         {`
@@ -1450,6 +1452,8 @@ Previous versions available upon request for comparison and transparency purpose
         </div>
       </div>
     </div>
+    <Footer />
+    </>
   );
 };
 
