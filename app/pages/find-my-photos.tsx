@@ -108,6 +108,7 @@ const FindMyPhotos = () => {
       setDisplayedPhotos(matched);
       setIsFiltered(true);
       setIsScanning(false);
+      setIsCodeSubmitted(true);
       resetScanModal();
     }, scanDuration);
   };
@@ -171,7 +172,7 @@ const FindMyPhotos = () => {
   };
 
   return (
-    <div style={{ ...(isCodeSubmitted ? { minHeight: '100vh' } : { height: '100vh', overflow: 'hidden' }), backgroundColor: '#052047' }}>
+    <div style={{ minHeight: '100vh', backgroundColor: '#052047' }}>
       <Navbar />
 
       {!isCodeSubmitted ? (
@@ -181,14 +182,14 @@ const FindMyPhotos = () => {
           onMouseMove={handleMouseMove(heroSectionRef, setHeroMousePos)}
           onMouseLeave={() => setHeroMousePos(null)}
           style={{
-            height: '100vh',
+            minHeight: '100vh',
             background: 'linear-gradient(to right, #052047, #052047, #103E83)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             position: 'relative',
             overflow: 'hidden',
-            padding: isMobile ? '80px 20px 20px' : '60px 20px 20px',
+            padding: isMobile ? '100px 20px 40px' : '80px 20px 40px',
           }}
         >
           {/* Dotted pattern background - base layer (dim) */}
@@ -220,14 +221,14 @@ const FindMyPhotos = () => {
           }} />
 
           <div style={{
-            maxWidth: '600px',
+            maxWidth: '720px',
             width: '100%',
             textAlign: 'center',
             position: 'relative',
             zIndex: 2,
             background: 'linear-gradient(135deg, rgba(5, 32, 71, 0.95) 0%, rgba(16, 62, 131, 0.92) 100%)',
             borderRadius: '28px',
-            padding: isMobile ? '40px 24px' : '48px 40px',
+            padding: isMobile ? '48px 28px' : '56px 52px',
             border: '1px solid rgba(255,255,255,0.08)',
             boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
           }}>
@@ -265,87 +266,423 @@ const FindMyPhotos = () => {
               fontSize: isMobile ? '16px' : '18px',
               color: 'rgba(255,255,255,0.7)',
               lineHeight: 1.6,
-              marginBottom: '40px',
-              maxWidth: '480px',
+              marginBottom: '36px',
+              maxWidth: '520px',
               marginLeft: 'auto',
               marginRight: 'auto',
             }}>
-              Enter the invite code shared by your photographer or event owner to access the event gallery and find your photos using facial recognition.
+              Search for your photos across all events on the platform using facial recognition, or use an invite code to access a specific event gallery.
             </p>
 
-            {/* Invite code input */}
-            <div style={{
-              display: 'flex',
-              flexDirection: isMobile ? 'column' : 'row',
-              gap: '12px',
-              maxWidth: '460px',
-              margin: '0 auto',
-            }}>
-              <input
-                type="text"
-                value={inviteCode}
-                onChange={(e) => { setInviteCode(e.target.value); setInviteError(''); }}
-                onKeyDown={(e) => e.key === 'Enter' && handleInviteSubmit()}
-                placeholder="Enter invite code"
-                style={{
-                  flex: 1,
-                  padding: '16px 20px',
-                  borderRadius: '12px',
-                  border: inviteError ? '2px solid #FF6B6B' : '2px solid rgba(255,255,255,0.15)',
-                  background: 'rgba(255,255,255,0.06)',
-                  color: '#ffffff',
-                  fontSize: '16px',
-                  outline: 'none',
-                  transition: 'all 0.3s ease',
-                  textAlign: 'center',
-                  letterSpacing: '2px',
-                  fontWeight: 600,
-                }}
-                onFocus={(e) => { e.target.style.borderColor = '#FF6B6B'; e.target.style.background = 'rgba(255,255,255,0.1)'; }}
-                onBlur={(e) => { if (!inviteError) { e.target.style.borderColor = 'rgba(255,255,255,0.15)'; e.target.style.background = 'rgba(255,255,255,0.06)'; } }}
-              />
-              <button
-                onClick={handleInviteSubmit}
-                style={{
-                  padding: '16px 32px',
-                  borderRadius: '12px',
-                  background: '#FF6B6B',
-                  color: '#ffffff',
+            {/* Hidden canvas for camera capture */}
+            <canvas ref={canvasRef} style={{ display: 'none' }} />
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileSelect}
+              style={{ display: 'none' }}
+            />
+
+            {/* === Facial Recognition Scan Section === */}
+            {!isScanning && !isCameraActive && (
+              <div style={{ marginBottom: '20px' }}>
+                <h3 style={{
                   fontSize: '16px',
                   fontWeight: 700,
-                  border: 'none',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease',
-                  whiteSpace: 'nowrap',
-                }}
-                onMouseEnter={(e) => { (e.target as HTMLButtonElement).style.background = '#ff5252'; (e.target as HTMLButtonElement).style.transform = 'translateY(-2px)'; }}
-                onMouseLeave={(e) => { (e.target as HTMLButtonElement).style.background = '#FF6B6B'; (e.target as HTMLButtonElement).style.transform = 'translateY(0)'; }}
-              >
-                Access Gallery
-              </button>
-            </div>
+                  color: '#ffffff',
+                  marginBottom: '6px',
+                }}>
+                  Facial Recognition Scan
+                </h3>
+                <p style={{
+                  fontSize: '13px',
+                  color: 'rgba(255,255,255,0.5)',
+                  lineHeight: 1.5,
+                  maxWidth: '420px',
+                  marginLeft: 'auto',
+                  marginRight: 'auto',
+                  marginBottom: '0',
+                }}>
+                  {`Don't have an invite code? No problem. Take a selfie or upload your photo and we'll scan all event photos on the platform to find every photo you appear in.`}
+                </p>
+              </div>
+            )}
+            {isScanning ? (
+              <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                <div style={{
+                  width: '180px',
+                  height: '180px',
+                  borderRadius: '50%',
+                  overflow: 'hidden',
+                  margin: '0 auto 24px',
+                  position: 'relative',
+                  border: '4px solid #FF6B6B',
+                  boxShadow: '0 0 30px rgba(255,107,107,0.4)',
+                }}>
+                  {uploadedPreview && (
+                    <img
+                      src={uploadedPreview}
+                      alt="Scanning face"
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        filter: 'blur(4px) brightness(0.7)',
+                      }}
+                    />
+                  )}
+                  <div className="scan-line" style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: '3px',
+                    background: 'linear-gradient(90deg, transparent 0%, #FF6B6B 30%, #ffffff 50%, #FF6B6B 70%, transparent 100%)',
+                    boxShadow: '0 0 12px rgba(255,107,107,0.8), 0 0 30px rgba(255,107,107,0.4)',
+                    zIndex: 2,
+                  }} />
+                  <div className="scan-pulse-ring" style={{
+                    position: 'absolute',
+                    inset: '-4px',
+                    borderRadius: '50%',
+                    border: '3px solid rgba(255,107,107,0.5)',
+                    zIndex: 1,
+                  }} />
+                </div>
+                <p style={{ fontSize: '16px', fontWeight: 600, color: '#ffffff' }}>Scanning...</p>
+                <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginTop: '8px' }}>Matching your face across event photos</p>
+              </div>
+            ) : isCameraActive ? (
+              <div style={{ textAlign: 'center' }}>
+                <div style={{
+                  width: '200px',
+                  height: '200px',
+                  borderRadius: '50%',
+                  overflow: 'hidden',
+                  margin: '0 auto 20px',
+                  border: '4px solid #FF6B6B',
+                  boxShadow: '0 4px 20px rgba(255,107,107,0.3)',
+                }}>
+                  <video
+                    ref={videoRef}
+                    autoPlay
+                    playsInline
+                    muted
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                      transform: 'scaleX(-1)',
+                    }}
+                  />
+                </div>
+                <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginBottom: '16px' }}>
+                  Position your face in the circle
+                </p>
+                <div style={{ display: 'flex', gap: '12px', maxWidth: '340px', margin: '0 auto' }}>
+                  <button
+                    onClick={stopCamera}
+                    style={{
+                      flex: 1,
+                      padding: '14px',
+                      borderRadius: '12px',
+                      background: 'rgba(255,255,255,0.1)',
+                      color: '#ffffff',
+                      fontSize: '15px',
+                      fontWeight: 600,
+                      border: '1px solid rgba(255,255,255,0.2)',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={capturePhoto}
+                    style={{
+                      flex: 1,
+                      padding: '14px',
+                      borderRadius: '12px',
+                      background: '#FF6B6B',
+                      color: '#ffffff',
+                      fontSize: '15px',
+                      fontWeight: 700,
+                      border: 'none',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                    }}
+                    onMouseEnter={(e) => { (e.target as HTMLButtonElement).style.background = '#ff5252'; }}
+                    onMouseLeave={(e) => { (e.target as HTMLButtonElement).style.background = '#FF6B6B'; }}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="10"/>
+                      <circle cx="12" cy="12" r="4"/>
+                    </svg>
+                    Capture
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                {uploadedPreview ? (
+                  <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+                    <div style={{
+                      width: '120px',
+                      height: '120px',
+                      borderRadius: '50%',
+                      overflow: 'hidden',
+                      border: '3px solid #FF6B6B',
+                      boxShadow: '0 4px 12px rgba(255,107,107,0.3)',
+                      margin: '0 auto 12px',
+                    }}>
+                      <img
+                        src={uploadedPreview}
+                        alt="Captured face"
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                    </div>
+                    <p style={{ fontSize: '13px', color: '#10b981', fontWeight: 600 }}>Photo ready for scan</p>
+                    <button
+                      onClick={() => { setUploadedFile(null); setUploadedPreview(null); if (fileInputRef.current) fileInputRef.current.value = ''; }}
+                      style={{
+                        marginTop: '8px',
+                        padding: '6px 16px',
+                        borderRadius: '8px',
+                        background: 'transparent',
+                        color: 'rgba(255,255,255,0.6)',
+                        fontSize: '13px',
+                        fontWeight: 500,
+                        border: '1px solid rgba(255,255,255,0.2)',
+                        cursor: 'pointer',
+                        transition: 'all 0.3s ease',
+                      }}
+                    >
+                      Change photo
+                    </button>
+                  </div>
+                ) : (
+                  <div style={{
+                    display: 'flex',
+                    gap: '12px',
+                    marginBottom: '20px',
+                    maxWidth: '340px',
+                    marginLeft: 'auto',
+                    marginRight: 'auto',
+                  }}>
+                    {/* Take Selfie button */}
+                    <div
+                      onClick={startCamera}
+                      style={{
+                        flex: 1,
+                        border: '2px dashed rgba(255,255,255,0.2)',
+                        borderRadius: '16px',
+                        padding: '24px 12px',
+                        textAlign: 'center',
+                        cursor: 'pointer',
+                        transition: 'all 0.3s ease',
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#FF6B6B'; e.currentTarget.style.background = 'rgba(255,107,107,0.08)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; e.currentTarget.style.background = 'transparent'; }}
+                    >
+                      <div style={{
+                        width: '48px',
+                        height: '48px',
+                        borderRadius: '50%',
+                        background: 'rgba(255,107,107,0.15)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        margin: '0 auto 10px',
+                      }}>
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FF6B6B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                          <circle cx="12" cy="13" r="4"/>
+                        </svg>
+                      </div>
+                      <p style={{ fontSize: '14px', fontWeight: 600, color: '#ffffff' }}>Take Selfie</p>
+                      <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginTop: '2px' }}>Use camera</p>
+                    </div>
 
-            {inviteError && (
-              <p style={{
-                color: '#FF6B6B',
-                fontSize: '14px',
-                marginTop: '12px',
-              }}>{inviteError}</p>
+                    {/* Upload Photo button */}
+                    <div
+                      onClick={() => fileInputRef.current?.click()}
+                      style={{
+                        flex: 1,
+                        border: '2px dashed rgba(255,255,255,0.2)',
+                        borderRadius: '16px',
+                        padding: '24px 12px',
+                        textAlign: 'center',
+                        cursor: 'pointer',
+                        transition: 'all 0.3s ease',
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#83B4FF'; e.currentTarget.style.background = 'rgba(131,180,255,0.08)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; e.currentTarget.style.background = 'transparent'; }}
+                    >
+                      <div style={{
+                        width: '48px',
+                        height: '48px',
+                        borderRadius: '50%',
+                        background: 'rgba(131,180,255,0.15)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        margin: '0 auto 10px',
+                      }}>
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#83B4FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                          <polyline points="17 8 12 3 7 8"/>
+                          <line x1="12" y1="3" x2="12" y2="15"/>
+                        </svg>
+                      </div>
+                      <p style={{ fontSize: '14px', fontWeight: 600, color: '#ffffff' }}>Upload Photo</p>
+                      <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginTop: '2px' }}>From gallery</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Find My Photos button */}
+                <button
+                  onClick={handleStartScan}
+                  disabled={!uploadedFile}
+                  style={{
+                    width: '100%',
+                    maxWidth: '340px',
+                    display: 'block',
+                    margin: '0 auto',
+                    padding: '16px',
+                    borderRadius: '12px',
+                    background: uploadedFile ? '#FF6B6B' : 'rgba(255,255,255,0.08)',
+                    color: uploadedFile ? '#ffffff' : 'rgba(255,255,255,0.3)',
+                    fontSize: '16px',
+                    fontWeight: 700,
+                    border: 'none',
+                    cursor: uploadedFile ? 'pointer' : 'not-allowed',
+                    transition: 'all 0.3s ease',
+                  }}
+                  onMouseEnter={(e) => { if (uploadedFile) (e.target as HTMLButtonElement).style.background = '#ff5252'; }}
+                  onMouseLeave={(e) => { if (uploadedFile) (e.target as HTMLButtonElement).style.background = '#FF6B6B'; }}
+                >
+                  Find My Photos
+                </button>
+              </>
             )}
 
-            {/* Dashed decorative border */}
-            <div style={{
-              marginTop: '50px',
-              borderTop: '1px dashed rgba(255,255,255,0.15)',
-              paddingTop: '24px',
-            }}>
-              <p style={{
-                color: 'rgba(255,255,255,0.4)',
-                fontSize: '13px',
+            {/* OR Divider */}
+            {!isScanning && !isCameraActive && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                margin: '32px 0 28px',
+                gap: '16px',
               }}>
-                Your photographer or event owner can share the invite code after the event
-              </p>
-            </div>
+                <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.15)' }} />
+                <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '14px', fontWeight: 600, letterSpacing: '1px' }}>OR</span>
+                <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.15)' }} />
+              </div>
+            )}
+
+            {/* Invite Code Section */}
+            {!isScanning && !isCameraActive && (
+              <>
+                <h3 style={{
+                  fontSize: '16px',
+                  fontWeight: 700,
+                  color: '#ffffff',
+                  marginBottom: '6px',
+                }}>
+                  Enter Invite Code
+                </h3>
+                <p style={{
+                  fontSize: '13px',
+                  color: 'rgba(255,255,255,0.5)',
+                  lineHeight: 1.5,
+                  maxWidth: '420px',
+                  marginLeft: 'auto',
+                  marginRight: 'auto',
+                  marginBottom: '16px',
+                }}>
+                  Received an invite code from your photographer or event owner? Enter it below to go directly to that specific event gallery.
+                </p>
+
+                <div style={{
+                  display: 'flex',
+                  flexDirection: isMobile ? 'column' : 'row',
+                  gap: '12px',
+                  maxWidth: '460px',
+                  margin: '0 auto',
+                }}>
+                  <input
+                    type="text"
+                    value={inviteCode}
+                    onChange={(e) => { setInviteCode(e.target.value); setInviteError(''); }}
+                    onKeyDown={(e) => e.key === 'Enter' && handleInviteSubmit()}
+                    placeholder="Enter invite code"
+                    style={{
+                      flex: 1,
+                      padding: '16px 20px',
+                      borderRadius: '12px',
+                      border: inviteError ? '2px solid #FF6B6B' : '2px solid rgba(255,255,255,0.15)',
+                      background: 'rgba(255,255,255,0.06)',
+                      color: '#ffffff',
+                      fontSize: '16px',
+                      outline: 'none',
+                      transition: 'all 0.3s ease',
+                      textAlign: 'center',
+                      letterSpacing: '2px',
+                      fontWeight: 600,
+                    }}
+                    onFocus={(e) => { e.target.style.borderColor = '#FF6B6B'; e.target.style.background = 'rgba(255,255,255,0.1)'; }}
+                    onBlur={(e) => { if (!inviteError) { e.target.style.borderColor = 'rgba(255,255,255,0.15)'; e.target.style.background = 'rgba(255,255,255,0.06)'; } }}
+                  />
+                  <button
+                    onClick={handleInviteSubmit}
+                    style={{
+                      padding: '16px 32px',
+                      borderRadius: '12px',
+                      background: '#FF6B6B',
+                      color: '#ffffff',
+                      fontSize: '16px',
+                      fontWeight: 700,
+                      border: 'none',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                      whiteSpace: 'nowrap',
+                    }}
+                    onMouseEnter={(e) => { (e.target as HTMLButtonElement).style.background = '#ff5252'; (e.target as HTMLButtonElement).style.transform = 'translateY(-2px)'; }}
+                    onMouseLeave={(e) => { (e.target as HTMLButtonElement).style.background = '#FF6B6B'; (e.target as HTMLButtonElement).style.transform = 'translateY(0)'; }}
+                  >
+                    Access Gallery
+                  </button>
+                </div>
+
+                {inviteError && (
+                  <p style={{
+                    color: '#FF6B6B',
+                    fontSize: '14px',
+                    marginTop: '12px',
+                  }}>{inviteError}</p>
+                )}
+
+                {/* Dashed decorative border */}
+                <div style={{
+                  marginTop: '40px',
+                  borderTop: '1px dashed rgba(255,255,255,0.15)',
+                  paddingTop: '24px',
+                }}>
+                  <p style={{
+                    color: 'rgba(255,255,255,0.4)',
+                    fontSize: '13px',
+                  }}>
+                    Your photographer or event owner can share the invite code after the event
+                  </p>
+                </div>
+              </>
+            )}
           </div>
         </div>
       ) : (
