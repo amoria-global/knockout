@@ -20,6 +20,7 @@ export default function SignupPage(): React.JSX.Element {
   const router = useRouter();
   const searchParams = useSearchParams();
   const urlUserType = searchParams.get('userType');
+  const redirectUrl = searchParams.get('redirect');
   const [selectedUserType, setSelectedUserType] = useState<string | null>(urlUserType);
   const [showUserTypeModal, setShowUserTypeModal] = useState(!urlUserType);
   const userType = selectedUserType || 'Client';
@@ -218,9 +219,9 @@ export default function SignupPage(): React.JSX.Element {
           }
 
           // Show success and redirect to OTP verification
-          showSuccess('Account created! Please verify your email.');
-          showInfo('Check your email for the verification code.');
-          router.push(`/user/auth/verify-otp?applicantId=${encodeURIComponent(String(applicantId))}&email=${encodeURIComponent(email)}`);
+          showSuccess('Account created! Please verify your phone number.');
+          showInfo('Check your phone for the SMS verification code.');
+          router.push(`/user/auth/verify-otp?applicantId=${encodeURIComponent(String(applicantId))}&email=${encodeURIComponent(email)}${redirectUrl ? `&redirect=${encodeURIComponent(redirectUrl)}` : ''}`);
         } else {
           // Display the actual error message from the backend
           const errorMessage = response.error || 'Signup failed. Please try again.';

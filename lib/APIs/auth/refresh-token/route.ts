@@ -1,6 +1,6 @@
 /**
  * Refresh Token API
- * GET /api/remote/auth/refresh-token
+ * POST /api/remote/auth/refresh-token
  *
  * Enhanced with new API client featuring:
  * - Automatic retry with exponential backoff
@@ -12,6 +12,10 @@
 import { apiClient, getAuthToken, setAuthToken, getRefreshToken, setRefreshToken } from '@/lib/api/client';
 import { API_ENDPOINTS } from '@/lib/api/config';
 import type { ApiResponse } from '@/lib/api/types';
+
+export interface RefreshTokenRequest {
+  refreshToken: string;
+}
 
 export interface RefreshTokenResponse {
   action: number; // 0 = failure, 1 = success

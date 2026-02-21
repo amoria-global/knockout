@@ -1,10 +1,11 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useGoogleLogin } from '@react-oauth/google';
 import { login } from '@/lib/APIs/auth/login/route';
+import { googleAuth } from '@/lib/APIs/auth/google/route';
 import { useToast } from '@/lib/notifications/ToastProvider';
 import { useAuth } from '@/app/providers/AuthProvider';
 import { getAuthToken, getRefreshToken } from '@/lib/api/client';
@@ -13,6 +14,8 @@ import { getDashboardUrlWithToken } from '@/lib/utils/dashboard-url';
 
 export default function LoginPage(): React.JSX.Element {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectUrl = searchParams.get('redirect');
   const t = useTranslations('auth.loginPage');
   const tAuth = useTranslations('auth');
   const { success: showSuccess, error: showError, warning: showWarning, info: showInfo, isOnline } = useToast();
@@ -25,6 +28,78 @@ export default function LoginPage(): React.JSX.Element {
   const [showPostLoginModal, setShowPostLoginModal] = useState(false);
   const [loggedInUserName, setLoggedInUserName] = useState('');
   const [loggedInUserType, setLoggedInUserType] = useState<string | undefined>(undefined);
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+  // Google OAuth login handler
+  const googleLogin = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      setGoogleLoading(true);
+      setError('');
+
+      try {
+        // Fetch user info from Google using the access token
+        const googleResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+          headers: {
+            Authorization: `Bearer ${tokenResponse.access_token}`,
+          },
+        });
+
+        if (!googleResponse.ok) {
+          throw new Error('Failed to fetch Google user info');
+        }
+
+        const userInfo = await googleResponse.json();
+        const googleEmail = userInfo.email;
+        const firstName = userInfo.given_name || '';
+        const lastName = userInfo.family_name || '';
+
+        // Call backend google auth endpoint
+        const response = await googleAuth({
+          email: googleEmail,
+          firstName,
+          lastName,
+          customerType: 'Client',
+        });
+
+        const data = response.data;
+
+        if (response.success && data?.token) {
+          const customerType = data.customerType || '';
+
+          const userData = {
+            id: data.id || data.customerId || '',
+            firstName: data.firstName || firstName,
+            lastName: data.lastName || lastName,
+            email: data.email || googleEmail,
+            phone: data.phone || '',
+            customerId: data.customerId || '',
+            customerType: customerType,
+          };
+
+          loginUser(userData, data.token);
+
+          setLoggedInUserName(userData.firstName || 'User');
+          setLoggedInUserType(customerType);
+          showSuccess('Welcome back!');
+          setShowPostLoginModal(true);
+        } else {
+          const errorMessage = response.error || data?.message || 'Google login failed. Please try again.';
+          setError(errorMessage);
+          showError(errorMessage);
+        }
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'An error occurred during Google login.';
+        setError(errorMessage);
+        showError(errorMessage);
+      } finally {
+        setGoogleLoading(false);
+      }
+    },
+    onError: () => {
+      showError('Google sign-in was cancelled or failed. Please try again.');
+      setGoogleLoading(false);
+    },
+  });
 
   // Screen size detection for responsive design
   const [screenSize, setScreenSize] = useState<'mobile' | 'tablet' | 'desktop' | 'large' | 'xlarge'>('desktop');
@@ -46,10 +121,13 @@ export default function LoginPage(): React.JSX.Element {
 
   const isDisabled = !email || !password;
 
+  // Default fallback page if no redirect URL was provided
+  const returnTo = redirectUrl || '/user/photographers';
+
   // Modal handlers
   const handleKeepExploring = () => {
     setShowPostLoginModal(false);
-    router.push('/user/photographers');
+    router.push(returnTo);
   };
 
   const handleGoToDashboard = () => {
@@ -64,9 +142,9 @@ export default function LoginPage(): React.JSX.Element {
       // Fallback to local dashboard if env not set
       window.open('/user/dashboard', '_blank');
     }
-    // Close modal and redirect to photographers page
+    // Close modal and return to the page the user came from
     setShowPostLoginModal(false);
-    router.push('/user/photographers');
+    router.push(returnTo);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -83,7 +161,7 @@ export default function LoginPage(): React.JSX.Element {
       setLoading(true);
 
       try {
-        const response = await login({ email, password });
+        const response = await login({ email: email.trim().toLowerCase(), password });
 
         // Debug: Log full response in development
         console.log('[Login] Full API response:', JSON.stringify(response, null, 2));
@@ -106,7 +184,7 @@ export default function LoginPage(): React.JSX.Element {
 
         if (isOtpNotVerified && customerId) {
           // Backend has already sent a new OTP, redirect to verification page
-          const message = data?.message || response.error || 'Please verify your email to continue.';
+          const message = data?.message || response.error || 'Please verify your phone number to continue.';
           showWarning(message);
           setLoading(false); // Stop loading before redirect
           const redirectUrl = `/user/auth/verify-otp?applicantId=${encodeURIComponent(String(customerId))}&email=${encodeURIComponent(email)}`;
@@ -462,13 +540,11 @@ export default function LoginPage(): React.JSX.Element {
 
             {/* Social Login Buttons */}
             <div style={{ display: 'flex', gap: '12px', marginBottom: isMobile ? '8px' : '16px' }}>
-              {/* Google Button - Redirects to signup since no backend OAuth */}
+              {/* Google Button - Triggers Google OAuth flow */}
               <button
                 type="button"
-                onClick={() => {
-                  showInfo('Please sign up with Google first to create your account.');
-                  router.push('/user/auth/signup');
-                }}
+                onClick={() => googleLogin()}
+                disabled={googleLoading || loading}
                 style={{
                   flex: '1',
                   padding: isMobile ? '14px 20px' : '12px 20px',
@@ -479,22 +555,39 @@ export default function LoginPage(): React.JSX.Element {
                   borderRadius: '20px',
                   border: '2px solid #d1d5db',
                   backgroundColor: '#ffffff',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s'
+                  cursor: (googleLoading || loading) ? 'not-allowed' : 'pointer',
+                  transition: 'all 0.3s',
+                  opacity: googleLoading ? 0.7 : 1
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = '#083A85';
-                  e.currentTarget.style.backgroundColor = '#f9fafb';
-                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  if (!googleLoading && !loading) {
+                    e.currentTarget.style.borderColor = '#083A85';
+                    e.currentTarget.style.backgroundColor = '#f9fafb';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                  }
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = '#d1d5db';
-                  e.currentTarget.style.backgroundColor = '#ffffff';
-                  e.currentTarget.style.transform = 'translateY(0)';
+                  if (!googleLoading && !loading) {
+                    e.currentTarget.style.borderColor = '#d1d5db';
+                    e.currentTarget.style.backgroundColor = '#ffffff';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                  }
                 }}
               >
-                <img src="https://www.svgrepo.com/show/355037/google.svg" alt="Google" style={{ width: '22px', height: '22px' }} />
-                <span style={{ fontSize: isMobile ? '15px' : '14px', fontWeight: '600', color: '#374151' }}>Login with Google</span>
+                {googleLoading ? (
+                  <>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" style={{ animation: 'spin 1s linear infinite' }}>
+                      <circle cx="12" cy="12" r="10" stroke="#d1d5db" strokeWidth="3" fill="none" />
+                      <path d="M12 2a10 10 0 0 1 10 10" stroke="#083A85" strokeWidth="3" fill="none" strokeLinecap="round" />
+                    </svg>
+                    <span style={{ fontSize: isMobile ? '15px' : '14px', fontWeight: '600', color: '#374151' }}>Signing in...</span>
+                  </>
+                ) : (
+                  <>
+                    <img src="https://www.svgrepo.com/show/355037/google.svg" alt="Google" style={{ width: '22px', height: '22px' }} />
+                    <span style={{ fontSize: isMobile ? '15px' : '14px', fontWeight: '600', color: '#374151' }}>Login with Google</span>
+                  </>
+                )}
               </button>
             </div>
 

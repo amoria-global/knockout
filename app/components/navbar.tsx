@@ -8,6 +8,7 @@ import { useLanguage } from '../providers/LanguageProvider';
 import { useAuth } from '../providers/AuthProvider';
 import { getAuthToken } from '@/lib/api/client';
 import { getDashboardUrlWithToken } from '@/lib/utils/dashboard-url';
+import { useToast } from '@/lib/notifications/ToastProvider';
 import { locales, languageNames, type Locale } from '../../i18n';
 import { getCategories, type PhotographerCategory } from '@/lib/APIs/public';
 import 'bootstrap-icons/font/bootstrap-icons.css';
@@ -200,11 +201,14 @@ const AmoriaKNavbar = () => {
     document.body.style.overflow = '';
   };
 
+  const { showBanner } = useToast();
+
   const handleLogout = () => {
     logout();
     setIsProfileDropdownOpen(false);
     setIsMobileMenuOpen(false);
     document.body.style.overflow = '';
+    showBanner('You have been logged out successfully.', '#DC2626');
     router.push('/');
   };
 
@@ -809,8 +813,8 @@ const AmoriaKNavbar = () => {
               </div>
             ) : (
               <>
-                <Link href={getLocalePath('/user/auth/login')} className="text-gray-900 text-sm lg:text-base font-semibold hover:text-[#083A85] transition-colors duration-200 whitespace-nowrap cursor-pointer">{t('login')}</Link>
-                <Link href={getLocalePath('/user/auth/signup')} className="bg-[#083A85] text-white text-sm lg:text-base font-medium rounded-full hover:bg-[#001f4d] transition-all duration-300 whitespace-nowrap cursor-pointer" style={{ paddingLeft: '1.25rem', paddingRight: '1.25rem', paddingTop: '0.375rem', paddingBottom: '0.375rem' }}>{t('signup')}</Link>
+                <Link href={`${getLocalePath('/user/auth/login')}?redirect=${encodeURIComponent(pathname)}`} className="text-gray-900 text-sm lg:text-base font-semibold hover:text-[#083A85] transition-colors duration-200 whitespace-nowrap cursor-pointer">{t('login')}</Link>
+                <Link href={`${getLocalePath('/user/auth/signup')}?redirect=${encodeURIComponent(pathname)}`} className="bg-[#083A85] text-white text-sm lg:text-base font-medium rounded-full hover:bg-[#001f4d] transition-all duration-300 whitespace-nowrap cursor-pointer" style={{ paddingLeft: '1.25rem', paddingRight: '1.25rem', paddingTop: '0.375rem', paddingBottom: '0.375rem' }}>{t('signup')}</Link>
               </>
             )}
           </div>
@@ -1165,8 +1169,8 @@ const AmoriaKNavbar = () => {
               </>
             ) : (
               <>
-                <Link href={getLocalePath('/user/auth/login')} onClick={handleLinkClick} className="block text-center rounded-md text-gray-900 hover:bg-gray-50 font-medium transition-colors cursor-pointer" style={{ padding: isMobile ? '0.5rem 0.75rem' : '0.625rem 0.75rem', fontSize: isMobile ? '0.9375rem' : '1rem' }}>{t('login')}</Link>
-                <Link href={getLocalePath('/user/auth/signup')} onClick={handleLinkClick} className="block text-center bg-[#002D72] text-white rounded-full hover:bg-[#001f4d] font-semibold transition-all duration-300 shadow-sm cursor-pointer" style={{ padding: isMobile ? '0.5rem 0.75rem' : '0.625rem 0.75rem', fontSize: isMobile ? '0.9375rem' : '1rem' }}>{t('signup')}</Link>
+                <Link href={`${getLocalePath('/user/auth/login')}?redirect=${encodeURIComponent(pathname)}`} onClick={handleLinkClick} className="block text-center rounded-md text-gray-900 hover:bg-gray-50 font-medium transition-colors cursor-pointer" style={{ padding: isMobile ? '0.5rem 0.75rem' : '0.625rem 0.75rem', fontSize: isMobile ? '0.9375rem' : '1rem' }}>{t('login')}</Link>
+                <Link href={`${getLocalePath('/user/auth/signup')}?redirect=${encodeURIComponent(pathname)}`} onClick={handleLinkClick} className="block text-center bg-[#002D72] text-white rounded-full hover:bg-[#001f4d] font-semibold transition-all duration-300 shadow-sm cursor-pointer" style={{ padding: isMobile ? '0.5rem 0.75rem' : '0.625rem 0.75rem', fontSize: isMobile ? '0.9375rem' : '1rem' }}>{t('signup')}</Link>
               </>
             )}
           </div>

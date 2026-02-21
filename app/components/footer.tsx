@@ -9,12 +9,16 @@ import {
   FaXTwitter,
   FaInstagram,
 } from 'react-icons/fa6';
+import { newsletterSubscribe } from '@/lib/APIs/public';
+import { useToast } from '@/lib/notifications/ToastProvider';
 
 export default function Footer() {
   const t = useTranslations('footer');
   const pathname = usePathname();
   const isLandingPage = pathname === '/' || pathname === '';
+  const { success: showSuccess, error: showError, warning: showWarning, isOnline } = useToast();
   const [email, setEmail] = useState('');
+  const [isSubscribing, setIsSubscribing] = useState(false);
   const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(null);
   const [isMobile, setIsMobile] = useState(false);
   const footerRef = useRef<HTMLDivElement>(null);
@@ -40,10 +44,29 @@ export default function Footer() {
     setMousePos(null);
   };
 
-  const handleSubscribe = (e: React.FormEvent) => {
+  const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Subscribing email:', email);
-    setEmail('');
+    if (!email.trim() || isSubscribing) return;
+
+    if (!isOnline) {
+      showWarning('You are offline. Please check your internet connection.');
+      return;
+    }
+
+    setIsSubscribing(true);
+    try {
+      const response = await newsletterSubscribe({ email: email.trim() });
+      if (response.success) {
+        showSuccess('Subscribed to newsletter successfully!');
+        setEmail('');
+      } else {
+        showError(response.error || 'Failed to subscribe. Please try again.');
+      }
+    } catch {
+      showError('Failed to subscribe. Please try again.');
+    } finally {
+      setIsSubscribing(false);
+    }
   };
 
   const handleScrollToSection = (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
@@ -201,8 +224,8 @@ export default function Footer() {
                 className="subscribe-input"
                 required
               />
-              <button type="submit" className="subscribe-button">
-                {t('subscribe')}
+              <button type="submit" className="subscribe-button" disabled={isSubscribing || !email.trim()} style={{ opacity: isSubscribing || !email.trim() ? 0.6 : 1, cursor: isSubscribing || !email.trim() ? 'not-allowed' : 'pointer' }}>
+                {isSubscribing ? 'Subscribing...' : t('subscribe')}
               </button>
             </form>
           </div>

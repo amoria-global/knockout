@@ -318,9 +318,6 @@ export default function JoinEvent() {
   const [detectedEvent, setDetectedEvent] = useState<{ id: number; title: string; category: string; fee: number; location: string; image: string; status: string } | null>(null);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string | null>(null);
   const [paymentPhone, setPaymentPhone] = useState('');
-  const [bankName, setBankName] = useState('');
-  const [bankAccountName, setBankAccountName] = useState('');
-  const [bankAccountNumber, setBankAccountNumber] = useState('');
   const [cardNumber, setCardNumber] = useState('');
   const [cardExpiry, setCardExpiry] = useState('');
   const [cardCvv, setCardCvv] = useState('');
@@ -337,9 +334,6 @@ export default function JoinEvent() {
 
   // Input validation error states
   const [phoneError, setPhoneError] = useState('');
-  const [bankNameError, setBankNameError] = useState('');
-  const [bankAccountNameError, setBankAccountNameError] = useState('');
-  const [bankAccountNumberError, setBankAccountNumberError] = useState('');
   const [cardNumberError, setCardNumberError] = useState('');
   const [cardExpiryError, setCardExpiryError] = useState('');
   const [cardCvvError, setCardCvvError] = useState('');
@@ -355,39 +349,6 @@ export default function JoinEvent() {
       setPhoneError('');
     }
     setPaymentPhone(digitsOnly);
-  };
-
-  const handleBankNameChange = (value: string) => {
-    // Only allow letters and spaces
-    const lettersOnly = value.replace(/[^a-zA-Z\s]/g, '');
-    if (value !== lettersOnly) {
-      setBankNameError('Only letters allowed');
-    } else {
-      setBankNameError('');
-    }
-    setBankName(lettersOnly);
-  };
-
-  const handleBankAccountNameChange = (value: string) => {
-    // Only allow letters and spaces
-    const lettersOnly = value.replace(/[^a-zA-Z\s]/g, '');
-    if (value !== lettersOnly) {
-      setBankAccountNameError('Only letters allowed');
-    } else {
-      setBankAccountNameError('');
-    }
-    setBankAccountName(lettersOnly);
-  };
-
-  const handleBankAccountNumberChange = (value: string) => {
-    // Only allow digits
-    const digitsOnly = value.replace(/[^0-9]/g, '');
-    if (value !== digitsOnly) {
-      setBankAccountNumberError('Only numbers allowed');
-    } else {
-      setBankAccountNumberError('');
-    }
-    setBankAccountNumber(digitsOnly);
   };
 
   const handleCardNumberChange = (value: string) => {
@@ -438,7 +399,6 @@ export default function JoinEvent() {
   const paymentMethods = [
     { id: 'mtn', name: 'MTN Mobile Money', image: '/mtn.png' },
     { id: 'airtel', name: 'Airtel Money', image: '/airtel.png' },
-    { id: 'bank', name: 'Bank Account', image: '/bank.png' },
     { id: 'card', name: 'VISA & Master Card', image: '/cards.png' }
   ];
 
@@ -521,8 +481,6 @@ export default function JoinEvent() {
       case 'mtn':
       case 'airtel':
         return paymentPhone.length >= 10;
-      case 'bank':
-        return bankAccountName.trim() !== '' && bankAccountNumber.trim() !== '' && bankName.trim() !== '';
       case 'card':
         return cardNumber.length >= 16 && cardExpiry.length >= 4 && cardCvv.length >= 3 && cardHolderName.trim() !== '';
       default:
@@ -535,9 +493,6 @@ export default function JoinEvent() {
     setDetectedEvent(null);
     setSelectedPaymentMethod(null);
     setPaymentPhone('');
-    setBankName('');
-    setBankAccountName('');
-    setBankAccountNumber('');
     setCardNumber('');
     setCardExpiry('');
     setCardCvv('');
@@ -1152,90 +1107,6 @@ export default function JoinEvent() {
                           {phoneError}
                         </p>
                       )}
-                    </div>
-                  )}
-
-                  {/* Payment Details - Bank */}
-                  {selectedPaymentMethod === 'bank' && (
-                    <div style={{ marginBottom: '14px', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr', gap: '12px' }}>
-                      <div>
-                        <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#fff', marginBottom: '6px' }}>
-                          <i className="bi bi-bank" style={{ marginRight: '6px', color: '#10b981' }}></i>
-                          Bank Name
-                        </label>
-                        <input
-                          type="text"
-                          value={bankName}
-                          onChange={(e) => handleBankNameChange(e.target.value)}
-                          placeholder="Enter bank name"
-                          style={{
-                            width: '100%',
-                            padding: '12px 14px',
-                            fontSize: '14px',
-                            backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                            border: `2px solid ${bankNameError ? '#ef4444' : 'rgba(255, 255, 255, 0.1)'}`,
-                            borderRadius: '10px',
-                            color: '#fff',
-                            outline: 'none',
-                            boxSizing: 'border-box',
-                          }}
-                        />
-                        {bankNameError && (
-                          <p style={{ color: '#ef4444', fontSize: '11px', margin: '4px 0 0 0' }}>{bankNameError}</p>
-                        )}
-                      </div>
-                      <div>
-                        <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#fff', marginBottom: '6px' }}>
-                          <i className="bi bi-person" style={{ marginRight: '6px', color: '#10b981' }}></i>
-                          Account Holder Name
-                        </label>
-                        <input
-                          type="text"
-                          value={bankAccountName}
-                          onChange={(e) => handleBankAccountNameChange(e.target.value)}
-                          placeholder="Enter account holder name"
-                          style={{
-                            width: '100%',
-                            padding: '12px 14px',
-                            fontSize: '14px',
-                            backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                            border: `2px solid ${bankAccountNameError ? '#ef4444' : 'rgba(255, 255, 255, 0.1)'}`,
-                            borderRadius: '10px',
-                            color: '#fff',
-                            outline: 'none',
-                            boxSizing: 'border-box',
-                          }}
-                        />
-                        {bankAccountNameError && (
-                          <p style={{ color: '#ef4444', fontSize: '11px', margin: '4px 0 0 0' }}>{bankAccountNameError}</p>
-                        )}
-                      </div>
-                      <div>
-                        <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#fff', marginBottom: '6px' }}>
-                          <i className="bi bi-credit-card-2-front" style={{ marginRight: '6px', color: '#10b981' }}></i>
-                          Account Number
-                        </label>
-                        <input
-                          type="text"
-                          value={bankAccountNumber}
-                          onChange={(e) => handleBankAccountNumberChange(e.target.value)}
-                          placeholder="Enter account number"
-                          style={{
-                            width: '100%',
-                            padding: '12px 14px',
-                            fontSize: '14px',
-                            backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                            border: `2px solid ${bankAccountNumberError ? '#ef4444' : 'rgba(255, 255, 255, 0.1)'}`,
-                            borderRadius: '10px',
-                            color: '#fff',
-                            outline: 'none',
-                            boxSizing: 'border-box',
-                          }}
-                        />
-                        {bankAccountNumberError && (
-                          <p style={{ color: '#ef4444', fontSize: '11px', margin: '4px 0 0 0' }}>{bankAccountNumberError}</p>
-                        )}
-                      </div>
                     </div>
                   )}
 
