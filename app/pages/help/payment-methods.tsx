@@ -209,7 +209,6 @@ const PaymentMethodsHelp: React.FC = () => {
                 {[
                   { icon: 'bi-credit-card-fill', title: 'Credit & Debit Cards', id: 'cards' },
                   { icon: 'bi-phone-fill', title: 'Mobile Money', id: 'mobile' },
-                  { icon: 'bi-bank', title: 'Bank Transfer', id: 'bank' },
                   { icon: 'bi-paypal', title: 'PayPal', id: 'paypal' },
                   { icon: 'bi-bookmark-fill', title: 'Saved Methods', id: 'saved' },
                   { icon: 'bi-shield-check', title: 'Payment Verification', id: 'verification' }

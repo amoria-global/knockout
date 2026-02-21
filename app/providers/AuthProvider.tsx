@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { getAuthToken, setAuthToken, removeAuthToken, isAuthenticated as checkAuth } from '@/lib/api/client';
 import { API_CONFIG } from '@/lib/api/config';
 import { refreshToken as attemptRefreshToken } from '@/lib/APIs/auth/refresh-token/route';
+import { logout as logoutFromBackend } from '@/lib/APIs/auth/logout/route';
 
 /**
  * User data stored in auth context
@@ -176,6 +177,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     initializeAuth();
   }, []);
 
+  // Listen for logout messages from dashboard (opened via window.open)
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      // Only accept logout messages from the dashboard origin
+      const dashboardOrigin = process.env.NEXT_PUBLIC_DASHBOARD_URL?.replace(/\/$/, '') || '';
+      if (dashboardOrigin && event.origin !== dashboardOrigin) return;
+      if (event.data?.type === 'connekyt-logout') {
+        removeAuthToken();
+        clearStoredUser();
+        setUser(null);
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
   // Listen for storage events (cross-tab sync)
   useEffect(() => {
     const handleStorageChange = (event: StorageEvent) => {
@@ -228,11 +246,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   /**
-   * Logout function - clears all auth data
+   * Logout function - invalidates token on backend and clears all local auth data
    */
   const logout = useCallback(() => {
-    // Clear token
-    removeAuthToken();
+    // Call backend to invalidate the token (fire-and-forget)
+    logoutFromBackend().catch(() => {});
     // Clear user data
     clearStoredUser();
     // Update state

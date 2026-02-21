@@ -62,3 +62,32 @@ export type {
   PaginatedEvents,
   GetPublicEventsRequest,
 } from './get-events/route';
+
+// Contact Us
+export {
+  contactUs,
+} from './contact-us/route';
+export type {
+  ContactUsRequest,
+  ContactUsResponse,
+} from './contact-us/route';
+
+// Public Donations
+export {
+  createPublicDonation,
+} from './donations/route';
+export type {
+  PublicDonationRequest,
+  PublicDonationResponse,
+} from './donations/route';
+
+// Newsletter
+export {
+  newsletterSubscribe,
+  newsletterUnsubscribe,
+} from './newsletter/route';
+export type {
+  NewsletterSubscribeRequest,
+  NewsletterSubscribeResponse,
+  NewsletterUnsubscribeResponse,
+} from './newsletter/route';

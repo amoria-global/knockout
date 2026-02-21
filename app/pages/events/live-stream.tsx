@@ -2,8 +2,8 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import dynamic from 'next/dynamic';
-import { apiClient } from '@/lib/api/client';
 import { getCurrencies, type Currency as APICurrency } from '@/lib/APIs/public';
+import { recordTip, recordStreamingPayment } from '@/lib/APIs/payments/route';
 
 // Dynamically import VideoMessageRecorder to avoid SSR issues
 const VideoMessageRecorder = dynamic(() => import('../../components/VideoMessageRecorder'), { ssr: false });
@@ -175,18 +175,12 @@ const App = () => {
   const [donationAmount, setDonationAmount] = useState("");
   const [donationPaymentMethod, setDonationPaymentMethod] = useState<string | null>(null);
   const [donationPhone, setDonationPhone] = useState("");
-  const [donationBankName, setDonationBankName] = useState("");
-  const [donationBankAccountName, setDonationBankAccountName] = useState("");
-  const [donationBankAccountNumber, setDonationBankAccountNumber] = useState("");
   const [donationCardNumber, setDonationCardNumber] = useState("");
   const [donationCardExpiry, setDonationCardExpiry] = useState("");
   const [donationCardCvv, setDonationCardCvv] = useState("");
   const [donationCardHolderName, setDonationCardHolderName] = useState("");
   // Payment details state
   const [paymentPhone, setPaymentPhone] = useState("");
-  const [bankAccountName, setBankAccountName] = useState("");
-  const [bankAccountNumber, setBankAccountNumber] = useState("");
-  const [bankName, setBankName] = useState("");
   const [cardNumber, setCardNumber] = useState("");
   const [cardExpiry, setCardExpiry] = useState("");
   const [cardCvv, setCardCvv] = useState("");
@@ -246,9 +240,6 @@ const App = () => {
     setDonationAmount("");
     setDonationPaymentMethod(null);
     setDonationPhone("");
-    setDonationBankName("");
-    setDonationBankAccountName("");
-    setDonationBankAccountNumber("");
     setDonationCardNumber("");
     setDonationCardExpiry("");
     setDonationCardCvv("");
@@ -263,8 +254,6 @@ const App = () => {
       case 'mtn':
       case 'airtel':
         return donationPhone.length >= 10;
-      case 'bank':
-        return donationBankAccountName.trim() !== '' && donationBankAccountNumber.trim() !== '' && donationBankName.trim() !== '';
       case 'card':
         return donationCardNumber.length >= 16 && donationCardExpiry.length >= 4 && donationCardCvv.length >= 3 && donationCardHolderName.trim() !== '';
       default:
@@ -288,17 +277,13 @@ const App = () => {
     setDonationApiError(null);
 
     try {
-      const queryParams = new URLSearchParams();
-      queryParams.append('amount', donationAmount);
       const currencyId = streamCurrencies.length > 0 ? streamCurrencies[0].id : '';
-      if (currencyId) queryParams.append('currencyId', currencyId);
-      queryParams.append('remarks', `Donation via ${donationPaymentMethod}`);
 
-      const response = await apiClient.post(
-        `/api/remote/payments/record-tip?${queryParams.toString()}`,
-        undefined,
-        { retries: 1 }
-      );
+      const response = await recordTip({
+        amount: donationAmount,
+        currencyId: currencyId || undefined,
+        remarks: `Donation via ${donationPaymentMethod}`,
+      });
 
       if (!response.success) {
         throw new Error(response.error || 'Donation failed');
@@ -316,7 +301,6 @@ const App = () => {
   const paymentMethods = [
     { id: 'mtn', name: 'MTN Mobile Money', image: '/mtn.png' },
     { id: 'airtel', name: 'Airtel Money', image: '/airtel.png' },
-    { id: 'bank', name: 'Bank Account', image: '/bank.png' },
     { id: 'card', name: 'VISA & Master Card', image: '/cards.png' }
   ];
 
@@ -328,9 +312,6 @@ const App = () => {
     setGiftAmount("");
     setGiftMessage("");
     setPaymentPhone("");
-    setBankAccountName("");
-    setBankAccountNumber("");
-    setBankName("");
     setCardNumber("");
     setCardExpiry("");
     setCardCvv("");
@@ -345,8 +326,6 @@ const App = () => {
       case 'mtn':
       case 'airtel':
         return paymentPhone.length >= 10;
-      case 'bank':
-        return bankAccountName.trim() !== '' && bankAccountNumber.trim() !== '' && bankName.trim() !== '';
       case 'card':
         return cardNumber.length >= 16 && cardExpiry.length >= 4 && cardCvv.length >= 3 && cardHolderName.trim() !== '';
       default:
@@ -373,20 +352,16 @@ const App = () => {
       // Use target event or fallback to main event
       const targetEvent = giftTargetEvent || mainEvent;
 
-      const queryParams = new URLSearchParams();
-      queryParams.append('eventId', targetEvent.id);
-      queryParams.append('amount', giftAmount);
       // Use first available currency ID
       const currencyId = streamCurrencies.length > 0 ? streamCurrencies[0].id : '';
-      if (currencyId) queryParams.append('currencyId', currencyId);
       const remarks = giftMessage || `Gift to ${targetEvent.photographer} via ${selectedPaymentMethod}`;
-      queryParams.append('remarks', remarks);
 
-      const response = await apiClient.post(
-        `/api/remote/payments/record-streaming-payment?${queryParams.toString()}`,
-        undefined,
-        { retries: 1 }
-      );
+      const response = await recordStreamingPayment({
+        eventId: targetEvent.id,
+        amount: giftAmount,
+        currencyId: currencyId || undefined,
+        remarks,
+      });
 
       if (!response.success) {
         throw new Error(response.error || 'Gift payment failed');
@@ -5449,74 +5424,6 @@ const App = () => {
               </div>
             )}
 
-            {donationPaymentMethod === 'bank' && (
-              <div style={{ marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#fff', marginBottom: '8px' }}>
-                    Bank Name
-                  </label>
-                  <input
-                    type="text"
-                    value={donationBankName}
-                    onChange={(e) => setDonationBankName(e.target.value)}
-                    placeholder="Enter bank name"
-                    style={{
-                      width: '100%',
-                      padding: '14px 16px',
-                      fontSize: '16px',
-                      backgroundColor: '#27272a',
-                      border: '1px solid #3f3f46',
-                      borderRadius: '10px',
-                      color: '#fff',
-                      outline: 'none',
-                    }}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#fff', marginBottom: '8px' }}>
-                    Account Holder Name
-                  </label>
-                  <input
-                    type="text"
-                    value={donationBankAccountName}
-                    onChange={(e) => setDonationBankAccountName(e.target.value)}
-                    placeholder="Enter account holder name"
-                    style={{
-                      width: '100%',
-                      padding: '14px 16px',
-                      fontSize: '16px',
-                      backgroundColor: '#27272a',
-                      border: '1px solid #3f3f46',
-                      borderRadius: '10px',
-                      color: '#fff',
-                      outline: 'none',
-                    }}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#fff', marginBottom: '8px' }}>
-                    Account Number
-                  </label>
-                  <input
-                    type="text"
-                    value={donationBankAccountNumber}
-                    onChange={(e) => setDonationBankAccountNumber(e.target.value)}
-                    placeholder="Enter account number"
-                    style={{
-                      width: '100%',
-                      padding: '14px 16px',
-                      fontSize: '16px',
-                      backgroundColor: '#27272a',
-                      border: '1px solid #3f3f46',
-                      borderRadius: '10px',
-                      color: '#fff',
-                      outline: 'none',
-                    }}
-                  />
-                </div>
-              </div>
-            )}
-
             {donationPaymentMethod === 'card' && (
               <div style={{ marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <div>
@@ -5937,99 +5844,6 @@ const App = () => {
                   marginTop: '6px',
                   marginBottom: 0
                 }}>You will receive a payment confirmation SMS on this number</p>
-              </div>
-            )}
-
-            {/* Payment Details Input - Bank Account */}
-            {selectedPaymentMethod === 'bank' && (
-              <div style={{ marginBottom: '20px' }}>
-                <div style={{ marginBottom: '12px' }}>
-                  <label style={{
-                    display: 'block',
-                    fontSize: '13px',
-                    fontWeight: '600',
-                    color: '#efeff1',
-                    marginBottom: '8px'
-                  }}>Bank Name *</label>
-                  <input
-                    type="text"
-                    value={bankName}
-                    onChange={(e) => setBankName(e.target.value)}
-                    placeholder="e.g., Stanbic Bank, Centenary Bank"
-                    style={{
-                      width: '100%',
-                      padding: '12px 16px',
-                      backgroundColor: '#27272a',
-                      border: '1px solid rgba(255, 255, 255, 0.1)',
-                      borderRadius: '12px',
-                      color: '#efeff1',
-                      fontSize: '14px',
-                      outline: 'none',
-                      transition: 'border-color 0.2s',
-                      boxSizing: 'border-box'
-                    }}
-                    onFocus={(e) => e.currentTarget.style.borderColor = '#03969c'}
-                    onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'}
-                  />
-                </div>
-                <div style={{ marginBottom: '12px' }}>
-                  <label style={{
-                    display: 'block',
-                    fontSize: '13px',
-                    fontWeight: '600',
-                    color: '#efeff1',
-                    marginBottom: '8px'
-                  }}>Account Holder Name *</label>
-                  <input
-                    type="text"
-                    value={bankAccountName}
-                    onChange={(e) => setBankAccountName(e.target.value)}
-                    placeholder="Enter account holder name"
-                    style={{
-                      width: '100%',
-                      padding: '12px 16px',
-                      backgroundColor: '#27272a',
-                      border: '1px solid rgba(255, 255, 255, 0.1)',
-                      borderRadius: '12px',
-                      color: '#efeff1',
-                      fontSize: '14px',
-                      outline: 'none',
-                      transition: 'border-color 0.2s',
-                      boxSizing: 'border-box'
-                    }}
-                    onFocus={(e) => e.currentTarget.style.borderColor = '#03969c'}
-                    onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'}
-                  />
-                </div>
-                <div>
-                  <label style={{
-                    display: 'block',
-                    fontSize: '13px',
-                    fontWeight: '600',
-                    color: '#efeff1',
-                    marginBottom: '8px'
-                  }}>Account Number *</label>
-                  <input
-                    type="text"
-                    value={bankAccountNumber}
-                    onChange={(e) => setBankAccountNumber(e.target.value.replace(/\D/g, ''))}
-                    placeholder="Enter account number"
-                    style={{
-                      width: '100%',
-                      padding: '12px 16px',
-                      backgroundColor: '#27272a',
-                      border: '1px solid rgba(255, 255, 255, 0.1)',
-                      borderRadius: '12px',
-                      color: '#efeff1',
-                      fontSize: '14px',
-                      outline: 'none',
-                      transition: 'border-color 0.2s',
-                      boxSizing: 'border-box'
-                    }}
-                    onFocus={(e) => e.currentTarget.style.borderColor = '#03969c'}
-                    onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'}
-                  />
-                </div>
               </div>
             )}
 

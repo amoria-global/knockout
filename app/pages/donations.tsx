@@ -3,8 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import Navbar from "../components/navbar";
 import Footer from "../components/footer";
-import { getCurrencies, type Currency as APICurrency } from '@/lib/APIs/public';
-import { apiClient } from '@/lib/api/client';
+import { getCurrencies, createPublicDonation, type Currency as APICurrency } from '@/lib/APIs/public';
 
 // Hook for counting animation
 const useCountUp = (end: number, duration: number = 2000, startCounting: boolean = false) => {
@@ -347,7 +346,6 @@ const HeroStatCard = ({
 const paymentMethods = [
   { id: 'mtn', name: 'MTN Mobile Money', image: '/mtn.png' },
   { id: 'airtel', name: 'Airtel Money', image: '/airtel.png' },
-  { id: 'bank', name: 'Bank Transfer', image: '/bank.png' },
   { id: 'card', name: 'VISA & Master Card', image: '/cards.png' }
 ];
 
@@ -367,9 +365,6 @@ const Donations = () => {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string | null>(null);
   const [paymentPhone, setPaymentPhone] = useState('');
-  const [bankName, setBankName] = useState('');
-  const [bankAccountName, setBankAccountName] = useState('');
-  const [bankAccountNumber, setBankAccountNumber] = useState('');
   const [cardHolderName, setCardHolderName] = useState('');
   const [cardNumber, setCardNumber] = useState('');
   const [cardExpiry, setCardExpiry] = useState('');
@@ -388,9 +383,6 @@ const Donations = () => {
     setShowPaymentModal(false);
     setSelectedPaymentMethod(null);
     setPaymentPhone('');
-    setBankName('');
-    setBankAccountName('');
-    setBankAccountNumber('');
     setCardHolderName('');
     setCardNumber('');
     setCardExpiry('');
@@ -408,8 +400,6 @@ const Donations = () => {
       case 'mtn':
       case 'airtel':
         return paymentPhone.length >= 10;
-      case 'bank':
-        return bankName.trim() !== '' && bankAccountName.trim() !== '' && bankAccountNumber.trim() !== '';
       case 'card':
         return cardHolderName.trim() !== '' && cardNumber.length >= 13 && cardExpiry.length === 5 && cardCvv.length >= 3;
       default:
@@ -434,17 +424,17 @@ const Donations = () => {
       const matchedCurrency = apiCurrencies.find(c => c.code === currency);
       const currencyId = matchedCurrency?.id || '';
 
-      const queryParams = new URLSearchParams();
-      queryParams.append('amount', amount.toString());
-      if (currencyId) queryParams.append('currencyId', currencyId);
-      const remarks = donorMessage || `${categories[activeCategory].title} donation via ${selectedPaymentMethod}`;
-      queryParams.append('remarks', remarks);
+      const message = donorMessage || `${categories[activeCategory].title} donation via ${selectedPaymentMethod}`;
+      const donorFullName = isAnonymous ? undefined : `${donorFirstName} ${donorLastName}`.trim() || undefined;
 
-      const response = await apiClient.post(
-        `/api/remote/payments/record-tip?${queryParams.toString()}`,
-        undefined,
-        { retries: 1 }
-      );
+      const response = await createPublicDonation({
+        amount: amount.toString(),
+        currencyId,
+        donorName: donorFullName,
+        donorEmail: isAnonymous ? undefined : donorEmail || undefined,
+        message,
+        paymentMethod: selectedPaymentMethod || undefined,
+      });
 
       if (!response.success) {
         throw new Error(response.error || 'Donation failed');
@@ -1902,99 +1892,6 @@ const Donations = () => {
                   marginTop: '6px',
                   marginBottom: 0
                 }}>You will receive a payment prompt on this number</p>
-              </div>
-            )}
-
-            {/* Bank Transfer Input */}
-            {selectedPaymentMethod === 'bank' && (
-              <div style={{ marginBottom: '24px' }}>
-                <div style={{ marginBottom: '14px' }}>
-                  <label style={{
-                    display: 'block',
-                    fontSize: '14px',
-                    fontWeight: 600,
-                    color: '#333',
-                    marginBottom: '8px'
-                  }}>Bank Name *</label>
-                  <input
-                    type="text"
-                    value={bankName}
-                    onChange={(e) => setBankName(e.target.value)}
-                    placeholder="e.g., Bank of Kigali, Equity Bank"
-                    style={{
-                      width: '100%',
-                      padding: '14px 16px',
-                      backgroundColor: '#f8f9fa',
-                      border: '2px solid #e0e0e0',
-                      borderRadius: '12px',
-                      color: '#333',
-                      fontSize: '15px',
-                      outline: 'none',
-                      transition: 'border-color 0.2s',
-                      boxSizing: 'border-box'
-                    }}
-                    onFocus={(e) => e.currentTarget.style.borderColor = '#083A85'}
-                    onBlur={(e) => e.currentTarget.style.borderColor = '#e0e0e0'}
-                  />
-                </div>
-                <div style={{ marginBottom: '14px' }}>
-                  <label style={{
-                    display: 'block',
-                    fontSize: '14px',
-                    fontWeight: 600,
-                    color: '#333',
-                    marginBottom: '8px'
-                  }}>Account Holder Name *</label>
-                  <input
-                    type="text"
-                    value={bankAccountName}
-                    onChange={(e) => setBankAccountName(e.target.value)}
-                    placeholder="Enter account holder name"
-                    style={{
-                      width: '100%',
-                      padding: '14px 16px',
-                      backgroundColor: '#f8f9fa',
-                      border: '2px solid #e0e0e0',
-                      borderRadius: '12px',
-                      color: '#333',
-                      fontSize: '15px',
-                      outline: 'none',
-                      transition: 'border-color 0.2s',
-                      boxSizing: 'border-box'
-                    }}
-                    onFocus={(e) => e.currentTarget.style.borderColor = '#083A85'}
-                    onBlur={(e) => e.currentTarget.style.borderColor = '#e0e0e0'}
-                  />
-                </div>
-                <div>
-                  <label style={{
-                    display: 'block',
-                    fontSize: '14px',
-                    fontWeight: 600,
-                    color: '#333',
-                    marginBottom: '8px'
-                  }}>Account Number *</label>
-                  <input
-                    type="text"
-                    value={bankAccountNumber}
-                    onChange={(e) => setBankAccountNumber(e.target.value.replace(/\D/g, ''))}
-                    placeholder="Enter account number"
-                    style={{
-                      width: '100%',
-                      padding: '14px 16px',
-                      backgroundColor: '#f8f9fa',
-                      border: '2px solid #e0e0e0',
-                      borderRadius: '12px',
-                      color: '#333',
-                      fontSize: '15px',
-                      outline: 'none',
-                      transition: 'border-color 0.2s',
-                      boxSizing: 'border-box'
-                    }}
-                    onFocus={(e) => e.currentTarget.style.borderColor = '#083A85'}
-                    onBlur={(e) => e.currentTarget.style.borderColor = '#e0e0e0'}
-                  />
-                </div>
               </div>
             )}
 

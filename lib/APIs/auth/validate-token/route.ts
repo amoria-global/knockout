@@ -26,6 +26,7 @@ export interface ValidateTokenResponse {
 /**
  * Validate Token
  * Uses enhanced API client with automatic retry and error handling
+ * Backend expects the token as a query parameter
  */
 export async function validateToken(): Promise<ApiResponse<ValidateTokenResponse>> {
   const token = getAuthToken();
@@ -37,15 +38,19 @@ export async function validateToken(): Promise<ApiResponse<ValidateTokenResponse
     };
   }
 
+  const queryParams = new URLSearchParams({ token });
+
   const response = await apiClient.get<ValidateTokenResponse>(
-    API_ENDPOINTS.AUTH.VALIDATE_TOKEN,
+    `${API_ENDPOINTS.AUTH.VALIDATE_TOKEN}?${queryParams}`,
     {
+      skipAuth: true, // Token is sent as query param, not header
       retries: 1,
     }
   );
 
   // If token is invalid, remove it
-  if (!response.success || !response.data?.valid) {
+  // Backend returns action: 1 for valid tokens (mapped to success: true by apiClient)
+  if (!response.success) {
     removeAuthToken();
   }
 

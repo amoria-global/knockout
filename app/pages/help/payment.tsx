@@ -414,12 +414,6 @@ const PaymentHelp: React.FC = () => {
                       title: 'PayPal',
                       desc: 'Fast and secure payments using your PayPal account',
                       fee: 'Standard PayPal rates apply'
-                    },
-                    {
-                      icon: 'bi-bank',
-                      title: 'Bank Transfer',
-                      desc: 'Direct bank transfers for bookings over $500',
-                      fee: '2-3 business days processing'
                     }
                   ].map((method, idx) => (
                     <div key={idx} style={{
@@ -864,7 +858,6 @@ const PaymentHelp: React.FC = () => {
                       </h4>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {[
-                          { method: 'Direct Bank Deposit', time: '1-2 business days', fee: 'Free' },
                           { method: 'PayPal Transfer', time: 'Instant', fee: '$1.50 per transfer' },
                           { method: 'Wire Transfer (International)', time: '3-5 business days', fee: '$25 per transfer' },
                           { method: 'Check by Mail', time: '7-10 business days', fee: '$5 per check' }

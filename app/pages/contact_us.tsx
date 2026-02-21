@@ -2,13 +2,18 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '../components/navbar';
 import Footer from '../components/footer';
+import { contactUs } from '@/lib/APIs/public';
+import { useToast } from '@/lib/notifications/ToastProvider';
 
 export default function ContactUsPage(): React.JSX.Element {
+  const { success: showSuccess, error: showError, warning: showWarning, isOnline } = useToast();
+
   // Form state
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
     phone: '',
+    subject: '',
     message: ''
   });
 
@@ -37,6 +42,7 @@ export default function ContactUsPage(): React.JSX.Element {
       formData.email.trim() !== '' &&
       emailRegex.test(formData.email) &&
       formData.phone.trim() !== '' &&
+      formData.subject.trim() !== '' &&
       formData.message.trim() !== ''
     );
   };
@@ -59,6 +65,10 @@ export default function ContactUsPage(): React.JSX.Element {
     }
     if (!formData.phone.trim()) {
       setErrorMessage('Please enter your phone number');
+      return false;
+    }
+    if (!formData.subject.trim()) {
+      setErrorMessage('Please enter a subject');
       return false;
     }
     if (!formData.message.trim()) {
@@ -92,36 +102,50 @@ export default function ContactUsPage(): React.JSX.Element {
       return;
     }
 
+    // Check online status
+    if (!isOnline) {
+      showWarning('You are offline. Please check your internet connection.');
+      return;
+    }
+
     setIsSubmitting(true);
     setSubmitStatus('idle');
     setErrorMessage('');
 
     try {
-      // Simulate API call (replace with your actual API endpoint)
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-      // Here you would typically send the data to your backend
-      console.log('Form submitted:', formData);
-
-
-      setSubmitStatus('success');
-      // Clear form after successful submission
-      setFormData({
-        fullName: '',
-        email: '',
-        phone: '',
-        message: ''
+      const response = await contactUs({
+        fullName: formData.fullName.trim(),
+        email: formData.email.trim(),
+        phone: formData.phone.trim(),
+        subject: formData.subject.trim(),
+        message: formData.message.trim(),
       });
 
-      // Reset success message after 5 seconds
-      setTimeout(() => {
-        setSubmitStatus('idle');
-      }, 5000);
+      if (response.success) {
+        setSubmitStatus('success');
+        showSuccess('Message sent successfully! We\'ll get back to you soon.');
+        setFormData({
+          fullName: '',
+          email: '',
+          phone: '',
+          subject: '',
+          message: ''
+        });
 
+        setTimeout(() => {
+          setSubmitStatus('idle');
+        }, 5000);
+      } else {
+        const errorMsg = response.error || 'Failed to send message. Please try again later.';
+        setSubmitStatus('error');
+        setErrorMessage(errorMsg);
+        showError(errorMsg);
+      }
     } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Failed to send message. Please try again later.';
       setSubmitStatus('error');
-      setErrorMessage('Failed to send message. Please try again later.');
-      console.error('Error submitting form:', error);
+      setErrorMessage(errorMsg);
+      showError(errorMsg);
     } finally {
       setIsSubmitting(false);
     }
@@ -445,6 +469,38 @@ export default function ContactUsPage(): React.JSX.Element {
                       backgroundColor: isSubmitting ? '#B0B0B0' : '#FFFFFF',
                       boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)',
                       color: '#000',
+                      cursor: isSubmitting ? 'not-allowed' : 'text'
+                    }}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="subject" style={{
+                    display: 'block',
+                    fontSize: isMobile ? 'clamp(0.75rem, 2vw, 0.8rem)' : '0.8rem',
+                    fontWeight: '600',
+                    color: '#000000',
+                    marginBottom: isMobile ? 'clamp(0.4rem, 1vw, 0.5rem)' : '0.5rem'
+                  }}>
+                    Subject
+                  </label>
+                  <input
+                    type="text"
+                    id="subject"
+                    name="subject"
+                    value={formData.subject}
+                    onChange={handleInputChange}
+                    placeholder="How can we help you?"
+                    disabled={isSubmitting}
+                    style={{
+                      width: '100%',
+                      padding: isMobile ? 'clamp(0.65rem, 2vw, 0.75rem)' : '0.75rem',
+                      fontSize: isMobile ? 'clamp(0.8rem, 2.2vw, 0.85rem)' : '0.85rem',
+                      border: '2px solid #C4C4C4',
+                      borderRadius: isMobile ? 'clamp(0.6rem, 1.5vw, 0.75rem)' : '0.75rem',
+                      outline: 'none',
+                      backgroundColor: isSubmitting ? '#B0B0B0' : '#FFFFFF',
+                      boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)',
+                      color: '#000000',
                       cursor: isSubmitting ? 'not-allowed' : 'text'
                     }}
                   />
