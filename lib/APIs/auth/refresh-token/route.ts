@@ -9,7 +9,7 @@
  * - Production-safe logging
  */
 
-import { apiClient, getAuthToken, setAuthToken } from '@/lib/api/client';
+import { apiClient, getAuthToken, setAuthToken, getRefreshToken, setRefreshToken } from '@/lib/api/client';
 import { API_ENDPOINTS } from '@/lib/api/config';
 import type { ApiResponse } from '@/lib/api/types';
 
@@ -26,31 +26,33 @@ export interface RefreshTokenResponse {
 
 /**
  * Refresh Token
- * Uses enhanced API client with automatic retry and error handling
- * Backend expects POST with refreshToken in request body
+ * Uses POST with refresh token UUID in the body
  */
-export async function refreshToken(refreshTokenValue?: string): Promise<ApiResponse<RefreshTokenResponse>> {
-  const token = refreshTokenValue || getAuthToken();
+export async function refreshToken(): Promise<ApiResponse<RefreshTokenResponse>> {
+  const storedRefreshToken = getRefreshToken();
 
-  if (!token) {
+  if (!storedRefreshToken) {
     return {
       success: false,
-      error: 'No token found',
+      error: 'No refresh token found',
     };
   }
 
   const response = await apiClient.post<RefreshTokenResponse>(
     API_ENDPOINTS.AUTH.REFRESH_TOKEN,
-    { refreshToken: token },
+    { refreshToken: storedRefreshToken },
     {
-      skipAuth: true, // Token is sent in body, not header
+      skipAuth: true,
       retries: 2,
     }
   );
 
-  // Update stored token if successful
+  // Update stored tokens if successful
   if (response.success && response.data?.token) {
     setAuthToken(response.data.token);
+  }
+  if (response.success && response.data?.refreshToken) {
+    setRefreshToken(response.data.refreshToken);
   }
 
   return response;

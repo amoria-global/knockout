@@ -29,6 +29,7 @@ function generateRequestId(): string {
  * Token storage key
  */
 const AUTH_TOKEN_KEY = 'authToken';
+const REFRESH_TOKEN_KEY = 'refreshToken';
 
 /**
  * Get authentication token from storage
@@ -52,6 +53,30 @@ function setAuthToken(token: string): void {
 function removeAuthToken(): void {
   if (typeof window === 'undefined') return;
   localStorage.removeItem(AUTH_TOKEN_KEY);
+}
+
+/**
+ * Get refresh token from storage
+ */
+function getRefreshToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem(REFRESH_TOKEN_KEY);
+}
+
+/**
+ * Set refresh token in storage
+ */
+function setRefreshToken(token: string): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(REFRESH_TOKEN_KEY, token);
+}
+
+/**
+ * Remove refresh token from storage
+ */
+function removeRefreshToken(): void {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem(REFRESH_TOKEN_KEY);
 }
 
 /**
@@ -562,8 +587,8 @@ async function attemptTokenRefresh(): Promise<boolean> {
 
   refreshPromise = (async () => {
     try {
-      const token = getAuthToken();
-      if (!token) return false;
+      const storedRefreshToken = getRefreshToken();
+      if (!storedRefreshToken) return false;
 
       const response = await fetch(
         `${API_CONFIG.baseUrl.replace(/\/$/, '')}/api/remote/auth/refresh-token`,
@@ -572,7 +597,7 @@ async function attemptTokenRefresh(): Promise<boolean> {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ refreshToken: token }),
+          body: JSON.stringify({ refreshToken: storedRefreshToken }),
         }
       );
 
@@ -580,6 +605,9 @@ async function attemptTokenRefresh(): Promise<boolean> {
         const data = await response.json();
         if (data.token) {
           setAuthToken(data.token);
+          if (data.refreshToken) {
+            setRefreshToken(data.refreshToken);
+          }
           logger.info('Token refreshed successfully');
           return true;
         }
@@ -605,6 +633,7 @@ function redirectToLogin(): void {
   if (typeof window !== 'undefined') {
     // Clear auth data
     removeAuthToken();
+    removeRefreshToken();
     localStorage.removeItem('authUser');
 
     // Redirect to login
@@ -650,7 +679,7 @@ apiClient.addResponseInterceptor(async (response, options) => {
 /**
  * Export auth token utilities for backward compatibility
  */
-export { getAuthToken, setAuthToken, removeAuthToken, isAuthenticated };
+export { getAuthToken, setAuthToken, removeAuthToken, getRefreshToken, setRefreshToken, removeRefreshToken, isAuthenticated };
 
 /**
  * Export client class for custom instances
