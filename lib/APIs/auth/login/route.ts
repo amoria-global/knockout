@@ -9,7 +9,7 @@
  * - Production-safe logging
  */
 
-import { apiClient, setAuthToken } from '@/lib/api/client';
+import { apiClient, setAuthToken, setRefreshToken } from '@/lib/api/client';
 import { API_ENDPOINTS } from '@/lib/api/config';
 import type { ApiResponse } from '@/lib/api/types';
 
@@ -40,6 +40,7 @@ export interface LoginResponse {
   customerId?: string | null;
   customer_id?: string | null;
   token?: string; // JWT token (only on successful login)
+  refreshToken?: string; // Refresh token UUID (only on successful login)
   user?: {
     id: string;
     email: string;
@@ -64,9 +65,12 @@ export async function login(data: LoginRequest): Promise<ApiResponse<LoginRespon
     }
   );
 
-  // Store token on successful login
+  // Store tokens on successful login
   if (response.success && response.data?.token) {
     setAuthToken(response.data.token);
+  }
+  if (response.success && response.data?.refreshToken) {
+    setRefreshToken(response.data.refreshToken);
   }
 
   return response;

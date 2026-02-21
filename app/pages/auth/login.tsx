@@ -8,7 +8,7 @@ import { login } from '@/lib/APIs/auth/login/route';
 import { googleAuth } from '@/lib/APIs/auth/google/route';
 import { useToast } from '@/lib/notifications/ToastProvider';
 import { useAuth } from '@/app/providers/AuthProvider';
-import { getAuthToken } from '@/lib/api/client';
+import { getAuthToken, getRefreshToken } from '@/lib/api/client';
 import PostLoginModal from '@/app/components/PostLoginModal';
 import { getDashboardUrlWithToken } from '@/lib/utils/dashboard-url';
 
@@ -132,7 +132,8 @@ export default function LoginPage(): React.JSX.Element {
 
   const handleGoToDashboard = () => {
     const token = getAuthToken();
-    const dashboardUrl = getDashboardUrlWithToken(loggedInUserType, token || undefined);
+    const refreshTokenValue = getRefreshToken();
+    const dashboardUrl = getDashboardUrlWithToken(loggedInUserType, token || undefined, refreshTokenValue || undefined);
 
     if (dashboardUrl && token) {
       // Open dashboard in new tab with type-based route (token-only, no email needed)
