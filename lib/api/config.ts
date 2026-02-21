@@ -83,7 +83,7 @@ export const API_ENDPOINTS = {
     RESET_PASSWORD: '/api/remote/auth/reset-password',
     SET_NEW_PASSWORD: '/api/remote/auth/set-new-password',
     VALIDATE_TOKEN: '/api/remote/auth/validate-token',
-    REFRESH_TOKEN: '/api/remote/auth/api/v1/remote/refresh-token',
+    REFRESH_TOKEN: '/api/remote/auth/refresh-token',
   },
 
   // Public endpoints
