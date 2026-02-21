@@ -591,7 +591,7 @@ async function attemptTokenRefresh(): Promise<boolean> {
       if (!storedRefreshToken) return false;
 
       const response = await fetch(
-        `${API_CONFIG.baseUrl}/api/remote/auth/refresh-token`,
+        `${API_CONFIG.baseUrl.replace(/\/$/, '')}/api/remote/auth/refresh-token`,
         {
           method: 'POST',
           headers: {

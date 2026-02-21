@@ -6,7 +6,7 @@ import { LanguageProvider } from "./providers/LanguageProvider";
 import { AuthProvider } from "./providers/AuthProvider";
 import GoogleOAuthProvider from "./providers/GoogleOAuthProvider";
 import { ToastProvider } from "@/lib/notifications/ToastProvider";
-import { ToastContainer } from "./components/Toast";
+import { ToastContainer, BannerNotification, OfflineBanner } from "./components/Toast";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 
 export const metadata: Metadata = {
@@ -39,6 +39,8 @@ export default function RootLayout({
                   {children}
                   <BackToTop />
                   <ToastContainer />
+                  <BannerNotification />
+                  <OfflineBanner />
                 </ErrorBoundary>
               </ToastProvider>
             </AuthProvider>

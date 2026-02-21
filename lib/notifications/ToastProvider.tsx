@@ -17,6 +17,15 @@ import { toast as toastManager, Toast, ToastOptions, ToastType } from './toast';
 import { offlineDetector } from '../network/offline-detector';
 
 /**
+ * Banner notification data
+ */
+export interface BannerNotification {
+  message: string;
+  color: string;
+  visible: boolean;
+}
+
+/**
  * Toast context value type
  */
 interface ToastContextValue {
@@ -43,6 +52,8 @@ interface ToastContextValue {
     }
   ) => Promise<T>;
   isOnline: boolean;
+  banner: BannerNotification;
+  showBanner: (message: string, color: string, duration?: number) => void;
 }
 
 /**
@@ -71,7 +82,14 @@ export function ToastProvider({
 }: ToastProviderProps) {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [isOnline, setIsOnline] = useState(true);
-  const [offlineToastId, setOfflineToastId] = useState<string | null>(null);
+  const [banner, setBanner] = useState<BannerNotification>({ message: '', color: '', visible: false });
+
+  const showBanner = useCallback((message: string, color: string, duration = 4000) => {
+    setBanner({ message, color, visible: true });
+    setTimeout(() => {
+      setBanner(prev => ({ ...prev, visible: false }));
+    }, duration);
+  }, []);
 
   // Set max toasts
   useEffect(() => {
@@ -88,31 +106,18 @@ export function ToastProvider({
   useEffect(() => {
     offlineDetector.init();
 
+    let wasOffline = false;
+
     const unsubscribe = offlineDetector.subscribe(online => {
       setIsOnline(online);
 
       if (showOfflineNotification) {
         if (!online) {
-          // Show persistent offline notification
-          const id = toastManager.warning(
-            'You are offline. Some features may be unavailable.',
-            {
-              title: 'No Internet Connection',
-              duration: 0, // Don't auto-dismiss
-              dismissible: false,
-            }
-          );
-          setOfflineToastId(id);
-        } else {
-          // Dismiss offline notification and show reconnected
-          if (offlineToastId) {
-            toastManager.dismiss(offlineToastId);
-            setOfflineToastId(null);
-          }
-          toastManager.success('You are back online!', {
-            title: 'Connected',
-            duration: 3000,
-          });
+          wasOffline = true;
+        } else if (wasOffline) {
+          // Only show reconnected banner after an actual offline→online transition
+          showBanner('You are back online!', '#027a59');
+          wasOffline = false;
         }
       }
     });
@@ -121,7 +126,7 @@ export function ToastProvider({
       unsubscribe();
       offlineDetector.destroy();
     };
-  }, [showOfflineNotification, offlineToastId]);
+  }, [showOfflineNotification, showBanner]);
 
   // Memoized context value
   const contextValue = useMemo<ToastContextValue>(
@@ -137,8 +142,10 @@ export function ToastProvider({
       loading: toastManager.loading.bind(toastManager),
       promise: toastManager.promise.bind(toastManager),
       isOnline,
+      banner,
+      showBanner,
     }),
-    [toasts, isOnline]
+    [toasts, isOnline, banner, showBanner]
   );
 
   return (
