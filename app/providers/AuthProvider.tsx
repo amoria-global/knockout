@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { getAuthToken, setAuthToken, removeAuthToken, isAuthenticated as checkAuth } from '@/lib/api/client';
+import { getAuthToken, setAuthToken, removeAuthToken, removeRefreshToken, isAuthenticated as checkAuth } from '@/lib/api/client';
 import { API_CONFIG } from '@/lib/api/config';
 import { refreshToken as attemptRefreshToken } from '@/lib/APIs/auth/refresh-token/route';
 
@@ -114,6 +114,7 @@ async function fetchUserProfile(token: string): Promise<Partial<AuthUser> | null
       }
       // Refresh failed — clear auth and redirect to login
       removeAuthToken();
+      removeRefreshToken();
       clearStoredUser();
       if (typeof window !== 'undefined') {
         window.location.href = '/user/auth/login';
@@ -231,8 +232,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
    * Logout function - clears all auth data
    */
   const logout = useCallback(() => {
-    // Clear token
+    // Clear tokens
     removeAuthToken();
+    removeRefreshToken();
     // Clear user data
     clearStoredUser();
     // Update state
