@@ -566,13 +566,13 @@ async function attemptTokenRefresh(): Promise<boolean> {
       if (!token) return false;
 
       const response = await fetch(
-        `${API_CONFIG.baseUrl}/api/remote/auth/api/v1/remote/refresh-token`,
+        `${API_CONFIG.baseUrl.replace(/\/$/, '')}/api/remote/auth/refresh-token`,
         {
-          method: 'GET',
+          method: 'POST',
           headers: {
-            'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
+          body: JSON.stringify({ refreshToken: token }),
         }
       );
 

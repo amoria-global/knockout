@@ -83,7 +83,9 @@ export const API_ENDPOINTS = {
     RESET_PASSWORD: '/api/remote/auth/reset-password',
     SET_NEW_PASSWORD: '/api/remote/auth/set-new-password',
     VALIDATE_TOKEN: '/api/remote/auth/validate-token',
-    REFRESH_TOKEN: '/api/remote/auth/api/v1/remote/refresh-token',
+    REFRESH_TOKEN: '/api/remote/auth/refresh-token',
+    LOGOUT: '/api/remote/auth/logout',
+    GOOGLE: '/api/remote/auth/google',
   },
 
   // Public endpoints
@@ -92,8 +94,12 @@ export const API_ENDPOINTS = {
     PHOTOGRAPHER_CATEGORIES: '/api/remote/photographer-categories',
     CITIES: '/api/remote/cities',
     CURRENCIES: '/api/remote/public/currencies',
+    CONTACT_US: '/api/remote/public/contact-us',
+    NEWSLETTER_SUBSCRIBE: '/api/remote/public/newsletter/subscribe',
+    NEWSLETTER_UNSUBSCRIBE: '/api/remote/public/newsletter/unsubscribe',
     PHOTOGRAPHER_PACKAGES: (id: string) => `/api/remote/public/photographers/${id}/packages`,
     EVENTS_LIST: '/api/remote/public/events/list',
+    DONATIONS: '/api/remote/public/donations',
   },
 
   // Protected photographer endpoints
@@ -110,6 +116,18 @@ export const API_ENDPOINTS = {
     PROFILE_SUMMARY: '/api/remote/photographer/profile-summary',
     PACKAGES: '/api/remote/photographer/packages',
     PACKAGE_BY_ID: (id: string) => `/api/remote/photographer/packages/${id}`,
+  },
+
+  // Donation endpoints (authenticated)
+  DONATIONS: {
+    CREATE: '/api/remote/donations',
+  },
+
+  // Payment endpoints
+  PAYMENTS: {
+    PAY: (declarationId: string) => `/api/remote/payments/${declarationId}/pay`,
+    RECORD_TIP: '/api/remote/payments/record-tip',
+    RECORD_STREAMING_PAYMENT: '/api/remote/payments/record-streaming-payment',
   },
 
   // Customer endpoints

@@ -236,14 +236,79 @@ export function OfflineBanner() {
   return (
     <div
       role="alert"
-      className="fixed top-0 left-0 right-0 z-[9999] bg-amber-500 text-amber-950 text-center py-2 px-4 text-sm font-medium shadow-md"
+      style={{
+        position: 'fixed',
+        top: '3.5rem',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        zIndex: 9999,
+        backgroundColor: '#e60f0b',
+        color: 'white',
+        padding: '0.4rem 1rem',
+        borderRadius: '0.375rem',
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.12)',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.375rem',
+        fontSize: '0.8rem',
+        fontWeight: '500',
+        animation: 'fadeInDown 0.3s ease-out',
+      }}
     >
-      <span className="inline-flex items-center gap-2">
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 5.636a9 9 0 010 12.728m-3.536-3.536a4 4 0 010-5.656m-7.072 7.072a9 9 0 010-12.728m3.536 3.536a4 4 0 010 5.656M12 12h.01" />
-        </svg>
-        You are offline. Some features may not work.
-      </span>
+      <svg width="14" height="14" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 5.636a9 9 0 010 12.728m-3.536-3.536a4 4 0 010-5.656m-7.072 7.072a9 9 0 010-12.728m3.536 3.536a4 4 0 010 5.656M12 12h.01" />
+      </svg>
+      You are offline. Some features may not work.
+      <style>{`
+        @keyframes fadeInDown {
+          from { opacity: 0; transform: translateX(-50%) translateY(-1rem); }
+          to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+/**
+ * Top-center banner notification component
+ * Used for logout and network reconnection banners
+ */
+export function BannerNotification() {
+  const { banner } = useToast();
+
+  if (!banner.visible) {
+    return null;
+  }
+
+  return (
+    <div style={{
+      position: 'fixed',
+      top: '3.5rem',
+      left: '50%',
+      transform: 'translateX(-50%)',
+      zIndex: 9999,
+      backgroundColor: banner.color,
+      color: 'white',
+      padding: '0.4rem 1rem',
+      borderRadius: '0.375rem',
+      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.12)',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '0.375rem',
+      fontSize: '0.8rem',
+      fontWeight: '500',
+      animation: 'fadeInDown 0.3s ease-out',
+    }}>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M20 6L9 17L4 12" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+      {banner.message}
+      <style>{`
+        @keyframes fadeInDown {
+          from { opacity: 0; transform: translateX(-50%) translateY(-1rem); }
+          to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+      `}</style>
     </div>
   );
 }

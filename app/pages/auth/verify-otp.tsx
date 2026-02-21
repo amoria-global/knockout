@@ -15,6 +15,7 @@ function VerifyOtpContent(): React.JSX.Element {
   // Get query params and validate they're not "undefined" strings
   const applicantIdFromQuery = searchParams.get('applicantId');
   const emailFromQuery = searchParams.get('email');
+  const redirectUrl = searchParams.get('redirect');
 
   const [applicantId, setApplicantId] = useState(applicantIdFromQuery && applicantIdFromQuery !== 'undefined' ? applicantIdFromQuery : '');
   const [email, setEmail] = useState(emailFromQuery && emailFromQuery !== 'undefined' ? emailFromQuery : '');
@@ -116,10 +117,10 @@ function VerifyOtpContent(): React.JSX.Element {
 
         if (response.success) {
           setSuccess(true);
-          showSuccess('Email verified successfully!');
-          // Redirect to login or dashboard after 2 seconds
+          showSuccess('Account verified successfully!');
+          // Redirect to login after 2 seconds, preserving the original redirect destination
           setTimeout(() => {
-            router.push('/user/auth/login');
+            router.push(`/user/auth/login${redirectUrl ? `?redirect=${encodeURIComponent(redirectUrl)}` : ''}`);
           }, 2000);
         } else {
           const errorMessage = response.error || 'Invalid OTP. Please try again.';
@@ -186,9 +187,9 @@ function VerifyOtpContent(): React.JSX.Element {
               </div>
             </div>
 
-            <h1 style={{ fontSize: window.innerWidth < 640 ? '20px' : '22px', fontWeight: '600', textAlign: 'center', color: '#000000', marginBottom: '6px', letterSpacing: '0.3px' }}>Email Verified Successfully!</h1>
+            <h1 style={{ fontSize: window.innerWidth < 640 ? '20px' : '22px', fontWeight: '600', textAlign: 'center', color: '#000000', marginBottom: '6px', letterSpacing: '0.3px' }}>Account Verified Successfully!</h1>
             <p style={{ fontSize: window.innerWidth < 640 ? '14px' : '14px', fontWeight: '500', color: '#000000', textAlign: 'center', marginBottom: window.innerWidth < 640 ? '20px' : '20px', lineHeight: '1.4', opacity: '0.7' }}>
-              Your email has been successfully verified. Redirecting to login...
+              Your account has been successfully verified. Redirecting to login...
             </p>
           </div>
         </div>
@@ -203,17 +204,17 @@ function VerifyOtpContent(): React.JSX.Element {
           {/* Envelope Icon */}
           <div style={{display: 'flex', justifyContent: 'center', marginBottom: window.innerWidth < 640 ? '12px' : '20px'}}>
             <div style={{ width: window.innerWidth < 640 ? '48px' : '60px', height: window.innerWidth < 640 ? '48px' : '60px', borderRadius: '50%', backgroundColor: '#083A85', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <i className="bi bi-envelope-check" style={{ fontSize: window.innerWidth < 640 ? '22px' : '28px', color: '#ffffff' }}></i>
+              <i className="bi bi-phone" style={{ fontSize: window.innerWidth < 640 ? '22px' : '28px', color: '#ffffff' }}></i>
             </div>
           </div>
 
           {/* Title and Description */}
           <h1 style={{ fontSize: window.innerWidth < 640 ? '18px' : '24px', fontWeight: '600', textAlign: 'center', color: '#000000', marginBottom: window.innerWidth < 640 ? '5px' : '8px', letterSpacing: '0.3px' }}>
-            Verify Your Email
+            Verify Your Phone Number
           </h1>
 
           <p style={{ fontSize: window.innerWidth < 640 ? '12px' : '15px', fontWeight: '500', color: '#000000', textAlign: 'center', marginBottom: window.innerWidth < 640 ? '16px' : '24px', lineHeight: '1.4', opacity: '0.7' }}>
-            We've sent a 6-digit verification code to {email}. Please enter it below.
+            We've sent a 6-digit verification code via SMS to your phone. Please enter it below.
           </p>
 
           {/* Error Message */}
@@ -226,7 +227,7 @@ function VerifyOtpContent(): React.JSX.Element {
           <form onSubmit={handleSubmit}>
             {/* Show email (read-only) */}
             <div style={{ marginBottom: window.innerWidth < 640 ? '10px' : '16px' }}>
-              <label style={{ display: 'block', fontSize: window.innerWidth < 640 ? '12px' : '14px', fontWeight: '500', color: '#000000', marginBottom: window.innerWidth < 640 ? '4px' : '6px' }}>Email Address</label>
+              <label style={{ display: 'block', fontSize: window.innerWidth < 640 ? '12px' : '14px', fontWeight: '500', color: '#000000', marginBottom: window.innerWidth < 640 ? '4px' : '6px' }}>Account Email</label>
               <div style={{
                 width: '100%',
                 padding: window.innerWidth < 640 ? '10px 12px' : '10px 14px',

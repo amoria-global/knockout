@@ -131,7 +131,7 @@ class OfflineDetector {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000);
 
-      const response = await fetch('/favicon.ico', {
+      await fetch('/favicon.ico', {
         method: 'HEAD',
         cache: 'no-store',
         signal: controller.signal,
@@ -139,9 +139,9 @@ class OfflineDetector {
 
       clearTimeout(timeoutId);
 
-      const isOnline = response.ok;
-      this.setOnline(isOnline);
-      return isOnline;
+      // Any response (even 404) means we have network connectivity
+      this.setOnline(true);
+      return true;
     } catch {
       // Fetch failed - might be offline or CORS issue
       // Only mark offline if browser also says offline
