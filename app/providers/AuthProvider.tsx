@@ -159,10 +159,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const token = getAuthToken();
         if (token) {
           fetchUserProfile(token).then(profile => {
-            if (profile?.customerType && profile.customerType !== storedUser.customerType) {
-              const updated = { ...storedUser, customerType: profile.customerType };
-              storeUser(updated);
-              setUser(updated);
+            if (profile) {
+              const needsUpdate =
+                (profile.customerType && profile.customerType !== storedUser.customerType) ||
+                (profile.profilePicture && profile.profilePicture !== storedUser.profilePicture);
+              if (needsUpdate) {
+                const updated = {
+                  ...storedUser,
+                  ...(profile.customerType && { customerType: profile.customerType }),
+                  ...(profile.profilePicture && { profilePicture: profile.profilePicture }),
+                };
+                storeUser(updated);
+                setUser(updated);
+              }
             }
           });
         }
@@ -237,10 +246,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     storeUser(userData);
     // Update state
     setUser(userData);
-    // Fetch real profile to get customerType
+    // Fetch real profile to get customerType and profilePicture
     const profile = await fetchUserProfile(token);
-    if (profile?.customerType) {
-      const updated = { ...userData, customerType: profile.customerType };
+    if (profile?.customerType || profile?.profilePicture) {
+      const updated = {
+        ...userData,
+        ...(profile.customerType && { customerType: profile.customerType }),
+        ...(profile.profilePicture && { profilePicture: profile.profilePicture }),
+      };
       storeUser(updated);
       setUser(updated);
     }
