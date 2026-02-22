@@ -718,12 +718,16 @@ const AmoriaKNavbar = () => {
                   className="flex items-center gap-2 cursor-pointer border-none bg-transparent"
                 >
                   <div
-                    className="w-9 h-9 rounded-full bg-[#083A85] flex items-center justify-center"
+                    className="w-9 h-9 rounded-full bg-[#083A85] flex items-center justify-center overflow-hidden"
                     style={{ boxShadow: '0 2px 8px rgba(8, 58, 133, 0.25)' }}
                   >
-                    <span className="text-white font-semibold text-sm">
-                      {user.firstName?.[0]?.toUpperCase()}{user.lastName?.[0]?.toUpperCase()}
-                    </span>
+                    {user.profilePicture ? (
+                      <img src={user.profilePicture} alt={`${user.firstName} ${user.lastName}`} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-white font-semibold text-sm">
+                        {user.firstName?.[0]?.toUpperCase()}{user.lastName?.[0]?.toUpperCase()}
+                      </span>
+                    )}
                   </div>
                   <i className={`bi bi-chevron-down text-gray-600 transition-transform duration-200 ${isProfileDropdownOpen ? 'rotate-180' : ''}`} style={{ fontSize: '12px' }}></i>
                 </button>
@@ -1107,11 +1111,16 @@ const AmoriaKNavbar = () => {
                         alignItems: 'center',
                         justifyContent: 'center',
                         flexShrink: 0,
+                        overflow: 'hidden',
                       }}
                     >
-                      <span style={{ color: '#fff', fontWeight: '600', fontSize: isMobile ? '12px' : '14px' }}>
-                        {user.firstName?.[0]?.toUpperCase()}{user.lastName?.[0]?.toUpperCase()}
-                      </span>
+                      {user.profilePicture ? (
+                        <img src={user.profilePicture} alt={`${user.firstName} ${user.lastName}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : (
+                        <span style={{ color: '#fff', fontWeight: '600', fontSize: isMobile ? '12px' : '14px' }}>
+                          {user.firstName?.[0]?.toUpperCase()}{user.lastName?.[0]?.toUpperCase()}
+                        </span>
+                      )}
                     </div>
                     <div style={{ overflow: 'hidden' }}>
                       <p style={{ fontWeight: '600', color: '#1f2937', fontSize: isMobile ? '13px' : '14px', marginBottom: '2px' }}>

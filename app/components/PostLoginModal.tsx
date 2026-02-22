@@ -22,11 +22,16 @@ export default function PostLoginModal({
   onGoToDashboard,
 }: PostLoginModalProps): React.JSX.Element | null {
   // Determine dashboard label based on user type
-  const dashboardLabel = customerType === 'client'
-    ? 'Continue to Client Portal'
-    : customerType === 'event-coordinator'
-      ? 'Continue to Event Dashboard'
-      : 'Continue to Dashboard';
+  const userTypeLabel = customerType === 'photographer'
+    ? 'Photographer'
+    : customerType === 'client'
+      ? 'Client'
+      : customerType === 'event-coordinator'
+        ? 'Event Coordinator'
+        : '';
+  const dashboardLabel = userTypeLabel
+    ? `Continue to ${userTypeLabel} Dashboard`
+    : 'Continue to Dashboard';
   if (!isOpen) return null;
 
   return (
@@ -180,7 +185,7 @@ export default function PostLoginModal({
               }}
             >
               <i className="bi bi-camera-fill" style={{ fontSize: '18px' }}></i>
-              Keep Exploring Photographers
+              Keep Exploring Photographers & Events
             </button>
           </div>
         </div>
