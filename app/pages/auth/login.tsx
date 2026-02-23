@@ -12,6 +12,82 @@ import { getAuthToken, getRefreshToken } from '@/lib/api/client';
 import PostLoginModal from '@/app/components/PostLoginModal';
 import { getDashboardUrlWithToken } from '@/lib/utils/dashboard-url';
 
+/**
+ * Google Login Button — isolated so useGoogleLogin only runs inside GoogleOAuthProvider context.
+ * If GoogleOAuthProvider skipped wrapping (no client ID), this component is not rendered.
+ */
+function GoogleLoginButton({ onSuccess, onError, disabled, isMobile }: {
+  onSuccess: (tokenResponse: { access_token: string }) => void;
+  onError: () => void;
+  disabled: boolean;
+  isMobile: boolean;
+}) {
+  const [loading, setLoading] = useState(false);
+  const googleLogin = useGoogleLogin({
+    onSuccess: (tokenResponse) => {
+      setLoading(true);
+      onSuccess(tokenResponse);
+    },
+    onError: () => {
+      setLoading(false);
+      onError();
+    },
+  });
+
+  return (
+    <button
+      type="button"
+      onClick={() => googleLogin()}
+      disabled={disabled || loading}
+      style={{
+        flex: '1',
+        padding: isMobile ? '14px 20px' : '12px 20px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '10px',
+        borderRadius: '20px',
+        border: '2px solid #d1d5db',
+        backgroundColor: '#ffffff',
+        cursor: (disabled || loading) ? 'not-allowed' : 'pointer',
+        transition: 'all 0.3s',
+        opacity: loading ? 0.7 : 1
+      }}
+      onMouseEnter={(e) => {
+        if (!disabled && !loading) {
+          e.currentTarget.style.borderColor = '#083A85';
+          e.currentTarget.style.backgroundColor = '#f9fafb';
+          e.currentTarget.style.transform = 'translateY(-2px)';
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (!disabled && !loading) {
+          e.currentTarget.style.borderColor = '#d1d5db';
+          e.currentTarget.style.backgroundColor = '#ffffff';
+          e.currentTarget.style.transform = 'translateY(0)';
+        }
+      }}
+    >
+      {loading ? (
+        <>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" style={{ animation: 'spin 1s linear infinite' }}>
+            <circle cx="12" cy="12" r="10" stroke="#d1d5db" strokeWidth="3" fill="none" />
+            <path d="M12 2a10 10 0 0 1 10 10" stroke="#083A85" strokeWidth="3" fill="none" strokeLinecap="round" />
+          </svg>
+          <span style={{ fontSize: isMobile ? '15px' : '14px', fontWeight: '600', color: '#374151' }}>Signing in...</span>
+        </>
+      ) : (
+        <>
+          <img src="https://www.svgrepo.com/show/355037/google.svg" alt="Google" style={{ width: '22px', height: '22px' }} />
+          <span style={{ fontSize: isMobile ? '15px' : '14px', fontWeight: '600', color: '#374151' }}>Login with Google</span>
+        </>
+      )}
+    </button>
+  );
+}
+
+const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';
+
 export default function LoginPage(): React.JSX.Element {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -30,76 +106,73 @@ export default function LoginPage(): React.JSX.Element {
   const [loggedInUserType, setLoggedInUserType] = useState<string | undefined>(undefined);
   const [googleLoading, setGoogleLoading] = useState(false);
 
-  // Google OAuth login handler
-  const googleLogin = useGoogleLogin({
-    onSuccess: async (tokenResponse) => {
-      setGoogleLoading(true);
-      setError('');
+  // Google OAuth success handler
+  const handleGoogleSuccess = async (tokenResponse: { access_token: string }) => {
+    setGoogleLoading(true);
+    setError('');
 
-      try {
-        // Fetch user info from Google using the access token
-        const googleResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-          headers: {
-            Authorization: `Bearer ${tokenResponse.access_token}`,
-          },
-        });
+    try {
+      const googleResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: {
+          Authorization: `Bearer ${tokenResponse.access_token}`,
+        },
+      });
 
-        if (!googleResponse.ok) {
-          throw new Error('Failed to fetch Google user info');
-        }
+      if (!googleResponse.ok) {
+        throw new Error('Failed to fetch Google user info');
+      }
 
-        const userInfo = await googleResponse.json();
-        const googleEmail = userInfo.email;
-        const firstName = userInfo.given_name || '';
-        const lastName = userInfo.family_name || '';
+      const userInfo = await googleResponse.json();
+      const googleEmail = userInfo.email;
+      const firstName = userInfo.given_name || '';
+      const lastName = userInfo.family_name || '';
 
-        // Call backend google auth endpoint
-        const response = await googleAuth({
-          email: googleEmail,
-          firstName,
-          lastName,
-          customerType: 'Client',
-        });
+      const response = await googleAuth({
+        email: googleEmail,
+        firstName,
+        lastName,
+        customerType: 'Client',
+      });
 
-        const data = response.data;
+      const data = response.data;
 
-        if (response.success && data?.token) {
-          const customerType = data.customerType || '';
+      if (response.success && data?.token) {
+        const customerType = data.customerType || '';
 
-          const userData = {
-            id: data.id || data.customerId || '',
-            firstName: data.firstName || firstName,
-            lastName: data.lastName || lastName,
-            email: data.email || googleEmail,
-            phone: data.phone || '',
-            customerId: data.customerId || '',
-            customerType: customerType,
-          };
+        const userData = {
+          id: data.id || data.customerId || '',
+          firstName: data.firstName || firstName,
+          lastName: data.lastName || lastName,
+          email: data.email || googleEmail,
+          phone: data.phone || '',
+          customerId: data.customerId || '',
+          customerType: customerType,
+        };
 
-          loginUser(userData, data.token);
+        loginUser(userData, data.token);
 
-          setLoggedInUserName(userData.firstName || 'User');
-          setLoggedInUserType(customerType);
-          showSuccess('Welcome back!');
-          setShowPostLoginModal(true);
-        } else {
-          const errorMessage = response.error || data?.message || 'Google login failed. Please try again.';
-          setError(errorMessage);
-          showError(errorMessage);
-        }
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'An error occurred during Google login.';
+        setLoggedInUserName(userData.firstName || 'User');
+        setLoggedInUserType(customerType);
+        showSuccess('Welcome back!');
+        setShowPostLoginModal(true);
+      } else {
+        const errorMessage = response.error || data?.message || 'Google login failed. Please try again.';
         setError(errorMessage);
         showError(errorMessage);
-      } finally {
-        setGoogleLoading(false);
       }
-    },
-    onError: () => {
-      showError('Google sign-in was cancelled or failed. Please try again.');
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred during Google login.';
+      setError(errorMessage);
+      showError(errorMessage);
+    } finally {
       setGoogleLoading(false);
-    },
-  });
+    }
+  };
+
+  const handleGoogleError = () => {
+    showError('Google sign-in was cancelled or failed. Please try again.');
+    setGoogleLoading(false);
+  };
 
   // Screen size detection for responsive design
   const [screenSize, setScreenSize] = useState<'mobile' | 'tablet' | 'desktop' | 'large' | 'xlarge'>('desktop');
@@ -539,57 +612,16 @@ export default function LoginPage(): React.JSX.Element {
             </h1>
 
             {/* Social Login Buttons */}
-            <div style={{ display: 'flex', gap: '12px', marginBottom: isMobile ? '8px' : '16px' }}>
-              {/* Google Button - Triggers Google OAuth flow */}
-              <button
-                type="button"
-                onClick={() => googleLogin()}
-                disabled={googleLoading || loading}
-                style={{
-                  flex: '1',
-                  padding: isMobile ? '14px 20px' : '12px 20px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '10px',
-                  borderRadius: '20px',
-                  border: '2px solid #d1d5db',
-                  backgroundColor: '#ffffff',
-                  cursor: (googleLoading || loading) ? 'not-allowed' : 'pointer',
-                  transition: 'all 0.3s',
-                  opacity: googleLoading ? 0.7 : 1
-                }}
-                onMouseEnter={(e) => {
-                  if (!googleLoading && !loading) {
-                    e.currentTarget.style.borderColor = '#083A85';
-                    e.currentTarget.style.backgroundColor = '#f9fafb';
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!googleLoading && !loading) {
-                    e.currentTarget.style.borderColor = '#d1d5db';
-                    e.currentTarget.style.backgroundColor = '#ffffff';
-                    e.currentTarget.style.transform = 'translateY(0)';
-                  }
-                }}
-              >
-                {googleLoading ? (
-                  <>
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" style={{ animation: 'spin 1s linear infinite' }}>
-                      <circle cx="12" cy="12" r="10" stroke="#d1d5db" strokeWidth="3" fill="none" />
-                      <path d="M12 2a10 10 0 0 1 10 10" stroke="#083A85" strokeWidth="3" fill="none" strokeLinecap="round" />
-                    </svg>
-                    <span style={{ fontSize: isMobile ? '15px' : '14px', fontWeight: '600', color: '#374151' }}>Signing in...</span>
-                  </>
-                ) : (
-                  <>
-                    <img src="https://www.svgrepo.com/show/355037/google.svg" alt="Google" style={{ width: '22px', height: '22px' }} />
-                    <span style={{ fontSize: isMobile ? '15px' : '14px', fontWeight: '600', color: '#374151' }}>Login with Google</span>
-                  </>
-                )}
-              </button>
-            </div>
+            {GOOGLE_CLIENT_ID && (
+              <div style={{ display: 'flex', gap: '12px', marginBottom: isMobile ? '8px' : '16px' }}>
+                <GoogleLoginButton
+                  onSuccess={handleGoogleSuccess}
+                  onError={handleGoogleError}
+                  disabled={googleLoading || loading}
+                  isMobile={isMobile}
+                />
+              </div>
+            )}
 
             {/* Divider */}
             <div style={{
