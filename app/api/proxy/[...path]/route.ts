@@ -75,16 +75,33 @@ async function proxyRequest(
     // Make the request to the actual API
     const response = await fetch(url.toString(), fetchOptions);
 
-    // Get response data
-    const data = await response.json().catch(() => ({}));
+    const corsHeaders = {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    };
 
-    // Return the response
-    return NextResponse.json(data, {
+    // Check if the response is binary (image, file, etc.) vs JSON
+    const contentType = response.headers.get('content-type') || '';
+    const isJson = contentType.includes('application/json');
+
+    if (isJson) {
+      // JSON response — parse and re-serialize
+      const data = await response.json().catch(() => ({}));
+      return NextResponse.json(data, {
+        status: response.status,
+        headers: corsHeaders,
+      });
+    }
+
+    // Binary / non-JSON response (images, files, etc.) — stream through as-is
+    const body = await response.arrayBuffer();
+    return new NextResponse(body, {
       status: response.status,
       headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        ...corsHeaders,
+        'Content-Type': contentType,
+        'Cache-Control': 'public, max-age=86400', // Cache images for 24h
       },
     });
   } catch (error) {
