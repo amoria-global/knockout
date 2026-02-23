@@ -16,6 +16,95 @@ interface GoogleUserInfo {
   name?: string;
 }
 
+/**
+ * Google Signup Button — isolated so useGoogleLogin only runs inside GoogleOAuthProvider context.
+ */
+function GoogleSignupButton({ onSuccess, onError, disabled, isConnected, isMobile }: {
+  onSuccess: (tokenResponse: { access_token: string }) => void;
+  onError: (error: unknown) => void;
+  disabled: boolean;
+  isConnected: boolean;
+  isMobile: boolean;
+}) {
+  const [loading, setLoading] = useState(false);
+  const googleLogin = useGoogleLogin({
+    onSuccess: (tokenResponse) => {
+      setLoading(true);
+      onSuccess(tokenResponse);
+      setLoading(false);
+    },
+    onError: (error) => {
+      setLoading(false);
+      onError(error);
+    },
+  });
+
+  return (
+    <button
+      type="button"
+      onClick={() => googleLogin()}
+      disabled={disabled || isConnected}
+      style={{
+        flex: '1',
+        padding: isMobile ? '14px 20px' : '12px 20px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '10px',
+        borderRadius: isMobile ? '16px' : '20px',
+        border: isConnected ? '2px solid #10b981' : '2px solid #d1d5db',
+        backgroundColor: isConnected ? '#ecfdf5' : '#ffffff',
+        cursor: (disabled || isConnected) ? 'not-allowed' : 'pointer',
+        transition: 'all 0.3s',
+        minHeight: isMobile ? '50px' : 'auto',
+        opacity: loading ? 0.7 : 1
+      }}
+      onMouseEnter={(e) => {
+        if (!disabled && !isConnected) {
+          e.currentTarget.style.borderColor = '#083A85';
+          e.currentTarget.style.backgroundColor = '#f9fafb';
+          e.currentTarget.style.transform = 'translateY(-2px)';
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (!disabled && !isConnected) {
+          e.currentTarget.style.borderColor = '#d1d5db';
+          e.currentTarget.style.backgroundColor = '#ffffff';
+          e.currentTarget.style.transform = 'translateY(0)';
+        }
+      }}
+    >
+      {loading ? (
+        <>
+          <div style={{
+            width: isMobile ? '22px' : '20px',
+            height: isMobile ? '22px' : '20px',
+            border: '2px solid #d1d5db',
+            borderTopColor: '#083A85',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite'
+          }} />
+          <span style={{ fontSize: isMobile ? '15px' : '14px', fontWeight: '600', color: '#374151' }}>Connecting...</span>
+        </>
+      ) : isConnected ? (
+        <>
+          <svg width={isMobile ? '22' : '20'} height={isMobile ? '22' : '20'} viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2">
+            <path d="M20 6L9 17l-5-5" />
+          </svg>
+          <span style={{ fontSize: isMobile ? '15px' : '14px', fontWeight: '600', color: '#10b981' }}>Google Connected</span>
+        </>
+      ) : (
+        <>
+          <img src="https://www.svgrepo.com/show/355037/google.svg" alt="Google" style={{ width: isMobile ? '22px' : '20px', height: isMobile ? '22px' : '20px' }} />
+          <span style={{ fontSize: isMobile ? '15px' : '14px', fontWeight: '600', color: '#374151' }}>Sign up with Google</span>
+        </>
+      )}
+    </button>
+  );
+}
+
+const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';
+
 export default function SignupPage(): React.JSX.Element {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -37,45 +126,42 @@ export default function SignupPage(): React.JSX.Element {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [isGooglePreFilled, setIsGooglePreFilled] = useState(false);
 
-  // Google OAuth login handler
-  const googleLogin = useGoogleLogin({
-    onSuccess: async (tokenResponse) => {
-      setGoogleLoading(true);
-      try {
-        // Fetch user info from Google using the access token
-        const response = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-          headers: {
-            Authorization: `Bearer ${tokenResponse.access_token}`,
-          },
-        });
+  // Google OAuth success handler
+  const handleGoogleSuccess = async (tokenResponse: { access_token: string }) => {
+    setGoogleLoading(true);
+    try {
+      const response = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: {
+          Authorization: `Bearer ${tokenResponse.access_token}`,
+        },
+      });
 
-        if (!response.ok) {
-          throw new Error('Failed to fetch Google user info');
-        }
-
-        const userInfo: GoogleUserInfo = await response.json();
-
-        // Pre-fill form fields with Google data
-        if (userInfo.given_name) setFirstName(userInfo.given_name);
-        if (userInfo.family_name) setLastName(userInfo.family_name);
-        if (userInfo.email) setEmail(userInfo.email);
-
-        setIsGooglePreFilled(true);
-        showSuccess('Google account connected! Please complete your registration.');
-        showInfo('Enter your phone number and create a password to finish signing up.');
-      } catch (error) {
-        console.error('Google login error:', error);
-        showError('Failed to connect Google account. Please try again.');
-      } finally {
-        setGoogleLoading(false);
+      if (!response.ok) {
+        throw new Error('Failed to fetch Google user info');
       }
-    },
-    onError: (error) => {
-      console.error('Google OAuth error:', error);
-      showError('Google sign-in was cancelled or failed. Please try again.');
+
+      const userInfo: GoogleUserInfo = await response.json();
+
+      if (userInfo.given_name) setFirstName(userInfo.given_name);
+      if (userInfo.family_name) setLastName(userInfo.family_name);
+      if (userInfo.email) setEmail(userInfo.email);
+
+      setIsGooglePreFilled(true);
+      showSuccess('Google account connected! Please complete your registration.');
+      showInfo('Enter your phone number and create a password to finish signing up.');
+    } catch (error) {
+      console.error('Google login error:', error);
+      showError('Failed to connect Google account. Please try again.');
+    } finally {
       setGoogleLoading(false);
-    },
-  });
+    }
+  };
+
+  const handleGoogleError = (error: unknown) => {
+    console.error('Google OAuth error:', error);
+    showError('Google sign-in was cancelled or failed. Please try again.');
+    setGoogleLoading(false);
+  };
 
   // Auto-scroll to phone field after Google pre-fill
   useEffect(() => {
@@ -481,67 +567,16 @@ export default function SignupPage(): React.JSX.Element {
               marginBottom: isMobile ? '14px' : '16px',
               width: '100%'
             }}>
-              {/* Google Button */}
-              <button
-                type="button"
-                onClick={() => googleLogin()}
-                disabled={googleLoading || isGooglePreFilled}
-                style={{
-                  flex: '1',
-                  padding: isMobile ? '14px 20px' : '12px 20px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '10px',
-                  borderRadius: isMobile ? '16px' : '20px',
-                  border: isGooglePreFilled ? '2px solid #10b981' : '2px solid #d1d5db',
-                  backgroundColor: isGooglePreFilled ? '#ecfdf5' : '#ffffff',
-                  cursor: (googleLoading || isGooglePreFilled) ? 'not-allowed' : 'pointer',
-                  transition: 'all 0.3s',
-                  minHeight: isMobile ? '50px' : 'auto',
-                  opacity: googleLoading ? 0.7 : 1
-                }}
-                onMouseEnter={(e) => {
-                  if (!googleLoading && !isGooglePreFilled) {
-                    e.currentTarget.style.borderColor = '#083A85';
-                    e.currentTarget.style.backgroundColor = '#f9fafb';
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!googleLoading && !isGooglePreFilled) {
-                    e.currentTarget.style.borderColor = '#d1d5db';
-                    e.currentTarget.style.backgroundColor = '#ffffff';
-                    e.currentTarget.style.transform = 'translateY(0)';
-                  }
-                }}
-              >
-                {googleLoading ? (
-                  <>
-                    <div style={{
-                      width: isMobile ? '22px' : '20px',
-                      height: isMobile ? '22px' : '20px',
-                      border: '2px solid #d1d5db',
-                      borderTopColor: '#083A85',
-                      borderRadius: '50%',
-                      animation: 'spin 1s linear infinite'
-                    }} />
-                    <span style={{ fontSize: isMobile ? '15px' : '14px', fontWeight: '600', color: '#374151' }}>Connecting...</span>
-                  </>
-                ) : isGooglePreFilled ? (
-                  <>
-                    <svg width={isMobile ? '22' : '20'} height={isMobile ? '22' : '20'} viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2">
-                      <path d="M20 6L9 17l-5-5" />
-                    </svg>
-                    <span style={{ fontSize: isMobile ? '15px' : '14px', fontWeight: '600', color: '#10b981' }}>Google Connected</span>
-                  </>
-                ) : (
-                  <>
-                    <img src="https://www.svgrepo.com/show/355037/google.svg" alt="Google" style={{ width: isMobile ? '22px' : '20px', height: isMobile ? '22px' : '20px' }} />
-                    <span style={{ fontSize: isMobile ? '15px' : '14px', fontWeight: '600', color: '#374151' }}>Sign up with Google</span>
-                  </>
-                )}
-              </button>
+              {/* Google Button — only rendered when Google OAuth is configured */}
+              {GOOGLE_CLIENT_ID ? (
+                <GoogleSignupButton
+                  onSuccess={handleGoogleSuccess}
+                  onError={handleGoogleError}
+                  disabled={googleLoading}
+                  isConnected={isGooglePreFilled}
+                  isMobile={isMobile}
+                />
+              ) : null}
             </div>
 
             {/* CSS for spinner animation */}
