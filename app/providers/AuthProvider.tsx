@@ -76,6 +76,19 @@ function getValidProfilePicture(url: string | null | undefined): string | undefi
 }
 
 /**
+ * Rewrite backend HTTP image URLs to go through our HTTPS proxy on deployment.
+ * e.g. http://197.243.24.101/uploads/photo.jpg → /api/proxy/uploads/photo.jpg
+ */
+function normalizeImageUrl(url: string | undefined): string | undefined {
+  if (!url) return undefined;
+  const apiBase = (process.env.NEXT_PUBLIC_API_URL || 'http://197.243.24.101').replace(/\/$/, '');
+  if (typeof window !== 'undefined' && url.startsWith(apiBase) && window.location.origin !== apiBase) {
+    return url.replace(apiBase, '/api/proxy');
+  }
+  return url;
+}
+
+/**
  * Profile summary response shape
  */
 interface ProfileSummaryData {
@@ -109,7 +122,7 @@ async function fetchUserProfile(): Promise<Partial<AuthUser> | null> {
       lastName: data.lastName || '',
       email: data.email || '',
       customerType: data.customerType || '',
-      profilePicture: getValidProfilePicture(data.profilePicture),
+      profilePicture: normalizeImageUrl(getValidProfilePicture(data.profilePicture)),
     };
   } catch {
     return null;
@@ -131,6 +144,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const storedUser = getStoredUser();
 
       if (hasToken && storedUser) {
+        // Normalize any stored HTTP image URLs for current environment
+        if (storedUser.profilePicture) {
+          storedUser.profilePicture = normalizeImageUrl(storedUser.profilePicture);
+        }
         setUser(storedUser);
         // Refresh customerType and profilePicture from profile-summary API
         if (getAuthToken()) {
