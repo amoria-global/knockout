@@ -21,12 +21,13 @@ export default function PostLoginModal({
   onKeepExploring,
   onGoToDashboard,
 }: PostLoginModalProps): React.JSX.Element | null {
-  // Determine dashboard label based on user type
-  const userTypeLabel = customerType === 'photographer'
+  // Determine dashboard label based on user type (case-insensitive)
+  const type = customerType?.toLowerCase();
+  const userTypeLabel = type === 'photographer'
     ? 'Photographer'
-    : customerType === 'client'
+    : type === 'client'
       ? 'Client'
-      : customerType === 'event-coordinator'
+      : type === 'event-coordinator'
         ? 'Event Coordinator'
         : '';
   const dashboardLabel = userTypeLabel
