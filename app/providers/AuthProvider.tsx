@@ -1,9 +1,8 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { getAuthToken, setAuthToken, removeAuthToken, removeRefreshToken, isAuthenticated as checkAuth } from '@/lib/api/client';
-import { API_CONFIG } from '@/lib/api/config';
-import { refreshToken as attemptRefreshToken } from '@/lib/APIs/auth/refresh-token/route';
+import { apiClient, getAuthToken, setAuthToken, removeAuthToken, removeRefreshToken, isAuthenticated as checkAuth } from '@/lib/api/client';
+import { API_ENDPOINTS } from '@/lib/api/config';
 import { logout as logoutFromBackend } from '@/lib/APIs/auth/logout/route';
 
 /**
@@ -69,70 +68,48 @@ function clearStoredUser(): void {
 }
 
 /**
- * Fetch user profile from profile-summary endpoint to get real customerType
+ * Validate profile picture URL — backend sometimes returns URLs like ".../null" instead of actual null
  */
-async function fetchUserProfile(token: string): Promise<Partial<AuthUser> | null> {
+function getValidProfilePicture(url: string | null | undefined): string | undefined {
+  if (!url || url.includes('/null')) return undefined;
+  return url;
+}
+
+/**
+ * Profile summary response shape
+ */
+interface ProfileSummaryData {
+  id?: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  customerType?: string;
+  profilePicture?: string | null;
+}
+
+/**
+ * Fetch user profile from profile-summary endpoint to get real customerType.
+ * Uses apiClient so it routes through the proxy on deployment (HTTPS→HTTP bridging)
+ * and gets automatic token refresh + retry handling.
+ */
+async function fetchUserProfile(): Promise<Partial<AuthUser> | null> {
   try {
-    const response = await fetch(
-      `${API_CONFIG.baseUrl}api/remote/photographer/profile-summary`,
-      {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'api-token': process.env.NEXT_PUBLIC_API_KEY || '',
-        },
-      }
+    const response = await apiClient.get<ProfileSummaryData>(
+      API_ENDPOINTS.PHOTOGRAPHER.PROFILE_SUMMARY
     );
-    if (response.status === 401) {
-      // Attempt token refresh before giving up
-      const refreshResult = await attemptRefreshToken();
-      if (refreshResult.success && refreshResult.data?.token) {
-        // Retry profile fetch with the new token
-        const retryResponse = await fetch(
-          `${API_CONFIG.baseUrl}api/remote/photographer/profile-summary`,
-          {
-            method: 'GET',
-            headers: {
-              'Authorization': `Bearer ${refreshResult.data.token}`,
-              'api-token': process.env.NEXT_PUBLIC_API_KEY || '',
-            },
-          }
-        );
-        if (retryResponse.ok) {
-          const retryResult = await retryResponse.json();
-          if (retryResult.action === 1 && retryResult.data) {
-            const retryData = retryResult.data;
-            return {
-              id: retryData.id || '',
-              firstName: retryData.firstName || '',
-              lastName: retryData.lastName || '',
-              email: retryData.email || '',
-              customerType: retryData.customerType || '',
-              profilePicture: retryData.profilePicture || undefined,
-            };
-          }
-        }
-      }
-      // Refresh failed — clear auth and redirect to login
-      removeAuthToken();
-      removeRefreshToken();
-      clearStoredUser();
-      if (typeof window !== 'undefined') {
-        window.location.href = '/user/auth/login';
-      }
-      return null;
-    }
-    if (!response.ok) return null;
-    const result = await response.json();
-    if (result.action !== 1 || !result.data) return null;
-    const data = result.data;
+
+    if (!response.success || !response.data) return null;
+
+    const data = response.data;
+    console.log('[AuthProvider] profile-summary response data:', JSON.stringify(data, null, 2));
+
     return {
       id: data.id || '',
       firstName: data.firstName || '',
       lastName: data.lastName || '',
       email: data.email || '',
       customerType: data.customerType || '',
-      profilePicture: data.profilePicture || undefined,
+      profilePicture: getValidProfilePicture(data.profilePicture),
     };
   } catch {
     return null;
@@ -155,10 +132,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (hasToken && storedUser) {
         setUser(storedUser);
-        // Refresh customerType from profile-summary API
-        const token = getAuthToken();
-        if (token) {
-          fetchUserProfile(token).then(profile => {
+        // Refresh customerType and profilePicture from profile-summary API
+        if (getAuthToken()) {
+          fetchUserProfile().then(profile => {
             if (profile) {
               const needsUpdate =
                 (profile.customerType && profile.customerType !== storedUser.customerType) ||
@@ -247,7 +223,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Update state
     setUser(userData);
     // Fetch real profile to get customerType and profilePicture
-    const profile = await fetchUserProfile(token);
+    const profile = await fetchUserProfile();
     if (profile?.customerType || profile?.profilePicture) {
       const updated = {
         ...userData,
