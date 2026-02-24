@@ -104,28 +104,13 @@ export const API_ENDPOINTS = {
 
   // Protected photographer endpoints
   PHOTOGRAPHER: {
-    UPDATE_PROFILE_PICTURE: '/api/remote/photographer/update-profile-picture',
-    UPDATE_COVER_PHOTO: '/api/remote/photographer/update-cover-photo',
-    UPDATE_IMPORTANT_DETAILS: '/api/remote/photographer/update-important-details',
-    ADD_AVAILABILITY: '/api/remote/photographer/add-availability',
-    ADD_EQUIPMENT: '/api/remote/photographer/add-equipment',
-    ADD_EDUCATION: '/api/remote/photographer/add-education-level',
-    ADD_SKILLS: '/api/remote/photographer/add-professional-skills',
-    ADD_PORTFOLIO: '/api/remote/photographer/add-project-portfolio',
-    ADD_CERTIFICATION: '/api/remote/photographer/add-trainting-certification',
     PROFILE_SUMMARY: '/api/remote/photographer/profile-summary',
     PACKAGES: '/api/remote/photographer/packages',
     PACKAGE_BY_ID: (id: string) => `/api/remote/photographer/packages/${id}`,
   },
 
-  // Donation endpoints (authenticated)
-  DONATIONS: {
-    CREATE: '/api/remote/donations',
-  },
-
   // Payment endpoints
   PAYMENTS: {
-    PAY: (declarationId: string) => `/api/remote/payments/${declarationId}/pay`,
     RECORD_TIP: '/api/remote/payments/record-tip',
     RECORD_STREAMING_PAYMENT: '/api/remote/payments/record-streaming-payment',
   },
@@ -133,19 +118,12 @@ export const API_ENDPOINTS = {
   // Customer endpoints
   CUSTOMER: {
     EVENTS_BOOK: '/api/remote/customer/events/book',
-    EVENTS_PUBLISH: (eventId: string) => `/api/remote/customer/events/${eventId}/publish`,
-    EVENTS_CONFIRM_COMPLETION: (eventId: string) => `/api/remote/customer/events/${eventId}/confirm-completion`,
   },
 
   // Legacy endpoint paths (for backward compatibility)
   LEGACY: {
-    AUTH: '/api/remote/auth',
-    USER: '/api/remote/user',
-    PHOTOGRAPHERS: '/api/remote/photographers',
     EVENTS: '/api/remote/events',
     BOOKINGS: '/api/remote/bookings',
-    MESSAGES: '/api/remote/messages',
-    CONTACT: '/api/remote/contact',
   },
 } as const;
 
