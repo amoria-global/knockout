@@ -26,7 +26,7 @@ export default function PhotographerInfoPage(): React.JSX.Element {
     e.preventDefault();
 
     if (!isDisabled) {
-      console.log('Photographer Info:', {
+      const params = new URLSearchParams({
         country: country === 'other' ? customCountry : country,
         eventType: eventType === 'other' ? customEventType : eventType,
         location,
@@ -34,6 +34,7 @@ export default function PhotographerInfoPage(): React.JSX.Element {
         eventTime,
       });
 
+      router.push(`/user/photographers?${params.toString()}`);
     }
   };
 

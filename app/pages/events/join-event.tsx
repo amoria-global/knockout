@@ -3,298 +3,55 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Navbar from '../../components/navbar';
+import { getPublicEvents, type PublicEvent } from '@/lib/APIs/public';
+import { joinEvent } from '@/lib/APIs/events/join-event/route';
 
-// Existing events data from the system
-const eventsData = [
-  {
-    id: 1,
-    title: 'APR BBC Vs Espoir BCC',
-    image: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?w=500&q=80',
-    category: 'Sports',
-    date: '2025-08-15',
-    time: '08:00 AM - 11:50 PM',
-    location: 'BK Arena - KN 4 Ave, Kigali',
-    status: 'UPCOMING',
-    price: '15,000 RWF',
-    attendees: 450
-  },
-  {
-    id: 2,
-    title: 'Joseph & Solange Wedding',
-    image: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80',
-    category: 'Wedding',
-    date: '2025-07-20',
-    time: '10:00 AM - 06:00 PM',
-    location: 'Kigali Serena Hotel - KN 3 Ave, Kigali',
-    status: 'LIVE',
-    price: '50,000 RWF',
-    attendees: 200
-  },
-  {
-    id: 3,
-    title: '2021 Graduation Ceremony',
-    image: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=500&q=80',
-    category: 'Academic',
-    date: '2025-09-10',
-    time: '09:00 AM - 02:00 PM',
-    location: 'University of Rwanda - KK 737 St, Kigali',
-    status: 'UPCOMING',
-    price: 'Free',
-    attendees: 1500
-  },
-  {
-    id: 4,
-    title: 'Zuba Sisterhood',
-    image: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=500&q=80',
-    category: 'Gathering',
-    date: '2025-08-05',
-    time: '03:00 PM - 07:00 PM',
-    location: 'Inema Arts Center - KG 518 St, Kigali',
-    status: 'LIVE',
-    price: '10,000 RWF',
-    attendees: 80
-  },
-  {
-    id: 5,
-    title: 'The Toxxyk Experience',
-    image: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=500&q=80',
-    category: 'Concert',
-    date: '2025-07-20',
-    time: '08:00 AM - 11:50 PM',
-    location: 'Heza Beach Resort - RBV 187 Ave, Gisenyi',
-    status: 'UPCOMING',
-    price: '25,000 RWF',
-    attendees: 500
-  },
-  {
-    id: 6,
-    title: 'New Jersey Fashion Week',
-    image: 'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=500&q=80',
-    category: 'Fashion',
-    date: '2025-10-15',
-    time: '06:00 PM - 11:00 PM',
-    location: 'Kigali Convention Centre - KN 3 Ave, Kigali',
-    status: 'UPCOMING',
-    price: '30,000 RWF',
-    attendees: 350
-  },
-  {
-    id: 7,
-    title: 'Rebecca Holy Service',
-    image: 'https://images.unsplash.com/photo-1438032005730-c779502df39b?w=500&q=80',
-    category: 'Religious',
-    date: '2025-07-25',
-    time: '10:00 AM - 01:00 PM',
-    location: 'Christian Life Assembly - KG 7 Ave, Kigali',
-    status: 'UPCOMING',
-    price: 'Free',
-    attendees: 800
-  },
-  {
-    id: 8,
-    title: 'Kwita Izina - Gorilla Naming',
-    image: 'https://images.unsplash.com/photo-1540573133985-87b6da6d54a9?w=500&q=80',
-    category: 'Cultural',
-    date: '2025-09-05',
-    time: '08:00 AM - 05:00 PM',
-    location: 'Volcanoes National Park, Musanze',
-    status: 'UPCOMING',
-    price: '100,000 RWF',
-    attendees: 250
-  },
-  {
-    id: 9,
-    title: 'Pervision Experience',
-    image: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=500&q=80',
-    category: 'Corporate',
-    date: '2025-11-20',
-    time: '02:00 PM - 06:00 PM',
-    location: 'Radisson Blu Hotel - KN 3 Ave, Kigali',
-    status: 'UPCOMING',
-    price: '40,000 RWF',
-    attendees: 150
-  },
-  {
-    id: 10,
-    title: 'Iwacu Music Festival',
-    image: 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=500&q=80',
-    category: 'Concert',
-    date: '2025-12-10',
-    time: '05:00 PM - 11:30 PM',
-    location: 'Amahoro Stadium - KN 3 Ave, Kigali',
-    status: 'UPCOMING',
-    price: '20,000 RWF',
-    attendees: 2000
-  },
-  {
-    id: 11,
-    title: 'Tech Startup Summit',
-    image: 'https://images.unsplash.com/photo-1505373877841-8d25f7d46678?w=500&q=80',
-    category: 'Conference',
-    date: '2025-08-30',
-    time: '09:00 AM - 05:00 PM',
-    location: 'Norrsken House - KG 17 Ave, Kigali',
-    status: 'LIVE',
-    price: '35,000 RWF',
-    attendees: 300
-  },
-  {
-    id: 12,
-    title: 'Rwanda Film Festival',
-    image: 'https://images.unsplash.com/photo-1478720568477-152d9b164e26?w=500&q=80',
-    category: 'Entertainment',
-    date: '2025-07-18',
-    time: '06:00 PM - 10:00 PM',
-    location: 'Century Cinema - UTC, Kigali',
-    status: 'LIVE',
-    price: '12,000 RWF',
-    attendees: 180
-  },
-  {
-    id: 13,
-    title: 'Jazz & Wine Evening',
-    image: 'https://images.unsplash.com/photo-1415201364774-f6f0bb35f28f?w=500&q=80',
-    category: 'Concert',
-    date: '2025-08-22',
-    time: '07:00 PM - 11:00 PM',
-    location: 'Heaven Restaurant - KN 6 Ave, Kigali',
-    status: 'UPCOMING',
-    price: '25,000 RWF',
-    attendees: 120
-  },
-  {
-    id: 14,
-    title: 'Startup Pitch Competition',
-    image: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=500&q=80',
-    category: 'Conference',
-    date: '2025-09-15',
-    time: '10:00 AM - 05:00 PM',
-    location: 'Impact Hub - KG 9 Ave, Kigali',
-    status: 'LIVE',
-    price: '20,000 RWF',
-    attendees: 200
-  },
-  {
-    id: 15,
-    title: 'Annual Charity Gala',
-    image: 'https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=500&q=80',
-    category: 'Corporate',
-    date: '2025-10-05',
-    time: '06:00 PM - 11:00 PM',
-    location: 'Kigali Marriott Hotel - KN 3 Ave, Kigali',
-    status: 'UPCOMING',
-    price: '75,000 RWF',
-    attendees: 300
-  },
-  {
-    id: 16,
-    title: 'Traditional Dance Festival',
-    image: 'https://images.unsplash.com/photo-1504609813442-a8924e83f76e?w=500&q=80',
-    category: 'Cultural',
-    date: '2025-08-18',
-    time: '03:00 PM - 08:00 PM',
-    location: 'Kigali Cultural Village - KG 14 Ave, Kigali',
-    status: 'LIVE',
-    price: '8,000 RWF',
-    attendees: 400
-  },
-  {
-    id: 17,
-    title: 'E-Commerce Summit 2025',
-    image: 'https://images.unsplash.com/photo-1556761175-4b46a572b786?w=500&q=80',
-    category: 'Conference',
-    date: '2025-11-08',
-    time: '08:00 AM - 06:00 PM',
-    location: 'Radisson Blu Hotel - KN 3 Ave, Kigali',
-    status: 'UPCOMING',
-    price: '45,000 RWF',
-    attendees: 250
-  },
-  {
-    id: 18,
-    title: 'Photography Exhibition',
-    image: 'https://images.unsplash.com/photo-1542038784456-1ea8e935640e?w=500&q=80',
-    category: 'Entertainment',
-    date: '2025-09-20',
-    time: '10:00 AM - 08:00 PM',
-    location: 'Ivuka Arts Center - KG 563 St, Kigali',
-    status: 'UPCOMING',
-    price: '5,000 RWF',
-    attendees: 150
-  },
-  {
-    id: 19,
-    title: 'Youth Leadership Forum',
-    image: 'https://images.unsplash.com/photo-1523580494863-6f3031224c94?w=500&q=80',
-    category: 'Conference',
-    date: '2025-10-12',
-    time: '09:00 AM - 04:00 PM',
-    location: 'Kigali Convention Centre - KN 3 Ave, Kigali',
-    status: 'UPCOMING',
-    price: 'Free',
-    attendees: 500
-  },
-  {
-    id: 20,
-    title: 'International Food Fair',
-    image: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=500&q=80',
-    category: 'Entertainment',
-    date: '2025-08-28',
-    time: '12:00 PM - 09:00 PM',
-    location: 'Kigali Heights - KN 4 Ave, Kigali',
-    status: 'UPCOMING',
-    price: '15,000 RWF',
-    attendees: 600
-  },
-  {
-    id: 21,
-    title: 'Marathon for Peace',
-    image: 'https://images.unsplash.com/photo-1532444458054-01a7dd3e9fca?w=500&q=80',
-    category: 'Sports',
-    date: '2025-09-25',
-    time: '06:00 AM - 12:00 PM',
-    location: 'Kigali City Centre - KN 3 Ave, Kigali',
-    status: 'LIVE',
-    price: '10,000 RWF',
-    attendees: 1000
-  },
-  {
-    id: 22,
-    title: 'Classical Music Night',
-    image: 'https://images.unsplash.com/photo-1465847899084-d164df4dedc6?w=500&q=80',
-    category: 'Concert',
-    date: '2025-11-15',
-    time: '07:30 PM - 10:30 PM',
-    location: 'Kigali Serena Hotel - KN 3 Ave, Kigali',
-    status: 'UPCOMING',
-    price: '30,000 RWF',
-    attendees: 180
-  },
-  {
-    id: 23,
-    title: 'Digital Marketing Bootcamp',
-    image: 'https://images.unsplash.com/photo-1432888498266-38ffec3eaf0a?w=500&q=80',
-    category: 'Conference',
-    date: '2025-10-20',
-    time: '09:00 AM - 05:00 PM',
-    location: 'Norrsken House - KG 17 Ave, Kigali',
-    status: 'LIVE',
-    price: '50,000 RWF',
-    attendees: 100
-  },
-  {
-    id: 24,
-    title: 'Comedy & Brunch Special',
-    image: 'https://images.unsplash.com/photo-1527224857830-43a7acc85260?w=500&q=80',
-    category: 'Entertainment',
-    date: '2025-08-10',
-    time: '11:00 AM - 03:00 PM',
-    location: 'The Hut - KG 623 St, Kigali',
-    status: 'UPCOMING',
-    price: '18,000 RWF',
-    attendees: 90
-  }
-];
+// Event type used by this page's UI
+interface EventItem {
+  id: string;
+  title: string;
+  image: string;
+  category: string;
+  date: string;
+  time: string;
+  location: string;
+  status: string;
+  price: string;
+  attendees: number;
+}
+
+// Map API PublicEvent to local EventItem
+function mapPublicEvent(e: PublicEvent): EventItem {
+  const price = e.price && e.price > 0 ? `${e.price.toLocaleString()} RWF` : 'Free';
+  const time = [e.startTime, e.endTime].filter(Boolean).join(' - ') || 'TBD';
+  return {
+    id: e.id,
+    title: e.title,
+    image: e.coverImage || e.bannerImage || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=500&q=80',
+    category: e.eventType || e.category || 'Event',
+    date: e.eventDate || '',
+    time,
+    location: e.location || 'TBD',
+    status: e.status || 'UPCOMING',
+    price,
+    attendees: e.guestCount || 0,
+  };
+}
+
+// Placeholder shown while loading (first item only, for structure)
+const placeholderEvent: EventItem = {
+  id: '0',
+  title: 'Loading events...',
+  image: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?w=500&q=80',
+  category: 'Sports',
+  date: '',
+  time: '',
+  location: '',
+  status: 'UPCOMING',
+  price: 'Free',
+  attendees: 0,
+};
+// eventsData removed — replaced by real API calls
 
 // Big event categories that require payment for live stream access
 const paidEventCategories = [
@@ -314,8 +71,12 @@ export default function JoinEvent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  // Real events from API
+  const [eventsData, setEventsData] = useState<EventItem[]>([]);
+  const [eventsLoading, setEventsLoading] = useState(true);
+
   // Payment state for big LIVE events
-  const [detectedEvent, setDetectedEvent] = useState<{ id: number; title: string; category: string; fee: number; location: string; image: string; status: string } | null>(null);
+  const [detectedEvent, setDetectedEvent] = useState<{ id: string; title: string; category: string; fee: number; location: string; image: string; status: string } | null>(null);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string | null>(null);
   const [paymentPhone, setPaymentPhone] = useState('');
   const [cardNumber, setCardNumber] = useState('');
@@ -413,6 +174,28 @@ export default function JoinEvent() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Fetch real events from API
+  useEffect(() => {
+    const fetchEvents = async () => {
+      setEventsLoading(true);
+      try {
+        const response = await getPublicEvents({ size: 50, sortDirection: 'desc' });
+        if (response.success && response.data) {
+          const data = response.data as unknown as Record<string, unknown>;
+          const content = data?.content
+            ? (data.content as PublicEvent[])
+            : [];
+          setEventsData(content.map(mapPublicEvent));
+        }
+      } catch {
+        // Failed to fetch — eventsData stays empty
+      } finally {
+        setEventsLoading(false);
+      }
+    };
+    fetchEvents();
+  }, []);
+
   // Auto-detect event from URL params and set detectedEvent if it's a paid big LIVE event
   useEffect(() => {
     const eventId = searchParams.get('id');
@@ -427,9 +210,8 @@ export default function JoinEvent() {
       setNumberOfPeople(parseInt(peopleCount, 10) || 1);
     }
 
-    if (eventId) {
-      const numericId = parseInt(eventId, 10);
-      const event = eventsData.find(e => e.id === numericId);
+    if (eventId && eventsData.length > 0) {
+      const event = eventsData.find(e => e.id === eventId || e.id === eventId);
 
       if (event) {
         let fee = parsePrice(event.price);
@@ -464,7 +246,7 @@ export default function JoinEvent() {
         // For UPCOMING, free, or non-paid category events without package param - show original content
       }
     }
-  }, [searchParams]);
+  }, [searchParams, eventsData]);
 
   // Check if event requires payment
   const isPaidEvent = (event: { category: string; fee: number }) => {
@@ -517,7 +299,7 @@ export default function JoinEvent() {
   };
 
   // Handle payment submission
-  const handlePayment = () => {
+  const handlePayment = async () => {
     if (!isPaymentValid()) {
       alert('Please fill in all required payment details');
       return;
@@ -525,38 +307,48 @@ export default function JoinEvent() {
 
     setIsProcessing(true);
 
-    // Simulate payment processing
-    setTimeout(() => {
-      setIsProcessing(false);
-      setPaymentSuccess(true);
+    try {
+      const response = await joinEvent({
+        eventId: String(detectedEvent?.id || ''),
+        packageType: packageType || 'individual',
+        numberOfPeople,
+      });
 
-      // After showing success message
-      setTimeout(() => {
-        if (packageType === 'group') {
-          // For group package, show shareable link card
-          setPaymentSuccess(false);
-          const newLink = generateShareableLink();
-          setShareableLink(newLink);
-          setShowShareableLink(true);
-        } else {
-          // For individual package, redirect to live stream
-          resetPaymentForm();
-          router.push('/user/events/live-stream');
-        }
-      }, 2000);
-    }, 2500);
+      setIsProcessing(false);
+
+      if (response.success) {
+        setPaymentSuccess(true);
+
+        // After showing success message
+        setTimeout(() => {
+          if (packageType === 'group') {
+            setPaymentSuccess(false);
+            const newLink = generateShareableLink();
+            setShareableLink(newLink);
+            setShowShareableLink(true);
+          } else {
+            resetPaymentForm();
+            router.push('/user/events/live-stream');
+          }
+        }, 2000);
+      } else {
+        alert(response.error || 'Payment failed. Please try again.');
+      }
+    } catch {
+      setIsProcessing(false);
+      alert('Payment failed. Please try again.');
+    }
   };
 
   const handleJoin = () => {
     // Only proceed if event link is filled in
     if (eventLink.trim()) {
-      // Try to find event by ID (numeric) or by title match
+      // Try to find event by ID or by title match
       const inputValue = eventLink.trim();
-      const numericId = parseInt(inputValue, 10);
 
       // Find event by ID or by partial title match
       const event = eventsData.find(e =>
-        e.id === numericId ||
+        e.id === inputValue ||
         e.title.toLowerCase().includes(inputValue.toLowerCase())
       );
 
