@@ -1,6 +1,5 @@
 /**
  * Payments API
- * POST /api/remote/payments/{declarationId}/pay
  * POST /api/remote/payments/record-tip
  * POST /api/remote/payments/record-streaming-payment
  */
@@ -8,28 +7,6 @@
 import { apiClient, isAuthenticated } from '@/lib/api/client';
 import { API_ENDPOINTS } from '@/lib/api/config';
 import type { ApiResponse } from '@/lib/api/types';
-
-// --- Pay Declaration ---
-
-export interface PayDeclarationResponse {
-  message: string;
-}
-
-/**
- * Pay for a declaration
- * Requires authentication
- */
-export async function payDeclaration(declarationId: string): Promise<ApiResponse<PayDeclarationResponse>> {
-  if (!isAuthenticated()) {
-    return { success: false, error: 'Authentication required' };
-  }
-
-  return apiClient.post<PayDeclarationResponse>(
-    API_ENDPOINTS.PAYMENTS.PAY(declarationId),
-    undefined,
-    { retries: 1 }
-  );
-}
 
 // --- Record Tip ---
 

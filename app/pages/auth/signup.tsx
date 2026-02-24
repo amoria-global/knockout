@@ -418,8 +418,8 @@ export default function SignupPage(): React.JSX.Element {
           flexShrink: 0,
           zIndex: 1000
         }}>
-          <img src="/logo.png" alt="Connekyt Logo" style={{ width: isMobile ? '36px' : '50px', height: isMobile ? '36px' : '50px', objectFit: 'contain', position: 'relative', top: isMobile ? '0px' : '-9px', left: isMobile ? '0px' : '-13px' }} />
-          <span className="font-bold" style={{ color: '#083A85', fontSize: isMobile ? '1.25rem' : '1.4rem', marginLeft: isMobile ? '-6px' : '-26px', marginTop: isMobile ? '0px' : '-2px', letterSpacing: '0.5px' }}>onnekyt</span>
+          <img src="/logo.png" alt="Connekyt Logo" style={{ width: isMobile ? '36px' : '50px', height: isMobile ? '36px' : '50px', objectFit: 'contain', position: 'relative', top: isMobile ? '-6px' : '-9px', left: isMobile ? '-1px' : '-13px' }} />
+          <span className="font-bold" style={{ color: '#083A85', fontSize: isMobile ? '1.25rem' : '1.4rem', marginLeft: isMobile ? '-10px' : '-26px', marginTop: isMobile ? '-1px' : '-2px', letterSpacing: '0.5px' }}>onnekyt</span>
         </Link>
 
       <div
@@ -429,7 +429,7 @@ export default function SignupPage(): React.JSX.Element {
           height: isMobile ? 'calc(100vh - 3.5rem)' : '90vh',
           maxHeight: isMobile ? 'none' : '800px',
           borderRadius: isMobile ? '0' : '1.5rem',
-          marginTop: isMobile ? '3.5rem' : '0'
+          marginTop: isMobile ? '0' : '0'
         }}
       >
 
