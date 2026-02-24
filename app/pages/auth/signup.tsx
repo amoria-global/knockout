@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useGoogleLogin } from '@react-oauth/google';
 import { signup } from '@/lib/APIs/auth/signup/route';
+import { googleAuth } from '@/lib/APIs/auth/google/route';
+import { setAuthToken } from '@/lib/api/client';
 import { useToast } from '@/lib/notifications/ToastProvider';
 import UserTypeModal from '@/app/components/UserTypeModal';
 
@@ -142,6 +144,27 @@ export default function SignupPage(): React.JSX.Element {
 
       const userInfo: GoogleUserInfo = await response.json();
 
+      // Try backend Google auth — if user already exists, they get a token and we redirect
+      try {
+        const backendResponse = await googleAuth({
+          email: userInfo.email,
+          firstName: userInfo.given_name || '',
+          lastName: userInfo.family_name || '',
+          customerType: userType,
+        });
+
+        if (backendResponse.success && backendResponse.data?.token) {
+          // Existing user — store token and redirect
+          setAuthToken(backendResponse.data.token);
+          showSuccess('Welcome back! Redirecting...');
+          router.push(redirectUrl || '/user');
+          return;
+        }
+      } catch {
+        // Backend call failed — continue with form pre-fill
+      }
+
+      // New user — pre-fill the form
       if (userInfo.given_name) setFirstName(userInfo.given_name);
       if (userInfo.family_name) setLastName(userInfo.family_name);
       if (userInfo.email) setEmail(userInfo.email);
