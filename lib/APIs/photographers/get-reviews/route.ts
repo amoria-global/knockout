@@ -1,12 +1,6 @@
 /**
  * Get Photographer Reviews API
- * GET /api/remote/public/photographers/list/:id/reviews
- *
- * Enhanced with new API client featuring:
- * - Automatic retry with exponential backoff
- * - Request timeout handling
- * - Rate limiting protection
- * - Production-safe logging
+ * GET /api/remote/public/photographers/:id/reviews
  */
 
 import { apiClient } from '@/lib/api/client';
@@ -43,7 +37,7 @@ export interface GetReviewsResponse {
 
 /**
  * Get Photographer Reviews
- * Uses enhanced API client with automatic retry and error handling
+ * Uses the correct /public/photographers/{id}/reviews endpoint
  */
 export async function getPhotographerReviews(
   photographerId: string,
@@ -51,7 +45,7 @@ export async function getPhotographerReviews(
   limit: number = 10
 ): Promise<ApiResponse<GetReviewsResponse>> {
   const response = await apiClient.get<GetReviewsResponse>(
-    `${API_ENDPOINTS.PUBLIC.PHOTOGRAPHERS_LIST}/${photographerId}/reviews?page=${page}&limit=${limit}`,
+    `${API_ENDPOINTS.PUBLIC.PHOTOGRAPHER_REVIEWS(photographerId)}?page=${page}&limit=${limit}`,
     {
       skipAuth: true,
       retries: 2,

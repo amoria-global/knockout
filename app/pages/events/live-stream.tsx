@@ -1,9 +1,11 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
+import { useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { getCurrencies, type Currency as APICurrency } from '@/lib/APIs/public';
 import { recordTip, recordStreamingPayment } from '@/lib/APIs/payments/route';
+import { getEventDetails } from '@/lib/APIs/events/get-event-details/route';
 
 // Dynamically import VideoMessageRecorder to avoid SSR issues
 const VideoMessageRecorder = dynamic(() => import('../../components/VideoMessageRecorder'), { ssr: false });
@@ -80,6 +82,33 @@ const App = () => {
   // Main focused event (index in events array)
   const [mainEventIndex, setMainEventIndex] = useState(0);
   const mainEvent = events[mainEventIndex];
+  const searchParams = useSearchParams();
+
+  // Load real event metadata from API on mount if eventId is in URL
+  useEffect(() => {
+    const eventId = searchParams.get('eventId') || searchParams.get('id');
+    if (!eventId) return;
+
+    const loadEventDetails = async () => {
+      try {
+        const response = await getEventDetails(eventId);
+        if (response.success && response.data) {
+          const eventData = (response.data as unknown as Record<string, unknown>)?.event || response.data;
+          const ev = eventData as Record<string, unknown>;
+          setEvents(prev => [{
+            ...prev[0],
+            id: eventId,
+            title: (ev.title as string) || prev[0].title,
+            photographer: (ev.photographerName as string) || prev[0].photographer,
+            category: (ev.eventType as string) || (ev.category as string) || prev[0].category,
+          }, ...prev.slice(1)]);
+        }
+      } catch {
+        // Keep default event data
+      }
+    };
+    loadEventDetails();
+  }, [searchParams]);
 
   // Swap animation state
   const [isSwapping, setIsSwapping] = useState(false);
