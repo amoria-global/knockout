@@ -321,23 +321,23 @@ export default function LoginPage(): React.JSX.Element {
   // Responsive styles for form inputs (mobile-only responsiveness, desktop keeps original)
   const inputStyle = {
     width: '100%',
-    padding: isMobile ? '10px 12px' : '12px 14px',
+    padding: isMobile ? '14px 16px' : '12px 14px',
     fontSize: isMobile ? '16px' : '15px', // 16px on mobile prevents iOS zoom
     border: '2px solid #d1d5db',
     borderRadius: isMobile ? '16px' : '20px',
     outline: 'none',
     transition: 'all 0.3s',
     backgroundColor: '#ffffff',
-    minHeight: isMobile ? '44px' : 'auto', // Minimum touch target on mobile only
+    minHeight: isMobile ? '50px' : 'auto', // Minimum touch target on mobile only
     boxSizing: 'border-box' as const
   };
 
   const labelStyle = {
     display: 'block',
-    fontSize: isMobile ? '13px' : '15px',
+    fontSize: isMobile ? '15px' : '15px',
     fontWeight: '500',
     color: '#374151',
-    marginBottom: isMobile ? '4px' : '6px'
+    marginBottom: isMobile ? '8px' : '6px'
   };
 
   return (
@@ -353,10 +353,10 @@ export default function LoginPage(): React.JSX.Element {
       `}</style>
 
       <div
-        className="h-screen overflow-hidden bg-gray-50 flex items-center justify-center"
+        className={`h-screen overflow-hidden bg-gray-50 flex ${isMobile ? 'items-start' : 'items-center'} justify-center`}
         style={{
-          padding: isMobile ? '0.5rem' : '4rem 1rem 1rem 1rem',
-          paddingTop: isMobile ? '12rem' : '4rem',
+          padding: isMobile ? '0' : '4rem 1rem 1rem 1rem',
+          paddingTop: isMobile ? '0' : '4rem',
           position: 'relative'
         }}
       >
@@ -365,14 +365,14 @@ export default function LoginPage(): React.JSX.Element {
           display: 'flex',
           alignItems: 'center',
           position: 'absolute',
-          left: '15px',
-          top: isMobile ? '20px' : '6px',
+          left: isMobile ? '0.5rem' : '15px',
+          top: isMobile ? '0.5rem' : '6px',
           textDecoration: 'none',
           flexShrink: 0,
           zIndex: 1000
         }}>
-          <img src="/logo.png" alt="Connekyt Logo" style={{ width: isMobile ? '36px' : '50px', height: isMobile ? '36px' : '50px', objectFit: 'contain', position: 'relative', top: isMobile ? '0px' : '-9px', left: isMobile ? '0px' : '-13px' }} />
-          <span className="font-bold" style={{ color: '#083A85', fontSize: isMobile ? '1.25rem' : '1.4rem', marginLeft: isMobile ? '-6px' : '-26px', marginTop: isMobile ? '0px' : '-2px', letterSpacing: '0.5px' }}>onnekyt</span>
+          <img src="/logo.png" alt="Connekyt Logo" style={{ width: isMobile ? '36px' : '50px', height: isMobile ? '36px' : '50px', objectFit: 'contain', position: 'relative', top: isMobile ? '-6px' : '-9px', left: isMobile ? '-1px' : '-13px' }} />
+          <span className="font-bold" style={{ color: '#083A85', fontSize: isMobile ? '1.25rem' : '1.4rem', marginLeft: isMobile ? '-10px' : '-26px', marginTop: isMobile ? '-1px' : '-2px', letterSpacing: '0.5px' }}>onnekyt</span>
         </Link>
 
         <div
@@ -380,7 +380,7 @@ export default function LoginPage(): React.JSX.Element {
           style={{
             maxWidth: isMobile ? '100%' : '80rem',
             height: isMobile ? '100vh' : '90vh',
-            maxHeight: isMobile ? '100vh' : '800px',
+            maxHeight: isMobile ? 'none' : '800px',
             borderRadius: isMobile ? '0' : '1.5rem'
           }}
         >
@@ -557,10 +557,10 @@ export default function LoginPage(): React.JSX.Element {
         <div
           className={`w-full lg:w-1/2 flex flex-col items-center h-full overflow-y-auto ${isMobile ? 'mobile-safe-area' : ''}`}
           style={{
-            padding: isMobile ? '1rem 1rem' : '20px 30px',
-            paddingTop: isMobile ? '2rem' : '3rem',
-            paddingBottom: isMobile ? '1.5rem' : '20px',
-            justifyContent: isMobile ? 'flex-start' : 'center',
+            padding: isMobile ? '1rem 1.25rem 2rem 1.25rem' : '20px 30px',
+            paddingTop: isMobile ? '1rem' : '3rem',
+            paddingBottom: isMobile ? '2rem' : '20px',
+            justifyContent: isMobile ? 'center' : 'center',
             position: 'relative'
           }}
         >
@@ -596,16 +596,16 @@ export default function LoginPage(): React.JSX.Element {
           <div
             className="w-full max-w-md"
             style={{
-              padding: isMobile ? '0 0.25rem' : '0 2rem',
-              marginTop: isMobile ? '2.5rem' : '3rem'
+              padding: isMobile ? '0 0.5rem' : '0 2rem',
+              marginTop: isMobile ? '-7rem' : '3rem'
             }}
           >
             <h1 style={{
-              fontSize: isMobile ? '20px' : '28px',
+              fontSize: isMobile ? '24px' : '28px',
               fontWeight: '700',
               textAlign: 'left',
               color: '#000000',
-              marginBottom: isMobile ? '8px' : '24px',
+              marginBottom: isMobile ? '16px' : '24px',
               letterSpacing: '0.5px'
             }}>
               {t('title')}
@@ -613,7 +613,7 @@ export default function LoginPage(): React.JSX.Element {
 
             {/* Social Login Buttons */}
             {GOOGLE_CLIENT_ID && (
-              <div style={{ display: 'flex', gap: '12px', marginBottom: isMobile ? '8px' : '16px' }}>
+              <div style={{ display: 'flex', gap: '12px', marginBottom: isMobile ? '14px' : '16px' }}>
                 <GoogleLoginButton
                   onSuccess={handleGoogleSuccess}
                   onError={handleGoogleError}
@@ -627,11 +627,11 @@ export default function LoginPage(): React.JSX.Element {
             <div style={{
               display: 'flex',
               alignItems: 'center',
-              marginBottom: isMobile ? '8px' : '16px',
-              marginTop: isMobile ? '8px' : '16px'
+              marginBottom: isMobile ? '14px' : '16px',
+              marginTop: isMobile ? '14px' : '16px'
             }}>
               <hr style={{ flex: '1', border: 'none', borderTop: '2px solid #d1d5db' }} />
-              <span style={{ padding: '0 12px', fontSize: isMobile ? '13px' : '16px', color: '#6b7280', fontWeight: '600' }}>{t('orContinueWith')}</span>
+              <span style={{ padding: '0 12px', fontSize: isMobile ? '14px' : '16px', color: '#6b7280', fontWeight: '600' }}>{t('orContinueWith')}</span>
               <hr style={{ flex: '1', border: 'none', borderTop: '2px solid #d1d5db' }} />
             </div>
 
@@ -644,7 +644,7 @@ export default function LoginPage(): React.JSX.Element {
                 </div>
               )}
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '6px' : '16px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '14px' : '16px' }}>
                 {/* Email Input */}
                 <div>
                   <label htmlFor="email" style={labelStyle}>
@@ -710,13 +710,13 @@ export default function LoginPage(): React.JSX.Element {
               </div>
 
               {/* Submit Button */}
-              <div style={{ marginTop: isMobile ? '8px' : '20px' }}>
+              <div style={{ marginTop: isMobile ? '16px' : '20px' }}>
                 <button
                   type="submit"
                   disabled={isDisabled || loading}
                   style={{
                     width: '100%',
-                    padding: isMobile ? '10px' : '12px',
+                    padding: isMobile ? '14px' : '12px',
                     fontSize: '16px',
                     borderRadius: '30px',
                     fontWeight: '600',
@@ -736,21 +736,21 @@ export default function LoginPage(): React.JSX.Element {
 
             {/* Links */}
             <div style={{
-              marginTop: isMobile ? '8px' : '20px',
-              marginBottom: isMobile ? '1rem' : '0',
+              marginTop: isMobile ? '16px' : '20px',
+              marginBottom: isMobile ? '2rem' : '0',
               display: 'flex',
               flexDirection: 'column',
-              gap: isMobile ? '4px' : '6px'
+              gap: isMobile ? '6px' : '6px'
             }}>
               <Link href="/user/auth/forgotpswd" style={{
-                fontSize: isMobile ? '13px' : '15px',
+                fontSize: isMobile ? '15px' : '15px',
                 color: '#083A85',
                 textDecoration: 'underline',
                 fontWeight: '800'
               }}>
                 {t('forgotPasswordLink')}
               </Link>
-              <p style={{ fontSize: isMobile ? '13px' : '15px', color: '#6b7280', margin: 0 }}>
+              <p style={{ fontSize: isMobile ? '15px' : '15px', color: '#6b7280', margin: 0 }}>
                 {t('notRegistered')}{' '}
                 <Link href="/user/auth/signup" style={{ color: '#083A85', textDecoration: 'underline', fontWeight: '800' }}>
                   {t('createAccount')}
