@@ -4,6 +4,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import Navbar from '../components/navbar';
 import Footer from '../components/footer';
 import { useRouter } from 'next/navigation';
+import { contactUs } from '@/lib/APIs/public/contact-us/route';
 
 // Local types (no backend imports)
 type FAQ = {
@@ -221,18 +222,35 @@ const HelpSupportCenter: React.FC = () => {
     ));
   };
 
-  const handleContactSubmit = (e: React.FormEvent) => {
+  const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!contactForm.name || !contactForm.email || !contactForm.message) return;
 
     setContactForm(prev => ({ ...prev, loading: true }));
 
-    // Simulate API call
-    setTimeout(() => {
-      setContactForm({ name: '', email: '', subject: '', message: '', loading: false });
-      setSuccessMessage('Message sent successfully! We\'ll get back to you soon.');
+    try {
+      const response = await contactUs({
+        fullName: contactForm.name,
+        email: contactForm.email,
+        phone: '',
+        subject: contactForm.subject,
+        message: contactForm.message,
+      });
+
+      if (response.success) {
+        setContactForm({ name: '', email: '', subject: '', message: '', loading: false });
+        setSuccessMessage('Message sent successfully! We\'ll get back to you soon.');
+        setTimeout(() => setSuccessMessage(null), 3000);
+      } else {
+        setContactForm(prev => ({ ...prev, loading: false }));
+        setSuccessMessage(response.error || 'Failed to send message. Please try again.');
+        setTimeout(() => setSuccessMessage(null), 3000);
+      }
+    } catch {
+      setContactForm(prev => ({ ...prev, loading: false }));
+      setSuccessMessage('Failed to send message. Please try again.');
       setTimeout(() => setSuccessMessage(null), 3000);
-    }, 1000);
+    }
   };
 
   const handleCategoryClick = (categoryId: string) => {

@@ -4,7 +4,8 @@ import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import AmoriaKNavbar from '../../components/navbar';
 import ReviewModal from '../../components/ReviewModal';
-import { getPhotographers, type Photographer, getPublicEvents, getCities, type City } from '@/lib/APIs/public';
+import { getPhotographerById, type Photographer, getPublicEvents, getCities, type City } from '@/lib/APIs/public';
+import { getPhotographerReviews } from '@/lib/APIs/photographers/get-reviews/route';
 import { getPublicPhotographerPackages, type PublicPackage } from '@/lib/APIs/packages/get-packages/route';
 import { useToast } from '@/lib/notifications/ToastProvider';
 import { useAuth } from '@/app/providers/AuthProvider';
@@ -80,20 +81,19 @@ function ViewProfileContent(): React.JSX.Element {
       setFetchError(null);
 
       try {
-        // Fetch all photographers and filter by ID (no unique endpoint for single photographer)
-        const response = await getPhotographers({ size: 100 });
+        // Fetch single photographer by ID
+        const response = await getPhotographerById(photographerId);
 
-        if (response.success && response.data?.content) {
-          const found = response.data.content.find(p => p.id === photographerId);
-          if (found) {
-            setPhotographer(found);
-          } else {
-            setFetchError('Photographer not found');
-            toast.error('Photographer not found');
-          }
+        if (response.success && response.data) {
+          // Handle both direct data and wrapped { action, data } response formats
+          const rawData = response.data as unknown as Record<string, unknown>;
+          const photographerData = rawData?.data
+            ? rawData.data as Photographer
+            : response.data as Photographer;
+          setPhotographer(photographerData);
         } else {
-          setFetchError(response.error || 'Failed to load photographer profile');
-          toast.error(response.error || 'Failed to load photographer profile');
+          setFetchError(response.error || 'Photographer not found');
+          toast.error(response.error || 'Photographer not found');
         }
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'An error occurred';

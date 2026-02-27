@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useGoogleLogin } from '@react-oauth/google';
 import { signup } from '@/lib/APIs/auth/signup/route';
+import { googleAuth } from '@/lib/APIs/auth/google/route';
+import { setAuthToken } from '@/lib/api/client';
 import { useToast } from '@/lib/notifications/ToastProvider';
 import UserTypeModal from '@/app/components/UserTypeModal';
 
@@ -142,6 +144,27 @@ export default function SignupPage(): React.JSX.Element {
 
       const userInfo: GoogleUserInfo = await response.json();
 
+      // Try backend Google auth — if user already exists, they get a token and we redirect
+      try {
+        const backendResponse = await googleAuth({
+          email: userInfo.email,
+          firstName: userInfo.given_name || '',
+          lastName: userInfo.family_name || '',
+          customerType: userType,
+        });
+
+        if (backendResponse.success && backendResponse.data?.token) {
+          // Existing user — store token and redirect
+          setAuthToken(backendResponse.data.token);
+          showSuccess('Welcome back! Redirecting...');
+          router.push(redirectUrl || '/user');
+          return;
+        }
+      } catch {
+        // Backend call failed — continue with form pre-fill
+      }
+
+      // New user — pre-fill the form
       if (userInfo.given_name) setFirstName(userInfo.given_name);
       if (userInfo.family_name) setLastName(userInfo.family_name);
       if (userInfo.email) setEmail(userInfo.email);
@@ -418,8 +441,8 @@ export default function SignupPage(): React.JSX.Element {
           flexShrink: 0,
           zIndex: 1000
         }}>
-          <img src="/logo.png" alt="Connekyt Logo" style={{ width: isMobile ? '36px' : '50px', height: isMobile ? '36px' : '50px', objectFit: 'contain', position: 'relative', top: isMobile ? '0px' : '-9px', left: isMobile ? '0px' : '-13px' }} />
-          <span className="font-bold" style={{ color: '#083A85', fontSize: isMobile ? '1.25rem' : '1.4rem', marginLeft: isMobile ? '-6px' : '-26px', marginTop: isMobile ? '0px' : '-2px', letterSpacing: '0.5px' }}>onnekyt</span>
+          <img src="/logo.png" alt="Connekyt Logo" style={{ width: isMobile ? '36px' : '50px', height: isMobile ? '36px' : '50px', objectFit: 'contain', position: 'relative', top: isMobile ? '-6px' : '-9px', left: isMobile ? '-1px' : '-13px' }} />
+          <span className="font-bold" style={{ color: '#083A85', fontSize: isMobile ? '1.25rem' : '1.4rem', marginLeft: isMobile ? '-10px' : '-26px', marginTop: isMobile ? '-1px' : '-2px', letterSpacing: '0.5px' }}>onnekyt</span>
         </Link>
 
       <div
@@ -429,7 +452,7 @@ export default function SignupPage(): React.JSX.Element {
           height: isMobile ? 'calc(100vh - 3.5rem)' : '90vh',
           maxHeight: isMobile ? 'none' : '800px',
           borderRadius: isMobile ? '0' : '1.5rem',
-          marginTop: isMobile ? '3.5rem' : '0'
+          marginTop: isMobile ? '0' : '0'
         }}
       >
 
