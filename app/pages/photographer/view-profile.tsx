@@ -323,11 +323,15 @@ function ViewProfileContent(): React.JSX.Element {
     }
 
     try {
-      const response = await apiClient.post<Record<string, unknown>>('/api/remote/photographer-reviews', {
-        eventId: review.eventId,
-        rating: review.rating,
-        comment: review.comment,
-      });
+      const formData = new FormData();
+      formData.append('eventId', review.eventId);
+      formData.append('rating', review.rating.toString());
+      formData.append('comment', review.comment);
+      if (review.images && review.images.length > 0) {
+        review.images.forEach(img => formData.append('images', img));
+      }
+
+      const response = await apiClient.post<Record<string, unknown>>('/api/remote/photographer-reviews', formData);
 
       if (response.success) {
         toast.success('Review submitted successfully!');
@@ -739,6 +743,7 @@ function ViewProfileContent(): React.JSX.Element {
               loading="lazy"
             />
             {/* Verification Badge - Matching photographers.tsx */}
+            {(photographer as unknown as Record<string, unknown>)?.isVerified !== false && (
             <div
               style={{
                 position: 'absolute',
@@ -757,6 +762,7 @@ function ViewProfileContent(): React.JSX.Element {
             >
               <i className="bi bi-patch-check-fill" style={{ color: '#3b82f6', fontSize: '1rem' }}></i>
             </div>
+            )}
 
             {/* Hover overlay indicator */}
             <div

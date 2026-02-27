@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Navbar from '../components/navbar';
 import { getMyPhotos, type MyPhoto } from '@/lib/APIs/customer/my-photos/route';
 import { isAuthenticated } from '@/lib/api/client';
+import { validateInviteCode, facialRecognitionMatch } from '@/lib/APIs/customer/facial-recognition/route';
 
 const FindMyPhotos = () => {
   // Responsive
@@ -62,13 +63,33 @@ const FindMyPhotos = () => {
     }
   };
 
-  const handleInviteSubmit = () => {
+  const handleInviteSubmit = async () => {
     if (!inviteCode.trim()) {
       setInviteError('Please enter a valid invite code');
       return;
     }
     setInviteError('');
-    setIsCodeSubmitted(true);
+
+    if (!isAuthenticated()) {
+      setAuthRequired(true);
+      return;
+    }
+
+    try {
+      const response = await validateInviteCode(inviteCode);
+      if (response.success && response.data) {
+        const apiData = response.data as unknown as Record<string, unknown>;
+        if ((apiData?.action as number) === 1) {
+          setIsCodeSubmitted(true);
+        } else {
+          setInviteError((apiData?.message as string) || 'Invalid invite code');
+        }
+      } else {
+        setInviteError(response.error || 'Failed to validate invite code');
+      }
+    } catch {
+      setInviteError('Failed to validate invite code. Please try again.');
+    }
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -92,21 +113,38 @@ const FindMyPhotos = () => {
 
     setIsScanning(true);
     try {
-      const response = await getMyPhotos();
-      if (response.success && response.data) {
-        const rawData = response.data as unknown as Record<string, unknown>;
-        const photos = Array.isArray(response.data)
-          ? response.data
-          : rawData?.data
-            ? (rawData.data as MyPhoto[])
-            : [];
-        const mapped = photos.map((p: MyPhoto) => ({
-          id: p.id,
-          url: p.url || p.thumbnailUrl || '',
-          alt: p.alt || p.eventTitle || 'Event photo',
-        }));
-        setAllPhotos(mapped);
-        setDisplayedPhotos(mapped);
+      // Use facial recognition API if invite code is available
+      if (inviteCode.trim()) {
+        const result = await facialRecognitionMatch(uploadedFile, inviteCode);
+        if (result.success && result.data) {
+          const apiData = result.data as unknown as Record<string, unknown>;
+          const data = apiData?.data as Record<string, unknown>;
+          const matchedPhotos = ((data?.matchedPhotos || []) as Array<Record<string, unknown>>).map((p) => ({
+            id: p.id as string,
+            url: (p.url as string) || (p.thumbnailUrl as string) || '',
+            alt: (p.alt as string) || 'Matched photo',
+          }));
+          setAllPhotos(matchedPhotos);
+          setDisplayedPhotos(matchedPhotos);
+        }
+      } else {
+        // Fallback to regular my-photos endpoint
+        const response = await getMyPhotos();
+        if (response.success && response.data) {
+          const rawData = response.data as unknown as Record<string, unknown>;
+          const photos = Array.isArray(response.data)
+            ? response.data
+            : rawData?.data
+              ? (rawData.data as MyPhoto[])
+              : [];
+          const mapped = photos.map((p: MyPhoto) => ({
+            id: p.id,
+            url: p.url || p.thumbnailUrl || '',
+            alt: p.alt || p.eventTitle || 'Event photo',
+          }));
+          setAllPhotos(mapped);
+          setDisplayedPhotos(mapped);
+        }
       }
       setIsFiltered(true);
       setIsCodeSubmitted(true);

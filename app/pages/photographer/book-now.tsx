@@ -6,7 +6,8 @@ import AmoriaKNavbar from '../../components/navbar';
 import { useAuth } from '@/app/providers/AuthProvider';
 import { createEventBooking, parseTimeToApiString } from '@/lib/APIs/bookings/create-booking/route';
 import { getPublicPhotographerPackages, type PublicPackage } from '@/lib/APIs/packages/get-packages/route';
-import { getPhotographers, type Photographer } from '@/lib/APIs/public';
+import { getPhotographerById, getPhotographers, type Photographer } from '@/lib/APIs/public';
+import { getEventTypes } from '@/lib/APIs/public/get-event-types/route';
 
 // Default images for fallback
 const DEFAULT_PROFILE_IMAGE = 'https://i.pinimg.com/1200x/e9/1f/59/e91f59ed85a702d7252f2b0c8e02c7d2.jpg';
@@ -50,7 +51,7 @@ const formatWorkingHours = (availabilities: { startTime: string; endTime: string
   return `${first.startTime} - ${first.endTime}`;
 };
 
-const eventTypes = [
+const defaultEventTypes = [
   'Wedding',
   'Birthday',
   'Corporate Event',
@@ -99,6 +100,7 @@ function BookNowContent(): React.JSX.Element {
   const [eventDescription, setEventDescription] = useState('');
   const [eventOrganizer, setEventOrganizer] = useState('');
   const [eventVisibility, setEventVisibility] = useState('PUBLIC');
+  const [eventTypes, setEventTypes] = useState<string[]>(defaultEventTypes);
 
 
   // Validation checks
@@ -127,7 +129,7 @@ function BookNowContent(): React.JSX.Element {
     setValidationError(null);
   }, [authLoading, isAuthenticated, user, photographerId, router]);
 
-  // Fetch photographer data from API by filtering from main list
+  // Fetch photographer data from API by ID
   useEffect(() => {
     const fetchPhotographer = async () => {
       if (!photographerId) {
@@ -140,16 +142,10 @@ function BookNowContent(): React.JSX.Element {
       setPhotographerError(null);
 
       try {
-        // Fetch all photographers and filter by ID (same as view-profile.tsx)
-        const response = await getPhotographers({ size: 100 });
+        const response = await getPhotographerById(photographerId);
 
-        if (response.success && response.data?.content) {
-          const found = response.data.content.find(p => p.id === photographerId);
-          if (found) {
-            setPhotographer(found);
-          } else {
-            setPhotographerError('Photographer not found');
-          }
+        if (response.success && response.data) {
+          setPhotographer(response.data as Photographer);
         } else {
           setPhotographerError(response.error || 'Failed to load photographer profile');
         }
@@ -163,6 +159,30 @@ function BookNowContent(): React.JSX.Element {
 
     fetchPhotographer();
   }, [photographerId]);
+
+  // Fetch event types from API
+  useEffect(() => {
+    const fetchEventTypes = async () => {
+      try {
+        const response = await getEventTypes();
+        if (response.success && response.data) {
+          const apiData = response.data as unknown as Record<string, unknown>;
+          const types = (apiData?.data || []) as Array<Record<string, unknown>>;
+          if (types.length > 0) {
+            const typeNames = types
+              .filter(t => t.isActive !== false)
+              .map(t => t.name as string);
+            if (typeNames.length > 0) {
+              setEventTypes([...typeNames, 'Other']);
+            }
+          }
+        }
+      } catch {
+        // Keep default event types
+      }
+    };
+    fetchEventTypes();
+  }, []);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -206,7 +226,7 @@ function BookNowContent(): React.JSX.Element {
     location: photographer?.address || '',
     rating: photographer?.rating || 0,
     completedJobs: photographer?.projects?.length || 0,
-    verified: true,
+    verified: (photographer as unknown as Record<string, unknown>)?.isVerified === true,
     availability: photographer ? formatAvailability(photographer.availabilities) : 'Contact for availability',
     hours: photographer ? formatWorkingHours(photographer.availabilities) : 'Contact for hours',
     minimumEarnings: minimumPrice || 'Contact for pricing',
