@@ -5,6 +5,7 @@ import Navbar from '../components/navbar';
 import Footer from '../components/footer';
 import { useRouter } from 'next/navigation';
 import { contactUs } from '@/lib/APIs/public/contact-us/route';
+import { getFAQs } from '@/lib/APIs/public/get-faqs/route';
 
 // Local types (no backend imports)
 type FAQ = {
@@ -171,6 +172,35 @@ const HelpSupportCenter: React.FC = () => {
     handleResize(); // Initial check
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Fetch FAQs from API
+  useEffect(() => {
+    const loadFAQs = async () => {
+      try {
+        const response = await getFAQs();
+        if (response.success && response.data) {
+          const apiData = response.data as unknown as Record<string, unknown>;
+          const faqData = (apiData?.data || []) as Array<Record<string, unknown>>;
+          if (faqData.length > 0) {
+            const apiFAQs: FAQ[] = faqData.map((faq) => ({
+              id: faq.id as string,
+              question: faq.question as string,
+              answer: faq.answer as string,
+              category: (faq.category as string) || 'General',
+              priority: (faq.priority as string) || 'medium',
+              helpful: (faq.helpfulCount as number) || 0,
+              lastUpdated: new Date((faq.createdAt as string) || Date.now()),
+              tags: ((faq.category as string) || 'general').toLowerCase().split(/[\s,]+/),
+            }));
+            setFAQS(apiFAQs);
+          }
+        }
+      } catch {
+        // Keep mock FAQs as fallback
+      }
+    };
+    loadFAQs();
   }, []);
 
   // Contact form state
