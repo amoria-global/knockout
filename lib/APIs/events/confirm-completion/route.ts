@@ -1,23 +1,23 @@
 /**
- * Confirm Event Completion API Route
- * POST /api/remote/customer/events/{eventId}/confirm-completion
+ * Confirm Event Completion API
+ * POST /api/remote/customer/events/{id}/confirm-completion
  */
 
 import { apiClient } from '@/lib/api/client';
-import { API_ENDPOINTS } from '@/lib/api/config';
 import type { ApiResponse } from '@/lib/api/types';
 
+export interface ConfirmCompletionResponse {
+  action: number;
+  message: string;
+}
+
 /**
- * Confirm completion of an event (requires authentication)
+ * Confirm completion of an event by ID
  */
-export async function confirmEventCompletion(
-  eventId: string
-): Promise<ApiResponse<Record<string, unknown>>> {
-  const endpoint = API_ENDPOINTS.CUSTOMER.EVENTS_CONFIRM_COMPLETION(eventId);
-
-  const response = await apiClient.post<Record<string, unknown>>(endpoint, undefined, {
-    retries: 1,
-  });
-
-  return response;
+export async function confirmCompletion(eventId: string): Promise<ApiResponse<ConfirmCompletionResponse>> {
+  return apiClient.post<ConfirmCompletionResponse>(
+    `/api/remote/customer/events/${eventId}/confirm-completion`,
+    undefined,
+    { retries: 2 }
+  );
 }

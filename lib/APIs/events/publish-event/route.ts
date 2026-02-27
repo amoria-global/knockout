@@ -1,23 +1,23 @@
 /**
- * Publish Event API Route
- * POST /api/remote/customer/events/{eventId}/publish
+ * Publish Event API
+ * POST /api/remote/customer/events/{id}/publish
  */
 
 import { apiClient } from '@/lib/api/client';
-import { API_ENDPOINTS } from '@/lib/api/config';
 import type { ApiResponse } from '@/lib/api/types';
 
+export interface PublishEventResponse {
+  action: number;
+  message: string;
+}
+
 /**
- * Publish an event (requires authentication)
+ * Publish an event by ID
  */
-export async function publishEvent(
-  eventId: string
-): Promise<ApiResponse<Record<string, unknown>>> {
-  const endpoint = API_ENDPOINTS.CUSTOMER.EVENTS_PUBLISH(eventId);
-
-  const response = await apiClient.post<Record<string, unknown>>(endpoint, undefined, {
-    retries: 1,
-  });
-
-  return response;
+export async function publishEvent(eventId: string): Promise<ApiResponse<PublishEventResponse>> {
+  return apiClient.post<PublishEventResponse>(
+    `/api/remote/customer/events/${eventId}/publish`,
+    undefined,
+    { retries: 2 }
+  );
 }

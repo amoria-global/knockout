@@ -2,22 +2,8 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Navbar from '../components/navbar';
-
-// Mock event photos — replace with API data in production
-const MOCK_PHOTOS = [
-  { id: '1', url: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=600&h=400&fit=crop', alt: 'Event photo 1' },
-  { id: '2', url: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=600&h=400&fit=crop', alt: 'Event photo 2' },
-  { id: '3', url: 'https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=600&h=400&fit=crop', alt: 'Event photo 3' },
-  { id: '4', url: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=600&h=400&fit=crop', alt: 'Event photo 4' },
-  { id: '5', url: 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=600&h=400&fit=crop', alt: 'Event photo 5' },
-  { id: '6', url: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=600&h=400&fit=crop', alt: 'Event photo 6' },
-  { id: '7', url: 'https://images.unsplash.com/photo-1505236858219-8359eb29e329?w=600&h=400&fit=crop', alt: 'Event photo 7' },
-  { id: '8', url: 'https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?w=600&h=400&fit=crop', alt: 'Event photo 8' },
-  { id: '9', url: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=600&h=400&fit=crop', alt: 'Event photo 9' },
-  { id: '10', url: 'https://images.unsplash.com/photo-1527529482837-4698179dc6ce?w=600&h=400&fit=crop', alt: 'Event photo 10' },
-  { id: '11', url: 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=600&h=400&fit=crop', alt: 'Event photo 11' },
-  { id: '12', url: 'https://images.unsplash.com/photo-1504196606672-aef5c9cefc92?w=600&h=400&fit=crop', alt: 'Event photo 12' },
-];
+import { getMyPhotos, type MyPhoto } from '@/lib/APIs/customer/my-photos/route';
+import { isAuthenticated } from '@/lib/api/client';
 
 const FindMyPhotos = () => {
   // Responsive
@@ -37,9 +23,10 @@ const FindMyPhotos = () => {
   const [gridMousePos, setGridMousePos] = useState<{ x: number; y: number } | null>(null);
 
   // Photo grid
-  const [allPhotos] = useState(MOCK_PHOTOS);
-  const [displayedPhotos, setDisplayedPhotos] = useState(MOCK_PHOTOS);
+  const [allPhotos, setAllPhotos] = useState<{ id: string; url: string; alt: string }[]>([]);
+  const [displayedPhotos, setDisplayedPhotos] = useState<{ id: string; url: string; alt: string }[]>([]);
   const [isFiltered, setIsFiltered] = useState(false);
+  const [authRequired, setAuthRequired] = useState(false);
 
   // Scan modal
   const [isScanModalOpen, setIsScanModalOpen] = useState(false);
@@ -95,22 +82,40 @@ const FindMyPhotos = () => {
     reader.readAsDataURL(file);
   };
 
-  const handleStartScan = () => {
+  const handleStartScan = async () => {
     if (!uploadedFile) return;
+
+    if (!isAuthenticated()) {
+      setAuthRequired(true);
+      return;
+    }
+
     setIsScanning(true);
-    // Simulate face recognition scan
-    const scanDuration = 2000 + Math.random() * 1000;
-    setTimeout(() => {
-      // Return random subset of 4-6 photos
-      const count = 4 + Math.floor(Math.random() * 3);
-      const shuffled = [...allPhotos].sort(() => 0.5 - Math.random());
-      const matched = shuffled.slice(0, count);
-      setDisplayedPhotos(matched);
+    try {
+      const response = await getMyPhotos();
+      if (response.success && response.data) {
+        const rawData = response.data as unknown as Record<string, unknown>;
+        const photos = Array.isArray(response.data)
+          ? response.data
+          : rawData?.data
+            ? (rawData.data as MyPhoto[])
+            : [];
+        const mapped = photos.map((p: MyPhoto) => ({
+          id: p.id,
+          url: p.url || p.thumbnailUrl || '',
+          alt: p.alt || p.eventTitle || 'Event photo',
+        }));
+        setAllPhotos(mapped);
+        setDisplayedPhotos(mapped);
+      }
       setIsFiltered(true);
-      setIsScanning(false);
       setIsCodeSubmitted(true);
       resetScanModal();
-    }, scanDuration);
+    } catch {
+      // Scan failed — keep current state
+    } finally {
+      setIsScanning(false);
+    }
   };
 
   const handleShowAll = () => {
