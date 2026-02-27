@@ -6,6 +6,7 @@ import dynamic from 'next/dynamic';
 import { getCurrencies, type Currency as APICurrency } from '@/lib/APIs/public';
 import { recordTip, recordStreamingPayment } from '@/lib/APIs/payments/route';
 import { getEventDetails } from '@/lib/APIs/events/get-event-details/route';
+import { getStreamChats, sendStreamChat, sendStreamVideoChat, getStreamViewerCount, getStreamParticipants, reportStreamIssue, rateStream, blockUserInStream } from '@/lib/APIs/streams/route';
 
 // Dynamically import VideoMessageRecorder to avoid SSR issues
 const VideoMessageRecorder = dynamic(() => import('../../components/VideoMessageRecorder'), { ssr: false });
@@ -108,6 +109,61 @@ const App = () => {
       }
     };
     loadEventDetails();
+  }, [searchParams]);
+
+  // Load stream chats from API
+  useEffect(() => {
+    const eventId = searchParams.get('eventId') || searchParams.get('id');
+    if (!eventId) return;
+
+    const loadStreamChats = async () => {
+      try {
+        const response = await getStreamChats(eventId);
+        if (response.success && response.data) {
+          const apiData = response.data as unknown as Record<string, unknown>;
+          const chatData = apiData?.data as Record<string, unknown>;
+          const chatContent = (chatData?.content || []) as Array<Record<string, unknown>>;
+          if (chatContent.length > 0) {
+            const apiMessages: Message[] = chatContent.map((chat, index) => ({
+              id: index + 1,
+              sender: (chat.senderName as string) || 'Unknown',
+              text: (chat.content as string) || '',
+              time: new Date(chat.timestamp as string).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              delivered: true,
+              avatar: (chat.senderAvatar as string) || `https://i.pravatar.cc/150?img=${index + 1}`,
+              videoUrl: chat.videoUrl as string | undefined,
+            }));
+            setEvents(prev => prev.map((ev, i) => i === 0 ? { ...ev, messages: apiMessages } : ev));
+          }
+        }
+      } catch {
+        // Keep default messages
+      }
+    };
+    loadStreamChats();
+  }, [searchParams]);
+
+  // Load viewer count from API
+  useEffect(() => {
+    const eventId = searchParams.get('eventId') || searchParams.get('id');
+    if (!eventId) return;
+
+    const loadViewerCount = async () => {
+      try {
+        const response = await getStreamViewerCount(eventId);
+        if (response.success && response.data) {
+          const apiData = response.data as unknown as Record<string, unknown>;
+          const data = apiData?.data as Record<string, unknown>;
+          const viewerCount = (data?.viewerCount as number) || 0;
+          setEvents(prev => prev.map((ev, i) => i === 0 ? { ...ev, viewers: viewerCount } : ev));
+        }
+      } catch {
+        // Keep default viewer count
+      }
+    };
+    loadViewerCount();
+    const interval = setInterval(loadViewerCount, 30000);
+    return () => clearInterval(interval);
   }, [searchParams]);
 
   // Swap animation state
@@ -310,6 +366,7 @@ const App = () => {
 
       const response = await recordTip({
         amount: donationAmount,
+        eventId: mainEvent.id,
         currencyId: currencyId || undefined,
         remarks: `Donation via ${donationPaymentMethod}`,
       });
@@ -529,6 +586,12 @@ const App = () => {
       setEvents(updatedEvents);
       setNewMessage("");
       setReplyingTo(null);
+
+      // Send to backend API
+      const eventId = searchParams.get('eventId') || searchParams.get('id');
+      if (eventId) {
+        sendStreamChat(eventId, messageText).catch(() => {});
+      }
     }
   };
 
@@ -555,8 +618,12 @@ const App = () => {
     ];
     setEvents(updatedEvents);
 
-    // Here you would typically upload the videoBlob to your server
-    console.log('Video message recorded:', videoBlob);
+    // Upload video to backend API
+    const eventId = searchParams.get('eventId') || searchParams.get('id');
+    if (eventId) {
+      const videoFile = new File([videoBlob], 'video-message.webm', { type: videoBlob.type || 'video/webm' });
+      sendStreamVideoChat(eventId, videoFile).catch(() => {});
+    }
   };
 
   // Handle delete message
@@ -594,9 +661,14 @@ const App = () => {
 
   // Handle block user
   const handleBlockUser = (sender: string) => {
-    // In a real app, this would block the user and filter their messages
     alert(`Blocked user: ${sender}`);
     setOpenMessageMenu(null);
+
+    // Block user via backend API (using sender name as placeholder - in a real app, use userId)
+    const eventId = searchParams.get('eventId') || searchParams.get('id');
+    if (eventId && sender) {
+      blockUserInStream(eventId, sender).catch(() => {});
+    }
   };
 
   // Handle reply to message
@@ -1443,7 +1515,12 @@ const App = () => {
     setShowSettings(false);
     setShowReportIssues(false);
     alert(`Thank you for reporting: "${issueType}". Our team will investigate this shortly.`);
-    console.log('Reported issue:', issueType);
+
+    // Submit report to backend API
+    const eventId = searchParams.get('eventId') || searchParams.get('id');
+    if (eventId) {
+      reportStreamIssue(eventId, issueType).catch(() => {});
+    }
   };
 
   // Close message menu when clicking outside
@@ -1482,14 +1559,13 @@ const App = () => {
       return;
     }
 
-    console.log('Rating submitted:', {
-      rating,
-      comment: ratingComment,
-      streamId: mainEvent.streamId,
-      photographer: mainEvent.photographer
-    });
-
     alert(`Thank you for rating this live stream ${rating} star${rating > 1 ? 's' : ''}!`);
+
+    // Submit rating to backend API
+    const eventId = searchParams.get('eventId') || searchParams.get('id');
+    if (eventId) {
+      rateStream(eventId, rating, ratingComment).catch(() => {});
+    }
 
     setShowRatingModal(false);
     setRating(0);
