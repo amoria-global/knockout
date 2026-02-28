@@ -1,12 +1,16 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Navbar from '../components/navbar';
 import { getMyPhotos, type MyPhoto } from '@/lib/APIs/customer/my-photos/route';
+import { validateInviteCode } from '@/lib/APIs/customer/validate-invite-code/route';
+import { uploadSelfieForRecognition, type MatchedPhoto } from '@/lib/APIs/customer/facial-recognition/route';
 import { isAuthenticated } from '@/lib/api/client';
-import { validateInviteCode, facialRecognitionMatch } from '@/lib/APIs/customer/facial-recognition/route';
 
 const FindMyPhotos = () => {
+  const searchParams = useSearchParams();
+
   // Responsive
   const [isMobile, setIsMobile] = useState(false);
 
@@ -45,6 +49,25 @@ const FindMyPhotos = () => {
   // Image viewer modal
   const [selectedPhoto, setSelectedPhoto] = useState<{ id: string; url: string; alt: string } | null>(null);
 
+  // Auto-fill invite code from URL param (e.g. /find-my-photos?code=ABC123)
+  useEffect(() => {
+    const codeFromUrl = searchParams.get('code');
+    if (codeFromUrl && !inviteCode) {
+      setInviteCode(codeFromUrl);
+      // Auto-validate the invite code from URL
+      validateInviteCode(codeFromUrl).then(response => {
+        if (response.success) {
+          setIsCodeSubmitted(true);
+        } else {
+          setInviteError(response.error || 'Invalid invite code');
+        }
+      }).catch(() => {
+        setInviteError('Failed to validate invite code');
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
     checkMobile();
@@ -69,23 +92,12 @@ const FindMyPhotos = () => {
       return;
     }
     setInviteError('');
-
-    if (!isAuthenticated()) {
-      setAuthRequired(true);
-      return;
-    }
-
     try {
-      const response = await validateInviteCode(inviteCode);
-      if (response.success && response.data) {
-        const apiData = response.data as unknown as Record<string, unknown>;
-        if ((apiData?.action as number) === 1) {
-          setIsCodeSubmitted(true);
-        } else {
-          setInviteError((apiData?.message as string) || 'Invalid invite code');
-        }
+      const response = await validateInviteCode(inviteCode.trim());
+      if (response.success) {
+        setIsCodeSubmitted(true);
       } else {
-        setInviteError(response.error || 'Failed to validate invite code');
+        setInviteError(response.error || 'Invalid invite code');
       }
     } catch {
       setInviteError('Failed to validate invite code. Please try again.');
@@ -113,27 +125,28 @@ const FindMyPhotos = () => {
 
     setIsScanning(true);
     try {
-      // Use facial recognition API if invite code is available
-      if (inviteCode.trim()) {
-        const result = await facialRecognitionMatch(uploadedFile, inviteCode);
-        if (result.success && result.data) {
-          const apiData = result.data as unknown as Record<string, unknown>;
-          const data = apiData?.data as Record<string, unknown>;
-          const matchedPhotos = ((data?.matchedPhotos || []) as Array<Record<string, unknown>>).map((p) => ({
-            id: p.id as string,
-            url: (p.url as string) || (p.thumbnailUrl as string) || '',
-            alt: (p.alt as string) || 'Matched photo',
-          }));
-          setAllPhotos(matchedPhotos);
-          setDisplayedPhotos(matchedPhotos);
-        }
+      const response = await uploadSelfieForRecognition(inviteCode.trim(), uploadedFile);
+      if (response.success && response.data) {
+        const rawData = response.data as unknown as Record<string, unknown>;
+        const photos: MatchedPhoto[] = rawData?.data
+          ? (rawData.data as MatchedPhoto[])
+          : Array.isArray(response.data)
+            ? (response.data as unknown as MatchedPhoto[])
+            : [];
+        const mapped = photos.map((p: MatchedPhoto) => ({
+          id: p.id,
+          url: p.url || p.thumbnailUrl || '',
+          alt: p.alt || p.eventTitle || 'Event photo',
+        }));
+        setAllPhotos(mapped);
+        setDisplayedPhotos(mapped);
       } else {
-        // Fallback to regular my-photos endpoint
-        const response = await getMyPhotos();
-        if (response.success && response.data) {
-          const rawData = response.data as unknown as Record<string, unknown>;
-          const photos = Array.isArray(response.data)
-            ? response.data
+        // Fallback: try getMyPhotos with invite code
+        const fallback = await getMyPhotos(inviteCode ? { inviteCode } : undefined);
+        if (fallback.success && fallback.data) {
+          const rawData = fallback.data as unknown as Record<string, unknown>;
+          const photos = Array.isArray(fallback.data)
+            ? fallback.data
             : rawData?.data
               ? (rawData.data as MyPhoto[])
               : [];

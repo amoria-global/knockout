@@ -92,10 +92,12 @@ export default function LoginPage(): React.JSX.Element {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectUrl = searchParams.get('redirect');
+  const loggedOut = searchParams.get('logged_out') === 'true';
   const t = useTranslations('auth.loginPage');
   const tAuth = useTranslations('auth');
   const { success: showSuccess, error: showError, warning: showWarning, info: showInfo, isOnline } = useToast();
   const { login: loginUser } = useAuth();
+  const [showLoggedOutBanner, setShowLoggedOutBanner] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -105,6 +107,22 @@ export default function LoginPage(): React.JSX.Element {
   const [loggedInUserName, setLoggedInUserName] = useState('');
   const [loggedInUserType, setLoggedInUserType] = useState<string | undefined>(undefined);
   const [googleLoading, setGoogleLoading] = useState(false);
+
+  // Persist the redirect URL so the logout page can send the user back here
+  useEffect(() => {
+    if (redirectUrl) {
+      localStorage.setItem('authRedirectUrl', redirectUrl);
+    }
+  }, [redirectUrl]);
+
+  // Show logged-out banner if redirected from dashboard logout
+  useEffect(() => {
+    if (loggedOut) {
+      setShowLoggedOutBanner(true);
+      const timer = setTimeout(() => setShowLoggedOutBanner(false), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [loggedOut]);
 
   // Google OAuth success handler
   const handleGoogleSuccess = async (tokenResponse: { access_token: string }) => {
@@ -351,6 +369,46 @@ export default function LoginPage(): React.JSX.Element {
           }
         }
       `}</style>
+
+      {/* Logged-out banner */}
+      {showLoggedOutBanner && (
+        <div style={{
+          position: 'fixed',
+          top: '3.5rem',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 9999,
+          backgroundColor: '#DC2626',
+          color: 'white',
+          padding: '0.4rem 1rem',
+          borderRadius: '0.375rem',
+          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.12)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.375rem',
+          fontSize: '0.8rem',
+          fontWeight: '500',
+          animation: 'fadeInDown 0.3s ease-out',
+        }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M20 6L9 17L4 12" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          You have been logged out successfully
+          <button
+            onClick={() => setShowLoggedOutBanner(false)}
+            style={{ marginLeft: '0.5rem', background: 'none', border: 'none', color: 'white', cursor: 'pointer', padding: '0 2px', fontSize: '1rem', lineHeight: 1 }}
+            aria-label="Dismiss"
+          >
+            &times;
+          </button>
+          <style>{`
+            @keyframes fadeInDown {
+              from { opacity: 0; transform: translateX(-50%) translateY(-1rem); }
+              to { opacity: 1; transform: translateX(-50%) translateY(0); }
+            }
+          `}</style>
+        </div>
+      )}
 
       <div
         className={`h-screen overflow-hidden bg-gray-50 flex ${isMobile ? 'items-start' : 'items-center'} justify-center`}

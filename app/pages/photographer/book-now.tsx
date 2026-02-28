@@ -6,8 +6,8 @@ import AmoriaKNavbar from '../../components/navbar';
 import { useAuth } from '@/app/providers/AuthProvider';
 import { createEventBooking, parseTimeToApiString } from '@/lib/APIs/bookings/create-booking/route';
 import { getPublicPhotographerPackages, type PublicPackage } from '@/lib/APIs/packages/get-packages/route';
-import { getPhotographerById, getPhotographers, type Photographer } from '@/lib/APIs/public';
-import { getEventTypes } from '@/lib/APIs/public/get-event-types/route';
+import { getPhotographers, type Photographer } from '@/lib/APIs/public';
+import { getEventTypes, type EventType } from '@/lib/APIs/public/get-event-types/route';
 
 // Default images for fallback
 const DEFAULT_PROFILE_IMAGE = 'https://i.pinimg.com/1200x/e9/1f/59/e91f59ed85a702d7252f2b0c8e02c7d2.jpg';
@@ -51,7 +51,7 @@ const formatWorkingHours = (availabilities: { startTime: string; endTime: string
   return `${first.startTime} - ${first.endTime}`;
 };
 
-const defaultEventTypes = [
+const FALLBACK_EVENT_TYPES = [
   'Wedding',
   'Birthday',
   'Corporate Event',
@@ -85,6 +85,9 @@ function BookNowContent(): React.JSX.Element {
   const [photographerLoading, setPhotographerLoading] = useState(true);
   const [photographerError, setPhotographerError] = useState<string | null>(null);
 
+  // Event types from API (with fallback)
+  const [eventTypes, setEventTypes] = useState<string[]>(FALLBACK_EVENT_TYPES);
+
   // Extra photos & videos state per package
   const [extraPhotos, setExtraPhotos] = useState<Record<string, number | ''>>({ essential: '', custom: '', premium: '' });
   const [extraVideos, setExtraVideos] = useState<Record<string, number | ''>>({ essential: '', custom: '', premium: '' });
@@ -100,7 +103,6 @@ function BookNowContent(): React.JSX.Element {
   const [eventDescription, setEventDescription] = useState('');
   const [eventOrganizer, setEventOrganizer] = useState('');
   const [eventVisibility, setEventVisibility] = useState('PUBLIC');
-  const [eventTypes, setEventTypes] = useState<string[]>(defaultEventTypes);
 
 
   // Validation checks
@@ -129,7 +131,24 @@ function BookNowContent(): React.JSX.Element {
     setValidationError(null);
   }, [authLoading, isAuthenticated, user, photographerId, router]);
 
-  // Fetch photographer data from API by ID
+  // Fetch event types from API
+  useEffect(() => {
+    getEventTypes().then(response => {
+      if (response.success && response.data && Array.isArray(response.data)) {
+        const rawData = response.data as unknown as Record<string, unknown>;
+        const types = rawData?.data
+          ? (rawData.data as EventType[])
+          : response.data as EventType[];
+        if (types.length > 0) {
+          setEventTypes(types.map(t => t.name));
+        }
+      }
+    }).catch(() => {
+      // Keep fallback event types
+    });
+  }, []);
+
+  // Fetch photographer data from API by filtering from main list
   useEffect(() => {
     const fetchPhotographer = async () => {
       if (!photographerId) {
@@ -142,10 +161,16 @@ function BookNowContent(): React.JSX.Element {
       setPhotographerError(null);
 
       try {
-        const response = await getPhotographerById(photographerId);
+        // Fetch all photographers and filter by ID (same as view-profile.tsx)
+        const response = await getPhotographers({ size: 100 });
 
-        if (response.success && response.data) {
-          setPhotographer(response.data as Photographer);
+        if (response.success && response.data?.content) {
+          const found = response.data.content.find(p => p.id === photographerId);
+          if (found) {
+            setPhotographer(found);
+          } else {
+            setPhotographerError('Photographer not found');
+          }
         } else {
           setPhotographerError(response.error || 'Failed to load photographer profile');
         }
@@ -159,30 +184,6 @@ function BookNowContent(): React.JSX.Element {
 
     fetchPhotographer();
   }, [photographerId]);
-
-  // Fetch event types from API
-  useEffect(() => {
-    const fetchEventTypes = async () => {
-      try {
-        const response = await getEventTypes();
-        if (response.success && response.data) {
-          const apiData = response.data as unknown as Record<string, unknown>;
-          const types = (apiData?.data || []) as Array<Record<string, unknown>>;
-          if (types.length > 0) {
-            const typeNames = types
-              .filter(t => t.isActive !== false)
-              .map(t => t.name as string);
-            if (typeNames.length > 0) {
-              setEventTypes([...typeNames, 'Other']);
-            }
-          }
-        }
-      } catch {
-        // Keep default event types
-      }
-    };
-    fetchEventTypes();
-  }, []);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -226,7 +227,7 @@ function BookNowContent(): React.JSX.Element {
     location: photographer?.address || '',
     rating: photographer?.rating || 0,
     completedJobs: photographer?.projects?.length || 0,
-    verified: (photographer as unknown as Record<string, unknown>)?.isVerified === true,
+    verified: photographer?.isVerified ?? false,
     availability: photographer ? formatAvailability(photographer.availabilities) : 'Contact for availability',
     hours: photographer ? formatWorkingHours(photographer.availabilities) : 'Contact for hours',
     minimumEarnings: minimumPrice || 'Contact for pricing',

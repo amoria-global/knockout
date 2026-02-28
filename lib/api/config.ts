@@ -93,6 +93,7 @@ export const API_ENDPOINTS = {
     PHOTOGRAPHERS_LIST: '/api/remote/public/photographers/list',
     PHOTOGRAPHER_BY_ID: (id: string) => `/api/remote/public/photographers/list/${id}`,
     PHOTOGRAPHER_REVIEWS: (id: string) => `/api/remote/public/photographers/${id}/reviews`,
+    SUBMIT_REVIEW: '/api/remote/photographer-reviews',
     PHOTOGRAPHER_CATEGORIES: '/api/remote/photographer-categories',
     CITIES: '/api/remote/cities',
     CURRENCIES: '/api/remote/public/currencies',
@@ -103,7 +104,6 @@ export const API_ENDPOINTS = {
     EVENTS_LIST: '/api/remote/public/events/list',
     DONATIONS: '/api/remote/public/donations',
     EVENT_TYPES: '/api/remote/public/event-types',
-    PACKAGE_EXTRAS: (photographerId: string, packageId: string) => `/api/remote/public/photographers/${photographerId}/packages/${packageId}/extras`,
     FAQS: '/api/remote/public/faqs',
   },
 
@@ -147,19 +147,12 @@ export const API_ENDPOINTS = {
     EVENTS_JOIN: '/api/remote/customer/events/join',
     MY_PHOTOS: '/api/remote/customer/events/my-photos',
     VALIDATE_INVITE_CODE: '/api/remote/customer/events/validate-invite-code',
-    FACIAL_RECOGNITION_MATCH: '/api/remote/customer/events/facial-recognition-match',
+    FACIAL_RECOGNITION: '/api/remote/customer/events/facial-recognition',
   },
 
-  // Stream endpoints
+  // Stream endpoints (coordinator streams)
   STREAMS: {
-    CHATS: (eventId: string) => `/api/remote/coordinator/streams/${eventId}/chats`,
-    CHAT_VIDEO: (eventId: string) => `/api/remote/coordinator/streams/${eventId}/chats/video`,
-    VIEWERS: (eventId: string) => `/api/remote/coordinator/streams/${eventId}/viewers`,
-    PARTICIPANTS: (eventId: string) => `/api/remote/coordinator/streams/${eventId}/participants`,
-    URL: (eventId: string) => `/api/remote/coordinator/streams/${eventId}/url`,
-    REPORTS: (eventId: string) => `/api/remote/streams/${eventId}/reports`,
-    RATINGS: (eventId: string) => `/api/remote/streams/${eventId}/ratings`,
-    BLOCK: (eventId: string) => `/api/remote/streams/${eventId}/block`,
+    CHATS: (streamId: string) => `/api/remote/coordinator/streams/${streamId}/chats`,
   },
 
   // Chat/messaging endpoints
