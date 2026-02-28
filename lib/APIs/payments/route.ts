@@ -12,6 +12,8 @@ import type { ApiResponse } from '@/lib/api/types';
 
 export interface RecordTipRequest {
   amount: string;
+  eventId?: string;
+  recipientId?: string;
   currencyId?: string;
   remarks?: string;
 }
@@ -32,6 +34,8 @@ export async function recordTip(data: RecordTipRequest): Promise<ApiResponse<Rec
 
   const queryParams = new URLSearchParams();
   queryParams.append('amount', data.amount);
+  if (data.eventId) queryParams.append('eventId', data.eventId);
+  if (data.recipientId) queryParams.append('recipientId', data.recipientId);
   if (data.currencyId) queryParams.append('currencyId', data.currencyId);
   if (data.remarks) queryParams.append('remarks', data.remarks);
 

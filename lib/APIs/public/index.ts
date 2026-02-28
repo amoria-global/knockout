@@ -91,3 +91,21 @@ export type {
   NewsletterSubscribeResponse,
   NewsletterUnsubscribeResponse,
 } from './newsletter/route';
+
+// FAQs
+export {
+  getFAQs,
+} from './get-faqs/route';
+export type {
+  FAQ,
+  GetFAQsResponse,
+} from './get-faqs/route';
+
+// Event Types
+export {
+  getEventTypes,
+} from './get-event-types/route';
+export type {
+  EventType,
+  GetEventTypesResponse,
+} from './get-event-types/route';
