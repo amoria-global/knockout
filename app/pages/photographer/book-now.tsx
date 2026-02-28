@@ -7,6 +7,7 @@ import { useAuth } from '@/app/providers/AuthProvider';
 import { createEventBooking, parseTimeToApiString } from '@/lib/APIs/bookings/create-booking/route';
 import { getPublicPhotographerPackages, type PublicPackage } from '@/lib/APIs/packages/get-packages/route';
 import { getPhotographers, type Photographer } from '@/lib/APIs/public';
+import { getEventTypes, type EventType } from '@/lib/APIs/public/get-event-types/route';
 
 // Default images for fallback
 const DEFAULT_PROFILE_IMAGE = 'https://i.pinimg.com/1200x/e9/1f/59/e91f59ed85a702d7252f2b0c8e02c7d2.jpg';
@@ -50,7 +51,7 @@ const formatWorkingHours = (availabilities: { startTime: string; endTime: string
   return `${first.startTime} - ${first.endTime}`;
 };
 
-const eventTypes = [
+const FALLBACK_EVENT_TYPES = [
   'Wedding',
   'Birthday',
   'Corporate Event',
@@ -83,6 +84,9 @@ function BookNowContent(): React.JSX.Element {
   const [photographer, setPhotographer] = useState<Photographer | null>(null);
   const [photographerLoading, setPhotographerLoading] = useState(true);
   const [photographerError, setPhotographerError] = useState<string | null>(null);
+
+  // Event types from API (with fallback)
+  const [eventTypes, setEventTypes] = useState<string[]>(FALLBACK_EVENT_TYPES);
 
   // Extra photos & videos state per package
   const [extraPhotos, setExtraPhotos] = useState<Record<string, number | ''>>({ essential: '', custom: '', premium: '' });
@@ -126,6 +130,23 @@ function BookNowContent(): React.JSX.Element {
 
     setValidationError(null);
   }, [authLoading, isAuthenticated, user, photographerId, router]);
+
+  // Fetch event types from API
+  useEffect(() => {
+    getEventTypes().then(response => {
+      if (response.success && response.data && Array.isArray(response.data)) {
+        const rawData = response.data as unknown as Record<string, unknown>;
+        const types = rawData?.data
+          ? (rawData.data as EventType[])
+          : response.data as EventType[];
+        if (types.length > 0) {
+          setEventTypes(types.map(t => t.name));
+        }
+      }
+    }).catch(() => {
+      // Keep fallback event types
+    });
+  }, []);
 
   // Fetch photographer data from API by filtering from main list
   useEffect(() => {
@@ -206,7 +227,7 @@ function BookNowContent(): React.JSX.Element {
     location: photographer?.address || '',
     rating: photographer?.rating || 0,
     completedJobs: photographer?.projects?.length || 0,
-    verified: true,
+    verified: photographer?.isVerified ?? false,
     availability: photographer ? formatAvailability(photographer.availabilities) : 'Contact for availability',
     hours: photographer ? formatWorkingHours(photographer.availabilities) : 'Contact for hours',
     minimumEarnings: minimumPrice || 'Contact for pricing',

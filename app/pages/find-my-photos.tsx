@@ -1,11 +1,16 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Navbar from '../components/navbar';
 import { getMyPhotos, type MyPhoto } from '@/lib/APIs/customer/my-photos/route';
+import { validateInviteCode } from '@/lib/APIs/customer/validate-invite-code/route';
+import { uploadSelfieForRecognition, type MatchedPhoto } from '@/lib/APIs/customer/facial-recognition/route';
 import { isAuthenticated } from '@/lib/api/client';
 
 const FindMyPhotos = () => {
+  const searchParams = useSearchParams();
+
   // Responsive
   const [isMobile, setIsMobile] = useState(false);
 
@@ -44,6 +49,25 @@ const FindMyPhotos = () => {
   // Image viewer modal
   const [selectedPhoto, setSelectedPhoto] = useState<{ id: string; url: string; alt: string } | null>(null);
 
+  // Auto-fill invite code from URL param (e.g. /find-my-photos?code=ABC123)
+  useEffect(() => {
+    const codeFromUrl = searchParams.get('code');
+    if (codeFromUrl && !inviteCode) {
+      setInviteCode(codeFromUrl);
+      // Auto-validate the invite code from URL
+      validateInviteCode(codeFromUrl).then(response => {
+        if (response.success) {
+          setIsCodeSubmitted(true);
+        } else {
+          setInviteError(response.error || 'Invalid invite code');
+        }
+      }).catch(() => {
+        setInviteError('Failed to validate invite code');
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
     checkMobile();
@@ -62,13 +86,22 @@ const FindMyPhotos = () => {
     }
   };
 
-  const handleInviteSubmit = () => {
+  const handleInviteSubmit = async () => {
     if (!inviteCode.trim()) {
       setInviteError('Please enter a valid invite code');
       return;
     }
     setInviteError('');
-    setIsCodeSubmitted(true);
+    try {
+      const response = await validateInviteCode(inviteCode.trim());
+      if (response.success) {
+        setIsCodeSubmitted(true);
+      } else {
+        setInviteError(response.error || 'Invalid invite code');
+      }
+    } catch {
+      setInviteError('Failed to validate invite code. Please try again.');
+    }
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -92,21 +125,39 @@ const FindMyPhotos = () => {
 
     setIsScanning(true);
     try {
-      const response = await getMyPhotos();
+      const response = await uploadSelfieForRecognition(inviteCode.trim(), uploadedFile);
       if (response.success && response.data) {
         const rawData = response.data as unknown as Record<string, unknown>;
-        const photos = Array.isArray(response.data)
-          ? response.data
-          : rawData?.data
-            ? (rawData.data as MyPhoto[])
+        const photos: MatchedPhoto[] = rawData?.data
+          ? (rawData.data as MatchedPhoto[])
+          : Array.isArray(response.data)
+            ? (response.data as unknown as MatchedPhoto[])
             : [];
-        const mapped = photos.map((p: MyPhoto) => ({
+        const mapped = photos.map((p: MatchedPhoto) => ({
           id: p.id,
           url: p.url || p.thumbnailUrl || '',
           alt: p.alt || p.eventTitle || 'Event photo',
         }));
         setAllPhotos(mapped);
         setDisplayedPhotos(mapped);
+      } else {
+        // Fallback: try getMyPhotos with invite code
+        const fallback = await getMyPhotos(inviteCode ? { inviteCode } : undefined);
+        if (fallback.success && fallback.data) {
+          const rawData = fallback.data as unknown as Record<string, unknown>;
+          const photos = Array.isArray(fallback.data)
+            ? fallback.data
+            : rawData?.data
+              ? (rawData.data as MyPhoto[])
+              : [];
+          const mapped = photos.map((p: MyPhoto) => ({
+            id: p.id,
+            url: p.url || p.thumbnailUrl || '',
+            alt: p.alt || p.eventTitle || 'Event photo',
+          }));
+          setAllPhotos(mapped);
+          setDisplayedPhotos(mapped);
+        }
       }
       setIsFiltered(true);
       setIsCodeSubmitted(true);

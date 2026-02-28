@@ -5,6 +5,7 @@ import Navbar from '../components/navbar';
 import Footer from '../components/footer';
 import { useRouter } from 'next/navigation';
 import { contactUs } from '@/lib/APIs/public/contact-us/route';
+import { getFAQs as fetchFAQsFromApi } from '@/lib/APIs/public/get-faqs/route';
 
 // Local types (no backend imports)
 type FAQ = {
@@ -161,6 +162,34 @@ const HelpSupportCenter: React.FC = () => {
 
   // Data states
   const [FAQS, setFAQS] = useState<FAQ[]>(mockFAQs);
+
+  // Fetch FAQs from API (fallback to mockFAQs)
+  useEffect(() => {
+    fetchFAQsFromApi().then(response => {
+      if (response.success && response.data) {
+        const rawData = response.data as unknown as Record<string, unknown>;
+        const faqs = rawData?.data
+          ? (rawData.data as FAQ[])
+          : Array.isArray(response.data)
+            ? (response.data as unknown as FAQ[])
+            : [];
+        if (faqs.length > 0) {
+          setFAQS(faqs.map(f => ({
+            id: f.id || '',
+            question: f.question || '',
+            answer: f.answer || '',
+            category: f.category || 'General',
+            priority: f.priority || 'medium',
+            helpful: f.helpful || 0,
+            lastUpdated: f.lastUpdated ? new Date(f.lastUpdated) : new Date(),
+            tags: f.tags || [],
+          })));
+        }
+      }
+    }).catch(() => {
+      // Keep mockFAQs as fallback
+    });
+  }, []);
 
   // Detect screen size
   useEffect(() => {
