@@ -153,6 +153,13 @@ export const API_ENDPOINTS = {
   // Stream endpoints (coordinator streams)
   STREAMS: {
     CHATS: (streamId: string) => `/api/remote/coordinator/streams/${streamId}/chats`,
+    CHAT_VIDEO: (streamId: string) => `/api/remote/coordinator/streams/${streamId}/chats/video`,
+    VIEWERS: (streamId: string) => `/api/remote/coordinator/streams/${streamId}/viewers`,
+    PARTICIPANTS: (streamId: string) => `/api/remote/coordinator/streams/${streamId}/participants`,
+    URL: (streamId: string) => `/api/remote/coordinator/streams/${streamId}/url`,
+    REPORTS: (streamId: string) => `/api/remote/coordinator/streams/${streamId}/reports`,
+    RATINGS: (streamId: string) => `/api/remote/coordinator/streams/${streamId}/ratings`,
+    BLOCK: (streamId: string) => `/api/remote/coordinator/streams/${streamId}/block`,
   },
 
   // Chat/messaging endpoints
