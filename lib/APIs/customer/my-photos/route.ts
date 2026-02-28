@@ -27,6 +27,7 @@ export interface GetMyPhotosResponse {
 
 export interface GetMyPhotosParams {
   eventId?: string;
+  inviteCode?: string;
   page?: number;
   size?: number;
 }
@@ -38,6 +39,7 @@ export async function getMyPhotos(params?: GetMyPhotosParams): Promise<ApiRespon
   const queryParams = new URLSearchParams();
 
   if (params?.eventId) queryParams.append('eventId', params.eventId);
+  if (params?.inviteCode) queryParams.append('inviteCode', params.inviteCode);
   if (params?.page !== undefined) queryParams.append('page', params.page.toString());
   if (params?.size !== undefined) queryParams.append('size', params.size.toString());
 

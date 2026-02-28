@@ -10,6 +10,7 @@ import { getPublicPhotographerPackages, type PublicPackage } from '@/lib/APIs/pa
 import { useToast } from '@/lib/notifications/ToastProvider';
 import { useAuth } from '@/app/providers/AuthProvider';
 import { apiClient } from '@/lib/api/client';
+import { API_ENDPOINTS } from '@/lib/api/config';
 
 // Default images for fallback
 const DEFAULT_PROFILE_IMAGE = 'https://i.pinimg.com/1200x/e9/1f/59/e91f59ed85a702d7252f2b0c8e02c7d2.jpg';
@@ -323,11 +324,18 @@ function ViewProfileContent(): React.JSX.Element {
     }
 
     try {
-      const response = await apiClient.post<Record<string, unknown>>('/api/remote/photographer-reviews', {
-        eventId: review.eventId,
-        rating: review.rating,
-        comment: review.comment,
-      });
+      // Backend ONLY accepts multipart/form-data (returns 415 for JSON)
+      const formData = new FormData();
+      formData.append('eventId', review.eventId);
+      formData.append('photographerId', photographerId || '');
+      formData.append('rating', review.rating.toString());
+      formData.append('comment', review.comment);
+      review.images.forEach(img => formData.append('images', img));
+
+      const response = await apiClient.post<Record<string, unknown>>(
+        API_ENDPOINTS.PUBLIC.SUBMIT_REVIEW,
+        formData
+      );
 
       if (response.success) {
         toast.success('Review submitted successfully!');

@@ -93,6 +93,7 @@ export const API_ENDPOINTS = {
     PHOTOGRAPHERS_LIST: '/api/remote/public/photographers/list',
     PHOTOGRAPHER_BY_ID: (id: string) => `/api/remote/public/photographers/list/${id}`,
     PHOTOGRAPHER_REVIEWS: (id: string) => `/api/remote/public/photographers/${id}/reviews`,
+    SUBMIT_REVIEW: '/api/remote/photographer-reviews',
     PHOTOGRAPHER_CATEGORIES: '/api/remote/photographer-categories',
     CITIES: '/api/remote/cities',
     CURRENCIES: '/api/remote/public/currencies',
@@ -102,6 +103,8 @@ export const API_ENDPOINTS = {
     PHOTOGRAPHER_PACKAGES: (id: string) => `/api/remote/public/photographers/${id}/packages`,
     EVENTS_LIST: '/api/remote/public/events/list',
     DONATIONS: '/api/remote/public/donations',
+    EVENT_TYPES: '/api/remote/public/event-types',
+    FAQS: '/api/remote/public/faqs',
   },
 
   // Protected photographer endpoints
@@ -143,6 +146,13 @@ export const API_ENDPOINTS = {
     EVENTS_BOOK: '/api/remote/customer/events/book',
     EVENTS_JOIN: '/api/remote/customer/events/join',
     MY_PHOTOS: '/api/remote/customer/events/my-photos',
+    VALIDATE_INVITE_CODE: '/api/remote/customer/events/validate-invite-code',
+    FACIAL_RECOGNITION: '/api/remote/customer/events/facial-recognition',
+  },
+
+  // Stream endpoints (coordinator streams)
+  STREAMS: {
+    CHATS: (streamId: string) => `/api/remote/coordinator/streams/${streamId}/chats`,
   },
 
   // Chat/messaging endpoints
