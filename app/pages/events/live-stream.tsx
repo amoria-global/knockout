@@ -6,7 +6,10 @@ import dynamic from 'next/dynamic';
 import { getCurrencies, type Currency as APICurrency } from '@/lib/APIs/public';
 import { recordTip, recordStreamingPayment } from '@/lib/APIs/payments/route';
 import { getEventDetails } from '@/lib/APIs/events/get-event-details/route';
-import { getStreamChats, sendStreamChat, sendStreamVideoChat, getStreamViewerCount, getStreamParticipants, reportStreamIssue, rateStream, blockUserInStream } from '@/lib/APIs/streams/route';
+import { getStreamChats, sendStreamChat, type StreamChatMessage } from '@/lib/APIs/streams/chat/route';
+import { contactUs } from '@/lib/APIs/public/contact-us/route';
+import { apiClient } from '@/lib/api/client';
+import { API_ENDPOINTS } from '@/lib/api/config';
 
 // Dynamically import VideoMessageRecorder to avoid SSR issues
 const VideoMessageRecorder = dynamic(() => import('../../components/VideoMessageRecorder'), { ssr: false });
@@ -16,6 +19,7 @@ interface EventStream {
   id: string;
   title: string;
   photographer: string;
+  photographerId: string;
   category: string;
   videoSrc: string;
   streamId: string;
@@ -46,6 +50,7 @@ const App = () => {
       id: "event-1",
       title: "Beautiful Wedding Ceremony Live Stream",
       photographer: "John Anderson Photography",
+      photographerId: "",
       viewers: 15886,
       category: "Wedding Events",
       videoSrc: "/live-stream.mp4",
@@ -85,6 +90,11 @@ const App = () => {
   const mainEvent = events[mainEventIndex];
   const searchParams = useSearchParams();
 
+  // Blocked users (local only)
+  const [blockedUsers, setBlockedUsers] = useState<Set<string>>(new Set());
+  // Dynamic participants derived from chat messages
+  const [participants, setParticipants] = useState<{ id: number; name: string; status: string; avatar: string }[]>([]);
+
   // Load real event metadata from API on mount if eventId is in URL
   useEffect(() => {
     const eventId = searchParams.get('eventId') || searchParams.get('id');
@@ -101,6 +111,7 @@ const App = () => {
             id: eventId,
             title: (ev.title as string) || prev[0].title,
             photographer: (ev.photographerName as string) || prev[0].photographer,
+            photographerId: (ev.photographerId as string) || (ev.organizerId as string) || prev[0].photographerId,
             category: (ev.eventType as string) || (ev.category as string) || prev[0].category,
           }, ...prev.slice(1)]);
         }
@@ -111,60 +122,74 @@ const App = () => {
     loadEventDetails();
   }, [searchParams]);
 
-  // Load stream chats from API
+  // Poll stream chat messages every 5 seconds
   useEffect(() => {
-    const eventId = searchParams.get('eventId') || searchParams.get('id');
-    if (!eventId) return;
+    if (!mainEvent?.streamId) return;
 
-    const loadStreamChats = async () => {
+    const pollChat = async () => {
       try {
-        const response = await getStreamChats(eventId);
+        const response = await getStreamChats(mainEvent.streamId, 0, 50);
         if (response.success && response.data) {
-          const apiData = response.data as unknown as Record<string, unknown>;
-          const chatData = apiData?.data as Record<string, unknown>;
-          const chatContent = (chatData?.content || []) as Array<Record<string, unknown>>;
-          if (chatContent.length > 0) {
-            const apiMessages: Message[] = chatContent.map((chat, index) => ({
-              id: index + 1,
-              sender: (chat.senderName as string) || 'Unknown',
-              text: (chat.content as string) || '',
-              time: new Date(chat.timestamp as string).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-              delivered: true,
-              avatar: (chat.senderAvatar as string) || `https://i.pravatar.cc/150?img=${index + 1}`,
-              videoUrl: chat.videoUrl as string | undefined,
-            }));
-            setEvents(prev => prev.map((ev, i) => i === 0 ? { ...ev, messages: apiMessages } : ev));
+          const rawData = response.data as unknown as Record<string, unknown>;
+          const chatMessages: StreamChatMessage[] = rawData?.data
+            ? (rawData.data as StreamChatMessage[])
+            : Array.isArray(response.data)
+              ? (response.data as unknown as StreamChatMessage[])
+              : [];
+
+          if (chatMessages.length > 0) {
+            // Convert API messages to local format and merge
+            const existingIds = new Set(mainEvent.messages.map(m => String(m.id)));
+            const newMessages = chatMessages
+              .filter(m => !existingIds.has(m.id) && !blockedUsers.has(m.sender))
+              .map((m, idx) => ({
+                id: Date.now() + idx,
+                sender: m.sender,
+                text: m.message,
+                time: new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                delivered: true,
+                avatar: m.avatar || `https://i.pravatar.cc/150?u=${m.sender}`,
+              }));
+
+            if (newMessages.length > 0) {
+              setEvents(prev => {
+                const updated = [...prev];
+                updated[mainEventIndex] = {
+                  ...updated[mainEventIndex],
+                  messages: [...updated[mainEventIndex].messages, ...newMessages],
+                };
+                return updated;
+              });
+            }
+
+            // Update participants from unique senders
+            const senderMap = new Map<string, string>();
+            chatMessages.forEach(m => {
+              if (!senderMap.has(m.sender)) {
+                senderMap.set(m.sender, m.avatar || `https://i.pravatar.cc/150?u=${m.sender}`);
+              }
+            });
+            setParticipants(
+              Array.from(senderMap.entries()).map(([name, avatar], idx) => ({
+                id: idx + 1,
+                name,
+                status: 'active',
+                avatar,
+              }))
+            );
           }
         }
       } catch {
-        // Keep default messages
+        // Silent fail for polling
       }
     };
-    loadStreamChats();
-  }, [searchParams]);
 
-  // Load viewer count from API
-  useEffect(() => {
-    const eventId = searchParams.get('eventId') || searchParams.get('id');
-    if (!eventId) return;
-
-    const loadViewerCount = async () => {
-      try {
-        const response = await getStreamViewerCount(eventId);
-        if (response.success && response.data) {
-          const apiData = response.data as unknown as Record<string, unknown>;
-          const data = apiData?.data as Record<string, unknown>;
-          const viewerCount = (data?.viewerCount as number) || 0;
-          setEvents(prev => prev.map((ev, i) => i === 0 ? { ...ev, viewers: viewerCount } : ev));
-        }
-      } catch {
-        // Keep default viewer count
-      }
-    };
-    loadViewerCount();
-    const interval = setInterval(loadViewerCount, 30000);
+    // Initial fetch
+    pollChat();
+    const interval = setInterval(pollChat, 5000);
     return () => clearInterval(interval);
-  }, [searchParams]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mainEvent?.streamId, mainEventIndex, blockedUsers]);
 
   // Swap animation state
   const [isSwapping, setIsSwapping] = useState(false);
@@ -366,7 +391,6 @@ const App = () => {
 
       const response = await recordTip({
         amount: donationAmount,
-        eventId: mainEvent.id,
         currencyId: currencyId || undefined,
         remarks: `Donation via ${donationPaymentMethod}`,
       });
@@ -561,36 +585,56 @@ const App = () => {
   }, [mainEventIndex, events.length, isSwapping]); // Don't include playbackState to avoid re-creating interval
 
   // Handle sending a new message
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (newMessage.trim()) {
-      const updatedEvents = [...events];
       const messageText = replyingTo
         ? `@${replyingTo.sender} ${newMessage}`
         : newMessage;
 
-      updatedEvents[mainEventIndex].messages = [
-        ...updatedEvents[mainEventIndex].messages,
-        {
-          id: updatedEvents[mainEventIndex].messages.length + 1,
-          sender: "You",
-          text: messageText,
-          time: new Date().toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
-          delivered: false,
-          avatar: "https://i.pravatar.cc/150?img=1",
-          replyTo: replyingTo ? { id: replyingTo.id, sender: replyingTo.sender } : undefined
-        },
-      ];
-      setEvents(updatedEvents);
+      const tempId = Date.now();
+      const newMsg: Message = {
+        id: tempId,
+        sender: "You",
+        text: messageText,
+        time: new Date().toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+        delivered: false,
+        avatar: "https://i.pravatar.cc/150?img=1",
+        replyTo: replyingTo ? { id: replyingTo.id, sender: replyingTo.sender } : undefined
+      };
+
+      // Optimistic update
+      setEvents(prev => {
+        const updated = [...prev];
+        updated[mainEventIndex] = {
+          ...updated[mainEventIndex],
+          messages: [...updated[mainEventIndex].messages, newMsg],
+        };
+        return updated;
+      });
       setNewMessage("");
       setReplyingTo(null);
 
-      // Send to backend API
-      const eventId = searchParams.get('eventId') || searchParams.get('id');
-      if (eventId) {
-        sendStreamChat(eventId, messageText).catch(() => {});
+      // Send to API
+      try {
+        const response = await sendStreamChat(mainEvent.streamId, messageText);
+        if (response.success) {
+          // Mark as delivered
+          setEvents(prev => {
+            const updated = [...prev];
+            updated[mainEventIndex] = {
+              ...updated[mainEventIndex],
+              messages: updated[mainEventIndex].messages.map(m =>
+                m.id === tempId ? { ...m, delivered: true } : m
+              ),
+            };
+            return updated;
+          });
+        }
+      } catch {
+        // Message stays as undelivered — no removal
       }
     }
   };
@@ -618,12 +662,8 @@ const App = () => {
     ];
     setEvents(updatedEvents);
 
-    // Upload video to backend API
-    const eventId = searchParams.get('eventId') || searchParams.get('id');
-    if (eventId) {
-      const videoFile = new File([videoBlob], 'video-message.webm', { type: videoBlob.type || 'video/webm' });
-      sendStreamVideoChat(eventId, videoFile).catch(() => {});
-    }
+    // Here you would typically upload the videoBlob to your server
+    console.log('Video message recorded:', videoBlob);
   };
 
   // Handle delete message
@@ -661,14 +701,17 @@ const App = () => {
 
   // Handle block user
   const handleBlockUser = (sender: string) => {
-    alert(`Blocked user: ${sender}`);
+    // Block user locally and filter their messages from the chat
+    setBlockedUsers(prev => new Set(prev).add(sender));
+    setEvents(prev => {
+      const updated = [...prev];
+      updated[mainEventIndex] = {
+        ...updated[mainEventIndex],
+        messages: updated[mainEventIndex].messages.filter(m => m.sender !== sender),
+      };
+      return updated;
+    });
     setOpenMessageMenu(null);
-
-    // Block user via backend API (using sender name as placeholder - in a real app, use userId)
-    const eventId = searchParams.get('eventId') || searchParams.get('id');
-    if (eventId && sender) {
-      blockUserInStream(eventId, sender).catch(() => {});
-    }
   };
 
   // Handle reply to message
@@ -986,6 +1029,7 @@ const App = () => {
         id: `event-${Date.now()}`,
         title: "New Event Live Stream",
         photographer: "Guest Photographer",
+        photographerId: "",
         viewers: 1250,
         category: "Live Events",
         videoSrc: events.length === 1 ? "/live-stream-2.mp4" : "/bako.mp4",
@@ -1264,15 +1308,7 @@ const App = () => {
     { emoji: "😮", name: "wow" },
   ];
 
-  // Sample participants data
-  const participants = [
-    { id: 1, name: "moise caicedo", status: "active", avatar: "https://i.pravatar.cc/150?img=12" },
-    { id: 2, name: "Enzo fernandes", status: "active", avatar: "https://i.pravatar.cc/150?img=5" },
-    { id: 3, name: "Cole palmer", status: "active", avatar: "https://i.pravatar.cc/150?img=33" },
-    { id: 4, name: "malo Gusto", status: "active", avatar: "https://i.pravatar.cc/150?img=47" },
-    { id: 5, name: "Reece james", status: "active", avatar: "https://i.pravatar.cc/150?img=15" },
-    { id: 6, name: "liam delap", status: "active", avatar:""},
-  ];
+  // Participants are now populated from stream chat messages (see polling useEffect above)
 
   // Format recording time
   const formatRecordingTime = (seconds: number) => {
@@ -1510,16 +1546,21 @@ const App = () => {
     }
   };
 
-  // Handle report issue
-  const handleReportIssue = (issueType: string) => {
+  // Handle report issue — sends via contact-us API
+  const handleReportIssue = async (issueType: string) => {
     setShowSettings(false);
     setShowReportIssues(false);
-    alert(`Thank you for reporting: "${issueType}". Our team will investigate this shortly.`);
 
-    // Submit report to backend API
-    const eventId = searchParams.get('eventId') || searchParams.get('id');
-    if (eventId) {
-      reportStreamIssue(eventId, issueType).catch(() => {});
+    try {
+      await contactUs({
+        fullName: 'Stream Viewer',
+        email: 'stream-report@amoria.com',
+        phone: '',
+        subject: `Stream Report: ${issueType}`,
+        message: `Issue reported on stream "${mainEvent.title}" (ID: ${mainEvent.streamId}): ${issueType}`,
+      });
+    } catch {
+      // Silent fail — best-effort report
     }
   };
 
@@ -1553,18 +1594,25 @@ const App = () => {
   };
 
   // Handle rating submission
-  const handleSubmitRating = () => {
+  const handleSubmitRating = async () => {
     if (rating === 0) {
-      alert('Please select a rating before submitting.');
       return;
     }
 
-    alert(`Thank you for rating this live stream ${rating} star${rating > 1 ? 's' : ''}!`);
+    try {
+      // Backend requires multipart/form-data for reviews
+      const formData = new FormData();
+      formData.append('eventId', mainEvent.id);
+      formData.append('photographerId', mainEvent.photographerId);
+      formData.append('rating', rating.toString());
+      formData.append('comment', ratingComment);
 
-    // Submit rating to backend API
-    const eventId = searchParams.get('eventId') || searchParams.get('id');
-    if (eventId) {
-      rateStream(eventId, rating, ratingComment).catch(() => {});
+      await apiClient.post(
+        API_ENDPOINTS.PUBLIC.SUBMIT_REVIEW,
+        formData
+      );
+    } catch {
+      // Silent fail — best effort
     }
 
     setShowRatingModal(false);

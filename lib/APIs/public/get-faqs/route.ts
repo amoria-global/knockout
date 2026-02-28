@@ -1,5 +1,5 @@
 /**
- * FAQs API
+ * Get FAQs API
  * GET /api/remote/public/faqs
  */
 
@@ -12,25 +12,20 @@ export interface FAQ {
   question: string;
   answer: string;
   category: string;
-  priority: number;
-  helpfulCount: number;
-  isActive: boolean;
-  createdAt: string;
+  priority?: string;
+  helpful?: number;
+  lastUpdated?: string;
+  tags?: string[];
 }
 
-export interface GetFAQsResponse {
-  action: number;
-  message: string;
-  data: FAQ[];
-}
+export type GetFAQsResponse = FAQ[];
 
 /**
- * Get all active FAQs, optionally filtered by category
+ * Get all FAQs (public, no auth required)
  */
-export async function getFAQs(category?: string): Promise<ApiResponse<GetFAQsResponse>> {
-  const queryParams = category ? `?category=${encodeURIComponent(category)}` : '';
+export async function getFAQs(): Promise<ApiResponse<GetFAQsResponse>> {
   return apiClient.get<GetFAQsResponse>(
-    `${API_ENDPOINTS.PUBLIC.FAQS}${queryParams}`,
-    { retries: 2 }
+    API_ENDPOINTS.PUBLIC.FAQS,
+    { skipAuth: true, retries: 2 }
   );
 }

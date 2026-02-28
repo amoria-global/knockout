@@ -40,6 +40,7 @@ export interface Photographer {
   educationLevels: Education[];
   certifications: Certification[];
   trainings: Training[];
+  isVerified?: boolean;
 }
 
 export interface Review {

@@ -1,5 +1,5 @@
 /**
- * Event Types API
+ * Get Event Types API
  * GET /api/remote/public/event-types
  */
 
@@ -10,22 +10,16 @@ import type { ApiResponse } from '@/lib/api/types';
 export interface EventType {
   id: string;
   name: string;
-  description: string | null;
-  isActive: boolean;
 }
 
-export interface GetEventTypesResponse {
-  action: number;
-  message: string;
-  data: EventType[];
-}
+export type GetEventTypesResponse = EventType[];
 
 /**
- * Get all active event types/categories
+ * Get all available event types (public, no auth required)
  */
 export async function getEventTypes(): Promise<ApiResponse<GetEventTypesResponse>> {
   return apiClient.get<GetEventTypesResponse>(
     API_ENDPOINTS.PUBLIC.EVENT_TYPES,
-    { retries: 2 }
+    { skipAuth: true, retries: 2 }
   );
 }
