@@ -237,13 +237,13 @@ export default function JoinEvent() {
         // 1. User came from join-package page (has package param) with a valid fee, OR
         // 2. It's a LIVE event with a paid category
         const hasPackageFromJoinPackage = pkgType && (pkgType === 'individual' || pkgType === 'group');
-        const isLivePaidEvent = event.status === 'LIVE' && paidEventCategories.includes(event.category) && fee > 0;
+        const isLivePaidEvent = event.status === 'ongoing' && paidEventCategories.includes(event.category) && fee > 0;
 
         if ((hasPackageFromJoinPackage && fee > 0) || isLivePaidEvent) {
           // Show inline payment form
           setDetectedEvent(eventData);
         }
-        // For UPCOMING, free, or non-paid category events without package param - show original content
+        // For upcoming, free, or non-paid category events without package param - show original content
       }
     }
   }, [searchParams, eventsData]);
@@ -365,8 +365,8 @@ export default function JoinEvent() {
         };
 
         // Check if it's a LIVE event with a paid category
-        if (event.status === 'LIVE' && paidEventCategories.includes(event.category) && fee > 0) {
-          // Show inline payment form for paid big LIVE events
+        if (event.status === 'ongoing' && paidEventCategories.includes(event.category) && fee > 0) {
+          // Show inline payment form for paid ongoing LIVE events
           setDetectedEvent(eventData);
         } else {
           // Free event, non-LIVE, or non-paid category - proceed directly

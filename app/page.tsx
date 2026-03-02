@@ -8,6 +8,8 @@ import Footer from "./components/footer";
 import Navbar from "./components/navbar";
 import GlobalNetwork from "./components/GlobalNetwork";
 import Preloader from "./components/Preloader";
+import { getPublicEvents } from '@/lib/APIs/public';
+import { getStreamVideo } from '@/lib/APIs/streams/route';
 
 // Register GSAP plugins
 if (typeof window !== 'undefined') {
@@ -16,6 +18,7 @@ if (typeof window !== 'undefined') {
 
 export default function Home() {
   const t = useTranslations();
+  const [hasLiveEvents, setHasLiveEvents] = useState(false);
   const [activeCard, setActiveCard] = useState(0) // rated, 1: live, 2: pay, 3: gallery
   const [networkMousePos, setNetworkMousePos] = useState<{ x: number; y: number } | null>(null)
   const [whyAmoriaMousePos, setWhyAmoriaMousePos] = useState<{ x: number; y: number } | null>(null)
@@ -58,6 +61,28 @@ export default function Home() {
   const handlePreloaderComplete = () => {
     setShowPreloader(false)
   }
+
+  // Check whether any event has a live Cloudflare stream session active
+  useEffect(() => {
+    const checkLiveEvents = async () => {
+      try {
+        const res = await getPublicEvents({ size: 100 });
+        if (!res.success || !res.data) return;
+        const ongoingEvents = res.data.content.filter(e => e.status === 'ongoing');
+        if (ongoingEvents.length === 0) return;
+        const checks = await Promise.allSettled(
+          ongoingEvents.map(e => getStreamVideo(e.id))
+        );
+        const anyLive = checks.some(result => {
+          if (result.status !== 'fulfilled' || !result.value.success) return false;
+          const d = result.value.data as { data?: { connectionStatus?: string }; connectionStatus?: string };
+          return (d?.data?.connectionStatus ?? d?.connectionStatus) === 'live';
+        });
+        setHasLiveEvents(anyLive);
+      } catch { /* silent */ }
+    };
+    checkLiveEvents();
+  }, []);
 
   // Auto-rotation effect for Why Amoria Connekt cards - rotate every 3 seconds
   useEffect(() => {
@@ -2915,7 +2940,7 @@ export default function Home() {
                   {t('globalNetwork.connectNow')}
                 </button>
                 <button
-                  className="find-events-btn"
+                  className={hasLiveEvents ? 'find-events-btn' : undefined}
                   onClick={() => window.location.href = '/user/events'}
                   style={{
                     backgroundColor: 'transparent',

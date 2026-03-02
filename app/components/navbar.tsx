@@ -10,7 +10,8 @@ import { getAuthToken } from '@/lib/api/client';
 import { getDashboardUrlWithToken } from '@/lib/utils/dashboard-url';
 import { useToast } from '@/lib/notifications/ToastProvider';
 import { locales, languageNames, type Locale } from '../../i18n';
-import { getCategories, type PhotographerCategory } from '@/lib/APIs/public';
+import { getCategories, getPublicEvents, type PhotographerCategory } from '@/lib/APIs/public';
+import { getStreamVideo } from '@/lib/APIs/streams/route';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 
 // Map category names to icons
@@ -28,6 +29,16 @@ const getIconForCategory = (name: string): string => {
   const normalized = name.toLowerCase();
   return categoryIcons[normalized] || 'bi-camera-fill';
 };
+
+// Known event categories — icons and translation keys
+const EVENT_CATEGORY_BASE: { value: string; icon: string; translationKey: string }[] = [
+  { value: 'wedding',    icon: 'bi-heart-fill',          translationKey: 'weddings' },
+  { value: 'concert',    icon: 'bi-music-note-beamed',   translationKey: 'concerts' },
+  { value: 'corporate',  icon: 'bi-briefcase-fill',      translationKey: 'corporate' },
+  { value: 'sports',     icon: 'bi-trophy-fill',         translationKey: 'sports' },
+  { value: 'cultural',   icon: 'bi-globe',               translationKey: 'cultural' },
+  { value: 'conference', icon: 'bi-people-fill',         translationKey: 'conferences' },
+];
 
 // Map category names to translation keys
 const getCategoryTranslationKey = (name: string): string => {
@@ -54,6 +65,8 @@ const AmoriaKNavbar = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [photographerCategories, setPhotographerCategories] = useState<{ value: string; translationKey: string; icon: string }[]>([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
+  const [eventCategories, setEventCategories] = useState<{ value: string; icon: string; translationKey: string; isLive: boolean }[]>([]);
+  const [hasLiveEvents, setHasLiveEvents] = useState(false);
 
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
@@ -104,14 +117,54 @@ const AmoriaKNavbar = () => {
     fetchCategories();
   }, []);
 
-  const eventCategories = [
-    { value: 'wedding', label: t('eventCategories.weddings'), icon: 'bi-heart-fill', isLive: true },
-    { value: 'concert', label: t('eventCategories.concerts'), icon: 'bi-music-note-beamed', isLive: false },
-    { value: 'corporate', label: t('eventCategories.corporate'), icon: 'bi-briefcase-fill', isLive: true },
-    { value: 'sports', label: t('eventCategories.sports'), icon: 'bi-trophy-fill', isLive: false },
-    { value: 'cultural', label: t('eventCategories.cultural'), icon: 'bi-globe', isLive: true },
-    { value: 'conference', label: t('eventCategories.conferences'), icon: 'bi-people-fill', isLive: false },
-  ];
+  // Fetch public events to derive active categories and live status
+  useEffect(() => {
+    const fetchEventCategories = async () => {
+      try {
+        const res = await getPublicEvents({ size: 100 });
+        if (res.success && res.data) {
+          const events = res.data.content;
+          // First pass: record which categories have any event (regardless of live status)
+          const catMap = new Map<string, boolean>(); // category → isVerifiedLive
+          const ongoingEvents = events.filter(ev => (ev.status as string) === 'ongoing');
+
+          for (const ev of events) {
+            const raw = ((ev.eventType || ev.category || '') as string).toLowerCase().trim();
+            if (!raw) continue;
+            catMap.set(raw, catMap.get(raw) ?? false);
+          }
+
+          // Second pass: verify each "ongoing" event has an active Cloudflare stream
+          let anyLive = false;
+          if (ongoingEvents.length > 0) {
+            const checks = await Promise.allSettled(
+              ongoingEvents.map(ev => getStreamVideo(ev.id))
+            );
+            checks.forEach((result, i) => {
+              if (result.status === 'fulfilled' && result.value.success) {
+                const d = result.value.data as { data?: { connectionStatus?: string }; connectionStatus?: string };
+                const connStatus = d?.data?.connectionStatus ?? d?.connectionStatus;
+                if (connStatus === 'live') {
+                  anyLive = true;
+                  const raw = ((ongoingEvents[i].eventType || ongoingEvents[i].category || '') as string).toLowerCase().trim();
+                  if (raw) catMap.set(raw, true);
+                }
+              }
+            });
+          }
+
+          setHasLiveEvents(anyLive);
+          // Keep only known categories that have at least one event
+          setEventCategories(
+            EVENT_CATEGORY_BASE
+              .filter(c => catMap.has(c.value))
+              .map(c => ({ ...c, isLive: catMap.get(c.value) ?? false }))
+          );
+        }
+      } catch { /* silent — navbar should never break on API errors */ }
+    };
+    fetchEventCategories();
+  }, []);
 
   // Effect to detect screen size
   useEffect(() => {
@@ -420,6 +473,11 @@ const AmoriaKNavbar = () => {
                       flex: 1,
                       alignContent: 'start'
                     }}>
+                      {!categoriesLoading && photographerCategories.length === 0 && (
+                        <p style={{ gridColumn: '1 / -1', color: '#9ca3af', fontSize: '14px' }}>
+                          No photographers available right now.
+                        </p>
+                      )}
                       {photographerCategories.map((category) => (
                         <Link
                           key={category.value}
@@ -492,7 +550,7 @@ const AmoriaKNavbar = () => {
             >
               <Link
                 href={getLocalePath('/user/events')}
-                className="nav-events-link flex items-center gap-1 text-sm lg:text-base font-semibold transition-colors duration-200 whitespace-nowrap cursor-pointer"
+                className={`${hasLiveEvents ? 'nav-events-link' : 'text-gray-700 hover:text-[#083A85]'} flex items-center gap-1 text-sm lg:text-base font-semibold transition-colors duration-200 whitespace-nowrap cursor-pointer`}
               >
                 <span>{t('events')}</span>
                 <i className={`bi bi-chevron-down transition-transform duration-200 ${isEventsDropdownOpen ? 'rotate-180' : ''}`}></i>
@@ -565,6 +623,11 @@ const AmoriaKNavbar = () => {
                       flex: 1,
                       alignContent: 'start'
                     }}>
+                      {eventCategories.length === 0 && (
+                        <p style={{ gridColumn: '1 / -1', color: '#9ca3af', fontSize: '14px' }}>
+                          No events available right now.
+                        </p>
+                      )}
                       {eventCategories.map((category) => (
                         <Link
                           key={category.value}
@@ -622,7 +685,7 @@ const AmoriaKNavbar = () => {
                           }}>
                             <i className={`bi ${category.icon} ${category.isLive ? 'nav-live-icon' : ''}`} style={{ fontSize: '22px', color: 'white' }}></i>
                           </div>
-                          <span className={category.isLive ? 'nav-live-text' : ''} style={{ lineHeight: '1.4', fontWeight: category.isLive ? '700' : '600' }}>{category.label}</span>
+                          <span className={category.isLive ? 'nav-live-text' : ''} style={{ lineHeight: '1.4', fontWeight: category.isLive ? '700' : '600' }}>{t(`eventCategories.${category.translationKey}`)}</span>
                         </Link>
                       ))}
                     </div>
@@ -902,6 +965,11 @@ const AmoriaKNavbar = () => {
                     marginTop: '0.5rem'
                   }}
                 >
+                  {!categoriesLoading && photographerCategories.length === 0 && (
+                    <p style={{ padding: '8px 10px', color: '#9ca3af', fontSize: isMobile ? '0.8125rem' : '0.875rem' }}>
+                      No photographers available right now.
+                    </p>
+                  )}
                   {photographerCategories.map((category) => (
                     <Link
                       key={category.value}
@@ -996,7 +1064,7 @@ const AmoriaKNavbar = () => {
                       }}
                     >
                       <i className={`bi ${category.icon}`} style={{ fontSize: isMobile ? '0.8125rem' : '0.875rem', color: category.isLive ? '#10b981' : 'inherit' }}></i>
-                      <span>{category.label}</span>
+                      <span>{t(`eventCategories.${category.translationKey}`)}</span>
                       {category.isLive && (
                         <span style={{
                           marginLeft: 'auto',

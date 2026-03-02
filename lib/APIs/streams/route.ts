@@ -179,3 +179,27 @@ export async function blockUserInStream(eventId: string, blockedUserId: string):
     { retries: 1 }
   );
 }
+
+// --- Stream Video (replay URL + live metadata) ---
+
+export interface StreamVideoData {
+  replayUrl: string | null;
+  connectionStatus: 'live' | 'idle' | 'error' | null;
+  viewerCount: number;
+  peakViewers: number;
+  streamHealth: string | null;
+  totalMessages: number;
+}
+
+export interface StreamVideoResponse {
+  action: number;
+  message: string;
+  data: StreamVideoData;
+}
+
+export async function getStreamVideo(eventId: string): Promise<ApiResponse<StreamVideoResponse>> {
+  return apiClient.get<StreamVideoResponse>(
+    API_ENDPOINTS.STREAMS.VIDEO(eventId),
+    { skipAuth: !isAuthenticated(), retries: 1 }
+  );
+}
