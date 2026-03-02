@@ -105,6 +105,7 @@ export const API_ENDPOINTS = {
     DONATIONS: '/api/remote/public/donations',
     EVENT_TYPES: '/api/remote/public/event-types',
     FAQS: '/api/remote/public/faqs',
+    ALBUM_BY_CODE: '/api/remote/public/albums',
   },
 
   // Protected photographer endpoints
@@ -160,6 +161,7 @@ export const API_ENDPOINTS = {
     REPORTS: (streamId: string) => `/api/remote/coordinator/streams/${streamId}/reports`,
     RATINGS: (streamId: string) => `/api/remote/coordinator/streams/${streamId}/ratings`,
     BLOCK: (streamId: string) => `/api/remote/coordinator/streams/${streamId}/block`,
+    VIDEO: (eventId: string) => `/api/remote/coordinator/streams/${eventId}/video`,
   },
 
   // Chat/messaging endpoints
