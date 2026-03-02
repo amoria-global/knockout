@@ -572,7 +572,7 @@ export default function LoginPage(): React.JSX.Element {
                   borderRadius: '2px'
                 }}></div>
 
-                {/* Video Camera Icon */}
+                {/*Video Camera Icon */}
                 <div style={{
                   width: '100px',
                   height: '100px',
