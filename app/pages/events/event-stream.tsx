@@ -552,7 +552,7 @@ export default function EventStreamPage({ eventId }: EventStreamPageProps) {
             {/* Banner */}
             <div style={{ width: '100%', height: isMobile ? 200 : 340, position: 'relative', overflow: 'hidden' }}>
               <img
-                src={event.bannerImage || event.coverImage || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=1200&q=80'}
+                src={event.coverImage || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=1200&q=80'}
                 alt={event.title}
                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
               />
@@ -589,8 +589,8 @@ export default function EventStreamPage({ eventId }: EventStreamPageProps) {
                 {event.time && <span>🕐 {event.time}</span>}
                 {locationStr && <span>📍 {locationStr}</span>}
                 {event.organizerName && <span>👤 {event.organizerName}</span>}
-                {(event.category || event.eventType) && <span>🏷️ {event.category || event.eventType}</span>}
-                {event.maxGuests && <span>👥 {event.currentAttendees ?? 0} / {event.maxGuests} guests</span>}
+                {event.eventType && <span>🏷️ {event.eventType}</span>}
+                {event.maxAttendees && <span>👥 {event.currentAttendees ?? 0} / {event.maxAttendees} guests</span>}
               </div>
 
               {/* Tags */}
