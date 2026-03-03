@@ -3,10 +3,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Navbar from '../components/navbar';
-import { getMyPhotos, type MyPhoto } from '@/lib/APIs/customer/my-photos/route';
-import { validateInviteCode } from '@/lib/APIs/customer/validate-invite-code/route';
+import { getAlbumByCode, type AlbumPhoto } from '@/lib/APIs/public/get-album/route';
 import { uploadSelfieForRecognition, type MatchedPhoto } from '@/lib/APIs/customer/facial-recognition/route';
-import { isAuthenticated } from '@/lib/api/client';
 
 const FindMyPhotos = () => {
   const searchParams = useSearchParams();
@@ -18,6 +16,7 @@ const FindMyPhotos = () => {
   const [inviteCode, setInviteCode] = useState('');
   const [inviteError, setInviteError] = useState('');
   const [isCodeSubmitted, setIsCodeSubmitted] = useState(false);
+  const [isLoadingAlbum, setIsLoadingAlbum] = useState(false);
 
   // Dot pattern mouse tracking
   const heroSectionRef = useRef<HTMLDivElement>(null);
@@ -31,7 +30,6 @@ const FindMyPhotos = () => {
   const [allPhotos, setAllPhotos] = useState<{ id: string; url: string; alt: string }[]>([]);
   const [displayedPhotos, setDisplayedPhotos] = useState<{ id: string; url: string; alt: string }[]>([]);
   const [isFiltered, setIsFiltered] = useState(false);
-  const [authRequired, setAuthRequired] = useState(false);
 
   // Scan modal
   const [isScanModalOpen, setIsScanModalOpen] = useState(false);
@@ -49,20 +47,29 @@ const FindMyPhotos = () => {
   // Image viewer modal
   const [selectedPhoto, setSelectedPhoto] = useState<{ id: string; url: string; alt: string } | null>(null);
 
-  // Auto-fill invite code from URL param (e.g. /find-my-photos?code=ABC123)
+  // Auto-fill invite code from URL param and load album (e.g. /find-my-photos?code=ABC123)
   useEffect(() => {
     const codeFromUrl = searchParams.get('code');
     if (codeFromUrl && !inviteCode) {
       setInviteCode(codeFromUrl);
-      // Auto-validate the invite code from URL
-      validateInviteCode(codeFromUrl).then(response => {
-        if (response.success) {
+      setIsLoadingAlbum(true);
+      getAlbumByCode(codeFromUrl).then(response => {
+        if (response.success && response.data) {
+          const photos = (response.data.photos ?? []).map((p: AlbumPhoto) => ({
+            id: p.id,
+            url: p.url || p.thumbnailUrl || '',
+            alt: 'Event photo',
+          }));
+          setAllPhotos(photos);
+          setDisplayedPhotos(photos);
           setIsCodeSubmitted(true);
         } else {
           setInviteError(response.error || 'Invalid invite code');
         }
       }).catch(() => {
-        setInviteError('Failed to validate invite code');
+        setInviteError('Failed to load album');
+      }).finally(() => {
+        setIsLoadingAlbum(false);
       });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -92,15 +99,25 @@ const FindMyPhotos = () => {
       return;
     }
     setInviteError('');
+    setIsLoadingAlbum(true);
     try {
-      const response = await validateInviteCode(inviteCode.trim());
-      if (response.success) {
+      const response = await getAlbumByCode(inviteCode.trim());
+      if (response.success && response.data) {
+        const photos = (response.data.photos ?? []).map((p: AlbumPhoto) => ({
+          id: p.id,
+          url: p.url || p.thumbnailUrl || '',
+          alt: 'Event photo',
+        }));
+        setAllPhotos(photos);
+        setDisplayedPhotos(photos);
         setIsCodeSubmitted(true);
       } else {
         setInviteError(response.error || 'Invalid invite code');
       }
     } catch {
-      setInviteError('Failed to validate invite code. Please try again.');
+      setInviteError('Failed to load album. Please try again.');
+    } finally {
+      setIsLoadingAlbum(false);
     }
   };
 
@@ -118,11 +135,6 @@ const FindMyPhotos = () => {
   const handleStartScan = async () => {
     if (!uploadedFile) return;
 
-    if (!isAuthenticated()) {
-      setAuthRequired(true);
-      return;
-    }
-
     setIsScanning(true);
     try {
       const response = await uploadSelfieForRecognition(inviteCode.trim(), uploadedFile);
@@ -138,29 +150,10 @@ const FindMyPhotos = () => {
           url: p.url || p.thumbnailUrl || '',
           alt: p.alt || p.eventTitle || 'Event photo',
         }));
-        setAllPhotos(mapped);
+        // Only filter displayedPhotos — allPhotos stays as the full album
         setDisplayedPhotos(mapped);
-      } else {
-        // Fallback: try getMyPhotos with invite code
-        const fallback = await getMyPhotos(inviteCode ? { inviteCode } : undefined);
-        if (fallback.success && fallback.data) {
-          const rawData = fallback.data as unknown as Record<string, unknown>;
-          const photos = Array.isArray(fallback.data)
-            ? fallback.data
-            : rawData?.data
-              ? (rawData.data as MyPhoto[])
-              : [];
-          const mapped = photos.map((p: MyPhoto) => ({
-            id: p.id,
-            url: p.url || p.thumbnailUrl || '',
-            alt: p.alt || p.eventTitle || 'Event photo',
-          }));
-          setAllPhotos(mapped);
-          setDisplayedPhotos(mapped);
-        }
+        setIsFiltered(true);
       }
-      setIsFiltered(true);
-      setIsCodeSubmitted(true);
       resetScanModal();
     } catch {
       // Scan failed — keep current state
@@ -697,22 +690,23 @@ const FindMyPhotos = () => {
                   />
                   <button
                     onClick={handleInviteSubmit}
+                    disabled={isLoadingAlbum}
                     style={{
                       padding: '16px 32px',
                       borderRadius: '12px',
-                      background: '#FF6B6B',
+                      background: isLoadingAlbum ? 'rgba(255,107,107,0.6)' : '#FF6B6B',
                       color: '#ffffff',
                       fontSize: '16px',
                       fontWeight: 700,
                       border: 'none',
-                      cursor: 'pointer',
+                      cursor: isLoadingAlbum ? 'not-allowed' : 'pointer',
                       transition: 'all 0.3s ease',
                       whiteSpace: 'nowrap',
                     }}
-                    onMouseEnter={(e) => { (e.target as HTMLButtonElement).style.background = '#ff5252'; (e.target as HTMLButtonElement).style.transform = 'translateY(-2px)'; }}
-                    onMouseLeave={(e) => { (e.target as HTMLButtonElement).style.background = '#FF6B6B'; (e.target as HTMLButtonElement).style.transform = 'translateY(0)'; }}
+                    onMouseEnter={(e) => { if (!isLoadingAlbum) { (e.target as HTMLButtonElement).style.background = '#ff5252'; (e.target as HTMLButtonElement).style.transform = 'translateY(-2px)'; } }}
+                    onMouseLeave={(e) => { if (!isLoadingAlbum) { (e.target as HTMLButtonElement).style.background = '#FF6B6B'; (e.target as HTMLButtonElement).style.transform = 'translateY(0)'; } }}
                   >
-                    Access Gallery
+                    {isLoadingAlbum ? 'Loading...' : 'Access Gallery'}
                   </button>
                 </div>
 

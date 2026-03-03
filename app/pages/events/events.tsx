@@ -9,6 +9,7 @@ import {
   type LocationData,
 } from '../../utils/locationUtils';
 import { getPublicEvents, type PublicEvent } from '@/lib/APIs/public';
+import { getStreamVideo } from '@/lib/APIs/streams/route';
 
 const Events: React.FC = () => {
   const t = useTranslations('events');
@@ -50,6 +51,8 @@ const Events: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [apiTotalPages, setApiTotalPages] = useState(0);
+  // IDs of events whose Cloudflare stream is confirmed live (connectionStatus === 'live')
+  const [liveStreamIds, setLiveStreamIds] = useState<Set<string>>(new Set());
 
   const fetchEvents = useCallback(async () => {
     setIsLoading(true);
@@ -62,7 +65,24 @@ const Events: React.FC = () => {
         sortDirection: 'desc',
       });
       if (response.success && response.data) {
-        setEventsData(response.data.content);
+        const events = response.data.content;
+        // Verify which "ongoing" events have an active Cloudflare stream
+        const ongoingEvents = events.filter(e => e.status === 'ongoing');
+        const trulyLiveIds = new Set<string>();
+        if (ongoingEvents.length > 0) {
+          const checks = await Promise.allSettled(
+            ongoingEvents.map(e => getStreamVideo(e.id))
+          );
+          checks.forEach((result, i) => {
+            if (result.status === 'fulfilled' && result.value.success) {
+              const d = result.value.data as { data?: { connectionStatus?: string }; connectionStatus?: string };
+              const connStatus = d?.data?.connectionStatus ?? d?.connectionStatus;
+              if (connStatus === 'live') trulyLiveIds.add(ongoingEvents[i].id);
+            }
+          });
+        }
+        setEventsData(events);
+        setLiveStreamIds(trulyLiveIds);
         setApiTotalPages(response.data.totalPages);
       } else {
         setLoadError(response.error || 'Failed to fetch events');
@@ -99,7 +119,7 @@ const Events: React.FC = () => {
       date: '2025-07-20',
       time: '10:00 AM - 06:00 PM',
       location: 'Kigali Serena Hotel - KN 3 Ave, Kigali',
-      status: 'LIVE',
+      status: 'ongoing',
       price: '50,000 RWF',
       attendees: 200
     },
@@ -123,7 +143,7 @@ const Events: React.FC = () => {
       date: '2025-08-05',
       time: '03:00 PM - 07:00 PM',
       location: 'Inema Arts Center - KG 518 St, Kigali',
-      status: 'LIVE',
+      status: 'ongoing',
       price: '10,000 RWF',
       attendees: 80
     },
@@ -207,7 +227,7 @@ const Events: React.FC = () => {
       date: '2025-08-30',
       time: '09:00 AM - 05:00 PM',
       location: 'Norrsken House - KG 17 Ave, Kigali',
-      status: 'LIVE',
+      status: 'ongoing',
       price: '35,000 RWF',
       attendees: 300
     },
@@ -219,7 +239,7 @@ const Events: React.FC = () => {
       date: '2025-07-18',
       time: '06:00 PM - 10:00 PM',
       location: 'Century Cinema - UTC, Kigali',
-      status: 'LIVE',
+      status: 'ongoing',
       price: '12,000 RWF',
       attendees: 180
     },
@@ -243,7 +263,7 @@ const Events: React.FC = () => {
       date: '2025-09-15',
       time: '10:00 AM - 05:00 PM',
       location: 'Impact Hub - KG 9 Ave, Kigali',
-      status: 'LIVE',
+      status: 'ongoing',
       price: '20,000 RWF',
       attendees: 200
     },
@@ -267,7 +287,7 @@ const Events: React.FC = () => {
       date: '2025-08-18',
       time: '03:00 PM - 08:00 PM',
       location: 'Kigali Cultural Village - KG 14 Ave, Kigali',
-      status: 'LIVE',
+      status: 'ongoing',
       price: '8,000 RWF',
       attendees: 400
     },
@@ -327,7 +347,7 @@ const Events: React.FC = () => {
       date: '2025-09-25',
       time: '06:00 AM - 12:00 PM',
       location: 'Kigali City Centre - KN 3 Ave, Kigali',
-      status: 'LIVE',
+      status: 'ongoing',
       price: '10,000 RWF',
       attendees: 1000
     },
@@ -351,7 +371,7 @@ const Events: React.FC = () => {
       date: '2025-10-20',
       time: '09:00 AM - 05:00 PM',
       location: 'Norrsken House - KG 17 Ave, Kigali',
-      status: 'LIVE',
+      status: 'ongoing',
       price: '50,000 RWF',
       attendees: 100
     },
@@ -369,8 +389,12 @@ const Events: React.FC = () => {
     }
   ];
 
-  // Trending Events Data - Filter only LIVE events
-  const allTrendingEvents = eventsData.filter(event => (event.status || '').toUpperCase() === 'LIVE').map(event => ({
+  // An event is only "live" when its Cloudflare stream is confirmed transmitting
+  const isEventLive = (event: PublicEvent) =>
+    event.status === 'ongoing' && liveStreamIds.has(event.id);
+
+  // Trending Events Data - Filter only truly live events
+  const allTrendingEvents = eventsData.filter(event => isEventLive(event)).map(event => ({
     id: event.id,
     name: event.title,
     image: event.coverImage || event.bannerImage || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=500&q=80'
@@ -949,7 +973,7 @@ const Events: React.FC = () => {
                     </div>
 
                     {/* Status Badge - LIVE NOW or UPCOMING */}
-                    {(event.status || '').toUpperCase() === 'LIVE' ? (
+                    {isEventLive(event) ? (
                       <div
                         className="live-badge"
                         style={{
@@ -1043,8 +1067,8 @@ const Events: React.FC = () => {
                         alignItems: 'center',
                         justifyContent: 'center',
                         gap: '0.4rem',
-                        background: (event.status || '').toUpperCase() === 'LIVE' ? '#039130' : '#083A85',
-                        border: `2.5px solid ${(event.status || '').toUpperCase() === 'LIVE' ? '#059669' : '#083A85'}`,
+                        background: isEventLive(event) ? '#039130' : '#083A85',
+                        border: `2.5px solid ${isEventLive(event) ? '#059669' : '#083A85'}`,
                         color: '#FFFFFF',
                         padding: 'clamp(0.625rem, 2.5vw, 0.75rem) clamp(1rem, 3vw, 1.25rem)',
                         borderRadius: '20px',
@@ -1079,7 +1103,7 @@ const Events: React.FC = () => {
                         textOverflow: 'ellipsis',
                         minWidth: '0'
                       }}>
-                        {(event.status || '').toUpperCase() === 'LIVE'
+                        {isEventLive(event)
                           ? (isMobile ? 'JOIN' : t('joinEvent').toUpperCase())
                           : (isMobile ? 'DETAILS' : t('viewDetails').toUpperCase())
                         }

@@ -42,6 +42,9 @@ export interface Event {
   tags?: string[];
   createdAt: string;
   updatedAt: string;
+  // Cloudflare Stream fields
+  liveInputId?: string;
+  hlsManifestUrl?: string;
 }
 
 export interface GetEventsRequest {
