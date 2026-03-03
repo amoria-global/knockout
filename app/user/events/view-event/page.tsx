@@ -32,7 +32,7 @@ const eventsData = [
     date: '2025-07-20',
     time: '10:00 AM - 06:00 PM',
     location: 'Kigali Serena Hotel - KN 3 Ave, Kigali',
-    status: 'LIVE',
+    status: 'ongoing',
     price: '50,000 RWF',
     attendees: 200,
     description: 'Join us in celebrating the union of Joseph and Solange as they embark on their journey of love and commitment. This elegant wedding ceremony will be held at the prestigious Kigali Serena Hotel, featuring a beautiful ceremony followed by a grand reception. Witness the exchange of vows in a romantic setting, enjoy exquisite cuisine, and dance the night away with live music and entertainment. This is a celebration of love, family, and new beginnings.',
@@ -64,7 +64,7 @@ const eventsData = [
     date: '2025-08-05',
     time: '03:00 PM - 07:00 PM',
     location: 'Inema Arts Center - KG 518 St, Kigali',
-    status: 'LIVE',
+    status: 'ongoing',
     price: '10,000 RWF',
     attendees: 80,
     description: 'An empowering gathering celebrating sisterhood, unity, and women\'s strength. Join us for an afternoon of inspiration, networking, and meaningful connections. This event features panel discussions on women\'s empowerment, entrepreneurship workshops, artistic performances, and opportunities to build lasting friendships. Share stories, gain insights, and be part of a supportive community of amazing women. Together, we rise!',
@@ -176,7 +176,7 @@ const eventsData = [
     date: '2025-08-30',
     time: '09:00 AM - 05:00 PM',
     location: 'Norrsken House - KG 17 Ave, Kigali',
-    status: 'LIVE',
+    status: 'ongoing',
     price: '35,000 RWF',
     attendees: 300,
     description: 'Join industry leaders and entrepreneurs at the Tech Startup Summit! This premier conference brings together innovators, investors, and tech enthusiasts to explore the latest trends in technology and entrepreneurship. Network with fellow founders, attend insightful workshops, and discover investment opportunities.',
@@ -192,7 +192,7 @@ const eventsData = [
     date: '2025-07-18',
     time: '06:00 PM - 10:00 PM',
     location: 'Century Cinema - UTC, Kigali',
-    status: 'LIVE',
+    status: 'ongoing',
     price: '12,000 RWF',
     attendees: 180,
     description: 'Celebrate African cinema at the Rwanda Film Festival! Watch award-winning films from across the continent, meet talented filmmakers, and participate in Q&A sessions. This festival showcases the best of African storytelling through the lens of cinema.',
@@ -224,7 +224,7 @@ const eventsData = [
     date: '2025-09-15',
     time: '10:00 AM - 05:00 PM',
     location: 'Impact Hub - KG 9 Ave, Kigali',
-    status: 'LIVE',
+    status: 'ongoing',
     price: '20,000 RWF',
     attendees: 200,
     description: 'Watch entrepreneurs pitch their innovative ideas to leading investors! This exciting competition brings together the brightest minds in the startup ecosystem. Network with investors, mentors, and fellow entrepreneurs while witnessing groundbreaking business ideas come to life.',
@@ -256,7 +256,7 @@ const eventsData = [
     date: '2025-08-18',
     time: '03:00 PM - 08:00 PM',
     location: 'Kigali Cultural Village - KG 14 Ave, Kigali',
-    status: 'LIVE',
+    status: 'ongoing',
     price: '8,000 RWF',
     attendees: 400,
     description: 'Immerse yourself in Rwanda\'s rich cultural heritage! Experience traditional dance performances, learn about ancient customs, and participate in interactive cultural activities. This festival celebrates the vibrant traditions that make Rwanda unique.',
@@ -336,7 +336,7 @@ const eventsData = [
     date: '2025-09-25',
     time: '06:00 AM - 12:00 PM',
     location: 'Kigali City Centre - KN 3 Ave, Kigali',
-    status: 'LIVE',
+    status: 'ongoing',
     price: '10,000 RWF',
     attendees: 1000,
     description: 'Run for peace and unity! Join thousands of runners in this annual marathon that promotes peace, health, and community. Multiple race categories available for all fitness levels. Register now and be part of this inspiring movement.',
@@ -368,7 +368,7 @@ const eventsData = [
     date: '2025-10-20',
     time: '09:00 AM - 05:00 PM',
     location: 'Norrsken House - KG 17 Ave, Kigali',
-    status: 'LIVE',
+    status: 'ongoing',
     price: '50,000 RWF',
     attendees: 100,
     description: 'Master digital marketing skills! This intensive bootcamp covers social media marketing, SEO, content creation, analytics, and more. Learn from industry experts and transform your digital marketing strategy.',
@@ -517,7 +517,7 @@ function ViewEventContent(): React.JSX.Element {
             </button>
 
             {/* Status Badge - Live or Upcoming */}
-            {selectedEvent.status === 'LIVE' ? (
+            {selectedEvent.status === 'ongoing' ? (
               <div
                 className="live-badge"
                 style={{
@@ -912,7 +912,7 @@ function ViewEventContent(): React.JSX.Element {
           </div>
 
           {/* Action Button */}
-          {selectedEvent.status === 'LIVE' && (
+          {selectedEvent.status === 'ongoing' && (
             <div
               style={{
                 display: 'flex',

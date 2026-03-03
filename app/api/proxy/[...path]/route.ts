@@ -45,10 +45,15 @@ async function proxyRequest(
       url.searchParams.append(key, value);
     });
 
-    // Build headers (forward relevant ones)
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-    };
+    // Detect multipart — must not override Content-Type or parse as JSON
+    const incomingContentType = request.headers.get('content-type') || '';
+    const isMultipart = incomingContentType.includes('multipart/form-data');
+
+    // Build headers — only set Content-Type for JSON requests
+    const headers: HeadersInit = {};
+    if (!isMultipart) {
+      headers['Content-Type'] = 'application/json';
+    }
 
     // Forward authorization header if present
     const authHeader = request.headers.get('authorization');
@@ -64,11 +69,17 @@ async function proxyRequest(
 
     // Add body for non-GET requests
     if (method !== 'GET' && method !== 'DELETE') {
-      try {
-        const body = await request.json();
-        fetchOptions.body = JSON.stringify(body);
-      } catch {
-        // No body or invalid JSON - continue without body
+      if (isMultipart) {
+        // Forward FormData as-is — browser sets correct Content-Type with boundary
+        const formData = await request.formData();
+        fetchOptions.body = formData;
+      } else {
+        try {
+          const body = await request.json();
+          fetchOptions.body = JSON.stringify(body);
+        } catch {
+          // No body or invalid JSON - continue without body
+        }
       }
     }
 

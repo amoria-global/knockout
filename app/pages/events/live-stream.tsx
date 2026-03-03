@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
+import Hls from 'hls.js';
 import { getCurrencies, type Currency as APICurrency } from '@/lib/APIs/public';
 import { recordTip, recordStreamingPayment } from '@/lib/APIs/payments/route';
 import { getEventDetails } from '@/lib/APIs/events/get-event-details/route';
@@ -26,6 +27,7 @@ interface EventStream {
   viewers: number;
   startTime: string;
   messages: Message[];
+  hlsManifestUrl?: string;
 }
 
 interface Message {
@@ -55,6 +57,7 @@ const App = () => {
       category: "Wedding Events",
       videoSrc: "/live-stream.mp4",
       streamId: "vwx-jcvv-sfg",
+      hlsManifestUrl: "https://customer-ngk2huwatflljurq.cloudflarestream.com/de4cdd1a4b52362d02bf0d3c172de001/manifest/video.m3u8?protocol=llhlsbeta",
       startTime: "Started 2 hours ago",
       messages: [
         {
@@ -113,6 +116,8 @@ const App = () => {
             photographer: (ev.photographerName as string) || prev[0].photographer,
             photographerId: (ev.photographerId as string) || (ev.organizerId as string) || prev[0].photographerId,
             category: (ev.eventType as string) || (ev.category as string) || prev[0].category,
+            hlsManifestUrl: (ev.hlsManifestUrl as string) || undefined,
+            streamId: (ev.liveInputId as string) || prev[0].streamId,
           }, ...prev.slice(1)]);
         }
       } catch {
@@ -191,6 +196,42 @@ const App = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mainEvent?.streamId, mainEventIndex, blockedUsers]);
 
+  // Initialize (or reinitialize) HLS player when hlsManifestUrl becomes available or changes
+  useEffect(() => {
+    const hlsUrl = mainEvent?.hlsManifestUrl;
+    const eventId = mainEvent?.id;
+    if (!hlsUrl || !eventId) return;
+
+    const videoEl = videoRefs.current[eventId];
+    if (!videoEl) return;
+
+    // Destroy existing HLS instance for this event
+    const existing = hlsInstancesRef.current[eventId];
+    if (existing) {
+      existing.destroy();
+      hlsInstancesRef.current[eventId] = null;
+    }
+
+    if (Hls.isSupported()) {
+      const hls = new Hls({ enableWorker: false });
+      hls.loadSource(hlsUrl);
+      hls.attachMedia(videoEl);
+      hlsInstancesRef.current[eventId] = hls;
+    } else if (videoEl.canPlayType('application/vnd.apple.mpegurl')) {
+      // Safari — native HLS support
+      videoEl.src = hlsUrl;
+    }
+
+    return () => {
+      const instance = hlsInstancesRef.current[eventId];
+      if (instance) {
+        instance.destroy();
+        hlsInstancesRef.current[eventId] = null;
+      }
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mainEvent?.hlsManifestUrl, mainEvent?.id]);
+
   // Swap animation state
   const [isSwapping, setIsSwapping] = useState(false);
   const [swappingFromIndex, setSwappingFromIndex] = useState<number | null>(null);
@@ -215,6 +256,8 @@ const App = () => {
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
   // Refs for the video elements - one per event
   const videoRefs = useRef<{ [key: string]: HTMLVideoElement | null }>({});
+  // HLS.js instances - one per event
+  const hlsInstancesRef = useRef<{ [key: string]: Hls | null }>({});
   // Ref to always have latest playback state in enforcement loop
   const playbackStateRef = useRef(playbackState);
   // Direct volume storage ref - bypasses React state for immediate access
@@ -2815,7 +2858,12 @@ const App = () => {
                     console.log(`[Video Ref] Set video element volume to: ${volumeToSet} (el.volume=${el.volume})`);
                     console.log(`[Video Ref] ===== VIDEO ELEMENT MOUNT COMPLETE =====`);
                   } else {
-                    // Clean up ref when element is unmounted
+                    // Clean up HLS instance and ref when element unmounts
+                    const hls = hlsInstancesRef.current[mainEvent.id];
+                    if (hls) {
+                      hls.destroy();
+                      hlsInstancesRef.current[mainEvent.id] = null;
+                    }
                     delete videoRefs.current[mainEvent.id];
                   }
                 }}
@@ -2879,7 +2927,7 @@ const App = () => {
                   };
                 }}
               >
-                <source src={mainEvent.videoSrc} type="video/mp4" />
+                {!mainEvent.hlsManifestUrl && <source src={mainEvent.videoSrc} type="video/mp4" />}
               </video>
 
               {/* Viewer Count */}
@@ -3972,8 +4020,26 @@ const App = () => {
                               ref={(el) => {
                                 if (el) {
                                   videoRefs.current[event.id] = el;
+                                  // Initialize HLS for mini-player if URL is available
+                                  if (event.hlsManifestUrl) {
+                                    const existing = hlsInstancesRef.current[event.id];
+                                    if (existing) existing.destroy();
+                                    if (Hls.isSupported()) {
+                                      const hls = new Hls({ enableWorker: false });
+                                      hls.loadSource(event.hlsManifestUrl);
+                                      hls.attachMedia(el);
+                                      hlsInstancesRef.current[event.id] = hls;
+                                    } else if (el.canPlayType('application/vnd.apple.mpegurl')) {
+                                      el.src = event.hlsManifestUrl;
+                                    }
+                                  }
                                 } else {
-                                  // Clean up ref when element is unmounted
+                                  // Clean up HLS instance and ref when element unmounts
+                                  const hls = hlsInstancesRef.current[event.id];
+                                  if (hls) {
+                                    hls.destroy();
+                                    hlsInstancesRef.current[event.id] = null;
+                                  }
                                   delete videoRefs.current[event.id];
                                 }
                               }}
@@ -3985,7 +4051,7 @@ const App = () => {
                               muted={true}
                               loop
                             >
-                              <source src={event.videoSrc} type="video/mp4" />
+                              {!event.hlsManifestUrl && <source src={event.videoSrc} type="video/mp4" />}
                             </video>
 
                             {/* Overlay */}
