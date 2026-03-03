@@ -564,7 +564,7 @@ export default function LoginPage(): React.JSX.Element {
                   </svg>
                 </div>
 
-                {/* Center Line/Minus */}
+                {/* Center Line/Minus*/}
                 <div style={{
                   width: '60px',
                   height: '4px',
