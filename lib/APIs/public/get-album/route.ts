@@ -12,11 +12,16 @@ export interface AlbumPhoto {
   id: string;
   url: string;
   thumbnailUrl?: string;
+  price?: number;
+  alt?: string;
+  eventTitle?: string;
 }
 
 export interface AlbumData {
   albumId: string;
+  eventId?: string;
   title: string;
+  pricePerPhoto?: number;
   photos: AlbumPhoto[];
 }
 

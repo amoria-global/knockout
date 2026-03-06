@@ -5,6 +5,8 @@ import { useSearchParams } from 'next/navigation';
 import Navbar from '../components/navbar';
 import { getAlbumByCode, type AlbumPhoto } from '@/lib/APIs/public/get-album/route';
 import { uploadSelfieForRecognition, type MatchedPhoto } from '@/lib/APIs/customer/facial-recognition/route';
+import { getCurrencies, type Currency } from '@/lib/APIs/public';
+import { recordStreamingPayment } from '@/lib/APIs/payments/route';
 
 const FindMyPhotos = () => {
   const searchParams = useSearchParams();
@@ -27,13 +29,14 @@ const FindMyPhotos = () => {
   const [gridMousePos, setGridMousePos] = useState<{ x: number; y: number } | null>(null);
 
   // Photo grid
-  const [allPhotos, setAllPhotos] = useState<{ id: string; url: string; alt: string }[]>([]);
-  const [displayedPhotos, setDisplayedPhotos] = useState<{ id: string; url: string; alt: string }[]>([]);
+  const [allPhotos, setAllPhotos] = useState<{ id: string; url: string; alt: string; price?: number }[]>([]);
+  const [displayedPhotos, setDisplayedPhotos] = useState<{ id: string; url: string; alt: string; price?: number }[]>([]);
   const [isFiltered, setIsFiltered] = useState(false);
 
   // Scan modal
   const [isScanModalOpen, setIsScanModalOpen] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
+  const [scanError, setScanError] = useState<string | null>(null);
   const [uploadedPreview, setUploadedPreview] = useState<string | null>(null);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -45,7 +48,24 @@ const FindMyPhotos = () => {
   const streamRef = useRef<MediaStream | null>(null);
 
   // Image viewer modal
-  const [selectedPhoto, setSelectedPhoto] = useState<{ id: string; url: string; alt: string } | null>(null);
+  const [selectedPhoto, setSelectedPhoto] = useState<{ id: string; url: string; alt: string; price?: number } | null>(null);
+
+  // Album metadata for payment
+  const [albumEventId, setAlbumEventId] = useState('');
+  const [currencies, setCurrencies] = useState<Currency[]>([]);
+
+  // Download payment modal
+  const [showDownloadModal, setShowDownloadModal] = useState(false);
+  const [downloadTarget, setDownloadTarget] = useState<{ id: string; url: string; alt: string; price?: number } | null>(null);
+  const [dlPaymentMethod, setDlPaymentMethod] = useState<string | null>(null);
+  const [dlPhone, setDlPhone] = useState('');
+  const [dlCardNumber, setDlCardNumber] = useState('');
+  const [dlCardExpiry, setDlCardExpiry] = useState('');
+  const [dlCardCvv, setDlCardCvv] = useState('');
+  const [dlCardHolderName, setDlCardHolderName] = useState('');
+  const [dlLoading, setDlLoading] = useState(false);
+  const [dlError, setDlError] = useState<string | null>(null);
+  const [dlSuccess, setDlSuccess] = useState(false);
 
   // Auto-fill invite code from URL param and load album (e.g. /find-my-photos?code=ABC123)
   useEffect(() => {
@@ -55,10 +75,13 @@ const FindMyPhotos = () => {
       setIsLoadingAlbum(true);
       getAlbumByCode(codeFromUrl).then(response => {
         if (response.success && response.data) {
+          setAlbumEventId(response.data.eventId ?? response.data.albumId);
+          const perPhotoPrice = response.data.pricePerPhoto;
           const photos = (response.data.photos ?? []).map((p: AlbumPhoto) => ({
             id: p.id,
             url: p.url || p.thumbnailUrl || '',
-            alt: 'Event photo',
+            alt: p.alt || p.eventTitle || 'Event photo',
+            price: p.price ?? perPhotoPrice,
           }));
           setAllPhotos(photos);
           setDisplayedPhotos(photos);
@@ -103,10 +126,13 @@ const FindMyPhotos = () => {
     try {
       const response = await getAlbumByCode(inviteCode.trim());
       if (response.success && response.data) {
+        setAlbumEventId(response.data.eventId ?? response.data.albumId);
+        const perPhotoPrice = response.data.pricePerPhoto;
         const photos = (response.data.photos ?? []).map((p: AlbumPhoto) => ({
           id: p.id,
           url: p.url || p.thumbnailUrl || '',
-          alt: 'Event photo',
+          alt: p.alt || p.eventTitle || 'Event photo',
+          price: p.price ?? perPhotoPrice,
         }));
         setAllPhotos(photos);
         setDisplayedPhotos(photos);
@@ -125,6 +151,7 @@ const FindMyPhotos = () => {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploadedFile(file);
+    setScanError(null);
     const reader = new FileReader();
     reader.onload = (ev) => {
       setUploadedPreview(ev.target?.result as string);
@@ -136,6 +163,7 @@ const FindMyPhotos = () => {
     if (!uploadedFile) return;
 
     setIsScanning(true);
+    setScanError(null);
     try {
       const response = await uploadSelfieForRecognition(inviteCode.trim(), uploadedFile);
       if (response.success && response.data) {
@@ -153,10 +181,13 @@ const FindMyPhotos = () => {
         // Only filter displayedPhotos — allPhotos stays as the full album
         setDisplayedPhotos(mapped);
         setIsFiltered(true);
+        setIsCodeSubmitted(true);
+        resetScanModal();
+      } else {
+        setScanError(response.error || 'No matching photos found. Try a clearer photo.');
       }
-      resetScanModal();
     } catch {
-      // Scan failed — keep current state
+      setScanError('Scan failed. Please check your connection and try again.');
     } finally {
       setIsScanning(false);
     }
@@ -180,7 +211,105 @@ const FindMyPhotos = () => {
     setIsScanModalOpen(false);
     setUploadedFile(null);
     setUploadedPreview(null);
+    setScanError(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  // Load currencies for payment
+  useEffect(() => {
+    getCurrencies().then(res => {
+      if (res.success && res.data && Array.isArray(res.data) && res.data.length > 0) {
+        setCurrencies(res.data);
+      }
+    }).catch(() => {});
+  }, []);
+
+  // Payment methods
+  const paymentMethods = [
+    { id: 'mtn', name: 'MTN Mobile Money', image: '/mtn.png' },
+    { id: 'airtel', name: 'Airtel Money', image: '/airtel.png' },
+    { id: 'card', name: 'VISA & Master Card', image: '/cards.png' },
+  ];
+
+  const resetDownloadModal = () => {
+    setShowDownloadModal(false);
+    setDownloadTarget(null);
+    setDlPaymentMethod(null);
+    setDlPhone('');
+    setDlCardNumber('');
+    setDlCardExpiry('');
+    setDlCardCvv('');
+    setDlCardHolderName('');
+    setDlLoading(false);
+    setDlError(null);
+    setDlSuccess(false);
+  };
+
+  const isDlPaymentValid = () => {
+    if (!dlPaymentMethod) return false;
+    switch (dlPaymentMethod) {
+      case 'mtn':
+      case 'airtel':
+        return dlPhone.length >= 10;
+      case 'card':
+        return dlCardNumber.length >= 16 && dlCardExpiry.length >= 4 && dlCardCvv.length >= 3 && dlCardHolderName.trim() !== '';
+      default:
+        return false;
+    }
+  };
+
+  const triggerPhotoDownload = async (url: string, filename: string) => {
+    try {
+      const res = await fetch(url);
+      const blob = await res.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = objectUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(objectUrl);
+    } catch {
+      window.open(url, '_blank');
+    }
+  };
+
+  const handleDownloadPayment = async () => {
+    if (!downloadTarget || !dlPaymentMethod) return;
+    setDlLoading(true);
+    setDlError(null);
+    try {
+      const amount = String(downloadTarget.price ?? 0);
+      const currencyId = currencies.length > 0 ? currencies[0].id : undefined;
+      const response = await recordStreamingPayment({
+        eventId: albumEventId || downloadTarget.id,
+        amount,
+        currencyId,
+        remarks: `Photo download via ${dlPaymentMethod}`,
+      });
+      if (!response.success) {
+        throw new Error(response.error || 'Payment failed');
+      }
+      setDlSuccess(true);
+      setTimeout(() => {
+        triggerPhotoDownload(downloadTarget.url, `photo-${downloadTarget.id}.jpg`);
+        resetDownloadModal();
+      }, 1200);
+    } catch (err) {
+      setDlError(err instanceof Error ? err.message : 'Payment failed. Please try again.');
+    } finally {
+      setDlLoading(false);
+    }
+  };
+
+  const handleDownloadClick = (photo: { id: string; url: string; alt: string; price?: number }) => {
+    if ((photo.price ?? 0) > 0) {
+      setDownloadTarget(photo);
+      setShowDownloadModal(true);
+    } else {
+      triggerPhotoDownload(photo.url, `photo-${photo.id}.jpg`);
+    }
   };
 
   const startCamera = async () => {
@@ -497,7 +626,7 @@ const FindMyPhotos = () => {
                     </div>
                     <p style={{ fontSize: '13px', color: '#10b981', fontWeight: 600 }}>Photo ready for scan</p>
                     <button
-                      onClick={() => { setUploadedFile(null); setUploadedPreview(null); if (fileInputRef.current) fileInputRef.current.value = ''; }}
+                      onClick={() => { setUploadedFile(null); setUploadedPreview(null); setScanError(null); if (fileInputRef.current) fileInputRef.current.value = ''; }}
                       style={{
                         marginTop: '8px',
                         padding: '6px 16px',
@@ -618,6 +747,15 @@ const FindMyPhotos = () => {
                 >
                   Find My Photos
                 </button>
+
+                {scanError && (
+                  <p style={{
+                    color: '#FF6B6B',
+                    fontSize: '14px',
+                    marginTop: '12px',
+                    textAlign: 'center',
+                  }}>{scanError}</p>
+                )}
               </>
             )}
 
@@ -837,7 +975,7 @@ const FindMyPhotos = () => {
                 Find Your Photo Using Facial Recognition Scan
               </button>
 
-              {isFiltered && (
+              {isFiltered && allPhotos.length > 0 && (
                 <button
                   onClick={handleShowAll}
                   style={{
@@ -917,7 +1055,6 @@ const FindMyPhotos = () => {
                 <div
                   key={photo.id}
                   className="photo-card"
-                  onClick={() => setSelectedPhoto(photo)}
                   style={{
                     borderRadius: '20px',
                     overflow: 'hidden',
@@ -925,12 +1062,13 @@ const FindMyPhotos = () => {
                     boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
                     transition: 'all 0.3s ease',
                     background: '#ffffff',
+                    position: 'relative',
                   }}
                 >
-                  <div style={{
-                    aspectRatio: '4/3',
-                    overflow: 'hidden',
-                  }}>
+                  <div
+                    style={{ aspectRatio: '4/3', overflow: 'hidden' }}
+                    onClick={() => setSelectedPhoto(photo)}
+                  >
                     <img
                       src={photo.url}
                       alt={photo.alt}
@@ -943,6 +1081,39 @@ const FindMyPhotos = () => {
                       loading="lazy"
                     />
                   </div>
+                  {/* Download button */}
+                  <button
+                    className="photo-download-btn"
+                    onClick={(e) => { e.stopPropagation(); handleDownloadClick(photo); }}
+                    style={{
+                      position: 'absolute',
+                      bottom: '10px',
+                      right: '10px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      padding: '7px 12px',
+                      borderRadius: '50px',
+                      background: 'rgba(0,0,0,0.65)',
+                      backdropFilter: 'blur(4px)',
+                      border: '1px solid rgba(255,255,255,0.2)',
+                      color: '#ffffff',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      zIndex: 2,
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = '#03969c'; e.currentTarget.style.borderColor = '#03969c'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(0,0,0,0.65)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; }}
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                      <polyline points="7 10 12 15 17 10"/>
+                      <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    {(photo.price ?? 0) > 0 ? `Buy (${photo.price?.toLocaleString()})` : 'Download'}
+                  </button>
                 </div>
               ))}
             </div>
@@ -981,31 +1152,68 @@ const FindMyPhotos = () => {
             padding: '20px',
           }}
         >
-          <button
-            onClick={(e) => { e.stopPropagation(); setSelectedPhoto(null); }}
+          {/* Top bar: close + download */}
+          <div
+            onClick={(e) => e.stopPropagation()}
             style={{
               position: 'absolute',
               top: '20px',
+              left: '20px',
               right: '20px',
-              width: '44px',
-              height: '44px',
-              borderRadius: '50%',
-              background: 'rgba(255,255,255,0.15)',
-              border: 'none',
-              color: '#ffffff',
-              fontSize: '24px',
-              cursor: 'pointer',
               display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transition: 'all 0.3s ease',
+              justifyContent: 'flex-end',
+              gap: '10px',
               zIndex: 2001,
             }}
-            onMouseEnter={(e) => { (e.target as HTMLButtonElement).style.background = 'rgba(255,255,255,0.3)'; }}
-            onMouseLeave={(e) => { (e.target as HTMLButtonElement).style.background = 'rgba(255,255,255,0.15)'; }}
           >
-            &times;
-          </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); handleDownloadClick(selectedPhoto); }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '7px',
+                padding: '10px 20px',
+                borderRadius: '50px',
+                background: '#03969c',
+                border: 'none',
+                color: '#ffffff',
+                fontSize: '14px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = '#026d72'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = '#03969c'; }}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              {(selectedPhoto.price ?? 0) > 0 ? `Buy (${selectedPhoto.price?.toLocaleString()} UGX)` : 'Download'}
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); setSelectedPhoto(null); }}
+              style={{
+                width: '44px',
+                height: '44px',
+                borderRadius: '50%',
+                background: 'rgba(255,255,255,0.15)',
+                border: 'none',
+                color: '#ffffff',
+                fontSize: '24px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.3s ease',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.3)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.15)'; }}
+            >
+              &times;
+            </button>
+          </div>
           <img
             src={selectedPhoto.url.replace('w=600&h=400', 'w=1200&h=800')}
             alt={selectedPhoto.alt}
@@ -1018,6 +1226,257 @@ const FindMyPhotos = () => {
               boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
             }}
           />
+        </div>
+      )}
+
+      {/* ── Download Payment Modal ── */}
+      {showDownloadModal && downloadTarget && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0, left: 0, right: 0, bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.8)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 3000,
+            backdropFilter: 'blur(4px)',
+            padding: '16px',
+            overflowY: 'auto',
+          }}
+          onMouseDown={(e) => { if (e.target === e.currentTarget) resetDownloadModal(); }}
+        >
+          <div
+            onMouseDown={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: '#18181b',
+              borderRadius: '20px',
+              padding: 'clamp(20px, 5vw, 32px)',
+              paddingTop: 'clamp(40px, 8vw, 50px)',
+              maxWidth: '450px',
+              width: '100%',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              boxShadow: '0 20px 25px -5px rgba(0,0,0,0.5)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              position: 'relative',
+              margin: 'auto',
+            }}
+          >
+            {/* Close */}
+            <button
+              onClick={resetDownloadModal}
+              style={{
+                position: 'absolute',
+                top: 'clamp(12px, 3vw, 16px)',
+                right: 'clamp(12px, 3vw, 16px)',
+                background: 'transparent',
+                border: 'none',
+                color: '#adadb8',
+                cursor: 'pointer',
+                fontSize: 'clamp(18px, 4vw, 20px)',
+                padding: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minWidth: '44px',
+                minHeight: '44px',
+                borderRadius: '50%',
+                transition: 'color 0.2s',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = '#efeff1'; e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = '#adadb8'; e.currentTarget.style.backgroundColor = 'transparent'; }}
+            >
+              ✕
+            </button>
+
+            {/* Title */}
+            <h2 style={{
+              fontSize: 'clamp(18px, 5vw, 22px)',
+              fontWeight: 600,
+              color: '#efeff1',
+              marginBottom: '6px',
+              marginTop: 0,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+            }}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#03969c" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              Download Photo
+            </h2>
+            <p style={{ fontSize: '13px', color: '#adadb8', marginBottom: '24px', lineHeight: 1.5 }}>
+              Complete your payment to download this photo
+            </p>
+
+            {/* Price display */}
+            <div style={{
+              padding: '14px 16px',
+              backgroundColor: 'rgba(3,150,156,0.12)',
+              border: '1px solid rgba(3,150,156,0.3)',
+              borderRadius: '12px',
+              marginBottom: '20px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}>
+              <span style={{ fontSize: '13px', color: '#adadb8', fontWeight: 500 }}>Photo price</span>
+              <span style={{ fontSize: '18px', color: '#03969c', fontWeight: 700 }}>
+                UGX {(downloadTarget.price ?? 0).toLocaleString()}
+              </span>
+            </div>
+
+            {/* Payment Method */}
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#efeff1', marginBottom: '12px' }}>
+                Select Payment Method
+              </label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {paymentMethods.map((method) => (
+                  <button
+                    key={method.id}
+                    onClick={() => setDlPaymentMethod(method.id)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      padding: '12px 16px',
+                      backgroundColor: dlPaymentMethod === method.id ? 'rgba(3,150,156,0.15)' : '#27272a',
+                      border: `2px solid ${dlPaymentMethod === method.id ? '#03969c' : 'rgba(255,255,255,0.1)'}`,
+                      borderRadius: '12px',
+                      cursor: 'pointer',
+                      width: '100%',
+                      textAlign: 'left',
+                      transition: 'all 0.2s',
+                    }}
+                    onMouseEnter={(e) => { if (dlPaymentMethod !== method.id) e.currentTarget.style.borderColor = 'rgba(3,150,156,0.5)'; }}
+                    onMouseLeave={(e) => { if (dlPaymentMethod !== method.id) e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; }}
+                  >
+                    <div style={{ width: '44px', height: '44px', borderRadius: '10px', overflow: 'hidden', flexShrink: 0 }}>
+                      <img src={method.image} alt={method.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    </div>
+                    <span style={{ color: '#efeff1', fontSize: '14px', fontWeight: 500 }}>{method.name}</span>
+                    {dlPaymentMethod === method.id && (
+                      <span style={{ marginLeft: 'auto', color: '#03969c', fontSize: '20px' }}>✓</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Mobile Money phone */}
+            {(dlPaymentMethod === 'mtn' || dlPaymentMethod === 'airtel') && (
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#efeff1', marginBottom: '8px' }}>
+                  Your Phone Number *
+                </label>
+                <input
+                  type="tel"
+                  value={dlPhone}
+                  onChange={(e) => setDlPhone(e.target.value.replace(/\D/g, '').slice(0, 12))}
+                  placeholder={dlPaymentMethod === 'mtn' ? 'e.g., 0781234567' : 'e.g., 0721234567'}
+                  style={{
+                    width: '100%', padding: '12px 16px',
+                    backgroundColor: '#27272a', border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: '12px', color: '#efeff1', fontSize: '14px',
+                    outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.2s',
+                  }}
+                  onFocus={(e) => e.currentTarget.style.borderColor = '#03969c'}
+                  onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'}
+                />
+                <p style={{ fontSize: '11px', color: '#71717a', marginTop: '6px', marginBottom: 0 }}>
+                  You will receive a payment confirmation SMS on this number
+                </p>
+              </div>
+            )}
+
+            {/* Card details */}
+            {dlPaymentMethod === 'card' && (
+              <div style={{ marginBottom: '20px' }}>
+                <div style={{ marginBottom: '12px' }}>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#efeff1', marginBottom: '8px' }}>Card Holder Name *</label>
+                  <input type="text" value={dlCardHolderName} onChange={(e) => setDlCardHolderName(e.target.value)} placeholder="Name on card"
+                    style={{ width: '100%', padding: '12px 16px', backgroundColor: '#27272a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#efeff1', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
+                    onFocus={(e) => e.currentTarget.style.borderColor = '#03969c'}
+                    onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'} />
+                </div>
+                <div style={{ marginBottom: '12px' }}>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#efeff1', marginBottom: '8px' }}>Card Number *</label>
+                  <input type="text" value={dlCardNumber} onChange={(e) => setDlCardNumber(e.target.value.replace(/\D/g, '').slice(0, 16))} placeholder="1234 5678 9012 3456"
+                    style={{ width: '100%', padding: '12px 16px', backgroundColor: '#27272a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#efeff1', fontSize: '14px', outline: 'none', boxSizing: 'border-box', letterSpacing: '2px' }}
+                    onFocus={(e) => e.currentTarget.style.borderColor = '#03969c'}
+                    onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'} />
+                </div>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#efeff1', marginBottom: '8px' }}>Expiry Date *</label>
+                    <input type="text" value={dlCardExpiry}
+                      onChange={(e) => { let v = e.target.value.replace(/\D/g, '').slice(0, 4); if (v.length >= 2) v = v.slice(0, 2) + '/' + v.slice(2); setDlCardExpiry(v); }}
+                      placeholder="MM/YY" maxLength={5}
+                      style={{ width: '100%', padding: '12px 16px', backgroundColor: '#27272a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#efeff1', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
+                      onFocus={(e) => e.currentTarget.style.borderColor = '#03969c'}
+                      onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#efeff1', marginBottom: '8px' }}>CVV *</label>
+                    <input type="password" value={dlCardCvv} onChange={(e) => setDlCardCvv(e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="***" maxLength={4}
+                      style={{ width: '100%', padding: '12px 16px', backgroundColor: '#27272a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#efeff1', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
+                      onFocus={(e) => e.currentTarget.style.borderColor = '#03969c'}
+                      onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'} />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Error */}
+            {dlError && (
+              <div style={{ padding: '10px 14px', marginBottom: '12px', backgroundColor: 'rgba(239,68,68,0.15)', border: '1px solid #EF4444', borderRadius: '10px', color: '#EF4444', fontSize: '13px' }}>
+                {dlError}
+              </div>
+            )}
+
+            {/* Success */}
+            {dlSuccess && (
+              <div style={{ padding: '10px 14px', marginBottom: '12px', backgroundColor: 'rgba(16,185,129,0.15)', border: '1px solid #10b981', borderRadius: '10px', color: '#10b981', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                ✓ Payment successful! Starting download…
+              </div>
+            )}
+
+            {/* Pay & Download button */}
+            <button
+              onClick={handleDownloadPayment}
+              disabled={!isDlPaymentValid() || dlLoading || dlSuccess}
+              style={{
+                width: '100%',
+                padding: '14px 24px',
+                background: (!isDlPaymentValid() || dlLoading || dlSuccess) ? '#3f3f46' : 'linear-gradient(135deg, #03969c 0%, #026d72 100%)',
+                border: 'none',
+                borderRadius: '12px',
+                color: (!isDlPaymentValid() || dlLoading || dlSuccess) ? '#71717a' : '#fff',
+                fontSize: '15px',
+                fontWeight: 600,
+                cursor: (!isDlPaymentValid() || dlLoading || dlSuccess) ? 'not-allowed' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                transition: 'all 0.3s ease',
+                boxShadow: (!isDlPaymentValid() || dlLoading || dlSuccess) ? 'none' : '0 4px 15px rgba(3,150,156,0.3)',
+              }}
+              onMouseEnter={(e) => { if (isDlPaymentValid() && !dlLoading && !dlSuccess) { e.currentTarget.style.transform = 'scale(1.02)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(3,150,156,0.4)'; } }}
+              onMouseLeave={(e) => { if (isDlPaymentValid() && !dlLoading && !dlSuccess) { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 4px 15px rgba(3,150,156,0.3)'; } }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              {dlLoading ? 'Processing...' : dlSuccess ? 'Downloading…' : `Pay & Download (UGX ${(downloadTarget.price ?? 0).toLocaleString()})`}
+            </button>
+          </div>
         </div>
       )}
 
@@ -1268,7 +1727,7 @@ const FindMyPhotos = () => {
                     </div>
                     <p style={{ fontSize: '13px', color: '#10b981', fontWeight: 600 }}>Photo ready for scan</p>
                     <button
-                      onClick={() => { setUploadedFile(null); setUploadedPreview(null); if (fileInputRef.current) fileInputRef.current.value = ''; }}
+                      onClick={() => { setUploadedFile(null); setUploadedPreview(null); setScanError(null); if (fileInputRef.current) fileInputRef.current.value = ''; }}
                       style={{
                         marginTop: '8px',
                         padding: '6px 16px',
@@ -1384,6 +1843,21 @@ const FindMyPhotos = () => {
                 >
                   Start Scan
                 </button>
+
+                {scanError && (
+                  <div style={{
+                    marginTop: '12px',
+                    padding: '10px 14px',
+                    backgroundColor: 'rgba(239,68,68,0.1)',
+                    border: '1px solid rgba(239,68,68,0.3)',
+                    borderRadius: '10px',
+                    color: '#ef4444',
+                    fontSize: '13px',
+                    textAlign: 'center',
+                  }}>
+                    {scanError}
+                  </div>
+                )}
               </>
             )}
           </div>
