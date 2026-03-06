@@ -7,6 +7,14 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: __dirname,
   },
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'backend.connekyt.com',
+      },
+    ],
+  },
 };
 
 export default withNextIntl(nextConfig);
