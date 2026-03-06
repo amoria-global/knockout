@@ -11,7 +11,7 @@ import type { ApiClientConfig, RetryConfig, RateLimitConfig } from "./types";
 function getBaseUrl(): string {
   // In production (Vercel), use the proxy to avoid mixed content
   if (typeof window !== 'undefined' && process.env.NODE_ENV === 'production') {
-    return '/api/proxy/';
+    return '/';
   }
 
   // In development or server-side, use direct URL
