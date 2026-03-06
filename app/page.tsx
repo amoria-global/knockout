@@ -1029,8 +1029,8 @@ export default function Home() {
                   src="/ava1.png"
                   alt="Get Started"
                   style={{
-                    width: '240px',
-                    height: '240px',
+                    width: '340px',
+                    height: '340px',
                     objectFit: 'contain',
                     marginBottom: '30px'
                   }}
@@ -1069,8 +1069,8 @@ export default function Home() {
                   src="/ava2.png"
                   alt="Photography"
                   style={{
-                    width: '240px',
-                    height: '240px',
+                    width: '340px',
+                    height: '340px',
                     objectFit: 'contain',
                     marginBottom: '30px'
                   }}
@@ -1109,8 +1109,8 @@ export default function Home() {
                   src="/ava3.png"
                   alt="Go Live"
                   style={{
-                    width: '240px',
-                    height: '240px',
+                    width: '340px',
+                    height: '340px',
                     objectFit: 'contain',
                     marginBottom: '30px'
                   }}
