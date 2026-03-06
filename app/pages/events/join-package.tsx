@@ -155,10 +155,20 @@ function JoinPackageContent(): React.JSX.Element {
   };
 
   const handleProceed = () => {
+    // Encode event data so join-event can show the payment form immediately (no API wait)
+    const eventParams = selectedEvent.price > 0
+      ? `&fee=${selectedEvent.price}&title=${encodeURIComponent(selectedEvent.title)}&category=${encodeURIComponent(selectedEvent.category)}&location=${encodeURIComponent(selectedEvent.location)}`
+      : '';
+
     if (selectedPackage === 'individual') {
-      window.location.href = `/user/events/join-event?id=${selectedEvent.id}&package=individual`;
+      window.location.href = `/user/events/join-event?id=${selectedEvent.id}&package=individual${eventParams}`;
     } else if (selectedPackage === 'group' && isGroupInputValid()) {
-      window.location.href = `/user/events/join-event?id=${selectedEvent.id}&package=group&people=${numberOfPeople}`;
+      const count = typeof numberOfPeople === 'number' ? numberOfPeople : 1;
+      const groupFee = Math.round(selectedEvent.price * 0.9 * count);
+      const groupParams = selectedEvent.price > 0
+        ? `&fee=${groupFee}&title=${encodeURIComponent(selectedEvent.title)}&category=${encodeURIComponent(selectedEvent.category)}&location=${encodeURIComponent(selectedEvent.location)}`
+        : '';
+      window.location.href = `/user/events/join-event?id=${selectedEvent.id}&package=group&people=${numberOfPeople}${groupParams}`;
     }
   };
 
