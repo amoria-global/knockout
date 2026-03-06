@@ -71,6 +71,9 @@ export default function JoinEvent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  // True when arriving from join-package (id + package params in URL)
+  const hasDirectPayment = !!(searchParams.get('id') && searchParams.get('package'));
+
   // Real events from API
   const [eventsData, setEventsData] = useState<EventItem[]>([]);
   const [eventsLoading, setEventsLoading] = useState(true);
@@ -163,6 +166,33 @@ export default function JoinEvent() {
     { id: 'card', name: 'VISA & Master Card', image: '/cards.png' }
   ];
 
+  // Immediately show payment form using URL params passed from join-package (no API wait)
+  useEffect(() => {
+    const eventId = searchParams.get('id');
+    const pkgType = searchParams.get('package');
+    const feeParam = searchParams.get('fee');
+    const titleParam = searchParams.get('title');
+    const categoryParam = searchParams.get('category');
+    const locationParam = searchParams.get('location');
+    const peopleCount = searchParams.get('people');
+
+    if (pkgType) setPackageType(pkgType);
+    if (peopleCount) setNumberOfPeople(parseInt(peopleCount, 10) || 1);
+
+    if (eventId && feeParam && titleParam && parseFloat(feeParam) > 0) {
+      setDetectedEvent({
+        id: eventId,
+        title: decodeURIComponent(titleParam),
+        category: decodeURIComponent(categoryParam || ''),
+        fee: parseFloat(feeParam),
+        location: decodeURIComponent(locationParam || ''),
+        image: '',
+        status: 'ongoing',
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // runs once on mount — URL params are stable
+
   // Detect screen size for responsive adjustments
   useEffect(() => {
     const handleResize = () => {
@@ -242,6 +272,9 @@ export default function JoinEvent() {
         if ((hasPackageFromJoinPackage && fee > 0) || isLivePaidEvent) {
           // Show inline payment form
           setDetectedEvent(eventData);
+        } else if (hasPackageFromJoinPackage) {
+          // Free event from join-package — skip payment, go directly to live stream
+          router.push('/user/events/live-stream');
         }
         // For upcoming, free, or non-paid category events without package param - show original content
       }
@@ -1059,6 +1092,28 @@ export default function JoinEvent() {
                   </div>
                 </div>
               </div>
+            </div>
+          ) : hasDirectPayment ? (
+            /* LOADING STATE: arrived from join-package, waiting for event + payment data */
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              minHeight: '300px',
+              gap: '16px',
+            }}>
+              <div style={{
+                width: '52px',
+                height: '52px',
+                border: '4px solid rgba(255,255,255,0.1)',
+                borderTop: '4px solid #10b981',
+                borderRadius: '50%',
+                animation: 'spin 0.8s linear infinite',
+              }} />
+              <p style={{ color: '#9ca3af', fontSize: '16px', margin: 0 }}>
+                Loading payment details...
+              </p>
             </div>
           ) : (
             /* ORIGINAL CONTENT for UPCOMING/free/small events */

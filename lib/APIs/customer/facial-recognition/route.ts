@@ -37,6 +37,6 @@ export async function uploadSelfieForRecognition(
   return apiClient.post<FacialRecognitionResponse>(
     API_ENDPOINTS.CUSTOMER.FACIAL_RECOGNITION,
     formData,
-    { retries: 1, timeout: 60000 }
+    { retries: 1, timeout: 60000, skipAuth: true }
   );
 }
