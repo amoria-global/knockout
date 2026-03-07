@@ -1,22 +1,20 @@
 'use client';
 import React, { useState, useRef, useEffect, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { verifyOtp } from '@/lib/APIs/auth/verify-otp/route';
 import { resendOtp } from '@/lib/APIs/auth/resend-otp/route';
 import { useToast } from '@/lib/notifications/ToastProvider';
+import { getAuthToken, getRefreshToken } from '@/lib/api/client';
 
 // Component that uses useSearchParams - needs to be wrapped in Suspense
 function VerifyOtpContent(): React.JSX.Element {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const { success: showSuccess, error: showError, warning: showWarning, isOnline } = useToast();
 
   // Get query params and validate they're not "undefined" strings
   const applicantIdFromQuery = searchParams.get('applicantId');
   const emailFromQuery = searchParams.get('email');
-  const redirectUrl = searchParams.get('redirect');
-
   const [applicantId, setApplicantId] = useState(applicantIdFromQuery && applicantIdFromQuery !== 'undefined' ? applicantIdFromQuery : '');
   const [email, setEmail] = useState(emailFromQuery && emailFromQuery !== 'undefined' ? emailFromQuery : '');
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
@@ -118,9 +116,17 @@ function VerifyOtpContent(): React.JSX.Element {
         if (response.success) {
           setSuccess(true);
           showSuccess('Account verified successfully!');
-          // Redirect to login after 2 seconds, preserving the original redirect destination
+          // Redirect to dashboard photographer profile after 2 seconds
           setTimeout(() => {
-            router.push(`/user/auth/login${redirectUrl ? `?redirect=${encodeURIComponent(redirectUrl)}` : ''}`);
+            const dashboardBaseUrl = process.env.NEXT_PUBLIC_DASHBOARD_URL || '';
+            const token = getAuthToken();
+            const refreshTkn = getRefreshToken();
+            const params = new URLSearchParams();
+            if (token) params.set('token', token);
+            if (refreshTkn) params.set('refreshToken', refreshTkn);
+            const query = params.toString();
+            const dashboardProfileUrl = `${dashboardBaseUrl}/user/photographer/profile${query ? `?${query}` : ''}`;
+            window.location.href = dashboardProfileUrl;
           }, 2000);
         } else {
           const errorMessage = response.error || 'Invalid OTP. Please try again.';
