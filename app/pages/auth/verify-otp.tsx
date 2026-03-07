@@ -210,17 +210,17 @@ function VerifyOtpContent(): React.JSX.Element {
           {/* Envelope Icon */}
           <div style={{display: 'flex', justifyContent: 'center', marginBottom: window.innerWidth < 640 ? '12px' : '20px'}}>
             <div style={{ width: window.innerWidth < 640 ? '48px' : '60px', height: window.innerWidth < 640 ? '48px' : '60px', borderRadius: '50%', backgroundColor: '#083A85', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <i className="bi bi-phone" style={{ fontSize: window.innerWidth < 640 ? '22px' : '28px', color: '#ffffff' }}></i>
+              <i className="bi bi-envelope" style={{ fontSize: window.innerWidth < 640 ? '22px' : '28px', color: '#ffffff' }}></i>
             </div>
           </div>
 
           {/* Title and Description */}
           <h1 style={{ fontSize: window.innerWidth < 640 ? '18px' : '24px', fontWeight: '600', textAlign: 'center', color: '#000000', marginBottom: window.innerWidth < 640 ? '5px' : '8px', letterSpacing: '0.3px' }}>
-            Verify Your Phone Number
+            Verify Your Email
           </h1>
 
           <p style={{ fontSize: window.innerWidth < 640 ? '12px' : '15px', fontWeight: '500', color: '#000000', textAlign: 'center', marginBottom: window.innerWidth < 640 ? '16px' : '24px', lineHeight: '1.4', opacity: '0.7' }}>
-            We've sent a 6-digit verification code via SMS to your phone. Please enter it below.
+            We've sent a 6-digit verification code via email . Please enter it below.
           </p>
 
           {/* Error Message */}
