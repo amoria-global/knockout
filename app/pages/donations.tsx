@@ -619,18 +619,78 @@ const Donations = () => {
         }
 
         @media (max-width: 768px) {
-          .hero-content { flex-direction: column !important; text-align: center !important; padding: 40px 20px !important; }
+          /* Hero Section */
+          .donations-page > section:first-of-type { min-height: auto !important; }
+          .hero-content { flex-direction: column !important; text-align: center !important; padding: 40px 15px 30px !important; gap: 10px !important; }
           .hero-left, .hero-right { width: 100% !important; max-width: 100% !important; }
-          .hero-title { font-size: 36px !important; }
-          .hero-right { margin-top: 30px !important; }
-          .impact-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 30px !important; }
-          .categories-grid { grid-template-columns: 1fr !important; }
-          .mission-content { flex-direction: column !important; }
-          .mission-left, .mission-right { width: 100% !important; }
-          .donation-form-container { flex-direction: column !important; }
+          .hero-title { font-size: 32px !important; line-height: 1.15 !important; }
+          .hero-left p { font-size: 15px !important; margin-bottom: 20px !important; }
+          .hero-left > div:first-child { justify-content: center !important; }
+          .hero-right { margin-top: 10px !important; height: 280px !important; display: flex !important; align-items: center !important; justify-content: center !important; }
+          .hero-right > div:first-child { width: 140px !important; height: 140px !important; border-radius: 22px !important; }
+          .hero-right > div:first-child svg { width: 55px !important; height: 55px !important; }
+          .hero-right > div:nth-child(2) { top: 5px !important; right: 15% !important; padding: 10px 14px !important; }
+          .hero-right > div:nth-child(3) { bottom: 15px !important; left: 15% !important; padding: 10px 14px !important; }
+          .hero-left > div:last-child { justify-content: center !important; }
+
+          /* Impact Statistics Section */
+          .impact-section { padding: 60px 15px !important; }
+          .section-title { font-size: 30px !important; }
+          .section-subtitle { font-size: 15px !important; }
+          .section-img { min-width: unset !important; min-height: unset !important; }
+          .impact-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 15px !important; }
+          .impact-card { padding: 25px 15px !important; min-height: 140px !important; }
+          .impact-card > div:nth-child(2) { font-size: 36px !important; }
+          .impact-card > div:nth-child(3) { font-size: 13px !important; }
+
+          /* Education Section */
+          .education-bg-curve { border-radius: 200px 200px 0 0 !important; left: -15% !important; width: 130% !important; }
+          .education-curve-overlay { height: 60px !important; }
+          .mission-content { flex-direction: column !important; padding: 60px 15px 50px !important; gap: 30px !important; text-align: center !important; }
+          .mission-left, .mission-right { width: 100% !important; max-width: 100% !important; }
+          .mission-left h2 { font-size: 30px !important; text-align: center !important; }
+          .mission-left p { font-size: 15px !important; text-align: center !important; }
+          .mission-left button { margin: 0 auto !important; display: block !important; }
+          .mission-right > div { margin-right: 0 !important; padding: 20px !important; border-radius: 20px !important; }
+          .mission-right > div > div { border-radius: 16px !important; }
+          .mission-right img { min-width: unset !important; min-height: unset !important; width: 100% !important; border-radius: 16px !important; }
+
+          /* Donation Categories */
+          .categories-grid { grid-template-columns: 1fr 1fr !important; gap: 15px !important; }
+          .categories-title { font-size: 30px !important; }
+
+          /* Donation Form */
+          .donation-form-card { padding: 25px 15px !important; border-radius: 20px !important; }
+          .donation-form-container { flex-direction: column !important; gap: 30px !important; }
           .form-left, .form-right { width: 100% !important; }
+          .form-amount-header { flex-direction: column !important; gap: 12px !important; align-items: flex-start !important; }
           .amounts-grid { grid-template-columns: repeat(2, 1fr) !important; }
-          .cta-title { font-size: 32px !important; }
+          .donor-name-row { flex-direction: column !important; }
+          .trust-badges { flex-direction: column !important; gap: 12px !important; }
+
+          /* Call to Action */
+          .cta-title { font-size: 28px !important; }
+
+          /* Family Support */
+          .family-section { padding: 50px 15px !important; }
+          .family-section .mission-content { flex-direction: column !important; }
+          .feature-list { align-items: center !important; }
+          .feature-list span { font-size: 15px !important; }
+        }
+
+        @media (max-width: 480px) {
+          .hero-title { font-size: 26px !important; }
+          .hero-right { height: 220px !important; }
+          .hero-right > div:first-child { width: 110px !important; height: 110px !important; }
+          .hero-right > div:first-child svg { width: 42px !important; height: 42px !important; }
+          .impact-grid { grid-template-columns: 1fr 1fr !important; gap: 12px !important; }
+          .impact-card { padding: 20px 10px !important; min-height: 120px !important; }
+          .impact-card > div:nth-child(2) { font-size: 28px !important; }
+          .categories-grid { grid-template-columns: 1fr !important; }
+          .categories-title { font-size: 24px !important; }
+          .mission-left h2 { font-size: 26px !important; }
+          .cta-title { font-size: 24px !important; }
+          .amounts-grid { grid-template-columns: repeat(2, 1fr) !important; }
         }
       `}</style>
 
@@ -851,6 +911,7 @@ const Donations = () => {
       <section
         id="impact-section"
         ref={impactSectionRef}
+        className="impact-section"
         style={{
           background: 'linear-gradient(180deg, #fff 0%, #f0f4f8 100%)',
           padding: '100px 20px',
@@ -904,7 +965,7 @@ const Donations = () => {
               <span style={{ color: '#083A85', fontSize: '14px', fontWeight: 600 }}>Making Real Difference</span>
             </div>
 
-            <h2 style={{
+            <h2 className="section-title" style={{
               fontSize: '59px',
               fontWeight: 700,
               marginBottom: '18px',
@@ -920,7 +981,7 @@ const Donations = () => {
               </span>{' '}
               <span style={{ color: '#000' }}>in Numbers</span>
             </h2>
-            <p style={{
+            <p className="section-subtitle" style={{
               fontSize: '18px',
               color: '#666',
               maxWidth: '650px',
@@ -1084,6 +1145,7 @@ const Donations = () => {
                   backgroundColor: '#fff',
                 }}>
                   <img
+                    className="section-img"
                     src="/students.png"
                     alt="Children receiving educational support"
                     style={{
@@ -1103,7 +1165,7 @@ const Donations = () => {
       </section>
 
       {/* Family Support Section */}
-      <section style={{
+      <section className="family-section" style={{
         backgroundColor: '#f8f9fa',
         padding: '80px 20px',
         position: 'relative',
@@ -1153,7 +1215,7 @@ const Donations = () => {
             </p>
 
             {/* Feature list */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+            <div className="feature-list" style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
               {['Medical Bills Assistance', 'Health Insurance Support', 'Emergency Care Fund'].map((item, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <div style={{
@@ -1187,6 +1249,7 @@ const Donations = () => {
               boxShadow: '0 25px 60px rgba(0,0,0,0.15)',
             }}>
               <img
+                className="section-img"
                 src="/family.png"
                 alt="Family receiving healthcare support"
                 style={{
@@ -1230,7 +1293,7 @@ const Donations = () => {
                 Donation Goes
               </span>
             </h2>
-            <p style={{
+            <p className="section-subtitle" style={{
               fontSize: '18px',
               color: '#666',
               maxWidth: '600px',
@@ -1270,7 +1333,7 @@ const Donations = () => {
           margin: '0 auto',
         }}>
           <div style={{ textAlign: 'center', marginBottom: '50px' }}>
-            <h2 style={{
+            <h2 className="section-title" style={{
               fontSize: '59px',
               fontWeight: 700,
               marginBottom: '15px',
@@ -1285,7 +1348,7 @@ const Donations = () => {
                 Make Your Donation
               </span>
             </h2>
-            <p style={{
+            <p className="section-subtitle" style={{
               fontSize: '18px',
               color: '#666',
               maxWidth: '500px',
@@ -1296,7 +1359,7 @@ const Donations = () => {
             </p>
           </div>
 
-          <div style={{
+          <div className="donation-form-card" style={{
             backgroundColor: '#fff',
             borderRadius: '30px',
             padding: '50px',
@@ -1308,7 +1371,7 @@ const Donations = () => {
             }}>
               {/* Left - Amount Selection */}
               <div className="form-left" style={{ flex: 1 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
+                <div className="form-amount-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
                   <h3 style={{
                     fontSize: '20px',
                     fontWeight: 600,
@@ -1472,7 +1535,7 @@ const Donations = () => {
                 </h3>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                  <div style={{ display: 'flex', gap: '15px' }}>
+                  <div className="donor-name-row" style={{ display: 'flex', gap: '15px' }}>
                     <input
                       type="text"
                       placeholder="First Name"
@@ -1574,7 +1637,7 @@ const Donations = () => {
             </button>
 
             {/* Trust badges */}
-            <div style={{
+            <div className="trust-badges" style={{
               display: 'flex',
               justifyContent: 'center',
               alignItems: 'center',
