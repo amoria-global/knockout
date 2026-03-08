@@ -406,7 +406,7 @@ const FindMyPhotos = () => {
             zIndex: 2,
             background: 'linear-gradient(135deg, rgba(5, 32, 71, 0.95) 0%, rgba(16, 62, 131, 0.92) 100%)',
             borderRadius: '28px',
-            padding: isMobile ? '48px 28px' : '56px 52px',
+            padding: isMobile ? '48px 28px' : '40px 52px',
             border: '1px solid rgba(255,255,255,0.08)',
             boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
           }}>
@@ -417,7 +417,7 @@ const FindMyPhotos = () => {
               borderRadius: '50px',
               background: 'rgba(255,255,255,0.08)',
               border: '1px solid rgba(255,255,255,0.15)',
-              marginBottom: '28px',
+              marginBottom: '18px',
             }}>
               <span style={{
                 color: '#FF6B6B',
@@ -430,21 +430,21 @@ const FindMyPhotos = () => {
 
             {/* Headline */}
             <h1 style={{
-              fontSize: isMobile ? '32px' : '59px',
+              fontSize: isMobile ? '32px' : '48px',
               fontWeight: 800,
               color: '#ffffff',
               lineHeight: 1.15,
-              marginBottom: '16px',
+              marginBottom: '12px',
               fontFamily: "'Pragati Narrow', sans-serif",
             }}>
               Find <span style={{ color: '#FF6B6B' }}>Your Photos</span>
             </h1>
 
             <p style={{
-              fontSize: isMobile ? '16px' : '18px',
+              fontSize: isMobile ? '16px' : '16px',
               color: 'rgba(255,255,255,0.7)',
-              lineHeight: 1.6,
-              marginBottom: '36px',
+              lineHeight: 1.5,
+              marginBottom: '24px',
               maxWidth: '520px',
               marginLeft: 'auto',
               marginRight: 'auto',
@@ -464,12 +464,12 @@ const FindMyPhotos = () => {
 
             {/* === Facial Recognition Scan Section === */}
             {!isScanning && !isCameraActive && (
-              <div style={{ marginBottom: '20px' }}>
+              <div style={{ marginBottom: '14px' }}>
                 <h3 style={{
-                  fontSize: '16px',
+                  fontSize: '15px',
                   fontWeight: 700,
                   color: '#ffffff',
-                  marginBottom: '6px',
+                  marginBottom: '4px',
                 }}>
                   Facial Recognition Scan
                 </h3>
@@ -647,7 +647,7 @@ const FindMyPhotos = () => {
                   <div style={{
                     display: 'flex',
                     gap: '12px',
-                    marginBottom: '20px',
+                    marginBottom: '14px',
                     maxWidth: '340px',
                     marginLeft: 'auto',
                     marginRight: 'auto',
@@ -659,7 +659,7 @@ const FindMyPhotos = () => {
                         flex: 1,
                         border: '2px dashed rgba(255,255,255,0.2)',
                         borderRadius: '16px',
-                        padding: '24px 12px',
+                        padding: '18px 12px',
                         textAlign: 'center',
                         cursor: 'pointer',
                         transition: 'all 0.3s ease',
@@ -668,22 +668,22 @@ const FindMyPhotos = () => {
                       onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; e.currentTarget.style.background = 'transparent'; }}
                     >
                       <div style={{
-                        width: '48px',
-                        height: '48px',
+                        width: '40px',
+                        height: '40px',
                         borderRadius: '50%',
                         background: 'rgba(255,107,107,0.15)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        margin: '0 auto 10px',
+                        margin: '0 auto 8px',
                       }}>
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FF6B6B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FF6B6B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
                           <circle cx="12" cy="13" r="4"/>
                         </svg>
                       </div>
                       <p style={{ fontSize: '14px', fontWeight: 600, color: '#ffffff' }}>Take Selfie</p>
-                      <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginTop: '2px' }}>Use camera</p>
+                      <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', marginTop: '2px' }}>Use camera</p>
                     </div>
 
                     {/* Upload Photo button */}
@@ -693,7 +693,7 @@ const FindMyPhotos = () => {
                         flex: 1,
                         border: '2px dashed rgba(255,255,255,0.2)',
                         borderRadius: '16px',
-                        padding: '24px 12px',
+                        padding: '18px 12px',
                         textAlign: 'center',
                         cursor: 'pointer',
                         transition: 'all 0.3s ease',
@@ -702,23 +702,23 @@ const FindMyPhotos = () => {
                       onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; e.currentTarget.style.background = 'transparent'; }}
                     >
                       <div style={{
-                        width: '48px',
-                        height: '48px',
+                        width: '40px',
+                        height: '40px',
                         borderRadius: '50%',
                         background: 'rgba(131,180,255,0.15)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        margin: '0 auto 10px',
+                        margin: '0 auto 8px',
                       }}>
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#83B4FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#83B4FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                           <polyline points="17 8 12 3 7 8"/>
                           <line x1="12" y1="3" x2="12" y2="15"/>
                         </svg>
                       </div>
                       <p style={{ fontSize: '14px', fontWeight: 600, color: '#ffffff' }}>Upload Photo</p>
-                      <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginTop: '2px' }}>From gallery</p>
+                      <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', marginTop: '2px' }}>From gallery</p>
                     </div>
                   </div>
                 )}
@@ -764,7 +764,7 @@ const FindMyPhotos = () => {
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
-                margin: '32px 0 28px',
+                margin: '20px 0 18px',
                 gap: '16px',
               }}>
                 <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.15)' }} />
@@ -777,10 +777,10 @@ const FindMyPhotos = () => {
             {!isScanning && !isCameraActive && (
               <>
                 <h3 style={{
-                  fontSize: '16px',
+                  fontSize: '15px',
                   fontWeight: 700,
                   color: '#ffffff',
-                  marginBottom: '6px',
+                  marginBottom: '4px',
                 }}>
                   Enter Invite Code
                 </h3>
@@ -791,7 +791,7 @@ const FindMyPhotos = () => {
                   maxWidth: '420px',
                   marginLeft: 'auto',
                   marginRight: 'auto',
-                  marginBottom: '16px',
+                  marginBottom: '12px',
                 }}>
                   Received an invite code from your photographer or event owner? Enter it below to go directly to that specific event gallery.
                 </p>
@@ -858,9 +858,9 @@ const FindMyPhotos = () => {
 
                 {/* Dashed decorative border */}
                 <div style={{
-                  marginTop: '40px',
+                  marginTop: '24px',
                   borderTop: '1px dashed rgba(255,255,255,0.15)',
-                  paddingTop: '24px',
+                  paddingTop: '16px',
                 }}>
                   <p style={{
                     color: 'rgba(255,255,255,0.4)',
