@@ -300,30 +300,31 @@ export default function Home() {
         <main style={{ flex: 1, position: 'relative' }}>
         <style jsx>{`
           @media (max-width: 768px) {
-            .hero-content { flex-direction: column !important; padding: 20px 15px 40px !important; min-height: auto !important; gap: 20px !important; }
-            .hero-left { width: 100% !important; max-width: 100% !important; text-align: center; padding: 0 10px !important; }
-            .hero-right { width: 100% !important; height: 380px !important; margin-top: 10px; position: relative !important; overflow: visible !important; transform: scale(0.55) translateX(25%) !important; transform-origin: top center !important; margin-bottom: -120px !important; }
+            .hero-content { flex-direction: column !important; padding: 20px 15px 20px !important; min-height: auto !important; gap: 10px !important; }
+            .hero-left { width: 100% !important; max-width: 100% !important; text-align: center; padding: 0 15px !important; }
+            .hero-right { width: 100% !important; height: 525px !important; margin-top: 0 !important; position: relative !important; overflow: visible !important; transform: scale(0.52) !important; transform-origin: top center !important; margin-bottom: -220px !important; }
             .hero-title { font-size: 32px !important; line-height: 1.1 !important; }
             .hero-description { max-width: 100% !important; font-size: 14px !important; padding: 0 5px !important; }
             .hero-buttons { justify-content: center !important; flex-direction: column !important; align-items: center !important; gap: 10px !important; }
             .hero-buttons button { width: 100% !important; max-width: 280px !important; }
             .twitter-badge { margin-left: auto; margin-right: auto; }
-            .hero-image-container { left: 50% !important; transform: translateX(-50%) !important; }
-            .hero-glow { display: none !important; }
-            .hero-circle { display: none !important; }
+            .hero-glow { left: 50% !important; transform: translateX(-50%) !important; width: 400px !important; top: 10px !important; }
+            .hero-floating-card { transform: none !important; }
 
             .how-it-works-title { font-size: 36px !important; margin-bottom: 40px !important; text-align: center !important; }
-            .how-it-works-steps { flex-direction: column !important; gap: 30px !important; align-items: center !important; }
+            .how-it-works-steps { flex-direction: column !important; gap: 30px !important; align-items: center !important; position: relative !important; }
             .how-it-works-svg { display: none !important; }
+            .how-it-works-mobile-line { display: block !important; }
+            .how-it-works-steps > div { background: #fff !important; z-index: 2 !important; position: relative !important; padding: 10px 20px !important; }
             .step-img { width: 180px !important; height: 180px !important; }
             .step-title { font-size: 24px !important; text-align: center !important; }
             .step-description { font-size: 15px !important; text-align: center !important; }
 
-            .photographer-container { flex-direction: column !important; padding: 20px !important; gap: 20px !important; align-items: center !important; text-align: center !important; }
-            .photographer-title { font-size: 32px !important; position: relative !important; top: 0 !important; text-align: center !important; }
-            .photographer-description { position: relative !important; top: 0 !important; margin-bottom: 20px !important; font-size: 16px !important; text-align: center !important; }
-            .photographer-button { position: relative !important; left: 0 !important; top: 0 !important; width: 100% !important; max-width: 220px !important; margin: 0 auto !important; font-size: 22px !important; }
-            .photographer-video-container { max-width: 100% !important; width: 100% !important; height: auto !important; }
+            .photographer-container { flex-direction: column !important; padding: 25px 20px 30px !important; gap: 20px !important; align-items: center !important; text-align: center !important; }
+            .photographer-title { font-size: 32px !important; position: relative !important; top: 0 !important; text-align: center !important; max-width: 100% !important; line-height: 1.1 !important; margin-bottom: 5px !important; }
+            .photographer-description { position: relative !important; top: 0 !important; margin-bottom: 15px !important; font-size: 15px !important; text-align: center !important; opacity: 0.95 !important; }
+            .photographer-button { position: relative !important; left: 0 !important; top: 0 !important; width: 100% !important; max-width: 220px !important; margin: 0 auto !important; font-size: 17px !important; height: auto !important; padding: 12px 20px !important; }
+            .photographer-video-container { max-width: 100% !important; width: 100% !important; height: auto !important; order: -1 !important; }
 
             .mockups-section { padding: 0 !important; background-color: #1c1c1c !important; min-height: 100vh !important; }
             .mockups-inner { padding: 0 20px !important; margin: 0 auto !important; min-height: 100vh !important; display: flex !important; flex-direction: column !important; justify-content: center !important; align-items: center !important; }
@@ -362,6 +363,12 @@ export default function Home() {
             .global-network-svg { display: block !important; }
           }
 
+          @media (max-width: 400px) {
+            .hero-right { transform: scale(0.44) !important; margin-bottom: -260px !important; }
+            .hero-title { font-size: 28px !important; }
+            .hero-description { font-size: 13px !important; }
+          }
+
           @media (min-width: 769px) and (max-width: 1024px) {
             .hero-title { font-size: 48px !important; }
             .hero-content { padding: 30px 20px 80px !important; }
@@ -372,6 +379,10 @@ export default function Home() {
             .how-it-works-title { font-size: 45px !important; }
             .why-amoria-title { font-size: 45px !important; }
             .global-network-title { font-size: 45px !important; }
+          }
+
+          .how-it-works-mobile-line {
+            display: none;
           }
 
           .step-img {
@@ -1014,6 +1025,63 @@ export default function Home() {
                 />
               </svg>
 
+              {/* Single vertical S-curve connector for mobile - mirrors desktop horizontal arc */}
+              <svg
+                className="how-it-works-mobile-line"
+                style={{
+                  position: 'absolute',
+                  top: '0',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  width: '100%',
+                  height: '100%',
+                  zIndex: 1,
+                  pointerEvents: 'none'
+                }}
+                viewBox="-100 0 600 1000"
+                preserveAspectRatio="none"
+              >
+                <defs>
+                  <linearGradient id="mobileFlowGrad" gradientUnits="userSpaceOnUse" x1="200" y1="0" x2="200" y2="1000">
+                    <stop offset="0%" stopColor="#000000">
+                      <animate attributeName="offset" values="-0.3;1.0;-0.3" dur="3s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.6 1; 0.4 0 0.6 1" />
+                    </stop>
+                    <stop offset="4%" stopColor="#1d4ed8">
+                      <animate attributeName="offset" values="-0.26;1.04;-0.26" dur="3s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.6 1; 0.4 0 0.6 1" />
+                    </stop>
+                    <stop offset="8%" stopColor="#3b82f6">
+                      <animate attributeName="offset" values="-0.22;1.08;-0.22" dur="3s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.6 1; 0.4 0 0.6 1" />
+                    </stop>
+                    <stop offset="12%" stopColor="#60a5fa">
+                      <animate attributeName="offset" values="-0.18;1.12;-0.18" dur="3s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.6 1; 0.4 0 0.6 1" />
+                    </stop>
+                    <stop offset="15%" stopColor="#93c5fd">
+                      <animate attributeName="offset" values="-0.15;1.15;-0.15" dur="3s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.6 1; 0.4 0 0.6 1" />
+                    </stop>
+                    <stop offset="18%" stopColor="#60a5fa">
+                      <animate attributeName="offset" values="-0.12;1.18;-0.12" dur="3s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.6 1; 0.4 0 0.6 1" />
+                    </stop>
+                    <stop offset="22%" stopColor="#3b82f6">
+                      <animate attributeName="offset" values="-0.08;1.22;-0.08" dur="3s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.6 1; 0.4 0 0.6 1" />
+                    </stop>
+                    <stop offset="26%" stopColor="#1d4ed8">
+                      <animate attributeName="offset" values="-0.04;1.26;-0.04" dur="3s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.6 1; 0.4 0 0.6 1" />
+                    </stop>
+                    <stop offset="30%" stopColor="#000000">
+                      <animate attributeName="offset" values="0;1.3;0" dur="3s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.6 1; 0.4 0 0.6 1" />
+                    </stop>
+                  </linearGradient>
+                </defs>
+                <path
+                  d="M 350 30 Q 500 250, 50 500 Q -100 750, 350 970"
+                  stroke="url(#mobileFlowGrad)"
+                  strokeWidth="4"
+                  strokeDasharray="12,12"
+                  fill="none"
+                  strokeLinecap="round"
+                />
+              </svg>
+
               {/* Step 1: Get Started */}
               <div style={{
                 flex: 1,
@@ -1093,6 +1161,8 @@ export default function Home() {
                   {t('howItWorks.photography.description')}
                 </p>
               </div>
+
+
 
               {/* Step 3: Go Live */}
               <div style={{
