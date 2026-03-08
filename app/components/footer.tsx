@@ -117,51 +117,48 @@ export default function Footer() {
     }
 
     @media (max-width: 768px) {
-      .footer-container { margin-top: 5rem; }
+      .footer-container { margin-top: 4rem; }
       .subscribe-wrapper { top: -1.8rem; padding: 0 1rem; max-width: calc(100% - 2rem); }
       .subscribe-input { font-size: 0.875rem; padding: 0.44rem 1rem 0.44rem 0.5rem; }
       .subscribe-button { font-size: 0.8rem; padding: 0.5rem 1rem; }
       .footer-body { border-radius: 1.5rem 1.5rem 0 0 !important; }
-      .footer-content { padding: 4rem 1.5rem 1.5rem !important; text-align: center; }
-      .footer-grid { display: flex !important; flex-wrap: wrap !important; gap: 1.5rem !important; margin-bottom: 2.5rem !important; justify-content: space-between !important; }
-      .footer-brand { width: 100% !important; margin-bottom: 2rem !important; padding-top: 1rem !important; padding-right: 0 !important; order: -1 !important; }
-      .footer-section { flex: 0 1 22% !important; text-align: center; }
-      .footer-section:nth-child(2) { order: 1 !important; }
-      .footer-section:nth-child(3) { order: 2 !important; }
-      .footer-section:nth-child(4) { order: 4 !important; }
-      .footer-section:nth-child(5) { order: 3 !important; }
-      .footer-logo { margin-bottom: 1rem !important; justify-content: center !important; margin-left: 0 !important; }
-      .footer-description { font-size: 0.875rem !important; margin-bottom: 1.5rem !important; text-align: center; max-width: 100%; }
-      .social-section { margin: 1.5rem 0 0 !important; text-align: center; }
+      .footer-content { padding: 3.5rem 1.25rem 1.5rem !important; text-align: center; }
+      .footer-grid { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 1.5rem 1rem !important; margin-bottom: 2rem !important; }
+      .footer-brand { grid-column: 1 / -1 !important; width: 100% !important; margin-bottom: 1rem !important; padding-top: 0.5rem !important; padding-right: 0 !important; }
+      .footer-section { text-align: center; }
+      .footer-logo { margin-bottom: 0.75rem !important; justify-content: center !important; margin-left: 0 !important; margin-top: 0 !important; }
+      .footer-description { font-size: 0.875rem !important; margin-bottom: 1rem !important; text-align: center; max-width: 100%; }
+      .social-section { margin: 1rem 0 0 !important; margin-bottom: 0 !important; text-align: center; }
       .social-title { font-size: 0.95rem !important; text-align: center; }
       .social-links { gap: 1.5rem !important; justify-content: center !important; }
       .social-icon { height: 1.2rem !important; width: 1.2rem !important; }
-      .footer-section h4 { font-size: 0.9rem !important; margin-bottom: 1rem !important; text-align: center; }
+      .footer-section h4 { font-size: 0.9rem !important; margin-bottom: 0.75rem !important; text-align: center; }
       .footer-section ul { text-align: center; }
+      .footer-section li { margin-bottom: 0.5rem !important; }
       .footer-link { font-size: 0.875rem !important; text-align: center; }
-      .footer-copyright { padding-top: 1.5rem !important; margin-top: 1rem !important; width: 100% !important; }
+      .footer-copyright { padding-top: 1.25rem !important; margin-top: 0.5rem !important; width: 100% !important; grid-column: 1 / -1 !important; }
       .footer-copyright p { font-size: 0.875rem !important; }
     }
 
     @media (max-width: 480px) {
-      .footer-container { margin-top: 5.5rem; }
+      .footer-container { margin-top: 4.5rem; }
       .subscribe-wrapper { top: -1.5rem; padding: 0 0.75rem; }
-      .subscribe-input { font-size: 0.8rem; padding: 0.4rem 0.8rem 0.4rem 0.8rem; }
+      .subscribe-input { font-size: 0.8rem; padding: 0.4rem 0.8rem; }
       .subscribe-button { font-size: 0.75rem; padding: 0.5rem 0.8rem; }
-      .footer-content { padding: 4.5rem 1rem 1.5rem !important; }
-      .footer-grid { gap: 1.5rem !important; }
-      .footer-brand { padding-top: 1.5rem !important; margin-bottom: 1.5rem !important; }
-      .footer-section { flex: 0 0 calc(50% - 1rem) !important; min-width: 120px !important; }~
+      .footer-content { padding: 3.5rem 1rem 1.5rem !important; }
+      .footer-grid { grid-template-columns: 1fr 1fr !important; gap: 1.25rem 0.75rem !important; }
+      .footer-brand { padding-top: 1rem !important; margin-bottom: 1rem !important; }
       .footer-logo { justify-content: center !important; }
-      .footer-description { font-size: 0.825rem !important; line-height: 1.5 !important; padding: 0 0.5rem; }
-      .social-section { margin: 1.25rem 0 0 !important; }
-      .social-title { font-size: 0.9rem !important; }
+      .footer-description { font-size: 0.8rem !important; line-height: 1.5 !important; padding: 0 0.25rem; }
+      .social-section { margin: 1rem 0 0 !important; }
+      .social-title { font-size: 0.875rem !important; }
       .social-links { gap: 1.25rem !important; }
       .social-icon { height: 1.1rem !important; width: 1.1rem !important; }
-      .footer-section h4 { font-size: 0.875rem !important; margin-bottom: 0.875rem !important; }
-      .footer-link { font-size: 0.825rem !important; }
-      .footer-copyright { padding-top: 1.25rem !important; }
-      .footer-copyright p { font-size: 0.825rem !important; }
+      .footer-section h4 { font-size: 0.85rem !important; margin-bottom: 0.6rem !important; }
+      .footer-section li { margin-bottom: 0.4rem !important; }
+      .footer-link { font-size: 0.8rem !important; }
+      .footer-copyright { padding-top: 1rem !important; }
+      .footer-copyright p { font-size: 0.8rem !important; }
     }
   `;
 
@@ -310,7 +307,7 @@ export default function Footer() {
                 <img src="/log.png" alt="Connekyt Logo" style={{ width: isMobile ? '36px' : '50px', height: isMobile ? '36px' : '50px', objectFit: 'contain', position: 'relative', top: isMobile ? '-4px' : '-5px', left: isMobile ? '-1px' : '-14px' }} />
                 <span style={{ fontWeight: 700, color: '#fff', fontSize: isMobile ? '1.25rem' : '1.4rem', marginLeft: isMobile ? '-10px' : '-26px', marginTop: isMobile ? '-1px' : '-2px', letterSpacing: '0.5px' }}>onnekyt</span>
               </Link>
-              <div className="social-section" style={{ marginTop: 'auto', marginBottom: '-3.5rem' }}>
+              <div className="social-section" style={{ marginTop: 'auto', marginBottom: isMobile ? '0' : '-3.5rem' }}>
                 <span className="social-title" style={{ color: '#D1D5DB', fontSize: '1.04rem', display: 'block', marginBottom: '0.8rem', gap: '2.4rem' }}>
                   {t('followUs')}
                 </span>
