@@ -1,6 +1,7 @@
 /**
- * Facial Recognition API
- * POST /api/remote/customer/events/facial-recognition
+ * Facial Recognition API (Public)
+ * POST /api/remote/public/face-search
+ * No authentication required — resolves event from invite code
  */
 
 import { apiClient } from '@/lib/api/client';
@@ -24,18 +25,19 @@ export interface FacialRecognitionResponse {
 }
 
 /**
- * Upload a selfie for facial recognition to find matching photos
+ * Upload a selfie for facial recognition to find matching photos.
+ * Public endpoint — backend resolves the event from the invite code.
  */
 export async function uploadSelfieForRecognition(
   inviteCode: string,
   selfieFile: File
 ): Promise<ApiResponse<FacialRecognitionResponse>> {
   const formData = new FormData();
-  formData.append('inviteCode', inviteCode);
+  formData.append('code', inviteCode);
   formData.append('selfie', selfieFile);
 
   return apiClient.post<FacialRecognitionResponse>(
-    API_ENDPOINTS.CUSTOMER.FACIAL_RECOGNITION,
+    API_ENDPOINTS.PUBLIC.FACE_SEARCH,
     formData,
     { retries: 1, timeout: 60000, skipAuth: true }
   );

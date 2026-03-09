@@ -13,10 +13,12 @@ import {
   getPhotographers,
   getCategories,
   getCities,
+  getCurrencies,
   type Photographer,
   type PaginatedPhotographers,
   type PhotographerCategory,
   type City,
+  type Currency,
 } from '@/lib/APIs/public';
 import { useToast } from '@/lib/notifications/ToastProvider';
 
@@ -31,12 +33,14 @@ const Photographers: React.FC = () => {
   const [selectedLocation, setSelectedLocation] = useState<string>('all');
   const [priceRange, setPriceRange] = useState<string>('all');
   const [selectedRating, setSelectedRating] = useState<string>('all');
+  const [availableOn, setAvailableOn] = useState<string>('');
   const [bookmarkedPhotographers, setBookmarkedPhotographers] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
   const [userLocation, setUserLocation] = useState<LocationData | null>(null);
   const [availableDistricts, setAvailableDistricts] = useState<string[]>([]);
   const [cities, setCities] = useState<City[]>([]);
+  const [currencyMap, setCurrencyMap] = useState<Map<string, Currency>>(new Map());
 
   // API data states
   const [photographers, setPhotographers] = useState<Photographer[]>([]);
@@ -92,8 +96,20 @@ const Photographers: React.FC = () => {
         console.error('Failed to fetch cities:', err);
       }
     };
+    const fetchCurrencies = async () => {
+      try {
+        const response = await getCurrencies();
+        if (response.success && response.data) {
+          const list = Array.isArray(response.data) ? response.data : [];
+          const map = new Map<string, Currency>();
+          list.forEach(c => map.set(c.id, c));
+          setCurrencyMap(map);
+        }
+      } catch { /* silent */ }
+    };
     fetchCategories();
     fetchCities();
+    fetchCurrencies();
   }, []);
 
   // Fetch photographers from API
@@ -110,6 +126,7 @@ const Photographers: React.FC = () => {
         category: selectedCategory !== 'all' ? selectedCategory : undefined,
         location: selectedLocation !== 'all' ? selectedLocation : undefined,
         search: searchTerm || undefined,
+        availableOn: availableOn || undefined,
       });
 
       if (response.success && response.data) {
@@ -127,7 +144,7 @@ const Photographers: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [currentPage, selectedCategory, selectedLocation, searchTerm, toast]);
+  }, [currentPage, selectedCategory, selectedLocation, searchTerm, availableOn, toast]);
 
   // Fetch photographers when filters change
   useEffect(() => {
@@ -470,6 +487,54 @@ const Photographers: React.FC = () => {
                 <option value="2">⭐ 2+ Stars</option>
               </select>
             </div>
+
+            {/* Available On Date Filter */}
+            <div style={{ position: 'relative' }}>
+              <input
+                type="date"
+                value={availableOn}
+                min={new Date().toISOString().split('T')[0]}
+                onChange={(e) => {
+                  setAvailableOn(e.target.value);
+                  setCurrentPage(0);
+                }}
+                style={{
+                  width: '100%',
+                  padding: 'clamp(0.5rem, 2vw, 0.625rem) clamp(0.75rem, 2.5vw, 1rem)',
+                  borderRadius: '0.5rem',
+                  border: '2px solid rgba(255, 255, 255, 0.3)',
+                  backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                  color: availableOn ? '#111827' : '#6b7280',
+                  fontSize: '0.9rem',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  outline: 'none',
+                  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                }}
+                placeholder="Available on..."
+              />
+              {availableOn && (
+                <button
+                  onClick={() => { setAvailableOn(''); setCurrentPage(0); }}
+                  style={{
+                    position: 'absolute',
+                    right: '8px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    color: '#6b7280',
+                    cursor: 'pointer',
+                    fontSize: '16px',
+                    padding: '2px 6px',
+                    borderRadius: '50%',
+                  }}
+                  aria-label="Clear date filter"
+                >
+                  <i className="bi bi-x-lg"></i>
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -739,9 +804,9 @@ const Photographers: React.FC = () => {
                     flexWrap: 'wrap',
                     marginBottom: '0.4rem'
                   }}>
-                    {photographer.specialties.length > 0 ? (
+                    {(photographer.specialties?.length ?? 0) > 0 ? (
                       <>
-                        {photographer.specialties.slice(0, 3).map((specialty, i) => (
+                        {(photographer.specialties ?? []).slice(0, 3).map((specialty, i) => (
                           <span key={i} style={{
                             backgroundColor: '#f9fafb',
                             color: '#40444d',
@@ -754,7 +819,7 @@ const Photographers: React.FC = () => {
                             {specialty}
                           </span>
                         ))}
-                        {photographer.specialties.length > 3 && (
+                        {(photographer.specialties?.length ?? 0) > 3 && (
                           <span style={{
                             backgroundColor: '#f9fafb',
                             color: '#6b7280',
@@ -767,7 +832,7 @@ const Photographers: React.FC = () => {
                             alignItems: 'center',
                             justifyContent: 'center'
                           }}>
-                            +{photographer.specialties.length - 3}
+                            +{(photographer.specialties?.length ?? 0) - 3}
                           </span>
                         )}
                       </>
@@ -809,7 +874,7 @@ const Photographers: React.FC = () => {
                         marginBottom: '0.15rem'
                       }}>
                         <i className="bi bi-star-fill" style={{ color: '#000000', fontSize: '0.77rem' }}></i>
-                        {photographer.rating.toFixed(1)}
+                        {(photographer.rating ?? 0).toFixed(1)}
                       </p>
                       <p style={{ fontSize: '0.8rem', color: '#40444d', fontWeight: '500' }}>
                         {t('rating')}
@@ -827,7 +892,7 @@ const Photographers: React.FC = () => {
                         marginBottom: '0.15rem'
                       }}>
                         <i className="bi bi-people-fill" style={{ fontSize: '0.77rem' }}></i>
-                        {photographer.reviews.length}
+                        {photographer.completedEvents ?? 0}
                       </p>
                       <p style={{ fontSize: '0.8rem', color: '#40444d', fontWeight: '500' }}>
                         {t('completedJobs')}
@@ -845,13 +910,37 @@ const Photographers: React.FC = () => {
                         marginBottom: '0.15rem'
                       }}>
                         <i className="bi bi-clock" style={{ fontSize: '0.77rem' }}></i>
-                        {photographer.projects.length}
+                        {photographer.reviews?.length ?? 0}
                       </p>
                       <p style={{ fontSize: '0.8rem', color: '#40444d', fontWeight: '500' }}>
                         {t('accuracy')}
                       </p>
                     </div>
                   </div>
+
+                  {/* Starting Price */}
+                  {(() => {
+                    const activePkgs = (photographer.packages ?? []).filter(p => p.isActive);
+                    if (activePkgs.length === 0) return null;
+                    const cheapest = activePkgs.reduce((min, p) => p.price < min.price ? p : min, activePkgs[0]);
+                    const c = currencyMap.get(cheapest.currencyId);
+                    const sym = c?.symbol || c?.code || '';
+                    return (
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.3rem',
+                        marginBottom: '0.5rem',
+                        fontSize: '0.85rem',
+                        color: '#10b981',
+                        fontWeight: '600',
+                      }}>
+                        <i className="bi bi-tag-fill" style={{ fontSize: '0.8rem' }}></i>
+                        From {sym}{cheapest.price.toLocaleString()} {cheapest.priceUnit}
+                      </div>
+                    );
+                  })()}
 
                   {/* Get In Touch Button */}
                   <button
