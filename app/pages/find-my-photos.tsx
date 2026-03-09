@@ -3,10 +3,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Navbar from '../components/navbar';
-import { getAlbumByCode, type AlbumPhoto } from '@/lib/APIs/public/get-album/route';
+import { getAlbumByCode, type AlbumPhoto, type AlbumPricing } from '@/lib/APIs/public/get-album/route';
 import { uploadSelfieForRecognition, type MatchedPhoto } from '@/lib/APIs/customer/facial-recognition/route';
 import { getCurrencies, type Currency } from '@/lib/APIs/public';
-import { recordStreamingPayment } from '@/lib/APIs/payments/route';
+import { recordPhotoPurchase } from '@/lib/APIs/payments/route';
 
 const FindMyPhotos = () => {
   const searchParams = useSearchParams();
@@ -50,8 +50,11 @@ const FindMyPhotos = () => {
   // Image viewer modal
   const [selectedPhoto, setSelectedPhoto] = useState<{ id: string; url: string; alt: string; price?: number } | null>(null);
 
-  // Album metadata for payment
+  // Album metadata
   const [albumEventId, setAlbumEventId] = useState('');
+  const [albumPhotographerName, setAlbumPhotographerName] = useState('');
+  const [albumTitle, setAlbumTitle] = useState('');
+  const [albumPricing, setAlbumPricing] = useState<AlbumPricing | null>(null);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
 
   // Download payment modal
@@ -75,13 +78,17 @@ const FindMyPhotos = () => {
       setIsLoadingAlbum(true);
       getAlbumByCode(codeFromUrl).then(response => {
         if (response.success && response.data) {
-          setAlbumEventId(response.data.eventId ?? response.data.albumId);
-          const perPhotoPrice = response.data.pricePerPhoto;
-          const photos = (response.data.photos ?? []).map((p: AlbumPhoto) => ({
+          const albumData = response.data;
+          setAlbumEventId(albumData.eventId || '');
+          setAlbumPhotographerName(albumData.photographerName || '');
+          setAlbumTitle(albumData.eventTitle || '');
+          setAlbumPricing(albumData.pricing || null);
+          const pricePerImg = albumData.pricing?.pricePerImage;
+          const photos = (albumData.photos ?? []).map((p: AlbumPhoto) => ({
             id: p.id,
-            url: p.url || p.thumbnailUrl || '',
-            alt: p.alt || p.eventTitle || 'Event photo',
-            price: p.price ?? perPhotoPrice,
+            url: p.imageUrl || p.url || p.thumbnailUrl || '',
+            alt: p.alt || albumData.eventTitle || 'Event photo',
+            price: pricePerImg,
           }));
           setAllPhotos(photos);
           setDisplayedPhotos(photos);
@@ -126,13 +133,17 @@ const FindMyPhotos = () => {
     try {
       const response = await getAlbumByCode(inviteCode.trim());
       if (response.success && response.data) {
-        setAlbumEventId(response.data.eventId ?? response.data.albumId);
-        const perPhotoPrice = response.data.pricePerPhoto;
-        const photos = (response.data.photos ?? []).map((p: AlbumPhoto) => ({
+        const albumData = response.data;
+        setAlbumEventId(albumData.eventId || '');
+        setAlbumPhotographerName(albumData.photographerName || '');
+        setAlbumTitle(albumData.eventTitle || '');
+        setAlbumPricing(albumData.pricing || null);
+        const pricePerImg = albumData.pricing?.pricePerImage;
+        const photos = (albumData.photos ?? []).map((p: AlbumPhoto) => ({
           id: p.id,
-          url: p.url || p.thumbnailUrl || '',
-          alt: p.alt || p.eventTitle || 'Event photo',
-          price: p.price ?? perPhotoPrice,
+          url: p.imageUrl || p.url || p.thumbnailUrl || '',
+          alt: p.alt || albumData.eventTitle || 'Event photo',
+          price: pricePerImg,
         }));
         setAllPhotos(photos);
         setDisplayedPhotos(photos);
@@ -147,16 +158,57 @@ const FindMyPhotos = () => {
     }
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  /**
+   * Normalize an uploaded image to JPEG with max 1280px dimension.
+   * This matches what the camera capture produces and avoids backend
+   * issues with HEIC, PNG, large files, or missing EXIF orientation.
+   */
+  const normalizeImageFile = (file: File): Promise<{ file: File; preview: string }> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const MAX = 1280;
+        let { width, height } = img;
+        if (width > MAX || height > MAX) {
+          const scale = MAX / Math.max(width, height);
+          width = Math.round(width * scale);
+          height = Math.round(height * scale);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) { reject(new Error('Canvas not supported')); return; }
+        ctx.drawImage(img, 0, 0, width, height);
+        const preview = canvas.toDataURL('image/jpeg', 0.9);
+        canvas.toBlob((blob) => {
+          if (!blob) { reject(new Error('Failed to convert image')); return; }
+          const normalized = new File([blob], 'selfie.jpg', { type: 'image/jpeg' });
+          resolve({ file: normalized, preview });
+        }, 'image/jpeg', 0.9);
+      };
+      img.onerror = () => reject(new Error('Failed to load image'));
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setUploadedFile(file);
     setScanError(null);
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      setUploadedPreview(ev.target?.result as string);
-    };
-    reader.readAsDataURL(file);
+    try {
+      const { file: normalized, preview } = await normalizeImageFile(file);
+      setUploadedFile(normalized);
+      setUploadedPreview(preview);
+    } catch {
+      // Fallback: use original file if normalization fails
+      setUploadedFile(file);
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        setUploadedPreview(ev.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleStartScan = async () => {
@@ -280,9 +332,9 @@ const FindMyPhotos = () => {
     setDlLoading(true);
     setDlError(null);
     try {
-      const amount = String(downloadTarget.price ?? 0);
-      const currencyId = currencies.length > 0 ? currencies[0].id : undefined;
-      const response = await recordStreamingPayment({
+      const amount = String(albumPricing?.pricePerImage ?? downloadTarget.price ?? 0);
+      const currencyId = albumPricing?.currencyId || (currencies.length > 0 ? currencies[0].id : '');
+      const response = await recordPhotoPurchase({
         eventId: albumEventId || downloadTarget.id,
         amount,
         currencyId,
@@ -304,12 +356,19 @@ const FindMyPhotos = () => {
   };
 
   const handleDownloadClick = (photo: { id: string; url: string; alt: string; price?: number }) => {
-    if ((photo.price ?? 0) > 0) {
-      setDownloadTarget(photo);
-      setShowDownloadModal(true);
-    } else {
+    // If album has no pricing (free), allow direct download
+    if (!albumPricing) {
       triggerPhotoDownload(photo.url, `photo-${photo.id}.jpg`);
+      return;
     }
+    // If pricing exists but price is 0, also allow direct download
+    if ((albumPricing.pricePerImage ?? 0) <= 0) {
+      triggerPhotoDownload(photo.url, `photo-${photo.id}.jpg`);
+      return;
+    }
+    // Otherwise, show payment modal
+    setDownloadTarget(photo);
+    setShowDownloadModal(true);
   };
 
   const startCamera = async () => {
@@ -723,6 +782,19 @@ const FindMyPhotos = () => {
                   </div>
                 )}
 
+                {/* Selfie guidance hint */}
+                {!uploadedPreview && (
+                  <p style={{
+                    fontSize: '12px',
+                    color: 'rgba(255,255,255,0.4)',
+                    textAlign: 'center',
+                    marginBottom: '12px',
+                    lineHeight: 1.4,
+                  }}>
+                    Use a close-up selfie where your face fills most of the frame for best results
+                  </p>
+                )}
+
                 {/* Find My Photos button */}
                 <button
                   onClick={handleStartScan}
@@ -1046,6 +1118,36 @@ const FindMyPhotos = () => {
             position: 'relative',
             zIndex: 2,
           }}>
+            {/* Photographer credit & album info */}
+            {(albumPhotographerName || albumTitle) && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginBottom: '20px',
+                flexWrap: 'wrap',
+                gap: '8px',
+              }}>
+                {albumTitle && (
+                  <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#fff', margin: 0 }}>
+                    {albumTitle}
+                  </h3>
+                )}
+                {albumPhotographerName && (
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    fontSize: '14px',
+                    color: 'rgba(255,255,255,0.8)',
+                    fontWeight: '500',
+                  }}>
+                    <i className="bi bi-camera-fill" style={{ fontSize: '14px' }}></i>
+                    Photos by {albumPhotographerName}
+                  </div>
+                )}
+              </div>
+            )}
             <div style={{
               display: 'grid',
               gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',
@@ -1066,7 +1168,7 @@ const FindMyPhotos = () => {
                   }}
                 >
                   <div
-                    style={{ aspectRatio: '4/3', overflow: 'hidden' }}
+                    style={{ aspectRatio: '4/3', overflow: 'hidden', position: 'relative' }}
                     onClick={() => setSelectedPhoto(photo)}
                   >
                     <img
@@ -1080,6 +1182,24 @@ const FindMyPhotos = () => {
                       }}
                       loading="lazy"
                     />
+                    {/* Price badge */}
+                    <span style={{
+                      position: 'absolute',
+                      top: '8px',
+                      left: '8px',
+                      padding: '4px 10px',
+                      borderRadius: '20px',
+                      background: albumPricing && albumPricing.pricePerImage > 0 ? 'rgba(0,0,0,0.7)' : 'rgba(3,150,156,0.85)',
+                      color: '#fff',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      backdropFilter: 'blur(4px)',
+                      letterSpacing: '0.3px',
+                    }}>
+                      {albumPricing && albumPricing.pricePerImage > 0
+                        ? `${albumPricing.currencySymbol}${albumPricing.pricePerImage.toLocaleString()}`
+                        : 'Free'}
+                    </span>
                   </div>
                   {/* Download button */}
                   <button
@@ -1112,7 +1232,9 @@ const FindMyPhotos = () => {
                       <polyline points="7 10 12 15 17 10"/>
                       <line x1="12" y1="15" x2="12" y2="3"/>
                     </svg>
-                    {(photo.price ?? 0) > 0 ? `Buy (${photo.price?.toLocaleString()})` : 'Download'}
+                    {albumPricing && albumPricing.pricePerImage > 0
+                      ? `Buy (${albumPricing.currencySymbol}${albumPricing.pricePerImage.toLocaleString()})`
+                      : 'Download'}
                   </button>
                 </div>
               ))}
@@ -1190,7 +1312,9 @@ const FindMyPhotos = () => {
                 <polyline points="7 10 12 15 17 10"/>
                 <line x1="12" y1="15" x2="12" y2="3"/>
               </svg>
-              {(selectedPhoto.price ?? 0) > 0 ? `Buy (${selectedPhoto.price?.toLocaleString()} UGX)` : 'Download'}
+              {albumPricing && albumPricing.pricePerImage > 0
+                ? `Buy (${albumPricing.currencySymbol}${albumPricing.pricePerImage.toLocaleString()})`
+                : 'Download'}
             </button>
             <button
               onClick={(e) => { e.stopPropagation(); setSelectedPhoto(null); }}
@@ -1325,7 +1449,7 @@ const FindMyPhotos = () => {
             }}>
               <span style={{ fontSize: '13px', color: '#adadb8', fontWeight: 500 }}>Photo price</span>
               <span style={{ fontSize: '18px', color: '#03969c', fontWeight: 700 }}>
-                UGX {(downloadTarget.price ?? 0).toLocaleString()}
+                {albumPricing?.currencySymbol || ''}{(albumPricing?.pricePerImage ?? downloadTarget.price ?? 0).toLocaleString()} {albumPricing?.currencyAbbreviation || ''}
               </span>
             </div>
 
@@ -1474,7 +1598,7 @@ const FindMyPhotos = () => {
                 <polyline points="7 10 12 15 17 10"/>
                 <line x1="12" y1="15" x2="12" y2="3"/>
               </svg>
-              {dlLoading ? 'Processing...' : dlSuccess ? 'Downloading…' : `Pay & Download (UGX ${(downloadTarget.price ?? 0).toLocaleString()})`}
+              {dlLoading ? 'Processing...' : dlSuccess ? 'Downloading…' : `Pay & Download (${albumPricing?.currencySymbol ?? 'UGX'} ${(albumPricing?.pricePerImage ?? downloadTarget.price ?? 0).toLocaleString()})`}
             </button>
           </div>
         </div>
@@ -1820,6 +1944,18 @@ const FindMyPhotos = () => {
                       <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: '2px' }}>From gallery</p>
                     </div>
                   </div>
+                )}
+
+                {!uploadedPreview && (
+                  <p style={{
+                    fontSize: '12px',
+                    color: '#9ca3af',
+                    textAlign: 'center',
+                    marginBottom: '12px',
+                    lineHeight: 1.4,
+                  }}>
+                    Use a close-up selfie where your face fills most of the frame for best results
+                  </p>
                 )}
 
                 {/* Start Scan button */}

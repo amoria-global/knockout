@@ -107,11 +107,14 @@ export const API_ENDPOINTS = {
     NEWSLETTER_UNSUBSCRIBE: "/api/remote/public/newsletter/unsubscribe",
     PHOTOGRAPHER_PACKAGES: (id: string) =>
       `/api/remote/public/photographers/${id}/packages`,
+    PHOTOGRAPHER_BOOKED_DATES: (id: string) =>
+      `/api/remote/public/photographers/${id}/booked-dates`,
     EVENTS_LIST: "/api/remote/public/events/list",
     DONATIONS: "/api/remote/public/donations",
     EVENT_TYPES: "/api/remote/public/event-types",
     FAQS: "/api/remote/public/faqs",
     ALBUM_BY_CODE: "/api/remote/public/albums",
+    FACE_SEARCH: "/api/remote/public/face-search",
   },
 
   // Protected photographer endpoints
@@ -154,6 +157,7 @@ export const API_ENDPOINTS = {
   PAYMENTS: {
     RECORD_TIP: "/api/remote/payments/record-tip",
     RECORD_STREAMING_PAYMENT: "/api/remote/payments/record-streaming-payment",
+    RECORD_PHOTO_PURCHASE: "/api/remote/payments/record-photo-purchase",
   },
 
   // Customer endpoints
@@ -162,7 +166,8 @@ export const API_ENDPOINTS = {
     EVENTS_JOIN: "/api/remote/customer/events/join",
     MY_PHOTOS: "/api/remote/customer/events/my-photos",
     VALIDATE_INVITE_CODE: "/api/remote/customer/events/validate-invite-code",
-    FACIAL_RECOGNITION: "/api/remote/customer/events/facial-recognition",
+    /** @deprecated Use PUBLIC.FACE_SEARCH instead */
+    FACIAL_RECOGNITION: "/api/remote/events/facial-recognition",
   },
 
   // Stream endpoints (coordinator streams)
