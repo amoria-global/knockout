@@ -2841,7 +2841,7 @@ export default function Home() {
                     </svg>
                   </div>
                   <div>
-                    <div style={{ fontSize: '15px', fontWeight: 700, color: '#083A85' }}>All-in-One</div>
+                    <div style={{ fontSize: '15px', fontWeight: 700, color: '#083A85' }}>All in One</div>
                     <div style={{ fontSize: '12px', color: '#64748b' }}>Platform</div>
                   </div>
                 </div>
