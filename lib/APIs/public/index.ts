@@ -38,9 +38,15 @@ export type {
 export {
   getPhotographers,
   getPhotographerById,
+  formatTimeValue,
+  getReviewerName,
+  getReviewText,
+  getProjectImage,
 } from './get-photographers/route';
 export type {
   Photographer,
+  PhotographerPackage,
+  PhotographerPackageFeature,
   ProfessionalSkill,
   PaginatedPhotographers,
   GetPhotographersRequest,
@@ -51,6 +57,7 @@ export type {
   Education,
   Certification,
   Training,
+  WorkExperience,
 } from './get-photographers/route';
 
 // Events
@@ -100,6 +107,15 @@ export type {
   FAQ,
   GetFAQsResponse,
 } from './get-faqs/route';
+
+// Booked Dates
+export {
+  getBookedDates,
+} from './get-booked-dates/route';
+export type {
+  BookedDate,
+  GetBookedDatesRequest,
+} from './get-booked-dates/route';
 
 // Event Types
 export {

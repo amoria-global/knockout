@@ -3,14 +3,10 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import AmoriaKNavbar from '../../components/navbar';
-import ReviewModal from '../../components/ReviewModal';
-import { getPhotographerById, type Photographer, getPublicEvents, getCities, type City } from '@/lib/APIs/public';
-import { getPhotographerReviews } from '@/lib/APIs/photographers/get-reviews/route';
+import { getPhotographerById, type Photographer, type PhotographerPackage, getCities, getCurrencies, type City, type Currency, getReviewerName, getReviewText, formatTimeValue, getBookedDates, type BookedDate } from '@/lib/APIs/public';
 import { getPublicPhotographerPackages, type PublicPackage } from '@/lib/APIs/packages/get-packages/route';
 import { useToast } from '@/lib/notifications/ToastProvider';
 import { useAuth } from '@/app/providers/AuthProvider';
-import { apiClient } from '@/lib/api/client';
-import { API_ENDPOINTS } from '@/lib/api/config';
 
 // Default images for fallback
 const DEFAULT_PROFILE_IMAGE = 'https://i.pinimg.com/1200x/e9/1f/59/e91f59ed85a702d7252f2b0c8e02c7d2.jpg';
@@ -53,9 +49,6 @@ function ViewProfileContent(): React.JSX.Element {
 
   const { user, isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
-  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
-  const [reviewEvents, setReviewEvents] = useState<{id: string; title: string; eventDate: string}[]>([]);
-  const [reviewEventsLoading, setReviewEventsLoading] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [imageViewerOpen, setImageViewerOpen] = useState(false);
   const [currentImageType, setCurrentImageType] = useState<'profile' | 'cover' | null>(null);
@@ -68,6 +61,12 @@ function ViewProfileContent(): React.JSX.Element {
   const [packages, setPackages] = useState<PublicPackage[]>([]);
   const [packagesLoading, setPackagesLoading] = useState(false);
   const [cities, setCities] = useState<City[]>([]);
+  const [currencyMap, setCurrencyMap] = useState<Map<string, Currency>>(new Map());
+  const [bookedDates, setBookedDates] = useState<BookedDate[]>([]);
+  const [bookedCalendarMonth, setBookedCalendarMonth] = useState(() => {
+    const now = new Date();
+    return { year: now.getFullYear(), month: now.getMonth() };
+  });
 
   // Fetch photographer data from API by filtering from main list
   useEffect(() => {
@@ -91,6 +90,7 @@ function ViewProfileContent(): React.JSX.Element {
           const photographerData = rawData?.data
             ? rawData.data as Photographer
             : response.data as Photographer;
+
           setPhotographer(photographerData);
         } else {
           setFetchError(response.error || 'Photographer not found');
@@ -122,24 +122,62 @@ function ViewProfileContent(): React.JSX.Element {
     fetchCities();
   }, []);
 
-  // Fetch public packages for this photographer
+  // Use inline packages from photographer object, fallback to separate endpoint
   useEffect(() => {
     if (!photographerId) return;
     setPackagesLoading(true);
-    getPublicPhotographerPackages(photographerId)
+
+    // Prefer inline packages from photographer data
+    const inlinePkgs = photographer?.packages?.filter(p => p.isActive) || [];
+    if (inlinePkgs.length > 0) {
+      setPackages(inlinePkgs as unknown as PublicPackage[]);
+      setPackagesLoading(false);
+      return;
+    }
+
+    // Fallback: fetch from separate endpoint if inline data unavailable
+    if (photographer !== null) {
+      getPublicPhotographerPackages(photographerId)
+        .then(res => {
+          if (res.success && res.data) {
+            const pkgs = Array.isArray(res.data)
+              ? res.data
+              : (res.data as Record<string, unknown>)?.data
+                ? (res.data as Record<string, unknown>).data as PublicPackage[]
+                : [];
+            setPackages((pkgs as PublicPackage[]).filter(p => p.isActive));
+          }
+        })
+        .catch(() => {})
+        .finally(() => setPackagesLoading(false));
+    }
+  }, [photographerId, photographer]);
+
+  // Fetch currencies for price display
+  useEffect(() => {
+    getCurrencies().then(res => {
+      if (res.success && res.data) {
+        const currencies = Array.isArray(res.data) ? res.data : [];
+        const map = new Map<string, Currency>();
+        currencies.forEach(c => map.set(c.id, c));
+        setCurrencyMap(map);
+      }
+    }).catch(() => {});
+  }, []);
+
+  // Fetch booked dates for mini calendar (next 60 days)
+  useEffect(() => {
+    if (!photographerId) return;
+    const today = new Date();
+    const from = today.toISOString().split('T')[0];
+    const to = new Date(today.getFullYear(), today.getMonth() + 2, today.getDate()).toISOString().split('T')[0];
+    getBookedDates({ photographerId, from, to })
       .then(res => {
         if (res.success && res.data) {
-          // Handle both direct array and wrapped { action, data } response formats
-          const pkgs = Array.isArray(res.data)
-            ? res.data
-            : (res.data as Record<string, unknown>)?.data
-              ? (res.data as Record<string, unknown>).data as PublicPackage[]
-              : [];
-          setPackages((pkgs as PublicPackage[]).filter(p => p.isActive));
+          setBookedDates(Array.isArray(res.data) ? res.data : []);
         }
       })
-      .catch(() => {})
-      .finally(() => setPackagesLoading(false));
+      .catch(() => {});
   }, [photographerId]);
 
   // Handle Book Now button click with success banner
@@ -180,40 +218,6 @@ function ViewProfileContent(): React.JSX.Element {
     };
   }, [imageViewerOpen]);
 
-  // Fetch completed events when review modal opens
-  useEffect(() => {
-    if (!isReviewModalOpen || !photographerId || !isAuthenticated) return;
-
-    const fetchReviewEvents = async () => {
-      setReviewEventsLoading(true);
-      try {
-        const response = await getPublicEvents({ page: 0, size: 100 });
-        if (response.success && response.data?.content) {
-          const completedEvents = response.data.content
-            .filter(evt =>
-              evt.photographerId === photographerId &&
-              (evt.status === 'COMPLETED' || evt.status === 'completed')
-            )
-            .map(evt => ({
-              id: evt.id,
-              title: evt.title || 'Untitled Event',
-              eventDate: evt.eventDate || '',
-            }));
-          setReviewEvents(completedEvents);
-        } else {
-          setReviewEvents([]);
-        }
-      } catch (err) {
-        console.error('Failed to fetch events for review:', err);
-        setReviewEvents([]);
-      } finally {
-        setReviewEventsLoading(false);
-      }
-    };
-
-    fetchReviewEvents();
-  }, [isReviewModalOpen, photographerId, isAuthenticated]);
-
   const openImageViewer = (type: 'profile' | 'cover') => {
     setCurrentImageType(type);
     setImageViewerOpen(true);
@@ -242,7 +246,7 @@ function ViewProfileContent(): React.JSX.Element {
       }
       return photographer.address || '';
     })(),
-    eventsCompleted: photographer?.projects?.length || 0,
+    eventsCompleted: photographer?.completedEvents ?? photographer?.projects?.length ?? 0,
     rating: photographer?.rating || 0,
     profileImage: getProfileImage(photographer),
     backgroundImage: getCoverImage(photographer),
@@ -257,50 +261,74 @@ function ViewProfileContent(): React.JSX.Element {
       })) || [],
       qualifications: photographer?.certifications?.map((cert, index) => ({
         id: index + 1,
-        title: cert.name,
-        issuer: cert.issuingOrganization,
-        year: new Date(cert.issueDate).getFullYear().toString(),
-        description: `Certification from ${cert.issuingOrganization}`,
+        title: cert.title || cert.name || 'Untitled',
+        issuer: cert.institution || cert.issuingOrganization || '',
+        year: (() => {
+          if (cert.yearObtained) return cert.yearObtained;
+          if (cert.issueDate) { try { return new Date(cert.issueDate).getFullYear().toString(); } catch { return ''; } }
+          return '';
+        })(),
+        description: cert.description || `Certification from ${cert.institution || cert.issuingOrganization || 'Unknown'}`,
       })) || [],
       education: photographer?.educationLevels?.map((edu, index) => ({
         id: index + 1,
         degree: edu.degree,
         institution: edu.institution,
-        year: `${edu.startYear}${edu.endYear ? ` - ${edu.endYear}` : ''}`,
-        description: edu.fieldOfStudy || `Studied at ${edu.institution}`,
+        year: (() => {
+          if (edu.startYear) return `${edu.startYear}${edu.endYear ? ` - ${edu.endYear}` : ''}`;
+          if (edu.startDate) return `${edu.startDate}${edu.endDate ? ` - ${edu.endDate}` : ''}`;
+          return '';
+        })(),
+        description: edu.description || edu.fieldOfStudy || `Studied at ${edu.institution}`,
       })) || [],
       training: photographer?.trainings?.map((training, index) => ({
         id: index + 1,
-        title: training.name,
-        institution: training.provider,
-        year: new Date(training.completionDate).getFullYear().toString(),
-        description: `Training completed at ${training.provider}`,
+        title: training.title || training.name || 'Untitled',
+        institution: training.institution || training.provider || '',
+        year: (() => {
+          if (training.yearObtained) return training.yearObtained;
+          if (training.completionDate) { try { return new Date(training.completionDate).getFullYear().toString(); } catch { return ''; } }
+          return '';
+        })(),
+        description: training.description || `Training completed at ${training.institution || training.provider || 'Unknown'}`,
       })) || [],
       projects: photographer?.projects?.map((project, index) => ({
         id: index + 1,
-        image: project.images?.[0] || '',
+        image: project.projectImage || project.images?.[0] || '',
         title: project.title,
         description: project.description,
-        year: project.category || '',
+        year: project.year?.toString() || project.category || '',
       })) || [],
     },
     reviews: photographer?.reviews?.map((review, index) => ({
       id: index + 1,
-      name: review.reviewer?.name || 'Anonymous',
-      avatar: 'https://i.pinimg.com/1200x/85/c5/96/85c596eec98acf0645c5c231f3f8b870.jpg',
+      name: getReviewerName(review.reviewer),
+      avatar: review.reviewer?.profilePicture || 'https://i.pinimg.com/1200x/85/c5/96/85c596eec98acf0645c5c231f3f8b870.jpg',
       rating: review.rating,
-      date: review.createdAt,
-      comment: review.comment,
+      date: review.createdAt || '',
+      comment: getReviewText(review),
+      customerType: review.reviewer?.customerType || '',
+      images: review.images || [],
     })) || [],
-    experience: photographer ? [{
-      id: 1,
-      position: photographer.customerType || 'Photographer',
-      company: 'Self-employed',
-      location: photographer.address || '',
-      startDate: photographer.joinedFrom ? formatJoinDate(photographer.joinedFrom) : '',
-      endDate: 'Present',
-      description: photographer.about || '',
-    }] : [],
+    experience: (photographer?.workExperiences && photographer.workExperiences.length > 0)
+      ? photographer.workExperiences.map((exp, index) => ({
+          id: index + 1,
+          position: exp.position,
+          company: exp.company,
+          location: exp.location,
+          startDate: exp.startDate ? formatJoinDate(exp.startDate) : '',
+          endDate: exp.endDate ? formatJoinDate(exp.endDate) : 'Present',
+          description: exp.description,
+        }))
+      : photographer ? [{
+          id: 1,
+          position: photographer.customerType || 'Photographer',
+          company: 'Self-employed',
+          location: photographer.address || '',
+          startDate: photographer.joinedFrom ? formatJoinDate(photographer.joinedFrom) : '',
+          endDate: 'Present',
+          description: photographer.about || '',
+        }] : [],
     joinedFrom: photographer?.joinedFrom ? formatJoinDate(photographer.joinedFrom) : '',
     customerType: photographer?.customerType || '',
     phone: photographer?.phone || '',
@@ -315,38 +343,6 @@ function ViewProfileContent(): React.JSX.Element {
   const handleStartChat = () => {
     // Navigate to chat page
     console.log('Start Chat clicked');
-  };
-
-  const handleReviewSubmit = async (review: { name: string; rating: number; comment: string; images: File[]; eventId: string }) => {
-    if (!review.eventId) {
-      toast.error('Please select an event to review');
-      return;
-    }
-
-    try {
-      // Backend ONLY accepts multipart/form-data (returns 415 for JSON)
-      const formData = new FormData();
-      formData.append('eventId', review.eventId);
-      formData.append('photographerId', photographerId || '');
-      formData.append('rating', review.rating.toString());
-      formData.append('comment', review.comment);
-      review.images.forEach(img => formData.append('images', img));
-
-      const response = await apiClient.post<Record<string, unknown>>(
-        API_ENDPOINTS.PUBLIC.SUBMIT_REVIEW,
-        formData
-      );
-
-      if (response.success) {
-        toast.success('Review submitted successfully!');
-        setIsReviewModalOpen(false);
-      } else {
-        toast.error(response.error || 'Failed to submit review');
-      }
-    } catch (err) {
-      console.error('Failed to submit review:', err);
-      toast.error('Failed to submit review');
-    }
   };
 
   const renderStars = (rating: number) => {
@@ -820,30 +816,58 @@ function ViewProfileContent(): React.JSX.Element {
         >
           {/* Left Side - Name, Location, and Stats under profile photo */}
           <div style={{ flex: 1 }}>
-            {/* Name */}
-            <h3 style={{
-              fontSize: '20px',
-              fontWeight: '700',
-              color: '#111827',
-              marginBottom: '8px',
-            }}>
-              {photographerData.name}
-            </h3>
-
-            {/* Location */}
-            {photographerData.location && (
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                color: '#40444d',
-                fontSize: '15px',
-                marginBottom: '16px',
+            {/* Name and Type Badge */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px', flexWrap: 'wrap' }}>
+              <h3 style={{
+                fontSize: '20px',
+                fontWeight: '700',
+                color: '#111827',
+                margin: 0,
               }}>
-                <i className="bi bi-geo-alt-fill" style={{ fontSize: '15px' }}></i>
-                <span>{photographerData.location}</span>
-              </div>
-            )}
+                {photographerData.name}
+              </h3>
+              {photographerData.customerType && (
+                <span style={{
+                  padding: '3px 10px',
+                  backgroundColor: '#f0f9ff',
+                  border: '1px solid #bfdbfe',
+                  borderRadius: '12px',
+                  fontSize: '12px',
+                  fontWeight: '600',
+                  color: '#083A85',
+                }}>
+                  {photographerData.customerType}
+                </span>
+              )}
+            </div>
+
+            {/* Location and Member Since */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '16px' }}>
+              {photographerData.location && (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  color: '#40444d',
+                  fontSize: '15px',
+                }}>
+                  <i className="bi bi-geo-alt-fill" style={{ fontSize: '15px' }}></i>
+                  <span>{photographerData.location}</span>
+                </div>
+              )}
+              {photographerData.joinedFrom && (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  color: '#6b7280',
+                  fontSize: '13px',
+                }}>
+                  <i className="bi bi-calendar3" style={{ fontSize: '13px' }}></i>
+                  <span>Member since {photographerData.joinedFrom}</span>
+                </div>
+              )}
+            </div>
 
             {/* Stats Row */}
             <div style={{
@@ -927,7 +951,12 @@ function ViewProfileContent(): React.JSX.Element {
                 Availability
               </div>
               <div style={{ fontSize: '14px', color: '#111827', fontWeight: '600' }}>
-                Monday - Sunday
+                {(() => {
+                  const avails = photographer?.availabilities?.filter(a => a.isAvailable !== false) || [];
+                  if (avails.length === 0) return 'Contact for availability';
+                  if (avails.length === 7) return 'Monday - Sunday';
+                  return avails.map(a => a.dayOfWeek.charAt(0).toUpperCase() + a.dayOfWeek.slice(1).toLowerCase()).join(', ');
+                })()}
               </div>
             </div>
 
@@ -956,7 +985,12 @@ function ViewProfileContent(): React.JSX.Element {
                 }}
               >
                 <i className="bi bi-clock-fill" style={{ color: '#083A85', fontSize: '14px' }}></i>
-                08:00 AM - 11:50 PM
+                {(() => {
+                  const avails = photographer?.availabilities?.filter(a => a.isAvailable !== false) || [];
+                  if (avails.length === 0) return 'Contact for hours';
+                  const first = avails[0];
+                  return `${formatTimeValue(first.startTime)} - ${formatTimeValue(first.endTime)}`;
+                })()}
               </div>
             </div>
 
@@ -989,7 +1023,14 @@ function ViewProfileContent(): React.JSX.Element {
                     fontWeight: '700',
                   }}
                 >
-                  $200.00 / Event
+                  {(() => {
+                    const activePkgs = packages.filter(p => p.isActive);
+                    if (activePkgs.length === 0) return 'Contact for pricing';
+                    const cheapest = activePkgs.reduce((min, p) => p.price < min.price ? p : min, activePkgs[0]);
+                    const c = currencyMap.get(cheapest.currencyId);
+                    const sym = c?.symbol || c?.code || '$';
+                    return `${sym}${cheapest.price.toLocaleString()} / ${cheapest.priceUnit || 'Event'}`;
+                  })()}
                 </span>
               </div>
             </div>
@@ -1043,7 +1084,14 @@ function ViewProfileContent(): React.JSX.Element {
             </button>
 
             <button
-              onClick={() => (window.location.href = 'https://connekt-dashboard.vercel.app/user/client/inbox')}
+              onClick={() => {
+                if (isAuthenticated) {
+                  window.location.href = 'https://connekt-dashboard.vercel.app/user/client/inbox';
+                } else {
+                  toast.info('Please log in to start a chat');
+                  window.location.href = '/user/auth/login';
+                }
+              }}
               style={{
                 padding: isMobile ? 'clamp(12px, 3vw, 14px) clamp(20px, 5vw, 24px)' : '12px 24px',
                 backgroundColor: '#fff',
@@ -1299,6 +1347,126 @@ function ViewProfileContent(): React.JSX.Element {
                   <p style={{ fontSize: '14px', color: '#9ca3af', fontStyle: 'italic' }}>{t('overview.noEquipment')}</p>
                 )}
               </div>
+
+              {/* Booked Dates Mini Calendar */}
+              <div style={{ marginTop: '32px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+                  <div style={{ width: '4px', height: '24px', backgroundColor: '#083A85', borderRadius: '2px' }}></div>
+                  <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#000', margin: 0 }}>
+                    Availability Calendar
+                  </h3>
+                </div>
+                {/* Month navigation */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                  <button
+                    onClick={() => {
+                      setBookedCalendarMonth(prev => {
+                        const d = new Date(prev.year, prev.month - 1, 1);
+                        return { year: d.getFullYear(), month: d.getMonth() };
+                      });
+                    }}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px', fontSize: '18px', color: '#083A85' }}
+                  >
+                    <i className="bi bi-chevron-left"></i>
+                  </button>
+                  <span style={{ fontSize: '16px', fontWeight: '600', color: '#111827' }}>
+                    {new Date(bookedCalendarMonth.year, bookedCalendarMonth.month).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                  </span>
+                  <button
+                    onClick={() => {
+                      setBookedCalendarMonth(prev => {
+                        const d = new Date(prev.year, prev.month + 1, 1);
+                        return { year: d.getFullYear(), month: d.getMonth() };
+                      });
+                    }}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px', fontSize: '18px', color: '#083A85' }}
+                  >
+                    <i className="bi bi-chevron-right"></i>
+                  </button>
+                </div>
+                {/* Day headers */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px', marginBottom: '4px' }}>
+                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
+                    <div key={d} style={{ textAlign: 'center', fontSize: '12px', fontWeight: '600', color: '#6b7280', padding: '4px 0' }}>{d}</div>
+                  ))}
+                </div>
+                {/* Calendar grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px' }}>
+                  {(() => {
+                    const { year, month } = bookedCalendarMonth;
+                    const firstDay = new Date(year, month, 1).getDay();
+                    const daysInMonth = new Date(year, month + 1, 0).getDate();
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const bookedSet = new Map<string, BookedDate>();
+                    bookedDates.forEach(b => bookedSet.set(b.date, b));
+
+                    const cells = [];
+                    // Empty cells for days before the 1st
+                    for (let i = 0; i < firstDay; i++) {
+                      cells.push(<div key={`empty-${i}`}></div>);
+                    }
+                    for (let day = 1; day <= daysInMonth; day++) {
+                      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                      const dateObj = new Date(year, month, day);
+                      const isPast = dateObj < today;
+                      const booked = bookedSet.get(dateStr);
+                      const isFullDay = booked?.isFullDay === true;
+                      const isPartial = booked && !booked.isFullDay;
+                      const isToday = dateObj.getTime() === today.getTime();
+
+                      cells.push(
+                        <div
+                          key={day}
+                          title={isFullDay ? 'Fully booked' : isPartial && booked.startTime && booked.endTime ? `Booked: ${formatTimeValue(booked.startTime)} - ${formatTimeValue(booked.endTime)}` : undefined}
+                          style={{
+                            textAlign: 'center',
+                            padding: '6px 0',
+                            fontSize: '13px',
+                            fontWeight: isToday ? '700' : '500',
+                            color: isPast ? '#d1d5db' : isFullDay ? '#fff' : '#111827',
+                            backgroundColor: isFullDay ? '#ef4444' : isPartial ? '#fef3c7' : isToday ? '#dbeafe' : 'transparent',
+                            borderRadius: '6px',
+                            position: 'relative',
+                            cursor: 'default',
+                            border: isToday ? '2px solid #083A85' : '1px solid transparent',
+                          }}
+                        >
+                          {day}
+                          {isPartial && (
+                            <div style={{
+                              position: 'absolute',
+                              bottom: '2px',
+                              left: '50%',
+                              transform: 'translateX(-50%)',
+                              width: '5px',
+                              height: '5px',
+                              borderRadius: '50%',
+                              backgroundColor: '#f59e0b',
+                            }}></div>
+                          )}
+                        </div>
+                      );
+                    }
+                    return cells;
+                  })()}
+                </div>
+                {/* Legend */}
+                <div style={{ display: 'flex', gap: '16px', marginTop: '12px', fontSize: '12px', color: '#6b7280', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <div style={{ width: '12px', height: '12px', backgroundColor: '#ef4444', borderRadius: '3px' }}></div>
+                    Fully booked
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <div style={{ width: '12px', height: '12px', backgroundColor: '#fef3c7', borderRadius: '3px', border: '1px solid #fde68a' }}></div>
+                    Partially booked
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <div style={{ width: '12px', height: '12px', backgroundColor: '#dbeafe', borderRadius: '3px', border: '2px solid #083A85' }}></div>
+                    Today
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
@@ -1420,7 +1588,7 @@ function ViewProfileContent(): React.JSX.Element {
                           {/* Price */}
                           <div style={{ marginBottom: '8px' }}>
                             <span style={{ fontSize: '32px', fontWeight: '800', color: '#083A85' }}>
-                              ${pkg.price}
+                              {(() => { const c = currencyMap.get(pkg.currencyId); return c?.symbol || c?.code || '$'; })()}{pkg.price}
                             </span>
                             {pkg.priceUnit && (
                               <span style={{ fontSize: '14px', color: '#6b7280', marginLeft: '4px' }}>
@@ -1502,7 +1670,7 @@ function ViewProfileContent(): React.JSX.Element {
                         <div style={{ padding: '0 24px 24px', marginTop: 'auto' }}>
                           <button
                             onClick={() => {
-                              window.location.href = `/user/photographers/book-now?id=${photographerId}`;
+                              window.location.href = `/user/photographers/book-now?id=${photographerId}&packageId=${pkg.id}`;
                             }}
                             style={{
                               width: '100%',
@@ -1972,37 +2140,6 @@ function ViewProfileContent(): React.JSX.Element {
                       </p>
                     </div>
                   </div>
-                  <button
-                    onClick={() => setIsReviewModalOpen(true)}
-                    style={{
-                      padding: '14px 28px',
-                      backgroundColor: '#083A85',
-                      color: '#fff',
-                      border: 'none',
-                      borderRadius: '10px',
-                      fontSize: '14px',
-                      fontWeight: '700',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '10px',
-                      boxShadow: '0 4px 12px rgba(8, 58, 133, 0.25)',
-                      transition: 'all 0.3s ease',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = '#062d6b';
-                      e.currentTarget.style.transform = 'translateY(-2px)';
-                      e.currentTarget.style.boxShadow = '0 6px 20px rgba(8, 58, 133, 0.35)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = '#083A85';
-                      e.currentTarget.style.transform = 'translateY(0)';
-                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(8, 58, 133, 0.25)';
-                    }}
-                  >
-                    <i className="bi bi-pencil-square" style={{ fontSize: '16px' }}></i>
-                    {t('reviews.writeReview')}
-                  </button>
                 </div>
               </div>
 
@@ -2052,24 +2189,39 @@ function ViewProfileContent(): React.JSX.Element {
                           loading="lazy"
                         />
                         <div style={{ flex: 1 }}>
-                          <h4 style={{
-                            fontSize: '15px',
-                            fontWeight: '700',
-                            color: '#000',
-                            marginBottom: '4px',
-                          }}>
-                            {review.name}
-                          </h4>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                            <h4 style={{
+                              fontSize: '15px',
+                              fontWeight: '700',
+                              color: '#000',
+                              margin: 0,
+                            }}>
+                              {review.name}
+                            </h4>
+                            {review.customerType && (
+                              <span style={{
+                                padding: '2px 8px',
+                                backgroundColor: '#f0f9ff',
+                                border: '1px solid #bfdbfe',
+                                borderRadius: '10px',
+                                fontSize: '11px',
+                                fontWeight: '600',
+                                color: '#083A85',
+                              }}>
+                                {review.customerType}
+                              </span>
+                            )}
+                          </div>
                           <p style={{
                             fontSize: '12px',
                             color: '#6b7280',
                             margin: 0,
                           }}>
-                            {new Date(review.date).toLocaleDateString('en-US', {
+                            {review.date ? new Date(review.date).toLocaleDateString('en-US', {
                               year: 'numeric',
                               month: 'long',
                               day: 'numeric',
-                            })}
+                            }) : 'Recently'}
                           </p>
                         </div>
                         <div style={{
@@ -2096,6 +2248,27 @@ function ViewProfileContent(): React.JSX.Element {
                       }}>
                         {review.comment}
                       </p>
+
+                      {/* Review Images */}
+                      {review.images && review.images.length > 0 && (
+                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '12px' }}>
+                          {review.images.map((img: string, imgIdx: number) => (
+                            <img
+                              key={imgIdx}
+                              src={img}
+                              alt={`Review image ${imgIdx + 1}`}
+                              style={{
+                                width: '80px',
+                                height: '80px',
+                                objectFit: 'cover',
+                                borderRadius: '8px',
+                                border: '1px solid #e5e7eb',
+                              }}
+                              loading="lazy"
+                            />
+                          ))}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -2217,16 +2390,6 @@ function ViewProfileContent(): React.JSX.Element {
         </div>
       </div>
     </div>
-
-    {/* Review Modal */}
-    <ReviewModal
-      isOpen={isReviewModalOpen}
-      onClose={() => setIsReviewModalOpen(false)}
-      onSubmit={handleReviewSubmit}
-      photographerName={photographerData.name}
-      events={reviewEvents}
-      eventsLoading={reviewEventsLoading}
-    />
 
     {/* Image Viewer Modal */}
     {imageViewerOpen && (

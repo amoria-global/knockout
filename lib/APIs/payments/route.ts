@@ -2,6 +2,7 @@
  * Payments API
  * POST /api/remote/payments/record-tip
  * POST /api/remote/payments/record-streaming-payment
+ * POST /api/remote/payments/record-photo-purchase
  */
 
 import { apiClient, isAuthenticated } from '@/lib/api/client';
@@ -77,6 +78,41 @@ export async function recordStreamingPayment(data: RecordStreamingPaymentRequest
 
   return apiClient.post<RecordStreamingPaymentResponse>(
     `${API_ENDPOINTS.PAYMENTS.RECORD_STREAMING_PAYMENT}?${queryParams.toString()}`,
+    undefined,
+    { retries: 1 }
+  );
+}
+
+// --- Record Photo Purchase ---
+
+export interface RecordPhotoPurchaseRequest {
+  eventId: string;
+  amount: string;
+  currencyId: string;
+  remarks?: string;
+}
+
+export interface RecordPhotoPurchaseResponse {
+  message: string;
+}
+
+/**
+ * Record a photo purchase payment
+ * Requires authentication
+ */
+export async function recordPhotoPurchase(data: RecordPhotoPurchaseRequest): Promise<ApiResponse<RecordPhotoPurchaseResponse>> {
+  if (!isAuthenticated()) {
+    return { success: false, error: 'Authentication required' };
+  }
+
+  const queryParams = new URLSearchParams();
+  queryParams.append('eventId', data.eventId);
+  queryParams.append('amount', data.amount);
+  queryParams.append('currencyId', data.currencyId);
+  if (data.remarks) queryParams.append('remarks', data.remarks);
+
+  return apiClient.post<RecordPhotoPurchaseResponse>(
+    `${API_ENDPOINTS.PAYMENTS.RECORD_PHOTO_PURCHASE}?${queryParams.toString()}`,
     undefined,
     { retries: 1 }
   );
