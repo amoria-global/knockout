@@ -6,7 +6,7 @@ import AmoriaKNavbar from '../../components/navbar';
 import { useAuth } from '@/app/providers/AuthProvider';
 import { createEventBooking, parseTimeToApiString } from '@/lib/APIs/bookings/create-booking/route';
 import { getPublicPhotographerPackages, type PublicPackage } from '@/lib/APIs/packages/get-packages/route';
-import { getPhotographers, type Photographer } from '@/lib/APIs/public';
+import { getPhotographers, type Photographer, getCurrencies, type Currency, getBookedDates, type BookedDate, formatTimeValue } from '@/lib/APIs/public';
 import { getEventTypes, type EventType } from '@/lib/APIs/public/get-event-types/route';
 
 // Default images for fallback
@@ -31,11 +31,19 @@ const getCoverImage = (photographer: Photographer | null): string => {
   return DEFAULT_COVER_IMAGE;
 };
 
+// Helper to format time from string or {hour, minute} object
+const fmtTime = (t: string | { hour: number; minute: number }): string => {
+  if (typeof t === 'string') return t;
+  const period = t.hour >= 12 ? 'PM' : 'AM';
+  const h = t.hour === 0 ? 12 : t.hour > 12 ? t.hour - 12 : t.hour;
+  return `${h}:${t.minute.toString().padStart(2, '0')} ${period}`;
+};
+
 // Helper function to format availability from API data
-const formatAvailability = (availabilities: { dayOfWeek: string; isAvailable: boolean }[]): string => {
+const formatAvailability = (availabilities?: { dayOfWeek: string; isAvailable?: boolean }[]): string => {
   if (!availabilities || availabilities.length === 0) return 'Contact for availability';
   const availableDays = availabilities
-    .filter(a => a.isAvailable)
+    .filter(a => a.isAvailable !== false)
     .map(a => a.dayOfWeek);
   if (availableDays.length === 0) return 'Contact for availability';
   if (availableDays.length === 7) return 'Monday - Sunday';
@@ -43,12 +51,12 @@ const formatAvailability = (availabilities: { dayOfWeek: string; isAvailable: bo
 };
 
 // Helper function to format working hours from availability data
-const formatWorkingHours = (availabilities: { startTime: string; endTime: string; isAvailable: boolean }[]): string => {
+const formatWorkingHours = (availabilities?: { startTime: string | { hour: number; minute: number }; endTime: string | { hour: number; minute: number }; isAvailable?: boolean }[]): string => {
   if (!availabilities || availabilities.length === 0) return 'Contact for hours';
-  const availableSlots = availabilities.filter(a => a.isAvailable);
+  const availableSlots = availabilities.filter(a => a.isAvailable !== false);
   if (availableSlots.length === 0) return 'Contact for hours';
   const first = availableSlots[0];
-  return `${first.startTime} - ${first.endTime}`;
+  return `${fmtTime(first.startTime)} - ${fmtTime(first.endTime)}`;
 };
 
 const FALLBACK_EVENT_TYPES = [
@@ -69,6 +77,7 @@ function BookNowContent(): React.JSX.Element {
   const searchParams = useSearchParams();
   const router = useRouter();
   const photographerId = searchParams.get('id');
+  const preselectedPackageId = searchParams.get('packageId');
   const t = useTranslations('booking.step1');
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
 
@@ -79,6 +88,7 @@ function BookNowContent(): React.JSX.Element {
   const [validationError, setValidationError] = useState<string | null>(null);
   const [apiPackages, setApiPackages] = useState<PublicPackage[]>([]);
   const [apiPackagesLoaded, setApiPackagesLoaded] = useState(false);
+  const [currencyMap, setCurrencyMap] = useState<Map<string, Currency>>(new Map());
 
   // Photographer API data state
   const [photographer, setPhotographer] = useState<Photographer | null>(null);
@@ -104,6 +114,30 @@ function BookNowContent(): React.JSX.Element {
   const [eventOrganizer, setEventOrganizer] = useState('');
   const [eventVisibility, setEventVisibility] = useState('PUBLIC');
 
+  // Booked dates state
+  const [bookedDates, setBookedDates] = useState<BookedDate[]>([]);
+  const [bookedDatesLoading, setBookedDatesLoading] = useState(false);
+
+  // Fetch booked dates when photographer is selected
+  useEffect(() => {
+    if (!photographerId) return;
+    setBookedDatesLoading(true);
+    const today = new Date();
+    const from = today.toISOString().split('T')[0];
+    const to = new Date(today.getFullYear(), today.getMonth() + 3, today.getDate()).toISOString().split('T')[0];
+    getBookedDates({ photographerId, from, to })
+      .then(res => {
+        if (res.success && res.data) {
+          setBookedDates(Array.isArray(res.data) ? res.data : []);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setBookedDatesLoading(false));
+  }, [photographerId]);
+
+  // Check if selected date is booked
+  const selectedDateBooking = bookedDates.find(b => b.date === eventDate);
+  const isSelectedDateFullyBooked = selectedDateBooking?.isFullDay === true;
 
   // Validation checks
   useEffect(() => {
@@ -196,27 +230,69 @@ function BookNowContent(): React.JSX.Element {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Fetch real packages from API
+  // Use inline packages from photographer object, fallback to separate endpoint
   useEffect(() => {
     if (!photographerId) return;
-    getPublicPhotographerPackages(photographerId)
-      .then(res => {
-        if (res.success && res.data) {
-          const pkgs = Array.isArray(res.data)
-            ? res.data
-            : (res.data as Record<string, unknown>)?.data
-              ? (res.data as Record<string, unknown>).data as PublicPackage[]
-              : [];
-          setApiPackages((pkgs as PublicPackage[]).filter(p => p.isActive));
-        }
-      })
-      .catch(() => {})
-      .finally(() => setApiPackagesLoaded(true));
-  }, [photographerId]);
+
+    // Prefer inline packages from photographer data
+    const inlinePkgs = photographer?.packages?.filter(p => p.isActive) || [];
+    if (inlinePkgs.length > 0) {
+      setApiPackages(inlinePkgs as unknown as PublicPackage[]);
+      setApiPackagesLoaded(true);
+      return;
+    }
+
+    // Fallback: fetch from separate endpoint if inline data unavailable
+    if (photographer !== null) {
+      getPublicPhotographerPackages(photographerId)
+        .then(res => {
+          if (res.success && res.data) {
+            const pkgs = Array.isArray(res.data)
+              ? res.data
+              : (res.data as Record<string, unknown>)?.data
+                ? (res.data as Record<string, unknown>).data as PublicPackage[]
+                : [];
+            setApiPackages((pkgs as PublicPackage[]).filter(p => p.isActive));
+          }
+        })
+        .catch(() => {})
+        .finally(() => setApiPackagesLoaded(true));
+    }
+  }, [photographerId, photographer]);
+
+  // Fetch currencies for price display
+  useEffect(() => {
+    getCurrencies().then(res => {
+      if (res.success && res.data) {
+        const currencies = Array.isArray(res.data) ? res.data : [];
+        const map = new Map<string, Currency>();
+        currencies.forEach(c => map.set(c.id, c));
+        setCurrencyMap(map);
+      }
+    }).catch(() => {});
+  }, []);
+
+  // Auto-select package from URL param
+  useEffect(() => {
+    if (preselectedPackageId && apiPackagesLoaded && apiPackages.length > 0 && !selectedPackage) {
+      const match = apiPackages.find(p => p.id === preselectedPackageId);
+      if (match) setSelectedPackage(match.id);
+    }
+  }, [preselectedPackageId, apiPackagesLoaded, apiPackages, selectedPackage]);
+
+  // Helper to resolve currency symbol from currencyId
+  const getCurrencySymbol = (currencyId: string): string => {
+    const c = currencyMap.get(currencyId);
+    return c?.symbol || c?.code || '';
+  };
 
   // Compute minimum price from loaded packages
   const minimumPrice = (apiPackagesLoaded && apiPackages.length > 0)
-    ? `$${Math.min(...apiPackages.map(p => p.price)).toFixed(2)} / Event`
+    ? (() => {
+        const cheapest = apiPackages.reduce((min, p) => p.price < min.price ? p : min, apiPackages[0]);
+        const sym = getCurrencySymbol(cheapest.currencyId);
+        return `${sym}${cheapest.price.toLocaleString()} / Event`;
+      })()
     : null;
 
   // Build display data from API response
@@ -226,7 +302,7 @@ function BookNowContent(): React.JSX.Element {
     backgroundImage: getCoverImage(photographer),
     location: photographer?.address || '',
     rating: photographer?.rating || 0,
-    completedJobs: photographer?.projects?.length || 0,
+    completedJobs: photographer?.completedEvents ?? photographer?.projects?.length ?? 0,
     verified: photographer?.isVerified ?? false,
     availability: photographer ? formatAvailability(photographer.availabilities) : 'Contact for availability',
     hours: photographer ? formatWorkingHours(photographer.availabilities) : 'Contact for hours',
@@ -271,6 +347,8 @@ function BookNowContent(): React.JSX.Element {
     id: pkg.id,
     name: pkg.packageName,
     basePrice: pkg.price,
+    currencyId: pkg.currencyId,
+    currencySymbol: getCurrencySymbol(pkg.currencyId),
     includedPhotos: 0,
     includedVideos: 0,
     period: pkg.priceUnit || 'per event',
@@ -292,7 +370,7 @@ function BookNowContent(): React.JSX.Element {
     setEventVisibility('PUBLIC');
   };
 
-  const isFormComplete = selectedPackage && eventDate && eventTime && eventEndTime && eventType && eventLocation;
+  const isFormComplete = selectedPackage && eventDate && eventTime && eventEndTime && eventType && eventLocation && !isSelectedDateFullyBooked;
 
   const handleBooking = async () => {
     if (!selectedPackage || !photographerId || !user) {
@@ -1005,7 +1083,7 @@ function BookNowContent(): React.JSX.Element {
                       transition: 'all 0.3s ease',
                     }}
                   >
-                    ${getPackageTotal(pkg.id, pkg.basePrice)}
+                    {pkg.currencySymbol}{getPackageTotal(pkg.id, pkg.basePrice).toLocaleString()}
                   </div>
                   <div
                     style={{
@@ -1115,7 +1193,7 @@ function BookNowContent(): React.JSX.Element {
                         textAlign: 'center',
                         marginBottom: '16px',
                       }}>
-                        Want even more? Add extras below. They&apos;ll be added on top of your included set at <strong style={{ color: '#10b981' }}>$1/photo</strong> &amp; <strong style={{ color: '#10b981' }}>$2/video</strong>.
+                        Want even more? Add extras below. They&apos;ll be added on top of your included set at <strong style={{ color: '#10b981' }}>{pkg.currencySymbol}1/photo</strong> &amp; <strong style={{ color: '#10b981' }}>{pkg.currencySymbol}2/video</strong>.
                       </p>
 
                       {/* Extra Photos Input */}
@@ -1268,25 +1346,25 @@ function BookNowContent(): React.JSX.Element {
                         >
                           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                             <span style={{ fontSize: '14px', color: '#374151' }}>Base package ({pkg.includedPhotos} photos &amp; {pkg.includedVideos} videos)</span>
-                            <span style={{ fontSize: '14px', color: '#374151' }}>${pkg.basePrice}</span>
+                            <span style={{ fontSize: '14px', color: '#374151' }}>{pkg.currencySymbol}{pkg.basePrice.toLocaleString()}</span>
                           </div>
                           {typeof extraPhotos[pkg.id] === 'number' && (extraPhotos[pkg.id] as number) > 0 && (
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                               <span style={{ fontSize: '14px', color: '#10b981', fontWeight: '600' }}>
-                                +{extraPhotos[pkg.id]} extra photos x $1
+                                +{extraPhotos[pkg.id]} extra photos x {pkg.currencySymbol}1
                               </span>
                               <span style={{ fontSize: '14px', color: '#10b981', fontWeight: '600' }}>
-                                +${extraPhotos[pkg.id]}
+                                +{pkg.currencySymbol}{extraPhotos[pkg.id]}
                               </span>
                             </div>
                           )}
                           {typeof extraVideos[pkg.id] === 'number' && (extraVideos[pkg.id] as number) > 0 && (
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                               <span style={{ fontSize: '14px', color: '#10b981', fontWeight: '600' }}>
-                                +{extraVideos[pkg.id]} extra videos x $2
+                                +{extraVideos[pkg.id]} extra videos x {pkg.currencySymbol}2
                               </span>
                               <span style={{ fontSize: '14px', color: '#10b981', fontWeight: '600' }}>
-                                +${(extraVideos[pkg.id] as number) * 2}
+                                +{pkg.currencySymbol}{(extraVideos[pkg.id] as number) * 2}
                               </span>
                             </div>
                           )}
@@ -1300,7 +1378,7 @@ function BookNowContent(): React.JSX.Element {
                           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
                             <span style={{ fontSize: '16px', color: '#047857', fontWeight: '700' }}>New Total</span>
                             <span style={{ fontSize: '18px', color: '#047857', fontWeight: '800' }}>
-                              ${getPackageTotal(pkg.id, pkg.basePrice)}
+                              {pkg.currencySymbol}{getPackageTotal(pkg.id, pkg.basePrice).toLocaleString()}
                             </span>
                           </div>
                           <div style={{
@@ -1531,17 +1609,54 @@ function BookNowContent(): React.JSX.Element {
                       width: '100%',
                       padding: '12px 16px',
                       fontSize: '15px',
-                      border: '2px solid #d1d5db',
+                      border: `2px solid ${isSelectedDateFullyBooked ? '#ef4444' : '#d1d5db'}`,
                       borderRadius: '12px',
-                      backgroundColor: '#fff',
+                      backgroundColor: isSelectedDateFullyBooked ? '#fef2f2' : '#fff',
                       color: '#1f2937',
                       outline: 'none',
                       transition: 'border-color 0.2s ease',
                       boxSizing: 'border-box',
                     }}
-                    onFocus={(e) => (e.currentTarget.style.borderColor = '#083A85')}
-                    onBlur={(e) => (e.currentTarget.style.borderColor = '#d1d5db')}
+                    onFocus={(e) => (e.currentTarget.style.borderColor = isSelectedDateFullyBooked ? '#ef4444' : '#083A85')}
+                    onBlur={(e) => (e.currentTarget.style.borderColor = isSelectedDateFullyBooked ? '#ef4444' : '#d1d5db')}
                   />
+                  {/* Booked date warnings */}
+                  {eventDate && isSelectedDateFullyBooked && (
+                    <div style={{
+                      marginTop: '6px',
+                      padding: '8px 12px',
+                      backgroundColor: '#fef2f2',
+                      border: '1px solid #fecaca',
+                      borderRadius: '8px',
+                      fontSize: '13px',
+                      color: '#dc2626',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                    }}>
+                      <i className="bi bi-exclamation-triangle-fill"></i>
+                      This date is fully booked. Please select another date.
+                    </div>
+                  )}
+                  {eventDate && selectedDateBooking && !selectedDateBooking.isFullDay && (
+                    <div style={{
+                      marginTop: '6px',
+                      padding: '8px 12px',
+                      backgroundColor: '#fffbeb',
+                      border: '1px solid #fde68a',
+                      borderRadius: '8px',
+                      fontSize: '13px',
+                      color: '#92400e',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                    }}>
+                      <i className="bi bi-info-circle-fill"></i>
+                      {selectedDateBooking.startTime && selectedDateBooking.endTime
+                        ? `${formatTimeValue(selectedDateBooking.startTime)} - ${formatTimeValue(selectedDateBooking.endTime)} is booked. Please pick a non-overlapping time.`
+                        : 'Part of this day is booked. Please pick a non-overlapping time.'}
+                    </div>
+                  )}
                 </div>
 
                 {/* Start Time */}
