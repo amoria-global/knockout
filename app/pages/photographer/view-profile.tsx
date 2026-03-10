@@ -3,8 +3,7 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import AmoriaKNavbar from '../../components/navbar';
-import { getPhotographerById, type Photographer, type PhotographerPackage, getCities, getCurrencies, type City, type Currency, getReviewerName, getReviewText, formatTimeValue, getBookedDates, type BookedDate } from '@/lib/APIs/public';
-import { getPublicPhotographerPackages, type PublicPackage } from '@/lib/APIs/packages/get-packages/route';
+import { getPhotographerById, type Photographer, getCities, getCurrencies, type City, type Currency, getReviewerName, getReviewText, formatTimeValue, getBookedDates, type BookedDate } from '@/lib/APIs/public';
 import { useToast } from '@/lib/notifications/ToastProvider';
 import { useAuth } from '@/app/providers/AuthProvider';
 
@@ -58,8 +57,6 @@ function ViewProfileContent(): React.JSX.Element {
   // API data state
   const [photographer, setPhotographer] = useState<Photographer | null>(null);
   const [fetchError, setFetchError] = useState<string | null>(null);
-  const [packages, setPackages] = useState<PublicPackage[]>([]);
-  const [packagesLoading, setPackagesLoading] = useState(false);
   const [cities, setCities] = useState<City[]>([]);
   const [currencyMap, setCurrencyMap] = useState<Map<string, Currency>>(new Map());
   const [bookedDates, setBookedDates] = useState<BookedDate[]>([]);
@@ -121,37 +118,6 @@ function ViewProfileContent(): React.JSX.Element {
     };
     fetchCities();
   }, []);
-
-  // Use inline packages from photographer object, fallback to separate endpoint
-  useEffect(() => {
-    if (!photographerId) return;
-    setPackagesLoading(true);
-
-    // Prefer inline packages from photographer data
-    const inlinePkgs = photographer?.packages?.filter(p => p.isActive) || [];
-    if (inlinePkgs.length > 0) {
-      setPackages(inlinePkgs as unknown as PublicPackage[]);
-      setPackagesLoading(false);
-      return;
-    }
-
-    // Fallback: fetch from separate endpoint if inline data unavailable
-    if (photographer !== null) {
-      getPublicPhotographerPackages(photographerId)
-        .then(res => {
-          if (res.success && res.data) {
-            const pkgs = Array.isArray(res.data)
-              ? res.data
-              : (res.data as Record<string, unknown>)?.data
-                ? (res.data as Record<string, unknown>).data as PublicPackage[]
-                : [];
-            setPackages((pkgs as PublicPackage[]).filter(p => p.isActive));
-          }
-        })
-        .catch(() => {})
-        .finally(() => setPackagesLoading(false));
-    }
-  }, [photographerId, photographer]);
 
   // Fetch currencies for price display
   useEffect(() => {
@@ -1024,11 +990,11 @@ function ViewProfileContent(): React.JSX.Element {
                   }}
                 >
                   {(() => {
-                    const activePkgs = packages.filter(p => p.isActive);
+                    const activePkgs = (photographer?.packages || []).filter(p => p.isActive);
                     if (activePkgs.length === 0) return 'Contact for pricing';
                     const cheapest = activePkgs.reduce((min, p) => p.price < min.price ? p : min, activePkgs[0]);
-                    const c = currencyMap.get(cheapest.currencyId);
-                    const sym = c?.symbol || c?.code || '$';
+                    const c = cheapest.currencyId ? currencyMap.get(cheapest.currencyId) : undefined;
+                    const sym = c?.symbol || c?.code || cheapest.currencyAbbreviation || '$';
                     return `${sym}${cheapest.price.toLocaleString()} / ${cheapest.priceUnit || 'Event'}`;
                   })()}
                 </span>
@@ -1143,7 +1109,6 @@ function ViewProfileContent(): React.JSX.Element {
         >
           {[
             { key: 'overview', label: t('tabs.overview') },
-            { key: 'packages', label: 'Packages' },
             { key: 'portfolio', label: t('tabs.portfolio') },
             { key: 'reviews', label: t('tabs.reviews') },
             { key: 'working-experience', label: t('tabs.workingExperience') }
@@ -1467,245 +1432,6 @@ function ViewProfileContent(): React.JSX.Element {
                   </div>
                 </div>
               </div>
-            </div>
-          )}
-
-          {activeTab === 'packages' && (
-            <div>
-              {/* Section Header */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '24px' }}>
-                <div style={{
-                  width: '4px',
-                  height: '24px',
-                  backgroundColor: '#083A85',
-                  borderRadius: '2px',
-                }}></div>
-                <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#000', margin: 0 }}>
-                  Service Packages
-                </h3>
-              </div>
-
-              {packagesLoading ? (
-                /* Loading skeleton */
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(300px, 1fr))',
-                  gap: '20px',
-                }}>
-                  {[1, 2, 3].map(i => (
-                    <div key={i} style={{
-                      backgroundColor: '#f9fafb',
-                      borderRadius: '16px',
-                      padding: '24px',
-                      border: '2px solid #e5e7eb',
-                    }}>
-                      <div style={{ height: '28px', width: '60%', backgroundColor: '#e5e7eb', borderRadius: '8px', marginBottom: '16px' }} />
-                      <div style={{ height: '36px', width: '40%', backgroundColor: '#e5e7eb', borderRadius: '8px', marginBottom: '12px' }} />
-                      <div style={{ height: '16px', width: '80%', backgroundColor: '#e5e7eb', borderRadius: '6px', marginBottom: '20px' }} />
-                      {[1, 2, 3, 4].map(j => (
-                        <div key={j} style={{ height: '14px', width: `${70 + j * 5}%`, backgroundColor: '#e5e7eb', borderRadius: '4px', marginBottom: '10px' }} />
-                      ))}
-                    </div>
-                  ))}
-                </div>
-              ) : packages.length === 0 ? (
-                /* Empty state */
-                <div style={{
-                  textAlign: 'center',
-                  padding: isMobile ? '40px 20px' : '60px 40px',
-                  backgroundColor: '#f9fafb',
-                  borderRadius: '16px',
-                  border: '2px dashed #e5e7eb',
-                }}>
-                  <i className="bi bi-box-seam" style={{ fontSize: '48px', color: '#d1d5db', display: 'block', marginBottom: '16px' }}></i>
-                  <h4 style={{ fontSize: '18px', fontWeight: '600', color: '#6b7280', margin: '0 0 8px 0' }}>
-                    No packages available yet
-                  </h4>
-                  <p style={{ fontSize: '14px', color: '#9ca3af', margin: 0 }}>
-                    This photographer hasn&apos;t published any service packages yet.
-                  </p>
-                </div>
-              ) : (
-                /* Package cards grid */
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: isMobile ? '1fr' : packages.length === 1 ? '1fr' : packages.length === 2 ? 'repeat(2, 1fr)' : 'repeat(auto-fill, minmax(300px, 1fr))',
-                  gap: '20px',
-                }}>
-                  {packages.map((pkg, index) => {
-                    const badgeStyles = [
-                      { bg: 'linear-gradient(135deg, #22D3EE 0%, #3B82F6 100%)', color: '#fff' },
-                      { bg: 'linear-gradient(135deg, #FDE047 0%, #FBBF24 50%, #F59E0B 100%)', color: '#78350F' },
-                      { bg: 'linear-gradient(135deg, #C084FC 0%, #A855F7 50%, #7C3AED 100%)', color: '#fff' },
-                    ];
-                    const badge = badgeStyles[index % badgeStyles.length];
-                    const sortedFeatures = [...(pkg.features || [])].sort((a, b) => a.displayOrder - b.displayOrder);
-
-                    return (
-                      <div
-                        key={pkg.id || index}
-                        style={{
-                          backgroundColor: '#fff',
-                          borderRadius: '16px',
-                          border: '2px solid #e5e7eb',
-                          overflow: 'hidden',
-                          transition: 'all 0.3s ease',
-                          display: 'flex',
-                          flexDirection: 'column',
-                        }}
-                        onMouseEnter={(e) => {
-                          if (!isMobile) {
-                            e.currentTarget.style.transform = 'translateY(-4px)';
-                            e.currentTarget.style.boxShadow = '0 12px 32px rgba(8, 58, 133, 0.15)';
-                            e.currentTarget.style.borderColor = '#083A85';
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          if (!isMobile) {
-                            e.currentTarget.style.transform = 'translateY(0)';
-                            e.currentTarget.style.boxShadow = 'none';
-                            e.currentTarget.style.borderColor = '#e5e7eb';
-                          }
-                        }}
-                      >
-                        {/* Package header with badge */}
-                        <div style={{ padding: '24px 24px 16px' }}>
-                          <span style={{
-                            display: 'inline-block',
-                            background: badge.bg,
-                            color: badge.color,
-                            padding: '6px 16px',
-                            borderRadius: '20px',
-                            fontSize: '13px',
-                            fontWeight: '700',
-                            letterSpacing: '0.5px',
-                            textTransform: 'uppercase',
-                            marginBottom: '16px',
-                          }}>
-                            {pkg.packageName}
-                          </span>
-
-                          {/* Price */}
-                          <div style={{ marginBottom: '8px' }}>
-                            <span style={{ fontSize: '32px', fontWeight: '800', color: '#083A85' }}>
-                              {(() => { const c = currencyMap.get(pkg.currencyId); return c?.symbol || c?.code || '$'; })()}{pkg.price}
-                            </span>
-                            {pkg.priceUnit && (
-                              <span style={{ fontSize: '14px', color: '#6b7280', marginLeft: '4px' }}>
-                                / {pkg.priceUnit}
-                              </span>
-                            )}
-                          </div>
-
-                          {/* Duration */}
-                          {pkg.durationHours > 0 && (
-                            <div style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '6px',
-                              fontSize: '14px',
-                              color: '#6b7280',
-                              marginBottom: '12px',
-                            }}>
-                              <i className="bi bi-clock" style={{ fontSize: '14px' }}></i>
-                              {pkg.durationHours} {pkg.durationHours === 1 ? 'hour' : 'hours'}
-                            </div>
-                          )}
-
-                          {/* Description */}
-                          {pkg.description && (
-                            <p style={{
-                              fontSize: '14px',
-                              color: '#4b5563',
-                              lineHeight: '1.6',
-                              margin: '0 0 16px 0',
-                            }}>
-                              {pkg.description}
-                            </p>
-                          )}
-                        </div>
-
-                        {/* Features list */}
-                        {sortedFeatures.length > 0 && (
-                          <div style={{
-                            padding: '0 24px 16px',
-                            flex: 1,
-                          }}>
-                            <div style={{
-                              borderTop: '1px solid #f3f4f6',
-                              paddingTop: '16px',
-                            }}>
-                              {sortedFeatures.map((feature, fIdx) => (
-                                <div
-                                  key={fIdx}
-                                  style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '10px',
-                                    padding: '6px 0',
-                                    fontSize: '14px',
-                                  }}
-                                >
-                                  <i
-                                    className={feature.isIncluded ? 'bi bi-check-circle-fill' : 'bi bi-x-circle'}
-                                    style={{
-                                      color: feature.isIncluded ? '#16a34a' : '#d1d5db',
-                                      fontSize: '16px',
-                                      flexShrink: 0,
-                                    }}
-                                  ></i>
-                                  <span style={{
-                                    color: feature.isIncluded ? '#374151' : '#9ca3af',
-                                    textDecoration: feature.isIncluded ? 'none' : 'line-through',
-                                  }}>
-                                    {feature.featureName}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Book Now button */}
-                        <div style={{ padding: '0 24px 24px', marginTop: 'auto' }}>
-                          <button
-                            onClick={() => {
-                              window.location.href = `/user/photographers/book-now?id=${photographerId}&packageId=${pkg.id}`;
-                            }}
-                            style={{
-                              width: '100%',
-                              padding: '12px',
-                              backgroundColor: '#083A85',
-                              color: '#fff',
-                              border: 'none',
-                              borderRadius: '12px',
-                              fontSize: '15px',
-                              fontWeight: '600',
-                              cursor: 'pointer',
-                              transition: 'all 0.3s ease',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              gap: '8px',
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.backgroundColor = '#0d4ea6';
-                              e.currentTarget.style.boxShadow = '0 4px 12px rgba(8, 58, 133, 0.3)';
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.backgroundColor = '#083A85';
-                              e.currentTarget.style.boxShadow = 'none';
-                            }}
-                          >
-                            <i className="bi bi-calendar-check" style={{ fontSize: '16px' }}></i>
-                            Book Now
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
             </div>
           )}
 

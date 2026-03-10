@@ -923,8 +923,8 @@ const Photographers: React.FC = () => {
                     const activePkgs = (photographer.packages ?? []).filter(p => p.isActive);
                     if (activePkgs.length === 0) return null;
                     const cheapest = activePkgs.reduce((min, p) => p.price < min.price ? p : min, activePkgs[0]);
-                    const c = currencyMap.get(cheapest.currencyId);
-                    const sym = c?.symbol || c?.code || '';
+                    const c = cheapest.currencyId ? currencyMap.get(cheapest.currencyId) : undefined;
+                    const sym = c?.symbol || c?.code || cheapest.currencyAbbreviation || '';
                     return (
                       <div style={{
                         display: 'flex',
