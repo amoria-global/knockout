@@ -6,18 +6,10 @@
 import type { ApiClientConfig, RetryConfig, RateLimitConfig } from "./types";
 
 /**
- * Get the API base URL from environment or default
+ * Get the API base URL from environment
  */
 function getBaseUrl(): string {
-  // In production (Vercel), use the proxy to avoid mixed content
-  if (typeof window !== 'undefined' && process.env.NODE_ENV === 'production') {
-    return '/';
-  }
-
-  // In development or server-side, use direct URL
-  const url = process.env.NEXT_PUBLIC_API_URL!;
-
-  // Ensure URL ends with slash for consistent path joining
+  const url = process.env.NEXT_PUBLIC_API_URL as string;
   return url.endsWith('/') ? url : `${url}/`;
 }
 
@@ -158,6 +150,10 @@ export const API_ENDPOINTS = {
     RECORD_TIP: "/api/remote/payments/record-tip",
     RECORD_STREAMING_PAYMENT: "/api/remote/payments/record-streaming-payment",
     RECORD_PHOTO_PURCHASE: "/api/remote/payments/record-photo-purchase",
+    XENTRIPAY_INITIATE: "/api/remote/payments/xentripay/initiate",
+    XENTRIPAY_INITIATE_TIP: "/api/remote/payments/xentripay/initiate-tip",
+    XENTRIPAY_INITIATE_STREAMING: "/api/remote/payments/xentripay/initiate-streaming",
+    XENTRIPAY_STATUS: (refid: string) => `/api/remote/payments/xentripay/status/${refid}`,
   },
 
   // Customer endpoints
