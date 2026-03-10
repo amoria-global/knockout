@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL!;
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL as string;
 
 type RouteContext = {
   params: Promise<{ path: string[] }>;

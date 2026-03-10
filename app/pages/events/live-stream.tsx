@@ -6,6 +6,7 @@ import dynamic from 'next/dynamic';
 import Hls from 'hls.js';
 import { getCurrencies, type Currency as APICurrency } from '@/lib/APIs/public';
 import { recordTip, recordStreamingPayment } from '@/lib/APIs/payments/route';
+import XentriPayModal from '../../components/XentriPayModal';
 import { getEventDetails } from '@/lib/APIs/events/get-event-details/route';
 import { getStreamChats, sendStreamChat, type StreamChatMessage } from '@/lib/APIs/streams/chat/route';
 import { contactUs } from '@/lib/APIs/public/contact-us/route';
@@ -344,6 +345,11 @@ const App = () => {
   const [giftError, setGiftError] = useState<string | null>(null);
   const [donationApiLoading, setDonationApiLoading] = useState(false);
   const [donationApiError, setDonationApiError] = useState<string | null>(null);
+  // XentriPay modal state
+  const [showXentriPayModal, setShowXentriPayModal] = useState(false);
+  const [xentriPayAmount, setXentriPayAmount] = useState(0);
+  const [xentriPayType, setXentriPayType] = useState<'tip' | 'streaming'>('streaming');
+  const [xentriPayEventId, setXentriPayEventId] = useState<string>('');
 
   // Fetch currencies on mount
   useEffect(() => {
@@ -414,40 +420,18 @@ const App = () => {
     }
   };
 
-  // Handle sending donation
+  // Handle sending donation - open XentriPay modal
   const handleSendDonation = async () => {
-    if (!donationPaymentMethod || !donationAmount) {
-      alert('Please select a payment method and enter an amount');
+    if (!donationAmount || parseInt(donationAmount) <= 0) {
+      alert('Please enter a donation amount');
       return;
     }
 
-    if (!isDonationPaymentValid()) {
-      alert('Please fill in all required payment details');
-      return;
-    }
-
-    setDonationApiLoading(true);
-    setDonationApiError(null);
-
-    try {
-      const currencyId = streamCurrencies.length > 0 ? streamCurrencies[0].id : '';
-
-      const response = await recordTip({
-        amount: donationAmount,
-        currencyId: currencyId || undefined,
-        remarks: `Donation via ${donationPaymentMethod}`,
-      });
-
-      if (!response.success) {
-        throw new Error(response.error || 'Donation failed');
-      }
-
-      resetDonationModal();
-    } catch (err) {
-      setDonationApiError(err instanceof Error ? err.message : 'Donation failed. Please try again.');
-    } finally {
-      setDonationApiLoading(false);
-    }
+    setXentriPayEventId(mainEvent?.id || '');
+    setXentriPayAmount(parseInt(donationAmount));
+    setXentriPayType('tip');
+    setShowDonationModal(false);
+    setShowXentriPayModal(true);
   };
 
   // Payment methods
@@ -486,46 +470,25 @@ const App = () => {
     }
   };
 
-  // Handle sending gift
+  // Handle sending gift - open XentriPay modal
   const handleSendGift = async () => {
-    if (!selectedPaymentMethod || !giftAmount) {
-      alert('Please select a payment method and enter an amount');
+    if (!giftAmount || parseInt(giftAmount) <= 0) {
+      alert('Please enter a gift amount');
       return;
     }
 
-    if (!isPaymentDetailsValid()) {
-      alert('Please fill in all required payment details');
-      return;
-    }
+    const targetEvent = giftTargetEvent || mainEvent;
+    setXentriPayEventId(targetEvent.id);
+    setXentriPayAmount(parseInt(giftAmount));
+    setXentriPayType('streaming');
+    setShowGiftModal(false);
+    setShowXentriPayModal(true);
+  };
 
-    setGiftLoading(true);
-    setGiftError(null);
-
-    try {
-      // Use target event or fallback to main event
-      const targetEvent = giftTargetEvent || mainEvent;
-
-      // Use first available currency ID
-      const currencyId = streamCurrencies.length > 0 ? streamCurrencies[0].id : '';
-      const remarks = giftMessage || `Gift to ${targetEvent.photographer} via ${selectedPaymentMethod}`;
-
-      const response = await recordStreamingPayment({
-        eventId: targetEvent.id,
-        amount: giftAmount,
-        currencyId: currencyId || undefined,
-        remarks,
-      });
-
-      if (!response.success) {
-        throw new Error(response.error || 'Gift payment failed');
-      }
-
-      resetGiftModal();
-    } catch (err) {
-      setGiftError(err instanceof Error ? err.message : 'Gift payment failed. Please try again.');
-    } finally {
-      setGiftLoading(false);
-    }
+  // Handle XentriPay payment success
+  const handleXentriPaySuccess = () => {
+    setShowXentriPayModal(false);
+    resetGiftModal();
   };
 
   // Get current time
@@ -6311,6 +6274,18 @@ const App = () => {
           onSend={handleSendVideoMessage}
         />
       )}
+
+      {/* XentriPay Payment Modal */}
+      <XentriPayModal
+        isOpen={showXentriPayModal}
+        onClose={() => setShowXentriPayModal(false)}
+        onSuccess={handleXentriPaySuccess}
+        amount={xentriPayAmount}
+        currencyCode={streamCurrencies.length > 0 ? streamCurrencies[0].code : 'RWF'}
+        currencyId={streamCurrencies.length > 0 ? streamCurrencies[0].id : ''}
+        paymentType={xentriPayType}
+        eventId={xentriPayEventId}
+      />
     </>
   );
 };
