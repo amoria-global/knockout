@@ -15,7 +15,7 @@ function getBaseUrl(): string {
   }
 
   // In development or server-side, use direct URL
-  const url = process.env.NEXT_PUBLIC_API_URL || 'https://backend.connekyt.com/';
+  const url = process.env.NEXT_PUBLIC_API_URL!;
 
   // Ensure URL ends with slash for consistent path joining
   return url.endsWith('/') ? url : `${url}/`;
