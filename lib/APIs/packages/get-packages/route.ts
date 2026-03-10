@@ -96,11 +96,17 @@ export interface PublicPackage {
   id: string;
   packageName: string;
   price: number;
-  currencyId: string;
+  currencyId?: string;
+  currencyAbbreviation?: string;
+  currencyName?: string;
   priceUnit: string;
   durationHours: number;
   description: string;
   isActive: boolean;
+  includedPhotos?: number;
+  includedVideos?: number;
+  extraPhotoPrice?: number;
+  extraVideoPrice?: number;
   features: PublicPackageFeature[];
 }
 
