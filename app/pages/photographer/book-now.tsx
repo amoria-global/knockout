@@ -290,7 +290,7 @@ function BookNowContent(): React.JSX.Element {
   const minimumPrice = (apiPackagesLoaded && apiPackages.length > 0)
     ? (() => {
         const cheapest = apiPackages.reduce((min, p) => p.price < min.price ? p : min, apiPackages[0]);
-        const sym = getCurrencySymbol(cheapest.currencyId);
+        const sym = (cheapest.currencyId ? getCurrencySymbol(cheapest.currencyId) : '') || cheapest.currencyAbbreviation || '';
         return `${sym}${cheapest.price.toLocaleString()} / Event`;
       })()
     : null;
@@ -318,15 +318,21 @@ function BookNowContent(): React.JSX.Element {
 
   // Calculate total price for a package including extras
   const getPackageTotal = (pkgId: string, basePrice: number) => {
+    const pkg = packages.find(p => p.id === pkgId);
     const photosCount = typeof extraPhotos[pkgId] === 'number' ? extraPhotos[pkgId] : 0;
     const videosCount = typeof extraVideos[pkgId] === 'number' ? extraVideos[pkgId] : 0;
-    return basePrice + (photosCount * 1) + (videosCount * 2);
+    const photoPrice = pkg?.extraPhotoPrice || 0;
+    const videoPrice = pkg?.extraVideoPrice || 0;
+    return basePrice + (photosCount * photoPrice) + (videosCount * videoPrice);
   };
 
   const getExtrasTotal = (pkgId: string) => {
+    const pkg = packages.find(p => p.id === pkgId);
     const photosCount = typeof extraPhotos[pkgId] === 'number' ? extraPhotos[pkgId] : 0;
     const videosCount = typeof extraVideos[pkgId] === 'number' ? extraVideos[pkgId] : 0;
-    return (photosCount * 1) + (videosCount * 2);
+    const photoPrice = pkg?.extraPhotoPrice || 0;
+    const videoPrice = pkg?.extraVideoPrice || 0;
+    return (photosCount * photoPrice) + (videosCount * videoPrice);
   };
 
   const handleExtraChange = (
@@ -348,10 +354,13 @@ function BookNowContent(): React.JSX.Element {
     name: pkg.packageName,
     basePrice: pkg.price,
     currencyId: pkg.currencyId,
-    currencySymbol: getCurrencySymbol(pkg.currencyId),
-    includedPhotos: 0,
-    includedVideos: 0,
+    currencySymbol: (pkg.currencyId ? getCurrencySymbol(pkg.currencyId) : '') || pkg.currencyAbbreviation || '',
+    includedPhotos: pkg.includedPhotos || 0,
+    includedVideos: pkg.includedVideos || 0,
+    extraPhotoPrice: pkg.extraPhotoPrice || 0,
+    extraVideoPrice: pkg.extraVideoPrice || 0,
     period: pkg.priceUnit || 'per event',
+    durationHours: pkg.durationHours || 0,
     badge: pkg.packageName,
     ...badgePresets[index % badgePresets.length],
     description: pkg.description || '',
@@ -1097,6 +1106,40 @@ function BookNowContent(): React.JSX.Element {
                     {pkg.period}
                   </div>
 
+                  {/* Duration */}
+                  {pkg.durationHours > 0 && (
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        fontSize: '13px',
+                        color: selectedPackage === pkg.id ? 'rgba(8,58,133,0.7)' : '#6b7280',
+                        marginBottom: '4px',
+                        transition: 'all 0.3s ease',
+                      }}
+                    >
+                      <i className="bi bi-clock" style={{ fontSize: '13px' }}></i>
+                      {pkg.durationHours} {pkg.durationHours === 1 ? 'hour' : 'hours'}
+                    </div>
+                  )}
+
+                  {/* Description */}
+                  {pkg.description && (
+                    <p
+                      style={{
+                        fontSize: '13px',
+                        color: selectedPackage === pkg.id ? '#4b5563' : '#6b7280',
+                        lineHeight: '1.5',
+                        margin: '8px 0 0 0',
+                        transition: 'all 0.3s ease',
+                      }}
+                    >
+                      {pkg.description}
+                    </p>
+                  )}
+
                   {/* Divider */}
                   <div
                     style={{
@@ -1154,8 +1197,8 @@ function BookNowContent(): React.JSX.Element {
                     ))}
                   </div>
 
-                  {/* Extra Photos & Videos Input - Only shows when selected and package has included counts */}
-                  {selectedPackage === pkg.id && (pkg.includedPhotos > 0 || pkg.includedVideos > 0) && (
+                  {/* Extra Photos & Videos Input - Only shows when selected and package supports extras */}
+                  {selectedPackage === pkg.id && ((pkg.includedPhotos > 0 || pkg.includedVideos > 0) || (pkg.extraPhotoPrice > 0 || pkg.extraVideoPrice > 0)) && (
                     <div
                       style={{
                         marginTop: '20px',
@@ -1193,7 +1236,7 @@ function BookNowContent(): React.JSX.Element {
                         textAlign: 'center',
                         marginBottom: '16px',
                       }}>
-                        Want even more? Add extras below. They&apos;ll be added on top of your included set at <strong style={{ color: '#10b981' }}>{pkg.currencySymbol}1/photo</strong> &amp; <strong style={{ color: '#10b981' }}>{pkg.currencySymbol}2/video</strong>.
+                        Want even more? Add extras below. They&apos;ll be added on top of your included set at <strong style={{ color: '#10b981' }}>{pkg.currencySymbol}{pkg.extraPhotoPrice}/photo</strong> &amp; <strong style={{ color: '#10b981' }}>{pkg.currencySymbol}{pkg.extraVideoPrice}/video</strong>.
                       </p>
 
                       {/* Extra Photos Input */}
@@ -1253,7 +1296,7 @@ function BookNowContent(): React.JSX.Element {
                                 color: '#10b981',
                               }}
                             >
-                              +${extraPhotos[pkg.id]}
+                              +{pkg.currencySymbol}{(extraPhotos[pkg.id] as number) * pkg.extraPhotoPrice}
                             </div>
                           )}
                         </div>
@@ -1321,7 +1364,7 @@ function BookNowContent(): React.JSX.Element {
                                 color: '#10b981',
                               }}
                             >
-                              +${(extraVideos[pkg.id] as number) * 2}
+                              +{pkg.currencySymbol}{(extraVideos[pkg.id] as number) * pkg.extraVideoPrice}
                             </div>
                           )}
                         </div>
@@ -1351,20 +1394,20 @@ function BookNowContent(): React.JSX.Element {
                           {typeof extraPhotos[pkg.id] === 'number' && (extraPhotos[pkg.id] as number) > 0 && (
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                               <span style={{ fontSize: '14px', color: '#10b981', fontWeight: '600' }}>
-                                +{extraPhotos[pkg.id]} extra photos x {pkg.currencySymbol}1
+                                +{extraPhotos[pkg.id]} extra photos x {pkg.currencySymbol}{pkg.extraPhotoPrice}
                               </span>
                               <span style={{ fontSize: '14px', color: '#10b981', fontWeight: '600' }}>
-                                +{pkg.currencySymbol}{extraPhotos[pkg.id]}
+                                +{pkg.currencySymbol}{(extraPhotos[pkg.id] as number) * pkg.extraPhotoPrice}
                               </span>
                             </div>
                           )}
                           {typeof extraVideos[pkg.id] === 'number' && (extraVideos[pkg.id] as number) > 0 && (
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                               <span style={{ fontSize: '14px', color: '#10b981', fontWeight: '600' }}>
-                                +{extraVideos[pkg.id]} extra videos x {pkg.currencySymbol}2
+                                +{extraVideos[pkg.id]} extra videos x {pkg.currencySymbol}{pkg.extraVideoPrice}
                               </span>
                               <span style={{ fontSize: '14px', color: '#10b981', fontWeight: '600' }}>
-                                +{pkg.currencySymbol}{(extraVideos[pkg.id] as number) * 2}
+                                +{pkg.currencySymbol}{(extraVideos[pkg.id] as number) * pkg.extraVideoPrice}
                               </span>
                             </div>
                           )}
