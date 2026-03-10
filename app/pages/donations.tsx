@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import Navbar from "../components/navbar";
 import Footer from "../components/footer";
 import { getCurrencies, createPublicDonation, type Currency as APICurrency } from '@/lib/APIs/public';
+import XentriPayModal from '../components/XentriPayModal';
 
 // Hook for counting animation
 const useCountUp = (end: number, duration: number = 2000, startCounting: boolean = false) => {
@@ -342,12 +343,6 @@ const HeroStatCard = ({
   );
 };
 
-// Payment methods for donations
-const paymentMethods = [
-  { id: 'mtn', name: 'MTN Mobile Money', image: '/mtn.png' },
-  { id: 'airtel', name: 'Airtel Money', image: '/airtel.png' },
-  { id: 'card', name: 'VISA & Master Card', image: '/cards.png' }
-];
 
 const Donations = () => {
   const [activeCategory, setActiveCategory] = useState(0);
@@ -363,12 +358,6 @@ const Donations = () => {
 
   // Payment modal state
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string | null>(null);
-  const [paymentPhone, setPaymentPhone] = useState('');
-  const [cardHolderName, setCardHolderName] = useState('');
-  const [cardNumber, setCardNumber] = useState('');
-  const [cardExpiry, setCardExpiry] = useState('');
-  const [cardCvv, setCardCvv] = useState('');
   const [donorFirstName, setDonorFirstName] = useState('');
   const [donorLastName, setDonorLastName] = useState('');
   const [donorEmail, setDonorEmail] = useState('');
@@ -378,39 +367,19 @@ const Donations = () => {
   const [donationError, setDonationError] = useState<string | null>(null);
   const [donationSuccess, setDonationSuccess] = useState(false);
 
+  // XentriPay modal state
+  const [showXentriPayModal, setShowXentriPayModal] = useState(false);
+
   // Reset payment modal state
   const resetPaymentModal = () => {
     setShowPaymentModal(false);
-    setSelectedPaymentMethod(null);
-    setPaymentPhone('');
-    setCardHolderName('');
-    setCardNumber('');
-    setCardExpiry('');
-    setCardCvv('');
   };
 
-  // Validate payment details
-  const isPaymentDetailsValid = (): boolean => {
-    if (!selectedPaymentMethod) return false;
-
-    const amount = getDisplayAmount();
-    if (!amount || amount <= 0) return false;
-
-    switch (selectedPaymentMethod) {
-      case 'mtn':
-      case 'airtel':
-        return paymentPhone.length >= 10;
-      case 'card':
-        return cardHolderName.trim() !== '' && cardNumber.length >= 13 && cardExpiry.length === 5 && cardCvv.length >= 3;
-      default:
-        return false;
-    }
-  };
-
-  // Handle donation submission
+  // Handle donation - record donation then open XentriPay for payment
   const handleDonation = async () => {
-    if (!isPaymentDetailsValid()) {
-      alert('Please fill in all required payment details');
+    const amount = getDisplayAmount();
+    if (!amount || amount <= 0) {
+      alert('Please select a donation amount');
       return;
     }
 
@@ -419,12 +388,10 @@ const Donations = () => {
     setDonationSuccess(false);
 
     try {
-      const amount = getDisplayAmount();
-      // Find the currency ID from API currencies matching current code
       const matchedCurrency = apiCurrencies.find(c => c.code === currency);
       const currencyId = matchedCurrency?.id || '';
 
-      const message = donorMessage || `${categories[activeCategory].title} donation via ${selectedPaymentMethod}`;
+      const message = donorMessage || `${categories[activeCategory].title} donation`;
       const donorFullName = isAnonymous ? undefined : `${donorFirstName} ${donorLastName}`.trim() || undefined;
 
       const response = await createPublicDonation({
@@ -433,23 +400,29 @@ const Donations = () => {
         donorName: donorFullName,
         donorEmail: isAnonymous ? undefined : donorEmail || undefined,
         message,
-        paymentMethod: selectedPaymentMethod || undefined,
       });
 
       if (!response.success) {
         throw new Error(response.error || 'Donation failed');
       }
 
-      setDonationSuccess(true);
-      setTimeout(() => {
-        resetPaymentModal();
-        setDonationSuccess(false);
-      }, 2000);
+      // Donation recorded, now open XentriPay for actual payment
+      setShowPaymentModal(false);
+      setShowXentriPayModal(true);
     } catch (err) {
       setDonationError(err instanceof Error ? err.message : 'Donation failed. Please try again.');
     } finally {
       setDonationLoading(false);
     }
+  };
+
+  // Handle XentriPay payment success
+  const handleXentriPaySuccess = () => {
+    setShowXentriPayModal(false);
+    setDonationSuccess(true);
+    setTimeout(() => {
+      setDonationSuccess(false);
+    }, 3000);
   };
 
   // Get display amounts based on selected currency
@@ -1847,250 +1820,6 @@ const Donations = () => {
               </p>
             </div>
 
-            {/* Payment Method Selection */}
-            <div style={{ marginBottom: '24px' }}>
-              <label style={{
-                display: 'block',
-                fontSize: '14px',
-                fontWeight: 600,
-                color: '#333',
-                marginBottom: '12px'
-              }}>Select Payment Method</label>
-              <div style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '10px'
-              }}>
-                {paymentMethods.map((method) => (
-                  <button
-                    key={method.id}
-                    onClick={() => setSelectedPaymentMethod(method.id)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '14px',
-                      padding: '14px 16px',
-                      backgroundColor: selectedPaymentMethod === method.id ? 'rgba(8, 58, 133, 0.08)' : '#f8f9fa',
-                      border: '2px solid',
-                      borderColor: selectedPaymentMethod === method.id ? '#083A85' : '#e0e0e0',
-                      borderRadius: '14px',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
-                      width: '100%',
-                      textAlign: 'left'
-                    }}
-                    onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
-                  >
-                    <div style={{
-                      width: '48px',
-                      height: '48px',
-                      borderRadius: '12px',
-                      overflow: 'hidden',
-                      flexShrink: 0,
-                      backgroundColor: '#fff',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      border: '1px solid #e0e0e0'
-                    }}>
-                      <img
-                        src={method.image}
-                        alt={method.name}
-                        style={{
-                          width: '100%',
-                          height: '100%',
-                          objectFit: 'cover'
-                        }}
-                      />
-                    </div>
-                    <span style={{
-                      color: '#333',
-                      fontSize: '15px',
-                      fontWeight: 500
-                    }}>{method.name}</span>
-                    {selectedPaymentMethod === method.id && (
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill="#083A85" style={{ marginLeft: 'auto' }}>
-                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                      </svg>
-                    )}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* MTN/Airtel Mobile Money Input */}
-            {(selectedPaymentMethod === 'mtn' || selectedPaymentMethod === 'airtel') && (
-              <div style={{ marginBottom: '24px' }}>
-                <label style={{
-                  display: 'block',
-                  fontSize: '14px',
-                  fontWeight: 600,
-                  color: '#333',
-                  marginBottom: '8px'
-                }}>Phone Number *</label>
-                <input
-                  type="tel"
-                  value={paymentPhone}
-                  onChange={(e) => setPaymentPhone(e.target.value.replace(/\D/g, '').slice(0, 12))}
-                  placeholder={selectedPaymentMethod === 'mtn' ? "e.g., 078XXXXXXX" : "e.g., 073XXXXXXX"}
-                  style={{
-                    width: '100%',
-                    padding: '14px 16px',
-                    backgroundColor: '#f8f9fa',
-                    border: '2px solid #e0e0e0',
-                    borderRadius: '12px',
-                    color: '#333',
-                    fontSize: '15px',
-                    outline: 'none',
-                    transition: 'border-color 0.2s',
-                    boxSizing: 'border-box'
-                  }}
-                  onFocus={(e) => e.currentTarget.style.borderColor = '#083A85'}
-                  onBlur={(e) => e.currentTarget.style.borderColor = '#e0e0e0'}
-                />
-                <p style={{
-                  fontSize: '12px',
-                  color: '#888',
-                  marginTop: '6px',
-                  marginBottom: 0
-                }}>You will receive a payment prompt on this number</p>
-              </div>
-            )}
-
-            {/* Card Payment Input */}
-            {selectedPaymentMethod === 'card' && (
-              <div style={{ marginBottom: '24px' }}>
-                <div style={{ marginBottom: '14px' }}>
-                  <label style={{
-                    display: 'block',
-                    fontSize: '14px',
-                    fontWeight: 600,
-                    color: '#333',
-                    marginBottom: '8px'
-                  }}>Card Holder Name *</label>
-                  <input
-                    type="text"
-                    value={cardHolderName}
-                    onChange={(e) => setCardHolderName(e.target.value)}
-                    placeholder="Name on card"
-                    style={{
-                      width: '100%',
-                      padding: '14px 16px',
-                      backgroundColor: '#f8f9fa',
-                      border: '2px solid #e0e0e0',
-                      borderRadius: '12px',
-                      color: '#333',
-                      fontSize: '15px',
-                      outline: 'none',
-                      transition: 'border-color 0.2s',
-                      boxSizing: 'border-box'
-                    }}
-                    onFocus={(e) => e.currentTarget.style.borderColor = '#083A85'}
-                    onBlur={(e) => e.currentTarget.style.borderColor = '#e0e0e0'}
-                  />
-                </div>
-                <div style={{ marginBottom: '14px' }}>
-                  <label style={{
-                    display: 'block',
-                    fontSize: '14px',
-                    fontWeight: 600,
-                    color: '#333',
-                    marginBottom: '8px'
-                  }}>Card Number *</label>
-                  <input
-                    type="text"
-                    value={cardNumber}
-                    onChange={(e) => setCardNumber(e.target.value.replace(/\D/g, '').slice(0, 16))}
-                    placeholder="1234 5678 9012 3456"
-                    style={{
-                      width: '100%',
-                      padding: '14px 16px',
-                      backgroundColor: '#f8f9fa',
-                      border: '2px solid #e0e0e0',
-                      borderRadius: '12px',
-                      color: '#333',
-                      fontSize: '15px',
-                      outline: 'none',
-                      transition: 'border-color 0.2s',
-                      boxSizing: 'border-box',
-                      letterSpacing: '2px'
-                    }}
-                    onFocus={(e) => e.currentTarget.style.borderColor = '#083A85'}
-                    onBlur={(e) => e.currentTarget.style.borderColor = '#e0e0e0'}
-                  />
-                </div>
-                <div style={{ display: 'flex', gap: '14px' }}>
-                  <div style={{ flex: 1 }}>
-                    <label style={{
-                      display: 'block',
-                      fontSize: '14px',
-                      fontWeight: 600,
-                      color: '#333',
-                      marginBottom: '8px'
-                    }}>Expiry Date *</label>
-                    <input
-                      type="text"
-                      value={cardExpiry}
-                      onChange={(e) => {
-                        let value = e.target.value.replace(/\D/g, '').slice(0, 4);
-                        if (value.length >= 2) {
-                          value = value.slice(0, 2) + '/' + value.slice(2);
-                        }
-                        setCardExpiry(value);
-                      }}
-                      placeholder="MM/YY"
-                      maxLength={5}
-                      style={{
-                        width: '100%',
-                        padding: '14px 16px',
-                        backgroundColor: '#f8f9fa',
-                        border: '2px solid #e0e0e0',
-                        borderRadius: '12px',
-                        color: '#333',
-                        fontSize: '15px',
-                        outline: 'none',
-                        transition: 'border-color 0.2s',
-                        boxSizing: 'border-box'
-                      }}
-                      onFocus={(e) => e.currentTarget.style.borderColor = '#083A85'}
-                      onBlur={(e) => e.currentTarget.style.borderColor = '#e0e0e0'}
-                    />
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <label style={{
-                      display: 'block',
-                      fontSize: '14px',
-                      fontWeight: 600,
-                      color: '#333',
-                      marginBottom: '8px'
-                    }}>CVV *</label>
-                    <input
-                      type="password"
-                      value={cardCvv}
-                      onChange={(e) => setCardCvv(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                      placeholder="***"
-                      maxLength={4}
-                      style={{
-                        width: '100%',
-                        padding: '14px 16px',
-                        backgroundColor: '#f8f9fa',
-                        border: '2px solid #e0e0e0',
-                        borderRadius: '12px',
-                        color: '#333',
-                        fontSize: '15px',
-                        outline: 'none',
-                        transition: 'border-color 0.2s',
-                        boxSizing: 'border-box'
-                      }}
-                      onFocus={(e) => e.currentTarget.style.borderColor = '#083A85'}
-                      onBlur={(e) => e.currentTarget.style.borderColor = '#e0e0e0'}
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-
             {/* Error message */}
             {donationError && (
               <div style={{
@@ -2106,54 +1835,36 @@ const Donations = () => {
               </div>
             )}
 
-            {/* Success message */}
-            {donationSuccess && (
-              <div style={{
-                padding: '12px 16px',
-                marginBottom: '16px',
-                backgroundColor: '#F0FDF4',
-                border: '1px solid #22C55E',
-                borderRadius: '12px',
-                color: '#16A34A',
-                fontSize: '14px',
-                fontWeight: 500,
-              }}>
-                Donation successful! Thank you for your generosity.
-              </div>
-            )}
-
-            {/* Confirm Donation Button */}
+            {/* Proceed to Payment Button */}
             <button
               onClick={handleDonation}
-              disabled={!isPaymentDetailsValid() || donationLoading}
+              disabled={donationLoading || getDisplayAmount() <= 0}
               style={{
                 width: '100%',
                 padding: '16px 24px',
-                background: (!isPaymentDetailsValid() || donationLoading)
+                background: (donationLoading || getDisplayAmount() <= 0)
                   ? '#e0e0e0'
                   : 'linear-gradient(135deg, #083A85 0%, #0d4a9e 100%)',
                 border: 'none',
                 borderRadius: '14px',
-                color: (!isPaymentDetailsValid() || donationLoading) ? '#999' : '#fff',
+                color: (donationLoading || getDisplayAmount() <= 0) ? '#999' : '#fff',
                 fontSize: '16px',
                 fontWeight: 600,
-                cursor: (!isPaymentDetailsValid() || donationLoading) ? 'not-allowed' : 'pointer',
+                cursor: (donationLoading || getDisplayAmount() <= 0) ? 'not-allowed' : 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '10px',
                 transition: 'all 0.3s ease',
-                boxShadow: (!isPaymentDetailsValid() || donationLoading)
-                  ? 'none'
-                  : '0 4px 15px rgba(8, 58, 133, 0.3)'
+                boxShadow: (donationLoading || getDisplayAmount() <= 0) ? 'none' : '0 4px 15px rgba(8, 58, 133, 0.3)',
               }}
-              onMouseEnter={(e) => { if (isPaymentDetailsValid() && !donationLoading) e.currentTarget.style.transform = 'translateY(-2px)'; }}
+              onMouseEnter={(e) => { if (!donationLoading && getDisplayAmount() > 0) e.currentTarget.style.transform = 'translateY(-2px)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
               </svg>
-              {donationLoading ? 'Processing...' : `Confirm Donation ${formatCurrency(getDisplayAmount(), currency)}`}
+              {donationLoading ? 'Processing...' : `Proceed to Payment ${formatCurrency(getDisplayAmount(), currency)}`}
             </button>
 
             {/* Security Note */}
@@ -2164,7 +1875,7 @@ const Donations = () => {
               gap: '8px',
               marginTop: '16px',
               color: '#888',
-              fontSize: '13px'
+              fontSize: '13px',
             }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
@@ -2175,6 +1886,40 @@ const Donations = () => {
           </div>
         </div>
       )}
+
+      {/* XentriPay Payment Modal */}
+      <XentriPayModal
+        isOpen={showXentriPayModal}
+        onClose={() => setShowXentriPayModal(false)}
+        onSuccess={handleXentriPaySuccess}
+        amount={getDisplayAmount()}
+        currencyCode={currency}
+        currencyId={apiCurrencies.find(c => c.code === currency)?.id || ''}
+        paymentType="donation"
+        title="Complete Your Donation"
+        subtitle={`Donating ${formatCurrency(getDisplayAmount(), currency)} to ${categories[activeCategory].title}`}
+      />
+
+      {/* Success Toast */}
+      {donationSuccess && (
+        <div style={{
+          position: 'fixed',
+          bottom: '30px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          padding: '16px 28px',
+          backgroundColor: '#16A34A',
+          color: '#fff',
+          borderRadius: '14px',
+          fontSize: '15px',
+          fontWeight: 600,
+          zIndex: 3000,
+          boxShadow: '0 8px 24px rgba(22, 163, 74, 0.3)',
+        }}>
+          Donation successful! Thank you for your generosity.
+        </div>
+      )}
+
     </div>
   );
 };

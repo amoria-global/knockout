@@ -91,15 +91,10 @@ function getValidProfilePicture(
 }
 
 /**
- * Rewrite backend HTTP image URLs to go through our HTTPS proxy on deployment.
- * e.g. {API_URL}/uploads/photo.jpg → /api/proxy/uploads/photo.jpg
+ * Pass through image URLs as-is (no rewriting needed).
  */
 function normalizeImageUrl(url: string | undefined): string | undefined {
   if (!url) return undefined;
-  const apiBase = (process.env.NEXT_PUBLIC_API_URL!).replace(/\/$/, '');
-  if (typeof window !== 'undefined' && url.startsWith(apiBase) && window.location.origin !== apiBase) {
-    return url.replace(apiBase, '/api/proxy');
-  }
   return url;
 }
 

@@ -6,7 +6,7 @@ import Navbar from '../components/navbar';
 import { getAlbumByCode, type AlbumPhoto, type AlbumPricing } from '@/lib/APIs/public/get-album/route';
 import { uploadSelfieForRecognition, type MatchedPhoto } from '@/lib/APIs/customer/facial-recognition/route';
 import { getCurrencies, type Currency } from '@/lib/APIs/public';
-import { recordPhotoPurchase } from '@/lib/APIs/payments/route';
+import XentriPayModal from '../components/XentriPayModal';
 
 const FindMyPhotos = () => {
   const searchParams = useSearchParams();
@@ -60,15 +60,8 @@ const FindMyPhotos = () => {
   // Download payment modal
   const [showDownloadModal, setShowDownloadModal] = useState(false);
   const [downloadTarget, setDownloadTarget] = useState<{ id: string; url: string; alt: string; price?: number } | null>(null);
-  const [dlPaymentMethod, setDlPaymentMethod] = useState<string | null>(null);
-  const [dlPhone, setDlPhone] = useState('');
-  const [dlCardNumber, setDlCardNumber] = useState('');
-  const [dlCardExpiry, setDlCardExpiry] = useState('');
-  const [dlCardCvv, setDlCardCvv] = useState('');
-  const [dlCardHolderName, setDlCardHolderName] = useState('');
-  const [dlLoading, setDlLoading] = useState(false);
-  const [dlError, setDlError] = useState<string | null>(null);
-  const [dlSuccess, setDlSuccess] = useState(false);
+  // XentriPay modal state for photo purchases
+  const [showXentriPayModal, setShowXentriPayModal] = useState(false);
 
   // Auto-fill invite code from URL param and load album (e.g. /find-my-photos?code=ABC123)
   useEffect(() => {
@@ -276,38 +269,9 @@ const FindMyPhotos = () => {
     }).catch(() => {});
   }, []);
 
-  // Payment methods
-  const paymentMethods = [
-    { id: 'mtn', name: 'MTN Mobile Money', image: '/mtn.png' },
-    { id: 'airtel', name: 'Airtel Money', image: '/airtel.png' },
-    { id: 'card', name: 'VISA & Master Card', image: '/cards.png' },
-  ];
-
   const resetDownloadModal = () => {
     setShowDownloadModal(false);
     setDownloadTarget(null);
-    setDlPaymentMethod(null);
-    setDlPhone('');
-    setDlCardNumber('');
-    setDlCardExpiry('');
-    setDlCardCvv('');
-    setDlCardHolderName('');
-    setDlLoading(false);
-    setDlError(null);
-    setDlSuccess(false);
-  };
-
-  const isDlPaymentValid = () => {
-    if (!dlPaymentMethod) return false;
-    switch (dlPaymentMethod) {
-      case 'mtn':
-      case 'airtel':
-        return dlPhone.length >= 10;
-      case 'card':
-        return dlCardNumber.length >= 16 && dlCardExpiry.length >= 4 && dlCardCvv.length >= 3 && dlCardHolderName.trim() !== '';
-      default:
-        return false;
-    }
   };
 
   const triggerPhotoDownload = async (url: string, filename: string) => {
@@ -327,32 +291,20 @@ const FindMyPhotos = () => {
     }
   };
 
+  // Open XentriPay modal for photo purchase payment
   const handleDownloadPayment = async () => {
-    if (!downloadTarget || !dlPaymentMethod) return;
-    setDlLoading(true);
-    setDlError(null);
-    try {
-      const amount = String(albumPricing?.pricePerImage ?? downloadTarget.price ?? 0);
-      const currencyId = albumPricing?.currencyId || (currencies.length > 0 ? currencies[0].id : '');
-      const response = await recordPhotoPurchase({
-        eventId: albumEventId || downloadTarget.id,
-        amount,
-        currencyId,
-        remarks: `Photo download via ${dlPaymentMethod}`,
-      });
-      if (!response.success) {
-        throw new Error(response.error || 'Payment failed');
-      }
-      setDlSuccess(true);
-      setTimeout(() => {
-        triggerPhotoDownload(downloadTarget.url, `photo-${downloadTarget.id}.jpg`);
-        resetDownloadModal();
-      }, 1200);
-    } catch (err) {
-      setDlError(err instanceof Error ? err.message : 'Payment failed. Please try again.');
-    } finally {
-      setDlLoading(false);
+    if (!downloadTarget) return;
+    setShowDownloadModal(false);
+    setShowXentriPayModal(true);
+  };
+
+  // Handle XentriPay payment success for photo purchase
+  const handlePhotoPaymentSuccess = () => {
+    setShowXentriPayModal(false);
+    if (downloadTarget) {
+      triggerPhotoDownload(downloadTarget.url, `photo-${downloadTarget.id}.jpg`);
     }
+    resetDownloadModal();
   };
 
   const handleDownloadClick = (photo: { id: string; url: string; alt: string; price?: number }) => {
@@ -1453,152 +1405,35 @@ const FindMyPhotos = () => {
               </span>
             </div>
 
-            {/* Payment Method */}
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#efeff1', marginBottom: '12px' }}>
-                Select Payment Method
-              </label>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {paymentMethods.map((method) => (
-                  <button
-                    key={method.id}
-                    onClick={() => setDlPaymentMethod(method.id)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '12px',
-                      padding: '12px 16px',
-                      backgroundColor: dlPaymentMethod === method.id ? 'rgba(3,150,156,0.15)' : '#27272a',
-                      border: `2px solid ${dlPaymentMethod === method.id ? '#03969c' : 'rgba(255,255,255,0.1)'}`,
-                      borderRadius: '12px',
-                      cursor: 'pointer',
-                      width: '100%',
-                      textAlign: 'left',
-                      transition: 'all 0.2s',
-                    }}
-                    onMouseEnter={(e) => { if (dlPaymentMethod !== method.id) e.currentTarget.style.borderColor = 'rgba(3,150,156,0.5)'; }}
-                    onMouseLeave={(e) => { if (dlPaymentMethod !== method.id) e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; }}
-                  >
-                    <div style={{ width: '44px', height: '44px', borderRadius: '10px', overflow: 'hidden', flexShrink: 0 }}>
-                      <img src={method.image} alt={method.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    </div>
-                    <span style={{ color: '#efeff1', fontSize: '14px', fontWeight: 500 }}>{method.name}</span>
-                    {dlPaymentMethod === method.id && (
-                      <span style={{ marginLeft: 'auto', color: '#03969c', fontSize: '20px' }}>✓</span>
-                    )}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Mobile Money phone */}
-            {(dlPaymentMethod === 'mtn' || dlPaymentMethod === 'airtel') && (
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#efeff1', marginBottom: '8px' }}>
-                  Your Phone Number *
-                </label>
-                <input
-                  type="tel"
-                  value={dlPhone}
-                  onChange={(e) => setDlPhone(e.target.value.replace(/\D/g, '').slice(0, 12))}
-                  placeholder={dlPaymentMethod === 'mtn' ? 'e.g., 0781234567' : 'e.g., 0721234567'}
-                  style={{
-                    width: '100%', padding: '12px 16px',
-                    backgroundColor: '#27272a', border: '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: '12px', color: '#efeff1', fontSize: '14px',
-                    outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.2s',
-                  }}
-                  onFocus={(e) => e.currentTarget.style.borderColor = '#03969c'}
-                  onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'}
-                />
-                <p style={{ fontSize: '11px', color: '#71717a', marginTop: '6px', marginBottom: 0 }}>
-                  You will receive a payment confirmation SMS on this number
-                </p>
-              </div>
-            )}
-
-            {/* Card details */}
-            {dlPaymentMethod === 'card' && (
-              <div style={{ marginBottom: '20px' }}>
-                <div style={{ marginBottom: '12px' }}>
-                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#efeff1', marginBottom: '8px' }}>Card Holder Name *</label>
-                  <input type="text" value={dlCardHolderName} onChange={(e) => setDlCardHolderName(e.target.value)} placeholder="Name on card"
-                    style={{ width: '100%', padding: '12px 16px', backgroundColor: '#27272a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#efeff1', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
-                    onFocus={(e) => e.currentTarget.style.borderColor = '#03969c'}
-                    onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'} />
-                </div>
-                <div style={{ marginBottom: '12px' }}>
-                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#efeff1', marginBottom: '8px' }}>Card Number *</label>
-                  <input type="text" value={dlCardNumber} onChange={(e) => setDlCardNumber(e.target.value.replace(/\D/g, '').slice(0, 16))} placeholder="1234 5678 9012 3456"
-                    style={{ width: '100%', padding: '12px 16px', backgroundColor: '#27272a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#efeff1', fontSize: '14px', outline: 'none', boxSizing: 'border-box', letterSpacing: '2px' }}
-                    onFocus={(e) => e.currentTarget.style.borderColor = '#03969c'}
-                    onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'} />
-                </div>
-                <div style={{ display: 'flex', gap: '12px' }}>
-                  <div style={{ flex: 1 }}>
-                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#efeff1', marginBottom: '8px' }}>Expiry Date *</label>
-                    <input type="text" value={dlCardExpiry}
-                      onChange={(e) => { let v = e.target.value.replace(/\D/g, '').slice(0, 4); if (v.length >= 2) v = v.slice(0, 2) + '/' + v.slice(2); setDlCardExpiry(v); }}
-                      placeholder="MM/YY" maxLength={5}
-                      style={{ width: '100%', padding: '12px 16px', backgroundColor: '#27272a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#efeff1', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
-                      onFocus={(e) => e.currentTarget.style.borderColor = '#03969c'}
-                      onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'} />
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#efeff1', marginBottom: '8px' }}>CVV *</label>
-                    <input type="password" value={dlCardCvv} onChange={(e) => setDlCardCvv(e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="***" maxLength={4}
-                      style={{ width: '100%', padding: '12px 16px', backgroundColor: '#27272a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#efeff1', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
-                      onFocus={(e) => e.currentTarget.style.borderColor = '#03969c'}
-                      onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'} />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Error */}
-            {dlError && (
-              <div style={{ padding: '10px 14px', marginBottom: '12px', backgroundColor: 'rgba(239,68,68,0.15)', border: '1px solid #EF4444', borderRadius: '10px', color: '#EF4444', fontSize: '13px' }}>
-                {dlError}
-              </div>
-            )}
-
-            {/* Success */}
-            {dlSuccess && (
-              <div style={{ padding: '10px 14px', marginBottom: '12px', backgroundColor: 'rgba(16,185,129,0.15)', border: '1px solid #10b981', borderRadius: '10px', color: '#10b981', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                ✓ Payment successful! Starting download…
-              </div>
-            )}
-
-            {/* Pay & Download button */}
+            {/* Proceed to Payment button */}
             <button
               onClick={handleDownloadPayment}
-              disabled={!isDlPaymentValid() || dlLoading || dlSuccess}
               style={{
                 width: '100%',
                 padding: '14px 24px',
-                background: (!isDlPaymentValid() || dlLoading || dlSuccess) ? '#3f3f46' : 'linear-gradient(135deg, #03969c 0%, #026d72 100%)',
+                background: 'linear-gradient(135deg, #03969c 0%, #026d72 100%)',
                 border: 'none',
                 borderRadius: '12px',
-                color: (!isDlPaymentValid() || dlLoading || dlSuccess) ? '#71717a' : '#fff',
+                color: '#fff',
                 fontSize: '15px',
                 fontWeight: 600,
-                cursor: (!isDlPaymentValid() || dlLoading || dlSuccess) ? 'not-allowed' : 'pointer',
+                cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '8px',
                 transition: 'all 0.3s ease',
-                boxShadow: (!isDlPaymentValid() || dlLoading || dlSuccess) ? 'none' : '0 4px 15px rgba(3,150,156,0.3)',
+                boxShadow: '0 4px 15px rgba(3,150,156,0.3)',
               }}
-              onMouseEnter={(e) => { if (isDlPaymentValid() && !dlLoading && !dlSuccess) { e.currentTarget.style.transform = 'scale(1.02)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(3,150,156,0.4)'; } }}
-              onMouseLeave={(e) => { if (isDlPaymentValid() && !dlLoading && !dlSuccess) { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 4px 15px rgba(3,150,156,0.3)'; } }}
+              onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.02)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(3,150,156,0.4)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 4px 15px rgba(3,150,156,0.3)'; }}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                 <polyline points="7 10 12 15 17 10"/>
                 <line x1="12" y1="15" x2="12" y2="3"/>
               </svg>
-              {dlLoading ? 'Processing...' : dlSuccess ? 'Downloading…' : `Pay & Download (${albumPricing?.currencySymbol ?? 'UGX'} ${(albumPricing?.pricePerImage ?? downloadTarget.price ?? 0).toLocaleString()})`}
+              Proceed to Payment
             </button>
           </div>
         </div>
@@ -1999,6 +1834,20 @@ const FindMyPhotos = () => {
           </div>
         </div>
       )}
+
+      {/* ── XentriPay Payment Modal ── */}
+      <XentriPayModal
+        isOpen={showXentriPayModal}
+        onClose={() => { setShowXentriPayModal(false); resetDownloadModal(); }}
+        onSuccess={handlePhotoPaymentSuccess}
+        amount={albumPricing?.pricePerImage ?? downloadTarget?.price ?? 0}
+        currencyCode={albumPricing?.currencyAbbreviation ?? 'RWF'}
+        currencyId={albumPricing?.currencyId ?? ''}
+        paymentType="photo_purchase"
+        eventId={albumEventId}
+        title="Pay for Photo"
+        subtitle={`Download this photo for ${albumPricing?.currencySymbol ?? ''}${(albumPricing?.pricePerImage ?? downloadTarget?.price ?? 0).toLocaleString()}`}
+      />
 
       {/* ── Embedded Styles ── */}
       <style>{`
