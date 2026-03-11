@@ -10,14 +10,13 @@ import { getAuthToken } from '@/lib/api/client';
 import { getDashboardUrlWithToken } from '@/lib/utils/dashboard-url';
 import { useToast } from '@/lib/notifications/ToastProvider';
 import { locales, languageNames, type Locale } from '../../i18n';
-import { getCategories, getPublicEvents, type PhotographerCategory } from '@/lib/APIs/public';
+import { getPublicEvents, getPhotographers, getPhotographerById } from '@/lib/APIs/public';
 import { getStreamVideo } from '@/lib/APIs/streams/route';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 
 // Map category names to icons
 const categoryIcons: Record<string, string> = {
   'wedding': 'bi-heart-fill',
-  'weeding': 'bi-heart-fill', // typo in backend
   'portrait': 'bi-person-fill',
   'event': 'bi-calendar-event-fill',
   'commercial': 'bi-briefcase-fill',
@@ -42,10 +41,7 @@ const EVENT_CATEGORY_BASE: { value: string; icon: string; translationKey: string
 
 // Map category names to translation keys
 const getCategoryTranslationKey = (name: string): string => {
-  const normalized = name.toLowerCase();
-  // Handle common typos from backend
-  if (normalized === 'weeding') return 'wedding';
-  return normalized;
+  return name.toLowerCase();
 };
 
 const AmoriaKNavbar = () => {
@@ -92,21 +88,58 @@ const AmoriaKNavbar = () => {
     return path;
   };
 
-  // Fetch photographer categories from API
+  // Fetch photographer categories — derive cards directly from photographer specialties
   useEffect(() => {
-    const fetchCategories = async () => {
+    const fetchCategoriesAndSpecialties = async () => {
       try {
-        const response = await getCategories();
-        if (response.success && response.data) {
-          const categories = response.data
-            .filter((cat: PhotographerCategory) => cat.isActive)
-            .map((cat: PhotographerCategory) => ({
-              value: cat.name.toLowerCase(),
-              translationKey: getCategoryTranslationKey(cat.name),
-              icon: getIconForCategory(cat.name),
-            }));
-          setPhotographerCategories(categories);
+        const pgResponse = await getPhotographers({ size: 100 });
+
+        if (!pgResponse.success || !pgResponse.data) {
+          setCategoriesLoading(false);
+          return;
         }
+
+        const allPhotographers = pgResponse.data.content;
+        const seen = new Map<string, { value: string; translationKey: string; icon: string }>();
+
+        // If list response includes specialties, derive cards from them
+        allPhotographers.forEach((p) => {
+          (p.specialties ?? []).forEach((s) => {
+            const name = typeof s === 'string' ? s : (s as { id: string; name: string }).name;
+            const key = name.toLowerCase();
+            if (!seen.has(key)) {
+              seen.set(key, {
+                value: key,
+                translationKey: getCategoryTranslationKey(name),
+                icon: getIconForCategory(name),
+              });
+            }
+          });
+        });
+
+        // If list response doesn't include specialties, fetch detail for each photographer
+        if (seen.size === 0 && allPhotographers.length > 0) {
+          const details = await Promise.allSettled(
+            allPhotographers.map((p) => getPhotographerById(p.id))
+          );
+          details.forEach((result) => {
+            if (result.status === 'fulfilled' && result.value.success && result.value.data) {
+              (result.value.data.specialties ?? []).forEach((s) => {
+                const name = typeof s === 'string' ? s : (s as { id: string; name: string }).name;
+                const key = name.toLowerCase();
+                if (!seen.has(key)) {
+                  seen.set(key, {
+                    value: key,
+                    translationKey: getCategoryTranslationKey(name),
+                    icon: getIconForCategory(name),
+                  });
+                }
+              });
+            }
+          });
+        }
+
+        setPhotographerCategories([...seen.values()]);
       } catch (error) {
         console.error('Failed to fetch categories:', error);
       } finally {
@@ -114,7 +147,7 @@ const AmoriaKNavbar = () => {
       }
     };
 
-    fetchCategories();
+    fetchCategoriesAndSpecialties();
   }, []);
 
   // Fetch public events to derive active categories and live status
