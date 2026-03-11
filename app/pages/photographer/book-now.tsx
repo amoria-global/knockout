@@ -1,81 +1,16 @@
 'use client';
 import React, { useState, useEffect, Suspense } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import AmoriaKNavbar from '../../components/navbar';
 import { useAuth } from '@/app/providers/AuthProvider';
-import { createEventBooking, parseTimeToApiString } from '@/lib/APIs/bookings/create-booking/route';
+import { getAuthToken } from '@/lib/api/client';
 import { getPublicPhotographerPackages, type PublicPackage } from '@/lib/APIs/packages/get-packages/route';
-import { getPhotographers, type Photographer, getCurrencies, type Currency, getBookedDates, type BookedDate, formatTimeValue } from '@/lib/APIs/public';
-import { getEventTypes, type EventType } from '@/lib/APIs/public/get-event-types/route';
+import { getPhotographers, type Photographer, getCurrencies, type Currency } from '@/lib/APIs/public';
 
-// Default images for fallback
-const DEFAULT_PROFILE_IMAGE = 'https://i.pinimg.com/1200x/e9/1f/59/e91f59ed85a702d7252f2b0c8e02c7d2.jpg';
-const DEFAULT_COVER_IMAGE = 'https://i.pinimg.com/736x/8b/89/70/8b8970fb8745252e4d36f60305967d37.jpg';
-
-// Helper function to get valid profile image
-const getProfileImage = (photographer: Photographer | null): string => {
-  if (!photographer) return DEFAULT_PROFILE_IMAGE;
-  if (photographer.profilePicture && !photographer.profilePicture.includes('/null')) {
-    return photographer.profilePicture;
-  }
-  return DEFAULT_PROFILE_IMAGE;
-};
-
-// Helper function to get valid cover image
-const getCoverImage = (photographer: Photographer | null): string => {
-  if (!photographer) return DEFAULT_COVER_IMAGE;
-  if (photographer.coverPicture && !photographer.coverPicture.includes('/null')) {
-    return photographer.coverPicture;
-  }
-  return DEFAULT_COVER_IMAGE;
-};
-
-// Helper to format time from string or {hour, minute} object
-const fmtTime = (t: string | { hour: number; minute: number }): string => {
-  if (typeof t === 'string') return t;
-  const period = t.hour >= 12 ? 'PM' : 'AM';
-  const h = t.hour === 0 ? 12 : t.hour > 12 ? t.hour - 12 : t.hour;
-  return `${h}:${t.minute.toString().padStart(2, '0')} ${period}`;
-};
-
-// Helper function to format availability from API data
-const formatAvailability = (availabilities?: { dayOfWeek: string; isAvailable?: boolean }[]): string => {
-  if (!availabilities || availabilities.length === 0) return 'Contact for availability';
-  const availableDays = availabilities
-    .filter(a => a.isAvailable !== false)
-    .map(a => a.dayOfWeek);
-  if (availableDays.length === 0) return 'Contact for availability';
-  if (availableDays.length === 7) return 'Monday - Sunday';
-  return `${availableDays[0]} - ${availableDays[availableDays.length - 1]}`;
-};
-
-// Helper function to format working hours from availability data
-const formatWorkingHours = (availabilities?: { startTime: string | { hour: number; minute: number }; endTime: string | { hour: number; minute: number }; isAvailable?: boolean }[]): string => {
-  if (!availabilities || availabilities.length === 0) return 'Contact for hours';
-  const availableSlots = availabilities.filter(a => a.isAvailable !== false);
-  if (availableSlots.length === 0) return 'Contact for hours';
-  const first = availableSlots[0];
-  return `${fmtTime(first.startTime)} - ${fmtTime(first.endTime)}`;
-};
-
-const FALLBACK_EVENT_TYPES = [
-  'Wedding',
-  'Birthday',
-  'Corporate Event',
-  'Concert',
-  'Graduation',
-  'Baby Shower',
-  'Anniversary',
-  'Conference',
-  'Fashion Show',
-  'Sports Event',
-  'Other',
-];
 
 function BookNowContent(): React.JSX.Element {
   const searchParams = useSearchParams();
-  const router = useRouter();
   const photographerId = searchParams.get('id');
   const preselectedPackageId = searchParams.get('packageId');
   const t = useTranslations('booking.step1');
@@ -83,9 +18,9 @@ function BookNowContent(): React.JSX.Element {
 
   const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
-  const [bookingInProgress, setBookingInProgress] = useState(false);
   const [bookingError, setBookingError] = useState<string | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [showBookingBanner, setShowBookingBanner] = useState(false);
   const [apiPackages, setApiPackages] = useState<PublicPackage[]>([]);
   const [apiPackagesLoaded, setApiPackagesLoaded] = useState(false);
   const [currencyMap, setCurrencyMap] = useState<Map<string, Currency>>(new Map());
@@ -95,58 +30,14 @@ function BookNowContent(): React.JSX.Element {
   const [photographerLoading, setPhotographerLoading] = useState(true);
   const [photographerError, setPhotographerError] = useState<string | null>(null);
 
-  // Event types from API (with fallback)
-  const [eventTypes, setEventTypes] = useState<string[]>(FALLBACK_EVENT_TYPES);
-
   // Extra photos & videos state per package
   const [extraPhotos, setExtraPhotos] = useState<Record<string, number | ''>>({ essential: '', custom: '', premium: '' });
   const [extraVideos, setExtraVideos] = useState<Record<string, number | ''>>({ essential: '', custom: '', premium: '' });
 
-  // Event details form state
-  const [eventDate, setEventDate] = useState('');
-  const [eventTime, setEventTime] = useState('');
-  const [eventEndTime, setEventEndTime] = useState('');
-  const [eventType, setEventType] = useState('');
-  const [eventLocation, setEventLocation] = useState('');
-  const [eventNotes, setEventNotes] = useState('');
-  const [eventTitle, setEventTitle] = useState('');
-  const [eventDescription, setEventDescription] = useState('');
-  const [eventOrganizer, setEventOrganizer] = useState('');
-  const [eventVisibility, setEventVisibility] = useState('PUBLIC');
-
-  // Booked dates state
-  const [bookedDates, setBookedDates] = useState<BookedDate[]>([]);
-  const [bookedDatesLoading, setBookedDatesLoading] = useState(false);
-
-  // Fetch booked dates when photographer is selected
+  // Validation checks (only for logged-in users who are photographers or self-booking)
   useEffect(() => {
-    if (!photographerId) return;
-    setBookedDatesLoading(true);
-    const today = new Date();
-    const from = today.toISOString().split('T')[0];
-    const to = new Date(today.getFullYear(), today.getMonth() + 3, today.getDate()).toISOString().split('T')[0];
-    getBookedDates({ photographerId, from, to })
-      .then(res => {
-        if (res.success && res.data) {
-          setBookedDates(Array.isArray(res.data) ? res.data : []);
-        }
-      })
-      .catch(() => {})
-      .finally(() => setBookedDatesLoading(false));
-  }, [photographerId]);
-
-  // Check if selected date is booked
-  const selectedDateBooking = bookedDates.find(b => b.date === eventDate);
-  const isSelectedDateFullyBooked = selectedDateBooking?.isFullDay === true;
-
-  // Validation checks
-  useEffect(() => {
-    if (authLoading) return;
-
-    // Check if user is authenticated
-    if (!isAuthenticated) {
-      const returnUrl = encodeURIComponent(`/user/book-now?id=${photographerId}`);
-      router.push(`/user/auth/login?redirect=${returnUrl}`);
+    if (!isAuthenticated || authLoading) {
+      setValidationError(null);
       return;
     }
 
@@ -163,24 +54,7 @@ function BookNowContent(): React.JSX.Element {
     }
 
     setValidationError(null);
-  }, [authLoading, isAuthenticated, user, photographerId, router]);
-
-  // Fetch event types from API
-  useEffect(() => {
-    getEventTypes().then(response => {
-      if (response.success && response.data && Array.isArray(response.data)) {
-        const rawData = response.data as unknown as Record<string, unknown>;
-        const types = rawData?.data
-          ? (rawData.data as EventType[])
-          : response.data as EventType[];
-        if (types.length > 0) {
-          setEventTypes(types.map(t => t.name));
-        }
-      }
-    }).catch(() => {
-      // Keep fallback event types
-    });
-  }, []);
+  }, [authLoading, isAuthenticated, user, photographerId]);
 
   // Fetch photographer data from API by filtering from main list
   useEffect(() => {
@@ -283,38 +157,21 @@ function BookNowContent(): React.JSX.Element {
   // Helper to resolve currency symbol from currencyId
   const getCurrencySymbol = (currencyId: string): string => {
     const c = currencyMap.get(currencyId);
-    return c?.symbol || c?.code || '';
+    return c?.symbol || '';
   };
 
-  // Compute minimum price from loaded packages
-  const minimumPrice = (apiPackagesLoaded && apiPackages.length > 0)
-    ? (() => {
-        const cheapest = apiPackages.reduce((min, p) => p.price < min.price ? p : min, apiPackages[0]);
-        const sym = (cheapest.currencyId ? getCurrencySymbol(cheapest.currencyId) : '') || cheapest.currencyAbbreviation || '';
-        return `${sym}${cheapest.price.toLocaleString()} / Event`;
-      })()
-    : null;
-
-  // Build display data from API response
-  const photographerData = {
-    name: photographer ? `${photographer.firstName} ${photographer.lastName}` : '',
-    profileImage: getProfileImage(photographer),
-    backgroundImage: getCoverImage(photographer),
-    location: photographer?.address || '',
-    rating: photographer?.rating || 0,
-    completedJobs: photographer?.completedEvents ?? photographer?.projects?.length ?? 0,
-    verified: photographer?.isVerified ?? false,
-    availability: photographer ? formatAvailability(photographer.availabilities) : 'Contact for availability',
-    hours: photographer ? formatWorkingHours(photographer.availabilities) : 'Contact for hours',
-    minimumEarnings: minimumPrice || 'Contact for pricing',
-  };
-
-  // Badge styles for package cards (cycling)
+  // Tier ordering and config
+  const TIER_ORDER: Record<string, number> = { Essential: 1, Custom: 2, Premium: 3 };
   const badgePresets = [
-    { badgeColor: '#22D3EE', badgeGradient: 'linear-gradient(135deg, #22D3EE 0%, #3B82F6 100%)' },
-    { badgeColor: '#FBBF24', badgeGradient: 'linear-gradient(135deg, #FDE047 0%, #FBBF24 50%, #F59E0B 100%)' },
-    { badgeColor: '#A855F7', badgeGradient: 'linear-gradient(135deg, #C084FC 0%, #A855F7 50%, #7C3AED 100%)' },
+    { badgeGradient: 'linear-gradient(135deg, #22D3EE 0%, #3B82F6 100%)' },
+    { badgeGradient: 'linear-gradient(135deg, #FDE047 0%, #FBBF24 50%, #F59E0B 100%)' },
+    { badgeGradient: 'linear-gradient(135deg, #C084FC 0%, #A855F7 50%, #7C3AED 100%)' },
   ];
+  const TIER_BORDER: Record<string, string> = {
+    Essential: '#22D3EE',
+    Custom: '#FBBF24',
+    Premium: '#8B5CF6',
+  };
 
   // Calculate total price for a package including extras
   const getPackageTotal = (pkgId: string, basePrice: number) => {
@@ -348,81 +205,65 @@ function BookNowContent(): React.JSX.Element {
     }));
   };
 
-  // Use real API packages only
-  const packages = apiPackages.map((pkg, index) => ({
-    id: pkg.id,
-    name: pkg.packageName,
-    basePrice: pkg.price,
-    currencyId: pkg.currencyId,
-    currencySymbol: (pkg.currencyId ? getCurrencySymbol(pkg.currencyId) : '') || pkg.currencyAbbreviation || '',
-    includedPhotos: pkg.includedPhotos || 0,
-    includedVideos: pkg.includedVideos || 0,
-    extraPhotoPrice: pkg.extraPhotoPrice || 0,
-    extraVideoPrice: pkg.extraVideoPrice || 0,
-    period: pkg.priceUnit || 'per event',
-    durationHours: pkg.durationHours || 0,
-    badge: pkg.packageName,
-    ...badgePresets[index % badgePresets.length],
-    description: pkg.description || '',
-    features: [...(pkg.features || [])]
-      .sort((a, b) => a.displayOrder - b.displayOrder)
-      .map(f => ({ text: f.featureName, available: f.isIncluded })),
-  }));
+  // Use real API packages only, sorted Essential → Custom → Premium
+  const packages = [...apiPackages]
+    .sort((a, b) => (TIER_ORDER[a.packageName] ?? 99) - (TIER_ORDER[b.packageName] ?? 99))
+    .map((pkg, index) => {
+      const isPremium = pkg.packageName === 'Premium';
+      return {
+        id: pkg.id,
+        name: pkg.packageName,
+        basePrice: pkg.price,
+        currencyId: pkg.currencyId,
+        currencySymbol: pkg.currencySymbol || (pkg.currencyId ? getCurrencySymbol(pkg.currencyId) : '') || pkg.currencyAbbreviation || '',
+        currencyAbbreviation: pkg.currencyAbbreviation || '',
+        includedPhotos: pkg.includedPhotos ?? null,
+        includedVideos: pkg.includedVideos ?? null,
+        extraPhotoPrice: pkg.extraPhotoPrice || 0,
+        extraVideoPrice: pkg.extraVideoPrice || 0,
+        period: pkg.priceUnit || 'per event',
+        durationHours: pkg.durationHours || 0,
+        badge: pkg.packageName,
+        badgeGradient: badgePresets[index % badgePresets.length].badgeGradient,
+        tierBorderColor: TIER_BORDER[pkg.packageName] ?? '#3B82F6',
+        isPremium,
+        description: pkg.description || '',
+        features: [...(pkg.features || [])]
+          .sort((a, b) => a.displayOrder - b.displayOrder)
+          .map(f => ({ text: f.featureName, available: f.isIncluded })),
+      };
+    });
 
   const handleCancel = () => {
     setSelectedPackage(null);
     setBookingError(null);
-    setEventEndTime('');
-    setEventTitle('');
-    setEventDescription('');
-    setEventOrganizer('');
-    setEventVisibility('PUBLIC');
   };
 
-  const isFormComplete = selectedPackage && eventDate && eventTime && eventEndTime && eventType && eventLocation && !isSelectedDateFullyBooked;
+  const isFormComplete = !!selectedPackage;
 
-  const handleBooking = async () => {
-    if (!selectedPackage || !photographerId || !user) {
+  const handleBooking = () => {
+    if (!selectedPackage || !photographerId) {
       setBookingError('Please select a package to continue.');
       return;
     }
 
-    // Clear previous errors
-    setBookingError(null);
-    setBookingInProgress(true);
-
-    try {
-      const response = await createEventBooking(
-        {
-          title: eventTitle || `${eventType} Photography Session`,
-          description: eventDescription || `${eventType} event at ${eventLocation}`,
-          startTime: parseTimeToApiString(eventTime),
-          endTime: parseTimeToApiString(eventEndTime),
-          eventDate: eventDate,
-          location: eventLocation,
-          eventOrganizer: eventOrganizer || `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Customer',
-          eventVisibility: eventVisibility,
-          eventTags: eventType,
-          photographerId: photographerId,
-          packageId: selectedPackage,
-          notes: eventNotes || '',
-        },
-        user.customerId || user.id
-      );
-
-      if (response.success) {
-        // Redirect to events page on success
-        const dashboardUrl = process.env.NEXT_PUBLIC_DASHBOARD_URL || 'https://connekt-dashboard.vercel.app';
-        window.location.href = `${dashboardUrl}/user/client/events`;
-      } else {
-        setBookingError(response.error || 'Failed to create booking. Please try again.');
-      }
-    } catch (error) {
-      console.error('Booking error:', error);
-      setBookingError('An unexpected error occurred. Please try again.');
-    } finally {
-      setBookingInProgress(false);
+    if (!isAuthenticated) {
+      const returnUrl = encodeURIComponent(`/user/photographers/book-now?id=${photographerId}&packageId=${selectedPackage}`);
+      window.location.href = `/user/auth/login?redirect=${returnUrl}`;
+      return;
     }
+
+    const dashboardUrl = process.env.NEXT_PUBLIC_DASHBOARD_URL || 'https://dashboard.connekyt.com';
+    const userType = (user?.customerType || 'Client').replace(/([A-Z])/g, (m, l, i) => (i > 0 ? '-' : '') + l.toLowerCase());
+    const token = getAuthToken();
+    setShowBookingBanner(true);
+    setTimeout(() => {
+      const dest = new URL(`${dashboardUrl}/user/${userType}/events`);
+      if (photographerId) dest.searchParams.set('photographerId', photographerId);
+      if (selectedPackage) dest.searchParams.set('packageId', selectedPackage);
+      if (token) dest.searchParams.set('token', token);
+      window.location.href = dest.toString();
+    }, 1500);
   };
 
   // Show loading state while checking authentication
@@ -612,343 +453,79 @@ function BookNowContent(): React.JSX.Element {
   return (
     <>
       <AmoriaKNavbar />
-      <div className="min-h-screen" style={{ backgroundColor: '#f0f4f8', position: 'relative' }}>
-        {/* Header Section - Same as View Profile */}
-        <div
-          style={{
-            position: 'relative',
-            margin: isMobile ? '0 clamp(12px, 3vw, 24px)' : '0 24px',
-            marginTop: isMobile ? 'clamp(12px, 3vw, 20px)' : '20px',
-          }}
-        >
-          {/* Banner Container with Border */}
-          <div
-            style={{
-              position: 'relative',
-              height: isMobile ? 'clamp(180px, 35vw, 270px)' : '270px',
-              backgroundImage: `url(${photographerData.backgroundImage})`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              borderRadius: isMobile ? 'clamp(12px, 3vw, 17px)' : '17px',
-              border: isMobile ? '2px solid #bab8b8' : '3px solid #bab8b8',
-              overflow: 'hidden',
-            }}
-          >
-            {/* Back Button - Glassmorphism */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                window.history.back();
-              }}
-              style={{
-                position: 'absolute',
-                top: isMobile ? 'clamp(12px, 3vw, 20px)' : '20px',
-                left: isMobile ? 'clamp(12px, 3vw, 20px)' : '20px',
-                zIndex: 10,
-                width: isMobile ? 'clamp(36px, 8vw, 40px)' : '40px',
-                height: isMobile ? 'clamp(36px, 8vw, 40px)' : '40px',
-                borderRadius: '50%',
-                backgroundColor: 'rgba(255, 255, 255, 0.15)',
-                backdropFilter: 'blur(10px)',
-                WebkitBackdropFilter: 'blur(10px)',
-                border: '1px solid rgba(255, 255, 255, 0.2)',
-                color: '#fff',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                transition: 'all 0.3s ease',
-                boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)',
-              }}
-              onMouseEnter={(e) => {
-                if (!isMobile) {
-                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.25)';
-                  e.currentTarget.style.transform = 'scale(1.05)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isMobile) {
-                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.15)';
-                  e.currentTarget.style.transform = 'scale(1)';
-                }
-              }}
-              aria-label="Go back"
-            >
-              <i className="bi bi-chevron-left" style={{ fontSize: isMobile ? 'clamp(16px, 4vw, 20px)' : '20px', fontWeight: 'bold' }}></i>
-            </button>
 
-            {/* Overlay */}
-            <div
-              style={{
-                position: 'absolute',
-                inset: 0,
-                backgroundColor: 'rgba(13, 27, 42, 0.3)',
-                borderRadius: '17px',
-              }}
-            ></div>
+      {/* Success Booking Banner */}
+      {showBookingBanner && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 9999,
+          backgroundColor: '#10b981',
+          color: '#fff',
+          padding: '16px 24px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '12px',
+          boxShadow: '0 4px 20px rgba(16, 185, 129, 0.4)',
+          animation: 'slideDown 0.4s ease-out',
+        }}>
+          <div style={{
+            width: '32px',
+            height: '32px',
+            borderRadius: '50%',
+            backgroundColor: 'rgba(255, 255, 255, 0.2)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+            <i className="bi bi-check-lg" style={{ fontSize: '20px', fontWeight: 'bold' }}></i>
           </div>
-
-          {/* Profile Picture Container - Positioned to overlap */}
-          <div
-            style={{
-              position: 'absolute',
-              top: isMobile ? 'clamp(150px, 28vw, 230px)' : '230px',
-              left: isMobile ? 'clamp(12px, 3vw, 20px)' : '20px',
-              width: isMobile ? 'clamp(60px, 12vw, 70px)' : '70px',
-              height: isMobile ? 'clamp(60px, 12vw, 70px)' : '70px',
-              zIndex: 10,
-            }}
-          >
-            <div
-              style={{
-                position: 'relative',
-                width: '100%',
-                height: '100%',
-              }}
-            >
-              <img
-                src={photographerData.profileImage}
-                alt={photographerData.name}
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  borderRadius: '50%',
-                  border: '2px solid white',
-                  objectFit: 'cover',
-                  objectPosition: 'center',
-                  display: 'block',
-                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
-                }}
-              />
-              {/* Verification Badge */}
-              <div
-                style={{
-                  position: 'absolute',
-                  bottom: '0px',
-                  right: '0px',
-                  background: 'white',
-                  borderRadius: '50%',
-                  width: '24px',
-                  height: '24px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: '0 2px 4px rgba(0, 0, 0, 0.15)',
-                  zIndex: 5,
-                }}
-              >
-                <i className="bi bi-patch-check-fill" style={{ color: '#3b82f6', fontSize: '1rem' }}></i>
-              </div>
-            </div>
+          <div>
+            <div style={{ fontSize: '16px', fontWeight: '700' }}>Booking Photographer Successfully!</div>
+            <div style={{ fontSize: '13px', opacity: 0.9 }}>Redirecting to your events...</div>
           </div>
+          <div style={{
+            marginLeft: '20px',
+            width: '24px',
+            height: '24px',
+            border: '3px solid rgba(255, 255, 255, 0.3)',
+            borderTopColor: '#fff',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+          }}></div>
+          <style>{`
+            @keyframes slideDown { from { transform: translateY(-100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+            @keyframes spin { to { transform: rotate(360deg); } }
+          `}</style>
         </div>
+      )}
 
-        {/* Profile Section - White Background with Shadow */}
-        <div
-          style={{
-            backgroundColor: '#fff',
-            position: 'relative',
-            zIndex: 5,
-            paddingBottom: isMobile ? 'clamp(16px, 4vw, 24px)' : '24px',
-            marginTop: '0',
-            marginRight: isMobile ? 'clamp(12px, 3vw, 24px)' : '24px',
-            marginBottom: '0',
-            marginLeft: isMobile ? 'clamp(12px, 3vw, 24px)' : '24px',
-            boxShadow: '0 2px 10px rgba(0, 0, 0, 0.05)',
-            borderRadius: isMobile ? '0 0 clamp(12px, 3vw, 17px) clamp(12px, 3vw, 17px)' : '0 0 17px 17px',
-            border: isMobile ? '2px solid #bab8b8' : '3px solid #bab8b8',
-            borderTop: 'none',
-          }}
-        >
-          {/* Profile Content */}
-          <div
+      <div className="min-h-screen" style={{ backgroundColor: '#f0f4f8', position: 'relative' }}>
+        {/* Back Button */}
+        <div style={{ padding: isMobile ? '16px' : '20px 24px' }}>
+          <button
+            onClick={() => window.history.back()}
             style={{
-              paddingTop: isMobile ? 'clamp(32px, 7vw, 38px)' : '38px',
-              paddingLeft: isMobile ? 'clamp(12px, 3vw, 16px)' : '16px',
-              paddingRight: isMobile ? 'clamp(12px, 3vw, 16px)' : '16px',
-              paddingBottom: isMobile ? 'clamp(12px, 3vw, 16px)' : '16px',
               display: 'flex',
-              flexDirection: isMobile ? 'column' : 'row',
-              justifyContent: 'space-between',
-              alignItems: isMobile ? 'stretch' : 'flex-start',
-              gap: isMobile ? 'clamp(16px, 4vw, 20px)' : '20px',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '8px 16px',
+              backgroundColor: '#fff',
+              border: '1px solid #e5e7eb',
+              borderRadius: '8px',
+              fontSize: '14px',
+              fontWeight: '600',
+              color: '#374151',
+              cursor: 'pointer',
+              boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
             }}
           >
-            {/* Left Side - Name, Location, and Stats */}
-            <div style={{ flex: 1 }}>
-              {/* Name */}
-              <h3 style={{
-                fontSize: '20px',
-                fontWeight: '700',
-                color: '#111827',
-                marginBottom: '8px',
-              }}>
-                {photographerData.name}
-              </h3>
-
-              {/* Location */}
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                color: '#40444d',
-                fontSize: '15px',
-                marginBottom: '16px',
-              }}>
-                <i className="bi bi-geo-alt-fill" style={{ fontSize: '15px' }}></i>
-                <span>{photographerData.location}</span>
-              </div>
-
-              {/* Stats Row */}
-              <div style={{
-                display: 'flex',
-                gap: '24px',
-                alignItems: 'center',
-                marginTop: '12px',
-              }}>
-                {/* Rating */}
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                }}>
-                  <i className="bi bi-star-fill" style={{ color: '#FFA500', fontSize: '16px' }}></i>
-                  <span style={{
-                    fontSize: '16px',
-                    fontWeight: '700',
-                    color: '#111827',
-                  }}>
-                    {photographerData.rating}
-                  </span>
-                  <span style={{
-                    fontSize: '14px',
-                    color: '#083A85',
-                    fontWeight: '500',
-                  }}>
-                    Rating
-                  </span>
-                </div>
-
-                {/* Events */}
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                }}>
-                  <i className="bi bi-camera-fill" style={{ color: '#083A85', fontSize: '16px' }}></i>
-                  <span style={{
-                    fontSize: '16px',
-                    fontWeight: '700',
-                    color: '#111827',
-                  }}>
-                    {photographerData.completedJobs}+
-                  </span>
-                  <span style={{
-                    fontSize: '14px',
-                    color: '#083A85',
-                    fontWeight: '500',
-                  }}>
-                    Events
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Right Side - Availability, Working Hours, Starting Price */}
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: isMobile ? 'column' : 'row',
-                gap: isMobile ? '24px' : '72px',
-                alignItems: isMobile ? 'flex-start' : 'center',
-                flex: isMobile ? 'none' : 2,
-                justifyContent: 'flex-start',
-                paddingLeft: isMobile ? '0' : '40px',
-              }}
-            >
-              {/* Availability */}
-              <div>
-                <div
-                  style={{
-                    fontSize: '11px',
-                    fontWeight: '600',
-                    color: '#083A85',
-                    marginBottom: '4px',
-                    letterSpacing: '0.3px',
-                    textTransform: 'uppercase',
-                  }}
-                >
-                  {t('availability')}
-                </div>
-                <div style={{ fontSize: '14px', color: '#111827', fontWeight: '600' }}>
-                  {photographerData.availability}
-                </div>
-              </div>
-
-              {/* Working Hours */}
-              <div>
-                <div
-                  style={{
-                    fontSize: '11px',
-                    fontWeight: '600',
-                    color: '#083A85',
-                    marginBottom: '4px',
-                    letterSpacing: '0.3px',
-                    textTransform: 'uppercase',
-                  }}
-                >
-                  {t('workingHours')}
-                </div>
-                <div
-                  style={{
-                    fontSize: '14px',
-                    fontWeight: '600',
-                    color: '#111827',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                  }}
-                >
-                  <i className="bi bi-clock-fill" style={{ color: '#083A85', fontSize: '14px' }}></i>
-                  {photographerData.hours}
-                </div>
-              </div>
-
-              {/* Starting Price */}
-              <div>
-                <div
-                  style={{
-                    fontSize: '11px',
-                    fontWeight: '600',
-                    color: '#083A85',
-                    marginBottom: '4px',
-                    letterSpacing: '0.3px',
-                    textTransform: 'uppercase',
-                  }}
-                >
-                  {t('startingPrice')}
-                </div>
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                  }}
-                >
-                  <i className="bi bi-tag-fill" style={{ color: '#10b981', fontSize: '14px' }}></i>
-                  <span
-                    style={{
-                      fontSize: '16px',
-                      color: '#10b981',
-                      fontWeight: '700',
-                    }}
-                  >
-                    {photographerData.minimumEarnings}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
+            <i className="bi bi-chevron-left"></i>
+            Back
+          </button>
         </div>
 
         {/* Main Content Container */}
@@ -994,12 +571,16 @@ function BookNowContent(): React.JSX.Element {
                   borderRadius: '20px',
                   overflow: 'hidden',
                   cursor: 'pointer',
-                  border: selectedPackage === pkg.id ? '3px solid #00BFFF' : '3px solid transparent',
+                  border: selectedPackage === pkg.id
+                    ? '3px solid #00BFFF'
+                    : `3px solid ${pkg.tierBorderColor}`,
                   transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
                   boxShadow: selectedPackage === pkg.id
                     ? '0 25px 50px rgba(0, 191, 255, 0.35), 0 0 0 1px rgba(0, 191, 255, 0.1)'
-                    : '0 10px 30px rgba(0, 0, 0, 0.2)',
-                  transform: selectedPackage === pkg.id ? 'translateY(-12px) scale(1.03)' : 'translateY(0) scale(1)',
+                    : pkg.isPremium
+                      ? '0 10px 35px rgba(139, 92, 246, 0.25)'
+                      : '0 10px 30px rgba(0, 0, 0, 0.2)',
+                  transform: selectedPackage === pkg.id ? 'translateY(-12px) scale(1.03)' : pkg.isPremium ? 'translateY(-4px) scale(1.01)' : 'translateY(0) scale(1)',
                 }}
                 onMouseEnter={(e) => {
                   if (selectedPackage !== pkg.id) {
@@ -1036,11 +617,24 @@ function BookNowContent(): React.JSX.Element {
                   </div>
                 )}
 
+                {/* Best value pill — Premium only */}
+                {pkg.isPremium && selectedPackage !== pkg.id && (
+                  <div style={{
+                    position: 'absolute', top: '12px', left: '50%', transform: 'translateX(-50%)',
+                    backgroundColor: '#8B5CF6', color: '#fff',
+                    padding: '3px 12px', borderRadius: '50px',
+                    fontSize: '11px', fontWeight: '700', letterSpacing: '0.5px',
+                    whiteSpace: 'nowrap', zIndex: 3,
+                  }}>
+                    Best Value
+                  </div>
+                )}
+
                 {/* Badge - Ellipse/Oval shape sitting on top */}
                 <div style={{
                   display: 'flex',
                   justifyContent: 'center',
-                  paddingTop: selectedPackage === pkg.id ? '24px' : '20px',
+                  paddingTop: pkg.isPremium && selectedPackage !== pkg.id ? '36px' : selectedPackage === pkg.id ? '24px' : '20px',
                   marginBottom: '-24px',
                   position: 'relative',
                   zIndex: 2,
@@ -1049,7 +643,7 @@ function BookNowContent(): React.JSX.Element {
                   <div
                     style={{
                       background: pkg.badgeGradient,
-                      color: pkg.id === 'custom' ? '#1f2937' : '#fff',
+                      color: '#fff',
                       padding: selectedPackage === pkg.id ? '12px 48px' : '10px 40px',
                       borderRadius: '50px',
                       fontSize: selectedPackage === pkg.id ? '16px' : '15px',
@@ -1084,12 +678,14 @@ function BookNowContent(): React.JSX.Element {
                   {/* Price */}
                   <div
                     style={{
-                      fontSize: selectedPackage === pkg.id ? (isMobile ? '48px' : '56px') : (isMobile ? '42px' : '48px'),
-                      fontWeight: '800',
-                      color: selectedPackage === pkg.id ? '#083A85' : '#1f2937',
+                      fontSize: selectedPackage === pkg.id ? (isMobile ? '60px' : '72px') : (isMobile ? '52px' : '62px'),
+                      fontWeight: '900',
+                      color: '#16a34a',
                       lineHeight: 1,
                       marginBottom: '6px',
                       transition: 'all 0.3s ease',
+                      WebkitTextStroke: '0.5px #16a34a',
+                      letterSpacing: '-1px',
                     }}
                   >
                     {pkg.currencySymbol}{getPackageTotal(pkg.id, pkg.basePrice).toLocaleString()}
@@ -1099,11 +695,29 @@ function BookNowContent(): React.JSX.Element {
                       fontSize: selectedPackage === pkg.id ? '20px' : '18px',
                       color: selectedPackage === pkg.id ? '#083A85' : '#1f2937',
                       fontWeight: '700',
-                      marginBottom: '10px',
+                      marginBottom: '8px',
                       transition: 'all 0.3s ease',
                     }}
                   >
                     {pkg.period}
+                  </div>
+
+                  {/* Media coverage line */}
+                  <div style={{
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    marginBottom: '10px',
+                    color: pkg.isPremium ? '#7C3AED' : '#374151',
+                  }}>
+                    {pkg.isPremium
+                      ? 'Unlimited photos & videos'
+                      : (() => {
+                          const parts = [];
+                          if (pkg.includedPhotos) parts.push(`${pkg.includedPhotos} photos`);
+                          if (pkg.includedVideos) parts.push(`${pkg.includedVideos} videos`);
+                          return parts.join(' · ') || '—';
+                        })()
+                    }
                   </div>
 
                   {/* Duration */}
@@ -1198,7 +812,7 @@ function BookNowContent(): React.JSX.Element {
                   </div>
 
                   {/* Extra Photos & Videos Input - Only shows when selected and package supports extras */}
-                  {selectedPackage === pkg.id && ((pkg.includedPhotos > 0 || pkg.includedVideos > 0) || (pkg.extraPhotoPrice > 0 || pkg.extraVideoPrice > 0)) && (
+                  {selectedPackage === pkg.id && (pkg.isPremium || (pkg.includedPhotos ?? 0) > 0 || (pkg.includedVideos ?? 0) > 0 || pkg.extraPhotoPrice > 0 || pkg.extraVideoPrice > 0) && (
                     <div
                       style={{
                         marginTop: '20px',
@@ -1228,7 +842,10 @@ function BookNowContent(): React.JSX.Element {
                         textAlign: 'center',
                         marginBottom: '6px',
                       }}>
-                        This package already includes <strong style={{ color: '#083A85' }}>{pkg.includedPhotos} photos</strong> &amp; <strong style={{ color: '#083A85' }}>{pkg.includedVideos} videos</strong>.
+                        {pkg.isPremium
+                          ? <>This package includes <strong style={{ color: '#7C3AED' }}>unlimited photos &amp; videos</strong>.</>
+                          : <>This package already includes <strong style={{ color: '#083A85' }}>{pkg.includedPhotos} photos</strong> &amp; <strong style={{ color: '#083A85' }}>{pkg.includedVideos} videos</strong>.</>
+                        }
                       </p>
                       <p style={{
                         fontSize: '13px',
@@ -1259,7 +876,7 @@ function BookNowContent(): React.JSX.Element {
                             type="text"
                             inputMode="numeric"
                             pattern="[0-9]*"
-                            placeholder={`e.g. 50 → you'll get ${pkg.includedPhotos + 50} total photos`}
+                            placeholder={pkg.isPremium ? 'e.g. 50 extra photos' : `e.g. 50 → you'll get ${(pkg.includedPhotos ?? 0) + 50} total photos`}
                             value={extraPhotos[pkg.id]}
                             onChange={(e) => handleExtraChange(pkg.id, 'photos', e.target.value)}
                             onClick={(e) => e.stopPropagation()}
@@ -1302,7 +919,7 @@ function BookNowContent(): React.JSX.Element {
                         </div>
                         {typeof extraPhotos[pkg.id] === 'number' && (extraPhotos[pkg.id] as number) > 0 && (
                           <p style={{ fontSize: '12px', color: '#10b981', marginTop: '4px', fontWeight: '600', textAlign: 'center' }}>
-                            Total: {pkg.includedPhotos} included + {extraPhotos[pkg.id]} extra = <strong>{pkg.includedPhotos + (extraPhotos[pkg.id] as number)} photos</strong>
+                            {pkg.isPremium ? <>Extra: <strong>{extraPhotos[pkg.id]} photos</strong></> : <>Total: {pkg.includedPhotos} included + {extraPhotos[pkg.id]} extra = <strong>{(pkg.includedPhotos ?? 0) + (extraPhotos[pkg.id] as number)} photos</strong></>}
                           </p>
                         )}
                       </div>
@@ -1327,7 +944,7 @@ function BookNowContent(): React.JSX.Element {
                             type="text"
                             inputMode="numeric"
                             pattern="[0-9]*"
-                            placeholder={`e.g. 10 → you'll get ${pkg.includedVideos + 10} total videos`}
+                            placeholder={pkg.isPremium ? 'e.g. 10 extra videos' : `e.g. 10 → you'll get ${(pkg.includedVideos ?? 0) + 10} total videos`}
                             value={extraVideos[pkg.id]}
                             onChange={(e) => handleExtraChange(pkg.id, 'videos', e.target.value)}
                             onClick={(e) => e.stopPropagation()}
@@ -1370,7 +987,7 @@ function BookNowContent(): React.JSX.Element {
                         </div>
                         {typeof extraVideos[pkg.id] === 'number' && (extraVideos[pkg.id] as number) > 0 && (
                           <p style={{ fontSize: '12px', color: '#10b981', marginTop: '4px', fontWeight: '600', textAlign: 'center' }}>
-                            Total: {pkg.includedVideos} included + {extraVideos[pkg.id]} extra = <strong>{pkg.includedVideos + (extraVideos[pkg.id] as number)} videos</strong>
+                            {pkg.isPremium ? <>Extra: <strong>{extraVideos[pkg.id]} videos</strong></> : <>Total: {pkg.includedVideos} included + {extraVideos[pkg.id]} extra = <strong>{(pkg.includedVideos ?? 0) + (extraVideos[pkg.id] as number)} videos</strong></>}
                           </p>
                         )}
                       </div>
@@ -1388,7 +1005,7 @@ function BookNowContent(): React.JSX.Element {
                           }}
                         >
                           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                            <span style={{ fontSize: '14px', color: '#374151' }}>Base package ({pkg.includedPhotos} photos &amp; {pkg.includedVideos} videos)</span>
+                            <span style={{ fontSize: '14px', color: '#374151' }}>Base package ({pkg.isPremium ? 'Unlimited' : `${pkg.includedPhotos} photos & ${pkg.includedVideos} videos`})</span>
                             <span style={{ fontSize: '14px', color: '#374151' }}>{pkg.currencySymbol}{pkg.basePrice.toLocaleString()}</span>
                           </div>
                           {typeof extraPhotos[pkg.id] === 'number' && (extraPhotos[pkg.id] as number) > 0 && (
@@ -1432,14 +1049,18 @@ function BookNowContent(): React.JSX.Element {
                             paddingTop: '4px',
                             borderTop: '1px dashed #a7f3d0',
                           }}>
-                            You&apos;ll get{' '}
-                            {typeof extraPhotos[pkg.id] === 'number' && (extraPhotos[pkg.id] as number) > 0
-                              ? `${pkg.includedPhotos + (extraPhotos[pkg.id] as number)} total photos`
-                              : `${pkg.includedPhotos} photos`}
-                            {' '}&amp;{' '}
-                            {typeof extraVideos[pkg.id] === 'number' && (extraVideos[pkg.id] as number) > 0
-                              ? `${pkg.includedVideos + (extraVideos[pkg.id] as number)} total videos`
-                              : `${pkg.includedVideos} videos`}
+                            {pkg.isPremium ? 'Unlimited photos & videos' : (
+                              <>
+                                You&apos;ll get{' '}
+                                {typeof extraPhotos[pkg.id] === 'number' && (extraPhotos[pkg.id] as number) > 0
+                                  ? `${(pkg.includedPhotos ?? 0) + (extraPhotos[pkg.id] as number)} total photos`
+                                  : `${pkg.includedPhotos} photos`}
+                                {' '}&amp;{' '}
+                                {typeof extraVideos[pkg.id] === 'number' && (extraVideos[pkg.id] as number) > 0
+                                  ? `${(pkg.includedVideos ?? 0) + (extraVideos[pkg.id] as number)} total videos`
+                                  : `${pkg.includedVideos} videos`}
+                              </>
+                            )}
                           </div>
                         </div>
                       )}
@@ -1503,475 +1124,6 @@ function BookNowContent(): React.JSX.Element {
             ))}
           </div>
 
-          {/* Event Details Form - appears after package selection */}
-          {selectedPackage && (
-            <div
-              style={{
-                marginTop: '32px',
-                padding: isMobile ? '20px 16px' : '28px 24px',
-                backgroundColor: '#fff',
-                borderRadius: '16px',
-                border: '2px solid #e5e7eb',
-                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
-              }}
-            >
-              <h3
-                style={{
-                  fontSize: isMobile ? '18px' : '20px',
-                  fontWeight: '700',
-                  color: '#1f2937',
-                  marginBottom: '6px',
-                }}
-              >
-                Event Details
-              </h3>
-              <p
-                style={{
-                  fontSize: '14px',
-                  color: '#6b7280',
-                  marginBottom: '20px',
-                }}
-              >
-                Tell us about your event so the photographer can prepare
-              </p>
-
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
-                  gap: '16px',
-                }}
-              >
-                {/* Event Title */}
-                <div>
-                  <label
-                    htmlFor="eventTitle"
-                    style={{
-                      display: 'block',
-                      fontSize: '14px',
-                      fontWeight: '600',
-                      color: '#374151',
-                      marginBottom: '6px',
-                    }}
-                  >
-                    Event Title <span style={{ fontWeight: '400', color: '#9ca3af' }}>(optional)</span>
-                  </label>
-                  <input
-                    type="text"
-                    id="eventTitle"
-                    value={eventTitle}
-                    onChange={(e) => setEventTitle(e.target.value)}
-                    placeholder="e.g., My Wedding Photography"
-                    style={{
-                      width: '100%',
-                      padding: '12px 16px',
-                      fontSize: '15px',
-                      border: '2px solid #d1d5db',
-                      borderRadius: '12px',
-                      backgroundColor: '#fff',
-                      color: '#1f2937',
-                      outline: 'none',
-                      transition: 'border-color 0.2s ease',
-                      boxSizing: 'border-box',
-                    }}
-                    onFocus={(e) => (e.currentTarget.style.borderColor = '#083A85')}
-                    onBlur={(e) => (e.currentTarget.style.borderColor = '#d1d5db')}
-                  />
-                </div>
-
-                {/* Event Type */}
-                <div>
-                  <label
-                    htmlFor="eventType"
-                    style={{
-                      display: 'block',
-                      fontSize: '14px',
-                      fontWeight: '600',
-                      color: '#374151',
-                      marginBottom: '6px',
-                    }}
-                  >
-                    Event Type *
-                  </label>
-                  <select
-                    id="eventType"
-                    value={eventType}
-                    onChange={(e) => setEventType(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '12px 16px',
-                      fontSize: '15px',
-                      border: '2px solid #d1d5db',
-                      borderRadius: '12px',
-                      backgroundColor: '#fff',
-                      color: eventType ? '#1f2937' : '#9ca3af',
-                      cursor: 'pointer',
-                      outline: 'none',
-                      transition: 'border-color 0.2s ease',
-                      appearance: 'none',
-                      backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23374151' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e")`,
-                      backgroundRepeat: 'no-repeat',
-                      backgroundPosition: 'right 12px center',
-                      backgroundSize: '16px',
-                    }}
-                    onFocus={(e) => (e.currentTarget.style.borderColor = '#083A85')}
-                    onBlur={(e) => (e.currentTarget.style.borderColor = '#d1d5db')}
-                  >
-                    <option value="" disabled>
-                      Select event type
-                    </option>
-                    {eventTypes.map((type) => (
-                      <option key={type} value={type}>
-                        {type}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Event Date */}
-                <div>
-                  <label
-                    htmlFor="eventDate"
-                    style={{
-                      display: 'block',
-                      fontSize: '14px',
-                      fontWeight: '600',
-                      color: '#374151',
-                      marginBottom: '6px',
-                    }}
-                  >
-                    Event Date *
-                  </label>
-                  <input
-                    type="date"
-                    id="eventDate"
-                    value={eventDate}
-                    onChange={(e) => setEventDate(e.target.value)}
-                    min={new Date(Date.now() + 86400000).toISOString().split('T')[0]}
-                    style={{
-                      width: '100%',
-                      padding: '12px 16px',
-                      fontSize: '15px',
-                      border: `2px solid ${isSelectedDateFullyBooked ? '#ef4444' : '#d1d5db'}`,
-                      borderRadius: '12px',
-                      backgroundColor: isSelectedDateFullyBooked ? '#fef2f2' : '#fff',
-                      color: '#1f2937',
-                      outline: 'none',
-                      transition: 'border-color 0.2s ease',
-                      boxSizing: 'border-box',
-                    }}
-                    onFocus={(e) => (e.currentTarget.style.borderColor = isSelectedDateFullyBooked ? '#ef4444' : '#083A85')}
-                    onBlur={(e) => (e.currentTarget.style.borderColor = isSelectedDateFullyBooked ? '#ef4444' : '#d1d5db')}
-                  />
-                  {/* Booked date warnings */}
-                  {eventDate && isSelectedDateFullyBooked && (
-                    <div style={{
-                      marginTop: '6px',
-                      padding: '8px 12px',
-                      backgroundColor: '#fef2f2',
-                      border: '1px solid #fecaca',
-                      borderRadius: '8px',
-                      fontSize: '13px',
-                      color: '#dc2626',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                    }}>
-                      <i className="bi bi-exclamation-triangle-fill"></i>
-                      This date is fully booked. Please select another date.
-                    </div>
-                  )}
-                  {eventDate && selectedDateBooking && !selectedDateBooking.isFullDay && (
-                    <div style={{
-                      marginTop: '6px',
-                      padding: '8px 12px',
-                      backgroundColor: '#fffbeb',
-                      border: '1px solid #fde68a',
-                      borderRadius: '8px',
-                      fontSize: '13px',
-                      color: '#92400e',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                    }}>
-                      <i className="bi bi-info-circle-fill"></i>
-                      {selectedDateBooking.startTime && selectedDateBooking.endTime
-                        ? `${formatTimeValue(selectedDateBooking.startTime)} - ${formatTimeValue(selectedDateBooking.endTime)} is booked. Please pick a non-overlapping time.`
-                        : 'Part of this day is booked. Please pick a non-overlapping time.'}
-                    </div>
-                  )}
-                </div>
-
-                {/* Start Time */}
-                <div>
-                  <label
-                    htmlFor="eventTime"
-                    style={{
-                      display: 'block',
-                      fontSize: '14px',
-                      fontWeight: '600',
-                      color: '#374151',
-                      marginBottom: '6px',
-                    }}
-                  >
-                    Start Time *
-                  </label>
-                  <input
-                    type="time"
-                    id="eventTime"
-                    value={eventTime}
-                    onChange={(e) => setEventTime(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '12px 16px',
-                      fontSize: '15px',
-                      border: '2px solid #d1d5db',
-                      borderRadius: '12px',
-                      backgroundColor: '#fff',
-                      color: '#1f2937',
-                      outline: 'none',
-                      transition: 'border-color 0.2s ease',
-                      boxSizing: 'border-box',
-                    }}
-                    onFocus={(e) => (e.currentTarget.style.borderColor = '#083A85')}
-                    onBlur={(e) => (e.currentTarget.style.borderColor = '#d1d5db')}
-                  />
-                </div>
-
-                {/* End Time */}
-                <div>
-                  <label
-                    htmlFor="eventEndTime"
-                    style={{
-                      display: 'block',
-                      fontSize: '14px',
-                      fontWeight: '600',
-                      color: '#374151',
-                      marginBottom: '6px',
-                    }}
-                  >
-                    End Time *
-                  </label>
-                  <input
-                    type="time"
-                    id="eventEndTime"
-                    value={eventEndTime}
-                    onChange={(e) => setEventEndTime(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '12px 16px',
-                      fontSize: '15px',
-                      border: '2px solid #d1d5db',
-                      borderRadius: '12px',
-                      backgroundColor: '#fff',
-                      color: '#1f2937',
-                      outline: 'none',
-                      transition: 'border-color 0.2s ease',
-                      boxSizing: 'border-box',
-                    }}
-                    onFocus={(e) => (e.currentTarget.style.borderColor = '#083A85')}
-                    onBlur={(e) => (e.currentTarget.style.borderColor = '#d1d5db')}
-                  />
-                </div>
-
-                {/* Event Location */}
-                <div>
-                  <label
-                    htmlFor="eventLocation"
-                    style={{
-                      display: 'block',
-                      fontSize: '14px',
-                      fontWeight: '600',
-                      color: '#374151',
-                      marginBottom: '6px',
-                    }}
-                  >
-                    Event Location *
-                  </label>
-                  <input
-                    type="text"
-                    id="eventLocation"
-                    value={eventLocation}
-                    onChange={(e) => setEventLocation(e.target.value)}
-                    placeholder="e.g., Kigali Convention Center"
-                    style={{
-                      width: '100%',
-                      padding: '12px 16px',
-                      fontSize: '15px',
-                      border: '2px solid #d1d5db',
-                      borderRadius: '12px',
-                      backgroundColor: '#fff',
-                      color: '#1f2937',
-                      outline: 'none',
-                      transition: 'border-color 0.2s ease',
-                      boxSizing: 'border-box',
-                    }}
-                    onFocus={(e) => (e.currentTarget.style.borderColor = '#083A85')}
-                    onBlur={(e) => (e.currentTarget.style.borderColor = '#d1d5db')}
-                  />
-                </div>
-
-                {/* Event Organizer */}
-                <div>
-                  <label
-                    htmlFor="eventOrganizer"
-                    style={{
-                      display: 'block',
-                      fontSize: '14px',
-                      fontWeight: '600',
-                      color: '#374151',
-                      marginBottom: '6px',
-                    }}
-                  >
-                    Event Organizer <span style={{ fontWeight: '400', color: '#9ca3af' }}>(optional)</span>
-                  </label>
-                  <input
-                    type="text"
-                    id="eventOrganizer"
-                    value={eventOrganizer}
-                    onChange={(e) => setEventOrganizer(e.target.value)}
-                    placeholder={`${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Your name'}
-                    style={{
-                      width: '100%',
-                      padding: '12px 16px',
-                      fontSize: '15px',
-                      border: '2px solid #d1d5db',
-                      borderRadius: '12px',
-                      backgroundColor: '#fff',
-                      color: '#1f2937',
-                      outline: 'none',
-                      transition: 'border-color 0.2s ease',
-                      boxSizing: 'border-box',
-                    }}
-                    onFocus={(e) => (e.currentTarget.style.borderColor = '#083A85')}
-                    onBlur={(e) => (e.currentTarget.style.borderColor = '#d1d5db')}
-                  />
-                </div>
-
-                {/* Event Visibility */}
-                <div>
-                  <label
-                    htmlFor="eventVisibility"
-                    style={{
-                      display: 'block',
-                      fontSize: '14px',
-                      fontWeight: '600',
-                      color: '#374151',
-                      marginBottom: '6px',
-                    }}
-                  >
-                    Event Visibility
-                  </label>
-                  <select
-                    id="eventVisibility"
-                    value={eventVisibility}
-                    onChange={(e) => setEventVisibility(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '12px 16px',
-                      fontSize: '15px',
-                      border: '2px solid #d1d5db',
-                      borderRadius: '12px',
-                      backgroundColor: '#fff',
-                      color: '#1f2937',
-                      cursor: 'pointer',
-                      outline: 'none',
-                      transition: 'border-color 0.2s ease',
-                      appearance: 'none',
-                      backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23374151' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e")`,
-                      backgroundRepeat: 'no-repeat',
-                      backgroundPosition: 'right 12px center',
-                      backgroundSize: '16px',
-                    }}
-                    onFocus={(e) => (e.currentTarget.style.borderColor = '#083A85')}
-                    onBlur={(e) => (e.currentTarget.style.borderColor = '#d1d5db')}
-                  >
-                    <option value="PUBLIC">Public</option>
-                    <option value="PRIVATE">Private</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Event Description - full width */}
-              <div style={{ marginTop: '16px' }}>
-                <label
-                  htmlFor="eventDescription"
-                  style={{
-                    display: 'block',
-                    fontSize: '14px',
-                    fontWeight: '600',
-                    color: '#374151',
-                    marginBottom: '6px',
-                  }}
-                >
-                  Event Description <span style={{ fontWeight: '400', color: '#9ca3af' }}>(optional)</span>
-                </label>
-                <textarea
-                  id="eventDescription"
-                  value={eventDescription}
-                  onChange={(e) => setEventDescription(e.target.value)}
-                  placeholder="Describe your event..."
-                  rows={2}
-                  style={{
-                    width: '100%',
-                    padding: '12px 16px',
-                    fontSize: '15px',
-                    border: '2px solid #d1d5db',
-                    borderRadius: '12px',
-                    backgroundColor: '#fff',
-                    color: '#1f2937',
-                    outline: 'none',
-                    transition: 'border-color 0.2s ease',
-                    resize: 'vertical',
-                    fontFamily: 'inherit',
-                    boxSizing: 'border-box',
-                  }}
-                  onFocus={(e) => (e.currentTarget.style.borderColor = '#083A85')}
-                  onBlur={(e) => (e.currentTarget.style.borderColor = '#d1d5db')}
-                />
-              </div>
-
-              {/* Notes - full width */}
-              <div style={{ marginTop: '16px' }}>
-                <label
-                  htmlFor="eventNotes"
-                  style={{
-                    display: 'block',
-                    fontSize: '14px',
-                    fontWeight: '600',
-                    color: '#374151',
-                    marginBottom: '6px',
-                  }}
-                >
-                  Additional Notes <span style={{ fontWeight: '400', color: '#9ca3af' }}>(optional)</span>
-                </label>
-                <textarea
-                  id="eventNotes"
-                  value={eventNotes}
-                  onChange={(e) => setEventNotes(e.target.value)}
-                  placeholder="Any special requirements, preferred locations for shots, etc."
-                  rows={3}
-                  style={{
-                    width: '100%',
-                    padding: '12px 16px',
-                    fontSize: '15px',
-                    border: '2px solid #d1d5db',
-                    borderRadius: '12px',
-                    backgroundColor: '#fff',
-                    color: '#1f2937',
-                    outline: 'none',
-                    transition: 'border-color 0.2s ease',
-                    resize: 'vertical',
-                    fontFamily: 'inherit',
-                    boxSizing: 'border-box',
-                  }}
-                  onFocus={(e) => (e.currentTarget.style.borderColor = '#083A85')}
-                  onBlur={(e) => (e.currentTarget.style.borderColor = '#d1d5db')}
-                />
-              </div>
-            </div>
-          )}
-
           {/* Action Buttons */}
           <div
             style={{
@@ -2009,18 +1161,18 @@ function BookNowContent(): React.JSX.Element {
             </button>
             <button
               onClick={handleBooking}
-              disabled={!isFormComplete || bookingInProgress}
+              disabled={!isFormComplete}
               style={{
                 padding: '14px 40px',
-                backgroundColor: isFormComplete && !bookingInProgress ? '#083A85' : '#d1d5db',
+                backgroundColor: isFormComplete ? '#083A85' : '#d1d5db',
                 color: '#fff',
                 border: 'none',
                 borderRadius: '12px',
                 fontSize: '15px',
                 fontWeight: '700',
-                cursor: isFormComplete && !bookingInProgress ? 'pointer' : 'not-allowed',
+                cursor: isFormComplete ? 'pointer' : 'not-allowed',
                 transition: 'all 0.3s ease',
-                boxShadow: isFormComplete && !bookingInProgress ? '0 8px 20px rgba(8, 58, 133, 0.35)' : 'none',
+                boxShadow: isFormComplete ? '0 8px 20px rgba(8, 58, 133, 0.35)' : 'none',
                 minWidth: isMobile ? '100%' : '200px',
                 display: 'flex',
                 alignItems: 'center',
@@ -2028,38 +1180,22 @@ function BookNowContent(): React.JSX.Element {
                 gap: '8px',
               }}
               onMouseEnter={(e) => {
-                if (isFormComplete && !bookingInProgress) {
+                if (isFormComplete) {
                   e.currentTarget.style.backgroundColor = '#062d6b';
                   e.currentTarget.style.transform = 'translateY(-2px)';
                   e.currentTarget.style.boxShadow = '0 12px 28px rgba(8, 58, 133, 0.45)';
                 }
               }}
               onMouseLeave={(e) => {
-                if (isFormComplete && !bookingInProgress) {
+                if (isFormComplete) {
                   e.currentTarget.style.backgroundColor = '#083A85';
                   e.currentTarget.style.transform = 'translateY(0)';
                   e.currentTarget.style.boxShadow = '0 8px 20px rgba(8, 58, 133, 0.35)';
                 }
               }}
             >
-              {bookingInProgress ? (
-                <>
-                  <div style={{
-                    width: '16px',
-                    height: '16px',
-                    border: '2px solid rgba(255,255,255,0.3)',
-                    borderTopColor: '#fff',
-                    borderRadius: '50%',
-                    animation: 'spin 1s linear infinite'
-                  }} />
-                  Processing...
-                </>
-              ) : (
-                <>
-                  {t('next')}
-                  <i className="bi bi-arrow-right"></i>
-                </>
-              )}
+              {t('next')}
+              <i className="bi bi-arrow-right"></i>
             </button>
           </div>
 
