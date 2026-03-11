@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import AmoriaKNavbar from '../../components/navbar';
 import { useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
@@ -11,11 +11,9 @@ import {
 } from '../../utils/locationUtils';
 import {
   getPhotographers,
-  getCategories,
   getCities,
   getCurrencies,
   type Photographer,
-  type PaginatedPhotographers,
   type PhotographerCategory,
   type City,
   type Currency,
@@ -44,7 +42,6 @@ const Photographers: React.FC = () => {
 
   // API data states
   const [photographers, setPhotographers] = useState<Photographer[]>([]);
-  const [categories, setCategories] = useState<PhotographerCategory[]>([]);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -73,18 +70,8 @@ const Photographers: React.FC = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Fetch categories and cities on mount
+  // Fetch cities on mount
   useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const response = await getCategories();
-        if (response.success && response.data) {
-          setCategories(response.data.filter((cat) => cat.isActive));
-        }
-      } catch (err) {
-        console.error('Failed to fetch categories:', err);
-      }
-    };
     const fetchCities = async () => {
       try {
         const response = await getCities();
@@ -107,7 +94,6 @@ const Photographers: React.FC = () => {
         }
       } catch { /* silent */ }
     };
-    fetchCategories();
     fetchCities();
     fetchCurrencies();
   }, []);
@@ -213,6 +199,52 @@ const Photographers: React.FC = () => {
   const goToPage = (pageNumber: number) => {
     setCurrentPage(pageNumber);
   };
+
+  // Derive available specialty options from the loaded photographers (no extra API call needed)
+  const categoryOptions = useMemo(() => {
+    const seen = new Map<string, PhotographerCategory>();
+    photographers.forEach((p) => {
+      (p.specialties ?? []).forEach((s) => {
+        const name = typeof s === 'string' ? s : (s as { id: string; name: string }).name;
+        const id = typeof s !== 'string' && (s as { id: string; name: string }).id
+          ? (s as { id: string; name: string }).id
+          : name.toLowerCase();
+        const key = name.toLowerCase();
+        if (!seen.has(key)) seen.set(key, { id, name, isActive: true });
+      });
+    });
+    return [...seen.values()];
+  }, [photographers]);
+
+  // Client-side filtering for specialty, price range and rating (backend may not support all params)
+  const displayedPhotographers = useMemo(() => {
+    return photographers.filter(p => {
+      // Specialty filter — exact match since options are derived from photographer specialties
+      if (selectedCategory !== 'all') {
+        const specialties = (p.specialties ?? []).map((s) =>
+          (typeof s === 'string' ? s : s.name).toLowerCase()
+        );
+        if (!specialties.includes(selectedCategory.toLowerCase())) return false;
+      }
+      // Rating filter
+      if (selectedRating !== 'all') {
+        const minRating = parseFloat(selectedRating);
+        if ((p.rating || 0) < minRating) return false;
+      }
+      // Price range filter — based on photographer's lowest package price
+      if (priceRange !== 'all') {
+        const packages = p.packages || [];
+        if (packages.length > 0) {
+          const minPrice = Math.min(...packages.map(pkg => pkg.price));
+          if (priceRange === 'budget' && minPrice >= 50000) return false;
+          if (priceRange === 'moderate' && (minPrice < 50000 || minPrice > 150000)) return false;
+          if (priceRange === 'premium' && (minPrice <= 150000 || minPrice > 300000)) return false;
+          if (priceRange === 'luxury' && minPrice <= 300000) return false;
+        }
+      }
+      return true;
+    });
+  }, [photographers, selectedRating, priceRange, selectedCategory]);
 
   return (
     <div className="min-h-screen" style={{ background: 'linear-gradient(to bottom, #f9fafb 0%, #f3f4f6 50%, #e5e7eb 100%)' }}>
@@ -389,7 +421,7 @@ const Photographers: React.FC = () => {
                 }}
               >
                 <option value="all">{t('allCategories')}</option>
-                {categories.map((category) => (
+                {categoryOptions.map((category) => (
                   <option key={category.id} value={category.name.toLowerCase()}>
                     {category.name}
                   </option>
@@ -622,7 +654,7 @@ const Photographers: React.FC = () => {
           )}
 
           {/* Empty State */}
-          {!isLoading && !error && photographers.length === 0 && (
+          {!isLoading && !error && displayedPhotographers.length === 0 && (
             <div style={{
               display: 'flex',
               justifyContent: 'center',
@@ -642,7 +674,7 @@ const Photographers: React.FC = () => {
           )}
 
           {/* Photographer Cards Grid */}
-          {!isLoading && !error && photographers.length > 0 && (
+          {!isLoading && !error && displayedPhotographers.length > 0 && (
           <div style={{
             display: 'grid',
             gridTemplateColumns: isMobile
@@ -651,7 +683,7 @@ const Photographers: React.FC = () => {
             gap: isMobile ? 'clamp(1.5rem, 4vw, 2.5rem) clamp(0.75rem, 2vw, 1.5rem)' : '2.5rem 1.5rem',
             width: '100%'
           }}>
-            {photographers.map((photographer) => {
+            {displayedPhotographers.map((photographer) => {
               const isBookmarked = bookmarkedPhotographers.includes(photographer.id);
               const displayName = getPhotographerDisplayName(photographer);
               const profileImage = getProfileImage(photographer);
@@ -816,7 +848,7 @@ const Photographers: React.FC = () => {
                             fontWeight: '500',
                             border: '0.001px solid #adadad'
                           }}>
-                            {specialty}
+                            {typeof specialty === 'string' ? specialty : (specialty as { id: string; name: string }).name}
                           </span>
                         ))}
                         {(photographer.specialties?.length ?? 0) > 3 && (
@@ -923,8 +955,7 @@ const Photographers: React.FC = () => {
                     const activePkgs = (photographer.packages ?? []).filter(p => p.isActive);
                     if (activePkgs.length === 0) return null;
                     const cheapest = activePkgs.reduce((min, p) => p.price < min.price ? p : min, activePkgs[0]);
-                    const c = cheapest.currencyId ? currencyMap.get(cheapest.currencyId) : undefined;
-                    const sym = c?.symbol || c?.code || cheapest.currencyAbbreviation || '';
+                    const sym = cheapest.currencySymbol || '';
                     return (
                       <div style={{
                         display: 'flex',
