@@ -203,32 +203,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     initializeAuth();
   }, []);
 
-  // Listen for logout messages from dashboard (opened via window.open)
-  useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
-      // Only accept logout messages from the dashboard origin
-      const dashboardOrigin =
-        process.env.NEXT_PUBLIC_DASHBOARD_URL?.replace(/\/$/, "") || "";
-      if (dashboardOrigin && event.origin !== dashboardOrigin) return;
-      if (event.data?.type === "LOGOUT") {
-        removeAuthToken();
-        removeRefreshToken();
-        clearStoredUser();
-        setUser(null);
-        // Expire dashboard-set cookies
-        ["authToken", "refreshToken", "userRole"].forEach((name) => {
-          document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
-        });
-        // Redirect to the page the user was on before login, or fallback to home
-        const savedRedirect = localStorage.getItem("authRedirectUrl");
-        localStorage.removeItem("authRedirectUrl");
-        window.location.href = savedRedirect || "/";
-      }
-    };
-
-    window.addEventListener("message", handleMessage);
-    return () => window.removeEventListener("message", handleMessage);
-  }, []);
 
   // Listen for storage events (cross-tab sync)
   useEffect(() => {

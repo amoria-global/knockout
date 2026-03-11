@@ -16,12 +16,12 @@ import type { ApiResponse } from '@/lib/api/types';
 export interface PhotographerCategory {
   id: string;
   name: string;
-  specialties: string[];
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-  createdBy: string | null;
-  formattedCreatedAt: string;
+  specialties?: string[];
+  isActive?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  createdBy?: string | null;
+  formattedCreatedAt?: string;
 }
 
 // Backend response wraps categories in 'data' array

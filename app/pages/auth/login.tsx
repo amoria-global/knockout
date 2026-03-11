@@ -92,12 +92,14 @@ export default function LoginPage(): React.JSX.Element {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectUrl = searchParams.get('redirect');
-  const loggedOut = searchParams.get('logged_out') === 'true';
+  const loggedOut = searchParams.get('loggedOut') === 'true' || searchParams.get('logged_out') === 'true';
+  const sessionExpired = searchParams.get('session_expired') === 'true';
   const t = useTranslations('auth.loginPage');
   const tAuth = useTranslations('auth');
   const { success: showSuccess, error: showError, warning: showWarning, info: showInfo, isOnline } = useToast();
-  const { login: loginUser } = useAuth();
+  const { login: loginUser, logout: logoutUser } = useAuth();
   const [showLoggedOutBanner, setShowLoggedOutBanner] = useState(false);
+  const [showSessionExpiredBanner, setShowSessionExpiredBanner] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -115,14 +117,25 @@ export default function LoginPage(): React.JSX.Element {
     }
   }, [redirectUrl]);
 
-  // Show logged-out banner if redirected from dashboard logout
+  // Clear landing auth state and show banner when redirected from dashboard logout
   useEffect(() => {
     if (loggedOut) {
+      logoutUser();
       setShowLoggedOutBanner(true);
       const timer = setTimeout(() => setShowLoggedOutBanner(false), 5000);
       return () => clearTimeout(timer);
     }
-  }, [loggedOut]);
+  }, [loggedOut, logoutUser]);
+
+  // Clear landing auth state and show banner when session expired on dashboard
+  useEffect(() => {
+    if (sessionExpired) {
+      logoutUser();
+      setShowSessionExpiredBanner(true);
+      const timer = setTimeout(() => setShowSessionExpiredBanner(false), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [sessionExpired, logoutUser]);
 
   // Google OAuth success handler
   const handleGoogleSuccess = async (tokenResponse: { access_token: string }) => {
@@ -218,24 +231,51 @@ export default function LoginPage(): React.JSX.Element {
   // Modal handlers
   const handleKeepExploring = () => {
     setShowPostLoginModal(false);
-    router.push(returnTo);
+    if (returnTo.startsWith('http')) {
+      // External (dashboard) redirect — append token so handoff page can authenticate
+      const token = getAuthToken();
+      const separator = returnTo.includes('?') ? '&' : '?';
+      window.location.href = token ? `${returnTo}${separator}token=${encodeURIComponent(token)}` : returnTo;
+    } else {
+      router.push(returnTo);
+    }
   };
 
   const handleGoToDashboard = () => {
-    const token = getAuthToken();
-    const refreshTokenValue = getRefreshToken();
-    const dashboardUrl = getDashboardUrlWithToken(loggedInUserType, token || undefined, refreshTokenValue || undefined);
-
-    if (dashboardUrl && token) {
-      // Open dashboard in new tab with type-based route (token-only, no email needed)
-      window.open(dashboardUrl, '_blank');
-    } else {
-      // Fallback to local dashboard if env not set
-      window.open('/user/dashboard', '_blank');
-    }
-    // Close modal and return to the page the user came from
     setShowPostLoginModal(false);
-    router.push(returnTo);
+    if (returnTo.startsWith('http')) {
+      // External (dashboard) redirect — append token and navigate in same tab
+      const token = getAuthToken();
+      const separator = returnTo.includes('?') ? '&' : '?';
+      window.location.href = token ? `${returnTo}${separator}token=${encodeURIComponent(token)}` : returnTo;
+    } else {
+      // Check if returnTo is the book-now page with booking context
+      const returnToUrl = new URL(returnTo, window.location.origin);
+      const photographerId = returnToUrl.searchParams.get('id');
+      const packageId = returnToUrl.searchParams.get('packageId');
+
+      if (returnToUrl.pathname.includes('book-now') && photographerId && packageId) {
+        // Redirect directly to the dashboard events page with booking context
+        const token = getAuthToken();
+        const userType = (loggedInUserType || 'Client').replace(/([A-Z])/g, (m, l, i) => (i > 0 ? '-' : '') + l.toLowerCase());
+        const dashUrl = process.env.NEXT_PUBLIC_DASHBOARD_URL || 'https://dashboard.connekyt.com';
+        const dest = new URL(`${dashUrl}/user/${userType}/events`);
+        dest.searchParams.set('photographerId', photographerId);
+        dest.searchParams.set('packageId', packageId);
+        if (token) dest.searchParams.set('token', token);
+        window.location.href = dest.toString();
+      } else {
+        const token = getAuthToken();
+        const refreshTokenValue = getRefreshToken();
+        const dashboardUrl = getDashboardUrlWithToken(loggedInUserType, token || undefined, refreshTokenValue || undefined);
+        if (dashboardUrl && token) {
+          window.open(dashboardUrl, '_blank');
+        } else {
+          window.open('/user/dashboard', '_blank');
+        }
+        router.push(returnTo);
+      }
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -369,6 +409,40 @@ export default function LoginPage(): React.JSX.Element {
           }
         }
       `}</style>
+
+      {/* Session expired banner */}
+      {showSessionExpiredBanner && (
+        <div style={{
+          position: 'fixed',
+          top: '3.5rem',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 9999,
+          backgroundColor: '#D97706',
+          color: 'white',
+          padding: '0.4rem 1rem',
+          borderRadius: '0.375rem',
+          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.12)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.375rem',
+          fontSize: '0.8rem',
+          fontWeight: '500',
+          animation: 'fadeInDown 0.3s ease-out',
+        }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          Your session has expired. Please log in again.
+          <button
+            onClick={() => setShowSessionExpiredBanner(false)}
+            style={{ marginLeft: '0.5rem', background: 'none', border: 'none', color: 'white', cursor: 'pointer', padding: '0 2px', fontSize: '1rem', lineHeight: 1 }}
+            aria-label="Dismiss"
+          >
+            &times;
+          </button>
+        </div>
+      )}
 
       {/* Logged-out banner */}
       {showLoggedOutBanner && (
