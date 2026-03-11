@@ -39,6 +39,7 @@ export {
   getPhotographers,
   getPhotographerById,
   formatTimeValue,
+  getSpecialtyName,
   getReviewerName,
   getReviewText,
   getProjectImage,
