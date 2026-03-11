@@ -848,7 +848,7 @@ const Photographers: React.FC = () => {
                             fontWeight: '500',
                             border: '0.001px solid #adadad'
                           }}>
-                            {typeof specialty === 'string' ? specialty : (specialty as { id: string; name: string }).name}
+                            {typeof specialty === 'string' ? specialty : specialty.name}
                           </span>
                         ))}
                         {(photographer.specialties?.length ?? 0) > 3 && (
