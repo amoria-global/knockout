@@ -30,7 +30,7 @@ export interface Photographer {
   about?: string | null;
   joinedFrom?: string;
   professionalPhilosophy?: string | null;
-  specialties?: string[];
+  specialties?: (string | { id: string; name: string })[];
   rating?: number;
   completedEvents?: number;
   reviews?: Review[];
