@@ -97,6 +97,7 @@ export interface PublicPackage {
   packageName: string;
   price: number;
   currencyId?: string;
+  currencySymbol?: string;
   currencyAbbreviation?: string;
   currencyName?: string;
   priceUnit: string;

@@ -5,7 +5,6 @@ import { useTranslations } from 'next-intl';
 import AmoriaKNavbar from '../../components/navbar';
 import { getPhotographerById, type Photographer, getCities, getCurrencies, type City, type Currency, getReviewerName, getReviewText, formatTimeValue, getBookedDates, type BookedDate } from '@/lib/APIs/public';
 import { useToast } from '@/lib/notifications/ToastProvider';
-import { useAuth } from '@/app/providers/AuthProvider';
 
 // Default images for fallback
 const DEFAULT_PROFILE_IMAGE = 'https://i.pinimg.com/1200x/e9/1f/59/e91f59ed85a702d7252f2b0c8e02c7d2.jpg';
@@ -39,6 +38,16 @@ const formatJoinDate = (dateString: string): string => {
   }
 };
 
+// Format "YYYY-MM-DD" → "Oct 10, 2026"
+const formatAvailableDate = (dateStr: string): string => {
+  try {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    return new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  } catch {
+    return dateStr;
+  }
+};
+
 // Component that uses useSearchParams - needs to be wrapped in Suspense
 function ViewProfileContent(): React.JSX.Element {
   const t = useTranslations('viewProfile');
@@ -46,13 +55,11 @@ function ViewProfileContent(): React.JSX.Element {
   const photographerId = searchParams.get('id');
   const toast = useToast();
 
-  const { user, isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
   const [isLoading, setIsLoading] = useState(true);
   const [imageViewerOpen, setImageViewerOpen] = useState(false);
   const [currentImageType, setCurrentImageType] = useState<'profile' | 'cover' | null>(null);
   const [isMobile, setIsMobile] = useState(false);
-  const [showBookingBanner, setShowBookingBanner] = useState(false);
 
   // API data state
   const [photographer, setPhotographer] = useState<Photographer | null>(null);
@@ -148,10 +155,7 @@ function ViewProfileContent(): React.JSX.Element {
 
   // Handle Book Now button click with success banner
   const handleBookNowClick = () => {
-    setShowBookingBanner(true);
-    setTimeout(() => {
-      window.location.href = `/user/photographers/book-now?id=${photographerId}`;
-    }, 1500);
+    window.location.href = `/user/photographers/book-now?id=${photographerId}`;
   };
 
   // Detect screen size
@@ -217,7 +221,7 @@ function ViewProfileContent(): React.JSX.Element {
     profileImage: getProfileImage(photographer),
     backgroundImage: getCoverImage(photographer),
     about: photographer?.about || photographer?.professionalPhilosophy || '',
-    specialties: photographer?.specialties || [],
+    specialties: (photographer?.specialties || []).map((s: string | { id: string; name: string }) => typeof s === 'string' ? s : s.name),
     equipments: photographer?.equipments?.map(eq => eq.name) || [],
     portfolio: {
       beliefs: photographer?.professionalPhilosophy || '',
@@ -228,13 +232,14 @@ function ViewProfileContent(): React.JSX.Element {
       qualifications: photographer?.certifications?.map((cert, index) => ({
         id: index + 1,
         title: cert.title || cert.name || 'Untitled',
-        issuer: cert.institution || cert.issuingOrganization || '',
+        issuer: cert.issuer || cert.institution || cert.issuingOrganization || '',
         year: (() => {
+          if (cert.year) return cert.year;
           if (cert.yearObtained) return cert.yearObtained;
           if (cert.issueDate) { try { return new Date(cert.issueDate).getFullYear().toString(); } catch { return ''; } }
           return '';
         })(),
-        description: cert.description || `Certification from ${cert.institution || cert.issuingOrganization || 'Unknown'}`,
+        description: cert.description || `Certification from ${cert.issuer || cert.institution || cert.issuingOrganization || 'Unknown'}`,
       })) || [],
       education: photographer?.educationLevels?.map((edu, index) => ({
         id: index + 1,
@@ -252,6 +257,7 @@ function ViewProfileContent(): React.JSX.Element {
         title: training.title || training.name || 'Untitled',
         institution: training.institution || training.provider || '',
         year: (() => {
+          if (training.year) return training.year;
           if (training.yearObtained) return training.yearObtained;
           if (training.completionDate) { try { return new Date(training.completionDate).getFullYear().toString(); } catch { return ''; } }
           return '';
@@ -306,10 +312,6 @@ function ViewProfileContent(): React.JSX.Element {
     console.log('Book Now clicked');
   };
 
-  const handleStartChat = () => {
-    // Navigate to chat page
-    console.log('Start Chat clicked');
-  };
 
   const renderStars = (rating: number) => {
     const stars = [];
@@ -472,60 +474,6 @@ function ViewProfileContent(): React.JSX.Element {
     <>
       <AmoriaKNavbar />
 
-      {/* Success Booking Banner */}
-      {showBookingBanner && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            zIndex: 9999,
-            backgroundColor: '#10b981',
-            color: '#fff',
-            padding: '16px 24px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '12px',
-            boxShadow: '0 4px 20px rgba(16, 185, 129, 0.4)',
-            animation: 'slideDown 0.4s ease-out',
-          }}
-        >
-          <div
-            style={{
-              width: '32px',
-              height: '32px',
-              borderRadius: '50%',
-              backgroundColor: 'rgba(255, 255, 255, 0.2)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <i className="bi bi-check-lg" style={{ fontSize: '20px', fontWeight: 'bold' }}></i>
-          </div>
-          <div>
-            <div style={{ fontSize: '16px', fontWeight: '700' }}>
-              Booking Photographer Successfully!
-            </div>
-            <div style={{ fontSize: '13px', opacity: 0.9 }}>
-              Redirecting to package selection...
-            </div>
-          </div>
-          <div
-            style={{
-              marginLeft: '20px',
-              width: '24px',
-              height: '24px',
-              border: '3px solid rgba(255, 255, 255, 0.3)',
-              borderTopColor: '#fff',
-              borderRadius: '50%',
-              animation: 'spin 1s linear infinite',
-            }}
-          ></div>
-        </div>
-      )}
 
       {/* CSS Animation Keyframes */}
       <style jsx>{`
@@ -708,25 +656,27 @@ function ViewProfileContent(): React.JSX.Element {
               }}
               loading="lazy"
             />
-            {/* Verification Badge - Matching photographers.tsx */}
-            <div
-              style={{
-                position: 'absolute',
-                bottom: '0px',
-                right: '0px',
-                background: 'white',
-                borderRadius: '50%',
-                width: '24px',
-                height: '24px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.15)',
-                zIndex: 5,
-              }}
-            >
-              <i className="bi bi-patch-check-fill" style={{ color: '#3b82f6', fontSize: '1rem' }}></i>
-            </div>
+            {/* Verification Badge - only shown when photographer is verified */}
+            {photographer?.isVerified && (
+              <div
+                style={{
+                  position: 'absolute',
+                  bottom: '0px',
+                  right: '0px',
+                  background: 'white',
+                  borderRadius: '50%',
+                  width: '24px',
+                  height: '24px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 2px 4px rgba(0, 0, 0, 0.15)',
+                  zIndex: 5,
+                }}
+              >
+                <i className="bi bi-patch-check-fill" style={{ color: '#3b82f6', fontSize: '1rem' }}></i>
+              </div>
+            )}
 
             {/* Hover overlay indicator */}
             <div
@@ -792,6 +742,9 @@ function ViewProfileContent(): React.JSX.Element {
               }}>
                 {photographerData.name}
               </h3>
+              {photographer?.isVerified && (
+                <i className="bi bi-patch-check-fill" style={{ color: '#3b82f6', fontSize: '18px' }} title="Verified"></i>
+              )}
               {photographerData.customerType && (
                 <span style={{
                   padding: '3px 10px',
@@ -948,6 +901,7 @@ function ViewProfileContent(): React.JSX.Element {
                   display: 'flex',
                   alignItems: 'center',
                   gap: '6px',
+                  whiteSpace: 'nowrap',
                 }}
               >
                 <i className="bi bi-clock-fill" style={{ color: '#083A85', fontSize: '14px' }}></i>
@@ -979,6 +933,7 @@ function ViewProfileContent(): React.JSX.Element {
                   display: 'flex',
                   alignItems: 'center',
                   gap: '6px',
+                  whiteSpace: 'nowrap',
                 }}
               >
                 <i className="bi bi-tag-fill" style={{ color: '#10b981', fontSize: '14px' }}></i>
@@ -993,8 +948,7 @@ function ViewProfileContent(): React.JSX.Element {
                     const activePkgs = (photographer?.packages || []).filter(p => p.isActive);
                     if (activePkgs.length === 0) return 'Contact for pricing';
                     const cheapest = activePkgs.reduce((min, p) => p.price < min.price ? p : min, activePkgs[0]);
-                    const c = cheapest.currencyId ? currencyMap.get(cheapest.currencyId) : undefined;
-                    const sym = c?.symbol || c?.code || cheapest.currencyAbbreviation || '$';
+                    const sym = cheapest.currencySymbol || '';
                     return `${sym}${cheapest.price.toLocaleString()} / ${cheapest.priceUnit || 'Event'}`;
                   })()}
                 </span>
@@ -1010,88 +964,70 @@ function ViewProfileContent(): React.JSX.Element {
             alignItems: 'stretch',
             width: isMobile ? '100%' : 'auto',
           }}>
-            <button
-              onClick={handleBookNowClick}
-              disabled={showBookingBanner}
-              style={{
+            {photographer?.currentStatus === 'booked' ? (
+              <div style={{
                 padding: isMobile ? 'clamp(12px, 3vw, 14px) clamp(20px, 5vw, 24px)' : '12px 24px',
-                backgroundColor: showBookingBanner ? '#10b981' : '#083A85',
-                color: 'white',
-                border: 'none',
+                backgroundColor: '#f3f4f6',
+                color: '#6b7280',
+                border: '1px solid #d1d5db',
                 borderRadius: isMobile ? 'clamp(6px, 1.5vw, 8px)' : '8px',
-                fontSize: isMobile ? 'clamp(14px, 3.5vw, 15px)' : '15px',
+                fontSize: isMobile ? 'clamp(13px, 3.2vw, 14px)' : '14px',
                 fontWeight: '600',
-                cursor: showBookingBanner ? 'not-allowed' : 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: isMobile ? 'clamp(6px, 1.5vw, 8px)' : '8px',
-                boxShadow: '0 4px 12px rgba(8, 58, 133, 0.25)',
-                transition: 'all 0.3s ease',
+                gap: '8px',
                 whiteSpace: 'nowrap',
-              }}
-              onMouseEnter={(e) => {
-                if (!isMobile && !showBookingBanner) {
-                  e.currentTarget.style.backgroundColor = '#062d6b';
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 6px 16px rgba(8, 58, 133, 0.35)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isMobile && !showBookingBanner) {
-                  e.currentTarget.style.backgroundColor = '#083A85';
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(8, 58, 133, 0.25)';
-                }
-              }}
-            >
-              <i className="bi bi-calendar-check" style={{ fontSize: isMobile ? 'clamp(14px, 3.5vw, 16px)' : '16px' }}></i>
-              {showBookingBanner ? 'Booking...' : t('bookNow')}
-            </button>
+                cursor: 'not-allowed',
+              }}>
+                <i className="bi bi-calendar-x" style={{ fontSize: '15px', color: '#9ca3af' }}></i>
+                Booked
+                {photographer.nextAvailableDate && (
+                  <span style={{ fontWeight: '400', color: '#9ca3af' }}>
+                    · Available from {formatAvailableDate(photographer.nextAvailableDate)}
+                  </span>
+                )}
+              </div>
+            ) : (
+              <button
+                onClick={handleBookNowClick}
+                style={{
+                  padding: isMobile ? 'clamp(12px, 3vw, 14px) clamp(20px, 5vw, 24px)' : '12px 24px',
+                  backgroundColor: '#083A85',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: isMobile ? 'clamp(6px, 1.5vw, 8px)' : '8px',
+                  fontSize: isMobile ? 'clamp(14px, 3.5vw, 15px)' : '15px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: isMobile ? 'clamp(6px, 1.5vw, 8px)' : '8px',
+                  boxShadow: '0 4px 12px rgba(8, 58, 133, 0.25)',
+                  transition: 'all 0.3s ease',
+                  whiteSpace: 'nowrap',
+                }}
+                onMouseEnter={(e) => {
+                  if (!isMobile) {
+                    e.currentTarget.style.backgroundColor = '#062d6b';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 6px 16px rgba(8, 58, 133, 0.35)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isMobile) {
+                    e.currentTarget.style.backgroundColor = '#083A85';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(8, 58, 133, 0.25)';
+                  }
+                }}
+              >
+                <i className="bi bi-calendar-check" style={{ fontSize: isMobile ? 'clamp(14px, 3.5vw, 16px)' : '16px' }}></i>
+                {t('bookNow')}
+              </button>
+            )}
 
-            <button
-              onClick={() => {
-                if (isAuthenticated) {
-                  window.location.href = 'https://connekt-dashboard.vercel.app/user/client/inbox';
-                } else {
-                  toast.info('Please log in to start a chat');
-                  window.location.href = '/user/auth/login';
-                }
-              }}
-              style={{
-                padding: isMobile ? 'clamp(12px, 3vw, 14px) clamp(20px, 5vw, 24px)' : '12px 24px',
-                backgroundColor: '#fff',
-                color: '#083A85',
-                border: '2px solid #083A85',
-                borderRadius: isMobile ? 'clamp(6px, 1.5vw, 8px)' : '8px',
-                fontSize: isMobile ? 'clamp(14px, 3.5vw, 15px)' : '15px',
-                fontWeight: '600',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: isMobile ? 'clamp(6px, 1.5vw, 8px)' : '8px',
-                transition: 'all 0.3s ease',
-                whiteSpace: 'nowrap',
-              }}
-              onMouseEnter={(e) => {
-                if (!isMobile) {
-                  e.currentTarget.style.backgroundColor = '#f0f9ff';
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(8, 58, 133, 0.2)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isMobile) {
-                  e.currentTarget.style.backgroundColor = '#fff';
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = 'none';
-                }
-              }}
-            >
-              <i className="bi bi-chat-dots" style={{ fontSize: isMobile ? 'clamp(14px, 3.5vw, 16px)' : '16px' }}></i>
-              {t('startChat')}
-            </button>
           </div>
         </div>
 

@@ -17,6 +17,11 @@ export interface ProfessionalSkill {
   skillPercentage?: number;
 }
 
+export interface Specialty {
+  id: string;
+  name: string;
+}
+
 export interface Photographer {
   id: string;
   firstName: string;
@@ -30,7 +35,7 @@ export interface Photographer {
   about?: string | null;
   joinedFrom?: string;
   professionalPhilosophy?: string | null;
-  specialties?: (string | { id: string; name: string })[];
+  specialties?: Specialty[] | string[];
   rating?: number;
   completedEvents?: number;
   reviews?: Review[];
@@ -44,6 +49,8 @@ export interface Photographer {
   packages?: PhotographerPackage[];
   workExperiences?: WorkExperience[];
   isVerified?: boolean;
+  currentStatus?: 'available' | 'booked';
+  nextAvailableDate?: string | null;
 }
 
 export interface PhotographerPackageFeature {
@@ -57,14 +64,15 @@ export interface PhotographerPackage {
   packageName: string;
   price: number;
   currencyId?: string;
+  currencySymbol?: string;
   currencyAbbreviation?: string;
   currencyName?: string;
   priceUnit: string;
   durationHours: number;
   description: string;
   isActive: boolean;
-  includedPhotos?: number;
-  includedVideos?: number;
+  includedPhotos?: number | null;
+  includedVideos?: number | null;
   extraPhotoPrice?: number;
   extraVideoPrice?: number;
   features: PhotographerPackageFeature[];
@@ -130,13 +138,12 @@ export interface Education {
 
 export interface Certification {
   id?: string;
-  // Spec uses "title", legacy uses "name"
   title?: string;
   name?: string;
-  // Spec uses "institution", legacy uses "issuingOrganization"
+  issuer?: string;
   institution?: string;
   issuingOrganization?: string;
-  // Spec uses "yearObtained", legacy uses "issueDate"
+  year?: string;
   yearObtained?: string;
   issueDate?: string;
   expiryDate?: string;
@@ -145,13 +152,11 @@ export interface Certification {
 
 export interface Training {
   id?: string;
-  // Spec uses "title", legacy uses "name"
   title?: string;
   name?: string;
-  // Spec uses "institution", legacy uses "provider"
+  year?: string;
   institution?: string;
   provider?: string;
-  // Spec uses "yearObtained", legacy uses "completionDate"
   yearObtained?: string;
   completionDate?: string;
   description?: string;
@@ -163,7 +168,7 @@ export interface WorkExperience {
   company: string;
   location: string;
   startDate: string;
-  endDate: string;
+  endDate: string | null;
   description: string;
 }
 
@@ -220,13 +225,30 @@ export interface GetPhotographersRequest {
 }
 
 /**
- * Format time from API - handles both string and {hour, minute} formats
+ * Format "HH:MM:SS" or "HH:MM" string to "H:MM AM/PM"
+ */
+export function formatTime(timeStr: string): string {
+  const [h, m] = timeStr.split(':').map(Number);
+  const period = h >= 12 ? 'PM' : 'AM';
+  const displayHour = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return `${displayHour}:${m.toString().padStart(2, '0')} ${period}`;
+}
+
+/**
+ * Format time from API - handles string "HH:MM:SS", "HH:MM", or {hour, minute} object
  */
 export function formatTimeValue(t: string | { hour: number; minute: number }): string {
-  if (typeof t === 'string') return t;
+  if (typeof t === 'string') return formatTime(t);
   const period = t.hour >= 12 ? 'PM' : 'AM';
   const h = t.hour === 0 ? 12 : t.hour > 12 ? t.hour - 12 : t.hour;
   return `${h}:${t.minute.toString().padStart(2, '0')} ${period}`;
+}
+
+/**
+ * Get specialty display name - handles both string and {id, name} object
+ */
+export function getSpecialtyName(s: string | { id: string; name: string }): string {
+  return typeof s === 'string' ? s : s.name;
 }
 
 /**
