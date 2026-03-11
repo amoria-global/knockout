@@ -1181,7 +1181,7 @@ function ViewProfileContent(): React.JSX.Element {
                         }}
                       >
                         <i className="bi bi-camera-fill" style={{ fontSize: '14px' }}></i>
-                        {typeof specialty === 'string' ? specialty : specialty.name}
+                        {specialty}
                       </span>
                     ))}
                   </div>
