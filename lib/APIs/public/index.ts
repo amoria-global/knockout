@@ -64,11 +64,13 @@ export type {
 // Events
 export {
   getPublicEvents,
+  getPublicEventById,
 } from './get-events/route';
 export type {
   PublicEvent,
   PaginatedEvents,
   GetPublicEventsRequest,
+  EventCategory,
 } from './get-events/route';
 
 // Contact Us

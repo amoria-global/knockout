@@ -10,31 +10,66 @@ import type { ApiResponse } from '@/lib/api/types';
 /**
  * Public Event data returned from the API
  */
+/**
+ * Photographer nested object from the API
+ */
+export interface EventPhotographer {
+  id: string;
+  firstName?: string;
+  lastName?: string;
+  profilePicture?: string;
+  address?: string;
+  coverPicture?: string;
+}
+
+/**
+ * Creator nested object from the API
+ */
+export interface EventCreator {
+  firstName?: string;
+  lastName?: string;
+  profilePicture?: string;
+  customerType?: string;
+}
+
+/**
+ * Event category object from the API
+ */
+export interface EventCategory {
+  id: string;
+  name: string;
+  description?: string;
+  isActive?: boolean;
+}
+
 export interface PublicEvent {
   id: string;
   title: string;
   description?: string;
-  eventType?: string;
-  category?: string;
   eventDate?: string;
   startTime?: string;
   endTime?: string;
   location?: string;
   eventOrganizer?: string;
-  eventVisibility?: string;
   eventTags?: string;
-  coverImage?: string;
-  bannerImage?: string;
+  eventPhoto?: string;
+  eventCategory?: EventCategory | null;
   price?: number;
-  status?: string;
-  customerId?: string;
-  photographerId?: string;
-  photographerName?: string;
-  guestCount?: number;
+  eventStatus?: string;
+  completionStatus?: string;
+  bookingStatus?: string;
   maxGuests?: number;
+  photographer?: EventPhotographer;
+  creator?: EventCreator;
   notes?: string;
   createdAt?: string;
   updatedAt?: string;
+  streamFee?: number | null;
+  streamFeeCurrencySymbol?: string | null;
+  streamFeeCurrencyAbbreviation?: string | null;
+  hasLiveStream?: boolean | null;
+  liveInputId?: string | null;
+  hlsManifestUrl?: string | null;
   [key: string]: unknown;
 }
 
@@ -84,6 +119,16 @@ export interface GetPublicEventsRequest {
   size?: number;
   sortColumn?: string;
   sortDirection?: 'asc' | 'desc';
+}
+
+/**
+ * Fetch a single public event by ID
+ */
+export async function getPublicEventById(
+  id: string
+): Promise<ApiResponse<PublicEvent>> {
+  const endpoint = API_ENDPOINTS.PUBLIC.EVENT_BY_ID(id);
+  return apiClient.get<PublicEvent>(endpoint, { skipAuth: true, retries: 2 });
 }
 
 /**

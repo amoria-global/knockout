@@ -6,11 +6,10 @@ import Hls from 'hls.js';
 import AmoriaKNavbar from '../../components/navbar';
 import { useAuth } from '../../providers/AuthProvider';
 import { getEventDetails } from '@/lib/APIs/events/get-event-details/route';
-import { getStreamChats, sendStreamChat, getStreamViewerCount, getStreamVideo } from '@/lib/APIs/streams/route';
+import { getStreamChats, sendStreamChat, getStreamViewerCount, getStreamVideo, validateStreamToken, getStreamAccess } from '@/lib/APIs/streams/route';
 import { recordStreamingPayment } from '@/lib/APIs/payments/route';
 import { getCurrencies, type Currency } from '@/lib/APIs/public';
 import { joinEvent } from '@/lib/APIs/events/join-event/route';
-import { validateInviteCode } from '@/lib/APIs/customer/validate-invite-code/route';
 import type { Event } from '@/lib/APIs/events/get-events/route';
 
 // ---------------------------------------------------------------------------
@@ -98,11 +97,17 @@ export default function EventStreamPage({ eventId }: EventStreamPageProps) {
   // -- Mobile
   const [isMobile, setIsMobile] = useState(false);
 
-  // -- Host ID / Event Stream Link validation
+  // -- Invite token validation
   const [hostIdInput, setHostIdInput] = useState('');
   const [hostIdValidated, setHostIdValidated] = useState(false);
   const [hostIdValidating, setHostIdValidating] = useState(false);
   const [hostIdError, setHostIdError] = useState<string | null>(null);
+  const [validatedHlsUrl, setValidatedHlsUrl] = useState<string | null>(null);
+  const [tokenRequiresPayment, setTokenRequiresPayment] = useState(false);
+  const [tokenStreamFee, setTokenStreamFee] = useState(0);
+  const [tokenStreamFeeCurrency, setTokenStreamFeeCurrency] = useState('');
+  const [savedInviteToken, setSavedInviteToken] = useState('');
+  const [buyAccessClicked, setBuyAccessClicked] = useState(false);
 
   // -- Event data
   const [event, setEvent] = useState<Event | null>(null);
@@ -162,22 +167,53 @@ export default function EventStreamPage({ eventId }: EventStreamPageProps) {
     return () => window.removeEventListener('resize', handle);
   }, []);
 
-  // Auto-validate hostId from URL on mount (e.g., ?hostId=STREAM-abc-XYZ)
+  // Auto-validate invite token from URL on mount
+  // Handles two cases:
+  //   a) ?inviteToken=xxx  (or ?hostId=xxx) — validate token
+  //   b) ?inviteToken=xxx&paymentId=yyy    — post-payment return, call /stream/access
   useEffect(() => {
-    const urlHostId = searchParams.get('hostId');
-    if (!urlHostId) return;
-    setHostIdInput(urlHostId);
+    const token = searchParams.get('inviteToken') || searchParams.get('hostId');
+    const paymentId = searchParams.get('paymentId');
+    if (!token || !eventId) return;
+    setHostIdInput(token);
+    setSavedInviteToken(token);
     setHostIdValidating(true);
-    validateInviteCode(urlHostId)
-      .then(res => {
-        if (res.success && (res.data as { valid?: boolean })?.valid) {
-          setHostIdValidated(true);
+
+    const run = async () => {
+      try {
+        if (paymentId) {
+          // Post-payment: exchange token + paymentId for HLS URL
+          const res = await getStreamAccess(eventId, token, paymentId);
+          if (res.success && res.data?.hlsManifestUrl) {
+            setValidatedHlsUrl(res.data.hlsManifestUrl);
+            setHostIdValidated(true);
+          } else {
+            setHostIdError('Could not retrieve stream access. Please contact the organizer.');
+          }
         } else {
-          setHostIdError('The Host ID in this link is invalid or has expired.');
+          // Fresh visit: validate token
+          const res = await validateStreamToken(eventId, token);
+          if (res.success && res.data?.valid) {
+            if (res.data.requiresPayment) {
+              setTokenRequiresPayment(true);
+              setTokenStreamFee(res.data.streamFee ?? 0);
+              setTokenStreamFeeCurrency(res.data.currencyAbbreviation ?? '');
+            } else {
+              setHostIdValidated(true);
+              if (res.data.hlsManifestUrl) setValidatedHlsUrl(res.data.hlsManifestUrl);
+            }
+          } else {
+            setHostIdError('The invite token in this link is invalid or has expired.');
+          }
         }
-      })
-      .catch(() => setHostIdError('Could not validate the Host ID. Please try again.'))
-      .finally(() => setHostIdValidating(false));
+      } catch {
+        setHostIdError('Could not validate the invite token. Please try again.');
+      } finally {
+        setHostIdValidating(false);
+      }
+    };
+
+    run();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -226,7 +262,7 @@ export default function EventStreamPage({ eventId }: EventStreamPageProps) {
   // HLS player init / teardown
   useEffect(() => {
     if (resolvedStatus !== 'LIVE') return;
-    const hlsUrl = event?.hlsManifestUrl;
+    const hlsUrl = validatedHlsUrl || event?.hlsManifestUrl;
     if (!hlsUrl) return;
     const videoEl = videoRef.current;
     if (!videoEl) return;
@@ -267,7 +303,7 @@ export default function EventStreamPage({ eventId }: EventStreamPageProps) {
       videoEl.removeEventListener('emptied', onStall);
       setIsStreamActuallyLive(false);
     };
-  }, [resolvedStatus, event?.hlsManifestUrl]);
+  }, [resolvedStatus, event?.hlsManifestUrl, validatedHlsUrl]);
 
   // Chat polling every 5s
   useEffect(() => {
@@ -373,28 +409,36 @@ export default function EventStreamPage({ eventId }: EventStreamPageProps) {
     action();
   };
 
-  // Extract hostId from a pasted value — accepts bare code or full URL
+  // Extract token from a pasted value — accepts bare token or full event stream URL
   const extractHostId = (value: string): string => {
     try {
       const url = new URL(value.trim());
-      return url.searchParams.get('hostId') || value.trim();
+      return url.searchParams.get('inviteToken') || url.searchParams.get('hostId') || value.trim();
     } catch {
       return value.trim();
     }
   };
 
   const handleValidateHostId = async () => {
-    const code = extractHostId(hostIdInput);
-    if (!code) { setHostIdError('Please enter an Event Stream Link or Host ID.'); return; }
+    const token = extractHostId(hostIdInput);
+    if (!token) { setHostIdError('Please enter an invite token or Event Stream Link.'); return; }
     setHostIdValidating(true);
     setHostIdError(null);
+    setTokenRequiresPayment(false);
     try {
-      const res = await validateInviteCode(code);
-      if (res.success && (res.data as { valid?: boolean })?.valid) {
-        setHostIdValidated(true);
-        setHostIdInput(code);
+      const res = await validateStreamToken(eventId, token);
+      if (res.success && res.data?.valid) {
+        if (res.data.requiresPayment) {
+          setSavedInviteToken(token);
+          setTokenRequiresPayment(true);
+          setTokenStreamFee(res.data.streamFee ?? 0);
+          setTokenStreamFeeCurrency(res.data.currencyAbbreviation ?? '');
+        } else {
+          setHostIdValidated(true);
+          if (res.data.hlsManifestUrl) setValidatedHlsUrl(res.data.hlsManifestUrl);
+        }
       } else {
-        setHostIdError('Invalid Host ID or Event Stream Link. Please check and try again.');
+        setHostIdError('Invalid invite token or Event Stream Link. Please check and try again.');
       }
     } catch {
       setHostIdError('Validation failed. Please check your connection and try again.');
@@ -607,81 +651,90 @@ export default function EventStreamPage({ eventId }: EventStreamPageProps) {
 
             {/* ── LIVE branch ─────────────────────────────────────────── */}
 
-            {/* Paid but not yet registered → redirect to payment flow */}
-            {resolvedStatus === 'LIVE' && isPaid && !isRegistered && (
+            {/* Invite token gate — shown when not yet validated */}
+            {resolvedStatus === 'LIVE' && !hostIdValidated && (
               <div style={{ maxWidth: 560, margin: '0 auto', padding: isMobile ? '8px 16px 60px' : '8px 48px 60px' }}>
                 <div style={{ background: '#1a1a1d', borderRadius: 16, padding: isMobile ? '24px 20px' : '36px 32px', textAlign: 'center' }}>
-                  <div style={{ fontSize: 52, marginBottom: 16 }}>🔒</div>
-                  <h2 style={{ fontSize: isMobile ? 18 : 22, fontWeight: 700, marginBottom: 8 }}>Purchase access to watch this stream</h2>
-                  <p style={{ color: '#a0aec0', fontSize: 14, marginBottom: 10, lineHeight: 1.6 }}>
-                    This is a paid event. Complete your payment to get instant access to the live stream.
-                  </p>
-                  <p style={{ color: '#f6ad55', fontWeight: 800, fontSize: 22, margin: '16px 0 24px' }}>
-                    {eventPrice.toLocaleString()} RWF
-                  </p>
-                  <button
-                    onClick={() => router.push(`/user/events/join-package?id=${eventId}`)}
-                    style={{
-                      width: '100%', background: '#03969c', color: '#fff', border: 'none',
-                      padding: '15px', borderRadius: 10, fontWeight: 700, fontSize: 16, cursor: 'pointer',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                    }}
-                  >
-                    <span style={{ fontSize: 18 }}>🎬</span>
-                    Buy Access — {eventPrice.toLocaleString()} RWF
-                  </button>
-                </div>
-              </div>
-            )}
 
-            {/* Free event — Host ID / Event Stream Link validation gate */}
-            {resolvedStatus === 'LIVE' && !isPaid && !hostIdValidated && (
-              <div style={{ maxWidth: 560, margin: '0 auto', padding: isMobile ? '8px 16px 60px' : '8px 48px 60px' }}>
-                <div style={{ background: '#1a1a1d', borderRadius: 16, padding: isMobile ? '24px 20px' : '36px 32px', textAlign: 'center' }}>
-                  <div style={{ fontSize: 44, marginBottom: 16 }}>🔑</div>
-                  <h2 style={{ fontSize: isMobile ? 18 : 22, fontWeight: 700, marginBottom: 8 }}>Enter your Event Stream Link or Host ID</h2>
-                  <p style={{ color: '#a0aec0', fontSize: 14, marginBottom: 28, lineHeight: 1.6 }}>
-                    The organizer shared a unique <strong style={{ color: '#efeff1' }}>Event Stream Link</strong> or <strong style={{ color: '#efeff1' }}>Host ID</strong> with you.
-                    Paste it below to access the live stream.
-                  </p>
+                  {tokenRequiresPayment ? (
+                    /* Payment required after token validation */
+                    <>
+                      <div style={{ fontSize: 52, marginBottom: 16 }}>🔒</div>
+                      <h2 style={{ fontSize: isMobile ? 18 : 22, fontWeight: 700, marginBottom: 8 }}>Payment required to access this stream</h2>
+                      <p style={{ color: '#a0aec0', fontSize: 14, marginBottom: 10, lineHeight: 1.6 }}>
+                        Your invite token is valid, but this stream requires payment to watch.
+                      </p>
+                      <p style={{ color: '#f6ad55', fontWeight: 800, fontSize: 22, margin: '16px 0 24px' }}>
+                        {tokenStreamFee.toLocaleString()} {tokenStreamFeeCurrency || 'RWF'}
+                      </p>
+                      <button
+                        disabled={buyAccessClicked}
+                        onClick={() => { setBuyAccessClicked(true); router.push(`/user/events/join-package?id=${eventId}&inviteToken=${encodeURIComponent(savedInviteToken)}`); }}
+                        style={{
+                          width: '100%', background: '#03969c', color: '#fff', border: 'none',
+                          padding: '15px', borderRadius: 10, fontWeight: 700, fontSize: 16, cursor: buyAccessClicked ? 'default' : 'pointer',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                          opacity: buyAccessClicked ? 0.65 : 1,
+                        }}
+                      >
+                        <span style={{ fontSize: 18 }}>🎬</span>
+                        Buy Access — {tokenStreamFee.toLocaleString()} {tokenStreamFeeCurrency || 'RWF'}
+                      </button>
+                      <button
+                        onClick={() => { setTokenRequiresPayment(false); setHostIdInput(''); setBuyAccessClicked(false); }}
+                        style={{ marginTop: 12, background: 'transparent', color: '#a0aec0', border: 'none', fontSize: 13, cursor: 'pointer', textDecoration: 'underline' }}
+                      >
+                        Use a different token
+                      </button>
+                    </>
+                  ) : (
+                    /* Token entry form */
+                    <>
+                      <div style={{ fontSize: 44, marginBottom: 16 }}>🔑</div>
+                      <h2 style={{ fontSize: isMobile ? 18 : 22, fontWeight: 700, marginBottom: 8 }}>Enter your Invite Token</h2>
+                      <p style={{ color: '#a0aec0', fontSize: 14, marginBottom: 28, lineHeight: 1.6 }}>
+                        The organizer shared a unique <strong style={{ color: '#efeff1' }}>Invite Token</strong> or <strong style={{ color: '#efeff1' }}>Event Stream Link</strong> with you.
+                        Paste it below to access the live stream.
+                      </p>
 
-                  {/* Input */}
-                  <div style={{ display: 'flex', gap: 8, flexDirection: isMobile ? 'column' : 'row', marginBottom: 12 }}>
-                    <input
-                      value={hostIdInput}
-                      onChange={e => { setHostIdInput(e.target.value); setHostIdError(null); }}
-                      onKeyDown={e => e.key === 'Enter' && handleValidateHostId()}
-                      placeholder="Paste Event Stream Link or Host ID..."
-                      style={{
-                        flex: 1, background: '#2d3748', border: `1.5px solid ${hostIdError ? '#fc8181' : '#4a5568'}`,
-                        borderRadius: 8, padding: '12px 14px', color: '#efeff1', fontSize: 14, outline: 'none',
-                      }}
-                    />
-                    <button
-                      onClick={handleValidateHostId}
-                      disabled={hostIdValidating || !hostIdInput.trim()}
-                      style={{
-                        background: '#03969c', color: '#fff', border: 'none', padding: '12px 22px',
-                        borderRadius: 8, fontWeight: 700, fontSize: 14, cursor: 'pointer', whiteSpace: 'nowrap',
-                        opacity: (hostIdValidating || !hostIdInput.trim()) ? 0.65 : 1,
-                        display: 'flex', alignItems: 'center', gap: 7,
-                      }}
-                    >
-                      {hostIdValidating
-                        ? <><span style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite', display: 'inline-block' }} />Validating…</>
-                        : '✓ Validate'
-                      }
-                    </button>
-                  </div>
+                      <div style={{ display: 'flex', gap: 8, flexDirection: isMobile ? 'column' : 'row', marginBottom: 12 }}>
+                        <input
+                          value={hostIdInput}
+                          onChange={e => { setHostIdInput(e.target.value); setHostIdError(null); }}
+                          onKeyDown={e => e.key === 'Enter' && handleValidateHostId()}
+                          placeholder="Paste invite token or Event Stream Link..."
+                          style={{
+                            flex: 1, background: '#2d3748', border: `1.5px solid ${hostIdError ? '#fc8181' : '#4a5568'}`,
+                            borderRadius: 8, padding: '12px 14px', color: '#efeff1', fontSize: 14, outline: 'none',
+                          }}
+                        />
+                        <button
+                          onClick={handleValidateHostId}
+                          disabled={hostIdValidating || !hostIdInput.trim()}
+                          style={{
+                            background: '#03969c', color: '#fff', border: 'none', padding: '12px 22px',
+                            borderRadius: 8, fontWeight: 700, fontSize: 14, cursor: 'pointer', whiteSpace: 'nowrap',
+                            opacity: (hostIdValidating || !hostIdInput.trim()) ? 0.65 : 1,
+                            display: 'flex', alignItems: 'center', gap: 7,
+                          }}
+                        >
+                          {hostIdValidating
+                            ? <><span style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite', display: 'inline-block' }} />Validating…</>
+                            : '✓ Validate'
+                          }
+                        </button>
+                      </div>
 
-                  {hostIdError && (
-                    <p style={{ color: '#fc8181', fontSize: 13, marginBottom: 16 }}>{hostIdError}</p>
+                      {hostIdError && (
+                        <p style={{ color: '#fc8181', fontSize: 13, marginBottom: 16 }}>{hostIdError}</p>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
             )}
 
-            {resolvedStatus === 'LIVE' && (hostIdValidated || (isPaid && isRegistered)) && (
+            {resolvedStatus === 'LIVE' && hostIdValidated && (
               <div style={{
                 maxWidth: 1200, margin: '0 auto',
                 padding: isMobile ? '0 16px 60px' : '0 48px 48px',
@@ -743,7 +796,7 @@ export default function EventStreamPage({ eventId }: EventStreamPageProps) {
                       )}
 
                       {/* No manifest fallback */}
-                      {!event.hlsManifestUrl && (
+                      {!validatedHlsUrl && !event.hlsManifestUrl && (
                         <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 8 }}>
                           <div style={{ fontSize: 40 }}>📡</div>
                           <p style={{ color: '#a0aec0', fontSize: 14 }}>Stream starting soon...</p>

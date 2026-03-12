@@ -1,8 +1,10 @@
-import React from 'react';
-import LiveStreamPage from '../../../pages/events/live-stream';
+'use client';
 
-const LiveStream = () => {
-    return <LiveStreamPage />;
+import { useSearchParams } from 'next/navigation';
+import EventStreamPage from '../../../pages/events/event-stream';
+
+export default function LiveStream() {
+  const searchParams = useSearchParams();
+  const eventId = searchParams.get('eventId') || '';
+  return <EventStreamPage eventId={eventId} />;
 }
-
-export default LiveStream;
