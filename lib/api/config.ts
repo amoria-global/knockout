@@ -102,6 +102,9 @@ export const API_ENDPOINTS = {
     PHOTOGRAPHER_BOOKED_DATES: (id: string) =>
       `/api/remote/public/photographers/${id}/booked-dates`,
     EVENTS_LIST: "/api/remote/public/events/list",
+    EVENT_BY_ID: (id: string) => `/api/remote/public/events/${id}`,
+    STREAM_VALIDATE_TOKEN: (eventId: string) => `/api/remote/public/events/${eventId}/stream/validate-token`,
+    STREAM_ACCESS: (eventId: string) => `/api/remote/public/events/${eventId}/stream/access`,
     DONATIONS: "/api/remote/public/donations",
     EVENT_TYPES: "/api/remote/public/event-types",
     FAQS: "/api/remote/public/faqs",

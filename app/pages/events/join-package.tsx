@@ -2,66 +2,7 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import AmoriaKNavbar from '../../components/navbar';
-
-// Event data matching the events.tsx page
-const eventsData = [
-  {
-    id: 1,
-    title: 'APR BBC Vs Espoir BCC',
-    image: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?w=500&q=80',
-    bannerImage: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?w=1200&q=80',
-    category: 'Sports',
-    date: '2025-08-15',
-    time: '08:00 AM - 11:50 PM',
-    location: 'BK Arena - KN 4 Ave, Kigali',
-    status: 'ongoing',
-    price: 15000,
-    attendees: 450,
-    organizer: 'Rwanda Basketball Federation',
-  },
-  {
-    id: 2,
-    title: 'Joseph & Solange Wedding',
-    image: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80',
-    bannerImage: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=1200&q=80',
-    category: 'Wedding',
-    date: '2025-07-20',
-    time: '10:00 AM - 06:00 PM',
-    location: 'Kigali Serena Hotel - KN 3 Ave, Kigali',
-    status: 'ongoing',
-    price: 50000,
-    attendees: 200,
-    organizer: 'Joseph & Solange',
-  },
-  {
-    id: 3,
-    title: '2021 Graduation Ceremony',
-    image: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=500&q=80',
-    bannerImage: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=1200&q=80',
-    category: 'Academic',
-    date: '2025-09-10',
-    time: '09:00 AM - 02:00 PM',
-    location: 'University of Rwanda - KK 737 St, Kigali',
-    status: 'ongoing',
-    price: 0,
-    attendees: 1500,
-    organizer: 'University of Rwanda',
-  },
-  {
-    id: 4,
-    title: 'Zuba Sisterhood',
-    image: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=500&q=80',
-    bannerImage: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=1200&q=80',
-    category: 'Gathering',
-    date: '2025-08-05',
-    time: '03:00 PM - 07:00 PM',
-    location: 'Inema Arts Center - KG 518 St, Kigali',
-    status: 'ongoing',
-    price: 10000,
-    attendees: 80,
-    organizer: 'Zuba Foundation',
-  },
-];
+import { getPublicEventById, type PublicEvent } from '@/lib/APIs/public';
 
 function JoinPackageContent(): React.JSX.Element {
   const searchParams = useSearchParams();
@@ -71,6 +12,8 @@ function JoinPackageContent(): React.JSX.Element {
   const [numberOfPeople, setNumberOfPeople] = useState<number | ''>('');
   const [showPeopleInput, setShowPeopleInput] = useState(false);
   const [peopleInputError, setPeopleInputError] = useState('');
+  const [selectedEvent, setSelectedEvent] = useState<PublicEvent | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -83,12 +26,30 @@ function JoinPackageContent(): React.JSX.Element {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Get event data based on ID from URL
-  const selectedEvent = eventsData.find(e => e.id === Number(eventId)) || eventsData[0];
+  // Fetch event from API
+  useEffect(() => {
+    if (!eventId) {
+      setIsLoading(false);
+      return;
+    }
+    const fetchEvent = async () => {
+      try {
+        const response = await getPublicEventById(eventId);
+        if (response.success && response.data) {
+          setSelectedEvent(response.data);
+        }
+      } catch {
+        // silently fail — event stays null
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchEvent();
+  }, [eventId]);
 
   // Calculate group discount (10%)
   const discountPercentage = 10;
-  const individualFee = selectedEvent.price;
+  const individualFee = selectedEvent?.price || 0;
   const discountedFeePerPerson = individualFee * (1 - discountPercentage / 100);
   const peopleCount = typeof numberOfPeople === 'number' ? numberOfPeople : 0;
   const totalGroupFee = discountedFeePerPerson * peopleCount;
@@ -155,20 +116,25 @@ function JoinPackageContent(): React.JSX.Element {
   };
 
   const handleProceed = () => {
+    if (!selectedEvent) return;
+    const price = selectedEvent.price || 0;
+    const category = selectedEvent.eventCategory?.name || selectedEvent.eventTags?.split(',')[0] || 'Event';
+    const inviteToken = searchParams.get('inviteToken') || '';
+    const tokenParam = inviteToken ? `&inviteToken=${encodeURIComponent(inviteToken)}` : '';
     // Encode event data so join-event can show the payment form immediately (no API wait)
-    const eventParams = selectedEvent.price > 0
-      ? `&fee=${selectedEvent.price}&title=${encodeURIComponent(selectedEvent.title)}&category=${encodeURIComponent(selectedEvent.category)}&location=${encodeURIComponent(selectedEvent.location)}`
+    const eventParams = price > 0
+      ? `&fee=${price}&title=${encodeURIComponent(selectedEvent.title)}&category=${encodeURIComponent(category)}&location=${encodeURIComponent(selectedEvent.location || '')}`
       : '';
 
     if (selectedPackage === 'individual') {
-      window.location.href = `/user/events/join-event?id=${selectedEvent.id}&package=individual${eventParams}`;
+      window.location.href = `/user/events/join-event?id=${selectedEvent.id}&package=individual${eventParams}${tokenParam}`;
     } else if (selectedPackage === 'group' && isGroupInputValid()) {
       const count = typeof numberOfPeople === 'number' ? numberOfPeople : 1;
-      const groupFee = Math.round(selectedEvent.price * 0.9 * count);
-      const groupParams = selectedEvent.price > 0
-        ? `&fee=${groupFee}&title=${encodeURIComponent(selectedEvent.title)}&category=${encodeURIComponent(selectedEvent.category)}&location=${encodeURIComponent(selectedEvent.location)}`
+      const groupFee = Math.round(price * 0.9 * count);
+      const groupParams = price > 0
+        ? `&fee=${groupFee}&title=${encodeURIComponent(selectedEvent.title)}&category=${encodeURIComponent(category)}&location=${encodeURIComponent(selectedEvent.location || '')}`
         : '';
-      window.location.href = `/user/events/join-event?id=${selectedEvent.id}&package=group&people=${numberOfPeople}${groupParams}`;
+      window.location.href = `/user/events/join-event?id=${selectedEvent.id}&package=group&people=${numberOfPeople}${groupParams}${tokenParam}`;
     }
   };
 
@@ -195,6 +161,35 @@ function JoinPackageContent(): React.JSX.Element {
       setPeopleInputError('');
     }
   };
+
+  if (isLoading) {
+    return (
+      <>
+        <AmoriaKNavbar />
+        <div className="min-h-screen" style={{ backgroundColor: '#f0f4f8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ textAlign: 'center', color: '#083A85' }}>
+            <div style={{ fontSize: '48px', marginBottom: '16px' }}><i className="bi bi-hourglass-split"></i></div>
+            <p style={{ fontSize: '18px', fontWeight: '600' }}>Loading event...</p>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  if (!selectedEvent) {
+    return (
+      <>
+        <AmoriaKNavbar />
+        <div className="min-h-screen" style={{ backgroundColor: '#f0f4f8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ textAlign: 'center', color: '#ef4444' }}>
+            <div style={{ fontSize: '48px', marginBottom: '16px' }}><i className="bi bi-exclamation-circle"></i></div>
+            <p style={{ fontSize: '18px', fontWeight: '600' }}>Event not found</p>
+            <button onClick={() => window.history.back()} style={{ marginTop: '16px', padding: '12px 32px', backgroundColor: '#083A85', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer' }}>Go Back</button>
+          </div>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>

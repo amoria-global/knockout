@@ -203,3 +203,47 @@ export async function getStreamVideo(eventId: string): Promise<ApiResponse<Strea
     { skipAuth: !isAuthenticated(), retries: 1 }
   );
 }
+
+// --- Stream Token Validation ---
+
+export interface ValidateStreamTokenResponse {
+  valid: boolean;
+  eventId?: string;
+  eventTitle?: string;
+  hasLiveStream?: boolean;
+  hlsManifestUrl?: string | null;
+  streamFee?: number;
+  currencySymbol?: string;
+  currencyAbbreviation?: string;
+  requiresPayment?: boolean;
+}
+
+export async function validateStreamToken(
+  eventId: string,
+  inviteToken: string
+): Promise<ApiResponse<ValidateStreamTokenResponse>> {
+  return apiClient.post<ValidateStreamTokenResponse>(
+    API_ENDPOINTS.PUBLIC.STREAM_VALIDATE_TOKEN(eventId),
+    { inviteToken },
+    { skipAuth: true, retries: 0 }
+  );
+}
+
+// --- Stream Access (post-payment HLS URL retrieval) ---
+
+export interface StreamAccessResponse {
+  hlsManifestUrl: string;
+  eventTitle?: string;
+}
+
+export async function getStreamAccess(
+  eventId: string,
+  inviteToken: string,
+  paymentId: string
+): Promise<ApiResponse<StreamAccessResponse>> {
+  return apiClient.post<StreamAccessResponse>(
+    API_ENDPOINTS.PUBLIC.STREAM_ACCESS(eventId),
+    { inviteToken, paymentId },
+    { skipAuth: true, retries: 0 }
+  );
+}
