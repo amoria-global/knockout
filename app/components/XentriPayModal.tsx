@@ -5,6 +5,8 @@ import {
   initiateXentriPayTip,
   initiateXentriPayStreaming,
   initiateXentriPayment,
+  initiateXentriPayDonation,
+  initiateXentriPayPhotoPurchase,
   pollXentriPayStatus,
   type XentriPayResponse,
   type XentriPayStatusResponse,
@@ -25,10 +27,12 @@ export interface XentriPayModalProps {
   paymentType: PaymentType;
   title?: string;
   subtitle?: string;
-  // For booking payments - use existing declaration
+  // For booking payments - use existing declaration or eventId
   declarationId?: string;
-  // For tip/streaming - need event context
+  // For tip/streaming/photo_purchase - need event context
   eventId?: string;
+  // For donation payments
+  donationId?: string;
 }
 
 type PaymentStep = 'method' | 'processing' | 'success' | 'failed';
@@ -56,6 +60,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
   subtitle,
   declarationId,
   eventId,
+  donationId,
 }) => {
   // State
   const [step, setStep] = useState<PaymentStep>('method');
@@ -114,6 +119,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
       stopPollingRef.current();
     }
 
+    const usePublicStatus = paymentType === 'donation';
     stopPollingRef.current = pollXentriPayStatus(
       paymentRefid,
       {
@@ -133,9 +139,10 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
         },
       },
       5000,
-      60
+      60,
+      usePublicStatus
     );
-  }, [onSuccess]);
+  }, [onSuccess, paymentType]);
 
   // Handle payment initiation
   const handlePay = async () => {
@@ -152,9 +159,10 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
     try {
       let response: { success: boolean; data?: XentriPayResponse; error?: string };
 
-      if (paymentType === 'booking' && declarationId) {
+      if (paymentType === 'booking' && (declarationId || eventId)) {
         response = await initiateXentriPayment({
           declarationId,
+          eventId,
           phone,
           telecomProvider: method.provider,
           paymentMethod: paymentMethodType,
@@ -167,8 +175,22 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
           phone,
           telecomProvider: method.provider,
         });
-      } else if ((paymentType === 'streaming' || paymentType === 'donation') && eventId) {
+      } else if (paymentType === 'streaming' && eventId) {
         response = await initiateXentriPayStreaming({
+          eventId,
+          amount,
+          currencyId,
+          phone,
+          telecomProvider: method.provider,
+        });
+      } else if (paymentType === 'donation' && donationId) {
+        response = await initiateXentriPayDonation({
+          donationId,
+          phone,
+          telecomProvider: method.provider,
+        });
+      } else if (paymentType === 'photo_purchase' && eventId) {
+        response = await initiateXentriPayPhotoPurchase({
           eventId,
           amount,
           currencyId,
