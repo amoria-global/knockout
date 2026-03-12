@@ -20,6 +20,9 @@ export interface JoinEventResponse {
     id: string;
     eventId: string;
     status: string;
+    streamFee?: number;
+    streamFeeCurrencySymbol?: string;
+    streamFeeCurrencyAbbreviation?: string;
   };
 }
 

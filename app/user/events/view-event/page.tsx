@@ -4,394 +4,75 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import AmoriaKNavbar from '../../../components/navbar';
 import { useTranslations } from 'next-intl';
+import { getPublicEventById, type PublicEvent } from '@/lib/APIs/public';
 
-// Event data matching the events.tsx page
-const eventsData = [
-  {
-    id: 1,
-    title: 'APR BBC Vs Espoir BCC',
-    image: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?w=500&q=80',
-    bannerImage: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?w=1200&q=80',
-    category: 'Sports',
-    date: '2025-08-15',
-    time: '08:00 AM - 11:50 PM',
-    location: 'BK Arena - KN 4 Ave, Kigali',
-    status: 'UPCOMING',
-    price: '15,000 RWF',
-    attendees: 450,
-    description: 'Experience the thrill of basketball at its finest! Watch APR BBC take on Espoir BCC in this highly anticipated match. Both teams are known for their exceptional skills and competitive spirit. Join us for an evening of electrifying basketball action, complete with halftime entertainment and amazing fan experiences. Don\'t miss this championship clash that promises to be one of the most exciting games of the season!',
-    organizer: 'Rwanda Basketball Federation',
-    tags: ['Basketball', 'Championship', 'Live Sports'],
-  },
-  {
-    id: 2,
-    title: 'Joseph & Solange Wedding',
-    image: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80',
-    bannerImage: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=1200&q=80',
-    category: 'Wedding',
-    date: '2025-07-20',
-    time: '10:00 AM - 06:00 PM',
-    location: 'Kigali Serena Hotel - KN 3 Ave, Kigali',
-    status: 'ongoing',
-    price: '50,000 RWF',
-    attendees: 200,
-    description: 'Join us in celebrating the union of Joseph and Solange as they embark on their journey of love and commitment. This elegant wedding ceremony will be held at the prestigious Kigali Serena Hotel, featuring a beautiful ceremony followed by a grand reception. Witness the exchange of vows in a romantic setting, enjoy exquisite cuisine, and dance the night away with live music and entertainment. This is a celebration of love, family, and new beginnings.',
-    organizer: 'Joseph & Solange',
-    tags: ['Wedding', 'Celebration', 'Love'],
-  },
-  {
-    id: 3,
-    title: '2021 Graduation Ceremony',
-    image: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=500&q=80',
-    bannerImage: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=1200&q=80',
-    category: 'Academic',
-    date: '2025-09-10',
-    time: '09:00 AM - 02:00 PM',
-    location: 'University of Rwanda - KK 737 St, Kigali',
-    status: 'UPCOMING',
-    price: 'Free',
-    attendees: 1500,
-    description: 'Celebrate academic excellence as we honor the graduating class of 2021. This momentous occasion marks the culmination of years of hard work, dedication, and perseverance. The ceremony will feature inspiring speeches from distinguished guests, the presentation of degrees across various faculties, and special awards for outstanding achievements. Family and friends are invited to witness this proud moment in the lives of our graduates.',
-    organizer: 'University of Rwanda',
-    tags: ['Graduation', 'Academic', 'Ceremony'],
-  },
-  {
-    id: 4,
-    title: 'Zuba Sisterhood',
-    image: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=500&q=80',
-    bannerImage: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=1200&q=80',
-    category: 'Gathering',
-    date: '2025-08-05',
-    time: '03:00 PM - 07:00 PM',
-    location: 'Inema Arts Center - KG 518 St, Kigali',
-    status: 'ongoing',
-    price: '10,000 RWF',
-    attendees: 80,
-    description: 'An empowering gathering celebrating sisterhood, unity, and women\'s strength. Join us for an afternoon of inspiration, networking, and meaningful connections. This event features panel discussions on women\'s empowerment, entrepreneurship workshops, artistic performances, and opportunities to build lasting friendships. Share stories, gain insights, and be part of a supportive community of amazing women. Together, we rise!',
-    organizer: 'Zuba Foundation',
-    tags: ['Women', 'Empowerment', 'Networking'],
-  },
-  {
-    id: 5,
-    title: 'The Toxxyk Experience',
-    image: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=500&q=80',
-    bannerImage: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=1200&q=80',
-    category: 'Concert',
-    date: '2025-07-20',
-    time: '08:00 AM - 11:50 PM',
-    location: 'Heza Beach Resort - RBV 187 Ave, Gisenyi',
-    status: 'UPCOMING',
-    price: '25,000 RWF',
-    attendees: 500,
-    description: 'Get ready for an unforgettable musical journey with The Toxxyk Experience! This high-energy concert brings together the hottest local and international artists for a day of non-stop entertainment. Enjoy breathtaking performances against the stunning backdrop of Lake Kivu, with multiple stages featuring various music genres. Dance, sing along, and create lasting memories at this premier music festival. Limited tickets available!',
-    organizer: 'Toxxyk Entertainment',
-    tags: ['Concert', 'Music', 'Festival'],
-  },
-  {
-    id: 6,
-    title: 'New Jersey Fashion Week',
-    image: 'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=500&q=80',
-    bannerImage: 'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=1200&q=80',
-    category: 'Fashion',
-    date: '2025-10-15',
-    time: '06:00 PM - 11:00 PM',
-    location: 'Kigali Convention Centre - KN 3 Ave, Kigali',
-    status: 'UPCOMING',
-    price: '30,000 RWF',
-    attendees: 350,
-    description: 'Witness the pinnacle of African fashion innovation at New Jersey Fashion Week! This prestigious event showcases the latest collections from renowned and emerging designers. Experience breathtaking runway shows featuring cutting-edge designs, traditional meets contemporary fusion, and sustainable fashion innovations. Network with fashion industry leaders, influencers, and style enthusiasts. This is where creativity meets runway excellence!',
-    organizer: 'New Jersey Fashion',
-    tags: ['Fashion', 'Runway', 'Design'],
-  },
-  {
-    id: 7,
-    title: 'Rebecca Holy Service',
-    image: 'https://images.unsplash.com/photo-1438032005730-c779502df39b?w=500&q=80',
-    bannerImage: 'https://images.unsplash.com/photo-1438032005730-c779502df39b?w=1200&q=80',
-    category: 'Religious',
-    date: '2025-07-25',
-    time: '10:00 AM - 01:00 PM',
-    location: 'Christian Life Assembly - KG 7 Ave, Kigali',
-    status: 'UPCOMING',
-    price: 'Free',
-    attendees: 800,
-    description: 'Join us for a powerful spiritual experience at Rebecca Holy Service. This special worship service features inspiring messages, uplifting praise and worship, prayer sessions, and testimonies of faith. Experience the presence of God in a welcoming and vibrant atmosphere. Whether you\'re seeking spiritual renewal, guidance, or simply want to worship with fellow believers, this service offers a transformative experience for all. All are welcome!',
-    organizer: 'Christian Life Assembly',
-    tags: ['Religious', 'Worship', 'Spiritual'],
-  },
-  {
-    id: 8,
-    title: 'Kwita Izina - Gorilla Naming',
-    image: 'https://images.unsplash.com/photo-1540573133985-87b6da6d54a9?w=500&q=80',
-    bannerImage: 'https://images.unsplash.com/photo-1540573133985-87b6da6d54a9?w=1200&q=80',
-    category: 'Cultural',
-    date: '2025-09-05',
-    time: '08:00 AM - 05:00 PM',
-    location: 'Volcanoes National Park, Musanze',
-    status: 'UPCOMING',
-    price: '100,000 RWF',
-    attendees: 250,
-    description: 'Participate in Rwanda\'s most iconic cultural celebration - Kwita Izina! This annual gorilla naming ceremony honors Rwanda\'s commitment to conservation and celebrates new baby gorillas born throughout the year. Experience traditional Rwandan performances, witness the official naming ceremony, enjoy cultural exhibitions, and learn about conservation efforts. This prestigious event attracts global dignitaries and conservation enthusiasts from around the world. Be part of this unique cultural heritage!',
-    organizer: 'Rwanda Development Board',
-    tags: ['Cultural', 'Conservation', 'Gorillas'],
-  },
-  {
-    id: 9,
-    title: 'Pervision Experience',
-    image: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=500&q=80',
-    bannerImage: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=1200&q=80',
-    category: 'Corporate',
-    date: '2025-11-20',
-    time: '02:00 PM - 06:00 PM',
-    location: 'Radisson Blu Hotel - KN 3 Ave, Kigali',
-    status: 'UPCOMING',
-    price: '40,000 RWF',
-    attendees: 150,
-    description: 'Transform your business vision at the Pervision Experience! This exclusive corporate summit brings together industry leaders, entrepreneurs, and innovators for an afternoon of strategic insights and networking. Featuring keynote speeches on future business trends, panel discussions on digital transformation, interactive workshops, and valuable networking opportunities. Gain actionable strategies to propel your business forward and connect with like-minded professionals.',
-    organizer: 'Pervision Group',
-    tags: ['Corporate', 'Business', 'Networking'],
-  },
-  {
-    id: 10,
-    title: 'Iwacu Music Festival',
-    image: 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=500&q=80',
-    bannerImage: 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=1200&q=80',
-    category: 'Concert',
-    date: '2025-12-10',
-    time: '05:00 PM - 11:30 PM',
-    location: 'Amahoro Stadium - KN 3 Ave, Kigali',
-    status: 'UPCOMING',
-    price: '20,000 RWF',
-    attendees: 2000,
-    description: 'Experience the biggest music festival in Rwanda - Iwacu Music Festival! This mega event features over 20 local and international artists across multiple stages. Enjoy diverse music genres from Afrobeats to traditional Rwandan music, hip-hop, reggae, and more. With food vendors, art installations, and interactive experiences, this festival is the ultimate celebration of African music and culture. Bring your friends and get ready to dance!',
-    organizer: 'Iwacu Entertainment',
-    tags: ['Music Festival', 'Concert', 'Entertainment'],
-  },
-  {
-    id: 11,
-    title: 'Tech Startup Summit',
-    image: 'https://images.unsplash.com/photo-1505373877841-8d25f7d46678?w=500&q=80',
-    bannerImage: 'https://images.unsplash.com/photo-1505373877841-8d25f7d46678?w=1200&q=80',
-    category: 'Conference',
-    date: '2025-08-30',
-    time: '09:00 AM - 05:00 PM',
-    location: 'Norrsken House - KG 17 Ave, Kigali',
-    status: 'ongoing',
-    price: '35,000 RWF',
-    attendees: 300,
-    description: 'Join industry leaders and entrepreneurs at the Tech Startup Summit! This premier conference brings together innovators, investors, and tech enthusiasts to explore the latest trends in technology and entrepreneurship. Network with fellow founders, attend insightful workshops, and discover investment opportunities.',
-    organizer: 'Norrsken Foundation',
-    tags: ['Technology', 'Startup', 'Innovation'],
-  },
-  {
-    id: 12,
-    title: 'Rwanda Film Festival',
-    image: 'https://images.unsplash.com/photo-1478720568477-152d9b164e26?w=500&q=80',
-    bannerImage: 'https://images.unsplash.com/photo-1478720568477-152d9b164e26?w=1200&q=80',
-    category: 'Entertainment',
-    date: '2025-07-18',
-    time: '06:00 PM - 10:00 PM',
-    location: 'Century Cinema - UTC, Kigali',
-    status: 'ongoing',
-    price: '12,000 RWF',
-    attendees: 180,
-    description: 'Celebrate African cinema at the Rwanda Film Festival! Watch award-winning films from across the continent, meet talented filmmakers, and participate in Q&A sessions. This festival showcases the best of African storytelling through the lens of cinema.',
-    organizer: 'Rwanda Film Commission',
-    tags: ['Film', 'Entertainment', 'Cinema'],
-  },
-  {
-    id: 13,
-    title: 'Jazz & Wine Evening',
-    image: 'https://images.unsplash.com/photo-1415201364774-f6f0bb35f28f?w=500&q=80',
-    bannerImage: 'https://images.unsplash.com/photo-1415201364774-f6f0bb35f28f?w=1200&q=80',
-    category: 'Concert',
-    date: '2025-08-22',
-    time: '07:00 PM - 11:00 PM',
-    location: 'Heaven Restaurant - KN 6 Ave, Kigali',
-    status: 'UPCOMING',
-    price: '25,000 RWF',
-    attendees: 120,
-    description: 'Unwind with smooth jazz and fine wine at Heaven Restaurant! Enjoy live performances from talented jazz musicians while savoring gourmet cuisine and premium wines. This intimate evening promises relaxation and sophistication.',
-    organizer: 'Heaven Restaurant',
-    tags: ['Jazz', 'Wine', 'Music'],
-  },
-  {
-    id: 14,
-    title: 'Startup Pitch Competition',
-    image: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=500&q=80',
-    bannerImage: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=1200&q=80',
-    category: 'Conference',
-    date: '2025-09-15',
-    time: '10:00 AM - 05:00 PM',
-    location: 'Impact Hub - KG 9 Ave, Kigali',
-    status: 'ongoing',
-    price: '20,000 RWF',
-    attendees: 200,
-    description: 'Watch entrepreneurs pitch their innovative ideas to leading investors! This exciting competition brings together the brightest minds in the startup ecosystem. Network with investors, mentors, and fellow entrepreneurs while witnessing groundbreaking business ideas come to life.',
-    organizer: 'Impact Hub Kigali',
-    tags: ['Startup', 'Pitch', 'Investment'],
-  },
-  {
-    id: 15,
-    title: 'Annual Charity Gala',
-    image: 'https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=500&q=80',
-    bannerImage: 'https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=1200&q=80',
-    category: 'Corporate',
-    date: '2025-10-05',
-    time: '06:00 PM - 11:00 PM',
-    location: 'Kigali Marriott Hotel - KN 3 Ave, Kigali',
-    status: 'UPCOMING',
-    price: '75,000 RWF',
-    attendees: 300,
-    description: 'Join us for an elegant evening of giving back! The Annual Charity Gala raises funds for local communities through an evening of fine dining, entertainment, and silent auctions. Make a difference while enjoying world-class hospitality.',
-    organizer: 'Charity Foundation Rwanda',
-    tags: ['Charity', 'Gala', 'Fundraising'],
-  },
-  {
-    id: 16,
-    title: 'Traditional Dance Festival',
-    image: 'https://images.unsplash.com/photo-1504609813442-a8924e83f76e?w=500&q=80',
-    bannerImage: 'https://images.unsplash.com/photo-1504609813442-a8924e83f76e?w=1200&q=80',
-    category: 'Cultural',
-    date: '2025-08-18',
-    time: '03:00 PM - 08:00 PM',
-    location: 'Kigali Cultural Village - KG 14 Ave, Kigali',
-    status: 'ongoing',
-    price: '8,000 RWF',
-    attendees: 400,
-    description: 'Immerse yourself in Rwanda\'s rich cultural heritage! Experience traditional dance performances, learn about ancient customs, and participate in interactive cultural activities. This festival celebrates the vibrant traditions that make Rwanda unique.',
-    organizer: 'Ministry of Culture',
-    tags: ['Culture', 'Dance', 'Heritage'],
-  },
-  {
-    id: 17,
-    title: 'E-Commerce Summit 2025',
-    image: 'https://images.unsplash.com/photo-1556761175-4b46a572b786?w=500&q=80',
-    bannerImage: 'https://images.unsplash.com/photo-1556761175-4b46a572b786?w=1200&q=80',
-    category: 'Conference',
-    date: '2025-11-08',
-    time: '08:00 AM - 06:00 PM',
-    location: 'Radisson Blu Hotel - KN 3 Ave, Kigali',
-    status: 'UPCOMING',
-    price: '45,000 RWF',
-    attendees: 250,
-    description: 'Discover the future of online business at the E-Commerce Summit 2025! Learn from industry experts about digital marketing, logistics, payment solutions, and scaling your online business. Perfect for entrepreneurs and business owners.',
-    organizer: 'E-Commerce Association Rwanda',
-    tags: ['E-Commerce', 'Digital', 'Business'],
-  },
-  {
-    id: 18,
-    title: 'Photography Exhibition',
-    image: 'https://images.unsplash.com/photo-1542038784456-1ea8e935640e?w=500&q=80',
-    bannerImage: 'https://images.unsplash.com/photo-1542038784456-1ea8e935640e?w=1200&q=80',
-    category: 'Entertainment',
-    date: '2025-09-20',
-    time: '10:00 AM - 08:00 PM',
-    location: 'Ivuka Arts Center - KG 563 St, Kigali',
-    status: 'UPCOMING',
-    price: '5,000 RWF',
-    attendees: 150,
-    description: 'View stunning photography from talented Rwandan artists! This exhibition showcases diverse perspectives on life, culture, and nature through the art of photography. Meet the artists and purchase prints.',
-    organizer: 'Ivuka Arts',
-    tags: ['Photography', 'Art', 'Exhibition'],
-  },
-  {
-    id: 19,
-    title: 'Youth Leadership Forum',
-    image: 'https://images.unsplash.com/photo-1523580494863-6f3031224c94?w=500&q=80',
-    bannerImage: 'https://images.unsplash.com/photo-1523580494863-6f3031224c94?w=1200&q=80',
-    category: 'Conference',
-    date: '2025-10-12',
-    time: '09:00 AM - 04:00 PM',
-    location: 'Kigali Convention Centre - KN 3 Ave, Kigali',
-    status: 'UPCOMING',
-    price: 'Free',
-    attendees: 500,
-    description: 'Empower the next generation of leaders! The Youth Leadership Forum brings together young people to discuss leadership, career development, and social impact. Attend workshops, hear inspiring speakers, and network with peers.',
-    organizer: 'Youth Ministry Rwanda',
-    tags: ['Youth', 'Leadership', 'Development'],
-  },
-  {
-    id: 20,
-    title: 'International Food Fair',
-    image: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=500&q=80',
-    bannerImage: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=1200&q=80',
-    category: 'Entertainment',
-    date: '2025-08-28',
-    time: '12:00 PM - 09:00 PM',
-    location: 'Kigali Heights - KN 4 Ave, Kigali',
-    status: 'UPCOMING',
-    price: '15,000 RWF',
-    attendees: 600,
-    description: 'Taste the world at the International Food Fair! Sample cuisines from across the globe, watch cooking demonstrations, and enjoy live entertainment. A perfect event for food lovers and families.',
-    organizer: 'Kigali Food Association',
-    tags: ['Food', 'International', 'Festival'],
-  },
-  {
-    id: 21,
-    title: 'Marathon for Peace',
-    image: 'https://images.unsplash.com/photo-1532444458054-01a7dd3e9fca?w=500&q=80',
-    bannerImage: 'https://images.unsplash.com/photo-1532444458054-01a7dd3e9fca?w=1200&q=80',
-    category: 'Sports',
-    date: '2025-09-25',
-    time: '06:00 AM - 12:00 PM',
-    location: 'Kigali City Centre - KN 3 Ave, Kigali',
-    status: 'ongoing',
-    price: '10,000 RWF',
-    attendees: 1000,
-    description: 'Run for peace and unity! Join thousands of runners in this annual marathon that promotes peace, health, and community. Multiple race categories available for all fitness levels. Register now and be part of this inspiring movement.',
-    organizer: 'Rwanda Athletics Federation',
-    tags: ['Marathon', 'Sports', 'Peace'],
-  },
-  {
-    id: 22,
-    title: 'Classical Music Night',
-    image: 'https://images.unsplash.com/photo-1465847899084-d164df4dedc6?w=500&q=80',
-    bannerImage: 'https://images.unsplash.com/photo-1465847899084-d164df4dedc6?w=1200&q=80',
-    category: 'Concert',
-    date: '2025-11-15',
-    time: '07:30 PM - 10:30 PM',
-    location: 'Kigali Serena Hotel - KN 3 Ave, Kigali',
-    status: 'UPCOMING',
-    price: '30,000 RWF',
-    attendees: 180,
-    description: 'Experience the elegance of classical music! Renowned musicians perform timeless masterpieces in an intimate setting. Perfect for classical music enthusiasts and those seeking a sophisticated evening.',
-    organizer: 'Kigali Symphony Orchestra',
-    tags: ['Classical', 'Music', 'Concert'],
-  },
-  {
-    id: 23,
-    title: 'Digital Marketing Bootcamp',
-    image: 'https://images.unsplash.com/photo-1432888498266-38ffec3eaf0a?w=500&q=80',
-    bannerImage: 'https://images.unsplash.com/photo-1432888498266-38ffec3eaf0a?w=1200&q=80',
-    category: 'Conference',
-    date: '2025-10-20',
-    time: '09:00 AM - 05:00 PM',
-    location: 'Norrsken House - KG 17 Ave, Kigali',
-    status: 'ongoing',
-    price: '50,000 RWF',
-    attendees: 100,
-    description: 'Master digital marketing skills! This intensive bootcamp covers social media marketing, SEO, content creation, analytics, and more. Learn from industry experts and transform your digital marketing strategy.',
-    organizer: 'Digital Marketing Academy',
-    tags: ['Marketing', 'Digital', 'Training'],
-  },
-  {
-    id: 24,
-    title: 'Comedy & Brunch Special',
-    image: 'https://images.unsplash.com/photo-1527224857830-43a7acc85260?w=500&q=80',
-    bannerImage: 'https://images.unsplash.com/photo-1527224857830-43a7acc85260?w=1200&q=80',
-    category: 'Entertainment',
-    date: '2025-08-10',
-    time: '11:00 AM - 03:00 PM',
-    location: 'The Hut - KG 623 St, Kigali',
-    status: 'UPCOMING',
-    price: '18,000 RWF',
-    attendees: 90,
-    description: 'Laugh your way through brunch! Enjoy delicious food while top comedians keep you entertained with hilarious performances. A perfect Sunday activity for friends and family.',
-    organizer: 'Comedy Club Kigali',
-    tags: ['Comedy', 'Brunch', 'Entertainment'],
-  },
-];
+const PLACEHOLDER_IMAGE = 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=1200&q=80';
+
+/**
+ * Format eventDate string to readable format
+ */
+function formatDate(dateStr?: string): string {
+  if (!dateStr) return 'TBD';
+  try {
+    // Parse as local date to avoid timezone shift (e.g. "2026-03-13" → "March 13, 2026")
+    const [year, month, day] = dateStr.split('-').map(Number);
+    return new Date(year, month - 1, day).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  } catch {
+    return dateStr;
+  }
+}
+
+/**
+ * Format time strings (startTime/endTime) to readable range
+ */
+function formatTimeRange(startTime?: string, endTime?: string): string {
+  if (!startTime) return 'TBD';
+  const format = (t: string) => {
+    const [h, m] = t.split(':');
+    const hour = parseInt(h, 10);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const h12 = hour % 12 || 12;
+    return `${h12}:${m} ${ampm}`;
+  };
+  const start = format(startTime);
+  return endTime ? `${start} - ${format(endTime)}` : start;
+}
+
+/**
+ * Format price for display
+ */
+function formatPrice(price?: number): string {
+  if (!price || price <= 0) return 'Free';
+  return `${price.toLocaleString()} RWF`;
+}
+
+/**
+ * Get category display name
+ */
+function getCategoryName(event: PublicEvent): string {
+  return event.eventCategory?.name || event.eventTags?.split(',')[0]?.trim() || 'Event';
+}
+
+/**
+ * Get tags array from comma-separated eventTags string
+ */
+function getTagsArray(event: PublicEvent): string[] {
+  if (!event.eventTags) return [];
+  return event.eventTags.split(',').map(t => t.trim()).filter(Boolean);
+}
+
+/**
+ * Get photographer display name
+ */
+function getPhotographerName(event: PublicEvent): string | null {
+  if (!event.photographer) return null;
+  const { firstName, lastName } = event.photographer;
+  return [firstName, lastName].filter(Boolean).join(' ') || null;
+}
 
 // Component that uses useSearchParams - needs to be wrapped in Suspense
 function ViewEventContent(): React.JSX.Element {
@@ -401,16 +82,37 @@ function ViewEventContent(): React.JSX.Element {
   const eventId = searchParams.get('id');
 
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedEvent, setSelectedEvent] = useState<PublicEvent | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [imageViewerOpen, setImageViewerOpen] = useState(false);
-  const [currentImageType, setCurrentImageType] = useState<'thumbnail' | 'banner' | null>(null);
+
+  // Fetch event from API
+  useEffect(() => {
+    if (!eventId) {
+      setLoadError('No event ID provided');
+      setIsLoading(false);
+      return;
+    }
+
+    const fetchEvent = async () => {
+      try {
+        const response = await getPublicEventById(eventId);
+        if (response.success && response.data) {
+          setSelectedEvent(response.data);
+        } else {
+          setLoadError(response.error || 'Event not found');
+        }
+      } catch (err) {
+        setLoadError(err instanceof Error ? err.message : 'An error occurred');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchEvent();
+  }, [eventId]);
 
   useEffect(() => {
-    // Simulate loading
-    setTimeout(() => setIsLoading(false), 500);
-  }, []);
-
-  useEffect(() => {
-    // Handle ESC key to close image viewer
     const handleEscKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && imageViewerOpen) {
         closeImageViewer();
@@ -428,23 +130,73 @@ function ViewEventContent(): React.JSX.Element {
     };
   }, [imageViewerOpen]);
 
-  const openImageViewer = (type: 'thumbnail' | 'banner') => {
-    setCurrentImageType(type);
+  const openImageViewer = () => {
     setImageViewerOpen(true);
   };
 
   const closeImageViewer = () => {
     setImageViewerOpen(false);
-    setCurrentImageType(null);
   };
 
-  // Get event data based on ID or default to first one
-  const selectedEvent = eventsData.find(e => e.id === Number(eventId)) || eventsData[0];
+  // Loading state
+  if (isLoading) {
+    return (
+      <>
+        <AmoriaKNavbar />
+        <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff' }}>
+          <div style={{ textAlign: 'center', color: '#083A85' }}>
+            <div style={{ fontSize: '48px', marginBottom: '16px' }}>
+              <i className="bi bi-hourglass-split"></i>
+            </div>
+            <p style={{ fontSize: '18px', fontWeight: '600' }}>{t('loadingEventDetails')}</p>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // Error state
+  if (loadError || !selectedEvent) {
+    return (
+      <>
+        <AmoriaKNavbar />
+        <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff' }}>
+          <div style={{ textAlign: 'center', color: '#ef4444' }}>
+            <div style={{ fontSize: '48px', marginBottom: '16px' }}>
+              <i className="bi bi-exclamation-circle"></i>
+            </div>
+            <p style={{ fontSize: '18px', fontWeight: '600' }}>{loadError || 'Event not found'}</p>
+            <button
+              onClick={() => window.history.back()}
+              style={{
+                marginTop: '16px',
+                padding: '12px 32px',
+                backgroundColor: '#083A85',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '14px',
+                fontWeight: '600',
+                cursor: 'pointer',
+              }}
+            >
+              Go Back
+            </button>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  const eventImage = selectedEvent.eventPhoto || PLACEHOLDER_IMAGE;
+  const isLive = (selectedEvent.eventStatus || '').toLowerCase() === 'ongoing';
+  const tags = getTagsArray(selectedEvent);
+  const photographerName = getPhotographerName(selectedEvent);
 
   return (
     <>
       <AmoriaKNavbar />
-      <div className="min-h-screen bg-white" style={{ opacity: isLoading ? 0 : 1, transition: 'opacity 0.3s ease-in' }}>
+      <div className="min-h-screen bg-white" style={{ opacity: 1, transition: 'opacity 0.3s ease-in' }}>
         {/* Header Section - Banner Image */}
         <div
           style={{
@@ -458,7 +210,7 @@ function ViewEventContent(): React.JSX.Element {
             style={{
               position: 'relative',
               height: '400px',
-              backgroundImage: `url(${selectedEvent.bannerImage})`,
+              backgroundImage: `url(${eventImage})`,
               backgroundSize: 'cover',
               backgroundPosition: 'center',
               borderRadius: '17px',
@@ -467,7 +219,7 @@ function ViewEventContent(): React.JSX.Element {
               cursor: 'pointer',
               transition: 'all 0.3s ease',
             }}
-            onClick={() => openImageViewer('banner')}
+            onClick={() => openImageViewer()}
             onMouseEnter={(e) => {
               e.currentTarget.style.transform = 'scale(1.01)';
               e.currentTarget.style.boxShadow = '0 8px 20px rgba(0, 0, 0, 0.15)';
@@ -517,7 +269,7 @@ function ViewEventContent(): React.JSX.Element {
             </button>
 
             {/* Status Badge - Live or Upcoming */}
-            {selectedEvent.status === 'ongoing' ? (
+            {isLive ? (
               <div
                 className="live-badge"
                 style={{
@@ -636,7 +388,7 @@ function ViewEventContent(): React.JSX.Element {
                   border: '2px solid #dbeafe',
                 }}
               >
-                {selectedEvent.category}
+                {getCategoryName(selectedEvent)}
               </span>
             </div>
             <h1
@@ -686,12 +438,7 @@ function ViewEventContent(): React.JSX.Element {
                   {t('eventDate')}
                 </p>
                 <p style={{ fontSize: '15px', color: '#111827', fontWeight: '700', margin: 0 }}>
-                  {new Date(selectedEvent.date).toLocaleDateString('en-US', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                  })}
+                  {formatDate(selectedEvent.eventDate)}
                 </p>
               </div>
             </div>
@@ -717,7 +464,7 @@ function ViewEventContent(): React.JSX.Element {
                   {t('eventTime')}
                 </p>
                 <p style={{ fontSize: '15px', color: '#111827', fontWeight: '700', margin: 0 }}>
-                  {selectedEvent.time}
+                  {formatTimeRange(selectedEvent.startTime, selectedEvent.endTime)}
                 </p>
               </div>
             </div>
@@ -743,7 +490,7 @@ function ViewEventContent(): React.JSX.Element {
                   {t('location')}
                 </p>
                 <p style={{ fontSize: '15px', color: '#111827', fontWeight: '700', margin: 0 }}>
-                  {selectedEvent.location}
+                  {selectedEvent.location || 'TBD'}
                 </p>
               </div>
             </div>
@@ -769,12 +516,12 @@ function ViewEventContent(): React.JSX.Element {
                   {t('entryFee')}
                 </p>
                 <p style={{ fontSize: '15px', color: '#111827', fontWeight: '700', margin: 0 }}>
-                  {selectedEvent.price}
+                  {formatPrice(selectedEvent.price)}
                 </p>
               </div>
             </div>
 
-            {/* Attendees */}
+            {/* Max Guests */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <div
                 style={{
@@ -795,7 +542,9 @@ function ViewEventContent(): React.JSX.Element {
                   {t('expectedAttendees')}
                 </p>
                 <p style={{ fontSize: '15px', color: '#111827', fontWeight: '700', margin: 0 }}>
-                  {selectedEvent.attendees.toLocaleString()} {t('people')}
+                  {selectedEvent.maxGuests && selectedEvent.maxGuests > 0
+                    ? `${selectedEvent.maxGuests.toLocaleString()} ${t('people')}`
+                    : 'Unlimited'}
                 </p>
               </div>
             </div>
@@ -821,98 +570,154 @@ function ViewEventContent(): React.JSX.Element {
                   {t('organizedBy')}
                 </p>
                 <p style={{ fontSize: '15px', color: '#111827', fontWeight: '700', margin: 0 }}>
-                  {selectedEvent.organizer}
+                  {selectedEvent.eventOrganizer || 'TBD'}
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Description Section */}
-          <div style={{ marginBottom: '32px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-              <div
-                style={{
-                  width: '4px',
-                  height: '24px',
-                  backgroundColor: '#083A85',
-                  borderRadius: '2px',
-                }}
-              ></div>
-              <h2 style={{ fontSize: '22px', fontWeight: '700', color: '#111827', margin: 0 }}>
-                {t('aboutThisEvent')}
-              </h2>
-            </div>
-            <p
-              style={{
-                fontSize: '16px',
-                color: '#4b5563',
-                lineHeight: '1.8',
+          {/* Photographer Section */}
+          {photographerName && (
+            <div style={{ marginBottom: '32px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+                <div style={{ width: '4px', height: '24px', backgroundColor: '#083A85', borderRadius: '2px' }}></div>
+                <h2 style={{ fontSize: '22px', fontWeight: '700', color: '#111827', margin: 0 }}>Photographer</h2>
+              </div>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '16px',
                 padding: '20px',
                 backgroundColor: '#f9fafb',
                 borderRadius: '12px',
-                borderLeft: '4px solid #083A85',
-                margin: 0,
-              }}
-            >
-              {selectedEvent.description}
-            </p>
-          </div>
+                border: '1px solid #e5e7eb',
+              }}>
+                <div style={{
+                  width: '56px',
+                  height: '56px',
+                  borderRadius: '50%',
+                  backgroundColor: '#083A85',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                  overflow: 'hidden',
+                }}>
+                  {selectedEvent.photographer?.profilePicture ? (
+                    <img
+                      src={selectedEvent.photographer.profilePicture}
+                      alt={photographerName}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                  ) : (
+                    <i className="bi bi-camera-fill" style={{ color: '#fff', fontSize: '24px' }}></i>
+                  )}
+                </div>
+                <div>
+                  <p style={{ fontSize: '16px', fontWeight: '700', color: '#111827', margin: 0 }}>
+                    {photographerName}
+                  </p>
+                  {selectedEvent.photographer?.address && (
+                    <p style={{ fontSize: '13px', color: '#6b7280', margin: 0, marginTop: '4px' }}>
+                      <i className="bi bi-geo-alt" style={{ marginRight: '4px' }}></i>
+                      {selectedEvent.photographer.address}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Description Section */}
+          {selectedEvent.description && (
+            <div style={{ marginBottom: '32px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+                <div
+                  style={{
+                    width: '4px',
+                    height: '24px',
+                    backgroundColor: '#083A85',
+                    borderRadius: '2px',
+                  }}
+                ></div>
+                <h2 style={{ fontSize: '22px', fontWeight: '700', color: '#111827', margin: 0 }}>
+                  {t('aboutThisEvent')}
+                </h2>
+              </div>
+              <p
+                style={{
+                  fontSize: '16px',
+                  color: '#4b5563',
+                  lineHeight: '1.8',
+                  padding: '20px',
+                  backgroundColor: '#f9fafb',
+                  borderRadius: '12px',
+                  borderLeft: '4px solid #083A85',
+                  margin: 0,
+                }}
+              >
+                {selectedEvent.description}
+              </p>
+            </div>
+          )}
 
           {/* Tags Section */}
-          <div style={{ marginBottom: '32px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-              <div
-                style={{
-                  width: '4px',
-                  height: '24px',
-                  backgroundColor: '#083A85',
-                  borderRadius: '2px',
-                }}
-              ></div>
-              <h2 style={{ fontSize: '22px', fontWeight: '700', color: '#111827', margin: 0 }}>
-                {t('eventTags')}
-              </h2>
-            </div>
-            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-              {selectedEvent.tags.map((tag, index) => (
-                <span
-                  key={index}
+          {tags.length > 0 && (
+            <div style={{ marginBottom: '32px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+                <div
                   style={{
-                    padding: '12px 20px',
-                    backgroundColor: '#f0f9ff',
-                    border: '2px solid #dbeafe',
-                    borderRadius: '25px',
-                    fontSize: '14px',
-                    color: '#083A85',
-                    fontWeight: '600',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    transition: 'all 0.3s ease',
-                    cursor: 'default',
+                    width: '4px',
+                    height: '24px',
+                    backgroundColor: '#083A85',
+                    borderRadius: '2px',
                   }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = '#083A85';
-                    e.currentTarget.style.color = '#fff';
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(8, 58, 133, 0.25)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = '#f0f9ff';
-                    e.currentTarget.style.color = '#083A85';
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = 'none';
-                  }}
-                >
-                  <i className="bi bi-hash" style={{ fontSize: '14px' }}></i>
-                  {tag}
-                </span>
-              ))}
+                ></div>
+                <h2 style={{ fontSize: '22px', fontWeight: '700', color: '#111827', margin: 0 }}>
+                  {t('eventTags')}
+                </h2>
+              </div>
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                {tags.map((tag, index) => (
+                  <span
+                    key={index}
+                    style={{
+                      padding: '12px 20px',
+                      backgroundColor: '#f0f9ff',
+                      border: '2px solid #dbeafe',
+                      borderRadius: '25px',
+                      fontSize: '14px',
+                      color: '#083A85',
+                      fontWeight: '600',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      transition: 'all 0.3s ease',
+                      cursor: 'default',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#083A85';
+                      e.currentTarget.style.color = '#fff';
+                      e.currentTarget.style.transform = 'translateY(-2px)';
+                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(8, 58, 133, 0.25)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = '#f0f9ff';
+                      e.currentTarget.style.color = '#083A85';
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = 'none';
+                    }}
+                  >
+                    <i className="bi bi-hash" style={{ fontSize: '14px' }}></i>
+                    {tag}
+                  </span>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Action Button */}
-          {selectedEvent.status === 'ongoing' && (
+          {isLive && (
             <div
               style={{
                 display: 'flex',
@@ -1051,7 +856,7 @@ function ViewEventContent(): React.JSX.Element {
             onClick={(e) => e.stopPropagation()}
           >
             <img
-              src={selectedEvent.bannerImage}
+              src={eventImage}
               alt={selectedEvent.title}
               style={{
                 width: '100%',
@@ -1193,12 +998,10 @@ function ViewEventContent(): React.JSX.Element {
           }
         }
 
-        /* Smooth scrolling */
         html {
           scroll-behavior: smooth;
         }
 
-        /* Custom scrollbar */
         ::-webkit-scrollbar {
           width: 10px;
         }
@@ -1216,14 +1019,12 @@ function ViewEventContent(): React.JSX.Element {
           background: #062d6b;
         }
 
-        /* Focus styles for accessibility */
         button:focus-visible,
         a:focus-visible {
           outline: 3px solid #083A85;
           outline-offset: 2px;
         }
 
-        /* Selection styling */
         ::selection {
           background-color: #083A85;
           color: white;
