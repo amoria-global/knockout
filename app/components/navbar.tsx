@@ -62,6 +62,7 @@ const AmoriaKNavbar = () => {
   const [photographerCategories, setPhotographerCategories] = useState<{ value: string; translationKey: string; icon: string }[]>([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [eventCategories, setEventCategories] = useState<{ value: string; icon: string; translationKey: string; isLive: boolean }[]>([]);
+  const [eventCategoriesLoading, setEventCategoriesLoading] = useState(true);
   const [hasLiveEvents, setHasLiveEvents] = useState(false);
 
   const mobileMenuRef = useRef<HTMLDivElement>(null);
@@ -159,16 +160,24 @@ const AmoriaKNavbar = () => {
           const events = res.data.content;
           // First pass: record which categories have any event (regardless of live status)
           const catMap = new Map<string, boolean>(); // category → isVerifiedLive
-          const ongoingEvents = events.filter(ev => (ev.status as string) === 'ongoing');
+          const ongoingEvents = events.filter(ev => (ev.eventStatus as string)?.toLowerCase() === 'ongoing');
 
           for (const ev of events) {
-            const raw = ((ev.eventType || ev.category || '') as string).toLowerCase().trim();
+            const raw = (ev.eventCategory?.name || '').toLowerCase().trim();
             if (!raw) continue;
             catMap.set(raw, catMap.get(raw) ?? false);
           }
 
-          // Second pass: verify each "ongoing" event has an active Cloudflare stream
+          // Second pass: mark categories live via hasLiveStream flag first (no extra API calls),
+          // then additionally confirm via Cloudflare connectionStatus for ongoing events
           let anyLive = false;
+          for (const ev of events) {
+            if (ev.hasLiveStream === true) {
+              anyLive = true;
+              const raw = (ev.eventCategory?.name || '').toLowerCase().trim();
+              if (raw) catMap.set(raw, true);
+            }
+          }
           if (ongoingEvents.length > 0) {
             const checks = await Promise.allSettled(
               ongoingEvents.map(ev => getStreamVideo(ev.id))
@@ -179,7 +188,7 @@ const AmoriaKNavbar = () => {
                 const connStatus = d?.data?.connectionStatus ?? d?.connectionStatus;
                 if (connStatus === 'live') {
                   anyLive = true;
-                  const raw = ((ongoingEvents[i].eventType || ongoingEvents[i].category || '') as string).toLowerCase().trim();
+                  const raw = (ongoingEvents[i].eventCategory?.name || '').toLowerCase().trim();
                   if (raw) catMap.set(raw, true);
                 }
               }
@@ -195,6 +204,7 @@ const AmoriaKNavbar = () => {
           );
         }
       } catch { /* silent — navbar should never break on API errors */ }
+      finally { setEventCategoriesLoading(false); }
     };
     fetchEventCategories();
   }, []);
@@ -656,7 +666,7 @@ const AmoriaKNavbar = () => {
                       flex: 1,
                       alignContent: 'start'
                     }}>
-                      {eventCategories.length === 0 && (
+                      {!eventCategoriesLoading && eventCategories.length === 0 && (
                         <p style={{ gridColumn: '1 / -1', color: '#9ca3af', fontSize: '14px' }}>
                           No events available right now.
                         </p>

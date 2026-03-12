@@ -11,6 +11,20 @@ import {
 import { getPublicEvents, type PublicEvent } from '@/lib/APIs/public';
 import { getStreamVideo } from '@/lib/APIs/streams/route';
 
+function formatTime12h(t: string): string {
+  const [h, m] = t.split(':');
+  const hour = parseInt(h, 10);
+  const ampm = hour >= 12 ? 'PM' : 'AM';
+  const h12 = hour % 12 || 12;
+  return `${h12}:${m} ${ampm}`;
+}
+
+function formatTimeRange(startTime?: string, endTime?: string): string {
+  if (!startTime) return 'Time TBA';
+  const start = formatTime12h(startTime);
+  return endTime ? `${start} - ${formatTime12h(endTime)}` : start;
+}
+
 const Events: React.FC = () => {
   const t = useTranslations('events');
   // States
@@ -67,7 +81,7 @@ const Events: React.FC = () => {
       if (response.success && response.data) {
         const events = response.data.content;
         // Verify which "ongoing" events have an active Cloudflare stream
-        const ongoingEvents = events.filter(e => e.status === 'ongoing');
+        const ongoingEvents = events.filter(e => (e.eventStatus || '').toLowerCase() === 'ongoing');
         const trulyLiveIds = new Set<string>();
         if (ongoingEvents.length > 0) {
           const checks = await Promise.allSettled(
@@ -389,15 +403,17 @@ const Events: React.FC = () => {
     }
   ];
 
-  // An event is only "live" when its Cloudflare stream is confirmed transmitting
+  // An event is "live" if the backend marks it as having a live stream OR
+  // if Cloudflare confirms the stream is actively transmitting
   const isEventLive = (event: PublicEvent) =>
-    event.status === 'ongoing' && liveStreamIds.has(event.id);
+    event.hasLiveStream === true ||
+    ((event.eventStatus || '').toLowerCase() === 'ongoing' && liveStreamIds.has(event.id));
 
   // Trending Events Data - Filter only truly live events
   const allTrendingEvents = eventsData.filter(event => isEventLive(event)).map(event => ({
     id: event.id,
     name: event.title,
-    image: event.coverImage || event.bannerImage || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=500&q=80'
+    image: event.eventPhoto || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=500&q=80'
   }));
 
   // Limit trending events on mobile for better UX
@@ -939,7 +955,7 @@ const Events: React.FC = () => {
                     marginBottom: '1rem'
                   }}>
                     <img
-                      src={event.coverImage || event.bannerImage || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=500&q=80'}
+                      src={event.eventPhoto || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=500&q=80'}
                       alt={event.title}
                       style={{
                         width: '100%',
@@ -1056,7 +1072,7 @@ const Events: React.FC = () => {
                       width: '100%'
                     }}>
                       <i className="bi bi-clock-fill" style={{ fontSize: '0.85rem', color: '#3b82f6', flexShrink: 0 }}></i>
-                      <span style={{ textAlign: 'center' }}>{event.startTime ? `${event.startTime}${event.endTime ? ` - ${event.endTime}` : ''}` : event.eventDate || 'Time TBA'}</span>
+                      <span style={{ textAlign: 'center' }}>{formatTimeRange(event.startTime, event.endTime)}</span>
                     </div>
 
                     {/* Stream Now Button */}

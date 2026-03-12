@@ -20,21 +20,31 @@ interface EventItem {
   attendees: number;
 }
 
+function formatTime12h(t: string): string {
+  const [h, m] = t.split(':');
+  const hour = parseInt(h, 10);
+  const ampm = hour >= 12 ? 'PM' : 'AM';
+  const h12 = hour % 12 || 12;
+  return `${h12}:${m} ${ampm}`;
+}
+
 // Map API PublicEvent to local EventItem
 function mapPublicEvent(e: PublicEvent): EventItem {
   const price = e.price && e.price > 0 ? `${e.price.toLocaleString()} RWF` : 'Free';
-  const time = [e.startTime, e.endTime].filter(Boolean).join(' - ') || 'TBD';
+  const start = e.startTime ? formatTime12h(e.startTime) : null;
+  const end = e.endTime ? formatTime12h(e.endTime) : null;
+  const time = start ? (end ? `${start} - ${end}` : start) : 'TBD';
   return {
     id: e.id,
     title: e.title,
-    image: e.coverImage || e.bannerImage || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=500&q=80',
-    category: e.eventType || e.category || 'Event',
+    image: e.eventPhoto || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=500&q=80',
+    category: e.eventCategory?.name || e.eventTags?.split(',')[0] || 'Event',
     date: e.eventDate || '',
     time,
     location: e.location || 'TBD',
-    status: e.status || 'UPCOMING',
+    status: e.eventStatus || 'UPCOMING',
     price,
-    attendees: e.guestCount || 0,
+    attendees: 0,
   };
 }
 
@@ -92,9 +102,7 @@ export default function JoinEvent() {
   // Package state from URL params
   const [packageType, setPackageType] = useState<string | null>(null);
   const [numberOfPeople, setNumberOfPeople] = useState(1);
-  const [showShareableLink, setShowShareableLink] = useState(false);
-  const [shareableLink, setShareableLink] = useState('');
-  const [linkCopied, setLinkCopied] = useState(false);
+  const [paymentError, setPaymentError] = useState('');
 
   // Input validation error states
   const [phoneError, setPhoneError] = useState('');
@@ -274,7 +282,7 @@ export default function JoinEvent() {
           setDetectedEvent(eventData);
         } else if (hasPackageFromJoinPackage) {
           // Free event from join-package — skip payment, go directly to live stream
-          router.push('/user/events/live-stream');
+          router.push(`/user/events/live-stream?eventId=${eventId}`);
         }
         // For upcoming, free, or non-paid category events without package param - show original content
       }
@@ -314,21 +322,7 @@ export default function JoinEvent() {
     setCardHolderName('');
     setIsProcessing(false);
     setPaymentSuccess(false);
-  };
-
-  // Generate unique shareable link
-  const generateShareableLink = () => {
-    const uniqueId = Math.random().toString(36).substring(2, 10).toUpperCase();
-    const eventId = detectedEvent?.id || 0;
-    return `STREAM-${eventId}-${uniqueId}-${numberOfPeople}`;
-  };
-
-  // Copy link to clipboard
-  const copyLinkToClipboard = () => {
-    navigator.clipboard.writeText(shareableLink).then(() => {
-      setLinkCopied(true);
-      setTimeout(() => setLinkCopied(false), 2000);
-    });
+    setPaymentError('');
   };
 
   // Handle payment submission
@@ -339,6 +333,7 @@ export default function JoinEvent() {
     }
 
     setIsProcessing(true);
+    setPaymentError('');
 
     try {
       const response = await joinEvent({
@@ -351,21 +346,27 @@ export default function JoinEvent() {
 
       if (response.success) {
         setPaymentSuccess(true);
-
-        // After showing success message
         setTimeout(() => {
-          if (packageType === 'group') {
-            setPaymentSuccess(false);
-            const newLink = generateShareableLink();
-            setShareableLink(newLink);
-            setShowShareableLink(true);
+          resetPaymentForm();
+          const inviteToken = searchParams.get('inviteToken');
+          const eid = detectedEvent?.id || '';
+          if (inviteToken && eid) {
+            const paymentId = (response.data as { data?: { id?: string } } | undefined)?.data?.id || '';
+            router.push(`/user/event/${eid}?inviteToken=${encodeURIComponent(inviteToken)}${paymentId ? `&paymentId=${encodeURIComponent(paymentId)}` : ''}`);
           } else {
-            resetPaymentForm();
-            router.push('/user/events/live-stream');
+            router.push(`/user/events/live-stream?eventId=${eid}`);
           }
         }, 2000);
+      } else if (response.statusCode === 402) {
+        const fee = response.data?.data?.streamFee;
+        const symbol = response.data?.data?.streamFeeCurrencySymbol || response.data?.data?.streamFeeCurrencyAbbreviation || '';
+        setPaymentError(
+          fee
+            ? `Stream access requires a fee of ${fee.toLocaleString()} ${symbol}. Please contact the event organizer.`
+            : (response.data?.message || response.error || 'Additional payment required for stream access.')
+        );
       } else {
-        alert(response.error || 'Payment failed. Please try again.');
+        setPaymentError(response.error || 'Payment failed. Please try again.');
       }
     } catch {
       setIsProcessing(false);
@@ -403,10 +404,10 @@ export default function JoinEvent() {
           setDetectedEvent(eventData);
         } else {
           // Free event, non-LIVE, or non-paid category - proceed directly
-          router.push('/user/events/live-stream');
+          router.push(`/user/events/live-stream?eventId=${event.id}`);
         }
       } else {
-        // Event not found - proceed directly (could show error instead)
+        // Event not found - proceed directly
         router.push('/user/events/live-stream');
       }
     }
@@ -506,155 +507,8 @@ export default function JoinEvent() {
                     Payment Successful!
                   </h3>
                   <p style={{ color: '#9ca3af', fontSize: '15px' }}>
-                    {packageType === 'group' ? 'Generating your shareable link...' : 'Redirecting to live stream...'}
+                    Redirecting to live stream...
                   </p>
-                </div>
-              )}
-
-              {/* Shareable Link Card for Group Package */}
-              {showShareableLink && packageType === 'group' && (
-                <div
-                  style={{
-                    position: 'absolute',
-                    inset: 0,
-                    backgroundColor: 'rgba(0, 0, 0, 0.95)',
-                    borderRadius: '24px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    zIndex: 10,
-                    padding: '24px',
-                  }}
-                >
-                  {/* Success Icon */}
-                  <div
-                    style={{
-                      width: '70px',
-                      height: '70px',
-                      borderRadius: '50%',
-                      background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      marginBottom: '16px',
-                    }}
-                  >
-                    <i className="bi bi-link-45deg" style={{ fontSize: '32px', color: '#fff' }}></i>
-                  </div>
-
-                  <h3 style={{ color: '#fff', fontSize: '22px', fontWeight: '700', marginBottom: '8px', textAlign: 'center' }}>
-                    Your Shareable Stream Link
-                  </h3>
-                  <p style={{ color: '#9ca3af', fontSize: '14px', marginBottom: '20px', textAlign: 'center' }}>
-                    Share this link with your group. It can be used by up to {numberOfPeople} people (including you).
-                  </p>
-
-                  {/* Link Display Box */}
-                  <div
-                    style={{
-                      width: '100%',
-                      maxWidth: '400px',
-                      backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                      border: '2px solid #10b981',
-                      borderRadius: '12px',
-                      padding: '16px',
-                      marginBottom: '16px',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <div
-                        style={{
-                          flex: 1,
-                          backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                          borderRadius: '8px',
-                          padding: '12px 16px',
-                          fontFamily: 'monospace',
-                          fontSize: '15px',
-                          color: '#10b981',
-                          fontWeight: '600',
-                          letterSpacing: '1px',
-                          wordBreak: 'break-all',
-                        }}
-                      >
-                        {shareableLink}
-                      </div>
-                      <button
-                        onClick={copyLinkToClipboard}
-                        style={{
-                          padding: '12px 16px',
-                          backgroundColor: linkCopied ? '#059669' : '#10b981',
-                          border: 'none',
-                          borderRadius: '8px',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          transition: 'all 0.3s ease',
-                        }}
-                      >
-                        <i className={linkCopied ? 'bi bi-check-lg' : 'bi bi-clipboard'} style={{ color: '#fff', fontSize: '16px' }}></i>
-                        <span style={{ color: '#fff', fontSize: '13px', fontWeight: '600' }}>
-                          {linkCopied ? 'Copied!' : 'Copy'}
-                        </span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Usage Info */}
-                  <div
-                    style={{
-                      width: '100%',
-                      maxWidth: '400px',
-                      backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                      border: '1px solid rgba(59, 130, 246, 0.3)',
-                      borderRadius: '10px',
-                      padding: '14px',
-                      marginBottom: '20px',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-                      <i className="bi bi-info-circle-fill" style={{ color: '#3b82f6', fontSize: '18px', marginTop: '2px' }}></i>
-                      <div>
-                        <p style={{ color: '#fff', fontSize: '14px', fontWeight: '600', marginBottom: '4px' }}>
-                          Link Usage Limit: {numberOfPeople} people (including you)
-                        </p>
-                        <p style={{ color: '#9ca3af', fontSize: '13px', margin: 0 }}>
-                          This link can be used by you and {numberOfPeople - 1} other {numberOfPeople - 1 === 1 ? 'person' : 'people'}. Each person can use it once to access the stream.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div style={{ display: 'flex', gap: '12px', width: '100%', maxWidth: '400px' }}>
-                    <button
-                      onClick={() => {
-                        setShowShareableLink(false);
-                        resetPaymentForm();
-                        router.push('/user/events/live-stream');
-                      }}
-                      style={{
-                        flex: 1,
-                        padding: '14px',
-                        background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
-                        border: 'none',
-                        borderRadius: '10px',
-                        color: '#fff',
-                        fontSize: '14px',
-                        fontWeight: '700',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '8px',
-                        boxShadow: '0 4px 15px rgba(16, 185, 129, 0.4)',
-                      }}
-                    >
-                      <i className="bi bi-play-circle-fill" style={{ fontSize: '16px' }}></i>
-                      Watch Now
-                    </button>
-                  </div>
                 </div>
               )}
 
@@ -1074,6 +928,25 @@ export default function JoinEvent() {
                     <i className="bi bi-lock-fill" style={{ fontSize: '16px' }}></i>
                     Pay {detectedEvent.fee.toLocaleString()} RWF {packageType === 'group' ? `for ${numberOfPeople} People` : '& Join'}
                   </button>
+
+                  {/* Payment error */}
+                  {paymentError && (
+                    <div style={{
+                      marginBottom: '10px',
+                      padding: '12px 16px',
+                      backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                      border: '1px solid rgba(239, 68, 68, 0.4)',
+                      borderRadius: '10px',
+                      color: '#fca5a5',
+                      fontSize: '13px',
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: '8px',
+                    }}>
+                      <i className="bi bi-exclamation-triangle-fill" style={{ color: '#ef4444', fontSize: '15px', marginTop: '1px', flexShrink: 0 }}></i>
+                      {paymentError}
+                    </div>
+                  )}
 
                   {/* Security note */}
                   <div style={{
