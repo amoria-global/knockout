@@ -9,7 +9,7 @@ export default function NotFound() {
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <Navbar />
 
-      <main style={{
+      <main style={{ 
         flex: 1,
         display: 'flex',
         alignItems: 'center',
