@@ -17,6 +17,7 @@ import { contactUs } from '@/lib/APIs/public/contact-us/route';
 import { apiClient } from '@/lib/api/client';
 import { API_ENDPOINTS } from '@/lib/api/config';
 import XentriPayModal from '../../components/XentriPayModal';
+import { useToast } from '@/lib/notifications/ToastProvider';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -109,6 +110,7 @@ export default function EventStreamPage({ eventId }: EventStreamPageProps) {
   const { user, isAuthenticated } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { success: showSuccess } = useToast();
 
   // -- Mobile
   const [isMobile, setIsMobile] = useState(false);
@@ -162,6 +164,10 @@ export default function EventStreamPage({ eventId }: EventStreamPageProps) {
 
   // -- Currencies
   const [currencies, setCurrencies] = useState<Currency[]>([]);
+  const [giftCurrencyId, setGiftCurrencyId] = useState('');
+  const [giftCurrencyCode, setGiftCurrencyCode] = useState('');
+  const [donationCurrencyId, setDonationCurrencyId] = useState('');
+  const [donationCurrencyCode, setDonationCurrencyCode] = useState('');
 
   // -- Gift modal
   const [gift, setGift] = useState<GiftState>({
@@ -498,7 +504,16 @@ export default function EventStreamPage({ eventId }: EventStreamPageProps) {
   useEffect(() => {
     getCurrencies()
       .then(res => {
-        if (res.success && Array.isArray(res.data)) setCurrencies(res.data as Currency[]);
+        if (res.success && Array.isArray(res.data)) {
+          const curs = res.data as Currency[];
+          setCurrencies(curs);
+          if (curs.length > 0) {
+            setGiftCurrencyId(curs[0].id);
+            setGiftCurrencyCode(curs[0].code);
+            setDonationCurrencyId(curs[0].id);
+            setDonationCurrencyCode(curs[0].code);
+          }
+        }
       })
       .catch(() => {});
   }, []);
@@ -749,23 +764,28 @@ export default function EventStreamPage({ eventId }: EventStreamPageProps) {
 
   // Gift — opens XentriPay modal
   const handleSendGift = () => {
-    if (!gift.amount || parseInt(gift.amount) <= 0) return;
-    const selectedCurrency = currencies.find(c => c.id === (currencies[0]?.id ?? ''));
+    if (!gift.amount || Number(gift.amount) <= 0) return;
     setXentriPayEventId(eventId);
-    setXentriPayAmount(parseInt(gift.amount));
+    setXentriPayAmount(Number(gift.amount));
     setXentriPayType('streaming');
-    setXentriPayCurrencyId(currencies[0]?.id ?? '');
-    setXentriPayCurrencyCode(selectedCurrency?.code ?? currencies[0]?.code ?? 'USD');
+    setXentriPayCurrencyId(giftCurrencyId || (currencies[0]?.id ?? ''));
+    setXentriPayCurrencyCode(giftCurrencyCode || (currencies[0]?.code ?? 'USD'));
     setGift(prev => ({ ...prev, show: false }));
     setShowXentriPayModal(true);
   };
 
-  const handleXentriPaySuccess = () => {
+  const handleXentriPaySuccess = (_refid: string) => {
     setShowXentriPayModal(false);
+    showSuccess(xentriPayType === 'tip' ? 'Donation sent successfully!' : 'Gift sent successfully!');
+    // Send gift message as a chat message if applicable
+    if (xentriPayType === 'streaming' && gift.message && event?.liveInputId) {
+      sendStreamChat(event.liveInputId, `[Gift] ${gift.message}`).catch(() => {});
+      setGift(prev => ({ ...prev, message: '' }));
+    }
   };
 
   const isGiftValid = () => {
-    return !!(gift.amount && parseInt(gift.amount) > 0);
+    return !!(gift.amount && Number(gift.amount) > 0);
   };
 
   // ── ADVANCED CHAT HANDLERS ─────────────────────────────────────────────────
@@ -949,12 +969,12 @@ export default function EventStreamPage({ eventId }: EventStreamPageProps) {
   // ── DONATION ──────────────────────────────────────────────────────────────
 
   const handleSendDonation = () => {
-    if (!donationAmount || parseInt(donationAmount) <= 0) return;
+    if (!donationAmount || Number(donationAmount) <= 0) return;
     setXentriPayEventId(eventId);
-    setXentriPayAmount(parseInt(donationAmount));
+    setXentriPayAmount(Number(donationAmount));
     setXentriPayType('tip');
-    setXentriPayCurrencyId(currencies[0]?.id ?? '');
-    setXentriPayCurrencyCode(currencies[0]?.code ?? 'USD');
+    setXentriPayCurrencyId(donationCurrencyId || (currencies[0]?.id ?? ''));
+    setXentriPayCurrencyCode(donationCurrencyCode || (currencies[0]?.code ?? 'USD'));
     setShowDonationModal(false);
     setShowDonationPrompt(false);
     setShowXentriPayModal(true);
@@ -1442,7 +1462,7 @@ export default function EventStreamPage({ eventId }: EventStreamPageProps) {
                       🎁 Send a Gift
                     </button>
                     <button
-                      onClick={() => setShowDonationPrompt(true)}
+                      onClick={() => requireAuth(() => setShowDonationPrompt(true))}
                       style={{ background: 'rgba(159,122,234,0.15)', color: '#b794f4', border: '1px solid #b794f4', padding: '10px 18px', borderRadius: 8, fontWeight: 600, cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', gap: 7 }}
                     >
                       💝 Donate
@@ -1760,12 +1780,13 @@ export default function EventStreamPage({ eventId }: EventStreamPageProps) {
               {/* Currency selector */}
               {currencies.length > 0 && (
                 <select
+                  value={giftCurrencyId}
                   style={{ width: '100%', background: '#2d3748', border: '1px solid #4a5568', borderRadius: 8, padding: '10px 12px', color: '#efeff1', fontSize: 14, marginBottom: 12, boxSizing: 'border-box', outline: 'none', cursor: 'pointer' }}
                   onChange={e => {
                     const c = currencies.find(c => c.id === e.target.value);
                     if (c) {
-                      setXentriPayCurrencyId(c.id);
-                      setXentriPayCurrencyCode(c.code);
+                      setGiftCurrencyId(c.id);
+                      setGiftCurrencyCode(c.code);
                     }
                   }}
                 >
@@ -1818,16 +1839,31 @@ export default function EventStreamPage({ eventId }: EventStreamPageProps) {
                 onChange={e => setDonationAmount(e.target.value)}
                 style={{ width: '100%', background: '#2d3748', border: '1px solid #4a5568', borderRadius: 8, padding: '10px 12px', color: '#efeff1', fontSize: 15, marginBottom: 12, boxSizing: 'border-box', outline: 'none' }}
               />
+              {currencies.length > 0 && (
+                <select
+                  value={donationCurrencyId}
+                  style={{ width: '100%', background: '#2d3748', border: '1px solid #4a5568', borderRadius: 8, padding: '10px 12px', color: '#efeff1', fontSize: 14, marginBottom: 12, boxSizing: 'border-box', outline: 'none', cursor: 'pointer' }}
+                  onChange={e => {
+                    const c = currencies.find(c => c.id === e.target.value);
+                    if (c) {
+                      setDonationCurrencyId(c.id);
+                      setDonationCurrencyCode(c.code);
+                    }
+                  }}
+                >
+                  {currencies.map(c => <option key={c.id} value={c.id}>{c.code} — {c.name}</option>)}
+                </select>
+              )}
               {/* Quick amounts */}
               <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
                 {['5','10','20','50'].map(amt => (
-                  <button key={amt} style={{ background: donationAmount === amt ? '#b794f4' : '#2d3748', color: '#fff', border: 'none', borderRadius: 7, padding: '6px 14px', cursor: 'pointer', fontSize: 13, fontWeight: 600 }} onClick={() => setDonationAmount(amt)}>${amt}</button>
+                  <button key={amt} style={{ background: donationAmount === amt ? '#b794f4' : '#2d3748', color: '#fff', border: 'none', borderRadius: 7, padding: '6px 14px', cursor: 'pointer', fontSize: 13, fontWeight: 600 }} onClick={() => setDonationAmount(amt)}>{donationCurrencyCode || 'USD'} {amt}</button>
                 ))}
               </div>
               <button
                 onClick={handleSendDonation}
-                disabled={!donationAmount || parseInt(donationAmount) <= 0}
-                style={{ width: '100%', background: '#b794f4', color: '#fff', border: 'none', padding: 13, borderRadius: 9, fontWeight: 700, fontSize: 15, cursor: 'pointer', opacity: (!donationAmount || parseInt(donationAmount) <= 0) ? 0.65 : 1 }}
+                disabled={!donationAmount || Number(donationAmount) <= 0}
+                style={{ width: '100%', background: '#b794f4', color: '#fff', border: 'none', padding: 13, borderRadius: 9, fontWeight: 700, fontSize: 15, cursor: 'pointer', opacity: (!donationAmount || Number(donationAmount) <= 0) ? 0.65 : 1 }}
               >
                 Donate
               </button>
@@ -1934,7 +1970,7 @@ export default function EventStreamPage({ eventId }: EventStreamPageProps) {
             amount={xentriPayAmount}
             currencyCode={xentriPayCurrencyCode}
             currencyId={xentriPayCurrencyId}
-            paymentType={xentriPayType === 'tip' ? 'donation' : 'streaming'}
+            paymentType={xentriPayType}
             eventId={xentriPayEventId}
             title={xentriPayType === 'tip' ? 'Complete Your Donation' : 'Send a Gift'}
           />
