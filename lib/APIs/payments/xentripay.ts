@@ -15,12 +15,15 @@ export interface XentriPayInitiateRequest {
   phone: string;
   telecomProvider: string; // 'MTN' | 'AIRTEL'
   paymentMethod: string;   // 'MOBILE_MONEY' | 'CARD'
+  redirectUrl?: string;
 }
 
 export interface XentriPayDonationRequest {
   donationId: string;
   phone: string;
   telecomProvider: string;
+  paymentMethod?: string;
+  redirectUrl?: string;
 }
 
 export interface XentriPayPhotoPurchaseRequest {
@@ -29,6 +32,8 @@ export interface XentriPayPhotoPurchaseRequest {
   currencyId: string;
   phone: string;
   telecomProvider: string;
+  paymentMethod?: string;
+  redirectUrl?: string;
 }
 
 export interface XentriPayTipRequest {
@@ -37,6 +42,8 @@ export interface XentriPayTipRequest {
   currencyId: string;
   phone: string;
   telecomProvider: string;
+  paymentMethod?: string;
+  redirectUrl?: string;
 }
 
 export interface XentriPayStreamingRequest {
@@ -45,6 +52,8 @@ export interface XentriPayStreamingRequest {
   currencyId: string;
   phone: string;
   telecomProvider: string;
+  paymentMethod?: string;
+  redirectUrl?: string;
 }
 
 export interface XentriPayResponse {
