@@ -11,6 +11,7 @@ export interface JoinEventRequest {
   eventId: string;
   packageType?: string;
   numberOfPeople?: number;
+  eventPriceId?: string;
 }
 
 export interface JoinEventResponse {
