@@ -4,7 +4,46 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import AmoriaKNavbar from '../../../components/navbar';
 import { useTranslations } from 'next-intl';
+import { useGoogleLogin } from '@react-oauth/google';
 import { getPublicEventById, type PublicEvent } from '@/lib/APIs/public';
+import { isAuthenticated } from '@/lib/api/client';
+import { login } from '@/lib/APIs/auth/login/route';
+import { signup } from '@/lib/APIs/auth/signup/route';
+import { verifyOtp } from '@/lib/APIs/auth/verify-otp/route';
+import { googleAuth } from '@/lib/APIs/auth/google/route';
+
+const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';
+
+/** Isolated component so useGoogleLogin only runs inside GoogleOAuthProvider context.
+ *  Loading state is driven entirely by the parent via `loading` prop so the parent's
+ *  finally block can always re-enable the button after success or failure. */
+function GoogleAuthButton({ onSuccess, onError, loading, label }: {
+  onSuccess: (tokenResponse: { access_token: string }) => void;
+  onError: () => void;
+  loading: boolean;
+  label: string;
+}) {
+  const googleLogin = useGoogleLogin({
+    onSuccess: (tokenResponse) => { onSuccess(tokenResponse); },
+    onError: () => { onError(); },
+  });
+
+  return (
+    <button
+      type="button"
+      onClick={() => { if (!loading) googleLogin(); }}
+      disabled={loading}
+      style={{ width: '100%', padding: '11px', background: '#fff', border: '1px solid rgba(0,0,0,0.15)', borderRadius: 10, color: '#374151', fontSize: 14, fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, opacity: loading ? 0.7 : 1 }}
+    >
+      {loading ? (
+        <div style={{ width: 16, height: 16, border: '2px solid rgba(0,0,0,0.2)', borderTopColor: '#374151', borderRadius: '50%', animation: 'authSpin 0.8s linear infinite' }} />
+      ) : (
+        <img src="https://www.svgrepo.com/show/355037/google.svg" alt="Google" style={{ width: 18, height: 18 }} />
+      )}
+      {loading ? 'Connecting…' : label}
+    </button>
+  );
+}
 
 const PLACEHOLDER_IMAGE = 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=1200&q=80';
 
@@ -84,7 +123,60 @@ function ViewEventContent(): React.JSX.Element {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedEvent, setSelectedEvent] = useState<PublicEvent | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [imageViewerOpen, setImageViewerOpen] = useState(false);
+
+  // Viewer auth modal state
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authStep, setAuthStep] = useState<'login' | 'signup' | 'otp'>('login');
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authError, setAuthError] = useState('');
+  // Login fields
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  // Signup fields
+  const [signupFirstName, setSignupFirstName] = useState('');
+  const [signupLastName, setSignupLastName] = useState('');
+  const [signupEmail, setSignupEmail] = useState('');
+  const [signupPhone, setSignupPhone] = useState('');
+  const [signupPassword, setSignupPassword] = useState('');
+  // OTP step
+  const [otpCustomerId, setOtpCustomerId] = useState('');
+  const [otpValue, setOtpValue] = useState('');
+  // Pending destination after auth
+  const [pendingJoinUrl, setPendingJoinUrl] = useState('');
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+  const handleGoogleSuccess = async (tokenResponse: { access_token: string }) => {
+    setGoogleLoading(true); // set before async work; finally always resets it
+    setAuthError('');
+    try {
+      const userInfoRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+      });
+      if (!userInfoRes.ok) throw new Error('Failed to fetch Google user info');
+      const userInfo = await userInfoRes.json();
+      const res = await googleAuth({
+        email: userInfo.email,
+        firstName: userInfo.given_name || '',
+        lastName: userInfo.family_name || '',
+        customerType: 'Viewer',
+      });
+      if (res.success && res.data?.token) {
+        setShowAuthModal(false);
+        window.location.href = pendingJoinUrl;
+      } else {
+        setAuthError(res.data?.message || res.error || 'Google sign-in failed. Please try again.');
+      }
+    } catch {
+      setAuthError('Google sign-in failed. Please try again.');
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
+  const handleGoogleError = () => {
+    setGoogleLoading(false);
+    setAuthError('Google sign-in was cancelled or failed.');
+  };
 
   // Fetch event from API
   useEffect(() => {
@@ -112,43 +204,17 @@ function ViewEventContent(): React.JSX.Element {
     fetchEvent();
   }, [eventId]);
 
-  useEffect(() => {
-    const handleEscKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && imageViewerOpen) {
-        closeImageViewer();
-      }
-    };
-
-    if (imageViewerOpen) {
-      document.addEventListener('keydown', handleEscKey);
-      document.body.style.overflow = 'hidden';
-    }
-
-    return () => {
-      document.removeEventListener('keydown', handleEscKey);
-      document.body.style.overflow = 'unset';
-    };
-  }, [imageViewerOpen]);
-
-  const openImageViewer = () => {
-    setImageViewerOpen(true);
-  };
-
-  const closeImageViewer = () => {
-    setImageViewerOpen(false);
-  };
-
   // Loading state
   if (isLoading) {
     return (
       <>
         <AmoriaKNavbar />
-        <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff' }}>
-          <div style={{ textAlign: 'center', color: '#083A85' }}>
+        <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#0e0e10' }}>
+          <div style={{ textAlign: 'center', color: '#03969c' }}>
             <div style={{ fontSize: '48px', marginBottom: '16px' }}>
               <i className="bi bi-hourglass-split"></i>
             </div>
-            <p style={{ fontSize: '18px', fontWeight: '600' }}>{t('loadingEventDetails')}</p>
+            <p style={{ fontSize: '18px', fontWeight: '600', color: '#efeff1' }}>{t('loadingEventDetails')}</p>
           </div>
         </div>
       </>
@@ -160,7 +226,7 @@ function ViewEventContent(): React.JSX.Element {
     return (
       <>
         <AmoriaKNavbar />
-        <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff' }}>
+        <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#0e0e10' }}>
           <div style={{ textAlign: 'center', color: '#ef4444' }}>
             <div style={{ fontSize: '48px', marginBottom: '16px' }}>
               <i className="bi bi-exclamation-circle"></i>
@@ -171,7 +237,7 @@ function ViewEventContent(): React.JSX.Element {
               style={{
                 marginTop: '16px',
                 padding: '12px 32px',
-                backgroundColor: '#083A85',
+                backgroundColor: '#03969c',
                 color: '#fff',
                 border: 'none',
                 borderRadius: '8px',
@@ -188,709 +254,423 @@ function ViewEventContent(): React.JSX.Element {
     );
   }
 
+  // Open auth modal or proceed directly if already authenticated
+  const handlePurchaseAccess = (joinUrl: string) => {
+    if (isAuthenticated()) {
+      window.location.href = joinUrl;
+    } else {
+      setPendingJoinUrl(joinUrl);
+      setAuthStep('login');
+      setAuthError('');
+      setShowAuthModal(true);
+    }
+  };
+
+  const handleLogin = async () => {
+    if (!loginEmail || !loginPassword) { setAuthError('Please fill in all fields'); return; }
+    setAuthLoading(true);
+    setAuthError('');
+    try {
+      const res = await login({ email: loginEmail, password: loginPassword });
+      if (res.success && res.data?.token) {
+        setShowAuthModal(false);
+        window.location.href = pendingJoinUrl;
+      } else {
+        setAuthError(res.data?.message || res.error || 'Login failed. Please check your credentials.');
+      }
+    } catch {
+      setAuthError('Login failed. Please try again.');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleSignup = async () => {
+    if (!signupFirstName || !signupLastName || !signupEmail || !signupPhone || !signupPassword) {
+      setAuthError('Please fill in all fields');
+      return;
+    }
+    setAuthLoading(true);
+    setAuthError('');
+    try {
+      const res = await signup({
+        firstName: signupFirstName,
+        lastName: signupLastName,
+        email: signupEmail,
+        phone: signupPhone,
+        password: signupPassword,
+        customerType: 'Viewer',
+      });
+      if (res.success && res.data) {
+        const customerId = res.data.customerId || res.data.customer_id || res.data.applicantId || res.data.applicant_id || '';
+        setOtpCustomerId(customerId);
+        setAuthStep('otp');
+        setAuthError('');
+      } else {
+        setAuthError(res.data?.message || res.error || 'Signup failed. Please try again.');
+      }
+    } catch {
+      setAuthError('Signup failed. Please try again.');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (!otpValue || otpValue.length < 4) { setAuthError('Please enter the verification code'); return; }
+    setAuthLoading(true);
+    setAuthError('');
+    try {
+      const res = await verifyOtp({ customerId: otpCustomerId, otp: parseInt(otpValue, 10) });
+      if (res.success && res.data?.action === 1) {
+        // OTP verify only confirms email — token comes from login. Auto-login with signup credentials.
+        const loginRes = await login({ email: signupEmail, password: signupPassword });
+        if (loginRes.success && loginRes.data?.token) {
+          setShowAuthModal(false);
+          window.location.href = pendingJoinUrl;
+        } else {
+          setAuthError(loginRes.data?.message || loginRes.error || 'Email verified but login failed. Please log in manually.');
+        }
+      } else {
+        setAuthError(res.data?.message || res.error || 'Invalid code. Please try again.');
+      }
+    } catch {
+      setAuthError('Verification failed. Please try again.');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
   const eventImage = selectedEvent.eventPhoto || PLACEHOLDER_IMAGE;
-  const isLive = (selectedEvent.eventStatus || '').toLowerCase() === 'ongoing';
+  const rawStatus = (selectedEvent.eventStatus || '').toUpperCase();
+  const isLive = rawStatus === 'ONGOING';
+  const isCompleted = rawStatus === 'COMPLETED';
+  const isCancelled = rawStatus === 'CANCELLED';
+  const isUpcoming = !isLive && !isCompleted && !isCancelled; // PUBLISHED or UPCOMING
+  const streamFee = selectedEvent.streamFee || 0;
+  const isPaid = streamFee > 0 || (selectedEvent.price || 0) > 0;
+  // Backend returns hlsManifestUrl for authenticated viewers who have already paid
+  const hasStreamAccess = !!selectedEvent.hlsManifestUrl;
   const tags = getTagsArray(selectedEvent);
   const photographerName = getPhotographerName(selectedEvent);
 
   return (
     <>
       <AmoriaKNavbar />
-      <div className="min-h-screen bg-white" style={{ opacity: 1, transition: 'opacity 0.3s ease-in' }}>
-        {/* Header Section - Banner Image */}
-        <div
-          style={{
-            position: 'relative',
-            margin: '0 24px',
-            marginTop: '20px',
-          }}
+      {/* ── FULL-VIEWPORT CINEMA SHELL ── */}
+      <div style={{ position: 'relative', height: 'calc(100vh - 64px)', overflow: 'hidden', backgroundColor: '#0e0e10' }}>
+
+        {/* Background image — fills right */}
+        <div style={{ position: 'absolute', inset: 0, backgroundImage: `url(${eventImage})`, backgroundSize: 'cover', backgroundPosition: 'center right' }} />
+
+        {/* Left-to-right cinematic gradient */}
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, #0e0e10 28%, rgba(14,14,16,0.93) 48%, rgba(14,14,16,0.55) 68%, rgba(14,14,16,0.1) 100%)' }} />
+        {/* Top/bottom vignette */}
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(14,14,16,0.55) 0%, transparent 18%, transparent 75%, rgba(14,14,16,0.7) 100%)' }} />
+
+        {/* ── Back button — top-left ── */}
+        <button
+          onClick={() => window.history.back()}
+          style={{ position: 'absolute', top: 24, left: 28, zIndex: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', width: 42, height: 42, padding: 0, backgroundColor: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.16)', borderRadius: 25, color: '#fff', fontSize: 18, cursor: 'pointer', transition: 'all 0.2s' }}
+          onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.2)'; }}
+          onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)'; }}
         >
-          {/* Banner Container with Border */}
-          <div
-            style={{
-              position: 'relative',
-              height: '400px',
-              backgroundImage: `url(${eventImage})`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              borderRadius: '17px',
-              border: '3px solid #bab8b8',
-              overflow: 'hidden',
-              cursor: 'pointer',
-              transition: 'all 0.3s ease',
-            }}
-            onClick={() => openImageViewer()}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'scale(1.01)';
-              e.currentTarget.style.boxShadow = '0 8px 20px rgba(0, 0, 0, 0.15)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'scale(1)';
-              e.currentTarget.style.boxShadow = 'none';
-            }}
-          >
-            {/* Back Button - Glassmorphism */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                window.history.back();
-              }}
-              style={{
-                position: 'absolute',
-                top: '20px',
-                left: '20px',
-                zIndex: 10,
-                width: '40px',
-                height: '40px',
-                borderRadius: '50%',
-                backgroundColor: 'rgba(255, 255, 255, 0.15)',
-                backdropFilter: 'blur(10px)',
-                WebkitBackdropFilter: 'blur(10px)',
-                border: '1px solid rgba(255, 255, 255, 0.2)',
-                color: '#fff',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                transition: 'all 0.3s ease',
-                boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.25)';
-                e.currentTarget.style.transform = 'scale(1.05)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.15)';
-                e.currentTarget.style.transform = 'scale(1)';
-              }}
-              aria-label="Go back"
-            >
-              <i className="bi bi-chevron-left" style={{ fontSize: '20px', fontWeight: 'bold' }}></i>
-            </button>
+          <i className="bi bi-chevron-left"></i>
+        </button>
 
-            {/* Status Badge - Live or Upcoming */}
-            {isLive ? (
-              <div
-                className="live-badge"
-                style={{
-                  position: 'absolute',
-                  top: '20px',
-                  right: '20px',
-                  zIndex: 10,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '10px 20px',
-                  backgroundColor: 'rgba(3, 145, 48, 0.95)',
-                  backdropFilter: 'blur(10px)',
-                  border: '2px solid #10b981',
-                  borderRadius: '25px',
-                  color: '#fff',
-                  fontSize: '14px',
-                  fontWeight: '700',
-                  textTransform: 'uppercase',
-                  boxShadow: '0 4px 15px rgba(16, 185, 129, 0.4)',
-                }}
-              >
-                <i className="bi bi-camera-video-fill live-badge-icon" style={{ fontSize: '16px' }}></i>
-                {tStatus('live')}
-              </div>
-            ) : (
-              <div
-                style={{
-                  position: 'absolute',
-                  top: '20px',
-                  right: '20px',
-                  zIndex: 10,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '10px 20px',
-                  backgroundColor: 'rgba(8, 58, 133, 0.95)',
-                  backdropFilter: 'blur(10px)',
-                  border: '2px solid #3b82f6',
-                  borderRadius: '25px',
-                  color: '#fff',
-                  fontSize: '14px',
-                  fontWeight: '700',
-                  textTransform: 'uppercase',
-                  boxShadow: '0 4px 15px rgba(59, 130, 246, 0.4)',
-                }}
-              >
-                <i className="bi bi-broadcast" style={{ fontSize: '16px' }}></i>
-                {tStatus('upcoming')}
-              </div>
-            )}
-
-            {/* View Full Size Indicator */}
-            <div
-              style={{
-                position: 'absolute',
-                bottom: '20px',
-                right: '20px',
-                zIndex: 10,
-                padding: '8px 16px',
-                backgroundColor: 'rgba(255, 255, 255, 0.15)',
-                backdropFilter: 'blur(10px)',
-                WebkitBackdropFilter: 'blur(10px)',
-                border: '1px solid rgba(255, 255, 255, 0.2)',
-                borderRadius: '20px',
-                color: '#fff',
-                fontSize: '12px',
-                fontWeight: '600',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                pointerEvents: 'none',
-              }}
-            >
-              <i className="bi bi-arrows-fullscreen" style={{ fontSize: '14px' }}></i>
-              {t('viewFull')}
-            </div>
-
-            {/* Overlay */}
-            <div
-              style={{
-                position: 'absolute',
-                inset: 0,
-                backgroundColor: 'rgba(13, 27, 42, 0.3)',
-                borderRadius: '17px',
-              }}
-            ></div>
+        {/* ── Status badge — top-right ── */}
+        {isLive ? (
+          <div className="live-badge" style={{ position: 'absolute', top: 24, right: 28, zIndex: 20, display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', backgroundColor: 'rgba(3,145,48,0.95)', backdropFilter: 'blur(10px)', border: '2px solid #10b981', borderRadius: 25, color: '#fff', fontSize: 14, fontWeight: 700, textTransform: 'uppercase', boxShadow: '0 4px 15px rgba(16,185,129,0.4)' }}>
+            <i className="bi bi-camera-video-fill live-badge-icon" style={{ fontSize: 16 }}></i>
+            {tStatus('live')}
           </div>
+        ) : isCompleted ? (
+          <div style={{ position: 'absolute', top: 24, right: 28, zIndex: 20, display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', backgroundColor: 'rgba(55,65,81,0.95)', backdropFilter: 'blur(10px)', border: '2px solid #6b7280', borderRadius: 25, color: '#fff', fontSize: 14, fontWeight: 700, textTransform: 'uppercase', boxShadow: '0 4px 15px rgba(107,114,128,0.4)' }}>
+            <i className="bi bi-check-circle-fill" style={{ fontSize: 16 }}></i>
+            {tStatus('completed')}
+          </div>
+        ) : isCancelled ? (
+          <div style={{ position: 'absolute', top: 24, right: 28, zIndex: 20, display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', backgroundColor: 'rgba(153,27,27,0.95)', backdropFilter: 'blur(10px)', border: '2px solid #ef4444', borderRadius: 25, color: '#fff', fontSize: 14, fontWeight: 700, textTransform: 'uppercase', boxShadow: '0 4px 15px rgba(239,68,68,0.4)' }}>
+            <i className="bi bi-x-circle-fill" style={{ fontSize: 16 }}></i>
+            {tStatus('cancelled')}
+          </div>
+        ) : (
+          <div style={{ position: 'absolute', top: 24, right: 28, zIndex: 20, display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', backgroundColor: 'rgba(8,58,133,0.95)', backdropFilter: 'blur(10px)', border: '2px solid #3b82f6', borderRadius: 25, color: '#fff', fontSize: 14, fontWeight: 700, textTransform: 'uppercase', boxShadow: '0 4px 15px rgba(59,130,246,0.4)' }}>
+            <i className="bi bi-broadcast" style={{ fontSize: 16 }}></i>
+            {tStatus('upcoming')}
+          </div>
+        )}
+
+        {/* ── Price badge — bottom-right ── */}
+        {isPaid && (
+          <div style={{ position: 'absolute', bottom: 28, right: 28, zIndex: 20, background: 'rgba(246,173,85,0.13)', border: '2px solid #f6ad55', borderRadius: 12, padding: '12px 24px', textAlign: 'center', backdropFilter: 'blur(10px)', pointerEvents: 'none' }}>
+            <div style={{ fontSize: 26, fontWeight: 800, color: '#f6ad55', lineHeight: 1 }}>{(selectedEvent.price || 0).toLocaleString()} RWF</div>
+            <div style={{ fontSize: 12, color: '#a0aec0', marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Entry fee</div>
+          </div>
+        )}
+
+        {/* ── LEFT CONTENT PANEL ── */}
+        <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: '68%', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '110px 48px 100px 48px', zIndex: 10 }}>
+
+          {/* Category + meta top row */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
+            <span style={{ padding: '6px 16px', backgroundColor: 'rgba(3,150,156,0.15)', color: '#03969c', borderRadius: 20, fontSize: 13, fontWeight: 700, border: '1px solid rgba(3,150,156,0.3)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+              {getCategoryName(selectedEvent)}
+            </span>
+            <span style={{ color: '#4b5563', fontSize: 16 }}>•</span>
+            <span style={{ color: '#9ca3af', fontSize: 16 }}>{formatDate(selectedEvent.eventDate)}</span>
+            {isPaid && <>
+              <span style={{ color: '#4b5563', fontSize: 16 }}>•</span>
+              <span style={{ color: '#f6ad55', fontSize: 16, fontWeight: 700 }}>{formatPrice(selectedEvent.price)}</span>
+            </>}
+          </div>
+
+          {/* Title */}
+          <h1 style={{ fontSize: 58, fontWeight: 800, color: '#fff', margin: '0 0 20px', lineHeight: 1.08, letterSpacing: '-0.03em', textShadow: '0 2px 20px rgba(0,0,0,0.5)' }}>
+            {selectedEvent.title}
+          </h1>
+
+          {/* Description — clamped to 3 lines */}
+          {selectedEvent.description && (
+            <p style={{ fontSize: 17, color: '#a1a1aa', lineHeight: 1.75, margin: '0 0 24px', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden', maxWidth: '80%' }}>
+              {selectedEvent.description}
+            </p>
+          )}
+
+          {/* Info row: location · time · attendees */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20, flexWrap: 'wrap', color: '#9ca3af', fontSize: 16 }}>
+            <i className="bi bi-geo-alt-fill" style={{ color: '#f97316', fontSize: 16 }}></i>
+            <span>{selectedEvent.location || 'TBD'}</span>
+            <span style={{ color: '#4b5563' }}>•</span>
+            <i className="bi bi-clock-fill" style={{ color: '#10b981', fontSize: 16 }}></i>
+            <span>{formatTimeRange(selectedEvent.startTime, selectedEvent.endTime)}</span>
+            <span style={{ color: '#4b5563' }}>•</span>
+            <i className="bi bi-people-fill" style={{ color: '#ec4899', fontSize: 16 }}></i>
+            <span>{selectedEvent.maxGuests && selectedEvent.maxGuests > 0 ? `${selectedEvent.maxGuests.toLocaleString()} ${t('people')}` : 'Unlimited'}</span>
+          </div>
+
+          {/* Organizer row */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: photographerName ? 14 : 28, color: '#9ca3af', fontSize: 16 }}>
+            <i className="bi bi-person-badge-fill" style={{ color: '#06b6d4', fontSize: 17 }}></i>
+            <span>{t('organizedBy')}</span>
+            <span style={{ color: '#efeff1', fontWeight: 700 }}>{selectedEvent.eventOrganizer || 'TBD'}</span>
+          </div>
+
+          {/* Photographer row */}
+          {photographerName && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 28, color: '#9ca3af', fontSize: 16 }}>
+              <div style={{ width: 48, height: 48, borderRadius: '50%', backgroundColor: 'rgba(3,150,156,0.15)', border: '2px solid rgba(3,150,156,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
+                {selectedEvent.photographer?.profilePicture
+                  ? <img src={selectedEvent.photographer.profilePicture} alt={photographerName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  : <i className="bi bi-camera-fill" style={{ color: '#03969c', fontSize: 20 }}></i>
+                }
+              </div>
+              <span>Photographer</span>
+              <span style={{ color: '#efeff1', fontWeight: 700 }}>{photographerName}</span>
+            </div>
+          )}
+
+          {/* Tags */}
+          {tags.length > 0 && (
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              {tags.map((tag, i) => (
+                <span
+                  key={i}
+                  style={{ padding: '9px 18px', backgroundColor: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 20, fontSize: 15, color: '#d1d5db', fontWeight: 500, display: 'inline-flex', alignItems: 'center', gap: 5, transition: 'all 0.2s', cursor: 'default' }}
+                  onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(3,150,156,0.2)'; e.currentTarget.style.color = '#03969c'; e.currentTarget.style.borderColor = 'rgba(3,150,156,0.4)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = '#d1d5db'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }}
+                >
+                  <i className="bi bi-hash" style={{ fontSize: 14 }}></i>{tag}
+                </span>
+              ))}
+            </div>
+          )}
+
         </div>
 
-        {/* Event Details Section */}
-        <div
-          style={{
-            backgroundColor: '#fff',
-            position: 'relative',
-            zIndex: 5,
-            margin: '0 24px',
-            marginTop: '24px',
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
-            borderRadius: '17px',
-            border: '3px solid #bab8b8',
-            padding: '32px',
-          }}
-        >
-          {/* Event Title and Category */}
-          <div style={{ marginBottom: '24px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-              <span
-                style={{
-                  padding: '6px 16px',
-                  backgroundColor: '#f0f9ff',
-                  color: '#083A85',
-                  borderRadius: '20px',
-                  fontSize: '13px',
-                  fontWeight: '700',
-                  border: '2px solid #dbeafe',
-                }}
-              >
-                {getCategoryName(selectedEvent)}
-              </span>
-            </div>
-            <h1
-              style={{
-                fontSize: '32px',
-                fontWeight: '700',
-                color: '#111827',
-                marginBottom: '8px',
-                lineHeight: '1.2',
-              }}
-            >
-              {selectedEvent.title}
-            </h1>
-          </div>
-
-          {/* Event Info Grid */}
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-              gap: '20px',
-              marginBottom: '32px',
-              padding: '24px',
-              backgroundColor: '#f9fafb',
-              borderRadius: '12px',
-              border: '1px solid #e5e7eb',
-            }}
-          >
-            {/* Date */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div
-                style={{
-                  width: '48px',
-                  height: '48px',
-                  borderRadius: '12px',
-                  backgroundColor: '#083A85',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                }}
-              >
-                <i className="bi bi-calendar-event" style={{ color: '#fff', fontSize: '20px' }}></i>
-              </div>
-              <div>
-                <p style={{ fontSize: '12px', color: '#6b7280', fontWeight: '600', margin: 0, marginBottom: '4px' }}>
-                  {t('eventDate')}
-                </p>
-                <p style={{ fontSize: '15px', color: '#111827', fontWeight: '700', margin: 0 }}>
-                  {formatDate(selectedEvent.eventDate)}
-                </p>
-              </div>
-            </div>
-
-            {/* Time */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div
-                style={{
-                  width: '48px',
-                  height: '48px',
-                  borderRadius: '12px',
-                  backgroundColor: '#10b981',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                }}
-              >
-                <i className="bi bi-clock-fill" style={{ color: '#fff', fontSize: '20px' }}></i>
-              </div>
-              <div>
-                <p style={{ fontSize: '12px', color: '#6b7280', fontWeight: '600', margin: 0, marginBottom: '4px' }}>
-                  {t('eventTime')}
-                </p>
-                <p style={{ fontSize: '15px', color: '#111827', fontWeight: '700', margin: 0 }}>
-                  {formatTimeRange(selectedEvent.startTime, selectedEvent.endTime)}
-                </p>
-              </div>
-            </div>
-
-            {/* Location */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div
-                style={{
-                  width: '48px',
-                  height: '48px',
-                  borderRadius: '12px',
-                  backgroundColor: '#f97316',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                }}
-              >
-                <i className="bi bi-geo-alt-fill" style={{ color: '#fff', fontSize: '20px' }}></i>
-              </div>
-              <div>
-                <p style={{ fontSize: '12px', color: '#6b7280', fontWeight: '600', margin: 0, marginBottom: '4px' }}>
-                  {t('location')}
-                </p>
-                <p style={{ fontSize: '15px', color: '#111827', fontWeight: '700', margin: 0 }}>
-                  {selectedEvent.location || 'TBD'}
-                </p>
-              </div>
-            </div>
-
-            {/* Price */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div
-                style={{
-                  width: '48px',
-                  height: '48px',
-                  borderRadius: '12px',
-                  backgroundColor: '#8b5cf6',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                }}
-              >
-                <i className="bi bi-tag-fill" style={{ color: '#fff', fontSize: '20px' }}></i>
-              </div>
-              <div>
-                <p style={{ fontSize: '12px', color: '#6b7280', fontWeight: '600', margin: 0, marginBottom: '4px' }}>
-                  {t('entryFee')}
-                </p>
-                <p style={{ fontSize: '15px', color: '#111827', fontWeight: '700', margin: 0 }}>
-                  {formatPrice(selectedEvent.price)}
-                </p>
-              </div>
-            </div>
-
-            {/* Max Guests */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div
-                style={{
-                  width: '48px',
-                  height: '48px',
-                  borderRadius: '12px',
-                  backgroundColor: '#ec4899',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                }}
-              >
-                <i className="bi bi-people-fill" style={{ color: '#fff', fontSize: '20px' }}></i>
-              </div>
-              <div>
-                <p style={{ fontSize: '12px', color: '#6b7280', fontWeight: '600', margin: 0, marginBottom: '4px' }}>
-                  {t('expectedAttendees')}
-                </p>
-                <p style={{ fontSize: '15px', color: '#111827', fontWeight: '700', margin: 0 }}>
-                  {selectedEvent.maxGuests && selectedEvent.maxGuests > 0
-                    ? `${selectedEvent.maxGuests.toLocaleString()} ${t('people')}`
-                    : 'Unlimited'}
-                </p>
-              </div>
-            </div>
-
-            {/* Organizer */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div
-                style={{
-                  width: '48px',
-                  height: '48px',
-                  borderRadius: '12px',
-                  backgroundColor: '#06b6d4',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                }}
-              >
-                <i className="bi bi-person-badge-fill" style={{ color: '#fff', fontSize: '20px' }}></i>
-              </div>
-              <div>
-                <p style={{ fontSize: '12px', color: '#6b7280', fontWeight: '600', margin: 0, marginBottom: '4px' }}>
-                  {t('organizedBy')}
-                </p>
-                <p style={{ fontSize: '15px', color: '#111827', fontWeight: '700', margin: 0 }}>
-                  {selectedEvent.eventOrganizer || 'TBD'}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Photographer Section */}
-          {photographerName && (
-            <div style={{ marginBottom: '32px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-                <div style={{ width: '4px', height: '24px', backgroundColor: '#083A85', borderRadius: '2px' }}></div>
-                <h2 style={{ fontSize: '22px', fontWeight: '700', color: '#111827', margin: 0 }}>Photographer</h2>
-              </div>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '16px',
-                padding: '20px',
-                backgroundColor: '#f9fafb',
-                borderRadius: '12px',
-                border: '1px solid #e5e7eb',
-              }}>
-                <div style={{
-                  width: '56px',
-                  height: '56px',
-                  borderRadius: '50%',
-                  backgroundColor: '#083A85',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                  overflow: 'hidden',
-                }}>
-                  {selectedEvent.photographer?.profilePicture ? (
-                    <img
-                      src={selectedEvent.photographer.profilePicture}
-                      alt={photographerName}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                    />
-                  ) : (
-                    <i className="bi bi-camera-fill" style={{ color: '#fff', fontSize: '24px' }}></i>
-                  )}
-                </div>
-                <div>
-                  <p style={{ fontSize: '16px', fontWeight: '700', color: '#111827', margin: 0 }}>
-                    {photographerName}
-                  </p>
-                  {selectedEvent.photographer?.address && (
-                    <p style={{ fontSize: '13px', color: '#6b7280', margin: 0, marginTop: '4px' }}>
-                      <i className="bi bi-geo-alt" style={{ marginRight: '4px' }}></i>
-                      {selectedEvent.photographer.address}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Description Section */}
-          {selectedEvent.description && (
-            <div style={{ marginBottom: '32px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-                <div
-                  style={{
-                    width: '4px',
-                    height: '24px',
-                    backgroundColor: '#083A85',
-                    borderRadius: '2px',
-                  }}
-                ></div>
-                <h2 style={{ fontSize: '22px', fontWeight: '700', color: '#111827', margin: 0 }}>
-                  {t('aboutThisEvent')}
-                </h2>
-              </div>
-              <p
-                style={{
-                  fontSize: '16px',
-                  color: '#4b5563',
-                  lineHeight: '1.8',
-                  padding: '20px',
-                  backgroundColor: '#f9fafb',
-                  borderRadius: '12px',
-                  borderLeft: '4px solid #083A85',
-                  margin: 0,
-                }}
-              >
-                {selectedEvent.description}
-              </p>
-            </div>
-          )}
-
-          {/* Tags Section */}
-          {tags.length > 0 && (
-            <div style={{ marginBottom: '32px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-                <div
-                  style={{
-                    width: '4px',
-                    height: '24px',
-                    backgroundColor: '#083A85',
-                    borderRadius: '2px',
-                  }}
-                ></div>
-                <h2 style={{ fontSize: '22px', fontWeight: '700', color: '#111827', margin: 0 }}>
-                  {t('eventTags')}
-                </h2>
-              </div>
-              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                {tags.map((tag, index) => (
-                  <span
-                    key={index}
-                    style={{
-                      padding: '12px 20px',
-                      backgroundColor: '#f0f9ff',
-                      border: '2px solid #dbeafe',
-                      borderRadius: '25px',
-                      fontSize: '14px',
-                      color: '#083A85',
-                      fontWeight: '600',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      transition: 'all 0.3s ease',
-                      cursor: 'default',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = '#083A85';
-                      e.currentTarget.style.color = '#fff';
-                      e.currentTarget.style.transform = 'translateY(-2px)';
-                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(8, 58, 133, 0.25)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = '#f0f9ff';
-                      e.currentTarget.style.color = '#083A85';
-                      e.currentTarget.style.transform = 'translateY(0)';
-                      e.currentTarget.style.boxShadow = 'none';
-                    }}
-                  >
-                    <i className="bi bi-hash" style={{ fontSize: '14px' }}></i>
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Action Button */}
-          {isLive && (
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'center',
-                paddingTop: '24px',
-                borderTop: '2px solid #e5e7eb',
-              }}
-            >
+        {/* ── CTA — bottom center of full page ── */}
+        <div style={{ position: 'absolute', bottom: 36, left: 0, right: 0, zIndex: 20, display: 'flex', justifyContent: 'center' }}>
+          {isLive ? (
+            isPaid ? (
+              // Paid event — require auth then payment flow
               <button
                 className="live-stream-button"
-                onClick={() => (window.location.href = `/user/events/join-package?id=${selectedEvent.id}`)}
-                style={{
-                  padding: '16px 40px',
-                  backgroundColor: '#039130',
-                  color: '#fff',
-                  border: '2px solid #10b981',
-                  borderRadius: '100px',
-                  fontSize: '16px',
-                  fontWeight: '700',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px',
-                  boxShadow: '0 4px 15px rgba(3, 145, 48, 0.3)',
-                  transition: 'all 0.3s ease',
-                  textTransform: 'uppercase',
-                  position: 'relative',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#027a28';
-                  e.currentTarget.style.transform = 'translateY(-3px)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = '#039130';
-                  e.currentTarget.style.transform = 'translateY(0)';
-                }}
+                onClick={() => handlePurchaseAccess(`/user/events/join-package?id=${selectedEvent.id}`)}
+                style={{ padding: '15px 48px', backgroundColor: '#039130', color: '#fff', border: '2px solid #10b981', borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, transition: 'background 0.2s', textTransform: 'uppercase' }}
+                onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#027a28'; }}
+                onMouseLeave={e => { e.currentTarget.style.backgroundColor = '#039130'; }}
               >
-                <i className="bi bi-camera-video-fill live-badge-icon" style={{ fontSize: '15px' }}></i>
-                {t('joinLiveStream')}
+                <i className="bi bi-ticket-perforated-fill live-badge-icon" style={{ fontSize: 16 }}></i>
+                Purchase Access
               </button>
-            </div>
-          )}
+            ) : (
+              // Free event — no auth needed, enter stream invite token
+              <button
+                className="live-stream-button"
+                onClick={() => { window.location.href = `/user/events/join-event?id=${selectedEvent.id}`; }}
+                style={{ padding: '15px 48px', backgroundColor: '#039130', color: '#fff', border: '2px solid #10b981', borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, transition: 'background 0.2s', textTransform: 'uppercase' }}
+                onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#027a28'; }}
+                onMouseLeave={e => { e.currentTarget.style.backgroundColor = '#039130'; }}
+              >
+                <i className="bi bi-play-circle-fill live-badge-icon" style={{ fontSize: 16 }}></i>
+                Watch Live
+              </button>
+            )
+          ) : null}
         </div>
       </div>
 
-      {/* Image Viewer Modal */}
-      {imageViewerOpen && (
-        <div
-          className="image-viewer-modal"
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.95)',
-            backdropFilter: 'blur(10px)',
-            zIndex: 9999,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            animation: 'fadeIn 0.3s ease',
-          }}
-          onClick={closeImageViewer}
-        >
-          {/* Close Button */}
-          <button
-            onClick={closeImageViewer}
-            style={{
-              position: 'absolute',
-              top: '20px',
-              right: '20px',
-              width: '50px',
-              height: '50px',
-              borderRadius: '50%',
-              backgroundColor: 'rgba(255, 255, 255, 0.1)',
-              backdropFilter: 'blur(10px)',
-              border: '2px solid rgba(255, 255, 255, 0.2)',
-              color: '#fff',
-              fontSize: '24px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transition: 'all 0.3s ease',
-              zIndex: 10001,
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
-              e.currentTarget.style.transform = 'scale(1.1) rotate(90deg)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
-              e.currentTarget.style.transform = 'scale(1) rotate(0deg)';
-            }}
-            aria-label="Close image viewer"
-          >
-            <i className="bi bi-x-lg"></i>
-          </button>
+      {/* ── VIEWER AUTH MODAL ── */}
+      {showAuthModal && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '32px 16px', background: 'rgba(0,0,0,0.82)', backdropFilter: 'blur(6px)', overflowY: 'auto' }}>
+          <div style={{ width: '100%', maxWidth: 520, background: 'linear-gradient(145deg, #141418 0%, #1a1a24 100%)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 20, padding: '32px 28px', boxShadow: '0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(3,150,156,0.15)', position: 'relative', margin: 'auto' }}>
 
-          {/* Image Type Label */}
-          <div
-            style={{
-              position: 'absolute',
-              top: '30px',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              padding: '12px 24px',
-              backgroundColor: 'rgba(255, 255, 255, 0.1)',
-              backdropFilter: 'blur(10px)',
-              border: '1px solid rgba(255, 255, 255, 0.2)',
-              borderRadius: '30px',
-              color: '#fff',
-              fontSize: '14px',
-              fontWeight: '600',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px',
-              zIndex: 10001,
-            }}
-          >
-            <i className="bi bi-image" style={{ fontSize: '18px' }}></i>
-            {t('eventBanner')}
-          </div>
+            {/* Close button */}
+            <button onClick={() => setShowAuthModal(false)} style={{ position: 'absolute', top: 14, right: 14, width: 32, height: 32, borderRadius: '50%', background: 'rgba(255,255,255,0.07)', border: 'none', color: '#9ca3af', fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <i className="bi bi-x-lg"></i>
+            </button>
 
-          {/* Image Container */}
-          <div
-            style={{
-              position: 'relative',
-              width: '95vw',
-              height: '90vh',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <img
-              src={eventImage}
-              alt={selectedEvent.title}
-              style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'contain',
-                animation: 'slideInFromLeft 0.4s ease',
-              }}
-            />
-          </div>
+            {/* Header */}
+            <div style={{ textAlign: 'center', marginBottom: 24 }}>
+              <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'linear-gradient(135deg, #03969c, #027a7f)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
+                <i className={authStep === 'otp' ? 'bi bi-shield-check' : 'bi bi-lock-fill'} style={{ fontSize: 22, color: '#fff' }}></i>
+              </div>
+              <h2 style={{ color: '#fff', fontSize: 20, fontWeight: 700, margin: '0 0 4px' }}>
+                {authStep === 'otp' ? 'Verify Your Email' : 'Sign in to Purchase Access'}
+              </h2>
+              <p style={{ color: '#6b7280', fontSize: 13, margin: 0 }}>
+                {authStep === 'otp' ? 'Enter the code sent to your email' : 'Your account keeps your access safe across sessions'}
+              </p>
+            </div>
 
-          {/* Instructions */}
-          <div
-            style={{
-              position: 'absolute',
-              bottom: '20px',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              padding: '10px 20px',
-              backgroundColor: 'rgba(255, 255, 255, 0.05)',
-              backdropFilter: 'blur(10px)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              borderRadius: '20px',
-              color: 'rgba(255, 255, 255, 0.7)',
-              fontSize: '12px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-            }}
-          >
-            <i className="bi bi-info-circle"></i>
-            <span>{t('closeInstructions')}</span>
+            {/* Tab switcher — only on login/signup step */}
+            {authStep !== 'otp' && (
+              <div style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: 3, marginBottom: 20 }}>
+                {(['login', 'signup'] as const).map(tab => (
+                  <button key={tab} onClick={() => { setAuthStep(tab); setAuthError(''); }} style={{ flex: 1, padding: '8px 0', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 600, transition: 'all 0.2s', background: authStep === tab ? 'linear-gradient(135deg, #03969c, #027a7f)' : 'transparent', color: authStep === tab ? '#fff' : '#6b7280' }}>
+                    {tab === 'login' ? 'Log In' : 'Sign Up'}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Error */}
+            {authError && (
+              <div style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.35)', borderRadius: 8, padding: '10px 14px', marginBottom: 16, display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                <i className="bi bi-exclamation-triangle-fill" style={{ color: '#ef4444', fontSize: 14, marginTop: 1, flexShrink: 0 }}></i>
+                <span style={{ color: '#fca5a5', fontSize: 13 }}>{authError}</span>
+              </div>
+            )}
+
+            {/* ── LOGIN FORM ── */}
+            {authStep === 'login' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div>
+                  <label style={{ display: 'block', color: '#d1d5db', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Email</label>
+                  <input type="email" value={loginEmail} onChange={e => setLoginEmail(e.target.value)} placeholder="your@email.com" onKeyDown={e => e.key === 'Enter' && handleLogin()} style={{ width: '100%', padding: '11px 14px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 9, color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} onFocus={e => { e.currentTarget.style.borderColor = '#03969c'; }} onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', color: '#d1d5db', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Password</label>
+                  <input type="password" value={loginPassword} onChange={e => setLoginPassword(e.target.value)} placeholder="••••••••" onKeyDown={e => e.key === 'Enter' && handleLogin()} style={{ width: '100%', padding: '11px 14px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 9, color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} onFocus={e => { e.currentTarget.style.borderColor = '#03969c'; }} onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }} />
+                </div>
+                <button onClick={handleLogin} disabled={authLoading || googleLoading} style={{ width: '100%', padding: '13px', background: authLoading ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, #03969c, #027a7f)', border: 'none', borderRadius: 10, color: '#fff', fontSize: 15, fontWeight: 700, cursor: authLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 4 }}>
+                  {authLoading ? <><div style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'authSpin 0.8s linear infinite' }} /> Signing in…</> : <><i className="bi bi-box-arrow-in-right"></i> Log In & Continue</>}
+                </button>
+                {GOOGLE_CLIENT_ID && (
+                  <>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '2px 0' }}>
+                      <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.1)' }} />
+                      <span style={{ color: '#6b7280', fontSize: 12 }}>or</span>
+                      <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.1)' }} />
+                    </div>
+                    <GoogleAuthButton
+                      onSuccess={handleGoogleSuccess}
+                      onError={handleGoogleError}
+                      loading={googleLoading || authLoading}
+                      label="Continue with Google"
+                    />
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* ── SIGNUP FORM ── */}
+            {authStep === 'signup' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div>
+                    <label style={{ display: 'block', color: '#d1d5db', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>First Name</label>
+                    <input type="text" value={signupFirstName} onChange={e => setSignupFirstName(e.target.value)} placeholder="John" style={{ width: '100%', padding: '11px 14px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 9, color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} onFocus={e => { e.currentTarget.style.borderColor = '#03969c'; }} onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', color: '#d1d5db', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Last Name</label>
+                    <input type="text" value={signupLastName} onChange={e => setSignupLastName(e.target.value)} placeholder="Doe" style={{ width: '100%', padding: '11px 14px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 9, color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} onFocus={e => { e.currentTarget.style.borderColor = '#03969c'; }} onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }} />
+                  </div>
+                </div>
+                <div>
+                  <label style={{ display: 'block', color: '#d1d5db', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Email</label>
+                  <input type="email" value={signupEmail} onChange={e => setSignupEmail(e.target.value)} placeholder="your@email.com" style={{ width: '100%', padding: '11px 14px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 9, color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} onFocus={e => { e.currentTarget.style.borderColor = '#03969c'; }} onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', color: '#d1d5db', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Phone</label>
+                  <input type="tel" value={signupPhone} onChange={e => setSignupPhone(e.target.value.replace(/[^0-9+]/g, ''))} placeholder="+250 700 000 000" style={{ width: '100%', padding: '11px 14px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 9, color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} onFocus={e => { e.currentTarget.style.borderColor = '#03969c'; }} onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', color: '#d1d5db', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Password</label>
+                  <input type="password" value={signupPassword} onChange={e => setSignupPassword(e.target.value)} placeholder="Min. 8 characters" style={{ width: '100%', padding: '11px 14px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 9, color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} onFocus={e => { e.currentTarget.style.borderColor = '#03969c'; }} onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }} />
+                </div>
+                <button onClick={handleSignup} disabled={authLoading || googleLoading} style={{ width: '100%', padding: '13px', background: authLoading ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, #03969c, #027a7f)', border: 'none', borderRadius: 10, color: '#fff', fontSize: 15, fontWeight: 700, cursor: authLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 2 }}>
+                  {authLoading ? <><div style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'authSpin 0.8s linear infinite' }} /> Creating account…</> : <><i className="bi bi-person-plus-fill"></i> Create Account</>}
+                </button>
+                {GOOGLE_CLIENT_ID && (
+                  <>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '2px 0' }}>
+                      <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.1)' }} />
+                      <span style={{ color: '#6b7280', fontSize: 12 }}>or</span>
+                      <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.1)' }} />
+                    </div>
+                    <GoogleAuthButton
+                      onSuccess={handleGoogleSuccess}
+                      onError={handleGoogleError}
+                      loading={googleLoading || authLoading}
+                      label="Sign up with Google"
+                    />
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* ── OTP FORM ── */}
+            {authStep === 'otp' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <div style={{ background: 'rgba(3,150,156,0.1)', border: '1px solid rgba(3,150,156,0.25)', borderRadius: 10, padding: '12px 16px', display: 'flex', gap: 10, alignItems: 'center' }}>
+                  <i className="bi bi-envelope-check-fill" style={{ color: '#03969c', fontSize: 16, flexShrink: 0 }}></i>
+                  <span style={{ color: '#a1a1aa', fontSize: 13 }}>A 6-digit code was sent to <strong style={{ color: '#fff' }}>{signupEmail}</strong></span>
+                </div>
+                <div>
+                  <label style={{ display: 'block', color: '#d1d5db', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Verification Code</label>
+                  <input type="text" inputMode="numeric" maxLength={6} value={otpValue} onChange={e => setOtpValue(e.target.value.replace(/[^0-9]/g, ''))} placeholder="000000" onKeyDown={e => e.key === 'Enter' && handleVerifyOtp()} style={{ width: '100%', padding: '14px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 9, color: '#fff', fontSize: 22, fontWeight: 700, letterSpacing: '0.35em', textAlign: 'center', outline: 'none', boxSizing: 'border-box' }} onFocus={e => { e.currentTarget.style.borderColor = '#03969c'; }} onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }} />
+                </div>
+                <button onClick={handleVerifyOtp} disabled={authLoading} style={{ width: '100%', padding: '13px', background: authLoading ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, #03969c, #027a7f)', border: 'none', borderRadius: 10, color: '#fff', fontSize: 15, fontWeight: 700, cursor: authLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                  {authLoading ? <><div style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'authSpin 0.8s linear infinite' }} /> Verifying…</> : <><i className="bi bi-shield-check"></i> Verify & Continue</>}
+                </button>
+                <button onClick={() => { setAuthStep('login'); setAuthError(''); }} style={{ background: 'none', border: 'none', color: '#6b7280', fontSize: 13, cursor: 'pointer', textAlign: 'center', padding: '4px 0' }}>
+                  Already have an account? Log in
+                </button>
+              </div>
+            )}
+
           </div>
         </div>
       )}
+
+      {/* CSS Animations */}
+      <style jsx>{`
+        @keyframes authSpin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
 
       {/* CSS Animations */}
       <style jsx>{`
@@ -902,17 +682,6 @@ function ViewEventContent(): React.JSX.Element {
           to {
             opacity: 1;
             transform: translateY(0);
-          }
-        }
-
-        @keyframes slideInFromLeft {
-          from {
-            opacity: 0;
-            transform: translateX(-20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0);
           }
         }
 
@@ -973,6 +742,40 @@ function ViewEventContent(): React.JSX.Element {
           }
         }
 
+        @keyframes purchase-glow-pulse {
+          0% {
+            box-shadow: 0 4px 15px rgba(3, 150, 156, 0.3),
+                        0 0 0 0 rgba(6, 182, 212, 0.7),
+                        0 0 0 0 rgba(6, 182, 212, 0.5);
+          }
+          40% {
+            box-shadow: 0 6px 20px rgba(3, 150, 156, 0.5),
+                        0 0 0 10px rgba(6, 182, 212, 0),
+                        0 0 0 20px rgba(6, 182, 212, 0);
+          }
+          80% {
+            box-shadow: 0 4px 15px rgba(3, 150, 156, 0.4),
+                        0 0 0 10px rgba(6, 182, 212, 0),
+                        0 0 0 20px rgba(6, 182, 212, 0);
+          }
+          100% {
+            box-shadow: 0 4px 15px rgba(3, 150, 156, 0.3),
+                        0 0 0 0 rgba(6, 182, 212, 0.7),
+                        0 0 0 0 rgba(6, 182, 212, 0.5);
+          }
+        }
+
+        @keyframes purchase-border-twinkle {
+          0%, 100% {
+            border-color: #06b6d4;
+            filter: brightness(1);
+          }
+          50% {
+            border-color: #67e8f9;
+            filter: brightness(1.3);
+          }
+        }
+
         .live-badge {
           animation: sound-wave-pulse 0.9s ease-out infinite;
         }
@@ -980,6 +783,11 @@ function ViewEventContent(): React.JSX.Element {
         .live-stream-button {
           animation: button-glow-pulse 1.2s ease-in-out infinite,
                      border-twinkle 1.2s ease-in-out infinite;
+        }
+
+        .purchase-access-button {
+          animation: purchase-glow-pulse 1.2s ease-in-out infinite,
+                     purchase-border-twinkle 1.2s ease-in-out infinite;
         }
 
         .live-badge-icon {
@@ -1003,30 +811,48 @@ function ViewEventContent(): React.JSX.Element {
         }
 
         ::-webkit-scrollbar {
-          width: 10px;
+          width: 8px;
         }
 
         ::-webkit-scrollbar-track {
-          background: #f1f1f1;
+          background: #0e0e10;
         }
 
         ::-webkit-scrollbar-thumb {
-          background: #083A85;
-          border-radius: 5px;
+          background: #03969c;
+          border-radius: 4px;
         }
 
         ::-webkit-scrollbar-thumb:hover {
-          background: #062d6b;
+          background: #027a7f;
+        }
+
+        .left-scroll::-webkit-scrollbar,
+        .right-scroll::-webkit-scrollbar {
+          width: 4px;
+        }
+        .left-scroll::-webkit-scrollbar-track,
+        .right-scroll::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .left-scroll::-webkit-scrollbar-thumb,
+        .right-scroll::-webkit-scrollbar-thumb {
+          background: rgba(3, 150, 156, 0.3);
+          border-radius: 4px;
+        }
+        .left-scroll::-webkit-scrollbar-thumb:hover,
+        .right-scroll::-webkit-scrollbar-thumb:hover {
+          background: rgba(3, 150, 156, 0.6);
         }
 
         button:focus-visible,
         a:focus-visible {
-          outline: 3px solid #083A85;
+          outline: 3px solid #03969c;
           outline-offset: 2px;
         }
 
         ::selection {
-          background-color: #083A85;
+          background-color: #03969c;
           color: white;
         }
       `}</style>
@@ -1043,11 +869,11 @@ function LoadingFallback() {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: '#fff'
+      backgroundColor: '#0e0e10'
     }}>
       <div style={{
         textAlign: 'center',
-        color: '#083A85'
+        color: '#03969c'
       }}>
         <div style={{
           fontSize: '48px',
@@ -1057,7 +883,8 @@ function LoadingFallback() {
         </div>
         <p style={{
           fontSize: '18px',
-          fontWeight: '600'
+          fontWeight: '600',
+          color: '#efeff1'
         }}>{t('loadingEventDetails')}</p>
       </div>
     </div>

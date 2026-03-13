@@ -25,12 +25,22 @@
       "browseSubtitle": "Find the perfect photographer for your special moments"
     },
     "eventCategories": {
-      "weddings": "Weddings",
-      "concerts": "Concerts",
-      "corporate": "Corporate",
       "sports": "Sports",
+      "wedding": "Wedding",
+      "academic": "Academic",
+      "gathering": "Gathering",
+      "concert": "Concert",
+      "fashion": "Fashion",
+      "religious": "Religious",
       "cultural": "Cultural",
-      "conferences": "Conferences",
+      "corporate": "Corporate",
+      "conference": "Conference",
+      "entertainment": "Entertainment",
+      "birthday": "Birthday",
+      "babyShower": "Baby Shower",
+      "graduation": "Graduation",
+      "anniversary": "Anniversary",
+      "other": "Other",
       "browseTitle": "Browse Events",
       "browseSubtitle": "Discover amazing events happening near you"
     }
@@ -223,22 +233,27 @@
     "allDates": "All Dates",
     "allStatuses": "All Statuses",
     "categories": {
-      "weddings": "Weddings",
-      "concerts": "Concerts",
-      "corporate": "Corporate",
       "sports": "Sports",
-      "cultural": "Cultural",
-      "conferences": "Conferences",
+      "wedding": "Wedding",
+      "academic": "Academic",
+      "gathering": "Gathering",
+      "concert": "Concert",
       "fashion": "Fashion",
       "religious": "Religious",
-      "academic": "Academic",
+      "cultural": "Cultural",
+      "corporate": "Corporate",
+      "conference": "Conference",
       "entertainment": "Entertainment",
-      "gathering": "Gathering"
+      "birthday": "Birthday",
+      "babyShower": "Baby Shower",
+      "graduation": "Graduation"
     },
     "status": {
       "upcoming": "UPCOMING",
       "live": "LIVE",
-      "ended": "ENDED"
+      "ended": "ENDED",
+      "completed": "COMPLETED",
+      "cancelled": "CANCELLED"
     },
     "liveNow": "Live Now",
     "trending": "Trending Events",

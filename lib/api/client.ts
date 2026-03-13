@@ -654,6 +654,14 @@ apiClient.addResponseInterceptor(async (response, options) => {
       return response;
     }
 
+    // Only attempt refresh / redirect if the user had a token.
+    // Public API calls (navbar, public events, stream video) legitimately
+    // receive 401 for unauthenticated requests — never redirect those.
+    const hadToken = !!getAuthToken();
+    if (!hadToken) {
+      return response;
+    }
+
     logger.info('Received 401, attempting token refresh...');
 
     // Try to refresh the token

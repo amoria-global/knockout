@@ -3,7 +3,7 @@
  * Fetches list of public events from the backend with pagination
  */
 
-import { apiClient } from '@/lib/api/client';
+import { apiClient, isAuthenticated } from '@/lib/api/client';
 import { API_ENDPOINTS } from '@/lib/api/config';
 import type { ApiResponse } from '@/lib/api/types';
 
@@ -68,8 +68,10 @@ export interface PublicEvent {
   streamFeeCurrencySymbol?: string | null;
   streamFeeCurrencyAbbreviation?: string | null;
   hasLiveStream?: boolean | null;
+  hasInviteCode?: boolean | null;
   liveInputId?: string | null;
   hlsManifestUrl?: string | null;
+  eventPriceId?: string | null;
   [key: string]: unknown;
 }
 
@@ -119,6 +121,11 @@ export interface GetPublicEventsRequest {
   size?: number;
   sortColumn?: string;
   sortDirection?: 'asc' | 'desc';
+  category?: string;   // exact category name e.g. "Birthday"
+  location?: string;   // district/city name
+  status?: string;     // UPCOMING | ONGOING | COMPLETED
+  dateRange?: string;  // today | tomorrow | this-week | this-month | next-month
+  search?: string;     // keyword search
 }
 
 /**
@@ -128,7 +135,7 @@ export async function getPublicEventById(
   id: string
 ): Promise<ApiResponse<PublicEvent>> {
   const endpoint = API_ENDPOINTS.PUBLIC.EVENT_BY_ID(id);
-  return apiClient.get<PublicEvent>(endpoint, { skipAuth: true, retries: 2 });
+  return apiClient.get<PublicEvent>(endpoint, { skipAuth: !isAuthenticated(), retries: 2 });
 }
 
 /**
@@ -148,6 +155,11 @@ export async function getPublicEvents(
   queryParams.append('size', size.toString());
   queryParams.append('sortColumn', sortColumn);
   queryParams.append('sortDirection', sortDirection);
+  if (params?.category)  queryParams.append('category', params.category);
+  if (params?.location)  queryParams.append('location', params.location);
+  if (params?.status)    queryParams.append('status', params.status);
+  if (params?.dateRange) queryParams.append('dateRange', params.dateRange);
+  if (params?.search)    queryParams.append('search', params.search);
 
   const endpoint = `${API_ENDPOINTS.PUBLIC.EVENTS_LIST}?${queryParams.toString()}`;
 
@@ -158,3 +170,4 @@ export async function getPublicEvents(
 
   return response;
 }
+

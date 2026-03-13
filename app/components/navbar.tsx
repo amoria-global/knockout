@@ -29,14 +29,24 @@ const getIconForCategory = (name: string): string => {
   return categoryIcons[normalized] || 'bi-camera-fill';
 };
 
-// Known event categories — icons and translation keys
+// Known event categories — icons and translation keys (must match messages/en.json eventCategories keys)
 const EVENT_CATEGORY_BASE: { value: string; icon: string; translationKey: string }[] = [
-  { value: 'wedding',    icon: 'bi-heart-fill',          translationKey: 'weddings' },
-  { value: 'concert',    icon: 'bi-music-note-beamed',   translationKey: 'concerts' },
-  { value: 'corporate',  icon: 'bi-briefcase-fill',      translationKey: 'corporate' },
-  { value: 'sports',     icon: 'bi-trophy-fill',         translationKey: 'sports' },
-  { value: 'cultural',   icon: 'bi-globe',               translationKey: 'cultural' },
-  { value: 'conference', icon: 'bi-people-fill',         translationKey: 'conferences' },
+  { value: 'wedding',       icon: 'bi-heart-fill',        translationKey: 'wedding' },
+  { value: 'concert',       icon: 'bi-music-note-beamed', translationKey: 'concert' },
+  { value: 'corporate',     icon: 'bi-briefcase-fill',    translationKey: 'corporate' },
+  { value: 'sports',        icon: 'bi-trophy-fill',       translationKey: 'sports' },
+  { value: 'cultural',      icon: 'bi-globe',             translationKey: 'cultural' },
+  { value: 'conference',    icon: 'bi-people-fill',       translationKey: 'conference' },
+  { value: 'academic',      icon: 'bi-mortarboard-fill',  translationKey: 'academic' },
+  { value: 'gathering',     icon: 'bi-people-fill',       translationKey: 'gathering' },
+  { value: 'fashion',       icon: 'bi-bag-fill',          translationKey: 'fashion' },
+  { value: 'religious',     icon: 'bi-star-fill',         translationKey: 'religious' },
+  { value: 'entertainment', icon: 'bi-controller',        translationKey: 'entertainment' },
+  { value: 'birthday',      icon: 'bi-cake2-fill',        translationKey: 'birthday' },
+  { value: 'babyshower',    icon: 'bi-balloon-fill',      translationKey: 'babyShower' },
+  { value: 'graduation',    icon: 'bi-award-fill',        translationKey: 'graduation' },
+  { value: 'anniversary',   icon: 'bi-stars',             translationKey: 'anniversary' },
+  { value: 'other',         icon: 'bi-grid-fill',         translationKey: 'other' },
 ];
 
 // Map category names to translation keys
@@ -61,7 +71,7 @@ const AmoriaKNavbar = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [photographerCategories, setPhotographerCategories] = useState<{ value: string; translationKey: string; icon: string }[]>([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
-  const [eventCategories, setEventCategories] = useState<{ value: string; icon: string; translationKey: string; isLive: boolean }[]>([]);
+  const [eventCategories, setEventCategories] = useState<{ value: string; icon: string; translationKey: string; displayName?: string; isLive: boolean }[]>([]);
   const [eventCategoriesLoading, setEventCategoriesLoading] = useState(true);
   const [hasLiveEvents, setHasLiveEvents] = useState(false);
 
@@ -168,16 +178,18 @@ const AmoriaKNavbar = () => {
             catMap.set(raw, catMap.get(raw) ?? false);
           }
 
-          // Second pass: mark categories live via hasLiveStream flag first (no extra API calls),
-          // then additionally confirm via Cloudflare connectionStatus for ongoing events
+          // Second pass: mark live — same logic as the event cards:
+          // ONGOING + hasLiveStream flag is sufficient; Cloudflare check adds any missed ones
           let anyLive = false;
-          for (const ev of events) {
+
+          for (const ev of ongoingEvents) {
             if (ev.hasLiveStream === true) {
               anyLive = true;
               const raw = (ev.eventCategory?.name || '').toLowerCase().trim();
               if (raw) catMap.set(raw, true);
             }
           }
+
           if (ongoingEvents.length > 0) {
             const checks = await Promise.allSettled(
               ongoingEvents.map(ev => getStreamVideo(ev.id))
@@ -196,17 +208,32 @@ const AmoriaKNavbar = () => {
           }
 
           setHasLiveEvents(anyLive);
-          // Keep only known categories that have at least one event
-          setEventCategories(
-            EVENT_CATEGORY_BASE
-              .filter(c => catMap.has(c.value))
-              .map(c => ({ ...c, isLive: catMap.get(c.value) ?? false }))
-          );
+
+          // Known base categories that have events
+          const knownValues = new Set(EVENT_CATEGORY_BASE.map(c => c.value));
+          const knownCards = EVENT_CATEGORY_BASE
+            .filter(c => catMap.has(c.value))
+            .map(c => ({ ...c, displayName: undefined as string | undefined, isLive: catMap.get(c.value) ?? false }));
+
+          // Dynamic categories from API not in EVENT_CATEGORY_BASE (e.g. "anniversary")
+          const dynamicCards = [...catMap.entries()]
+            .filter(([key]) => !knownValues.has(key))
+            .map(([key, isLive]) => ({
+              value: key,
+              icon: 'bi-calendar-event-fill',
+              translationKey: key,
+              displayName: key.charAt(0).toUpperCase() + key.slice(1),
+              isLive,
+            }));
+
+          setEventCategories([...knownCards, ...dynamicCards]);
         }
       } catch { /* silent — navbar should never break on API errors */ }
       finally { setEventCategoriesLoading(false); }
     };
     fetchEventCategories();
+    const interval = setInterval(fetchEventCategories, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   // Effect to detect screen size
@@ -326,6 +353,57 @@ const AmoriaKNavbar = () => {
     >
       {/* Live Animation Styles for Event Category Cards */}
       <style>{`
+        @keyframes nav-live-dot-ping {
+          0% { transform: scale(1); opacity: 1; }
+          70% { transform: scale(2.2); opacity: 0; }
+          100% { transform: scale(2.2); opacity: 0; }
+        }
+
+        @keyframes nav-live-dot-blink {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.4; }
+        }
+
+        .nav-live-dot-wrap {
+          position: absolute;
+          top: 8px;
+          right: 8px;
+          display: flex;
+          align-items: center;
+          gap: 4px;
+        }
+
+        .nav-live-dot {
+          position: relative;
+          width: 8px;
+          height: 8px;
+        }
+
+        .nav-live-dot-inner {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background: #e53e3e;
+          animation: nav-live-dot-blink 1.2s ease-in-out infinite;
+        }
+
+        .nav-live-dot-ring {
+          position: absolute;
+          inset: 0;
+          border-radius: 50%;
+          background: rgba(229, 62, 62, 0.5);
+          animation: nav-live-dot-ping 1.2s ease-out infinite;
+        }
+
+        .nav-live-label {
+          font-size: 9px;
+          font-weight: 800;
+          color: #e53e3e;
+          letter-spacing: 0.8px;
+          text-transform: uppercase;
+          animation: nav-live-dot-blink 1.2s ease-in-out infinite;
+        }
+
         @keyframes nav-sound-wave-pulse {
           0% {
             box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7),
@@ -728,7 +806,7 @@ const AmoriaKNavbar = () => {
                           }}>
                             <i className={`bi ${category.icon} ${category.isLive ? 'nav-live-icon' : ''}`} style={{ fontSize: '22px', color: 'white' }}></i>
                           </div>
-                          <span className={category.isLive ? 'nav-live-text' : ''} style={{ lineHeight: '1.4', fontWeight: category.isLive ? '700' : '600' }}>{t(`eventCategories.${category.translationKey}`)}</span>
+                          <span className={category.isLive ? 'nav-live-text' : ''} style={{ lineHeight: '1.4', fontWeight: category.isLive ? '700' : '600' }}>{category.displayName ?? t(`eventCategories.${category.translationKey}`)}</span>
                         </Link>
                       ))}
                     </div>
@@ -1107,7 +1185,7 @@ const AmoriaKNavbar = () => {
                       }}
                     >
                       <i className={`bi ${category.icon}`} style={{ fontSize: isMobile ? '0.8125rem' : '0.875rem', color: category.isLive ? '#10b981' : 'inherit' }}></i>
-                      <span>{t(`eventCategories.${category.translationKey}`)}</span>
+                      <span>{category.displayName ?? t(`eventCategories.${category.translationKey}`)}</span>
                       {category.isLive && (
                         <span style={{
                           marginLeft: 'auto',
