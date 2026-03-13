@@ -156,7 +156,10 @@ export const API_ENDPOINTS = {
     XENTRIPAY_INITIATE: "/api/remote/payments/xentripay/initiate",
     XENTRIPAY_INITIATE_TIP: "/api/remote/payments/xentripay/initiate-tip",
     XENTRIPAY_INITIATE_STREAMING: "/api/remote/payments/xentripay/initiate-streaming",
+    XENTRIPAY_INITIATE_DONATION: "/api/remote/public/payments/xentripay/initiate-donation",
+    XENTRIPAY_INITIATE_PHOTO_PURCHASE: "/api/remote/payments/xentripay/initiate-photo-purchase",
     XENTRIPAY_STATUS: (refid: string) => `/api/remote/payments/xentripay/status/${refid}`,
+    XENTRIPAY_PUBLIC_STATUS: (refid: string) => `/api/remote/public/payments/xentripay/status/${refid}`,
   },
 
   // Customer endpoints

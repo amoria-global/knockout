@@ -10,10 +10,30 @@ import type { ApiResponse } from '@/lib/api/types';
 // ==================== Types ====================
 
 export interface XentriPayInitiateRequest {
-  declarationId: string;
+  declarationId?: string;
+  eventId?: string;
   phone: string;
   telecomProvider: string; // 'MTN' | 'AIRTEL'
   paymentMethod: string;   // 'MOBILE_MONEY' | 'CARD'
+  redirectUrl?: string;
+}
+
+export interface XentriPayDonationRequest {
+  donationId: string;
+  phone: string;
+  telecomProvider: string;
+  paymentMethod?: string;
+  redirectUrl?: string;
+}
+
+export interface XentriPayPhotoPurchaseRequest {
+  eventId: string;
+  amount: number;
+  currencyId: string;
+  phone: string;
+  telecomProvider: string;
+  paymentMethod?: string;
+  redirectUrl?: string;
 }
 
 export interface XentriPayTipRequest {
@@ -22,6 +42,8 @@ export interface XentriPayTipRequest {
   currencyId: string;
   phone: string;
   telecomProvider: string;
+  paymentMethod?: string;
+  redirectUrl?: string;
 }
 
 export interface XentriPayStreamingRequest {
@@ -30,6 +52,8 @@ export interface XentriPayStreamingRequest {
   currencyId: string;
   phone: string;
   telecomProvider: string;
+  paymentMethod?: string;
+  redirectUrl?: string;
 }
 
 export interface XentriPayResponse {
@@ -102,11 +126,49 @@ export async function initiateXentriPayStreaming(
 }
 
 /**
+ * Initiate donation payment via XentriPay (public, no auth required)
+ */
+export async function initiateXentriPayDonation(
+  data: XentriPayDonationRequest
+): Promise<ApiResponse<XentriPayResponse>> {
+  return apiClient.post<XentriPayResponse>(
+    API_ENDPOINTS.PAYMENTS.XENTRIPAY_INITIATE_DONATION,
+    data,
+    { skipAuth: true, retries: 1 }
+  );
+}
+
+/**
+ * Initiate photo purchase payment via XentriPay
+ */
+export async function initiateXentriPayPhotoPurchase(
+  data: XentriPayPhotoPurchaseRequest
+): Promise<ApiResponse<XentriPayResponse>> {
+  if (!isAuthenticated()) {
+    return { success: false, error: 'Authentication required' };
+  }
+
+  return apiClient.post<XentriPayResponse>(
+    API_ENDPOINTS.PAYMENTS.XENTRIPAY_INITIATE_PHOTO_PURCHASE,
+    data,
+    { retries: 1 }
+  );
+}
+
+/**
  * Check payment status by reference ID
  */
 export async function checkXentriPayStatus(
-  refid: string
+  refid: string,
+  usePublic: boolean = false
 ): Promise<ApiResponse<XentriPayStatusResponse>> {
+  if (usePublic) {
+    return apiClient.get<XentriPayStatusResponse>(
+      API_ENDPOINTS.PAYMENTS.XENTRIPAY_PUBLIC_STATUS(refid),
+      { skipAuth: true, retries: 1 }
+    );
+  }
+
   if (!isAuthenticated()) {
     return { success: false, error: 'Authentication required' };
   }
@@ -129,7 +191,8 @@ export function pollXentriPayStatus(
     onError: (error: string) => void;
   },
   intervalMs: number = 5000,
-  maxAttempts: number = 60 // 5 minutes at 5s intervals
+  maxAttempts: number = 60, // 5 minutes at 5s intervals
+  usePublic: boolean = false
 ): () => void {
   let attempts = 0;
   let stopped = false;
@@ -139,7 +202,7 @@ export function pollXentriPayStatus(
     attempts++;
 
     try {
-      const response = await checkXentriPayStatus(refid);
+      const response = await checkXentriPayStatus(refid, usePublic);
 
       if (stopped) return;
 

@@ -369,6 +369,7 @@ const Donations = () => {
 
   // XentriPay modal state
   const [showXentriPayModal, setShowXentriPayModal] = useState(false);
+  const [pendingDonationId, setPendingDonationId] = useState<string | null>(null);
 
   // Reset payment modal state
   const resetPaymentModal = () => {
@@ -402,11 +403,12 @@ const Donations = () => {
         message,
       });
 
-      if (!response.success) {
+      if (!response.success || !response.data) {
         throw new Error(response.error || 'Donation failed');
       }
 
-      // Donation recorded, now open XentriPay for actual payment
+      // Capture donationId from response, then open XentriPay for actual payment
+      setPendingDonationId(response.data.id);
       setShowPaymentModal(false);
       setShowXentriPayModal(true);
     } catch (err) {
@@ -1890,12 +1892,13 @@ const Donations = () => {
       {/* XentriPay Payment Modal */}
       <XentriPayModal
         isOpen={showXentriPayModal}
-        onClose={() => setShowXentriPayModal(false)}
+        onClose={() => { setShowXentriPayModal(false); setPendingDonationId(null); }}
         onSuccess={handleXentriPaySuccess}
         amount={getDisplayAmount()}
         currencyCode={currency}
         currencyId={apiCurrencies.find(c => c.code === currency)?.id || ''}
         paymentType="donation"
+        donationId={pendingDonationId || undefined}
         title="Complete Your Donation"
         subtitle={`Donating ${formatCurrency(getDisplayAmount(), currency)} to ${categories[activeCategory].title}`}
       />

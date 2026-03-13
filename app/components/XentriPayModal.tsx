@@ -5,6 +5,8 @@ import {
   initiateXentriPayTip,
   initiateXentriPayStreaming,
   initiateXentriPayment,
+  initiateXentriPayDonation,
+  initiateXentriPayPhotoPurchase,
   pollXentriPayStatus,
   type XentriPayResponse,
   type XentriPayStatusResponse,
@@ -25,10 +27,12 @@ export interface XentriPayModalProps {
   paymentType: PaymentType;
   title?: string;
   subtitle?: string;
-  // For booking payments - use existing declaration
+  // For booking payments - use existing declaration or eventId
   declarationId?: string;
-  // For tip/streaming - need event context
+  // For tip/streaming/photo_purchase - need event context
   eventId?: string;
+  // For donation payments
+  donationId?: string;
 }
 
 type PaymentStep = 'method' | 'processing' | 'success' | 'failed';
@@ -56,6 +60,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
   subtitle,
   declarationId,
   eventId,
+  donationId,
 }) => {
   // State
   const [step, setStep] = useState<PaymentStep>('method');
@@ -99,13 +104,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
   // Validate payment details
   const isValid = useCallback(() => {
     if (!selectedMethod) return false;
-    if (selectedMethod === 'mtn' || selectedMethod === 'airtel') {
-      return phone.length >= 10;
-    }
-    if (selectedMethod === 'card') {
-      return true; // Card payments redirect to XentriPay hosted page
-    }
-    return false;
+    return phone.length >= 10;
   }, [selectedMethod, phone]);
 
   // Start payment status polling
@@ -114,6 +113,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
       stopPollingRef.current();
     }
 
+    const usePublicStatus = paymentType === 'donation';
     stopPollingRef.current = pollXentriPayStatus(
       paymentRefid,
       {
@@ -133,9 +133,10 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
         },
       },
       5000,
-      60
+      60,
+      usePublicStatus
     );
-  }, [onSuccess]);
+  }, [onSuccess, paymentType]);
 
   // Handle payment initiation
   const handlePay = async () => {
@@ -148,16 +149,19 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
     if (!method) return;
 
     const paymentMethodType = selectedMethod === 'card' ? 'CARD' : 'MOBILE_MONEY';
+    const redirectUrl = selectedMethod === 'card' ? window.location.href : undefined;
 
     try {
       let response: { success: boolean; data?: XentriPayResponse; error?: string };
 
-      if (paymentType === 'booking' && declarationId) {
+      if (paymentType === 'booking' && (declarationId || eventId)) {
         response = await initiateXentriPayment({
           declarationId,
+          eventId,
           phone,
           telecomProvider: method.provider,
           paymentMethod: paymentMethodType,
+          redirectUrl,
         });
       } else if (paymentType === 'tip' && eventId) {
         response = await initiateXentriPayTip({
@@ -166,14 +170,36 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
           currencyId,
           phone,
           telecomProvider: method.provider,
+          paymentMethod: paymentMethodType,
+          redirectUrl,
         });
-      } else if ((paymentType === 'streaming' || paymentType === 'donation') && eventId) {
+      } else if (paymentType === 'streaming' && eventId) {
         response = await initiateXentriPayStreaming({
           eventId,
           amount,
           currencyId,
           phone,
           telecomProvider: method.provider,
+          paymentMethod: paymentMethodType,
+          redirectUrl,
+        });
+      } else if (paymentType === 'donation' && donationId) {
+        response = await initiateXentriPayDonation({
+          donationId,
+          phone,
+          telecomProvider: method.provider,
+          paymentMethod: paymentMethodType,
+          redirectUrl,
+        });
+      } else if (paymentType === 'photo_purchase' && eventId) {
+        response = await initiateXentriPayPhotoPurchase({
+          eventId,
+          amount,
+          currencyId,
+          phone,
+          telecomProvider: method.provider,
+          paymentMethod: paymentMethodType,
+          redirectUrl,
         });
       } else {
         throw new Error('Invalid payment configuration');
@@ -393,8 +419,8 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
               </div>
             </div>
 
-            {/* Mobile Money Phone Input */}
-            {(selectedMethod === 'mtn' || selectedMethod === 'airtel') && (
+            {/* Phone Input - shown for all methods */}
+            {selectedMethod && (
               <div style={{ marginBottom: '24px' }}>
                 <label style={{
                   display: 'block',
@@ -407,7 +433,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
                   type="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 12))}
-                  placeholder={selectedMethod === 'mtn' ? 'e.g., 078XXXXXXX' : 'e.g., 073XXXXXXX'}
+                  placeholder={selectedMethod === 'mtn' ? 'e.g., 078XXXXXXX' : selectedMethod === 'airtel' ? 'e.g., 073XXXXXXX' : 'e.g., 078XXXXXXX'}
                   style={{
                     width: '100%',
                     padding: '14px 16px',
@@ -424,7 +450,9 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
                   onBlur={(e) => { e.currentTarget.style.borderColor = '#e0e0e0'; }}
                 />
                 <p style={{ fontSize: '12px', color: '#888', marginTop: '6px', marginBottom: 0 }}>
-                  You will receive a payment prompt on this number
+                  {selectedMethod === 'card'
+                    ? 'Required for payment verification'
+                    : 'You will receive a payment prompt on this number'}
                 </p>
               </div>
             )}
