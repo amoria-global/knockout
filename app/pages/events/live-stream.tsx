@@ -7,7 +7,7 @@ import Hls from 'hls.js';
 import { getCurrencies, type Currency as APICurrency } from '@/lib/APIs/public';
 import { recordTip, recordStreamingPayment } from '@/lib/APIs/payments/route';
 import XentriPayModal from '../../components/XentriPayModal';
-import { getEventDetails } from '@/lib/APIs/events/get-event-details/route';
+import { getPublicEventById } from '@/lib/APIs/public/get-events/route';
 import { getStreamChats, sendStreamChat, type StreamChatMessage } from '@/lib/APIs/streams/chat/route';
 import { contactUs } from '@/lib/APIs/public/contact-us/route';
 import { apiClient } from '@/lib/api/client';
@@ -29,6 +29,7 @@ interface EventStream {
   startTime: string;
   messages: Message[];
   hlsManifestUrl?: string;
+  eventStatus?: string;
 }
 
 interface Message {
@@ -106,10 +107,9 @@ const App = () => {
 
     const loadEventDetails = async () => {
       try {
-        const response = await getEventDetails(eventId);
+        const response = await getPublicEventById(eventId);
         if (response.success && response.data) {
-          const eventData = (response.data as unknown as Record<string, unknown>)?.event || response.data;
-          const ev = eventData as Record<string, unknown>;
+          const ev = response.data as Record<string, unknown>;
           setEvents(prev => [{
             ...prev[0],
             id: eventId,
@@ -118,7 +118,8 @@ const App = () => {
             photographerId: (ev.photographerId as string) || (ev.organizerId as string) || prev[0].photographerId,
             category: (ev.eventType as string) || (ev.category as string) || prev[0].category,
             hlsManifestUrl: (ev.hlsManifestUrl as string) || undefined,
-            streamId: (ev.liveInputId as string) || prev[0].streamId,
+            streamId: eventId || (ev.liveInputId as string) || prev[0].streamId,
+            eventStatus: (ev.eventStatus as string) || undefined,
           }, ...prev.slice(1)]);
         }
       } catch {
@@ -126,6 +127,38 @@ const App = () => {
       }
     };
     loadEventDetails();
+  }, [searchParams]);
+
+  // Poll event status every 15s — detects PUBLISHED → ONGOING transition and gets hlsManifestUrl when ready
+  useEffect(() => {
+    const eventId = searchParams.get('eventId') || searchParams.get('id');
+    if (!eventId) return;
+
+    const pollEventStatus = async () => {
+      try {
+        const response = await getPublicEventById(eventId);
+        if (response.success && response.data) {
+          const ev = response.data as Record<string, unknown>;
+          const newStatus = (ev.eventStatus as string) || undefined;
+          const newHlsUrl = (ev.hlsManifestUrl as string) || undefined;
+          setEvents(prev => {
+            const current = prev[0];
+            // Only update if something relevant changed
+            if (current.eventStatus === newStatus && current.hlsManifestUrl === newHlsUrl) return prev;
+            return [{
+              ...current,
+              eventStatus: newStatus,
+              hlsManifestUrl: newHlsUrl,
+            }, ...prev.slice(1)];
+          });
+        }
+      } catch {
+        // Silent fail for polling
+      }
+    };
+
+    const interval = setInterval(pollEventStatus, 15000);
+    return () => clearInterval(interval);
   }, [searchParams]);
 
   // Poll stream chat messages every 5 seconds
@@ -1754,6 +1787,10 @@ const App = () => {
           object-fit: contain !important;
         }
 
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
         @keyframes blink {
           0%, 100% { opacity: 1; }
           50% { opacity: 0.3; }
@@ -2892,6 +2929,36 @@ const App = () => {
               >
                 {!mainEvent.hlsManifestUrl && <source src={mainEvent.videoSrc} type="video/mp4" />}
               </video>
+
+              {/* Stream starting overlay — ONGOING but HLS URL not yet available */}
+              {mainEvent.eventStatus === 'ONGOING' && !mainEvent.hlsManifestUrl && (
+                <div style={{
+                  position: 'absolute',
+                  inset: 0,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: 'rgba(0,0,0,0.75)',
+                  gap: '16px',
+                  zIndex: 9,
+                }}>
+                  <div style={{
+                    width: '48px',
+                    height: '48px',
+                    border: '4px solid rgba(255,255,255,0.15)',
+                    borderTopColor: '#03969c',
+                    borderRadius: '50%',
+                    animation: 'spin 0.9s linear infinite',
+                  }} />
+                  <p style={{ color: '#fff', fontSize: '16px', fontWeight: '600', margin: 0 }}>
+                    Stream is starting, please wait…
+                  </p>
+                  <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '13px', margin: 0 }}>
+                    The page will update automatically
+                  </p>
+                </div>
+              )}
 
               {/* Viewer Count */}
               <div

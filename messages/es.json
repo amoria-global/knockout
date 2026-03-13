@@ -25,12 +25,22 @@
       "browseSubtitle": "Encuentra el fotógrafo perfecto para tus momentos especiales"
     },
     "eventCategories": {
-      "weddings": "Bodas",
-      "concerts": "Conciertos",
-      "corporate": "Corporativo",
       "sports": "Deportes",
+      "wedding": "Boda",
+      "academic": "Académico",
+      "gathering": "Reunión",
+      "concert": "Concierto",
+      "fashion": "Moda",
+      "religious": "Religioso",
       "cultural": "Cultural",
-      "conferences": "Conferencias",
+      "corporate": "Corporativo",
+      "conference": "Conferencia",
+      "entertainment": "Entretenimiento",
+      "birthday": "Cumpleaños",
+      "babyShower": "Baby Shower",
+      "graduation": "Graduación",
+      "anniversary": "Aniversario",
+      "other": "Otro",
       "browseTitle": "Explorar Eventos",
       "browseSubtitle": "Descubre eventos increíbles cerca de ti"
     }
@@ -223,22 +233,27 @@
     "allDates": "Todas las Fechas",
     "allStatuses": "Todos los Estados",
     "categories": {
-      "weddings": "Bodas",
-      "concerts": "Conciertos",
-      "corporate": "Corporativo",
       "sports": "Deportes",
-      "cultural": "Cultural",
-      "conferences": "Conferencias",
+      "wedding": "Boda",
+      "academic": "Académico",
+      "gathering": "Reunión",
+      "concert": "Concierto",
       "fashion": "Moda",
       "religious": "Religioso",
-      "academic": "Académico",
+      "cultural": "Cultural",
+      "corporate": "Corporativo",
+      "conference": "Conferencia",
       "entertainment": "Entretenimiento",
-      "gathering": "Reunión"
+      "birthday": "Cumpleaños",
+      "babyShower": "Baby Shower",
+      "graduation": "Graduación"
     },
     "status": {
       "upcoming": "PRÓXIMO",
       "live": "EN VIVO",
-      "ended": "FINALIZADO"
+      "ended": "FINALIZADO",
+      "completed": "FINALIZADO",
+      "cancelled": "CANCELADO"
     },
     "liveNow": "En Vivo Ahora",
     "trending": "Eventos Populares",
