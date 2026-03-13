@@ -25,12 +25,22 @@
       "browseSubtitle": "Trouvez le photographe parfait pour vos moments spéciaux"
     },
     "eventCategories": {
-      "weddings": "Mariages",
-      "concerts": "Concerts",
-      "corporate": "Entreprise",
       "sports": "Sports",
+      "wedding": "Mariage",
+      "academic": "Académique",
+      "gathering": "Rassemblement",
+      "concert": "Concert",
+      "fashion": "Mode",
+      "religious": "Religieux",
       "cultural": "Culturel",
-      "conferences": "Conférences",
+      "corporate": "Entreprise",
+      "conference": "Conférence",
+      "entertainment": "Divertissement",
+      "birthday": "Anniversaire",
+      "babyShower": "Baby Shower",
+      "graduation": "Remise de Diplôme",
+      "anniversary": "Anniversaire de Mariage",
+      "other": "Autre",
       "browseTitle": "Parcourir les Événements",
       "browseSubtitle": "Découvrez des événements incroyables près de chez vous"
     }
@@ -223,22 +233,27 @@
     "allDates": "Toutes les Dates",
     "allStatuses": "Tous les Statuts",
     "categories": {
-      "weddings": "Mariages",
-      "concerts": "Concerts",
-      "corporate": "Entreprise",
       "sports": "Sports",
-      "cultural": "Culturel",
-      "conferences": "Conférences",
+      "wedding": "Mariage",
+      "academic": "Académique",
+      "gathering": "Rassemblement",
+      "concert": "Concert",
       "fashion": "Mode",
       "religious": "Religieux",
-      "academic": "Académique",
+      "cultural": "Culturel",
+      "corporate": "Entreprise",
+      "conference": "Conférence",
       "entertainment": "Divertissement",
-      "gathering": "Rassemblement"
+      "birthday": "Anniversaire",
+      "babyShower": "Baby Shower",
+      "graduation": "Remise de Diplôme"
     },
     "status": {
       "upcoming": "À VENIR",
       "live": "EN DIRECT",
-      "ended": "TERMINÉ"
+      "ended": "TERMINÉ",
+      "completed": "TERMINÉ",
+      "cancelled": "ANNULÉ"
     },
     "liveNow": "En Direct Maintenant",
     "trending": "Événements Tendance",

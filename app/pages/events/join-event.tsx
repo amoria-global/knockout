@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Navbar from '../../components/navbar';
-import { getPublicEvents, type PublicEvent } from '@/lib/APIs/public';
+import { getPublicEvents, getPublicEventById, type PublicEvent } from '@/lib/APIs/public';
 import { joinEvent } from '@/lib/APIs/events/join-event/route';
+import { validateStreamToken } from '@/lib/APIs/streams/route';
 
 // Event type used by this page's UI
 interface EventItem {
@@ -83,6 +84,16 @@ export default function JoinEvent() {
 
   // True when arriving from join-package (id + package params in URL)
   const hasDirectPayment = !!(searchParams.get('id') && searchParams.get('package'));
+
+  // True when arriving from view-event for a free LIVE event (id present, no package param)
+  const freeEventId = (!searchParams.get('package') && searchParams.get('id')) ? searchParams.get('id') : null;
+
+  // Free event token flow state
+  const [streamToken, setStreamToken] = useState('');
+  const [tokenLoading, setTokenLoading] = useState(false);
+  const [tokenError, setTokenError] = useState('');
+  const [freeEventCover, setFreeEventCover] = useState<string | null>(null);
+  const [freeEventTitle, setFreeEventTitle] = useState<string | null>(null);
 
   // Real events from API
   const [eventsData, setEventsData] = useState<EventItem[]>([]);
@@ -211,6 +222,17 @@ export default function JoinEvent() {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Fetch cover image for free event flow
+  useEffect(() => {
+    if (!freeEventId) return;
+    getPublicEventById(freeEventId).then(res => {
+      if (res.success && res.data) {
+        setFreeEventCover(res.data.eventPhoto || null);
+        setFreeEventTitle(res.data.title || null);
+      }
+    }).catch(() => {});
+  }, [freeEventId]);
 
   // Fetch real events from API
   useEffect(() => {
@@ -374,6 +396,24 @@ export default function JoinEvent() {
     }
   };
 
+  const handleTokenJoin = async () => {
+    if (!streamToken.trim() || !freeEventId) return;
+    setTokenLoading(true);
+    setTokenError('');
+    try {
+      const res = await validateStreamToken(freeEventId, streamToken.trim());
+      if (res.success) {
+        router.push(`/user/events/live-stream?eventId=${freeEventId}&inviteToken=${encodeURIComponent(streamToken.trim())}`);
+      } else {
+        setTokenError(res.error || 'Invalid token. Please check your invite code and try again.');
+      }
+    } catch {
+      setTokenError('Something went wrong. Please try again.');
+    } finally {
+      setTokenLoading(false);
+    }
+  };
+
   const handleJoin = () => {
     // Only proceed if event link is filled in
     if (eventLink.trim()) {
@@ -423,18 +463,24 @@ export default function JoinEvent() {
         overflowY: 'auto',
       }}
     >
-      {/* Background image only */}
+      {/* Background image */}
       <div
         style={{
           position: 'absolute',
           inset: 0,
-          backgroundImage: 'url(/arms.png)',
+          backgroundImage: freeEventCover ? `url(${freeEventCover})` : 'url(/arms.png)',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
-          filter: 'brightness(0.2)',
+          filter: freeEventCover ? undefined : 'brightness(0.2)',
         }}
-      ></div>
+      />
+      {/* Cinematic gradient overlay — top to bottom */}
+      {freeEventCover && (
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(14,14,16,0.92) 0%, rgba(14,14,16,0.82) 25%, rgba(14,14,16,0.7) 50%, rgba(14,14,16,0.88) 74%, rgba(14,14,16,0.96) 88%, #0e0e10 100%)' }} />
+      )}
+      {/* Dark overlay for fallback /arms.png */}
+      {!freeEventCover && <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.55)' }} />}
 
       {/* Content container */}
       <div
@@ -1004,13 +1050,18 @@ export default function JoinEvent() {
                   fontSize: isMobile ? 'clamp(1.75rem, 8vw, 2.5rem)' : '3rem',
                   fontWeight: 'bold',
                   color: 'white',
-                  marginBottom: isMobile ? '16px' : '24px',
+                  marginBottom: freeEventTitle ? '8px' : isMobile ? '16px' : '24px',
                   lineHeight: '1.2',
                   fontFamily: "'Pragati Narrow', sans-serif",
                 }}
               >
-                Live Moments, Shared Instantly
+                {freeEventTitle ?? 'Live Moments, Shared Instantly'}
               </h1>
+              {freeEventTitle && (
+                <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: isMobile ? '0.875rem' : '1rem', marginBottom: isMobile ? '24px' : '36px', fontFamily: "'Pragati Narrow', sans-serif" }}>
+                  Enter the invite token shared by your host to join the live stream
+                </p>
+              )}
 
               {/* Description */}
               <div
@@ -1038,15 +1089,23 @@ export default function JoinEvent() {
                     fontFamily: "'Pragati Narrow', sans-serif",
                   }}
                 >
-                  Join Live Now
+                  {freeEventId ? 'Enter Your Stream Invite Token' : 'Join Live Now'}
                 </h2>
+
+                {/* Error message for token validation */}
+                {freeEventId && tokenError && (
+                  <p style={{ color: '#f87171', fontSize: '14px', marginBottom: '12px', textAlign: 'center' }}>
+                    <i className="bi bi-exclamation-circle-fill" style={{ marginRight: 6 }}></i>{tokenError}
+                  </p>
+                )}
 
                 {/* Input field */}
                 <input
                   type="text"
-                  placeholder="Enter Event Link or Host ID from your event host"
-                  value={eventLink}
-                  onChange={(e) => setEventLink(e.target.value)}
+                  placeholder={freeEventId ? 'Enter invite token from your host' : 'Enter Event Link or Host ID from your event host'}
+                  value={freeEventId ? streamToken : eventLink}
+                  onChange={(e) => freeEventId ? setStreamToken(e.target.value) : setEventLink(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' && freeEventId) handleTokenJoin(); }}
                   style={{
                     width: '100%',
                     padding: isMobile ? '10px 16px' : '12px 20px',
@@ -1100,41 +1159,43 @@ export default function JoinEvent() {
 
                 {/* Join button */}
                 <button
-                  onClick={handleJoin}
+                  onClick={freeEventId ? handleTokenJoin : handleJoin}
+                  disabled={freeEventId ? tokenLoading : false}
                   style={{
                     width: '100%',
                     maxWidth: isMobile ? '100%' : '384px',
                     margin: '0 auto',
                     display: 'block',
-                    backgroundColor: eventLink ? '#039130' : 'white',
-                    color: eventLink ? '#FFFFFF' : '#374151',
+                    backgroundColor: (freeEventId ? streamToken : eventLink) ? '#039130' : 'white',
+                    color: (freeEventId ? streamToken : eventLink) ? '#FFFFFF' : '#374151',
                     fontWeight: '600',
                     padding: isMobile ? '10px 24px' : '12px 32px',
                     borderRadius: isMobile ? '12px' : '16px',
                     border: 'none',
-                    cursor: 'pointer',
+                    cursor: tokenLoading ? 'not-allowed' : 'pointer',
                     fontSize: isMobile ? '0.9375rem' : '1rem',
                     boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
                     transition: 'all 0.3s ease',
                     fontFamily: "'Pragati Narrow', sans-serif",
                     boxSizing: 'border-box',
+                    opacity: tokenLoading ? 0.7 : 1,
                   }}
                   onMouseEnter={(e) => {
-                    if (eventLink) {
-                      e.currentTarget.style.backgroundColor = '#039130';
+                    if (freeEventId ? streamToken : eventLink) {
+                      e.currentTarget.style.backgroundColor = '#027a28';
                     } else {
                       e.currentTarget.style.backgroundColor = '#f3f4f6';
                     }
                   }}
                   onMouseLeave={(e) => {
-                    if (eventLink) {
+                    if (freeEventId ? streamToken : eventLink) {
                       e.currentTarget.style.backgroundColor = '#039130';
                     } else {
                       e.currentTarget.style.backgroundColor = 'white';
                     }
                   }}
                 >
-                  Join
+                  {tokenLoading ? 'Verifying...' : (freeEventId ? 'Join Stream' : 'Join')}
                 </button>
               </div>
             </div>

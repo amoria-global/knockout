@@ -67,6 +67,9 @@ const Events: React.FC = () => {
   const [apiTotalPages, setApiTotalPages] = useState(0);
   // IDs of events whose Cloudflare stream is confirmed live (connectionStatus === 'live')
   const [liveStreamIds, setLiveStreamIds] = useState<Set<string>>(new Set());
+  // Accumulates unique category names seen across all fetched pages — drives the filter dropdown
+  const [categoryOptions, setCategoryOptions] = useState<string[]>([]);
+  const seenCategoriesRef = React.useRef<Set<string>>(new Set());
 
   const fetchEvents = useCallback(async () => {
     setIsLoading(true);
@@ -77,6 +80,11 @@ const Events: React.FC = () => {
         size: itemsPerPage,
         sortColumn: 'createdAt',
         sortDirection: 'desc',
+        category:  selectedCategory  !== 'all' ? selectedCategory  : undefined,
+        location:  selectedLocation  !== 'all' ? selectedLocation  : undefined,
+        status:    selectedStatus    !== 'all' ? selectedStatus : undefined,
+        dateRange: selectedDate      !== 'all' ? selectedDate      : undefined,
+        search:    searchTerm.trim() || undefined,
       });
       if (response.success && response.data) {
         const events = response.data.content;
@@ -98,6 +106,18 @@ const Events: React.FC = () => {
         setEventsData(events);
         setLiveStreamIds(trulyLiveIds);
         setApiTotalPages(response.data.totalPages);
+        // Accumulate categories seen across pages and update the filter dropdown
+        let changed = false;
+        for (const ev of events) {
+          const cat = ev.eventCategory?.name?.trim();
+          if (cat && !seenCategoriesRef.current.has(cat)) {
+            seenCategoriesRef.current.add(cat);
+            changed = true;
+          }
+        }
+        if (changed) {
+          setCategoryOptions(Array.from(seenCategoriesRef.current).sort());
+        }
       } else {
         setLoadError(response.error || 'Failed to fetch events');
       }
@@ -106,7 +126,7 @@ const Events: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [currentPage, itemsPerPage]);
+  }, [currentPage, itemsPerPage, selectedCategory, selectedLocation, selectedStatus, selectedDate, searchTerm]);
 
   useEffect(() => {
     fetchEvents();
@@ -403,11 +423,10 @@ const Events: React.FC = () => {
     }
   ];
 
-  // An event is "live" if the backend marks it as having a live stream OR
-  // if Cloudflare confirms the stream is actively transmitting
+  // An event is "live" only when it is ONGOING AND has an active live stream
   const isEventLive = (event: PublicEvent) =>
-    event.hasLiveStream === true ||
-    ((event.eventStatus || '').toLowerCase() === 'ongoing' && liveStreamIds.has(event.id));
+    (event.eventStatus || '').toUpperCase() === 'ONGOING' &&
+    (event.hasLiveStream === true || liveStreamIds.has(event.id));
 
   // Trending Events Data - Filter only truly live events
   const allTrendingEvents = eventsData.filter(event => isEventLive(event)).map(event => ({
@@ -422,7 +441,7 @@ const Events: React.FC = () => {
   // Handlers
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Searching for:', searchTerm);
+    setCurrentPage(1);
   };
 
   // Server-side pagination — events are already fetched per page
@@ -655,7 +674,7 @@ const Events: React.FC = () => {
             <div>
               <select
                 value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
+                onChange={(e) => { setSelectedCategory(e.target.value); setCurrentPage(1); }}
                 style={{
                   width: '100%',
                   padding: 'clamp(0.5rem, 2vw, 0.625rem) clamp(0.75rem, 2.5vw, 1rem)',
@@ -671,12 +690,9 @@ const Events: React.FC = () => {
                 }}
               >
                 <option value="all">{t('allCategories')}</option>
-                <option value="wedding">{t('categories.weddings')}</option>
-                <option value="concert">{t('categories.concerts')}</option>
-                <option value="corporate">{t('categories.corporate')}</option>
-                <option value="sports">{t('categories.sports')}</option>
-                <option value="cultural">{t('categories.cultural')}</option>
-                <option value="conference">{t('categories.conferences')}</option>
+                {categoryOptions.map(cat => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
               </select>
             </div>
 
@@ -684,7 +700,7 @@ const Events: React.FC = () => {
             <div>
               <select
                 value={selectedLocation}
-                onChange={(e) => setSelectedLocation(e.target.value)}
+                onChange={(e) => { setSelectedLocation(e.target.value); setCurrentPage(1); }}
                 style={{
                   width: '100%',
                   padding: 'clamp(0.5rem, 2vw, 0.625rem) clamp(0.75rem, 2.5vw, 1rem)',
@@ -712,7 +728,7 @@ const Events: React.FC = () => {
             <div>
               <select
                 value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
+                onChange={(e) => { setSelectedDate(e.target.value); setCurrentPage(1); }}
                 style={{
                   width: '100%',
                   padding: 'clamp(0.5rem, 2vw, 0.625rem) clamp(0.75rem, 2.5vw, 1rem)',
@@ -740,7 +756,7 @@ const Events: React.FC = () => {
             <div>
               <select
                 value={selectedStatus}
-                onChange={(e) => setSelectedStatus(e.target.value)}
+                onChange={(e) => { setSelectedStatus(e.target.value); setCurrentPage(1); }}
                 style={{
                   width: '100%',
                   padding: 'clamp(0.5rem, 2vw, 0.625rem) clamp(0.75rem, 2.5vw, 1rem)',
@@ -756,9 +772,9 @@ const Events: React.FC = () => {
                 }}
               >
                 <option value="all">{t('allStatuses')}</option>
-                <option value="upcoming">{t('status.upcoming')}</option>
-                <option value="live">{t('liveNow')}</option>
-                <option value="past">Past Events</option>
+                <option value="PUBLISHED">{t('status.upcoming')}</option>
+                <option value="ONGOING">{t('liveNow')}</option>
+                <option value="COMPLETED">Past Events</option>
               </select>
             </div>
           </div>
