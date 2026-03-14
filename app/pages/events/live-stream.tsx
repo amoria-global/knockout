@@ -363,8 +363,37 @@ const App = () => {
       }
       // Otherwise, payment form overlay will show
     } else if (type === 'invite_token') {
-      // Invite token stream — show token input
-      setShowInviteTokenModal(true);
+      // Check if invite token was already provided via URL (from join-event page)
+      const urlToken = searchParams.get('inviteToken');
+      if (urlToken) {
+        // Auto-submit the token from URL
+        setInviteTokenInput(urlToken);
+        (async () => {
+          const username = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email : 'Viewer';
+          setInviteTokenLoading(true);
+          try {
+            const res = await requestStreamAccess(mainEvent.id!, urlToken, username || 'Viewer');
+            if (res.success && res.data?.hlsManifestUrl) {
+              setEvents(prev => [{
+                ...prev[0],
+                hlsManifestUrl: res.data!.hlsManifestUrl,
+              }, ...prev.slice(1)]);
+              setStreamAccessGranted(true);
+            } else {
+              // Token from URL was invalid — fall back to manual input
+              setInviteTokenError(res.error || 'Invalid invite token. Please try again.');
+              setShowInviteTokenModal(true);
+            }
+          } catch {
+            setShowInviteTokenModal(true);
+          } finally {
+            setInviteTokenLoading(false);
+          }
+        })();
+      } else {
+        // No token in URL — show token input
+        setShowInviteTokenModal(true);
+      }
     } else {
       // No stream type or unknown — open access
       setStreamAccessGranted(true);
@@ -946,18 +975,9 @@ const App = () => {
   const isEntryFeeStream = (event: EventStream) => getStreamType(event) === 'entry_fee';
   const isInviteTokenStream = (event: EventStream) => getStreamType(event) === 'invite_token';
 
-  // Giftable ceremony categories (only applies to invite_token/client streams — never entry_fee)
-  const giftableCategories = [
-    'Wedding', 'Wedding Events', 'Birthday', 'Bridal Shower', 'Baby Shower',
-    'Anniversary', 'Engagement', 'Graduation', 'Baptism', 'Christening'
-  ];
-
-  // Check if an event is giftable: must NOT be entry_fee stream AND a giftable category
+  // All invite_token/client streams are giftable — paid (entry_fee) streams are not
   const isEventGiftable = (event: EventStream) =>
-    !isEntryFeeStream(event) &&
-    giftableCategories.some(cat =>
-      event.category.toLowerCase().includes(cat.toLowerCase())
-    );
+    !isEntryFeeStream(event) && isInviteTokenStream(event);
 
   // Check if current main event is giftable (for backward compatibility)
   const isGiftableEvent = isEventGiftable(mainEvent);
