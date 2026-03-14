@@ -1,14 +1,22 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
-import { useSearchParams } from 'next/navigation';
+import React, { useState, useRef, useEffect, useCallback } from "react";
+import { useSearchParams, useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import Hls from 'hls.js';
 import { getCurrencies, type Currency as APICurrency } from '@/lib/APIs/public';
 import { recordTip, recordStreamingPayment } from '@/lib/APIs/payments/route';
 import XentriPayModal from '../../components/XentriPayModal';
 import { getPublicEventById } from '@/lib/APIs/public/get-events/route';
-import { getStreamChats, sendStreamChat, type StreamChatMessage } from '@/lib/APIs/streams/chat/route';
+import { useAuth } from '../../providers/AuthProvider';
+import { login } from '@/lib/APIs/auth/login/route';
+import { signup } from '@/lib/APIs/auth/signup/route';
+import { verifyOtp } from '@/lib/APIs/auth/verify-otp/route';
+import { googleAuth } from '@/lib/APIs/auth/google/route';
+import { useGoogleLogin } from '@react-oauth/google';
+import { getStreamChats, type StreamChatMessage } from '@/lib/APIs/streams/chat/route';
+import { sendStreamChat, sendStreamVideoChat, getStreamViewerCount, getPublicViewerCount, requestStreamAccess, purchaseStreamAccess } from '@/lib/APIs/streams/route';
+import { pollXentriPayStatus } from '@/lib/APIs/payments/xentripay';
 import { contactUs } from '@/lib/APIs/public/contact-us/route';
 import { apiClient } from '@/lib/api/client';
 import { API_ENDPOINTS } from '@/lib/api/config';
@@ -16,12 +24,16 @@ import { API_ENDPOINTS } from '@/lib/api/config';
 // Dynamically import VideoMessageRecorder to avoid SSR issues
 const VideoMessageRecorder = dynamic(() => import('../../components/VideoMessageRecorder'), { ssr: false });
 
+// Default user avatar SVG (grey silhouette on light background)
+const DEFAULT_USER_AVATAR = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 150 150'%3E%3Crect width='150' height='150' fill='%234a4a4a'/%3E%3Ccircle cx='75' cy='56' r='30' fill='%23888'/%3E%3Cellipse cx='75' cy='138' rx='48' ry='42' fill='%23888'/%3E%3C/svg%3E";
+
 // Event/Stream interface
 interface EventStream {
   id: string;
   title: string;
   photographer: string;
   photographerId: string;
+  photographerAvatar?: string;
   category: string;
   videoSrc: string;
   streamId: string;
@@ -30,75 +42,272 @@ interface EventStream {
   messages: Message[];
   hlsManifestUrl?: string;
   eventStatus?: string;
+  streamType?: 'entry_fee' | 'invite_token' | null;
+  streamFee?: number | null;
+  streamFeeCurrencySymbol?: string | null;
+  streamFeeCurrencyAbbreviation?: string | null;
+  hasInviteCode?: boolean | null;
 }
 
 interface Message {
-  id: number;
+  id: number | string;
   sender: string;
   text: string;
   time: string;
   delivered: boolean;
   avatar: string;
   videoUrl?: string;
+  apiMessageId?: string; // tracks the backend ID for deduplication
   replyTo?: {
-    id: number;
+    id: number | string;
     sender: string;
   };
 }
 
+const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';
+
+function GoogleAuthButton({ onSuccess, onError, loading, label }: {
+  onSuccess: (tokenResponse: { access_token: string }) => void;
+  onError: () => void;
+  loading: boolean;
+  label: string;
+}) {
+  const googleLogin = useGoogleLogin({
+    onSuccess: (tokenResponse) => { onSuccess(tokenResponse); },
+    onError: () => { onError(); },
+  });
+  return (
+    <button
+      onClick={() => googleLogin()}
+      disabled={loading}
+      style={{ width: '100%', padding: '12px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10, color: '#fff', fontSize: 14, fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}
+    >
+      <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+      {loading ? 'Connecting...' : label}
+    </button>
+  );
+}
+
+// Helper to read eventId from URL (runs at module level for initial state)
+function getInitialEventId(): string {
+  if (typeof window !== 'undefined') {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('eventId') || params.get('id') || 'event-1';
+  }
+  return 'event-1';
+}
+
 // Main App Component
 const App = () => {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const { isAuthenticated, login: authLogin, user } = useAuth();
+  const initialId = searchParams.get('eventId') || searchParams.get('id') || getInitialEventId();
+
   // State for multiple events (up to 3)
   const [events, setEvents] = useState<EventStream[]>([
     {
-      id: "event-1",
-      title: "Beautiful Wedding Ceremony Live Stream",
-      photographer: "John Anderson Photography",
+      id: initialId,
+      title: "Loading...",
+      photographer: "",
       photographerId: "",
-      viewers: 15886,
-      category: "Wedding Events",
-      videoSrc: "/live-stream.mp4",
-      streamId: "vwx-jcvv-sfg",
-      hlsManifestUrl: "https://customer-ngk2huwatflljurq.cloudflarestream.com/de4cdd1a4b52362d02bf0d3c172de001/manifest/video.m3u8?protocol=llhlsbeta",
-      startTime: "Started 2 hours ago",
-      messages: [
-        {
-          id: 1,
-          sender: "Moise caicedo",
-          text: "Hey, I want to wish you a beautiful wedding day filled with love, grace, and blessings your lovely friend.",
-          time: "8:30 PM",
-          delivered: true,
-          avatar: "https://i.pravatar.cc/150?img=12"
-        },
-        {
-          id:2,
-          sender:"cole palmer",
-          text:"Hey, may your wedding day mark the start of a lifetime of love and blessings your lovely friend.",
-          time:"2:00 PM",
-          delivered:true,
-          avatar: "https://i.pravatar.cc/150?img=33"
-        },
-        {
-          id:3,
-          sender:"Enzo fernandez",
-          text:"Hey, congratulations on your wedding day; may your union be surrounded by joy, peace, and grace",
-          time:"11:00 AM",
-          delivered:true,
-          avatar: "https://i.pravatar.cc/150?img=5"
-        },
-      ]
+      viewers: 0,
+      category: "",
+      videoSrc: "",
+      streamId: initialId,
+      hlsManifestUrl: undefined,
+      startTime: "",
+      messages: [],
     }
   ]);
 
   // Main focused event (index in events array)
   const [mainEventIndex, setMainEventIndex] = useState(0);
   const mainEvent = events[mainEventIndex];
-  const searchParams = useSearchParams();
 
   // Blocked users (local only)
   const [blockedUsers, setBlockedUsers] = useState<Set<string>>(new Set());
   // Dynamic participants derived from chat messages
   const [participants, setParticipants] = useState<{ id: number; name: string; status: string; avatar: string }[]>([]);
+
+  // ── Stream access gate ──
+  // entry_fee streams: require payment before watching
+  // invite_token streams: require invite token before watching
+  const [streamAccessGranted, setStreamAccessGranted] = useState(false);
+  const [showInviteTokenModal, setShowInviteTokenModal] = useState(false);
+  const [inviteTokenInput, setInviteTokenInput] = useState('');
+  const [inviteTokenError, setInviteTokenError] = useState('');
+  const [inviteTokenLoading, setInviteTokenLoading] = useState(false);
+  const [viewerUsername, setViewerUsername] = useState('');
+  // Entry fee payment state
+  const [entryFeePaymentMethod, setEntryFeePaymentMethod] = useState<'mtn' | 'airtel' | 'card' | null>(null);
+  const [entryFeePhone, setEntryFeePhone] = useState('');
+  const [entryFeeLoading, setEntryFeeLoading] = useState(false);
+  const [entryFeeError, setEntryFeeError] = useState('');
+  const [entryFeePaymentPending, setEntryFeePaymentPending] = useState(false);
+  const [entryFeePaymentMessage, setEntryFeePaymentMessage] = useState('');
+  const entryFeePollingCleanup = useRef<(() => void) | null>(null);
+
+  // ── Viewer auth modal state ──
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authStep, setAuthStep] = useState<'login' | 'signup' | 'otp'>('login');
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authError, setAuthError] = useState('');
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [signupFirstName, setSignupFirstName] = useState('');
+  const [signupLastName, setSignupLastName] = useState('');
+  const [signupEmail, setSignupEmail] = useState('');
+  const [signupPhone, setSignupPhone] = useState('');
+  const [signupPassword, setSignupPassword] = useState('');
+  const [otpCustomerId, setOtpCustomerId] = useState('');
+  const [otpValue, setOtpValue] = useState('');
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+  // Open auth modal instead of redirecting
+  const requireAuth = (action: () => void) => {
+    if (isAuthenticated) {
+      action();
+    } else {
+      setAuthStep('login');
+      setAuthError('');
+      setShowAuthModal(true);
+    }
+  };
+
+  const handleAuthLogin = async () => {
+    if (!loginEmail || !loginPassword) { setAuthError('Please fill in all fields'); return; }
+    setAuthLoading(true);
+    setAuthError('');
+    try {
+      const res = await login({ email: loginEmail, password: loginPassword });
+      if (res.success && res.data?.token) {
+        const d = res.data;
+        await authLogin({
+          id: d.id || d.customerId || d.customer_id || '',
+          firstName: d.firstName || '',
+          lastName: d.lastName || '',
+          email: d.email || loginEmail,
+          phone: d.phone || '',
+          customerId: d.customerId || d.customer_id || d.id || '',
+          customerType: d.customerType || d.userType || 'Viewer',
+        }, d.token!);
+        setShowAuthModal(false);
+      } else {
+        setAuthError(res.data?.message || res.error || 'Login failed. Please check your credentials.');
+      }
+    } catch {
+      setAuthError('Login failed. Please try again.');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleAuthSignup = async () => {
+    if (!signupFirstName || !signupLastName || !signupEmail || !signupPhone || !signupPassword) {
+      setAuthError('Please fill in all fields');
+      return;
+    }
+    setAuthLoading(true);
+    setAuthError('');
+    try {
+      const res = await signup({
+        firstName: signupFirstName,
+        lastName: signupLastName,
+        email: signupEmail,
+        phone: signupPhone,
+        password: signupPassword,
+        customerType: 'Viewer',
+      });
+      if (res.success && res.data) {
+        const customerId = res.data.customerId || res.data.customer_id || res.data.applicantId || res.data.applicant_id || '';
+        setOtpCustomerId(customerId);
+        setAuthStep('otp');
+        setAuthError('');
+      } else {
+        setAuthError(res.data?.message || res.error || 'Signup failed. Please try again.');
+      }
+    } catch {
+      setAuthError('Signup failed. Please try again.');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleAuthVerifyOtp = async () => {
+    if (!otpValue || otpValue.length < 4) { setAuthError('Please enter the verification code'); return; }
+    setAuthLoading(true);
+    setAuthError('');
+    try {
+      const res = await verifyOtp({ customerId: otpCustomerId, otp: parseInt(otpValue, 10) });
+      if (res.success && res.data?.action === 1) {
+        const loginRes = await login({ email: signupEmail, password: signupPassword });
+        if (loginRes.success && loginRes.data?.token) {
+          const d = loginRes.data;
+          await authLogin({
+            id: d.id || d.customerId || d.customer_id || '',
+            firstName: d.firstName || signupFirstName,
+            lastName: d.lastName || signupLastName,
+            email: d.email || signupEmail,
+            phone: d.phone || signupPhone,
+            customerId: d.customerId || d.customer_id || d.id || '',
+            customerType: d.customerType || d.userType || 'Viewer',
+          }, d.token!);
+          setShowAuthModal(false);
+        } else {
+          setAuthError(loginRes.data?.message || loginRes.error || 'Email verified but login failed. Please log in manually.');
+        }
+      } else {
+        setAuthError(res.data?.message || res.error || 'Invalid code. Please try again.');
+      }
+    } catch {
+      setAuthError('Verification failed. Please try again.');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleGoogleSuccess = async (tokenResponse: { access_token: string }) => {
+    setGoogleLoading(true);
+    setAuthError('');
+    try {
+      const userInfoRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+      });
+      if (!userInfoRes.ok) throw new Error('Failed to fetch Google user info');
+      const userInfo = await userInfoRes.json();
+      const res = await googleAuth({
+        email: userInfo.email,
+        firstName: userInfo.given_name || '',
+        lastName: userInfo.family_name || '',
+        customerType: 'Viewer',
+      });
+      if (res.success && res.data?.token) {
+        const d = res.data;
+        await authLogin({
+          id: d.id || d.customerId || '',
+          firstName: d.firstName || userInfo.given_name || '',
+          lastName: d.lastName || userInfo.family_name || '',
+          email: d.email || userInfo.email || '',
+          phone: d.phone || '',
+          customerId: d.customerId || d.id || '',
+          customerType: d.customerType || 'Viewer',
+        }, d.token!);
+        setShowAuthModal(false);
+      } else {
+        setAuthError(res.data?.message || res.error || 'Google sign-in failed. Please try again.');
+      }
+    } catch {
+      setAuthError('Google sign-in failed. Please try again.');
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
+  const handleGoogleError = () => {
+    setGoogleLoading(false);
+    setAuthError('Google sign-in was cancelled or failed.');
+  };
 
   // Load real event metadata from API on mount if eventId is in URL
   useEffect(() => {
@@ -116,10 +325,16 @@ const App = () => {
             title: (ev.title as string) || prev[0].title,
             photographer: (ev.photographerName as string) || prev[0].photographer,
             photographerId: (ev.photographerId as string) || (ev.organizerId as string) || prev[0].photographerId,
+            photographerAvatar: ((ev.photographer as Record<string, unknown>)?.profilePicture as string) || undefined,
             category: (ev.eventType as string) || (ev.category as string) || prev[0].category,
             hlsManifestUrl: (ev.hlsManifestUrl as string) || undefined,
             streamId: eventId || (ev.liveInputId as string) || prev[0].streamId,
             eventStatus: (ev.eventStatus as string) || undefined,
+            streamType: (ev.streamType as 'entry_fee' | 'invite_token') ?? null,
+            streamFee: (ev.streamFee as number) ?? null,
+            streamFeeCurrencySymbol: (ev.streamFeeCurrencySymbol as string) ?? null,
+            streamFeeCurrencyAbbreviation: (ev.streamFeeCurrencyAbbreviation as string) ?? null,
+            hasInviteCode: (ev.hasInviteCode as boolean) ?? null,
           }, ...prev.slice(1)]);
         }
       } catch {
@@ -129,7 +344,136 @@ const App = () => {
     loadEventDetails();
   }, [searchParams]);
 
-  // Poll event status every 15s — detects PUBLISHED → ONGOING transition and gets hlsManifestUrl when ready
+  // Cleanup payment polling on unmount
+  useEffect(() => {
+    return () => { if (entryFeePollingCleanup.current) entryFeePollingCleanup.current(); };
+  }, []);
+
+  // Stream access gate — determine flow based on streamType
+  useEffect(() => {
+    if (!mainEvent?.id || mainEvent.title === 'Loading...') return;
+
+    const type = getStreamType(mainEvent);
+
+    if (type === 'entry_fee') {
+      // Entry fee stream — check URL for payment callback
+      const paid = searchParams.get('paid');
+      if (paid === 'true') {
+        setStreamAccessGranted(true);
+      }
+      // Otherwise, payment form overlay will show
+    } else if (type === 'invite_token') {
+      // Invite token stream — show token input
+      setShowInviteTokenModal(true);
+    } else {
+      // No stream type or unknown — open access
+      setStreamAccessGranted(true);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mainEvent?.id, mainEvent?.streamType, mainEvent?.streamFee, mainEvent?.hasInviteCode, mainEvent?.title]);
+
+  // Handle invite token submission (username auto-filled from auth profile)
+  const handleInviteTokenSubmit = async () => {
+    if (!inviteTokenInput.trim() || !mainEvent?.id) return;
+    const username = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email : viewerUsername.trim();
+    setInviteTokenLoading(true);
+    setInviteTokenError('');
+    try {
+      const res = await requestStreamAccess(mainEvent.id, inviteTokenInput.trim(), username || 'Viewer');
+      if (res.success && res.data?.hlsManifestUrl) {
+        setEvents(prev => [{
+          ...prev[0],
+          hlsManifestUrl: res.data!.hlsManifestUrl,
+        }, ...prev.slice(1)]);
+        setStreamAccessGranted(true);
+        setShowInviteTokenModal(false);
+      } else {
+        setInviteTokenError(res.error || 'Invalid invite token. Please try again.');
+      }
+    } catch {
+      setInviteTokenError('Failed to validate token. Please try again.');
+    } finally {
+      setInviteTokenLoading(false);
+    }
+  };
+
+  // Handle entry fee payment submission (username auto-filled from auth profile)
+  const handleEntryFeeSubmit = async () => {
+    if (!entryFeePaymentMethod || !mainEvent?.id) return;
+    if (entryFeePaymentMethod !== 'card' && !entryFeePhone.trim()) return;
+    const username = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email : viewerUsername.trim();
+    setEntryFeeLoading(true);
+    setEntryFeeError('');
+    try {
+      const res = await purchaseStreamAccess(mainEvent.id, {
+        paymentMethod: entryFeePaymentMethod,
+        phoneNumber: entryFeePhone.trim(),
+        viewerUsername: username || 'Viewer',
+        currencyId: mainEvent.streamFeeCurrencyAbbreviation || undefined,
+      });
+
+      if (res.success && res.data) {
+        const data = res.data as Record<string, unknown>;
+        const refid = (data.refid as string) || '';
+        const paymentUrl = ((data.paymentUrl as string) || '').trim();
+        const hlsUrl = (data.hlsManifestUrl as string) || '';
+        const statusMessage = (data.message as string) || '';
+        const status = (data.status as string) || '';
+
+        if (hlsUrl) {
+          // Direct access granted (unlikely for entry fee, but handle it)
+          setEvents(prev => [{
+            ...prev[0],
+            hlsManifestUrl: hlsUrl,
+          }, ...prev.slice(1)]);
+          setStreamAccessGranted(true);
+        } else if (paymentUrl && paymentUrl.length > 1) {
+          // Card payment — redirect to payment URL
+          window.location.href = paymentUrl;
+        } else if (status === 'PENDING' && refid) {
+          // Mobile money push — show message and poll for confirmation
+          setEntryFeePaymentPending(true);
+          setEntryFeePaymentMessage(statusMessage || 'Check your phone to confirm the payment.');
+          setEntryFeeLoading(false);
+
+          // Start polling payment status
+          if (entryFeePollingCleanup.current) entryFeePollingCleanup.current();
+          entryFeePollingCleanup.current = pollXentriPayStatus(
+            refid,
+            {
+              onSuccess: () => {
+                setEntryFeePaymentPending(false);
+                setStreamAccessGranted(true);
+              },
+              onFailure: () => {
+                setEntryFeePaymentPending(false);
+                setEntryFeeError('Payment was declined. Please try again.');
+              },
+              onError: (err) => {
+                setEntryFeePaymentPending(false);
+                setEntryFeeError(err || 'Could not verify payment. Please try again.');
+              },
+            },
+            5000,
+            60,
+            true // usePublic — no auth required
+          );
+          return; // don't hit finally block's setEntryFeeLoading
+        }
+      } else {
+        setEntryFeeError(res.error || 'Payment failed. Please try again.');
+      }
+    } catch {
+      setEntryFeeError('Payment failed. Please try again.');
+    } finally {
+      setEntryFeeLoading(false);
+    }
+  };
+
+  // Stream status overlay — tracks ONGOING→PUBLISHED (paused) / ONGOING→COMPLETED (ended)
+  const [streamOverlay, setStreamOverlay] = useState<'live' | 'paused' | 'ended' | 'scheduled' | null>(null);
+
+  // Poll event status every 15s — detects status transitions
   useEffect(() => {
     const eventId = searchParams.get('eventId') || searchParams.get('id');
     if (!eventId) return;
@@ -139,15 +483,29 @@ const App = () => {
         const response = await getPublicEventById(eventId);
         if (response.success && response.data) {
           const ev = response.data as Record<string, unknown>;
-          const newStatus = (ev.eventStatus as string) || undefined;
+          const newStatus = ((ev.eventStatus as string) || '').toUpperCase();
           const newHlsUrl = (ev.hlsManifestUrl as string) || undefined;
+
           setEvents(prev => {
             const current = prev[0];
+            const oldStatus = (current.eventStatus || '').toUpperCase();
+
+            // Detect status transitions
+            if (oldStatus === 'ONGOING' && newStatus === 'PUBLISHED') {
+              setStreamOverlay('paused'); // Photographer stopped — will resume
+            } else if (oldStatus === 'ONGOING' && newStatus === 'COMPLETED') {
+              setStreamOverlay('ended');
+            } else if (newStatus === 'ONGOING') {
+              setStreamOverlay('live'); // Stream is live (or resumed)
+            } else if (newStatus === 'PUBLISHED') {
+              setStreamOverlay('scheduled');
+            }
+
             // Only update if something relevant changed
-            if (current.eventStatus === newStatus && current.hlsManifestUrl === newHlsUrl) return prev;
+            if (current.eventStatus === (ev.eventStatus as string) && current.hlsManifestUrl === newHlsUrl) return prev;
             return [{
               ...current,
-              eventStatus: newStatus,
+              eventStatus: (ev.eventStatus as string) || undefined,
               hlsManifestUrl: newHlsUrl,
             }, ...prev.slice(1)];
           });
@@ -157,55 +515,122 @@ const App = () => {
       }
     };
 
+    // Set initial overlay based on current status
+    const currentStatus = (mainEvent?.eventStatus || '').toUpperCase();
+    if (currentStatus === 'ONGOING') setStreamOverlay('live');
+    else if (currentStatus === 'COMPLETED') setStreamOverlay('ended');
+    else if (currentStatus === 'PUBLISHED') setStreamOverlay('scheduled');
+
     const interval = setInterval(pollEventStatus, 15000);
     return () => clearInterval(interval);
   }, [searchParams]);
 
-  // Poll stream chat messages every 5 seconds
+  // Poll viewer count every 15s (public endpoint — no auth required)
   useEffect(() => {
-    if (!mainEvent?.streamId) return;
+    const eventId = searchParams.get('eventId') || searchParams.get('id');
+    if (!eventId) return;
+    if (mainEvent?.eventStatus !== 'ONGOING') return;
+
+    const pollViewerCount = async () => {
+      try {
+        const res = await getPublicViewerCount(eventId);
+        if (res.success && res.data) {
+          const count = (res.data as any).viewerCount ?? (res.data as any).data?.viewerCount ?? 0;
+          setEvents(prev => {
+            if (prev[0]?.viewers === count) return prev;
+            return [{ ...prev[0], viewers: count }, ...prev.slice(1)];
+          });
+        }
+      } catch {
+        // Silent fail
+      }
+    };
+
+    pollViewerCount();
+    const interval = setInterval(pollViewerCount, 15000);
+    return () => clearInterval(interval);
+  }, [searchParams, mainEvent?.eventStatus]);
+
+  // Poll stream chat messages every 5 seconds (requires auth — coordinator endpoint)
+  // Fetches full history so all viewers see a persistent, scrollable chat
+  useEffect(() => {
+    if (!mainEvent?.streamId || !isAuthenticated) return;
 
     const pollChat = async () => {
       try {
-        const response = await getStreamChats(mainEvent.streamId, 0, 50);
+        // Fetch large page to get full chat history
+        const response = await getStreamChats(mainEvent.streamId, 0, 500);
         if (response.success && response.data) {
-          const rawData = response.data as unknown as Record<string, unknown>;
-          const chatMessages: StreamChatMessage[] = rawData?.data
-            ? (rawData.data as StreamChatMessage[])
-            : Array.isArray(response.data)
-              ? (response.data as unknown as StreamChatMessage[])
+          // Backend returns a flat array directly in response.data
+          // Each item: { id, viewerUsername, message, timestamp, time, avatar? }
+          const rawData = response.data as unknown;
+          const chatMessages: Array<Record<string, unknown>> = Array.isArray(rawData)
+            ? rawData
+            : (rawData as Record<string, unknown>)?.data
+              ? ((rawData as Record<string, unknown>).data as Array<Record<string, unknown>>)
               : [];
 
           if (chatMessages.length > 0) {
-            // Convert API messages to local format and merge
-            const existingIds = new Set(mainEvent.messages.map(m => String(m.id)));
-            const newMessages = chatMessages
-              .filter(m => !existingIds.has(m.id) && !blockedUsers.has(m.sender))
-              .map((m, idx) => ({
-                id: Date.now() + idx,
-                sender: m.sender,
-                text: m.message,
-                time: new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                delivered: true,
-                avatar: m.avatar || `https://i.pravatar.cc/150?u=${m.sender}`,
-              }));
+            // Filter out already-seen API messages and blocked users
+            const newApiMessages = chatMessages.filter(m => {
+              const id = String(m.id);
+              const sender = (m.viewerUsername || m.sender || '') as string;
+              return !seenApiMessageIds.current.has(id) && !blockedUsers.has(sender);
+            });
 
-            if (newMessages.length > 0) {
+            if (newApiMessages.length > 0) {
+              // Mark these API IDs as seen
+              newApiMessages.forEach(m => seenApiMessageIds.current.add(String(m.id)));
+
               setEvents(prev => {
                 const updated = [...prev];
+                const currentMessages = [...updated[mainEventIndex].messages];
+
+                const convertedMessages: Message[] = newApiMessages.map(m => {
+                  const sender = (m.viewerUsername || m.sender || 'Unknown') as string;
+                  const msgText = (m.message || m.content || '') as string;
+                  // Use backend's pre-formatted time, fall back to parsing timestamp
+                  const timeStr = m.time
+                    ? String(m.time)
+                    : m.timestamp
+                      ? new Date(String(m.timestamp)).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                      : '';
+
+                  return {
+                    id: String(m.id),
+                    apiMessageId: String(m.id),
+                    sender,
+                    text: msgText,
+                    time: timeStr,
+                    delivered: true,
+                    avatar: (m.viewerAvatar || m.avatar || '') as string || DEFAULT_USER_AVATAR,
+                    videoUrl: (m.videoUrl as string) || undefined,
+                  };
+                });
+
+                // Remove optimistic "You" messages that now have a matching API message
+                const apiTexts = new Set(newApiMessages.map(m => String(m.message || m.content || '')));
+                const merged = currentMessages.filter(m => {
+                  if (m.sender === 'You' && !m.delivered && apiTexts.has(m.text)) {
+                    return false; // remove optimistic duplicate
+                  }
+                  return true;
+                });
+
                 updated[mainEventIndex] = {
                   ...updated[mainEventIndex],
-                  messages: [...updated[mainEventIndex].messages, ...newMessages],
+                  messages: [...merged, ...convertedMessages],
                 };
                 return updated;
               });
             }
 
-            // Update participants from unique senders
+            // Update participants from all senders
             const senderMap = new Map<string, string>();
             chatMessages.forEach(m => {
-              if (!senderMap.has(m.sender)) {
-                senderMap.set(m.sender, m.avatar || `https://i.pravatar.cc/150?u=${m.sender}`);
+              const sender = (m.viewerUsername || m.sender || 'Unknown') as string;
+              if (!senderMap.has(sender)) {
+                senderMap.set(sender, ((m.viewerAvatar || m.avatar || '') as string) || DEFAULT_USER_AVATAR);
               }
             });
             setParticipants(
@@ -228,35 +653,121 @@ const App = () => {
     const interval = setInterval(pollChat, 5000);
     return () => clearInterval(interval);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mainEvent?.streamId, mainEventIndex, blockedUsers]);
+  }, [mainEvent?.streamId, mainEventIndex, blockedUsers, isAuthenticated]);
+
+  // Auto-scroll chat to bottom when new messages arrive
+  useEffect(() => {
+    const container = chatContainerRef.current;
+    if (!container) return;
+    // Only auto-scroll if user is near the bottom (within 100px)
+    const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100;
+    if (isNearBottom) {
+      container.scrollTop = container.scrollHeight;
+    }
+  }, [mainEvent?.messages?.length]);
 
   // Initialize (or reinitialize) HLS player when hlsManifestUrl becomes available or changes
   useEffect(() => {
     const hlsUrl = mainEvent?.hlsManifestUrl;
     const eventId = mainEvent?.id;
-    if (!hlsUrl || !eventId) return;
-
-    const videoEl = videoRefs.current[eventId];
-    if (!videoEl) return;
-
-    // Destroy existing HLS instance for this event
-    const existing = hlsInstancesRef.current[eventId];
-    if (existing) {
-      existing.destroy();
-      hlsInstancesRef.current[eventId] = null;
+    console.log(`[HLS Effect] Triggered — eventId=${eventId}, hlsUrl=${hlsUrl ? hlsUrl.substring(0, 60) + '...' : 'NULL'}`);
+    if (!hlsUrl || !eventId) {
+      console.log('[HLS Effect] Skipping — no hlsUrl or eventId');
+      return;
     }
 
-    if (Hls.isSupported()) {
-      const hls = new Hls({ enableWorker: false });
-      hls.loadSource(hlsUrl);
-      hls.attachMedia(videoEl);
-      hlsInstancesRef.current[eventId] = hls;
-    } else if (videoEl.canPlayType('application/vnd.apple.mpegurl')) {
-      // Safari — native HLS support
-      videoEl.src = hlsUrl;
-    }
+    let cancelled = false;
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const initHls = (attempt = 0) => {
+      if (cancelled) return;
+      const videoEl = videoRefs.current[eventId];
+      if (!videoEl) {
+        // Video element not mounted yet — retry up to 10 times (2s total)
+        if (attempt < 10) {
+          console.log(`[HLS Init] Video element not ready, retry ${attempt + 1}/10`);
+          retryTimer = setTimeout(() => initHls(attempt + 1), 200);
+        } else {
+          console.warn(`[HLS Init] Video element not found after 10 retries for ${eventId}`);
+        }
+        return;
+      }
+
+      console.log(`[HLS Init] Attaching HLS for ${eventId}: ${hlsUrl}`);
+
+      // Destroy existing HLS instance for this event
+      const existing = hlsInstancesRef.current[eventId];
+      if (existing) {
+        existing.destroy();
+        hlsInstancesRef.current[eventId] = null;
+      }
+
+      if (Hls.isSupported()) {
+        const hls = new Hls({
+          lowLatencyMode: true,
+          liveSyncDurationCount: 3,
+          liveMaxLatencyDurationCount: 6,
+          enableWorker: true,
+        });
+        hls.loadSource(hlsUrl);
+        hls.attachMedia(videoEl);
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          if (cancelled) return;
+          console.log(`[HLS Init] Manifest parsed, stream ready for ${eventId}`);
+          // Set volume from saved preference
+          const savedVol = volumeRef.current[eventId] ?? getSavedVolume();
+          videoEl.volume = savedVol / 100;
+          volumeRef.current[eventId] = savedVol;
+          // Must be muted for autoplay to work (browser policy)
+          videoEl.muted = true;
+          videoEl.play().then(() => {
+            if (cancelled) return;
+            console.log(`[HLS Init] Autoplay succeeded (muted) for ${eventId}`);
+            setPlaybackState(prev => ({
+              ...prev,
+              [eventId]: {
+                ...prev[eventId],
+                isPlaying: true,
+                isMuted: true,
+                volume: savedVol,
+              }
+            }));
+          }).catch(err => console.warn('[HLS Init] Autoplay blocked even when muted:', err));
+        });
+        hls.on(Hls.Events.ERROR, (_e, data) => {
+          if (!data.fatal) {
+            // Non-fatal: HLS.js recovers automatically (fragLoadError, bufferStalledError, etc.)
+            return;
+          }
+          console.error(`[HLS Fatal]`, data.type, data.details);
+          switch (data.type) {
+            case Hls.ErrorTypes.NETWORK_ERROR:
+              console.log('[HLS Recovery] Attempting network recovery...');
+              hls.startLoad();
+              break;
+            case Hls.ErrorTypes.MEDIA_ERROR:
+              console.log('[HLS Recovery] Attempting media recovery...');
+              hls.recoverMediaError();
+              break;
+            default:
+              console.error('[HLS Fatal] Unrecoverable error, destroying instance');
+              hls.destroy();
+              break;
+          }
+        });
+        hlsInstancesRef.current[eventId] = hls;
+      } else if (videoEl.canPlayType('application/vnd.apple.mpegurl')) {
+        // Safari — native HLS support
+        videoEl.src = hlsUrl;
+        videoEl.play().catch(err => console.log('[HLS Init] Safari autoplay blocked:', err));
+      }
+    };
+
+    initHls();
 
     return () => {
+      cancelled = true;
+      if (retryTimer) clearTimeout(retryTimer);
       const instance = hlsInstancesRef.current[eventId];
       if (instance) {
         instance.destroy();
@@ -284,7 +795,7 @@ const App = () => {
 
   // State for video playback - per event
   const [playbackState, setPlaybackState] = useState<{ [key: string]: { isPlaying: boolean; isMuted: boolean; progress: number; volume: number } }>({
-    "event-1": { isPlaying: false, isMuted: false, progress: 0, volume: getSavedVolume() }
+    [initialId]: { isPlaying: false, isMuted: false, progress: 0, volume: getSavedVolume() }
   });
 
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
@@ -292,10 +803,39 @@ const App = () => {
   const videoRefs = useRef<{ [key: string]: HTMLVideoElement | null }>({});
   // HLS.js instances - one per event
   const hlsInstancesRef = useRef<{ [key: string]: Hls | null }>({});
+  // Stable ref callback for main video — only stores element, no side effects
+  const mainVideoRefCallback = useCallback((el: HTMLVideoElement | null) => {
+    const id = events[mainEventIndex]?.id;
+    if (!id) return;
+    if (el) {
+      videoRefs.current[id] = el;
+      // DEBUG: Intercept muted changes to trace who sets them
+      if (!(el as any).__mutedIntercepted) {
+        (el as any).__mutedIntercepted = true;
+        let _muted = el.muted;
+        Object.defineProperty(el, 'muted', {
+          get() { return _muted; },
+          set(val: boolean) {
+            if (val !== _muted) {
+              console.warn(`[MUTED TRACE] muted changing from ${_muted} to ${val}`);
+              console.trace();
+            }
+            _muted = val;
+            // Apply to the real property via the prototype
+            (Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype, 'muted')?.set as ((v: boolean) => void) | undefined)?.call(el, val);
+          },
+          configurable: true,
+        });
+      }
+    } else {
+      delete videoRefs.current[id];
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [events[mainEventIndex]?.id]);
   // Ref to always have latest playback state in enforcement loop
   const playbackStateRef = useRef(playbackState);
   // Direct volume storage ref - bypasses React state for immediate access
-  const volumeRef = useRef<{ [key: string]: number }>({ "event-1": getSavedVolume() });
+  const volumeRef = useRef<{ [key: string]: number }>({ [initialId]: getSavedVolume() });
 
   // Update ref whenever playback state changes
   useEffect(() => {
@@ -341,13 +881,16 @@ const App = () => {
   const [isCopied, setIsCopied] = useState(false);
   const [showVideoMessageRecorder, setShowVideoMessageRecorder] = useState(false);
   // Message actions state
-  const [openMessageMenu, setOpenMessageMenu] = useState<number | null>(null);
-  const [editingMessageId, setEditingMessageId] = useState<number | null>(null);
+  const [openMessageMenu, setOpenMessageMenu] = useState<number | string | null>(null);
+  const [editingMessageId, setEditingMessageId] = useState<number | string | null>(null);
   const [editingMessageText, setEditingMessageText] = useState("");
-  const [replyingTo, setReplyingTo] = useState<{ id: number; sender: string; text: string } | null>(null);
+  const [replyingTo, setReplyingTo] = useState<{ id: number | string; sender: string; text: string } | null>(null);
   // Video controls visibility state
   const [showControls, setShowControls] = useState(true);
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // Chat auto-scroll and deduplication
+  const chatContainerRef = useRef<HTMLDivElement | null>(null);
+  const seenApiMessageIds = useRef<Set<string>>(new Set());
   // Mobile chat visibility state
   const [isChatOpen, setIsChatOpen] = useState(false);
   // Gift modal state
@@ -395,16 +938,26 @@ const App = () => {
       .catch(() => {});
   }, []);
 
-  // Giftable ceremony categories
+  // Stream type detection using explicit streamType field from API
+  // Fallback to heuristic if API doesn't return streamType yet
+  const getStreamType = (event: EventStream): 'entry_fee' | 'invite_token' | null =>
+    event.streamType || (event.streamFee && event.streamFee > 0 ? 'entry_fee' : event.hasInviteCode ? 'invite_token' : null);
+
+  const isEntryFeeStream = (event: EventStream) => getStreamType(event) === 'entry_fee';
+  const isInviteTokenStream = (event: EventStream) => getStreamType(event) === 'invite_token';
+
+  // Giftable ceremony categories (only applies to invite_token/client streams — never entry_fee)
   const giftableCategories = [
     'Wedding', 'Wedding Events', 'Birthday', 'Bridal Shower', 'Baby Shower',
     'Anniversary', 'Engagement', 'Graduation', 'Baptism', 'Christening'
   ];
 
-  // Check if an event is giftable based on its category
-  const isEventGiftable = (event: EventStream) => giftableCategories.some(cat =>
-    event.category.toLowerCase().includes(cat.toLowerCase())
-  );
+  // Check if an event is giftable: must NOT be entry_fee stream AND a giftable category
+  const isEventGiftable = (event: EventStream) =>
+    !isEntryFeeStream(event) &&
+    giftableCategories.some(cat =>
+      event.category.toLowerCase().includes(cat.toLowerCase())
+    );
 
   // Check if current main event is giftable (for backward compatibility)
   const isGiftableEvent = isEventGiftable(mainEvent);
@@ -455,6 +1008,10 @@ const App = () => {
 
   // Handle sending donation - open XentriPay modal
   const handleSendDonation = async () => {
+    if (!isAuthenticated) {
+      requireAuth(() => {});
+      return;
+    }
     if (!donationAmount || parseInt(donationAmount) <= 0) {
       alert('Please enter a donation amount');
       return;
@@ -505,6 +1062,10 @@ const App = () => {
 
   // Handle sending gift - open XentriPay modal
   const handleSendGift = async () => {
+    if (!isAuthenticated) {
+      requireAuth(() => {});
+      return;
+    }
     if (!giftAmount || parseInt(giftAmount) <= 0) {
       alert('Please enter a gift amount');
       return;
@@ -585,36 +1146,18 @@ const App = () => {
             video.play().catch(err => console.log(`Mini-player play error for ${event.id}:`, err));
           }
         } else {
-          // Main player: Enforce correct volume and mute state
+          // Main player: Only enforce volume and pause state — never touch muted
           if (state) {
-            // ALWAYS enforce volume from volumeRef (source of truth) - this is critical to prevent resets
             const savedVolume = volumeRef.current[event.id] ?? state.volume ?? 100;
             const targetVolume = savedVolume / 100;
-            // Set volume EVERY TIME to override any browser/DOM resets
-            if (video.volume !== targetVolume) {
-              console.log(`[Enforcement] Volume correction needed. Video: ${video.volume}, volumeRef: ${volumeRef.current[event.id]}, State: ${state.volume}, Setting to: ${targetVolume}`);
+            if (Math.abs(video.volume - targetVolume) > 0.01) {
               video.volume = targetVolume;
             }
 
-            // Enforce unmuted (unless user explicitly muted it)
-            // Only change mute if video is playing (when paused, we mute for safety)
-            if (state.isPlaying) {
-              if (!state.isMuted && video.muted) {
-                video.muted = false;
-              } else if (state.isMuted && !video.muted) {
-                video.muted = true;
-              }
-            }
-
-            // Respect pause state - ONLY pause if needed, don't auto-play
-            // (togglePlay handles playing, this loop only prevents unwanted playback)
+            // Only enforce pause — don't auto-play, let togglePlay handle that
             if (!state.isPlaying && !video.paused) {
               video.pause();
-              // Extra safety: mute when paused to prevent audio leaks
-              video.muted = true;
-              console.log(`[Enforcement] Pausing ${event.id} - state says paused but video is playing`);
             }
-            // Don't auto-resume here - let togglePlay handle it to avoid conflicts
           }
         }
       });
@@ -625,6 +1168,10 @@ const App = () => {
 
   // Handle sending a new message
   const handleSendMessage = async () => {
+    if (!isAuthenticated) {
+      requireAuth(() => {});
+      return;
+    }
     if (newMessage.trim()) {
       const messageText = replyingTo
         ? `@${replyingTo.sender} ${newMessage}`
@@ -640,7 +1187,7 @@ const App = () => {
           minute: "2-digit",
         }),
         delivered: false,
-        avatar: "https://i.pravatar.cc/150?img=1",
+        avatar: user?.profilePicture || DEFAULT_USER_AVATAR,
         replyTo: replyingTo ? { id: replyingTo.id, sender: replyingTo.sender } : undefined
       };
 
@@ -679,34 +1226,66 @@ const App = () => {
   };
 
   // Handle sending a video message
-  const handleSendVideoMessage = (videoBlob: Blob) => {
-    // Create a URL for the video blob to display in chat
-    const videoUrl = URL.createObjectURL(videoBlob);
+  const handleSendVideoMessage = async (videoBlob: Blob) => {
+    const eventId = events[mainEventIndex]?.id;
+    if (!eventId) return;
 
+    // Show optimistic local message while uploading
+    const videoUrl = URL.createObjectURL(videoBlob);
+    const tempId = Date.now();
     const updatedEvents = [...events];
     updatedEvents[mainEventIndex].messages = [
       ...updatedEvents[mainEventIndex].messages,
       {
-        id: updatedEvents[mainEventIndex].messages.length + 1,
+        id: tempId,
         sender: "You",
-        text: "[Video Message]",
+        text: "[Video Message - Sending...]",
         time: new Date().toLocaleTimeString([], {
           hour: "2-digit",
           minute: "2-digit",
         }),
         delivered: false,
-        avatar: "https://i.pravatar.cc/150?img=1",
-        videoUrl // Store video URL in message
+        avatar: user?.profilePicture || DEFAULT_USER_AVATAR,
+        videoUrl
       },
     ];
     setEvents(updatedEvents);
 
-    // Here you would typically upload the videoBlob to your server
-    console.log('Video message recorded:', videoBlob);
+    try {
+      const videoFile = new File([videoBlob], `video-message-${Date.now()}.webm`, { type: videoBlob.type || 'video/webm' });
+      const res = await sendStreamVideoChat(eventId, videoFile);
+      if (res.success) {
+        // Update the optimistic message to show as delivered
+        setEvents(prev => {
+          const updated = [...prev];
+          updated[mainEventIndex].messages = updated[mainEventIndex].messages.map(msg =>
+            msg.id === tempId ? { ...msg, text: "[Video Message]", delivered: true } : msg
+          );
+          return updated;
+        });
+      } else {
+        // Mark as failed
+        setEvents(prev => {
+          const updated = [...prev];
+          updated[mainEventIndex].messages = updated[mainEventIndex].messages.map(msg =>
+            msg.id === tempId ? { ...msg, text: "[Video Message - Failed to send]" } : msg
+          );
+          return updated;
+        });
+      }
+    } catch {
+      setEvents(prev => {
+        const updated = [...prev];
+        updated[mainEventIndex].messages = updated[mainEventIndex].messages.map(msg =>
+          msg.id === tempId ? { ...msg, text: "[Video Message - Failed to send]" } : msg
+        );
+        return updated;
+      });
+    }
   };
 
   // Handle delete message
-  const handleDeleteMessage = (messageId: number) => {
+  const handleDeleteMessage = (messageId: number | string) => {
     const updatedEvents = [...events];
     updatedEvents[mainEventIndex].messages = updatedEvents[mainEventIndex].messages.filter(
       msg => msg.id !== messageId
@@ -716,14 +1295,14 @@ const App = () => {
   };
 
   // Handle edit message
-  const handleEditMessage = (messageId: number, currentText: string) => {
+  const handleEditMessage = (messageId: number | string, currentText: string) => {
     setEditingMessageId(messageId);
     setEditingMessageText(currentText);
     setOpenMessageMenu(null);
   };
 
   // Handle save edited message
-  const handleSaveEditedMessage = (messageId: number) => {
+  const handleSaveEditedMessage = (messageId: number | string) => {
     if (editingMessageText.trim()) {
       const updatedEvents = [...events];
       const messageIndex = updatedEvents[mainEventIndex].messages.findIndex(
@@ -754,7 +1333,7 @@ const App = () => {
   };
 
   // Handle reply to message
-  const handleReplyToMessage = (messageId: number, sender: string, text: string) => {
+  const handleReplyToMessage = (messageId: number | string, sender: string, text: string) => {
     setReplyingTo({ id: messageId, sender, text });
     setOpenMessageMenu(null);
     // Focus on the message input
@@ -773,73 +1352,25 @@ const App = () => {
   const togglePlay = (eventId: string) => {
     const video = videoRefs.current[eventId];
     if (video) {
-      console.log(`[togglePlay] ===== TOGGLE PLAY START =====`);
-
-      // Read current playing state from React state (for UI consistency)
       const currentState = playbackState[eventId];
-      const currentRefState = playbackStateRef.current[eventId];
       const willBePlaying = !currentState?.isPlaying;
 
-      // CRITICAL: Read volume from volumeRef FIRST (direct storage, always current)
-      const preservedVolume = volumeRef.current[eventId] ?? currentRefState?.volume ?? currentState?.volume ?? 100;
-      console.log(`[togglePlay] Volume sources - volumeRef: ${volumeRef.current[eventId]}, playbackStateRef: ${currentRefState?.volume}, state: ${currentState?.volume}, using: ${preservedVolume}`);
-
-      // STEP 1: Update volumeRef to ensure it's preserved
-      volumeRef.current[eventId] = preservedVolume;
-
-      // STEP 2: Update the playbackStateRef (before state) - critical for immediate reads
-      playbackStateRef.current = {
-        ...playbackStateRef.current,
-        [eventId]: {
-          ...currentRefState,
-          isPlaying: willBePlaying,
-          volume: preservedVolume // Explicitly preserve volume
-        }
-      };
-      console.log(`[togglePlay] Updated playbackStateRef with volume:`, playbackStateRef.current[eventId]?.volume);
-
-      // STEP 3: Update React state (async)
+      // Update state — only isPlaying, never touch isMuted or volume
       setPlaybackState(prev => ({
         ...prev,
-        [eventId]: {
-          ...prev[eventId],
-          isPlaying: willBePlaying,
-          volume: preservedVolume // Explicitly preserve volume
-        }
+        [eventId]: { ...prev[eventId], isPlaying: willBePlaying }
       }));
+      playbackStateRef.current = {
+        ...playbackStateRef.current,
+        [eventId]: { ...playbackStateRef.current[eventId], isPlaying: willBePlaying }
+      };
 
-      // STEP 4: Apply to main video only
+      // Only play or pause — do not touch muted or volume
       if (willBePlaying) {
-        // When playing, restore main player's volume and mute state
-        console.log(`[togglePlay] PLAYING - setting video.volume to:`, preservedVolume / 100);
-        video.muted = currentRefState?.isMuted || false;
-        video.volume = preservedVolume / 100;
-        console.log(`[togglePlay] Video element volume is now:`, video.volume);
         video.play().catch(err => console.log('Play error:', err));
       } else {
-        // When pausing main player, mute it to prevent audio leaks
-        // But PRESERVE the volume level in state AND DOM
-        console.log(`[togglePlay] PAUSING - setting video.volume to:`, preservedVolume / 100);
-        video.muted = true;
-        video.volume = preservedVolume / 100; // Keep volume in DOM even when muted
-        console.log(`[togglePlay] Video element volume is now:`, video.volume);
         video.pause();
       }
-
-      // Ensure ALL mini-players continue playing (muted)
-      events.forEach((event, idx) => {
-        if (idx !== mainEventIndex) {
-          const miniVideo = videoRefs.current[event.id];
-          if (miniVideo) {
-            miniVideo.muted = true;
-            miniVideo.volume = 0;
-            // Keep mini-players playing
-            if (miniVideo.paused) {
-              miniVideo.play().catch(err => console.log('Mini play error:', err));
-            }
-          }
-        }
-      });
 
       console.log(`[togglePlay] ===== TOGGLE PLAY END =====`);
     }
@@ -851,14 +1382,18 @@ const App = () => {
     if (video) {
       // Only allow mute toggle on main player
       const mainEventId = events[mainEventIndex]?.id;
-      if (eventId !== mainEventId) {
-        // Mini-players must always be muted
-        return;
-      }
+      if (eventId !== mainEventId) return;
 
       const currentState = playbackState[eventId];
       const newMutedState = !currentState?.isMuted;
       video.muted = newMutedState;
+
+      // Update ref immediately so togglePlay reads correct value
+      playbackStateRef.current = {
+        ...playbackStateRef.current,
+        [eventId]: { ...playbackStateRef.current[eventId], isMuted: newMutedState }
+      };
+
       setPlaybackState(prev => ({
         ...prev,
         [eventId]: { ...prev[eventId], isMuted: newMutedState }
@@ -905,12 +1440,8 @@ const App = () => {
         return newState;
       });
 
-      // STEP 5: Update mute state
-      if (newVolume === 0) {
-        video.muted = true;
-      } else if (playbackStateRef.current[eventId]?.isMuted) {
-        video.muted = false;
-      }
+      // STEP 5: Sync mute with volume — volume > 0 means unmute, volume = 0 means mute
+      video.muted = newVolume === 0;
 
       console.log(`[handleVolumeChange] ===== VOLUME CHANGE END =====`);
     }
@@ -935,35 +1466,35 @@ const App = () => {
         const handleUpdate = () => handleTimeUpdate(mainEvent.id);
 
         const handlePlay = () => {
-          console.log(`[handlePlay Listener] Play event on main video`);
-          // When main plays, update all video states - preserve volume from volumeRef
-          const newStates: { [key: string]: any } = {};
-          events.forEach(event => {
-            const preservedVolume = volumeRef.current[event.id] ?? playbackStateRef.current[event.id]?.volume ?? 100;
-            newStates[event.id] = {
-              ...playbackState[event.id],
-              isPlaying: true,
-              volume: preservedVolume // CRITICAL: preserve from volumeRef
-            };
-            console.log(`[handlePlay Listener] Event ${event.id} volume: ${preservedVolume}`);
+          // Sync isPlaying + read actual muted from DOM so icon matches reality
+          const mainVid = videoRefs.current[mainEvent.id];
+          const actualMuted = mainVid ? mainVid.muted : true;
+          setPlaybackState(prev => {
+            const updated = { ...prev };
+            events.forEach(event => {
+              if (event.id === mainEvent.id) {
+                updated[event.id] = { ...prev[event.id], isPlaying: true, isMuted: actualMuted };
+              } else {
+                updated[event.id] = { ...prev[event.id], isPlaying: true };
+              }
+            });
+            return updated;
           });
-          setPlaybackState(prev => ({ ...prev, ...newStates }));
+          playbackStateRef.current = {
+            ...playbackStateRef.current,
+            [mainEvent.id]: { ...playbackStateRef.current[mainEvent.id], isPlaying: true, isMuted: actualMuted }
+          };
         };
 
         const handlePause = () => {
-          console.log(`[handlePause Listener] Pause event on main video`);
-          // When main pauses, pause ALL videos - preserve volume from volumeRef
-          const newStates: { [key: string]: any } = {};
-          events.forEach(event => {
-            const preservedVolume = volumeRef.current[event.id] ?? playbackStateRef.current[event.id]?.volume ?? 100;
-            newStates[event.id] = {
-              ...playbackState[event.id],
-              isPlaying: false,
-              volume: preservedVolume // CRITICAL: preserve from volumeRef
-            };
-            console.log(`[handlePause Listener] Event ${event.id} volume: ${preservedVolume}`);
+          // Only update isPlaying — never touch isMuted or volume
+          setPlaybackState(prev => {
+            const updated = { ...prev };
+            events.forEach(event => {
+              updated[event.id] = { ...prev[event.id], isPlaying: false };
+            });
+            return updated;
           });
-          setPlaybackState(prev => ({ ...prev, ...newStates }));
 
           // Actually pause all video elements
           events.forEach(event => {
@@ -1001,18 +1532,14 @@ const App = () => {
       const mainVideo = videoRefs.current[mainEvent.id];
       const mainState = playbackState[mainEvent.id];
 
-      // Apply state to main video
+      // Apply state to main video — only play/pause and volume, never muted
       if (mainVideo && mainState) {
-        mainVideo.muted = mainState.isMuted || false;
         mainVideo.volume = (mainState.volume ?? 100) / 100;
 
         if (mainState.isPlaying && mainVideo.paused) {
           mainVideo.play().catch(err => console.log('Main play error:', err));
         } else if (!mainState.isPlaying && !mainVideo.paused) {
-          mainVideo.muted = true; // Mute when pausing to prevent audio leaks
           mainVideo.pause();
-          // Keep volume in DOM even when paused
-          mainVideo.volume = (mainState.volume ?? 100) / 100;
         }
       }
 
@@ -1032,15 +1559,11 @@ const App = () => {
             video.play().catch(err => console.log(`[Sync] Mini play error for ${event.id}:`, err));
           }
         } else {
-          // Main player: Enforce pause state
+          // Main player: Only enforce play/pause — never touch muted
           if (state) {
             if (!state.isPlaying && !video.paused) {
-              video.muted = true; // Mute when pausing to prevent audio leaks
               video.pause();
-              console.log(`[Sync] Paused ${event.id}`);
             } else if (state.isPlaying && video.paused) {
-              // Restore proper mute state when playing
-              video.muted = state.isMuted || false;
               video.play().catch(err => console.log(`[Sync] Play error for ${event.id}:`, err));
             }
           }
@@ -2818,116 +3341,241 @@ const App = () => {
                 pointerEvents: isSwapping ? 'none' : 'auto',
                 borderRadius: '16px',
               }}>
+
+              {/* Stream Access Gate */}
+              {!streamAccessGranted && (
+                <div style={{
+                  position: 'absolute',
+                  inset: 0,
+                  zIndex: 50,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: 'rgba(0, 0, 0, 0.92)',
+                  backdropFilter: 'blur(8px)',
+                  borderRadius: '16px',
+                  padding: '32px',
+                  textAlign: 'center',
+                  gap: '16px',
+                }}>
+                  {/* ── Entry Fee Form (coordinator streams) ── */}
+                  {isEntryFeeStream(mainEvent) ? (
+                    entryFeePaymentPending ? (
+                      /* Payment pending — waiting for mobile money confirmation */
+                      <>
+                        <div style={{
+                          width: '48px', height: '48px', border: '4px solid #03969c',
+                          borderTopColor: 'transparent', borderRadius: '50%',
+                          animation: 'spin 1s linear infinite'
+                        }} />
+                        <h3 style={{ color: '#fff', fontSize: '20px', fontWeight: '600', margin: 0 }}>
+                          Confirming Payment
+                        </h3>
+                        <p style={{ color: '#adadb8', fontSize: '14px', margin: 0, maxWidth: '320px', lineHeight: '1.5' }}>
+                          {entryFeePaymentMessage}
+                        </p>
+                        <p style={{ color: '#71717a', fontSize: '12px', margin: 0 }}>
+                          This may take a moment. Do not close this page.
+                        </p>
+                        {entryFeeError && (
+                          <p style={{ color: '#EF4444', fontSize: '13px', margin: 0 }}>{entryFeeError}</p>
+                        )}
+                      </>
+                    ) : (
+                    <>
+                      <i className="bi bi-lock-fill" style={{ fontSize: '42px', color: '#03969c' }}></i>
+                      <h3 style={{ color: '#fff', fontSize: '20px', fontWeight: '600', margin: 0 }}>
+                        Paid Stream
+                      </h3>
+                      <p style={{ color: '#adadb8', fontSize: '14px', margin: 0 }}>
+                        Entry fee:{' '}
+                        <strong style={{ color: '#fff', fontSize: '18px' }}>
+                          {mainEvent.streamFee?.toLocaleString()}{' '}
+                          {mainEvent.streamFeeCurrencyAbbreviation || mainEvent.streamFeeCurrencySymbol || ''}
+                        </strong>
+                      </p>
+
+                      <div style={{ width: '100%', maxWidth: '340px', display: 'flex', flexDirection: 'column', gap: '10px', textAlign: 'left' }}>
+                        {/* Payment method selector */}
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          {(['mtn', 'airtel', 'card'] as const).map(method => (
+                            <button
+                              key={method}
+                              onClick={() => setEntryFeePaymentMethod(method)}
+                              style={{
+                                flex: 1,
+                                padding: '10px 8px',
+                                backgroundColor: entryFeePaymentMethod === method ? 'rgba(3, 150, 156, 0.2)' : '#27272a',
+                                border: entryFeePaymentMethod === method ? '2px solid #03969c' : '1px solid rgba(255, 255, 255, 0.15)',
+                                borderRadius: '10px',
+                                color: entryFeePaymentMethod === method ? '#03969c' : '#adadb8',
+                                fontSize: '12px',
+                                fontWeight: '600',
+                                cursor: 'pointer',
+                                textTransform: 'uppercase',
+                                transition: 'all 0.2s',
+                              }}
+                            >
+                              {method === 'mtn' ? 'MTN' : method === 'airtel' ? 'Airtel' : 'Card'}
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Phone number (for mobile money) */}
+                        {entryFeePaymentMethod && entryFeePaymentMethod !== 'card' && (
+                          <input
+                            type="tel"
+                            value={entryFeePhone}
+                            onChange={(e) => setEntryFeePhone(e.target.value)}
+                            placeholder="Phone number (e.g. 250788123456)"
+                            style={{
+                              width: '100%',
+                              padding: '12px 16px',
+                              backgroundColor: '#27272a',
+                              border: '1px solid rgba(255, 255, 255, 0.15)',
+                              borderRadius: '10px',
+                              color: '#fff',
+                              fontSize: '14px',
+                              outline: 'none',
+                              boxSizing: 'border-box',
+                            }}
+                          />
+                        )}
+
+                        {entryFeeError && (
+                          <p style={{ color: '#EF4444', fontSize: '13px', margin: 0, textAlign: 'center' }}>{entryFeeError}</p>
+                        )}
+
+                        {/* Submit */}
+                        <button
+                          onClick={handleEntryFeeSubmit}
+                          disabled={entryFeeLoading || !entryFeePaymentMethod || (entryFeePaymentMethod !== 'card' && !entryFeePhone.trim())}
+                          style={{
+                            width: '100%',
+                            padding: '14px',
+                            background: entryFeeLoading ? '#3f3f46' : 'linear-gradient(135deg, #03969c 0%, #026d72 100%)',
+                            border: 'none',
+                            borderRadius: '12px',
+                            color: entryFeeLoading ? '#71717a' : '#fff',
+                            fontSize: '15px',
+                            fontWeight: '600',
+                            cursor: entryFeeLoading ? 'not-allowed' : 'pointer',
+                            transition: 'all 0.3s ease',
+                            opacity: !entryFeePaymentMethod ? 0.5 : 1,
+                          }}
+                        >
+                          {entryFeeLoading ? 'Processing...' : (
+                            <>
+                              <i className="bi bi-credit-card-fill" style={{ marginRight: '8px' }}></i>
+                              Pay & Watch
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </>
+                    )
+                  ) : isInviteTokenStream(mainEvent) ? (
+                    /* ── Invite Token Form (client streams) ── */
+                    <>
+                      <i className="bi bi-ticket-perforated-fill" style={{ fontSize: '42px', color: '#03969c' }}></i>
+                      <h3 style={{ color: '#fff', fontSize: '20px', fontWeight: '600', margin: 0 }}>
+                        Join Stream
+                      </h3>
+                      <p style={{ color: '#adadb8', fontSize: '14px', margin: 0, maxWidth: '320px' }}>
+                        Enter your invite token to start watching.
+                      </p>
+
+                      <div style={{ display: 'flex', gap: '8px', width: '100%', maxWidth: '320px' }}>
+                        <input
+                          type="text"
+                          value={inviteTokenInput}
+                          onChange={(e) => setInviteTokenInput(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleInviteTokenSubmit()}
+                          placeholder="Enter invite token"
+                          style={{
+                            flex: 1,
+                            padding: '12px 16px',
+                            backgroundColor: '#27272a',
+                            border: '1px solid rgba(255, 255, 255, 0.15)',
+                            borderRadius: '10px',
+                            color: '#fff',
+                            fontSize: '14px',
+                            outline: 'none',
+                          }}
+                        />
+                        <button
+                          onClick={handleInviteTokenSubmit}
+                          disabled={inviteTokenLoading || !inviteTokenInput.trim()}
+                          style={{
+                            padding: '12px 20px',
+                            background: (inviteTokenLoading || !inviteTokenInput.trim())
+                              ? '#3f3f46'
+                              : 'linear-gradient(135deg, #03969c 0%, #026d72 100%)',
+                            border: 'none',
+                            borderRadius: '10px',
+                            color: (inviteTokenLoading || !inviteTokenInput.trim()) ? '#71717a' : '#fff',
+                            fontSize: '14px',
+                            fontWeight: '600',
+                            cursor: (inviteTokenLoading || !inviteTokenInput.trim()) ? 'not-allowed' : 'pointer',
+                          }}
+                        >
+                          {inviteTokenLoading ? 'Joining...' : 'Join'}
+                        </button>
+                      </div>
+                      {inviteTokenError && (
+                        <p style={{ color: '#EF4444', fontSize: '13px', margin: 0 }}>{inviteTokenError}</p>
+                      )}
+                    </>
+                  ) : (
+                    /* ── Loading / verifying state ── */
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#adadb8' }}>
+                      <div style={{
+                        width: '24px', height: '24px', border: '3px solid #03969c',
+                        borderTopColor: 'transparent', borderRadius: '50%',
+                        animation: 'spin 1s linear infinite'
+                      }} />
+                      Loading stream...
+                    </div>
+                  )}
+                </div>
+              )}
+
               <video
                 key={mainEvent.id}
-                ref={(el) => {
-                  if (el) {
-                    videoRefs.current[mainEvent.id] = el;
-                    console.log(`[Video Ref] ===== VIDEO ELEMENT MOUNTED =====`);
-
-                    // PRIORITY ORDER for volume:
-                    // 1. volumeRef (direct storage - current session adjustments)
-                    // 2. playbackStateRef (ref storage)
-                    // 3. localStorage (from previous session)
-                    // 4. Default 100
-
-                    const currentState = playbackStateRef.current[mainEvent.id];
-                    const savedVolume = getSavedVolume();
-
-                    let volumeToSet = 100;
-
-                    if (volumeRef.current[mainEvent.id] !== undefined) {
-                      // HIGHEST PRIORITY: Use volumeRef (current session's adjustments)
-                      volumeToSet = volumeRef.current[mainEvent.id];
-                      console.log(`[Video Ref] Using volumeRef (CURRENT ADJUSTMENT): ${volumeToSet}`);
-                    } else if (currentState && currentState.volume !== undefined) {
-                      // Use playbackStateRef
-                      volumeToSet = currentState.volume;
-                      // Also update volumeRef to match
-                      volumeRef.current[mainEvent.id] = volumeToSet;
-                      console.log(`[Video Ref] Using playbackStateRef: ${volumeToSet}`);
-                    } else {
-                      // FALLBACK: Use saved volume from localStorage
-                      volumeToSet = savedVolume;
-                      volumeRef.current[mainEvent.id] = volumeToSet;
-                      console.log(`[Video Ref] Using localStorage: ${volumeToSet}`);
-                    }
-
-                    el.volume = volumeToSet / 100;
-                    el.muted = currentState?.isMuted || false;
-                    console.log(`[Video Ref] Set video element volume to: ${volumeToSet} (el.volume=${el.volume})`);
-                    console.log(`[Video Ref] ===== VIDEO ELEMENT MOUNT COMPLETE =====`);
-                  } else {
-                    // Clean up HLS instance and ref when element unmounts
-                    const hls = hlsInstancesRef.current[mainEvent.id];
-                    if (hls) {
-                      hls.destroy();
-                      hlsInstancesRef.current[mainEvent.id] = null;
-                    }
-                    delete videoRefs.current[mainEvent.id];
-                  }
-                }}
+                ref={mainVideoRefCallback}
+                playsInline
+                muted
                 style={{
                   width: '100%',
                   height: '100%',
                   objectFit: 'contain',
                   pointerEvents: 'none'
                 }}
-                muted={mainState.isMuted}
                 onPlay={() => {
-                  console.log(`[onPlay Event] Video play event fired`);
-                  // CRITICAL: Preserve volume from volumeRef (source of truth)
-                  const currentVolume = volumeRef.current[mainEvent.id] ?? playbackStateRef.current[mainEvent.id]?.volume ?? 100;
-                  console.log(`[onPlay Event] Preserving volume: ${currentVolume}`);
-
+                  const vid = videoRefs.current[mainEvent.id];
+                  const actualMuted = vid ? vid.muted : true;
                   setPlaybackState(prev => ({
                     ...prev,
-                    [mainEvent.id]: {
-                      ...prev[mainEvent.id],
-                      isPlaying: true,
-                      volume: currentVolume // Use volumeRef as source
-                    }
+                    [mainEvent.id]: { ...prev[mainEvent.id], isPlaying: true, isMuted: actualMuted }
                   }));
-
-                  // Update refs immediately
-                  volumeRef.current[mainEvent.id] = currentVolume;
                   playbackStateRef.current = {
                     ...playbackStateRef.current,
-                    [mainEvent.id]: {
-                      ...playbackStateRef.current[mainEvent.id],
-                      isPlaying: true,
-                      volume: currentVolume
-                    }
+                    [mainEvent.id]: { ...playbackStateRef.current[mainEvent.id], isPlaying: true, isMuted: actualMuted }
                   };
                 }}
                 onPause={() => {
-                  console.log(`[onPause Event] Video pause event fired`);
-                  // CRITICAL: Preserve volume from volumeRef (source of truth)
-                  const currentVolume = volumeRef.current[mainEvent.id] ?? playbackStateRef.current[mainEvent.id]?.volume ?? 100;
-                  console.log(`[onPause Event] Preserving volume: ${currentVolume}`);
-
                   setPlaybackState(prev => ({
                     ...prev,
-                    [mainEvent.id]: {
-                      ...prev[mainEvent.id],
-                      isPlaying: false,
-                      volume: currentVolume // Use volumeRef as source
-                    }
+                    [mainEvent.id]: { ...prev[mainEvent.id], isPlaying: false }
                   }));
-
-                  // Update refs immediately
-                  volumeRef.current[mainEvent.id] = currentVolume;
                   playbackStateRef.current = {
                     ...playbackStateRef.current,
-                    [mainEvent.id]: {
-                      ...playbackStateRef.current[mainEvent.id],
-                      isPlaying: false,
-                      volume: currentVolume
-                    }
+                    [mainEvent.id]: { ...playbackStateRef.current[mainEvent.id], isPlaying: false }
                   };
                 }}
               >
-                {!mainEvent.hlsManifestUrl && <source src={mainEvent.videoSrc} type="video/mp4" />}
+                {!mainEvent.hlsManifestUrl && mainEvent.videoSrc && <source src={mainEvent.videoSrc} type="video/mp4" />}
               </video>
 
               {/* Stream starting overlay — ONGOING but HLS URL not yet available */}
@@ -2956,6 +3604,75 @@ const App = () => {
                   </p>
                   <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '13px', margin: 0 }}>
                     The page will update automatically
+                  </p>
+                </div>
+              )}
+
+              {/* Stream paused overlay — photographer stopped, will resume */}
+              {streamOverlay === 'paused' && (
+                <div style={{
+                  position: 'absolute',
+                  inset: 0,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: 'rgba(0,0,0,0.8)',
+                  gap: '12px',
+                  zIndex: 10,
+                }}>
+                  <div style={{ fontSize: '44px' }}>⏸️</div>
+                  <p style={{ color: '#fff', fontSize: '16px', fontWeight: '600', margin: 0 }}>
+                    Stream paused
+                  </p>
+                  <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '13px', margin: 0 }}>
+                    The stream will resume shortly — stay on this page
+                  </p>
+                </div>
+              )}
+
+              {/* Stream ended overlay */}
+              {streamOverlay === 'ended' && (
+                <div style={{
+                  position: 'absolute',
+                  inset: 0,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: 'rgba(0,0,0,0.85)',
+                  gap: '12px',
+                  zIndex: 10,
+                }}>
+                  <div style={{ fontSize: '44px' }}>📺</div>
+                  <p style={{ color: '#fff', fontSize: '18px', fontWeight: '700', margin: 0 }}>
+                    Stream has ended
+                  </p>
+                  <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '13px', margin: 0 }}>
+                    Thank you for watching
+                  </p>
+                </div>
+              )}
+
+              {/* Scheduled overlay — stream not yet started */}
+              {streamOverlay === 'scheduled' && !mainEvent.hlsManifestUrl && (
+                <div style={{
+                  position: 'absolute',
+                  inset: 0,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: 'rgba(0,0,0,0.75)',
+                  gap: '12px',
+                  zIndex: 9,
+                }}>
+                  <div style={{ fontSize: '44px' }}>📡</div>
+                  <p style={{ color: '#fff', fontSize: '16px', fontWeight: '600', margin: 0 }}>
+                    Live stream coming soon
+                  </p>
+                  <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '13px', margin: 0 }}>
+                    The stream will start automatically — stay on this page
                   </p>
                 </div>
               )}
@@ -4243,18 +4960,36 @@ const App = () => {
                 marginBottom: '12px',
                 flexWrap: 'wrap'
               }}>
-                <img
-                  src="https://i.pravatar.cc/150?img=68"
-                  alt="Photographer"
-                  style={{
+                {mainEvent.photographerAvatar ? (
+                  <img
+                    src={mainEvent.photographerAvatar}
+                    alt="Photographer"
+                    style={{
+                      width: 'clamp(40px, 10vw, 48px)',
+                      height: 'clamp(40px, 10vw, 48px)',
+                      borderRadius: '50%',
+                      objectFit: 'cover',
+                      border: '2px solid #03969c',
+                      flexShrink: 0
+                    }}
+                  />
+                ) : (
+                  <div style={{
                     width: 'clamp(40px, 10vw, 48px)',
                     height: 'clamp(40px, 10vw, 48px)',
                     borderRadius: '50%',
-                    objectFit: 'cover',
                     border: '2px solid #03969c',
-                    flexShrink: 0
-                  }}
-                />
+                    flexShrink: 0,
+                    backgroundColor: '#2d2d35',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#adadb8',
+                    fontSize: 'clamp(18px, 5vw, 22px)',
+                  }}>
+                    <i className="bi bi-person-fill" />
+                  </div>
+                )}
                 <div style={{ flex: 1, minWidth: '150px' }}>
                   <h3 className="photographer-name" style={{
                     fontSize: 'clamp(13px, 3.5vw, 15px)',
@@ -4508,7 +5243,7 @@ const App = () => {
             </div>
 
             {/* Messages List */}
-            <div className="custom-scrollbar" style={{
+            <div ref={chatContainerRef} className="custom-scrollbar" style={{
               flex: 1,
               padding: '12px',
               overflowY: 'auto',
@@ -4529,8 +5264,9 @@ const App = () => {
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)'}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
                   <img
-                    src={message.avatar}
+                    src={message.avatar || DEFAULT_USER_AVATAR}
                     alt={message.sender}
+                    onError={(e) => { (e.target as HTMLImageElement).src = DEFAULT_USER_AVATAR; }}
                     style={{
                       width: '32px',
                       height: '32px',
@@ -4873,55 +5609,73 @@ const App = () => {
                 </div>
               )}
 
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                backgroundColor: '#2f2f35',
-                borderRadius: '16px',
-                padding: '8px 12px',
-                gap: '8px'
-              }}>
-                <input
-                  type="text"
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-                  placeholder={replyingTo ? `Reply to @${replyingTo.sender}...` : "Send a message..."}
-                  style={{
-                    flex: 1,
-                    backgroundColor: 'transparent',
-                    border: 'none',
-                    outline: 'none',
-                    fontSize: '13px',
-                    color: '#efeff1'
-                  }}
-                />
+              {isAuthenticated ? (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  backgroundColor: '#2f2f35',
+                  borderRadius: '16px',
+                  padding: '8px 12px',
+                  gap: '8px'
+                }}>
+                  <input
+                    type="text"
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
+                    placeholder={replyingTo ? `Reply to @${replyingTo.sender}...` : "Send a message..."}
+                    style={{
+                      flex: 1,
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      outline: 'none',
+                      fontSize: '13px',
+                      color: '#efeff1'
+                    }}
+                  />
+                  <button
+                    onClick={handleSendMessage}
+                    style={{
+                      color: newMessage.trim() ? '#03969c' : '#adadb8',
+                      background: 'transparent',
+                      border: 'none',
+                      cursor: newMessage.trim() ? 'pointer' : 'default',
+                      padding: '4px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      fontSize: '18px',
+                      transition: 'all 0.2s'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (newMessage.trim()) e.currentTarget.style.transform = 'scale(1.1)';
+                    }}
+                    onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                    disabled={!newMessage.trim()}
+                  >
+                    <i className="bi bi-send-fill"></i>
+                  </button>
+                </div>
+              ) : (
                 <button
-                  onClick={handleSendMessage}
+                  onClick={() => { setAuthStep('login'); setAuthError(''); setShowAuthModal(true); }}
                   style={{
-                    color: newMessage.trim() ? '#03969c' : '#adadb8',
-                    background: 'transparent',
-                    border: 'none',
-                    cursor: newMessage.trim() ? 'pointer' : 'default',
-                    padding: '4px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    fontSize: '18px',
-                    transition: 'all 0.2s'
+                    width: '100%',
+                    backgroundColor: '#2f2f35',
+                    border: '1px solid #4a5568',
+                    borderRadius: '16px',
+                    padding: '12px',
+                    color: '#a0aec0',
+                    cursor: 'pointer',
+                    fontSize: '13px',
                   }}
-                  onMouseEnter={(e) => {
-                    if (newMessage.trim()) e.currentTarget.style.transform = 'scale(1.1)';
-                  }}
-                  onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                  disabled={!newMessage.trim()}
                 >
-                  <i className="bi bi-send-fill"></i>
+                  Log in to chat
                 </button>
-              </div>
+              )}
 
               {/* Send Video Message Button */}
               <button
-                onClick={() => setShowVideoMessageRecorder(true)}
+                onClick={() => isAuthenticated ? setShowVideoMessageRecorder(true) : requireAuth(() => {})}
                 style={{
                   width: '100%',
                   marginTop: '12px',
@@ -6353,6 +7107,140 @@ const App = () => {
         paymentType={xentriPayType}
         eventId={xentriPayEventId}
       />
+
+      {/* ── VIEWER AUTH MODAL ── */}
+      {showAuthModal && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '32px 16px', background: 'rgba(0,0,0,0.82)', backdropFilter: 'blur(6px)', overflowY: 'auto' }}>
+          <div style={{ width: '100%', maxWidth: 520, background: 'linear-gradient(145deg, #141418 0%, #1a1a24 100%)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 20, padding: '32px 28px', boxShadow: '0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(3,150,156,0.15)', position: 'relative', margin: 'auto' }}>
+
+            {/* Close button */}
+            <button onClick={() => setShowAuthModal(false)} style={{ position: 'absolute', top: 14, right: 14, width: 32, height: 32, borderRadius: '50%', background: 'rgba(255,255,255,0.07)', border: 'none', color: '#9ca3af', fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <i className="bi bi-x-lg"></i>
+            </button>
+
+            {/* Header */}
+            <div style={{ textAlign: 'center', marginBottom: 24 }}>
+              <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'linear-gradient(135deg, #03969c, #027a7f)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
+                <i className={authStep === 'otp' ? 'bi bi-shield-check' : 'bi bi-chat-dots-fill'} style={{ fontSize: 22, color: '#fff' }}></i>
+              </div>
+              <h2 style={{ color: '#fff', fontSize: 20, fontWeight: 700, margin: '0 0 4px' }}>
+                {authStep === 'otp' ? 'Verify Your Email' : 'Sign in to Interact'}
+              </h2>
+              <p style={{ color: '#6b7280', fontSize: 13, margin: 0 }}>
+                {authStep === 'otp' ? 'Enter the code sent to your email' : 'Log in to send messages, gifts, and more'}
+              </p>
+            </div>
+
+            {/* Tab switcher */}
+            {authStep !== 'otp' && (
+              <div style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: 3, marginBottom: 20 }}>
+                {(['login', 'signup'] as const).map(tab => (
+                  <button key={tab} onClick={() => { setAuthStep(tab); setAuthError(''); }} style={{ flex: 1, padding: '8px 0', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 600, transition: 'all 0.2s', background: authStep === tab ? 'linear-gradient(135deg, #03969c, #027a7f)' : 'transparent', color: authStep === tab ? '#fff' : '#6b7280' }}>
+                    {tab === 'login' ? 'Log In' : 'Sign Up'}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Error */}
+            {authError && (
+              <div style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.35)', borderRadius: 8, padding: '10px 14px', marginBottom: 16, display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                <i className="bi bi-exclamation-triangle-fill" style={{ color: '#ef4444', fontSize: 14, marginTop: 1, flexShrink: 0 }}></i>
+                <span style={{ color: '#fca5a5', fontSize: 13 }}>{authError}</span>
+              </div>
+            )}
+
+            {/* LOGIN FORM */}
+            {authStep === 'login' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div>
+                  <label style={{ display: 'block', color: '#d1d5db', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Email</label>
+                  <input type="email" value={loginEmail} onChange={e => setLoginEmail(e.target.value)} placeholder="your@email.com" onKeyDown={e => e.key === 'Enter' && handleAuthLogin()} style={{ width: '100%', padding: '11px 14px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 9, color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} onFocus={e => { e.currentTarget.style.borderColor = '#03969c'; }} onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', color: '#d1d5db', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Password</label>
+                  <input type="password" value={loginPassword} onChange={e => setLoginPassword(e.target.value)} placeholder="••••••••" onKeyDown={e => e.key === 'Enter' && handleAuthLogin()} style={{ width: '100%', padding: '11px 14px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 9, color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} onFocus={e => { e.currentTarget.style.borderColor = '#03969c'; }} onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }} />
+                </div>
+                <button onClick={handleAuthLogin} disabled={authLoading || googleLoading} style={{ width: '100%', padding: '13px', background: authLoading ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, #03969c, #027a7f)', border: 'none', borderRadius: 10, color: '#fff', fontSize: 15, fontWeight: 700, cursor: authLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 4 }}>
+                  {authLoading ? <><div style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} /> Signing in…</> : <><i className="bi bi-box-arrow-in-right"></i> Log In</>}
+                </button>
+                {GOOGLE_CLIENT_ID && (
+                  <>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '2px 0' }}>
+                      <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.1)' }} />
+                      <span style={{ color: '#6b7280', fontSize: 12 }}>or</span>
+                      <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.1)' }} />
+                    </div>
+                    <GoogleAuthButton onSuccess={handleGoogleSuccess} onError={handleGoogleError} loading={googleLoading || authLoading} label="Continue with Google" />
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* SIGNUP FORM */}
+            {authStep === 'signup' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div>
+                    <label style={{ display: 'block', color: '#d1d5db', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>First Name</label>
+                    <input type="text" value={signupFirstName} onChange={e => setSignupFirstName(e.target.value)} placeholder="John" style={{ width: '100%', padding: '11px 14px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 9, color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} onFocus={e => { e.currentTarget.style.borderColor = '#03969c'; }} onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', color: '#d1d5db', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Last Name</label>
+                    <input type="text" value={signupLastName} onChange={e => setSignupLastName(e.target.value)} placeholder="Doe" style={{ width: '100%', padding: '11px 14px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 9, color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} onFocus={e => { e.currentTarget.style.borderColor = '#03969c'; }} onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }} />
+                  </div>
+                </div>
+                <div>
+                  <label style={{ display: 'block', color: '#d1d5db', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Email</label>
+                  <input type="email" value={signupEmail} onChange={e => setSignupEmail(e.target.value)} placeholder="your@email.com" style={{ width: '100%', padding: '11px 14px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 9, color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} onFocus={e => { e.currentTarget.style.borderColor = '#03969c'; }} onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', color: '#d1d5db', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Phone</label>
+                  <input type="tel" value={signupPhone} onChange={e => setSignupPhone(e.target.value.replace(/[^0-9+]/g, ''))} placeholder="+250 700 000 000" style={{ width: '100%', padding: '11px 14px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 9, color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} onFocus={e => { e.currentTarget.style.borderColor = '#03969c'; }} onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', color: '#d1d5db', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Password</label>
+                  <input type="password" value={signupPassword} onChange={e => setSignupPassword(e.target.value)} placeholder="Min. 8 characters" style={{ width: '100%', padding: '11px 14px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 9, color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} onFocus={e => { e.currentTarget.style.borderColor = '#03969c'; }} onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }} />
+                </div>
+                <button onClick={handleAuthSignup} disabled={authLoading || googleLoading} style={{ width: '100%', padding: '13px', background: authLoading ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, #03969c, #027a7f)', border: 'none', borderRadius: 10, color: '#fff', fontSize: 15, fontWeight: 700, cursor: authLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 2 }}>
+                  {authLoading ? <><div style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} /> Creating account…</> : <><i className="bi bi-person-plus-fill"></i> Create Account</>}
+                </button>
+                {GOOGLE_CLIENT_ID && (
+                  <>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '2px 0' }}>
+                      <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.1)' }} />
+                      <span style={{ color: '#6b7280', fontSize: 12 }}>or</span>
+                      <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.1)' }} />
+                    </div>
+                    <GoogleAuthButton onSuccess={handleGoogleSuccess} onError={handleGoogleError} loading={googleLoading || authLoading} label="Sign up with Google" />
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* OTP FORM */}
+            {authStep === 'otp' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <div style={{ background: 'rgba(3,150,156,0.1)', border: '1px solid rgba(3,150,156,0.25)', borderRadius: 10, padding: '12px 16px', display: 'flex', gap: 10, alignItems: 'center' }}>
+                  <i className="bi bi-envelope-check-fill" style={{ color: '#03969c', fontSize: 16, flexShrink: 0 }}></i>
+                  <span style={{ color: '#a1a1aa', fontSize: 13 }}>A 6-digit code was sent to <strong style={{ color: '#fff' }}>{signupEmail}</strong></span>
+                </div>
+                <div>
+                  <label style={{ display: 'block', color: '#d1d5db', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Verification Code</label>
+                  <input type="text" inputMode="numeric" maxLength={6} value={otpValue} onChange={e => setOtpValue(e.target.value.replace(/[^0-9]/g, ''))} placeholder="000000" onKeyDown={e => e.key === 'Enter' && handleAuthVerifyOtp()} style={{ width: '100%', padding: '14px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 9, color: '#fff', fontSize: 22, fontWeight: 700, letterSpacing: '0.35em', textAlign: 'center', outline: 'none', boxSizing: 'border-box' }} onFocus={e => { e.currentTarget.style.borderColor = '#03969c'; }} onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }} />
+                </div>
+                <button onClick={handleAuthVerifyOtp} disabled={authLoading} style={{ width: '100%', padding: '13px', background: authLoading ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, #03969c, #027a7f)', border: 'none', borderRadius: 10, color: '#fff', fontSize: 15, fontWeight: 700, cursor: authLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                  {authLoading ? <><div style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} /> Verifying…</> : <><i className="bi bi-shield-check"></i> Verify & Continue</>}
+                </button>
+                <button onClick={() => { setAuthStep('login'); setAuthError(''); }} style={{ background: 'none', border: 'none', color: '#6b7280', fontSize: 13, cursor: 'pointer', textAlign: 'center', padding: '4px 0' }}>
+                  Already have an account? Log in
+                </button>
+              </div>
+            )}
+
+          </div>
+        </div>
+      )}
     </>
   );
 };

@@ -6,7 +6,7 @@ import Hls from 'hls.js';
 import AmoriaKNavbar from '../../components/navbar';
 import { useAuth } from '../../providers/AuthProvider';
 import { getEventDetails } from '@/lib/APIs/events/get-event-details/route';
-import { getStreamChats, sendStreamChat, getStreamViewerCount, getStreamVideo, validateStreamToken, getStreamAccess } from '@/lib/APIs/streams/route';
+import { getStreamChats, sendStreamChat, getStreamViewerCount, getStreamVideo, validateStreamToken, requestStreamAccess } from '@/lib/APIs/streams/route';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { recordStreamingPayment } from '@/lib/APIs/payments/route';
 import { getCurrencies, type Currency } from '@/lib/APIs/public';
@@ -265,7 +265,7 @@ export default function EventStreamPage({ eventId }: EventStreamPageProps) {
     const run = async () => {
       try {
         if (paymentId) {
-          const res = await getStreamAccess(eventId, token, paymentId);
+          const res = await requestStreamAccess(eventId, token, 'Viewer');
           if (res.success && res.data?.hlsManifestUrl) {
             setValidatedHlsUrl(res.data.hlsManifestUrl);
             setHostIdValidated(true);

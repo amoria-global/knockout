@@ -104,12 +104,14 @@ export const API_ENDPOINTS = {
     EVENTS_LIST: "/api/remote/public/events/list",
     EVENT_BY_ID: (id: string) => `/api/remote/public/events/${id}`,
     STREAM_VALIDATE_TOKEN: (eventId: string) => `/api/remote/public/events/${eventId}/stream/validate-token`,
-    STREAM_ACCESS: (eventId: string) => `/api/remote/public/events/${eventId}/stream/access`,
+    STREAM_ACCESS: (eventId: string) => `/api/remote/public/streams/${eventId}/access`,
+    STREAM_PURCHASE_ACCESS: (eventId: string) => `/api/remote/public/streams/${eventId}/purchase-access`,
     DONATIONS: "/api/remote/public/donations",
     EVENT_TYPES: "/api/remote/public/event-types",
     FAQS: "/api/remote/public/faqs",
     ALBUM_BY_CODE: "/api/remote/public/albums",
     FACE_SEARCH: "/api/remote/public/face-search",
+    EVENT_VIEWERS: (eventId: string) => `/api/remote/public/events/${eventId}/viewers`,
   },
 
   // Protected photographer endpoints
