@@ -83,6 +83,14 @@ export async function getStreamViewerCount(eventId: string): Promise<ApiResponse
   );
 }
 
+// Public viewer count (no auth required)
+export async function getPublicViewerCount(eventId: string): Promise<ApiResponse<ViewerCountResponse>> {
+  return apiClient.get<ViewerCountResponse>(
+    API_ENDPOINTS.PUBLIC.EVENT_VIEWERS(eventId),
+    { retries: 1 }
+  );
+}
+
 // --- Stream Participants ---
 
 export interface StreamParticipant {
@@ -229,21 +237,45 @@ export async function validateStreamToken(
   );
 }
 
-// --- Stream Access (post-payment HLS URL retrieval) ---
+// --- Stream Access (invite token flow) ---
 
 export interface StreamAccessResponse {
   hlsManifestUrl: string;
   eventTitle?: string;
 }
 
-export async function getStreamAccess(
+export async function requestStreamAccess(
   eventId: string,
   inviteToken: string,
-  paymentId: string
+  viewerUsername: string
 ): Promise<ApiResponse<StreamAccessResponse>> {
   return apiClient.post<StreamAccessResponse>(
     API_ENDPOINTS.PUBLIC.STREAM_ACCESS(eventId),
-    { inviteToken, paymentId },
+    { inviteToken, viewerUsername },
+    { skipAuth: true, retries: 0 }
+  );
+}
+
+// --- Stream Purchase Access (entry fee flow) ---
+
+export interface PurchaseStreamAccessResponse {
+  paymentUrl?: string;
+  refid?: string;
+  hlsManifestUrl?: string;
+}
+
+export async function purchaseStreamAccess(
+  eventId: string,
+  data: {
+    paymentMethod: string;
+    phoneNumber: string;
+    viewerUsername: string;
+    currencyId?: string;
+  }
+): Promise<ApiResponse<PurchaseStreamAccessResponse>> {
+  return apiClient.post<PurchaseStreamAccessResponse>(
+    API_ENDPOINTS.PUBLIC.STREAM_PURCHASE_ACCESS(eventId),
+    data,
     { skipAuth: true, retries: 0 }
   );
 }

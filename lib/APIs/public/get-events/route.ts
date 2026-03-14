@@ -68,6 +68,7 @@ export interface PublicEvent {
   streamFeeCurrencySymbol?: string | null;
   streamFeeCurrencyAbbreviation?: string | null;
   hasLiveStream?: boolean | null;
+  streamType?: 'entry_fee' | 'invite_token' | null;
   hasInviteCode?: boolean | null;
   liveInputId?: string | null;
   hlsManifestUrl?: string | null;
