@@ -7,7 +7,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import Footer from "./components/footer";
 import Navbar from "./components/navbar";
 import GlobalNetwork from "./components/GlobalNetwork";
-import Preloader from "./components/Preloader";
+// import Preloader from "./components/Preloader"; // Commented out — client requested no preloader
 import { getPublicEvents } from '@/lib/APIs/public';
 import { getStreamVideo } from '@/lib/APIs/streams/route';
 
@@ -48,19 +48,18 @@ export default function Home() {
   const phoneTextRef = useRef<HTMLDivElement>(null)
   const tabletTextRef = useRef<HTMLDivElement>(null)
   const laptopTextRef = useRef<HTMLDivElement>(null)
-  // Check if preloader should show on initial load
-  const [showPreloader, setShowPreloader] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const hasShownPreloader = sessionStorage.getItem('hasShownPreloader');
-      return hasShownPreloader !== 'true';
-    }
-    return true; // Default to true on server-side rendering
-  })
-
-  // Handle preloader completion
-  const handlePreloaderComplete = () => {
-    setShowPreloader(false)
-  }
+  // Preloader disabled — client requested no preloader (kept for future reuse)
+  // const [showPreloader, setShowPreloader] = useState(() => {
+  //   if (typeof window !== 'undefined') {
+  //     const hasShownPreloader = sessionStorage.getItem('hasShownPreloader');
+  //     return hasShownPreloader !== 'true';
+  //   }
+  //   return true;
+  // })
+  // const handlePreloaderComplete = () => {
+  //   setShowPreloader(false)
+  // }
+  const showPreloader = false;
 
   // Check whether any event has a live Cloudflare stream session active
   useEffect(() => {
@@ -288,8 +287,9 @@ export default function Home() {
 
   return (
     <>
-      {/* Show preloader only on first visit */}
+      {/* Preloader disabled — client requested no preloader (kept for future reuse)
       {showPreloader && <Preloader onComplete={handlePreloaderComplete} />}
+      */}
 
       {/* Show main content only after preloader is complete */}
       {!showPreloader && (
