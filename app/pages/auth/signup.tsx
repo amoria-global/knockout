@@ -110,7 +110,10 @@ const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';
 export default function SignupPage(): React.JSX.Element {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const urlUserType = searchParams.get('userType');
+  const rawUserType = searchParams.get('userType');
+  // Viewers can only sign up through the built-in modals on view-event and live-stream pages
+  const allowedSignupTypes = ['Photographer', 'Client', 'Coordinator'];
+  const urlUserType = rawUserType && allowedSignupTypes.includes(rawUserType) ? rawUserType : null;
   const redirectUrl = searchParams.get('redirect');
   const [selectedUserType, setSelectedUserType] = useState<string | null>(urlUserType);
   const [showUserTypeModal, setShowUserTypeModal] = useState(!urlUserType);
