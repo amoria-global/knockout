@@ -822,7 +822,7 @@ const App = () => {
             }
             _muted = val;
             // Apply to the real property via the prototype
-            HTMLMediaElement.prototype.__lookupSetter__!('muted')!.call(el, val);
+            (Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype, 'muted')?.set as ((v: boolean) => void) | undefined)?.call(el, val);
           },
           configurable: true,
         });
