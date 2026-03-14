@@ -170,6 +170,13 @@ export default function LoginPage(): React.JSX.Element {
       if (response.success && data?.token) {
         const customerType = data.customerType || '';
 
+        // Viewers can only log in through the built-in modals on view-event and live-stream pages
+        if (customerType === 'Viewer') {
+          setError('Viewer accounts can only sign in from event pages. Please use the sign-in option on the event you want to watch.');
+          showError('Viewer accounts can only sign in from event pages.');
+          return;
+        }
+
         const userData = {
           id: data.id || data.customerId || '',
           firstName: data.firstName || firstName,
@@ -337,6 +344,14 @@ export default function LoginPage(): React.JSX.Element {
           // Successful login - store user in AuthContext and show modal
           // Get customerType from user object or root-level fields
           const customerType = data.user?.userType || data.userType || data.customerType || '';
+
+          // Viewers can only log in through the built-in modals on view-event and live-stream pages
+          if (customerType === 'Viewer') {
+            setError('Viewer accounts can only sign in from event pages. Please use the sign-in option on the event you want to watch.');
+            showError('Viewer accounts can only sign in from event pages.');
+            setLoading(false);
+            return;
+          }
 
           const userData = {
             id: data.id || data.user?.id || '',
