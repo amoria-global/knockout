@@ -1004,57 +1004,62 @@ const Events: React.FC = () => {
                       </h3>
                     </div>
 
-                    {/* Status Badge - LIVE NOW or UPCOMING */}
-                    {isEventLive(event) ? (
-                      <div
-                        className="live-badge"
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '0.4rem',
-                          background: 'transparent',
-                          border: '2px solid #039130',
-                          color: '#039130',
-                          padding: 'clamp(0.5rem, 2vw, 0.625rem) clamp(0.75rem, 2.5vw, 1rem)',
-                          borderRadius: '20px',
-                          fontSize: '0.9rem',
-                          fontWeight: '700',
-                          textTransform: 'uppercase',
-                          marginBottom: '0.5rem',
-                          width: '100%',
-                          maxWidth: '100%',
-                          boxSizing: 'border-box'
-                        }}
-                      >
-                        <i className="bi bi-camera-video-fill live-badge-icon" style={{ fontSize: '0.9rem' }}></i>
-                        {t('status.live')}
-                      </div>
-                    ) : (
-                      <div
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '0.4rem',
-                          background: 'transparent',
-                          border: '2px solid #3b82f6',
-                          color: '#3b82f6',
-                          padding: 'clamp(0.5rem, 2vw, 0.625rem) clamp(0.75rem, 2.5vw, 1rem)',
-                          borderRadius: '20px',
-                          fontSize: '0.9rem',
-                          fontWeight: '700',
-                          textTransform: 'uppercase',
-                          marginBottom: '0.5rem',
-                          width: '100%',
-                          maxWidth: '100%',
-                          boxSizing: 'border-box'
-                        }}
-                      >
-                        <i className="bi bi-broadcast" style={{ fontSize: '0.9rem' }}></i>
-                        {t('status.upcoming')}
-                      </div>
-                    )}
+                    {/* Status Badge - LIVE, UPCOMING, COMPLETED, or CANCELLED */}
+                    {(() => {
+                      const status = (event.eventStatus || '').toUpperCase();
+                      const isLive = isEventLive(event);
+                      const isCompleted = status === 'COMPLETED';
+                      const isCancelled = status === 'CANCELLED';
+
+                      let borderColor = '#3b82f6';
+                      let textColor = '#3b82f6';
+                      let icon = 'bi-broadcast';
+                      let label = t('status.upcoming');
+
+                      if (isLive) {
+                        borderColor = '#039130';
+                        textColor = '#039130';
+                        icon = 'bi-camera-video-fill';
+                        label = t('status.live');
+                      } else if (isCompleted) {
+                        borderColor = '#6b7280';
+                        textColor = '#6b7280';
+                        icon = 'bi-check-circle-fill';
+                        label = t('status.completed');
+                      } else if (isCancelled) {
+                        borderColor = '#ef4444';
+                        textColor = '#ef4444';
+                        icon = 'bi-x-circle-fill';
+                        label = t('status.cancelled');
+                      }
+
+                      return (
+                        <div
+                          className={isLive ? 'live-badge' : undefined}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '0.4rem',
+                            background: 'transparent',
+                            border: `2px solid ${borderColor}`,
+                            color: textColor,
+                            padding: 'clamp(0.5rem, 2vw, 0.625rem) clamp(0.75rem, 2.5vw, 1rem)',
+                            borderRadius: '20px',
+                            fontSize: '0.9rem',
+                            fontWeight: '700',
+                            textTransform: 'uppercase',
+                            marginBottom: '0.5rem',
+                            width: '100%',
+                            maxWidth: '100%',
+                            boxSizing: 'border-box'
+                          }}
+                        >
+                          <i className={`bi ${icon}`} style={{ fontSize: '0.9rem' }}></i>
+                          {label}
+                        </div>
+                      );
+                    })()}
 
                     {/* Location */}
                     <div style={{
@@ -1099,8 +1104,8 @@ const Events: React.FC = () => {
                         alignItems: 'center',
                         justifyContent: 'center',
                         gap: '0.4rem',
-                        background: isEventLive(event) ? '#039130' : '#083A85',
-                        border: `2.5px solid ${isEventLive(event) ? '#059669' : '#083A85'}`,
+                        background: isEventLive(event) ? '#039130' : (event.eventStatus || '').toUpperCase() === 'COMPLETED' ? '#4b5563' : '#083A85',
+                        border: `2.5px solid ${isEventLive(event) ? '#059669' : (event.eventStatus || '').toUpperCase() === 'COMPLETED' ? '#4b5563' : '#083A85'}`,
                         color: '#FFFFFF',
                         padding: 'clamp(0.625rem, 2.5vw, 0.75rem) clamp(1rem, 3vw, 1.25rem)',
                         borderRadius: '20px',

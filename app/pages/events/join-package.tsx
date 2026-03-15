@@ -2,7 +2,9 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import AmoriaKNavbar from '../../components/navbar';
-import { getPublicEventById, type PublicEvent } from '@/lib/APIs/public';
+import { useRouter } from 'next/navigation';
+import { getPublicEventById, type PublicEvent, getCurrencies, type Currency as APICurrency } from '@/lib/APIs/public';
+import XentriPayModal from '../../components/XentriPayModal';
 
 function JoinPackageContent(): React.JSX.Element {
   const searchParams = useSearchParams();
@@ -14,6 +16,11 @@ function JoinPackageContent(): React.JSX.Element {
   const [peopleInputError, setPeopleInputError] = useState('');
   const [selectedEvent, setSelectedEvent] = useState<PublicEvent | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
+
+  // XentriPay modal state
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [currencies, setCurrencies] = useState<APICurrency[]>([]);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -46,6 +53,13 @@ function JoinPackageContent(): React.JSX.Element {
     };
     fetchEvent();
   }, [eventId]);
+
+  // Fetch currencies for XentriPay
+  useEffect(() => {
+    getCurrencies().then(res => {
+      if (res.success && res.data) setCurrencies(res.data);
+    }).catch(() => {});
+  }, []);
 
   // Calculate group discount (10%)
   const discountPercentage = 10;
@@ -115,26 +129,42 @@ function JoinPackageContent(): React.JSX.Element {
     return typeof numberOfPeople === 'number' && numberOfPeople >= 2;
   };
 
+  const getPaymentFee = () => {
+    const price = selectedEvent?.price || 0;
+    if (selectedPackage === 'group' && isGroupInputValid()) {
+      const count = typeof numberOfPeople === 'number' ? numberOfPeople : 1;
+      return Math.round(price * 0.9 * count);
+    }
+    return price;
+  };
+
   const handleProceed = () => {
     if (!selectedEvent) return;
     const price = selectedEvent.price || 0;
-    const category = selectedEvent.eventCategory?.name || selectedEvent.eventTags?.split(',')[0] || 'Event';
     const inviteToken = searchParams.get('inviteToken') || '';
     const tokenParam = inviteToken ? `&inviteToken=${encodeURIComponent(inviteToken)}` : '';
-    // Encode event data so join-event can show the payment form immediately (no API wait)
-    const eventParams = price > 0
-      ? `&fee=${price}&title=${encodeURIComponent(selectedEvent.title)}&category=${encodeURIComponent(category)}&location=${encodeURIComponent(selectedEvent.location || '')}`
-      : '';
 
-    if (selectedPackage === 'individual') {
-      window.location.href = `/user/events/join-event?id=${selectedEvent.id}&package=individual${eventParams}${tokenParam}`;
-    } else if (selectedPackage === 'group' && isGroupInputValid()) {
-      const count = typeof numberOfPeople === 'number' ? numberOfPeople : 1;
-      const groupFee = Math.round(price * 0.9 * count);
-      const groupParams = price > 0
-        ? `&fee=${groupFee}&title=${encodeURIComponent(selectedEvent.title)}&category=${encodeURIComponent(category)}&location=${encodeURIComponent(selectedEvent.location || '')}`
-        : '';
-      window.location.href = `/user/events/join-event?id=${selectedEvent.id}&package=group&people=${numberOfPeople}${groupParams}${tokenParam}`;
+    if (price > 0) {
+      // Paid event — show XentriPay payment modal
+      setShowPaymentModal(true);
+    } else {
+      // Free event — redirect to join-event for invite token input
+      if (selectedPackage === 'individual') {
+        window.location.href = `/user/events/join-event?id=${selectedEvent.id}&package=individual${tokenParam}`;
+      } else if (selectedPackage === 'group' && isGroupInputValid()) {
+        window.location.href = `/user/events/join-event?id=${selectedEvent.id}&package=group&people=${numberOfPeople}${tokenParam}`;
+      }
+    }
+  };
+
+  const handlePaymentSuccess = () => {
+    setShowPaymentModal(false);
+    if (!selectedEvent) return;
+    const inviteToken = searchParams.get('inviteToken') || '';
+    if (inviteToken) {
+      router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&inviteToken=${encodeURIComponent(inviteToken)}`);
+    } else {
+      router.push(`/user/events/live-stream?eventId=${selectedEvent.id}`);
     }
   };
 
@@ -729,6 +759,20 @@ function JoinPackageContent(): React.JSX.Element {
           </div>       
         </div>
       </div>
+
+      {/* XentriPay Payment Modal */}
+      <XentriPayModal
+        isOpen={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        onSuccess={handlePaymentSuccess}
+        amount={getPaymentFee()}
+        currencyCode={selectedEvent?.streamFeeCurrencyAbbreviation || selectedEvent?.streamFeeCurrencySymbol || (currencies.length > 0 ? currencies[0].code : 'RWF')}
+        currencyId={currencies.length > 0 ? currencies[0].id : ''}
+        paymentType="streaming"
+        eventId={selectedEvent?.id || ''}
+        title={`Stream Access — ${selectedEvent?.title || 'Event'}`}
+        subtitle={`${selectedPackage === 'group' ? `Group (${typeof numberOfPeople === 'number' ? numberOfPeople : 1} people)` : 'Individual'} · ${getPaymentFee().toLocaleString()} ${selectedEvent?.streamFeeCurrencyAbbreviation || selectedEvent?.streamFeeCurrencySymbol || (currencies.length > 0 ? currencies[0].code : 'RWF')}`}
+      />
 
       {/* CSS Animations */}
       <style jsx>{`
