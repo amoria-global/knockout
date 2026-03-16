@@ -175,6 +175,18 @@ const App = () => {
     }
   };
 
+  // Listen for session expiry — show login modal instead of redirecting
+  useEffect(() => {
+    const handleSessionExpired = (e: Event) => {
+      e.preventDefault();
+      setAuthStep('login');
+      setAuthError('Your session has expired. Please log in again.');
+      setShowAuthModal(true);
+    };
+    window.addEventListener('auth:session-expired', handleSessionExpired);
+    return () => window.removeEventListener('auth:session-expired', handleSessionExpired);
+  }, []);
+
   const handleAuthLogin = async () => {
     if (!loginEmail || !loginPassword) { setAuthError('Please fill in all fields'); return; }
     setAuthLoading(true);

@@ -636,8 +636,14 @@ function redirectToLogin(): void {
     removeRefreshToken();
     localStorage.removeItem('authUser');
 
-    // Redirect to login
-    window.location.href = '/user/auth/login';
+    // Dispatch event so pages with inline auth modals can intercept
+    const event = new CustomEvent('auth:session-expired', { cancelable: true });
+    const handled = !window.dispatchEvent(event);
+
+    // If no listener called preventDefault(), fall back to redirect
+    if (!handled) {
+      window.location.href = '/user/auth/login';
+    }
   }
 }
 
