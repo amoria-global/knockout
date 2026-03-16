@@ -781,8 +781,8 @@ const Events: React.FC = () => {
         </div>
       </div>
 
-      {/* Hot Live Trends Section */}
-      <div style={{
+      {/* Hot Live Trends Section — only visible when live events exist */}
+      {trendingEvents.length > 0 && <div style={{
         maxWidth: '1280px',
         margin: '2rem auto 0',
         padding: '0 1rem',
@@ -886,7 +886,7 @@ const Events: React.FC = () => {
             ))}
           </div>
         </div>
-      </div>
+      </div>}
 
       {/* Main Content */}
       <main style={{

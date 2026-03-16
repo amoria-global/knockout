@@ -264,6 +264,67 @@ export interface PurchaseStreamAccessResponse {
   hlsManifestUrl?: string;
 }
 
+// --- Group Stream Access ---
+
+export interface GroupAccessResponse {
+  inviteCode: string;
+  eventId: string;
+  maxViewers: number;
+  currentViewers: number;
+  expiresAt: string;
+  paymentRefId: string;
+  purchaserEmail: string;
+}
+
+export interface RedeemGroupCodeResponse {
+  accessToken: string;
+  hlsManifestUrl: string;
+  eventTitle: string;
+  viewerUsername: string;
+  remainingSlots: number;
+}
+
+export interface GroupCodeStatusResponse {
+  inviteCode: string;
+  maxViewers: number;
+  currentViewers: number;
+  expiresAt: string;
+  isExpired: boolean;
+  viewers: Array<{ username: string; joinedAt: string }>;
+}
+
+export async function generateGroupAccess(
+  eventId: string,
+  data: { paymentRefId: string; viewerCount: number; purchaserEmail: string }
+): Promise<ApiResponse<GroupAccessResponse>> {
+  return apiClient.post<GroupAccessResponse>(
+    API_ENDPOINTS.PUBLIC.STREAM_GROUP_ACCESS(eventId),
+    data,
+    { skipAuth: true, retries: 0 }
+  );
+}
+
+export async function redeemGroupCode(
+  eventId: string,
+  data: { inviteCode: string; viewerUsername: string }
+): Promise<ApiResponse<RedeemGroupCodeResponse>> {
+  return apiClient.post<RedeemGroupCodeResponse>(
+    API_ENDPOINTS.PUBLIC.STREAM_REDEEM_GROUP_CODE(eventId),
+    data,
+    { skipAuth: true, retries: 0 }
+  );
+}
+
+export async function getGroupCodeStatus(
+  eventId: string,
+  inviteCode: string
+): Promise<ApiResponse<GroupCodeStatusResponse>> {
+  return apiClient.get<GroupCodeStatusResponse>(
+    API_ENDPOINTS.PUBLIC.STREAM_GROUP_CODE_STATUS(eventId, inviteCode),
+    { skipAuth: true }
+  );
+}
+
 export async function purchaseStreamAccess(
   eventId: string,
   data: {
