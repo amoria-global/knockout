@@ -155,6 +155,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Initialize auth state from localStorage on mount
   useEffect(() => {
     const initializeAuth = () => {
+      // Check if dashboard sent a logout signal via query param
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('logged_out') === 'true') {
+        removeAuthToken();
+        removeRefreshToken();
+        clearStoredUser();
+        setUser(null);
+        setIsLoading(false);
+        // Clean up the URL
+        const url = new URL(window.location.href);
+        url.searchParams.delete('logged_out');
+        window.history.replaceState({}, '', url.toString());
+        return;
+      }
+
       const hasToken = checkAuth();
       const storedUser = getStoredUser();
 

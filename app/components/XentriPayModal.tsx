@@ -33,6 +33,8 @@ export interface XentriPayModalProps {
   eventId?: string;
   // For donation payments
   donationId?: string;
+  // Dark theme to match viewer auth modal
+  darkMode?: boolean;
 }
 
 type PaymentStep = 'method' | 'processing' | 'success' | 'failed';
@@ -61,6 +63,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
   declarationId,
   eventId,
   donationId,
+  darkMode = false,
 }) => {
   // State
   const [step, setStep] = useState<PaymentStep>('method');
@@ -91,6 +94,16 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
     };
   }, [isOpen]);
 
+  // Close modal when session expires so auth modal can take over
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleSessionExpired = () => {
+      handleClose();
+    };
+    window.addEventListener('auth:session-expired', handleSessionExpired);
+    return () => window.removeEventListener('auth:session-expired', handleSessionExpired);
+  }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Lock body scroll
   useEffect(() => {
     if (isOpen) {
@@ -104,6 +117,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
   // Validate payment details
   const isValid = useCallback(() => {
     if (!selectedMethod) return false;
+    if (selectedMethod === 'card') return true;
     return phone.length >= 10;
   }, [selectedMethod, phone]);
 
@@ -273,12 +287,12 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+        backgroundColor: darkMode ? 'rgba(0,0,0,0.82)' : 'rgba(0, 0, 0, 0.6)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         zIndex: 2000,
-        backdropFilter: 'blur(4px)',
+        backdropFilter: darkMode ? 'blur(6px)' : 'blur(4px)',
         padding: '16px',
         overflowY: 'auto',
       }}
@@ -290,15 +304,16 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
     >
       <div
         style={{
-          backgroundColor: '#fff',
-          borderRadius: '24px',
+          background: darkMode ? 'linear-gradient(145deg, #141418 0%, #1a1a24 100%)' : '#fff',
+          borderRadius: darkMode ? '20px' : '24px',
           padding: 'clamp(24px, 5vw, 40px)',
           paddingTop: 'clamp(50px, 8vw, 60px)',
-          maxWidth: '500px',
+          maxWidth: darkMode ? '520px' : '500px',
           width: '100%',
           maxHeight: '90vh',
           overflowY: 'auto',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+          boxShadow: darkMode ? '0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(3,150,156,0.15)' : '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+          border: darkMode ? '1px solid rgba(255,255,255,0.1)' : 'none',
           position: 'relative',
           margin: 'auto',
         }}
@@ -312,9 +327,9 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
               position: 'absolute',
               top: 'clamp(12px, 3vw, 20px)',
               right: 'clamp(12px, 3vw, 20px)',
-              background: '#f5f5f5',
+              background: darkMode ? 'rgba(255,255,255,0.07)' : '#f5f5f5',
               border: 'none',
-              color: '#666',
+              color: darkMode ? '#9ca3af' : '#666',
               cursor: 'pointer',
               fontSize: '18px',
               padding: '10px',
@@ -327,11 +342,11 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
               borderRadius: '50%',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#e0e0e0';
+              e.currentTarget.style.backgroundColor = darkMode ? 'rgba(255,255,255,0.15)' : '#e0e0e0';
               e.currentTarget.style.transform = 'translateY(-2px)';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = '#f5f5f5';
+              e.currentTarget.style.backgroundColor = darkMode ? 'rgba(255,255,255,0.07)' : '#f5f5f5';
               e.currentTarget.style.transform = 'translateY(0)';
             }}
           >
@@ -350,15 +365,15 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
               <h2 style={{
                 fontSize: 'clamp(20px, 5vw, 26px)',
                 fontWeight: 700,
-                color: '#083A85',
+                color: darkMode ? '#fff' : '#083A85',
                 marginBottom: '8px',
                 marginTop: 0,
               }}>
                 {title || defaultTitle}
               </h2>
-              <p style={{ fontSize: '14px', color: '#666', margin: 0 }}>
+              <p style={{ fontSize: '14px', color: darkMode ? '#9ca3af' : '#666', margin: 0 }}>
                 {subtitle || (
-                  <>Amount: <strong style={{ color: '#083A85' }}>{formatAmount(amount)}</strong></>
+                  <>Amount: <strong style={{ color: darkMode ? '#fff' : '#083A85' }}>{formatAmount(amount)}</strong></>
                 )}
               </p>
             </div>
@@ -369,7 +384,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
                 display: 'block',
                 fontSize: '14px',
                 fontWeight: 600,
-                color: '#333',
+                color: darkMode ? '#d1d5db' : '#333',
                 marginBottom: '12px',
               }}>Select Payment Method</label>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -382,9 +397,13 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
                       alignItems: 'center',
                       gap: '14px',
                       padding: '14px 16px',
-                      backgroundColor: selectedMethod === method.id ? 'rgba(8, 58, 133, 0.08)' : '#f8f9fa',
+                      backgroundColor: darkMode
+                        ? (selectedMethod === method.id ? 'rgba(3,150,156,0.15)' : 'rgba(255,255,255,0.06)')
+                        : (selectedMethod === method.id ? 'rgba(8, 58, 133, 0.08)' : '#f8f9fa'),
                       border: '2px solid',
-                      borderColor: selectedMethod === method.id ? '#083A85' : '#e0e0e0',
+                      borderColor: darkMode
+                        ? (selectedMethod === method.id ? '#03969c' : 'rgba(255,255,255,0.12)')
+                        : (selectedMethod === method.id ? '#083A85' : '#e0e0e0'),
                       borderRadius: '14px',
                       cursor: 'pointer',
                       transition: 'all 0.2s',
@@ -400,17 +419,17 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
                       borderRadius: '12px',
                       overflow: 'hidden',
                       flexShrink: 0,
-                      backgroundColor: '#fff',
+                      backgroundColor: darkMode ? 'rgba(255,255,255,0.1)' : '#fff',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      border: '1px solid #e0e0e0',
+                      border: darkMode ? '1px solid rgba(255,255,255,0.12)' : '1px solid #e0e0e0',
                     }}>
                       <img src={method.image} alt={method.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     </div>
-                    <span style={{ color: '#333', fontSize: '15px', fontWeight: 500 }}>{method.name}</span>
+                    <span style={{ color: darkMode ? '#e5e7eb' : '#333', fontSize: '15px', fontWeight: 500 }}>{method.name}</span>
                     {selectedMethod === method.id && (
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill="#083A85" style={{ marginLeft: 'auto' }}>
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill={darkMode ? '#03969c' : '#083A85'} style={{ marginLeft: 'auto' }}>
                         <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
                       </svg>
                     )}
@@ -419,40 +438,38 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
               </div>
             </div>
 
-            {/* Phone Input - shown for all methods */}
-            {selectedMethod && (
+            {/* Phone Input - shown for mobile money methods only */}
+            {selectedMethod && selectedMethod !== 'card' && (
               <div style={{ marginBottom: '24px' }}>
                 <label style={{
                   display: 'block',
                   fontSize: '14px',
                   fontWeight: 600,
-                  color: '#333',
+                  color: darkMode ? '#d1d5db' : '#333',
                   marginBottom: '8px',
                 }}>Phone Number *</label>
                 <input
                   type="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 12))}
-                  placeholder={selectedMethod === 'mtn' ? 'e.g., 078XXXXXXX' : selectedMethod === 'airtel' ? 'e.g., 073XXXXXXX' : 'e.g., 078XXXXXXX'}
+                  placeholder={selectedMethod === 'mtn' ? 'e.g., 078XXXXXXX' : 'e.g., 073XXXXXXX'}
                   style={{
                     width: '100%',
                     padding: '14px 16px',
-                    backgroundColor: '#f8f9fa',
-                    border: '2px solid #e0e0e0',
-                    borderRadius: '12px',
-                    color: '#333',
+                    backgroundColor: darkMode ? 'rgba(255,255,255,0.06)' : '#f8f9fa',
+                    border: darkMode ? '1px solid rgba(255,255,255,0.12)' : '2px solid #e0e0e0',
+                    borderRadius: darkMode ? '9px' : '12px',
+                    color: darkMode ? '#fff' : '#333',
                     fontSize: '15px',
                     outline: 'none',
                     transition: 'border-color 0.2s',
                     boxSizing: 'border-box' as const,
                   }}
-                  onFocus={(e) => { e.currentTarget.style.borderColor = '#083A85'; }}
-                  onBlur={(e) => { e.currentTarget.style.borderColor = '#e0e0e0'; }}
+                  onFocus={(e) => { e.currentTarget.style.borderColor = darkMode ? '#03969c' : '#083A85'; }}
+                  onBlur={(e) => { e.currentTarget.style.borderColor = darkMode ? 'rgba(255,255,255,0.12)' : '#e0e0e0'; }}
                 />
-                <p style={{ fontSize: '12px', color: '#888', marginTop: '6px', marginBottom: 0 }}>
-                  {selectedMethod === 'card'
-                    ? 'Required for payment verification'
-                    : 'You will receive a payment prompt on this number'}
+                <p style={{ fontSize: '12px', color: darkMode ? '#6b7280' : '#888', marginTop: '6px', marginBottom: 0 }}>
+                  You will receive a payment prompt on this number
                 </p>
               </div>
             )}
@@ -462,11 +479,11 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
               <div style={{
                 marginBottom: '24px',
                 padding: '14px 16px',
-                backgroundColor: '#EFF6FF',
-                border: '1px solid #BFDBFE',
+                backgroundColor: darkMode ? 'rgba(3,150,156,0.1)' : '#EFF6FF',
+                border: darkMode ? '1px solid rgba(3,150,156,0.3)' : '1px solid #BFDBFE',
                 borderRadius: '12px',
               }}>
-                <p style={{ fontSize: '14px', color: '#1E40AF', margin: 0 }}>
+                <p style={{ fontSize: '14px', color: darkMode ? '#67e8f9' : '#1E40AF', margin: 0 }}>
                   You will be redirected to a secure payment page to enter your card details.
                 </p>
               </div>
@@ -477,8 +494,8 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
               <div style={{
                 padding: '12px 16px',
                 marginBottom: '16px',
-                backgroundColor: '#FEF2F2',
-                border: '1px solid #EF4444',
+                backgroundColor: darkMode ? 'rgba(239,68,68,0.12)' : '#FEF2F2',
+                border: darkMode ? '1px solid rgba(239,68,68,0.35)' : '1px solid #EF4444',
                 borderRadius: '12px',
                 color: '#EF4444',
                 fontSize: '14px',
@@ -495,8 +512,8 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
                 width: '100%',
                 padding: '16px 24px',
                 background: (!isValid() || loading)
-                  ? '#e0e0e0'
-                  : 'linear-gradient(135deg, #083A85 0%, #0d4a9e 100%)',
+                  ? (darkMode ? 'rgba(255,255,255,0.1)' : '#e0e0e0')
+                  : (darkMode ? 'linear-gradient(135deg, #03969c, #027a7f)' : 'linear-gradient(135deg, #083A85 0%, #0d4a9e 100%)'),
                 border: 'none',
                 borderRadius: '14px',
                 color: (!isValid() || loading) ? '#999' : '#fff',
@@ -525,10 +542,13 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
               ) : (
                 <>
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
-                    <line x1="1" y1="10" x2="23" y2="10" />
+                    {selectedMethod === 'card' ? (
+                      <><rect x="1" y="4" width="22" height="16" rx="2" ry="2" /><line x1="1" y1="10" x2="23" y2="10" /></>
+                    ) : (
+                      <><rect x="1" y="4" width="22" height="16" rx="2" ry="2" /><line x1="1" y1="10" x2="23" y2="10" /></>
+                    )}
                   </svg>
-                  Pay {formatAmount(amount)}
+                  {selectedMethod === 'card' ? `Proceed to Pay ${formatAmount(amount)}` : `Pay ${formatAmount(amount)}`}
                 </>
               )}
             </button>
@@ -544,18 +564,18 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
               height: '80px',
               margin: '0 auto 24px',
               border: '4px solid #e0e0e0',
-              borderTopColor: '#083A85',
+              borderTopColor: darkMode ? '#03969c' : '#083A85',
               borderRadius: '50%',
               animation: 'spin 1s linear infinite',
             }} />
 
-            <h3 style={{ fontSize: '22px', fontWeight: 700, color: '#083A85', marginBottom: '12px' }}>
+            <h3 style={{ fontSize: '22px', fontWeight: 700, color: darkMode ? '#fff' : '#083A85', marginBottom: '12px' }}>
               {selectedMethod === 'card' ? 'Complete Payment' : 'Payment Initiated'}
             </h3>
 
             {selectedMethod === 'card' ? (
               <>
-                <p style={{ fontSize: '15px', color: '#666', marginBottom: '16px', lineHeight: '1.5' }}>
+                <p style={{ fontSize: '15px', color: darkMode ? '#9ca3af' : '#666', marginBottom: '16px', lineHeight: '1.5' }}>
                   A secure payment page has been opened in a new tab.
                   Please complete the payment there.
                 </p>
@@ -581,13 +601,13 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
                 )}
               </>
             ) : (
-              <p style={{ fontSize: '15px', color: '#666', marginBottom: '16px', lineHeight: '1.5' }}>
+              <p style={{ fontSize: '15px', color: darkMode ? '#9ca3af' : '#666', marginBottom: '16px', lineHeight: '1.5' }}>
                 A payment prompt has been sent to your phone.
                 Please check your phone and confirm the payment.
               </p>
             )}
 
-            <p style={{ fontSize: '13px', color: '#999' }}>
+            <p style={{ fontSize: '13px', color: darkMode ? '#6b7280' : '#999' }}>
               Waiting for confirmation... This may take a moment.
             </p>
 
@@ -597,10 +617,10 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
               style={{
                 marginTop: '20px',
                 padding: '10px 24px',
-                backgroundColor: 'transparent',
-                border: '1px solid #ccc',
+                backgroundColor: darkMode ? 'rgba(255,255,255,0.07)' : 'transparent',
+                border: darkMode ? '1px solid rgba(255,255,255,0.15)' : '1px solid #ccc',
                 borderRadius: '10px',
-                color: '#666',
+                color: darkMode ? '#9ca3af' : '#666',
                 fontSize: '14px',
                 cursor: 'pointer',
               }}
@@ -618,7 +638,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
               width: '80px',
               height: '80px',
               margin: '0 auto 24px',
-              backgroundColor: '#F0FDF4',
+              backgroundColor: darkMode ? 'rgba(34,197,94,0.15)' : '#F0FDF4',
               borderRadius: '50%',
               display: 'flex',
               alignItems: 'center',
@@ -632,7 +652,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
             <h3 style={{ fontSize: '22px', fontWeight: 700, color: '#16A34A', marginBottom: '8px' }}>
               Payment Successful!
             </h3>
-            <p style={{ fontSize: '15px', color: '#666', margin: 0 }}>
+            <p style={{ fontSize: '15px', color: darkMode ? '#9ca3af' : '#666', margin: 0 }}>
               Your payment of <strong>{formatAmount(amount)}</strong> has been completed.
             </p>
           </div>
@@ -646,7 +666,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
               width: '80px',
               height: '80px',
               margin: '0 auto 24px',
-              backgroundColor: '#FEF2F2',
+              backgroundColor: darkMode ? 'rgba(239,68,68,0.15)' : '#FEF2F2',
               borderRadius: '50%',
               display: 'flex',
               alignItems: 'center',
@@ -661,7 +681,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
             <h3 style={{ fontSize: '22px', fontWeight: 700, color: '#EF4444', marginBottom: '8px' }}>
               Payment Failed
             </h3>
-            <p style={{ fontSize: '15px', color: '#666', marginBottom: '24px' }}>
+            <p style={{ fontSize: '15px', color: darkMode ? '#9ca3af' : '#666', marginBottom: '24px' }}>
               {error || 'The payment could not be completed. Please try again.'}
             </p>
 
@@ -670,7 +690,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
                 onClick={handleRetry}
                 style={{
                   padding: '12px 24px',
-                  background: 'linear-gradient(135deg, #083A85 0%, #0d4a9e 100%)',
+                  background: darkMode ? 'linear-gradient(135deg, #03969c, #027a7f)' : 'linear-gradient(135deg, #083A85 0%, #0d4a9e 100%)',
                   border: 'none',
                   borderRadius: '12px',
                   color: '#fff',
@@ -685,10 +705,10 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
                 onClick={handleClose}
                 style={{
                   padding: '12px 24px',
-                  backgroundColor: '#f5f5f5',
+                  backgroundColor: darkMode ? 'rgba(255,255,255,0.07)' : '#f5f5f5',
                   border: 'none',
                   borderRadius: '12px',
-                  color: '#666',
+                  color: darkMode ? '#9ca3af' : '#666',
                   fontSize: '15px',
                   fontWeight: 500,
                   cursor: 'pointer',
