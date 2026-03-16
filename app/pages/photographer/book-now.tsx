@@ -227,12 +227,30 @@ function BookNowContent(): React.JSX.Element {
         badgeGradient: badgePresets[index % badgePresets.length].badgeGradient,
         tierBorderColor: TIER_BORDER[pkg.packageName] ?? '#3B82F6',
         isPremium,
+        hasLiveStream: pkg.hasLiveStream || false,
+        photobookPhotos: pkg.photobookPhotos,
         description: pkg.description || '',
         features: [...(pkg.features || [])]
           .sort((a, b) => a.displayOrder - b.displayOrder)
           .map(f => ({ text: f.featureName, available: f.isIncluded })),
+        // Keep raw feature names for this package (included ones)
+        includedFeatureNames: new Set(
+          (pkg.features || []).filter(f => f.isIncluded).map(f => f.featureName)
+        ),
       };
     });
+
+  // Collect ALL unique feature names across all packages, preserving display order
+  const allFeatureNames: string[] = [];
+  const seenFeatures = new Set<string>();
+  for (const pkg of [...apiPackages].sort((a, b) => (TIER_ORDER[a.packageName] ?? 99) - (TIER_ORDER[b.packageName] ?? 99))) {
+    for (const f of [...(pkg.features || [])].sort((a, b) => a.displayOrder - b.displayOrder)) {
+      if (!seenFeatures.has(f.featureName)) {
+        seenFeatures.add(f.featureName);
+        allFeatureNames.push(f.featureName);
+      }
+    }
+  }
 
   const handleCancel = () => {
     setSelectedPackage(null);
@@ -764,9 +782,31 @@ function BookNowContent(): React.JSX.Element {
                     }}
                   ></div>
 
-                  {/* Features List */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: selectedPackage === pkg.id ? '14px' : '12px', transition: 'all 0.3s ease' }}>
-                    {pkg.features.map((feature, index) => (
+                  {/* All Offers & Features — unified list */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', transition: 'all 0.3s ease' }}>
+                    {[
+                      // Combined photos & videos line
+                      ...(() => {
+                        const hasPhotos = pkg.isPremium || (pkg.includedPhotos ?? 0) > 0;
+                        const hasVideos = pkg.isPremium || (pkg.includedVideos ?? 0) > 0;
+                        if (!hasPhotos && !hasVideos) return [];
+                        const photoPart = pkg.isPremium ? 'Unlimited photos' : pkg.includedPhotos ? `${pkg.includedPhotos} photos` : '';
+                        const videoPart = pkg.isPremium ? 'Unlimited videos' : pkg.includedVideos ? `${pkg.includedVideos} videos` : '';
+                        const combined = [photoPart, videoPart].filter(Boolean).join(' & ') + ' included';
+                        return [{ text: combined, available: true }];
+                      })(),
+                      // All features across all packages — checked if this package includes it
+                      ...allFeatureNames.map(name => {
+                        const available = pkg.includedFeatureNames.has(name);
+                        // Enhance "Printed photo album" with dynamic photo count
+                        if (name.toLowerCase().includes('printed photo album') && available) {
+                          const count = pkg.photobookPhotos;
+                          const suffix = count && count > 0 ? ` (${count} photos)` : '';
+                          return { text: `${name}${suffix}`, available };
+                        }
+                        return { text: name, available };
+                      }),
+                    ].map((feature, index) => (
                       <div
                         key={index}
                         style={{
@@ -781,7 +821,7 @@ function BookNowContent(): React.JSX.Element {
                             className="bi bi-check-circle-fill"
                             style={{
                               color: selectedPackage === pkg.id ? '#059669' : '#10b981',
-                              fontSize: selectedPackage === pkg.id ? '18px' : '16px',
+                              fontSize: '17px',
                               transition: 'all 0.3s ease',
                             }}
                           ></i>
@@ -790,18 +830,19 @@ function BookNowContent(): React.JSX.Element {
                             className="bi bi-x-circle"
                             style={{
                               color: '#d1d5db',
-                              fontSize: selectedPackage === pkg.id ? '18px' : '16px',
+                              fontSize: '17px',
                               transition: 'all 0.3s ease',
                             }}
                           ></i>
                         )}
                         <span
                           style={{
-                            fontSize: selectedPackage === pkg.id ? '15px' : '14px',
+                            fontSize: '15px',
                             color: feature.available
                               ? (selectedPackage === pkg.id ? '#1f2937' : '#374151')
                               : '#9ca3af',
                             fontWeight: selectedPackage === pkg.id && feature.available ? '600' : '500',
+                            textDecoration: 'none',
                             transition: 'all 0.3s ease',
                           }}
                         >

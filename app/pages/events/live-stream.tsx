@@ -206,10 +206,10 @@ const App = () => {
         }, d.token!);
         setShowAuthModal(false);
       } else {
-        setAuthError(res.data?.message || res.error || 'Login failed. Please check your credentials.');
+        setAuthError(res.data?.message || res.error || 'Incorrect email or password. Please try again.');
       }
     } catch {
-      setAuthError('Login failed. Please try again.');
+      setAuthError('Unable to connect. Please check your internet connection and try again.');
     } finally {
       setAuthLoading(false);
     }
@@ -237,17 +237,17 @@ const App = () => {
         setAuthStep('otp');
         setAuthError('');
       } else {
-        setAuthError(res.data?.message || res.error || 'Signup failed. Please try again.');
+        setAuthError(res.data?.message || res.error || 'Could not create your account. The email may already be registered.');
       }
     } catch {
-      setAuthError('Signup failed. Please try again.');
+      setAuthError('Unable to connect. Please check your internet connection and try again.');
     } finally {
       setAuthLoading(false);
     }
   };
 
   const handleAuthVerifyOtp = async () => {
-    if (!otpValue || otpValue.length < 4) { setAuthError('Please enter the verification code'); return; }
+    if (!otpValue || otpValue.length < 4) { setAuthError('Please enter the 4-digit verification code sent to your email.'); return; }
     setAuthLoading(true);
     setAuthError('');
     try {
@@ -267,13 +267,13 @@ const App = () => {
           }, d.token!);
           setShowAuthModal(false);
         } else {
-          setAuthError(loginRes.data?.message || loginRes.error || 'Email verified but login failed. Please log in manually.');
+          setAuthError(loginRes.data?.message || loginRes.error || 'Email verified successfully! Please switch to the Log In tab to sign in.');
         }
       } else {
-        setAuthError(res.data?.message || res.error || 'Invalid code. Please try again.');
+        setAuthError(res.data?.message || res.error || 'The verification code is incorrect or has expired. Please check your email and try again.');
       }
     } catch {
-      setAuthError('Verification failed. Please try again.');
+      setAuthError('Unable to verify. Please check your internet connection and try again.');
     } finally {
       setAuthLoading(false);
     }
@@ -307,10 +307,10 @@ const App = () => {
         }, d.token!);
         setShowAuthModal(false);
       } else {
-        setAuthError(res.data?.message || res.error || 'Google sign-in failed. Please try again.');
+        setAuthError(res.data?.message || res.error || 'Could not sign in with Google. Please try another method.');
       }
     } catch {
-      setAuthError('Google sign-in failed. Please try again.');
+      setAuthError('Unable to connect to Google. Please check your internet connection and try again.');
     } finally {
       setGoogleLoading(false);
     }
@@ -318,7 +318,7 @@ const App = () => {
 
   const handleGoogleError = () => {
     setGoogleLoading(false);
-    setAuthError('Google sign-in was cancelled or failed.');
+    setAuthError('Google sign-in was cancelled. You can try again or use email instead.');
   };
 
   // Load real event metadata from API on mount if eventId is in URL
@@ -432,7 +432,7 @@ const App = () => {
         setInviteTokenError(res.error || 'Invalid invite token. Please try again.');
       }
     } catch {
-      setInviteTokenError('Failed to validate token. Please try again.');
+      setInviteTokenError('Unable to validate token. Please check your connection and try again.');
     } finally {
       setInviteTokenLoading(false);
     }
@@ -505,7 +505,7 @@ const App = () => {
         setEntryFeeError(res.error || 'Payment failed. Please try again.');
       }
     } catch {
-      setEntryFeeError('Payment failed. Please try again.');
+      setEntryFeeError('Unable to process payment. Please check your connection and try again.');
     } finally {
       setEntryFeeLoading(false);
     }

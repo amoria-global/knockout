@@ -108,6 +108,8 @@ export interface PublicPackage {
   includedVideos?: number;
   extraPhotoPrice?: number;
   extraVideoPrice?: number;
+  hasLiveStream?: boolean;
+  photobookPhotos?: number | null;
   features: PublicPackageFeature[];
 }
 

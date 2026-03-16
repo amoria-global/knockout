@@ -139,10 +139,10 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
         },
         onFailure: (_data: XentriPayStatusResponse) => {
           setStep('failed');
-          setError('Payment was not completed. Please try again.');
+          setError('Payment was declined or timed out. Please check your balance and try again.');
         },
         onError: (errorMsg: string) => {
-          setError(errorMsg);
+          setError(errorMsg || 'Something went wrong while processing your payment.');
           setStep('failed');
         },
       },
@@ -235,7 +235,10 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
       setStep('processing');
       startPolling(data.refid);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Payment failed. Please try again.';
+      const raw = err instanceof Error ? err.message : '';
+      const msg = raw.toLowerCase().includes('network') || raw.toLowerCase().includes('fetch')
+        ? 'Unable to connect. Please check your internet connection and try again.'
+        : raw || 'Could not initiate payment. Please try again or choose a different payment method.';
       setError(msg);
       onError?.(msg);
     } finally {
