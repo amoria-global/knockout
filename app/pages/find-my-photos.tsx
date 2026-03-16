@@ -87,10 +87,10 @@ const FindMyPhotos = () => {
           setDisplayedPhotos(photos);
           setIsCodeSubmitted(true);
         } else {
-          setInviteError(response.error || 'Invalid invite code');
+          setInviteError(response.error || 'This invite code is invalid or has expired. Please check and try again.');
         }
       }).catch(() => {
-        setInviteError('Failed to load album');
+        setInviteError('Unable to load album. Please check your internet connection and try again.');
       }).finally(() => {
         setIsLoadingAlbum(false);
       });
@@ -118,7 +118,7 @@ const FindMyPhotos = () => {
 
   const handleInviteSubmit = async () => {
     if (!inviteCode.trim()) {
-      setInviteError('Please enter a valid invite code');
+      setInviteError('Please enter your album invite code.');
       return;
     }
     setInviteError('');
@@ -142,10 +142,10 @@ const FindMyPhotos = () => {
         setDisplayedPhotos(photos);
         setIsCodeSubmitted(true);
       } else {
-        setInviteError(response.error || 'Invalid invite code');
+        setInviteError(response.error || 'This invite code is invalid or has expired. Please check and try again.');
       }
     } catch {
-      setInviteError('Failed to load album. Please try again.');
+      setInviteError('Unable to load album. Please check your internet connection and try again.');
     } finally {
       setIsLoadingAlbum(false);
     }

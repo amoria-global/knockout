@@ -95,15 +95,15 @@ function JoinPackageContent(): React.JSX.Element {
           setShowAuthModal(false);
           setShowPaymentModal(true);
         } else {
-          setAuthError((res.data as unknown as Record<string, string>)?.message || res.error || 'Google sign-in failed.');
+          setAuthError((res.data as unknown as Record<string, string>)?.message || res.error || 'Could not sign in with Google. Please try another method.');
         }
-      } catch { setAuthError('Google sign-in failed.'); } finally { setGoogleLoading(false); }
+      } catch { setAuthError('Unable to connect to Google. Please check your internet connection.'); } finally { setGoogleLoading(false); }
     },
-    onError: () => setAuthError('Google sign-in was cancelled.'),
+    onError: () => setAuthError('Google sign-in was cancelled. You can try again or use email instead.'),
   });
 
   const handleAuthLogin = async () => {
-    if (!loginEmail || !loginPassword) { setAuthError('Please fill in all fields'); return; }
+    if (!loginEmail || !loginPassword) { setAuthError('Please enter your email and password.'); return; }
     setAuthLoading(true); setAuthError('');
     try {
       const res = await apiLogin({ email: loginEmail, password: loginPassword });
@@ -112,12 +112,12 @@ function JoinPackageContent(): React.JSX.Element {
         await authLogin({ id: d.id || d.customerId || d.customer_id || '', firstName: d.firstName || '', lastName: d.lastName || '', email: d.email || loginEmail, phone: d.phone || '', customerId: d.customerId || d.customer_id || d.id || '', customerType: d.customerType || d.userType || 'Viewer' }, d.token);
         setShowAuthModal(false);
         setShowPaymentModal(true);
-      } else { setAuthError((res.data as unknown as Record<string, string>)?.message || res.error || 'Login failed.'); }
-    } catch { setAuthError('Login failed.'); } finally { setAuthLoading(false); }
+      } else { setAuthError((res.data as unknown as Record<string, string>)?.message || res.error || 'Incorrect email or password. Please try again.'); }
+    } catch { setAuthError('Unable to connect. Please check your internet connection and try again.'); } finally { setAuthLoading(false); }
   };
 
   const handleAuthSignup = async () => {
-    if (!signupFirstName || !signupLastName || !signupEmail || !signupPassword) { setAuthError('Please fill in all fields'); return; }
+    if (!signupFirstName || !signupLastName || !signupEmail || !signupPassword) { setAuthError('Please fill in all required fields.'); return; }
     setAuthLoading(true); setAuthError('');
     try {
       const res = await apiSignup({ firstName: signupFirstName, lastName: signupLastName, email: signupEmail, phone: signupPhone, password: signupPassword, customerType: 'Viewer' });
@@ -126,13 +126,13 @@ function JoinPackageContent(): React.JSX.Element {
         if (d.customerId || d.customer_id || d.id) {
           setOtpCustomerId(d.customerId || d.customer_id || d.id || '');
           setAuthStep('otp');
-        } else { setAuthError('Signup failed.'); }
-      } else { setAuthError((res.data as unknown as Record<string, string>)?.message || res.error || 'Signup failed.'); }
-    } catch { setAuthError('Signup failed.'); } finally { setAuthLoading(false); }
+        } else { setAuthError('Could not create your account. Please try again.'); }
+      } else { setAuthError((res.data as unknown as Record<string, string>)?.message || res.error || 'Could not create your account. The email may already be registered.'); }
+    } catch { setAuthError('Unable to connect. Please check your internet connection and try again.'); } finally { setAuthLoading(false); }
   };
 
   const handleVerifyOtp = async () => {
-    if (!otpValue) { setAuthError('Please enter the verification code'); return; }
+    if (!otpValue) { setAuthError('Please enter the verification code sent to your email.'); return; }
     setAuthLoading(true); setAuthError('');
     try {
       const res = await verifyOtp({ customerId: otpCustomerId, otp: Number(otpValue) });
@@ -141,8 +141,8 @@ function JoinPackageContent(): React.JSX.Element {
         await authLogin({ id: d.id || d.customerId || d.customer_id || otpCustomerId, firstName: d.firstName || signupFirstName, lastName: d.lastName || signupLastName, email: d.email || signupEmail, phone: d.phone || signupPhone, customerId: d.customerId || d.customer_id || d.id || otpCustomerId, customerType: d.customerType || 'Viewer' }, d.token);
         setShowAuthModal(false);
         setShowPaymentModal(true);
-      } else { setAuthError((res.data as unknown as Record<string, string>)?.message || res.error || 'Verification failed.'); }
-    } catch { setAuthError('Verification failed.'); } finally { setAuthLoading(false); }
+      } else { setAuthError((res.data as unknown as Record<string, string>)?.message || res.error || 'The verification code is incorrect or has expired.'); }
+    } catch { setAuthError('Unable to verify. Please check your internet connection and try again.'); } finally { setAuthLoading(false); }
   };
 
   // Listen for session expiry
@@ -269,7 +269,7 @@ function JoinPackageContent(): React.JSX.Element {
     const price = selectedEvent?.price || 0;
     if (selectedPackage === 'group' && isGroupInputValid()) {
       const count = typeof numberOfPeople === 'number' ? numberOfPeople : 1;
-      return Math.round(price * 0.9 * count);
+      return Math.round(price * (1 - discountPercentage / 100) * count);
     }
     return price;
   };
@@ -459,7 +459,7 @@ function JoinPackageContent(): React.JSX.Element {
           <div style={{ marginBottom: isMobile ? '16px' : '20px', textAlign: 'center' }}>
             <h1
               style={{
-                fontSize: isMobile ? '26px' : '40px',
+                fontSize: isMobile ? '32px' : '52px',
                 fontWeight: '900',
                 color: '#ffffff',
                 marginBottom: '8px',

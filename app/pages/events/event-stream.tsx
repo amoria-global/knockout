@@ -234,7 +234,7 @@ export default function EventStreamPage({ eventId }: EventStreamPageProps) {
   const [xentriPayType, setXentriPayType] = useState<'tip' | 'streaming' | 'donation'>('streaming');
   const [xentriPayEventId, setXentriPayEventId] = useState('');
   const [xentriPayCurrencyId, setXentriPayCurrencyId] = useState('');
-  const [xentriPayCurrencyCode, setXentriPayCurrencyCode] = useState('USD');
+  const [xentriPayCurrencyCode, setXentriPayCurrencyCode] = useState('RWF');
 
   // ── DONATION ──────────────────────────────────────────────────────────────
   const [showDonationPrompt, setShowDonationPrompt] = useState(false);
@@ -288,7 +288,7 @@ export default function EventStreamPage({ eventId }: EventStreamPageProps) {
           }
         }
       } catch {
-        setHostIdError('Could not validate the invite token. Please try again.');
+        setHostIdError('Unable to validate the invite token. Please check your connection and try again.');
       } finally {
         setHostIdValidating(false);
       }
@@ -334,10 +334,10 @@ export default function EventStreamPage({ eventId }: EventStreamPageProps) {
             } catch { /* ignore — registration check is optional */ }
           }
         } else {
-          setLoadError(pubRes.error || 'Failed to load event details.');
+          setLoadError(pubRes.error || 'This event could not be found. It may have been removed.');
         }
       } catch {
-        setLoadError('An error occurred loading the event.');
+        setLoadError('Unable to load event details. Please check your internet connection and try again.');
       } finally {
         setIsLoading(false);
       }
@@ -754,9 +754,9 @@ export default function EventStreamPage({ eventId }: EventStreamPageProps) {
     try {
       const res = await joinEvent({ eventId });
       if (res.success) { setRsvpSuccess(true); setIsRegistered(true); }
-      else setRsvpError(res.error || 'Failed to register. Please try again.');
+      else setRsvpError(res.error || 'Could not complete registration. Please try again.');
     } catch {
-      setRsvpError('An error occurred. Please try again.');
+      setRsvpError('Unable to connect. Please check your internet connection and try again.');
     } finally {
       setRsvpLoading(false);
     }
@@ -769,7 +769,7 @@ export default function EventStreamPage({ eventId }: EventStreamPageProps) {
     setXentriPayAmount(Number(gift.amount));
     setXentriPayType('streaming');
     setXentriPayCurrencyId(giftCurrencyId || (currencies[0]?.id ?? ''));
-    setXentriPayCurrencyCode(giftCurrencyCode || (currencies[0]?.code ?? 'USD'));
+    setXentriPayCurrencyCode(giftCurrencyCode || (currencies[0]?.code ?? 'RWF'));
     setGift(prev => ({ ...prev, show: false }));
     setShowXentriPayModal(true);
   };
@@ -974,7 +974,7 @@ export default function EventStreamPage({ eventId }: EventStreamPageProps) {
     setXentriPayAmount(Number(donationAmount));
     setXentriPayType('tip');
     setXentriPayCurrencyId(donationCurrencyId || (currencies[0]?.id ?? ''));
-    setXentriPayCurrencyCode(donationCurrencyCode || (currencies[0]?.code ?? 'USD'));
+    setXentriPayCurrencyCode(donationCurrencyCode || (currencies[0]?.code ?? 'RWF'));
     setShowDonationModal(false);
     setShowDonationPrompt(false);
     setShowXentriPayModal(true);

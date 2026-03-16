@@ -176,10 +176,10 @@ function ViewEventContent(): React.JSX.Element {
         setShowAuthModal(false);
         window.location.href = pendingJoinUrl;
       } else {
-        setAuthError(res.data?.message || res.error || 'Google sign-in failed. Please try again.');
+        setAuthError(res.data?.message || res.error || 'Could not sign in with Google. Please try another method.');
       }
     } catch {
-      setAuthError('Google sign-in failed. Please try again.');
+      setAuthError('Unable to connect to Google. Please check your internet connection.');
     } finally {
       setGoogleLoading(false);
     }
@@ -187,7 +187,7 @@ function ViewEventContent(): React.JSX.Element {
 
   const handleGoogleError = () => {
     setGoogleLoading(false);
-    setAuthError('Google sign-in was cancelled or failed.');
+    setAuthError('Google sign-in was cancelled. You can try again or use email instead.');
   };
 
   // Fetch event from API
@@ -204,10 +204,10 @@ function ViewEventContent(): React.JSX.Element {
         if (response.success && response.data) {
           setSelectedEvent(response.data);
         } else {
-          setLoadError(response.error || 'Event not found');
+          setLoadError(response.error || 'This event could not be found. It may have been removed.');
         }
-      } catch (err) {
-        setLoadError(err instanceof Error ? err.message : 'An error occurred');
+      } catch {
+        setLoadError('Unable to load event details. Please check your internet connection and try again.');
       } finally {
         setIsLoading(false);
       }
@@ -279,7 +279,7 @@ function ViewEventContent(): React.JSX.Element {
   };
 
   const handleLogin = async () => {
-    if (!loginEmail || !loginPassword) { setAuthError('Please fill in all fields'); return; }
+    if (!loginEmail || !loginPassword) { setAuthError('Please enter your email and password.'); return; }
     setAuthLoading(true);
     setAuthError('');
     try {
@@ -288,10 +288,10 @@ function ViewEventContent(): React.JSX.Element {
         setShowAuthModal(false);
         window.location.href = pendingJoinUrl;
       } else {
-        setAuthError(res.data?.message || res.error || 'Login failed. Please check your credentials.');
+        setAuthError(res.data?.message || res.error || 'Incorrect email or password. Please try again.');
       }
     } catch {
-      setAuthError('Login failed. Please try again.');
+      setAuthError('Unable to connect. Please check your internet connection and try again.');
     } finally {
       setAuthLoading(false);
     }
@@ -299,7 +299,7 @@ function ViewEventContent(): React.JSX.Element {
 
   const handleSignup = async () => {
     if (!signupFirstName || !signupLastName || !signupEmail || !signupPhone || !signupPassword) {
-      setAuthError('Please fill in all fields');
+      setAuthError('Please fill in all required fields.');
       return;
     }
     setAuthLoading(true);
@@ -319,17 +319,17 @@ function ViewEventContent(): React.JSX.Element {
         setAuthStep('otp');
         setAuthError('');
       } else {
-        setAuthError(res.data?.message || res.error || 'Signup failed. Please try again.');
+        setAuthError(res.data?.message || res.error || 'Could not create your account. The email may already be registered.');
       }
     } catch {
-      setAuthError('Signup failed. Please try again.');
+      setAuthError('Unable to connect. Please check your internet connection and try again.');
     } finally {
       setAuthLoading(false);
     }
   };
 
   const handleVerifyOtp = async () => {
-    if (!otpValue || otpValue.length < 4) { setAuthError('Please enter the verification code'); return; }
+    if (!otpValue || otpValue.length < 4) { setAuthError('Please enter the 4-digit verification code sent to your email.'); return; }
     setAuthLoading(true);
     setAuthError('');
     try {
@@ -341,13 +341,13 @@ function ViewEventContent(): React.JSX.Element {
           setShowAuthModal(false);
           window.location.href = pendingJoinUrl;
         } else {
-          setAuthError(loginRes.data?.message || loginRes.error || 'Email verified but login failed. Please log in manually.');
+          setAuthError(loginRes.data?.message || loginRes.error || 'Email verified successfully! Please switch to the Log In tab to sign in.');
         }
       } else {
-        setAuthError(res.data?.message || res.error || 'Invalid code. Please try again.');
+        setAuthError(res.data?.message || res.error || 'The verification code is incorrect or has expired. Please check your email and try again.');
       }
     } catch {
-      setAuthError('Verification failed. Please try again.');
+      setAuthError('Unable to verify. Please check your internet connection and try again.');
     } finally {
       setAuthLoading(false);
     }
