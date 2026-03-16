@@ -380,7 +380,7 @@ const Donations = () => {
   const handleDonation = async () => {
     const amount = getDisplayAmount();
     if (!amount || amount <= 0) {
-      alert('Please select a donation amount');
+      setDonationError('Please select a donation amount before proceeding.');
       return;
     }
 
@@ -404,7 +404,7 @@ const Donations = () => {
       });
 
       if (!response.success || !response.data) {
-        throw new Error(response.error || 'Donation failed');
+        throw new Error(response.error || 'Could not process your donation. Please try again.');
       }
 
       // Capture donationId from response, then open XentriPay for actual payment
@@ -412,7 +412,8 @@ const Donations = () => {
       setShowPaymentModal(false);
       setShowXentriPayModal(true);
     } catch (err) {
-      setDonationError(err instanceof Error ? err.message : 'Donation failed. Please try again.');
+      const raw = err instanceof Error ? err.message : '';
+      setDonationError(raw || 'Unable to process your donation. Please check your connection and try again.');
     } finally {
       setDonationLoading(false);
     }
