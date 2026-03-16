@@ -145,6 +145,18 @@ function ViewEventContent(): React.JSX.Element {
   const [pendingJoinUrl, setPendingJoinUrl] = useState('');
   const [googleLoading, setGoogleLoading] = useState(false);
 
+  // Listen for session expiry — show login modal instead of redirecting
+  useEffect(() => {
+    const handleSessionExpired = (e: Event) => {
+      e.preventDefault();
+      setAuthStep('login');
+      setAuthError('Your session has expired. Please log in again.');
+      setShowAuthModal(true);
+    };
+    window.addEventListener('auth:session-expired', handleSessionExpired);
+    return () => window.removeEventListener('auth:session-expired', handleSessionExpired);
+  }, []);
+
   const handleGoogleSuccess = async (tokenResponse: { access_token: string }) => {
     setGoogleLoading(true); // set before async work; finally always resets it
     setAuthError('');
@@ -403,9 +415,14 @@ function ViewEventContent(): React.JSX.Element {
 
         {/* ── Price badge — bottom-right ── */}
         {isPaid && (
-          <div style={{ position: 'absolute', bottom: 28, right: 28, zIndex: 20, background: 'rgba(246,173,85,0.13)', border: '2px solid #f6ad55', borderRadius: 12, padding: '12px 24px', textAlign: 'center', backdropFilter: 'blur(10px)', pointerEvents: 'none' }}>
-            <div style={{ fontSize: 26, fontWeight: 800, color: '#f6ad55', lineHeight: 1 }}>{(selectedEvent.price || 0).toLocaleString()} RWF</div>
-            <div style={{ fontSize: 12, color: '#a0aec0', marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Entry fee</div>
+          <div style={{ position: 'absolute', bottom: 28, right: 28, zIndex: 20, background: isCompleted ? 'rgba(127,29,29,0.15)' : 'rgba(246,173,85,0.13)', border: `2px solid ${isCompleted ? '#ef4444' : '#f6ad55'}`, borderRadius: 12, padding: '12px 24px', textAlign: 'center', backdropFilter: 'blur(10px)', pointerEvents: 'none' }}>
+            {isCompleted && (
+              <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
+                <i className="bi bi-x-lg" style={{ fontSize: 48, color: 'rgba(239,68,68,0.6)', fontWeight: 900 }}></i>
+              </div>
+            )}
+            <div style={{ fontSize: 26, fontWeight: 800, color: isCompleted ? 'rgba(246,173,85,0.5)' : '#f6ad55', lineHeight: 1 }}>{(selectedEvent.price || 0).toLocaleString()} RWF</div>
+            <div style={{ fontSize: 12, color: isCompleted ? 'rgba(160,174,192,0.5)' : '#a0aec0', marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{isCompleted ? 'Event ended' : 'Entry fee'}</div>
           </div>
         )}
 
