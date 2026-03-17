@@ -92,9 +92,9 @@ function GoogleAuthButton({ onSuccess, onError, loading, label }: {
 function getInitialEventId(): string {
   if (typeof window !== 'undefined') {
     const params = new URLSearchParams(window.location.search);
-    return params.get('eventId') || params.get('id') || 'event-1';
+    return params.get('eventId') || params.get('id') || '';
   }
-  return 'event-1';
+  return '';
 }
 
 // Main App Component
@@ -196,13 +196,13 @@ const App = () => {
       if (res.success && res.data?.token) {
         const d = res.data;
         await authLogin({
-          id: d.id || d.customerId || d.customer_id || '',
+          id: d.id || d.customerId || '',
           firstName: d.firstName || '',
           lastName: d.lastName || '',
           email: d.email || loginEmail,
           phone: d.phone || '',
-          customerId: d.customerId || d.customer_id || d.id || '',
-          customerType: d.customerType || d.userType || 'Viewer',
+          customerId: d.customerId || '',
+          customerType: d.customerType || 'Viewer',
         }, d.token!);
         setShowAuthModal(false);
       } else {
@@ -232,7 +232,7 @@ const App = () => {
         customerType: 'Viewer',
       });
       if (res.success && res.data) {
-        const customerId = res.data.customerId || res.data.customer_id || res.data.applicantId || res.data.applicant_id || '';
+        const customerId = res.data.customerId || '';
         setOtpCustomerId(customerId);
         setAuthStep('otp');
         setAuthError('');
@@ -257,13 +257,13 @@ const App = () => {
         if (loginRes.success && loginRes.data?.token) {
           const d = loginRes.data;
           await authLogin({
-            id: d.id || d.customerId || d.customer_id || '',
+            id: d.id || d.customerId || '',
             firstName: d.firstName || signupFirstName,
             lastName: d.lastName || signupLastName,
             email: d.email || signupEmail,
             phone: d.phone || signupPhone,
-            customerId: d.customerId || d.customer_id || d.id || '',
-            customerType: d.customerType || d.userType || 'Viewer',
+            customerId: d.customerId || '',
+            customerType: d.customerType || 'Viewer',
           }, d.token!);
           setShowAuthModal(false);
         } else {
@@ -336,7 +336,7 @@ const App = () => {
             id: eventId,
             title: (ev.title as string) || prev[0].title,
             photographer: (ev.photographerName as string) || prev[0].photographer,
-            photographerId: (ev.photographerId as string) || (ev.organizerId as string) || prev[0].photographerId,
+            photographerId: (ev.photographerId as string) || prev[0].photographerId,
             photographerAvatar: ((ev.photographer as Record<string, unknown>)?.profilePicture as string) || undefined,
             category: (ev.eventType as string) || (ev.category as string) || prev[0].category,
             hlsManifestUrl: (ev.hlsManifestUrl as string) || undefined,
@@ -711,9 +711,7 @@ const App = () => {
   useEffect(() => {
     const hlsUrl = mainEvent?.hlsManifestUrl;
     const eventId = mainEvent?.id;
-    console.log(`[HLS Effect] Triggered — eventId=${eventId}, hlsUrl=${hlsUrl ? hlsUrl.substring(0, 60) + '...' : 'NULL'}`);
     if (!hlsUrl || !eventId) {
-      console.log('[HLS Effect] Skipping — no hlsUrl or eventId');
       return;
     }
 
@@ -726,15 +724,12 @@ const App = () => {
       if (!videoEl) {
         // Video element not mounted yet — retry up to 10 times (2s total)
         if (attempt < 10) {
-          console.log(`[HLS Init] Video element not ready, retry ${attempt + 1}/10`);
           retryTimer = setTimeout(() => initHls(attempt + 1), 200);
         } else {
-          console.warn(`[HLS Init] Video element not found after 10 retries for ${eventId}`);
         }
         return;
       }
 
-      console.log(`[HLS Init] Attaching HLS for ${eventId}: ${hlsUrl}`);
 
       // Destroy existing HLS instance for this event
       const existing = hlsInstancesRef.current[eventId];
@@ -754,7 +749,6 @@ const App = () => {
         hls.attachMedia(videoEl);
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
           if (cancelled) return;
-          console.log(`[HLS Init] Manifest parsed, stream ready for ${eventId}`);
           // Set volume from saved preference
           const savedVol = volumeRef.current[eventId] ?? getSavedVolume();
           videoEl.volume = savedVol / 100;
@@ -763,7 +757,6 @@ const App = () => {
           videoEl.muted = true;
           videoEl.play().then(() => {
             if (cancelled) return;
-            console.log(`[HLS Init] Autoplay succeeded (muted) for ${eventId}`);
             setPlaybackState(prev => ({
               ...prev,
               [eventId]: {
@@ -773,7 +766,7 @@ const App = () => {
                 volume: savedVol,
               }
             }));
-          }).catch(err => console.warn('[HLS Init] Autoplay blocked even when muted:', err));
+          }).catch(() => {});
         });
         hls.on(Hls.Events.ERROR, (_e, data) => {
           if (!data.fatal) {
@@ -783,11 +776,9 @@ const App = () => {
           console.error(`[HLS Fatal]`, data.type, data.details);
           switch (data.type) {
             case Hls.ErrorTypes.NETWORK_ERROR:
-              console.log('[HLS Recovery] Attempting network recovery...');
               hls.startLoad();
               break;
             case Hls.ErrorTypes.MEDIA_ERROR:
-              console.log('[HLS Recovery] Attempting media recovery...');
               hls.recoverMediaError();
               break;
             default:
@@ -800,7 +791,7 @@ const App = () => {
       } else if (videoEl.canPlayType('application/vnd.apple.mpegurl')) {
         // Safari — native HLS support
         videoEl.src = hlsUrl;
-        videoEl.play().catch(err => console.log('[HLS Init] Safari autoplay blocked:', err));
+        videoEl.play().catch(() => {});
       }
     };
 
@@ -858,7 +849,6 @@ const App = () => {
           get() { return _muted; },
           set(val: boolean) {
             if (val !== _muted) {
-              console.warn(`[MUTED TRACE] muted changing from ${_muted} to ${val}`);
               console.trace();
             }
             _muted = val;
@@ -890,7 +880,6 @@ const App = () => {
       const volume = playbackState[mainEventId].volume;
       if (typeof window !== 'undefined') {
         localStorage.setItem('livestream-volume', volume.toString());
-        console.log(`[localStorage] Saved volume: ${volume}`);
       }
     }
   }, [playbackState, mainEventIndex, events]);
@@ -1175,7 +1164,7 @@ const App = () => {
           }
           // Keep mini-players playing at all times
           if (video.paused) {
-            video.play().catch(err => console.log(`Mini-player play error for ${event.id}:`, err));
+            video.play().catch(() => {});
           }
         } else {
           // Main player: Only enforce volume and pause state — never touch muted
@@ -1399,12 +1388,11 @@ const App = () => {
 
       // Only play or pause — do not touch muted or volume
       if (willBePlaying) {
-        video.play().catch(err => console.log('Play error:', err));
+        video.play().catch(() => {});
       } else {
         video.pause();
       }
 
-      console.log(`[togglePlay] ===== TOGGLE PLAY END =====`);
     }
   };
 
@@ -1435,16 +1423,13 @@ const App = () => {
 
   // Handle volume change
   const handleVolumeChange = (eventId: string, newVolume: number) => {
-    console.log(`[handleVolumeChange] ===== VOLUME CHANGE START ===== Setting volume to ${newVolume} for ${eventId}`);
     const video = videoRefs.current[eventId];
     if (video) {
       // STEP 1: Store in direct volume ref FIRST - this is the source of truth
       volumeRef.current[eventId] = newVolume;
-      console.log(`[handleVolumeChange] Stored in volumeRef:`, volumeRef.current[eventId]);
 
       // STEP 2: Set video element volume immediately
       video.volume = newVolume / 100;
-      console.log(`[handleVolumeChange] Video element volume set to:`, video.volume);
 
       // STEP 3: Update the playbackStateRef (before state) - for enforcement loop
       const updatedEventState = {
@@ -1456,7 +1441,6 @@ const App = () => {
         ...playbackStateRef.current,
         [eventId]: updatedEventState
       };
-      console.log(`[handleVolumeChange] Updated playbackStateRef:`, playbackStateRef.current[eventId]);
 
       // STEP 4: Update React state (async) - for UI
       setPlaybackState(prev => {
@@ -1468,14 +1452,12 @@ const App = () => {
             isMuted: newVolume === 0
           }
         };
-        console.log(`[handleVolumeChange] Updated React state:`, newState[eventId]);
         return newState;
       });
 
       // STEP 5: Sync mute with volume — volume > 0 means unmute, volume = 0 means mute
       video.muted = newVolume === 0;
 
-      console.log(`[handleVolumeChange] ===== VOLUME CHANGE END =====`);
     }
   };
 
@@ -1569,7 +1551,7 @@ const App = () => {
         mainVideo.volume = (mainState.volume ?? 100) / 100;
 
         if (mainState.isPlaying && mainVideo.paused) {
-          mainVideo.play().catch(err => console.log('Main play error:', err));
+          mainVideo.play().catch(() => {});
         } else if (!mainState.isPlaying && !mainVideo.paused) {
           mainVideo.pause();
         }
@@ -1588,7 +1570,7 @@ const App = () => {
           video.volume = 0;
           // Keep mini-players playing
           if (video.paused) {
-            video.play().catch(err => console.log(`[Sync] Mini play error for ${event.id}:`, err));
+            video.play().catch(() => {});
           }
         } else {
           // Main player: Only enforce play/pause — never touch muted
@@ -1596,7 +1578,7 @@ const App = () => {
             if (!state.isPlaying && !video.paused) {
               video.pause();
             } else if (state.isPlaying && video.paused) {
-              video.play().catch(err => console.log(`[Sync] Play error for ${event.id}:`, err));
+              video.play().catch(() => {});
             }
           }
         }
@@ -1635,7 +1617,6 @@ const App = () => {
       // Use saved volume from localStorage or current main volume
       const savedVolume = getSavedVolume();
       const currentMainVolume = playbackState[events[mainEventIndex].id]?.volume ?? savedVolume;
-      console.log(`[handleAddEvent] New event volume: ${currentMainVolume}`);
 
       setEvents(prev => [...prev, newEvent]);
       setPlaybackState(prev => ({
@@ -1753,7 +1734,7 @@ const App = () => {
               }
               freshNewMainVideo.muted = false;
               freshNewMainVideo.volume = targetVolume / 100;
-              freshNewMainVideo.play().catch(err => console.log('Play error:', err));
+              freshNewMainVideo.play().catch(() => {});
             }
 
             // Ensure all mini-players (including old main) stay muted with zero volume and PLAYING
@@ -1769,7 +1750,7 @@ const App = () => {
                   video.volume = 0;
                   // Mini-players ALWAYS play
                   if (video.paused) {
-                    video.play().catch(err => console.log('Mini play error:', err));
+                    video.play().catch(() => {});
                   }
                 }
               }
@@ -2125,7 +2106,6 @@ const App = () => {
   // Handle quality change
   const handleQualityChange = (quality: 'auto' | '1080p' | '720p' | '480p' | '360p' | 'source') => {
     setVideoQuality(quality);
-    console.log('Quality changed to:', quality);
   };
 
   // Handle captions toggle
@@ -2280,10 +2260,7 @@ const App = () => {
     ? playbackState[mainEvent.id]
     : { isPlaying: false, isMuted: false, progress: 0, volume: 100 };
 
-  // Log if we're using default state
-  if (!playbackState[mainEvent.id]) {
-    console.warn(`[mainState] No playback state found for ${mainEvent.id}, using defaults`);
-  }
+
 
   // Main component render
   return (

@@ -91,7 +91,7 @@ function JoinPackageContent(): React.JSX.Element {
         const res = await googleAuth({ email: userInfo.email, firstName: userInfo.given_name || '', lastName: userInfo.family_name || '', customerType: 'Viewer' });
         if (res.success && res.data?.token) {
           const d = res.data as unknown as Record<string, string>;
-          await authLogin({ id: d.id || d.customerId || d.customer_id || '', firstName: d.firstName || userInfo.given_name || '', lastName: d.lastName || userInfo.family_name || '', email: d.email || userInfo.email, phone: d.phone || '', customerId: d.customerId || d.customer_id || d.id || '', customerType: d.customerType || d.userType || 'Viewer' }, d.token);
+          await authLogin({ id: d.id || d.customerId || '', firstName: d.firstName || userInfo.given_name || '', lastName: d.lastName || userInfo.family_name || '', email: d.email || userInfo.email, phone: d.phone || '', customerId: d.customerId || '', customerType: d.customerType || 'Viewer' }, d.token);
           setShowAuthModal(false);
           setShowPaymentModal(true);
         } else {
@@ -109,7 +109,7 @@ function JoinPackageContent(): React.JSX.Element {
       const res = await apiLogin({ email: loginEmail, password: loginPassword });
       if (res.success && res.data?.token) {
         const d = res.data as unknown as Record<string, string>;
-        await authLogin({ id: d.id || d.customerId || d.customer_id || '', firstName: d.firstName || '', lastName: d.lastName || '', email: d.email || loginEmail, phone: d.phone || '', customerId: d.customerId || d.customer_id || d.id || '', customerType: d.customerType || d.userType || 'Viewer' }, d.token);
+        await authLogin({ id: d.id || d.customerId || '', firstName: d.firstName || '', lastName: d.lastName || '', email: d.email || loginEmail, phone: d.phone || '', customerId: d.customerId || '', customerType: d.customerType || 'Viewer' }, d.token);
         setShowAuthModal(false);
         setShowPaymentModal(true);
       } else { setAuthError((res.data as unknown as Record<string, string>)?.message || res.error || 'Incorrect email or password. Please try again.'); }
@@ -123,8 +123,8 @@ function JoinPackageContent(): React.JSX.Element {
       const res = await apiSignup({ firstName: signupFirstName, lastName: signupLastName, email: signupEmail, phone: signupPhone, password: signupPassword, customerType: 'Viewer' });
       if (res.success && res.data) {
         const d = res.data as unknown as Record<string, string>;
-        if (d.customerId || d.customer_id || d.id) {
-          setOtpCustomerId(d.customerId || d.customer_id || d.id || '');
+        if (d.customerId) {
+          setOtpCustomerId(d.customerId || '');
           setAuthStep('otp');
         } else { setAuthError('Could not create your account. Please try again.'); }
       } else { setAuthError((res.data as unknown as Record<string, string>)?.message || res.error || 'Could not create your account. The email may already be registered.'); }
@@ -138,7 +138,7 @@ function JoinPackageContent(): React.JSX.Element {
       const res = await verifyOtp({ customerId: otpCustomerId, otp: Number(otpValue) });
       if (res.success && res.data?.token) {
         const d = res.data as unknown as Record<string, string>;
-        await authLogin({ id: d.id || d.customerId || d.customer_id || otpCustomerId, firstName: d.firstName || signupFirstName, lastName: d.lastName || signupLastName, email: d.email || signupEmail, phone: d.phone || signupPhone, customerId: d.customerId || d.customer_id || d.id || otpCustomerId, customerType: d.customerType || 'Viewer' }, d.token);
+        await authLogin({ id: d.id || d.customerId || otpCustomerId, firstName: d.firstName || signupFirstName, lastName: d.lastName || signupLastName, email: d.email || signupEmail, phone: d.phone || signupPhone, customerId: d.customerId || otpCustomerId, customerType: d.customerType || 'Viewer' }, d.token);
         setShowAuthModal(false);
         setShowPaymentModal(true);
       } else { setAuthError((res.data as unknown as Record<string, string>)?.message || res.error || 'The verification code is incorrect or has expired.'); }

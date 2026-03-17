@@ -12,11 +12,10 @@ function VerifyOtpContent(): React.JSX.Element {
   const searchParams = useSearchParams();
   const { success: showSuccess, error: showError, warning: showWarning, isOnline } = useToast();
 
-  // Get query params and validate they're not "undefined" strings
   const applicantIdFromQuery = searchParams.get('applicantId');
   const emailFromQuery = searchParams.get('email');
-  const [applicantId, setApplicantId] = useState(applicantIdFromQuery && applicantIdFromQuery !== 'undefined' ? applicantIdFromQuery : '');
-  const [email, setEmail] = useState(emailFromQuery && emailFromQuery !== 'undefined' ? emailFromQuery : '');
+  const [applicantId, setApplicantId] = useState(applicantIdFromQuery || '');
+  const [email, setEmail] = useState(emailFromQuery || '');
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -27,12 +26,8 @@ function VerifyOtpContent(): React.JSX.Element {
 
   // Update state when query params change
   useEffect(() => {
-    if (applicantIdFromQuery && applicantIdFromQuery !== 'undefined') {
-      setApplicantId(applicantIdFromQuery);
-    }
-    if (emailFromQuery && emailFromQuery !== 'undefined') {
-      setEmail(emailFromQuery);
-    }
+    if (applicantIdFromQuery) setApplicantId(applicantIdFromQuery);
+    if (emailFromQuery) setEmail(emailFromQuery);
   }, [applicantIdFromQuery, emailFromQuery]);
 
   // Show error if no applicantId
@@ -154,13 +149,7 @@ function VerifyOtpContent(): React.JSX.Element {
     }
 
     try {
-      // Debug: Log the request
-      console.log('[ResendOTP] Sending request with customerId:', applicantId);
-
       const response = await resendOtp({ customerId: applicantId });
-
-      // Debug: Log full response
-      console.log('[ResendOTP] Full API response:', JSON.stringify(response, null, 2));
 
       if (response.success) {
         showSuccess('Verification code sent successfully!');
