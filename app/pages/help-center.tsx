@@ -20,89 +20,6 @@ type FAQ = {
 };
 
 
-// Mock Data
-const mockFAQs: FAQ[] = [
-  {
-    id: '1',
-    question: 'How do I book a photographer on Amoria connekyt?',
-    answer: 'To book a photographer, browse through our verified photographers, view their portfolios, check availability, and send a booking request. Once the photographer accepts, you can proceed with payment through our secure escrow system.',
-    category: 'Booking',
-    priority: 'high',
-    helpful: 45,
-    lastUpdated: new Date('2025-01-15'),
-    tags: ['booking', 'getting-started', 'payment']
-  },
-  {
-    id: '2',
-    question: 'How does the payment system work?',
-    answer: 'Payments are held securely in escrow until project completion. Once you approve the delivered photos, the funds are released to the photographer. This ensures both parties are protected throughout the transaction.',
-    category: 'Payment',
-    priority: 'high',
-    helpful: 38,
-    lastUpdated: new Date('2025-01-10'),
-    tags: ['payment', 'escrow', 'security']
-  },
-  {
-    id: '3',
-    question: 'Can I cancel a booking?',
-    answer: 'Yes, you can cancel a booking according to our cancellation policy. Cancellations made 48 hours or more before the event receive a full refund. Cancellations within 48 hours may incur a fee depending on the photographer\'s policy.',
-    category: 'Booking',
-    priority: 'medium',
-    helpful: 29,
-    lastUpdated: new Date('2025-01-08'),
-    tags: ['cancellation', 'refund', 'policy']
-  },
-  {
-    id: '4',
-    question: 'How do I become a verified photographer?',
-    answer: 'To become verified, submit your application with valid ID, portfolio samples, and professional credentials. Our team reviews applications within 3-5 business days. Once approved, you can start accepting bookings.',
-    category: 'Account',
-    priority: 'high',
-    helpful: 52,
-    lastUpdated: new Date('2025-01-12'),
-    tags: ['verification', 'photographer', 'registration']
-  },
-  {
-    id: '5',
-    question: 'What if I\'m not satisfied with the photos?',
-    answer: 'If you\'re not satisfied, first communicate with the photographer to resolve the issue. If no resolution is reached, contact our support team within 7 days of delivery. We\'ll review the case and mediate a fair solution, which may include revisions or refunds.',
-    category: 'General',
-    priority: 'medium',
-    helpful: 33,
-    lastUpdated: new Date('2025-01-05'),
-    tags: ['dispute', 'quality', 'refund']
-  },
-  {
-    id: '6',
-    question: 'How can I view my payment history?',
-    answer: 'You can view your complete payment history in your account dashboard. Navigate to "My Account" > "Payment History" to see all your transactions, receipts, and payment details.',
-    category: 'Payment',
-    priority: 'medium',
-    helpful: 28,
-    lastUpdated: new Date('2025-01-09'),
-    tags: ['payment', 'history', 'account']
-  },
-  {
-    id: '7',
-    question: 'Is my personal information secure?',
-    answer: 'Yes, we use industry-standard encryption and security measures to protect your data. We comply with Rwanda\'s Data Protection Law No. 058/2021 and international security standards.',
-    category: 'Security',
-    priority: 'high',
-    helpful: 41,
-    lastUpdated: new Date('2025-01-11'),
-    tags: ['security', 'privacy', 'data-protection']
-  },
-  {
-    id: '8',
-    question: 'What payment methods do you accept?',
-    answer: 'We accept various payment methods including credit/debit cards, mobile money (MTN Mobile Money, Airtel Money), and bank transfers. All payments are processed securely through our escrow system.',
-    category: 'Payment Methods',
-    priority: 'medium',
-    helpful: 35,
-    lastUpdated: new Date('2025-01-07'),
-    tags: ['payment', 'methods', 'mobile-money']
-  }
-];
 
 const categories = [
   {
@@ -161,7 +78,7 @@ const HelpSupportCenter: React.FC = () => {
   const [isMobile, setIsMobile] = useState(false);
 
   // Data states
-  const [FAQS, setFAQS] = useState<FAQ[]>(mockFAQs);
+  const [FAQS, setFAQS] = useState<FAQ[]>([]);
 
   // Fetch FAQs from API (fallback to mockFAQs)
   useEffect(() => {
@@ -174,21 +91,23 @@ const HelpSupportCenter: React.FC = () => {
             ? (response.data as unknown as FAQ[])
             : [];
         if (faqs.length > 0) {
-          setFAQS(faqs.map(f => ({
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          setFAQS(faqs.map((f: any) => ({
             id: f.id || '',
             question: f.question || '',
             answer: f.answer || '',
             category: f.category || 'General',
-            priority: f.priority || 'medium',
-            helpful: f.helpful || 0,
-            lastUpdated: f.lastUpdated ? new Date(f.lastUpdated) : new Date(),
+            // Backend sends priority as number (1=high, 2=medium, 3=low)
+            priority: f.priority === 1 ? 'high' : f.priority === 2 ? 'medium' : f.priority === 3 ? 'low' : (f.priority || 'medium'),
+            // Backend field is helpfulCount, not helpful
+            helpful: f.helpfulCount ?? f.helpful ?? 0,
+            // Backend field is updatedAt, not lastUpdated
+            lastUpdated: f.updatedAt ? new Date(f.updatedAt) : f.lastUpdated ? new Date(f.lastUpdated) : new Date(),
             tags: f.tags || [],
           })));
         }
       }
-    }).catch(() => {
-      // Keep mockFAQs as fallback
-    });
+    }).catch(() => {});
   }, []);
 
   // Detect screen size
