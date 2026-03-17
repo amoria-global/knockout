@@ -128,3 +128,22 @@ export type {
   EventType,
   GetEventTypesResponse,
 } from './get-event-types/route';
+
+// Donation Tiers
+export {
+  getDonationTiers,
+} from './get-donation-tiers/route';
+
+// Live Currency Rates
+export {
+  getCurrencyRates,
+} from './get-currency-rates/route';
+export type {
+  CurrencyRate,
+  CurrencyRatesResponse,
+} from './get-currency-rates/route';
+export type {
+  DonationTier,
+  ExchangeRate,
+  DonationTiersResponse,
+} from './get-donation-tiers/route';

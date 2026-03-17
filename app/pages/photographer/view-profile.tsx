@@ -309,7 +309,6 @@ function ViewProfileContent(): React.JSX.Element {
 
   const handleBookNow = () => {
     // Navigate to booking page
-    console.log('Book Now clicked');
   };
 
 
