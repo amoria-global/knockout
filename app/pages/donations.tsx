@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import Navbar from "../components/navbar";
 import Footer from "../components/footer";
-import { getCurrencies, createPublicDonation, type Currency as APICurrency } from '@/lib/APIs/public';
+import { getCurrencies, createPublicDonation, getDonationTiers, getCurrencyRates, type Currency as APICurrency, type ExchangeRate } from '@/lib/APIs/public';
 import XentriPayModal from '../components/XentriPayModal';
 
 // Hook for counting animation
@@ -48,37 +48,13 @@ const formatNumber = (num: number): string => {
 // Currency type — accepts any string code from the API
 type Currency = string;
 
-// Known currency configs with exchange rates (approximate rates - RWF as base)
-const knownCurrencyConfig: Record<string, { symbol: string; rate: number; name: string }> = {
+// Static fallback used before the API responds
+const FALLBACK_CURRENCY_CONFIG: Record<string, { symbol: string; rate: number; name: string }> = {
   RWF: { symbol: 'RWF', rate: 1, name: 'Rwandan Franc' },
-  USD: { symbol: '$', rate: 0.00075, name: 'US Dollar' },
-  EUR: { symbol: '€', rate: 0.00069, name: 'Euro' },
+  USD: { symbol: '$', rate: 0.000769, name: 'US Dollar' },
 };
 
-// Get config for a currency, with a sensible fallback for unknown codes
-const getCurrencyConfig = (code: string): { symbol: string; rate: number; name: string } => {
-  return knownCurrencyConfig[code] || { symbol: code, rate: 1, name: code };
-};
-
-// Base amounts in RWF
-const baseAmountsRWF = [1000, 2000, 5000, 10000, 25000, 50000];
-
-// Convert amount from RWF to target currency
-const convertFromRWF = (amountRWF: number, currency: Currency): number => {
-  const config = getCurrencyConfig(currency);
-  const converted = amountRWF * config.rate;
-  if (config.rate === 1) return Math.round(converted);
-  return Math.round(converted * 100) / 100;
-};
-
-// Format currency amount with symbol
-const formatCurrency = (amount: number, currency: Currency): string => {
-  const config = getCurrencyConfig(currency);
-  if (config.rate === 1) {
-    return `${formatNumber(Math.round(amount))} ${config.symbol}`;
-  }
-  return `${config.symbol}${formatNumber(amount)}`;
-};
+const FALLBACK_TIER_AMOUNTS = [1000, 2000, 5000, 10000];
 
 // Get background color for impact cards based on main color
 const getImpactCardBg = (color: string): string => {
@@ -284,15 +260,13 @@ const DonationCard = ({
 
 // Donation Amount Button
 const AmountButton = ({
-  amount,
+  label,
   isSelected,
   onClick,
-  currency
 }: {
-  amount: number;
+  label: string;
   isSelected: boolean;
   onClick: () => void;
-  currency: Currency;
 }) => (
   <button
     onClick={onClick}
@@ -311,7 +285,7 @@ const AmountButton = ({
     onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
     onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
   >
-    {formatCurrency(amount, currency)}
+    {label}
   </button>
 );
 
@@ -346,10 +320,42 @@ const HeroStatCard = ({
 
 const Donations = () => {
   const [activeCategory, setActiveCategory] = useState(0);
-  const [selectedAmount, setSelectedAmount] = useState<number>(baseAmountsRWF[2]); // Default 3,000 RWF
+  const [tierAmounts, setTierAmounts] = useState<number[]>(FALLBACK_TIER_AMOUNTS);
+  const [exchangeRateMap, setExchangeRateMap] = useState<Record<string, ExchangeRate>>({});
+  const [apiBaseCurrency, setApiBaseCurrency] = useState('RWF');
+  const [selectedAmount, setSelectedAmount] = useState<number>(FALLBACK_TIER_AMOUNTS[2]);
   const [customAmount, setCustomAmount] = useState('');
   const [currency, setCurrency] = useState<Currency>('RWF');
   const [apiCurrencies, setApiCurrencies] = useState<APICurrency[]>([]);
+
+  // Build currency config from API exchange rates, falling back to static config.
+  // rateToUsd semantics: "units of this currency per 1 USD" (e.g. KES=129.5 means 1 USD = 129.5 KES).
+  // To convert from base to target: rate = target.rateToUsd / base.rateToUsd
+  const getCurrencyConfig = (code: string): { symbol: string; rate: number; name: string } => {
+    const base = exchangeRateMap[apiBaseCurrency];
+    const target = exchangeRateMap[code];
+    if (
+      base && target &&
+      base.rateToUsd != null && base.rateToUsd !== 0 &&
+      target.rateToUsd != null
+    ) {
+      return { symbol: target.symbol || code, rate: target.rateToUsd / base.rateToUsd, name: code };
+    }
+    return FALLBACK_CURRENCY_CONFIG[code] || { symbol: code, rate: 1, name: code };
+  };
+
+  const convertFromRWF = (amountRWF: number, curr: Currency): number => {
+    const config = getCurrencyConfig(curr);
+    const converted = amountRWF * config.rate;
+    return config.rate === 1 ? Math.round(converted) : Math.round(converted * 100) / 100;
+  };
+
+  const formatCurrency = (amount: number, curr: Currency): string => {
+    const config = getCurrencyConfig(curr);
+    return config.rate === 1
+      ? `${formatNumber(Math.round(amount))} ${config.symbol}`
+      : `${config.symbol}${formatNumber(amount)}`;
+  };
   const [donationFrequency, setDonationFrequency] = useState<'one-time' | 'monthly'>('one-time');
   const [impactVisible, setImpactVisible] = useState(false);
   const [heroVisible, setHeroVisible] = useState(false);
@@ -429,7 +435,7 @@ const Donations = () => {
   };
 
   // Get display amounts based on selected currency
-  const displayAmounts = baseAmountsRWF.map(amount => convertFromRWF(amount, currency));
+  const displayAmounts = tierAmounts.map(amount => convertFromRWF(amount, currency));
 
   // Get the display value for selected amount
   const getDisplayAmount = (): number => {
@@ -451,6 +457,41 @@ const Donations = () => {
     };
   }, [showPaymentModal]);
 
+  // Fetch donation tiers (amounts + base currency)
+  useEffect(() => {
+    getDonationTiers()
+      .then(res => {
+        if (res.success && res.data) {
+          const d = res.data;
+          if (d.tiers?.length > 0) {
+            const amounts = d.tiers.map(t => t.amount);
+            setTierAmounts(amounts);
+            setSelectedAmount(amounts[2] ?? amounts[0]);
+          }
+          if (d.baseCurrency) {
+            setApiBaseCurrency(d.baseCurrency);
+          }
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  // Fetch live exchange rates from the dedicated rates endpoint
+  useEffect(() => {
+    getCurrencyRates()
+      .then(res => {
+        if (res.success && res.data && Object.keys(res.data).length > 0) {
+          // Normalize to the ExchangeRate shape used by getCurrencyConfig
+          const normalized: Record<string, ExchangeRate> = {};
+          for (const [code, r] of Object.entries(res.data)) {
+            normalized[code] = { symbol: r.symbol, rateToUsd: r.rateToUsd, rateUpdatedAt: r.rateUpdatedAt ?? undefined };
+          }
+          setExchangeRateMap(normalized);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   // Fetch available currencies from API
   useEffect(() => {
     getCurrencies()
@@ -462,12 +503,25 @@ const Donations = () => {
       .catch(() => {});
   }, []);
 
-  // Build currency toggle list: use API currencies if available, otherwise fallback
-  const currencyToggleList: Currency[] = apiCurrencies.length > 0
-    ? apiCurrencies
-        .map(c => c.code as Currency)
-        .filter(code => code) // filter out empty codes
-    : (['RWF', 'USD', 'EUR'] as Currency[]);
+  // Build currency toggle list: use API exchange rates if available, otherwise API currencies, otherwise fallback
+  // Only offer multi-currency selection when the base currency rate is known.
+  // Without it, cross-currency conversion is impossible and would show wrong amounts.
+  const baseRateKnown =
+    exchangeRateMap[apiBaseCurrency]?.rateToUsd != null ||
+    FALLBACK_CURRENCY_CONFIG[apiBaseCurrency] != null;
+
+  const currencyToggleList: Currency[] = (() => {
+    if (!baseRateKnown) return [apiBaseCurrency];
+    if (Object.keys(exchangeRateMap).length > 0) {
+      const codes = Object.keys(exchangeRateMap);
+      if (!codes.includes(apiBaseCurrency)) codes.unshift(apiBaseCurrency);
+      return codes;
+    }
+    if (apiCurrencies.length > 0) {
+      return apiCurrencies.map(c => c.code as Currency).filter(Boolean);
+    }
+    return Object.keys(FALLBACK_CURRENCY_CONFIG);
+  })();
 
   // Intersection Observer for hero counting animation
   useEffect(() => {
@@ -1398,11 +1452,10 @@ const Donations = () => {
                   gap: '15px',
                   marginBottom: '25px',
                 }}>
-                  {baseAmountsRWF.map((amountRWF, index) => (
+                  {tierAmounts.map((amountRWF, index) => (
                     <AmountButton
                       key={amountRWF}
-                      amount={displayAmounts[index]}
-                      currency={currency}
+                      label={formatCurrency(displayAmounts[index], currency)}
                       isSelected={selectedAmount === amountRWF && !customAmount}
                       onClick={() => {
                         setSelectedAmount(amountRWF);

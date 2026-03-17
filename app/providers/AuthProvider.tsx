@@ -124,11 +124,6 @@ async function fetchUserProfile(): Promise<Partial<AuthUser> | null> {
     if (!response.success || !response.data) return null;
 
     const data = response.data;
-    console.log(
-      "[AuthProvider] profile-summary response data:",
-      JSON.stringify(data, null, 2),
-    );
-
     return {
       id: data.id || "",
       firstName: data.firstName || "",
