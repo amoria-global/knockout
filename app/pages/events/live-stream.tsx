@@ -15,8 +15,7 @@ import { verifyOtp } from '@/lib/APIs/auth/verify-otp/route';
 import { googleAuth } from '@/lib/APIs/auth/google/route';
 import { useGoogleLogin } from '@react-oauth/google';
 import { getStreamChats, type StreamChatMessage } from '@/lib/APIs/streams/chat/route';
-import { sendStreamChat, sendStreamVideoChat, getStreamViewerCount, getPublicViewerCount, requestStreamAccess, purchaseStreamAccess } from '@/lib/APIs/streams/route';
-import { pollXentriPayStatus } from '@/lib/APIs/payments/xentripay';
+import { sendStreamChat, sendStreamVideoChat, getStreamViewerCount, getPublicViewerCount, requestStreamAccess } from '@/lib/APIs/streams/route';
 import { contactUs } from '@/lib/APIs/public/contact-us/route';
 import { apiClient } from '@/lib/api/client';
 import { API_ENDPOINTS } from '@/lib/api/config';
@@ -139,14 +138,6 @@ const App = () => {
   const [inviteTokenError, setInviteTokenError] = useState('');
   const [inviteTokenLoading, setInviteTokenLoading] = useState(false);
   const [viewerUsername, setViewerUsername] = useState('');
-  // Entry fee payment state
-  const [entryFeePaymentMethod, setEntryFeePaymentMethod] = useState<'mtn' | 'airtel' | 'card' | null>(null);
-  const [entryFeePhone, setEntryFeePhone] = useState('');
-  const [entryFeeLoading, setEntryFeeLoading] = useState(false);
-  const [entryFeeError, setEntryFeeError] = useState('');
-  const [entryFeePaymentPending, setEntryFeePaymentPending] = useState(false);
-  const [entryFeePaymentMessage, setEntryFeePaymentMessage] = useState('');
-  const entryFeePollingCleanup = useRef<(() => void) | null>(null);
 
   // ── Viewer auth modal state ──
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -356,45 +347,62 @@ const App = () => {
     loadEventDetails();
   }, [searchParams]);
 
-  // Cleanup payment polling on unmount
-  useEffect(() => {
-    return () => { if (entryFeePollingCleanup.current) entryFeePollingCleanup.current(); };
-  }, []);
 
   // Stream access gate — determine flow based on streamType
+  // entry_fee: backend already guards hlsManifestUrl (nulls it for unpaid viewers)
+  // invite_token: backend fix pending — frontend must validate token
+  // paid=true param: viewer came from join-package/join-event after completing flow
   useEffect(() => {
     if (!mainEvent?.id || mainEvent.title === 'Loading...') return;
 
     const type = getStreamType(mainEvent);
+    const paid = searchParams.get('paid') === 'true';
+    const urlToken = searchParams.get('inviteToken');
+
+    // Fast path: viewer came from join-package/join-event after payment or token validation
+    if (paid) {
+      setStreamAccessGranted(true);
+      return;
+    }
 
     if (type === 'entry_fee') {
-      // Entry fee stream — check URL for payment callback
-      const paid = searchParams.get('paid');
-      if (paid === 'true') {
+      // Backend guards hlsManifestUrl for entry_fee streams:
+      // authenticated + paid → hlsManifestUrl is populated
+      // unauthenticated or unpaid → hlsManifestUrl is null
+      if (isAuthenticated && mainEvent.hlsManifestUrl) {
         setStreamAccessGranted(true);
       }
-      // Otherwise, payment form overlay will show
+      // Otherwise, "Purchase Access" overlay will show
     } else if (type === 'invite_token') {
-      // Check if invite token was already provided via URL (from join-event page)
-      const urlToken = searchParams.get('inviteToken');
-      if (urlToken) {
-        // Auto-submit the token from URL
-        setInviteTokenInput(urlToken);
+      // Check URL token first, then localStorage for previously validated token
+      const savedToken = localStorage.getItem(`streamToken_${mainEvent.id}`);
+      const token = urlToken || savedToken;
+
+      if (token) {
+        setInviteTokenInput(token);
         (async () => {
           const username = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email : 'Viewer';
           setInviteTokenLoading(true);
           try {
-            const res = await requestStreamAccess(mainEvent.id!, urlToken, username || 'Viewer');
+            const res = await requestStreamAccess(mainEvent.id!, token, username || 'Viewer');
             if (res.success && res.data?.hlsManifestUrl) {
+              // Persist token so viewer doesn't need to re-enter on return
+              localStorage.setItem(`streamToken_${mainEvent.id}`, token);
               setEvents(prev => [{
                 ...prev[0],
                 hlsManifestUrl: res.data!.hlsManifestUrl,
               }, ...prev.slice(1)]);
               setStreamAccessGranted(true);
             } else {
-              // Token from URL was invalid — fall back to manual input
-              setInviteTokenError(res.error || 'Invalid invite token. Please try again.');
-              setShowInviteTokenModal(true);
+              // Token invalid — clear saved token and prompt
+              localStorage.removeItem(`streamToken_${mainEvent.id}`);
+              if (savedToken && !urlToken) {
+                // Saved token expired — don't show error, just prompt fresh
+                setShowInviteTokenModal(true);
+              } else {
+                setInviteTokenError(res.error || 'Invalid invite token. Please try again.');
+                setShowInviteTokenModal(true);
+              }
             }
           } catch {
             setShowInviteTokenModal(true);
@@ -403,7 +411,7 @@ const App = () => {
           }
         })();
       } else {
-        // No token in URL — show token input
+        // No token anywhere — show token input overlay
         setShowInviteTokenModal(true);
       }
     } else {
@@ -411,7 +419,7 @@ const App = () => {
       setStreamAccessGranted(true);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mainEvent?.id, mainEvent?.streamType, mainEvent?.streamFee, mainEvent?.hasInviteCode, mainEvent?.title]);
+  }, [mainEvent?.id, mainEvent?.streamType, mainEvent?.streamFee, mainEvent?.hasInviteCode, mainEvent?.title, mainEvent?.hlsManifestUrl, isAuthenticated]);
 
   // Handle invite token submission (username auto-filled from auth profile)
   const handleInviteTokenSubmit = async () => {
@@ -422,6 +430,8 @@ const App = () => {
     try {
       const res = await requestStreamAccess(mainEvent.id, inviteTokenInput.trim(), username || 'Viewer');
       if (res.success && res.data?.hlsManifestUrl) {
+        // Persist so viewer doesn't need to re-enter on return
+        localStorage.setItem(`streamToken_${mainEvent.id}`, inviteTokenInput.trim());
         setEvents(prev => [{
           ...prev[0],
           hlsManifestUrl: res.data!.hlsManifestUrl,
@@ -435,79 +445,6 @@ const App = () => {
       setInviteTokenError('Unable to validate token. Please check your connection and try again.');
     } finally {
       setInviteTokenLoading(false);
-    }
-  };
-
-  // Handle entry fee payment submission (username auto-filled from auth profile)
-  const handleEntryFeeSubmit = async () => {
-    if (!entryFeePaymentMethod || !mainEvent?.id) return;
-    if (entryFeePaymentMethod !== 'card' && !entryFeePhone.trim()) return;
-    const username = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email : viewerUsername.trim();
-    setEntryFeeLoading(true);
-    setEntryFeeError('');
-    try {
-      const res = await purchaseStreamAccess(mainEvent.id, {
-        paymentMethod: entryFeePaymentMethod,
-        phoneNumber: entryFeePhone.trim(),
-        viewerUsername: username || 'Viewer',
-        currencyId: mainEvent.streamFeeCurrencyAbbreviation || undefined,
-      });
-
-      if (res.success && res.data) {
-        const data = res.data as Record<string, unknown>;
-        const refid = (data.refid as string) || '';
-        const paymentUrl = ((data.paymentUrl as string) || '').trim();
-        const hlsUrl = (data.hlsManifestUrl as string) || '';
-        const statusMessage = (data.message as string) || '';
-        const status = (data.status as string) || '';
-
-        if (hlsUrl) {
-          // Direct access granted (unlikely for entry fee, but handle it)
-          setEvents(prev => [{
-            ...prev[0],
-            hlsManifestUrl: hlsUrl,
-          }, ...prev.slice(1)]);
-          setStreamAccessGranted(true);
-        } else if (paymentUrl && paymentUrl.length > 1) {
-          // Card payment — redirect to payment URL
-          window.location.href = paymentUrl;
-        } else if (status === 'PENDING' && refid) {
-          // Mobile money push — show message and poll for confirmation
-          setEntryFeePaymentPending(true);
-          setEntryFeePaymentMessage(statusMessage || 'Check your phone to confirm the payment.');
-          setEntryFeeLoading(false);
-
-          // Start polling payment status
-          if (entryFeePollingCleanup.current) entryFeePollingCleanup.current();
-          entryFeePollingCleanup.current = pollXentriPayStatus(
-            refid,
-            {
-              onSuccess: () => {
-                setEntryFeePaymentPending(false);
-                setStreamAccessGranted(true);
-              },
-              onFailure: () => {
-                setEntryFeePaymentPending(false);
-                setEntryFeeError('Payment was declined. Please try again.');
-              },
-              onError: (err) => {
-                setEntryFeePaymentPending(false);
-                setEntryFeeError(err || 'Could not verify payment. Please try again.');
-              },
-            },
-            5000,
-            60,
-            true // usePublic — no auth required
-          );
-          return; // don't hit finally block's setEntryFeeLoading
-        }
-      } else {
-        setEntryFeeError(res.error || 'Payment failed. Please try again.');
-      }
-    } catch {
-      setEntryFeeError('Unable to process payment. Please check your connection and try again.');
-    } finally {
-      setEntryFeeLoading(false);
     }
   };
 
@@ -749,6 +686,7 @@ const App = () => {
         hls.attachMedia(videoEl);
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
           if (cancelled) return;
+
           // Set volume from saved preference
           const savedVol = volumeRef.current[eventId] ?? getSavedVolume();
           videoEl.volume = savedVol / 100;
@@ -893,8 +831,7 @@ const App = () => {
   // Settings state
   const [showSettings, setShowSettings] = useState(false);
   const [showReportIssues, setShowReportIssues] = useState(false);
-  const [videoQuality, setVideoQuality] = useState<'auto' | '1080p' | '720p' | '480p' | '360p' | 'source'>('auto');
-  const [captionsEnabled, setCaptionsEnabled] = useState(false);
+  const [lowLatencyMode, setLowLatencyMode] = useState(true);
   // Rating state
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [rating, setRating] = useState(0);
@@ -2103,20 +2040,22 @@ const App = () => {
     };
   }, [playbackState, mainEvent.id, isFullscreen]);
 
-  // Handle quality change
-  const handleQualityChange = (quality: 'auto' | '1080p' | '720p' | '480p' | '360p' | 'source') => {
-    setVideoQuality(quality);
-  };
-
-  // Handle captions toggle
-  const handleCaptionsToggle = () => {
-    setCaptionsEnabled(!captionsEnabled);
-    const video = videoRefs.current[mainEvent.id];
-    if (video) {
-      const tracks = video.textTracks;
-      if (tracks.length > 0) {
-        tracks[0].mode = !captionsEnabled ? 'showing' : 'hidden';
-      }
+  // Toggle low-latency mode — trades latency for smoother playback
+  const handleLowLatencyToggle = () => {
+    const next = !lowLatencyMode;
+    setLowLatencyMode(next);
+    const hls = hlsInstancesRef.current[mainEvent.id];
+    if (!hls) return;
+    if (next) {
+      // Low latency: stay close to live edge, smaller buffer
+      hls.config.liveSyncDurationCount = 3;
+      hls.config.liveMaxLatencyDurationCount = 6;
+      hls.config.lowLatencyMode = true;
+    } else {
+      // Smooth playback: larger buffer, fewer stalls
+      hls.config.liveSyncDurationCount = 6;
+      hls.config.liveMaxLatencyDurationCount = 12;
+      hls.config.lowLatencyMode = false;
     }
   };
 
@@ -3368,122 +3307,34 @@ const App = () => {
                   textAlign: 'center',
                   gap: '16px',
                 }}>
-                  {/* ── Entry Fee Form (coordinator streams) ── */}
+                  {/* ── Entry Fee — redirect to purchase page (payment handled there) ── */}
                   {isEntryFeeStream(mainEvent) ? (
-                    entryFeePaymentPending ? (
-                      /* Payment pending — waiting for mobile money confirmation */
-                      <>
-                        <div style={{
-                          width: '48px', height: '48px', border: '4px solid #03969c',
-                          borderTopColor: 'transparent', borderRadius: '50%',
-                          animation: 'spin 1s linear infinite'
-                        }} />
-                        <h3 style={{ color: '#fff', fontSize: '20px', fontWeight: '600', margin: 0 }}>
-                          Confirming Payment
-                        </h3>
-                        <p style={{ color: '#adadb8', fontSize: '14px', margin: 0, maxWidth: '320px', lineHeight: '1.5' }}>
-                          {entryFeePaymentMessage}
-                        </p>
-                        <p style={{ color: '#71717a', fontSize: '12px', margin: 0 }}>
-                          This may take a moment. Do not close this page.
-                        </p>
-                        {entryFeeError && (
-                          <p style={{ color: '#EF4444', fontSize: '13px', margin: 0 }}>{entryFeeError}</p>
-                        )}
-                      </>
-                    ) : (
                     <>
                       <i className="bi bi-lock-fill" style={{ fontSize: '42px', color: '#03969c' }}></i>
                       <h3 style={{ color: '#fff', fontSize: '20px', fontWeight: '600', margin: 0 }}>
                         Paid Stream
                       </h3>
-                      <p style={{ color: '#adadb8', fontSize: '14px', margin: 0 }}>
-                        Entry fee:{' '}
-                        <strong style={{ color: '#fff', fontSize: '18px' }}>
-                          {mainEvent.streamFee?.toLocaleString()}{' '}
-                          {mainEvent.streamFeeCurrencyAbbreviation || mainEvent.streamFeeCurrencySymbol || ''}
-                        </strong>
+                      <p style={{ color: '#adadb8', fontSize: '14px', margin: 0, maxWidth: '320px' }}>
+                        You need to purchase access to watch this stream.
                       </p>
-
-                      <div style={{ width: '100%', maxWidth: '340px', display: 'flex', flexDirection: 'column', gap: '10px', textAlign: 'left' }}>
-                        {/* Payment method selector */}
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                          {(['mtn', 'airtel', 'card'] as const).map(method => (
-                            <button
-                              key={method}
-                              onClick={() => setEntryFeePaymentMethod(method)}
-                              style={{
-                                flex: 1,
-                                padding: '10px 8px',
-                                backgroundColor: entryFeePaymentMethod === method ? 'rgba(3, 150, 156, 0.2)' : '#27272a',
-                                border: entryFeePaymentMethod === method ? '2px solid #03969c' : '1px solid rgba(255, 255, 255, 0.15)',
-                                borderRadius: '10px',
-                                color: entryFeePaymentMethod === method ? '#03969c' : '#adadb8',
-                                fontSize: '12px',
-                                fontWeight: '600',
-                                cursor: 'pointer',
-                                textTransform: 'uppercase',
-                                transition: 'all 0.2s',
-                              }}
-                            >
-                              {method === 'mtn' ? 'MTN' : method === 'airtel' ? 'Airtel' : 'Card'}
-                            </button>
-                          ))}
-                        </div>
-
-                        {/* Phone number (for mobile money) */}
-                        {entryFeePaymentMethod && entryFeePaymentMethod !== 'card' && (
-                          <input
-                            type="tel"
-                            value={entryFeePhone}
-                            onChange={(e) => setEntryFeePhone(e.target.value)}
-                            placeholder="Phone number (e.g. 250788123456)"
-                            style={{
-                              width: '100%',
-                              padding: '12px 16px',
-                              backgroundColor: '#27272a',
-                              border: '1px solid rgba(255, 255, 255, 0.15)',
-                              borderRadius: '10px',
-                              color: '#fff',
-                              fontSize: '14px',
-                              outline: 'none',
-                              boxSizing: 'border-box',
-                            }}
-                          />
-                        )}
-
-                        {entryFeeError && (
-                          <p style={{ color: '#EF4444', fontSize: '13px', margin: 0, textAlign: 'center' }}>{entryFeeError}</p>
-                        )}
-
-                        {/* Submit */}
-                        <button
-                          onClick={handleEntryFeeSubmit}
-                          disabled={entryFeeLoading || !entryFeePaymentMethod || (entryFeePaymentMethod !== 'card' && !entryFeePhone.trim())}
-                          style={{
-                            width: '100%',
-                            padding: '14px',
-                            background: entryFeeLoading ? '#3f3f46' : 'linear-gradient(135deg, #03969c 0%, #026d72 100%)',
-                            border: 'none',
-                            borderRadius: '12px',
-                            color: entryFeeLoading ? '#71717a' : '#fff',
-                            fontSize: '15px',
-                            fontWeight: '600',
-                            cursor: entryFeeLoading ? 'not-allowed' : 'pointer',
-                            transition: 'all 0.3s ease',
-                            opacity: !entryFeePaymentMethod ? 0.5 : 1,
-                          }}
-                        >
-                          {entryFeeLoading ? 'Processing...' : (
-                            <>
-                              <i className="bi bi-credit-card-fill" style={{ marginRight: '8px' }}></i>
-                              Pay & Watch
-                            </>
-                          )}
-                        </button>
-                      </div>
+                      <button
+                        onClick={() => window.location.href = `/user/events/view-event?id=${mainEvent.id}`}
+                        style={{
+                          padding: '14px 32px',
+                          background: 'linear-gradient(135deg, #03969c 0%, #026d72 100%)',
+                          border: 'none',
+                          borderRadius: '12px',
+                          color: '#fff',
+                          fontSize: '15px',
+                          fontWeight: '600',
+                          cursor: 'pointer',
+                          transition: 'all 0.3s ease',
+                        }}
+                      >
+                        <i className="bi bi-ticket-perforated-fill" style={{ marginRight: '8px' }}></i>
+                        Purchase Access
+                      </button>
                     </>
-                    )
                   ) : isInviteTokenStream(mainEvent) ? (
                     /* ── Invite Token Form (client streams) ── */
                     <>
@@ -4137,70 +3988,7 @@ const App = () => {
                         zIndex: 100,
                         overflowY: 'auto'
                       }}>
-                        {/* Quality Settings */}
-                        <div style={{ padding: 'clamp(6px, 2vw, 8px)' }}>
-                          <div style={{
-                            fontSize: 'clamp(11px, 2.5vw, 12px)',
-                            fontWeight: '600',
-                            color: '#adadb8',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.5px',
-                            marginBottom: '8px'
-                          }}>Quality</div>
-                          <div className="custom-scrollbar" style={{
-                            maxHeight: 'clamp(140px, 30vh, 180px)',
-                            overflowY: 'auto',
-                            marginRight: '-4px',
-                            paddingRight: '4px'
-                          }}>
-                            {(['auto', 'source', '1080p', '720p', '480p', '360p'] as const).map((quality) => (
-                              <button
-                                key={quality}
-                                onClick={() => handleQualityChange(quality)}
-                                style={{
-                                  width: '100%',
-                                  padding: 'clamp(8px, 2.5vw, 10px) clamp(10px, 3vw, 12px)',
-                                  backgroundColor: videoQuality === quality ? 'rgba(3, 150, 156, 0.2)' : 'transparent',
-                                  border: 'none',
-                                  borderRadius: '12px',
-                                  color: videoQuality === quality ? '#03969c' : '#efeff1',
-                                  fontSize: 'clamp(13px, 3vw, 14px)',
-                                  cursor: 'pointer',
-                                  textAlign: 'left',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'space-between',
-                                  marginBottom: '2px',
-                                  transition: 'all 0.2s',
-                                  minHeight: '40px'
-                                }}
-                                onMouseEnter={(e) => {
-                                  if (videoQuality !== quality) {
-                                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
-                                  }
-                                }}
-                                onMouseLeave={(e) => {
-                                  if (videoQuality !== quality) {
-                                    e.currentTarget.style.backgroundColor = 'transparent';
-                                  }
-                                }}
-                              >
-                                <span style={{ textTransform: 'capitalize' }}>{quality}</span>
-                                {videoQuality === quality && (
-                                  <i className="bi bi-check-lg" style={{ fontSize: 'clamp(14px, 3.5vw, 16px)' }}></i>
-                                )}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div style={{
-                          height: '1px',
-                          backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                          margin: '8px 0'
-                        }}></div>
-
-                        {/* Captions Settings */}
+                        {/* Low Latency Mode */}
                         <div style={{ padding: '8px' }}>
                           <div style={{
                             fontSize: '12px',
@@ -4209,9 +3997,9 @@ const App = () => {
                             textTransform: 'uppercase',
                             letterSpacing: '0.5px',
                             marginBottom: '8px'
-                          }}>Captions</div>
+                          }}>Latency</div>
                           <button
-                            onClick={handleCaptionsToggle}
+                            onClick={handleLowLatencyToggle}
                             style={{
                               width: '100%',
                               padding: '10px 12px',
@@ -4230,11 +4018,16 @@ const App = () => {
                             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)'}
                             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                           >
-                            <span>{captionsEnabled ? 'On' : 'Off'}</span>
+                            <div>
+                              <span>{lowLatencyMode ? 'Low Latency' : 'Smooth'}</span>
+                              <div style={{ fontSize: '11px', color: '#71717a', marginTop: '2px' }}>
+                                {lowLatencyMode ? 'Closer to real-time' : 'Fewer stalls, more buffer'}
+                              </div>
+                            </div>
                             <div style={{
                               width: '36px',
                               height: '20px',
-                              backgroundColor: captionsEnabled ? '#016a6e' : 'rgba(255, 255, 255, 0.2)',
+                              backgroundColor: lowLatencyMode ? '#016a6e' : 'rgba(255, 255, 255, 0.2)',
                               borderRadius: '10px',
                               position: 'relative',
                               transition: 'all 0.2s'
@@ -4246,7 +4039,7 @@ const App = () => {
                                 borderRadius: '50%',
                                 position: 'absolute',
                                 top: '2px',
-                                left: captionsEnabled ? '18px' : '2px',
+                                left: lowLatencyMode ? '18px' : '2px',
                                 transition: 'all 0.2s'
                               }}></div>
                             </div>

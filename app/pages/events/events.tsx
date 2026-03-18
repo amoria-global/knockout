@@ -103,7 +103,18 @@ const Events: React.FC = () => {
             }
           });
         }
-        setEventsData(events);
+        // Hide completed events older than 2 days
+        const twoDaysAgo = Date.now() - 2 * 24 * 60 * 60 * 1000;
+        const filtered = events.filter(ev => {
+          if ((ev.eventStatus || '').toUpperCase() !== 'COMPLETED') return true;
+          // Use updatedAt (status change timestamp), fall back to eventDate, keep if neither exists
+          const dateStr = ev.updatedAt || ev.eventDate;
+          if (!dateStr) return true;
+          const ts = new Date(dateStr).getTime();
+          if (isNaN(ts)) return true;
+          return ts > twoDaysAgo;
+        });
+        setEventsData(filtered);
         setLiveStreamIds(trulyLiveIds);
         setApiTotalPages(response.data.totalPages);
         // Accumulate categories seen across pages and update the filter dropdown
@@ -484,7 +495,6 @@ const Events: React.FC = () => {
                 <option value="all">{t('allStatuses')}</option>
                 <option value="PUBLISHED">{t('status.upcoming')}</option>
                 <option value="ONGOING">{t('liveNow')}</option>
-                <option value="COMPLETED">Past Events</option>
               </select>
             </div>
           </div>
@@ -510,18 +520,6 @@ const Events: React.FC = () => {
           WebkitOverflowScrolling: 'touch',
           scrollbarWidth: 'thin'
         }}>
-          {/* Connector Line - Full Width (attached to badge) */}
-          <div style={{
-            position: 'absolute',
-            left: '0',
-            right: '0',
-            top: '50%',
-            height: '3px',
-            background: 'linear-gradient(90deg, #ec4899 0%, #f97316 50%, #8b5cf6 100%)',
-            transform: 'translateY(-50%)',
-            zIndex: 0
-          }}></div>
-
           {/* Hot Live Trends Badge */}
           <div style={{
             background: 'linear-gradient(135deg, #ec4899 0%, #f97316 50%, #8b5cf6 100%)',
@@ -536,24 +534,34 @@ const Events: React.FC = () => {
             whiteSpace: 'nowrap',
             boxShadow: '0 4px 15px rgba(236, 72, 153, 0.4)',
             flexShrink: 0,
-            marginRight: isMobile ? 'clamp(0.75rem, 2vw, 1.5rem)' : '1.5rem',
             position: 'relative',
             zIndex: 2
           }}>
             {t('hotLiveTrends')}
           </div>
 
-          {/* Trending Events Circles */}
+          {/* Connector Line — spans from badge to last circle */}
+          <div style={{
+            width: isMobile ? '1rem' : '1.5rem',
+            height: '3px',
+            background: 'linear-gradient(90deg, #ec4899, #f97316)',
+            flexShrink: 0,
+            zIndex: 0
+          }}></div>
+
+          {/* Trending Events Circles — background line auto-spans the circles */}
           <div style={{
             display: 'flex',
             alignItems: 'center',
-            justifyContent: isMobile ? 'flex-start' : 'space-between',
-            flex: 1,
             position: 'relative',
             zIndex: 1,
-            gap: isMobile ? 'clamp(0.5rem, 2vw, 1rem)' : '0.5rem',
-            paddingRight: isMobile ? 'clamp(0.75rem, 2vw, 1.5rem)' : '1.5rem',
-            minWidth: isMobile ? 'max-content' : 'auto'
+            gap: isMobile ? 'clamp(0.5rem, 2vw, 0.75rem)' : '0.75rem',
+            minWidth: isMobile ? 'max-content' : 'auto',
+            backgroundImage: 'linear-gradient(90deg, #f97316 0%, #8b5cf6 100%)',
+            backgroundSize: '100% 3px',
+            backgroundRepeat: 'no-repeat',
+            backgroundPosition: 'center',
+            paddingRight: '4px'
           }}>
             {trendingEvents.map((event) => (
               <div
