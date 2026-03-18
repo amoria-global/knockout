@@ -61,22 +61,32 @@ export default function Home() {
   // }
   const showPreloader = false;
 
-  // Check whether any event has a live Cloudflare stream session active
+  // Check whether any event has a live stream active (mirrors navbar logic)
   useEffect(() => {
     const checkLiveEvents = async () => {
       try {
         const res = await getPublicEvents({ size: 100 });
         if (!res.success || !res.data) return;
-        const ongoingEvents = res.data.content.filter(e => e.status === 'ongoing');
-        if (ongoingEvents.length === 0) return;
-        const checks = await Promise.allSettled(
-          ongoingEvents.map(e => getStreamVideo(e.id))
+        const ongoingEvents = res.data.content.filter(
+          ev => (ev.eventStatus as string)?.toLowerCase() === 'ongoing'
         );
-        const anyLive = checks.some(result => {
-          if (result.status !== 'fulfilled' || !result.value.success) return false;
-          const d = result.value.data as { data?: { connectionStatus?: string }; connectionStatus?: string };
-          return (d?.data?.connectionStatus ?? d?.connectionStatus) === 'live';
-        });
+        if (ongoingEvents.length === 0) return;
+
+        // Fast path: hasLiveStream flag from backend
+        let anyLive = ongoingEvents.some(ev => ev.hasLiveStream === true);
+
+        // Fallback: check Cloudflare connection status
+        if (!anyLive) {
+          const checks = await Promise.allSettled(
+            ongoingEvents.map(ev => getStreamVideo(ev.id))
+          );
+          anyLive = checks.some(result => {
+            if (result.status !== 'fulfilled' || !result.value.success) return false;
+            const d = result.value.data as { data?: { connectionStatus?: string }; connectionStatus?: string };
+            return (d?.data?.connectionStatus ?? d?.connectionStatus) === 'live';
+          });
+        }
+
         setHasLiveEvents(anyLive);
       } catch { /* silent */ }
     };
