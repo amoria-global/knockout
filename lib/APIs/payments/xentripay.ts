@@ -12,16 +12,16 @@ import type { ApiResponse } from '@/lib/api/types';
 export interface XentriPayInitiateRequest {
   declarationId?: string;
   eventId?: string;
-  phone: string;
-  telecomProvider: string; // 'MTN' | 'AIRTEL'
+  phone?: string;
+  telecomProvider?: string; // 'MTN' | 'AIRTEL'
   paymentMethod: string;   // 'MOBILE_MONEY' | 'CARD'
   redirectUrl?: string;
 }
 
 export interface XentriPayDonationRequest {
   donationId: string;
-  phone: string;
-  telecomProvider: string;
+  phone?: string;
+  telecomProvider?: string;
   paymentMethod?: string;
   redirectUrl?: string;
 }
@@ -30,8 +30,8 @@ export interface XentriPayPhotoPurchaseRequest {
   eventId: string;
   amount: number;
   currencyId: string;
-  phone: string;
-  telecomProvider: string;
+  phone?: string;
+  telecomProvider?: string;
   paymentMethod?: string;
   redirectUrl?: string;
 }
@@ -40,8 +40,8 @@ export interface XentriPayTipRequest {
   eventId: string;
   amount: number;
   currencyId: string;
-  phone: string;
-  telecomProvider: string;
+  phone?: string;
+  telecomProvider?: string;
   paymentMethod?: string;
   redirectUrl?: string;
 }
@@ -50,8 +50,9 @@ export interface XentriPayStreamingRequest {
   eventId: string;
   amount: number;
   currencyId: string;
-  phone: string;
-  telecomProvider: string;
+  donationAmount?: number;
+  phone?: string;
+  telecomProvider?: string;
   paymentMethod?: string;
   redirectUrl?: string;
 }
