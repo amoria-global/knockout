@@ -9,7 +9,7 @@ import type { ApiResponse } from '@/lib/api/types';
 
 export interface PublicDonationRequest {
   amount: string;
-  currencyId: string;
+  currencyId?: string;
   donorName?: string;
   donorEmail?: string;
   message?: string;
@@ -36,7 +36,7 @@ export interface PublicDonationResponse {
 export async function createPublicDonation(data: PublicDonationRequest): Promise<ApiResponse<PublicDonationResponse>> {
   const queryParams = new URLSearchParams();
   queryParams.append('amount', data.amount);
-  queryParams.append('currencyId', data.currencyId);
+  if (data.currencyId) queryParams.append('currencyId', data.currencyId);
   if (data.donorName) queryParams.append('donorName', data.donorName);
   if (data.donorEmail) queryParams.append('donorEmail', data.donorEmail);
   if (data.message) queryParams.append('message', data.message);
