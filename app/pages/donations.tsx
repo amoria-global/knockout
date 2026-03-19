@@ -356,7 +356,6 @@ const Donations = () => {
       ? `${formatNumber(Math.round(amount))} ${config.symbol}`
       : `${config.symbol}${formatNumber(amount)}`;
   };
-  const [donationFrequency, setDonationFrequency] = useState<'one-time' | 'monthly'>('one-time');
   const [impactVisible, setImpactVisible] = useState(false);
   const [heroVisible, setHeroVisible] = useState(false);
   const impactSectionRef = useRef<HTMLDivElement>(null);
@@ -388,6 +387,21 @@ const Donations = () => {
     if (!amount || amount <= 0) {
       setDonationError('Please select a donation amount before proceeding.');
       return;
+    }
+
+    if (!isAnonymous) {
+      if (!donorFirstName.trim()) {
+        setDonationError('Please enter your first name.');
+        return;
+      }
+      if (!donorLastName.trim()) {
+        setDonationError('Please enter your last name.');
+        return;
+      }
+      if (!donorEmail.trim()) {
+        setDonationError('Please enter your email address.');
+        return;
+      }
     }
 
     setDonationLoading(true);
@@ -443,6 +457,15 @@ const Donations = () => {
       return parseFloat(customAmount) || 0;
     }
     return convertFromRWF(selectedAmount, currency);
+  };
+
+  // Check if donation form has all required fields filled
+  const isDonationFormValid = (): boolean => {
+    if (getDisplayAmount() <= 0) return false;
+    if (!isAnonymous) {
+      if (!donorFirstName.trim() || !donorLastName.trim() || !donorEmail.trim()) return false;
+    }
+    return true;
   };
 
   // Lock body scroll when payment modal is open
@@ -1509,47 +1532,6 @@ const Donations = () => {
                   </div>
                 </div>
 
-                {/* Donation frequency */}
-                <div style={{ display: 'flex', gap: '15px' }}>
-                  <button
-                    onClick={() => setDonationFrequency('one-time')}
-                    style={{
-                      flex: 1,
-                      padding: '12px',
-                      borderRadius: '10px',
-                      border: donationFrequency === 'one-time' ? '2px solid #083A85' : '2px solid #e0e0e0',
-                      backgroundColor: donationFrequency === 'one-time' ? '#083A85' : '#fff',
-                      color: donationFrequency === 'one-time' ? '#fff' : '#666',
-                      fontSize: '14px',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease',
-                    }}
-                    onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
-                  >
-                    One-time
-                  </button>
-                  <button
-                    onClick={() => setDonationFrequency('monthly')}
-                    style={{
-                      flex: 1,
-                      padding: '12px',
-                      borderRadius: '10px',
-                      border: donationFrequency === 'monthly' ? '2px solid #083A85' : '2px solid #e0e0e0',
-                      backgroundColor: donationFrequency === 'monthly' ? '#083A85' : '#fff',
-                      color: donationFrequency === 'monthly' ? '#fff' : '#666',
-                      fontSize: '14px',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease',
-                    }}
-                    onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
-                  >
-                    Monthly
-                  </button>
-                </div>
               </div>
 
               {/* Right - Donor Info */}
@@ -1567,28 +1549,28 @@ const Donations = () => {
                   <div className="donor-name-row" style={{ display: 'flex', gap: '15px' }}>
                     <input
                       type="text"
-                      placeholder="First Name"
+                      placeholder={isAnonymous ? 'First Name' : 'First Name *'}
                       value={donorFirstName}
                       onChange={(e) => setDonorFirstName(e.target.value)}
                       style={{
                         flex: 1,
                         padding: '15px',
                         borderRadius: '12px',
-                        border: '2px solid #e0e0e0',
+                        border: `2px solid ${!isAnonymous && !donorFirstName.trim() ? '#f0a0a0' : '#e0e0e0'}`,
                         fontSize: '15px',
                         outline: 'none',
                       }}
                     />
                     <input
                       type="text"
-                      placeholder="Last Name"
+                      placeholder={isAnonymous ? 'Last Name' : 'Last Name *'}
                       value={donorLastName}
                       onChange={(e) => setDonorLastName(e.target.value)}
                       style={{
                         flex: 1,
                         padding: '15px',
                         borderRadius: '12px',
-                        border: '2px solid #e0e0e0',
+                        border: `2px solid ${!isAnonymous && !donorLastName.trim() ? '#f0a0a0' : '#e0e0e0'}`,
                         fontSize: '15px',
                         outline: 'none',
                       }}
@@ -1596,17 +1578,20 @@ const Donations = () => {
                   </div>
                   <input
                     type="email"
-                    placeholder="Email Address"
+                    placeholder={isAnonymous ? 'Email Address' : 'Email Address *'}
                     value={donorEmail}
                     onChange={(e) => setDonorEmail(e.target.value)}
                     style={{
                       padding: '15px',
                       borderRadius: '12px',
-                      border: '2px solid #e0e0e0',
+                      border: `2px solid ${!isAnonymous && !donorEmail.trim() ? '#f0a0a0' : '#e0e0e0'}`,
                       fontSize: '15px',
                       outline: 'none',
                     }}
                   />
+                  {!isAnonymous && (
+                    <p style={{ fontSize: '12px', color: '#999', margin: '-8px 0 0 0' }}>* Required fields</p>
+                  )}
                   <textarea
                     placeholder="Leave a message (optional)"
                     rows={3}
@@ -1646,23 +1631,25 @@ const Donations = () => {
             {/* Submit Button */}
             <button
               className="donate-btn"
-              onClick={() => setShowPaymentModal(true)}
+              onClick={() => isDonationFormValid() && setShowPaymentModal(true)}
+              disabled={!isDonationFormValid()}
               style={{
                 width: '100%',
                 marginTop: '30px',
-                backgroundColor: '#083A85',
+                backgroundColor: isDonationFormValid() ? '#083A85' : '#b0b0b0',
                 color: '#fff',
                 padding: '18px',
                 borderRadius: '15px',
                 border: 'none',
                 fontSize: '16px',
                 fontWeight: 600,
-                cursor: 'pointer',
+                cursor: isDonationFormValid() ? 'pointer' : 'not-allowed',
                 transition: 'all 0.3s ease',
-                boxShadow: '0 5px 20px rgba(8, 58, 133, 0.3)',
+                boxShadow: isDonationFormValid() ? '0 5px 20px rgba(8, 58, 133, 0.3)' : 'none',
+                opacity: isDonationFormValid() ? 1 : 0.7,
               }}
             >
-              Donate {formatCurrency(getDisplayAmount(), currency)} {donationFrequency === 'monthly' ? 'Monthly' : 'Now'}
+              Donate {formatCurrency(getDisplayAmount(), currency)} Now
             </button>
 
             {/* Trust badges */}
@@ -1871,8 +1858,7 @@ const Donations = () => {
                 color: '#666',
                 margin: 0,
               }}>
-                You're donating <strong style={{ color: '#083A85' }}>{formatCurrency(getDisplayAmount(), currency)}</strong>
-                {donationFrequency === 'monthly' ? ' monthly' : ''} to <strong>{categories[activeCategory].title}</strong>
+                You're donating <strong style={{ color: '#083A85' }}>{formatCurrency(getDisplayAmount(), currency)}</strong> to <strong>{categories[activeCategory].title}</strong>
               </p>
             </div>
 
