@@ -33,6 +33,8 @@ export interface XentriPayModalProps {
   eventId?: string;
   // For donation payments
   donationId?: string;
+  // For streaming payments — optional donation amount added on top of gift
+  donationAmount?: number;
   // Dark theme to match viewer auth modal
   darkMode?: boolean;
 }
@@ -63,6 +65,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
   declarationId,
   eventId,
   donationId,
+  donationAmount = 0,
   darkMode = false,
 }) => {
   // State
@@ -117,9 +120,11 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
   // Validate payment details
   const isValid = useCallback(() => {
     if (!selectedMethod) return false;
+    // Donations always require phone (even for card)
+    if (paymentType === 'donation') return phone.length >= 10;
     if (selectedMethod === 'card') return true;
     return phone.length >= 10;
-  }, [selectedMethod, phone]);
+  }, [selectedMethod, phone, paymentType]);
 
   // Start payment status polling
   const startPolling = useCallback((paymentRefid: string) => {
@@ -162,8 +167,9 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
     const method = paymentMethods.find(m => m.id === selectedMethod);
     if (!method) return;
 
-    const paymentMethodType = selectedMethod === 'card' ? 'CARD' : 'MOBILE_MONEY';
-    const redirectUrl = selectedMethod === 'card' ? window.location.href : undefined;
+    const isCard = selectedMethod === 'card';
+    const paymentMethodType = isCard ? 'CARD' : 'MOBILE_MONEY';
+    const redirectUrl = isCard ? window.location.href : undefined;
 
     try {
       let response: { success: boolean; data?: XentriPayResponse; error?: string };
@@ -172,8 +178,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
         response = await initiateXentriPayment({
           declarationId,
           eventId,
-          phone,
-          telecomProvider: method.provider,
+          ...(isCard ? {} : { phone, telecomProvider: method.provider }),
           paymentMethod: paymentMethodType,
           redirectUrl,
         });
@@ -182,8 +187,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
           eventId,
           amount,
           currencyId,
-          phone,
-          telecomProvider: method.provider,
+          ...(isCard ? {} : { phone, telecomProvider: method.provider }),
           paymentMethod: paymentMethodType,
           redirectUrl,
         });
@@ -192,8 +196,8 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
           eventId,
           amount,
           currencyId,
-          phone,
-          telecomProvider: method.provider,
+          ...(hasDonation ? { donationAmount } : {}),
+          ...(isCard ? {} : { phone, telecomProvider: method.provider }),
           paymentMethod: paymentMethodType,
           redirectUrl,
         });
@@ -210,8 +214,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
           eventId,
           amount,
           currencyId,
-          phone,
-          telecomProvider: method.provider,
+          ...(isCard ? {} : { phone, telecomProvider: method.provider }),
           paymentMethod: paymentMethodType,
           redirectUrl,
         });
@@ -281,6 +284,9 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
       maximumFractionDigits: 0,
     }).format(val) + ' ' + currencyCode;
   };
+
+  const totalAmount = amount + (donationAmount || 0);
+  const hasDonation = (donationAmount || 0) > 0;
 
   return (
     <div
@@ -374,11 +380,28 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
               }}>
                 {title || defaultTitle}
               </h2>
-              <p style={{ fontSize: '14px', color: darkMode ? '#9ca3af' : '#666', margin: 0 }}>
-                {subtitle || (
-                  <>Amount: <strong style={{ color: darkMode ? '#fff' : '#083A85' }}>{formatAmount(amount)}</strong></>
-                )}
-              </p>
+              {subtitle ? (
+                <p style={{ fontSize: '14px', color: darkMode ? '#9ca3af' : '#666', margin: 0 }}>{subtitle}</p>
+              ) : hasDonation ? (
+                <div style={{ fontSize: '14px', color: darkMode ? '#9ca3af' : '#666', margin: 0 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                    <span>Gift:</span>
+                    <strong style={{ color: darkMode ? '#e5e7eb' : '#333' }}>{formatAmount(amount)}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                    <span>Donation:</span>
+                    <strong style={{ color: '#f59e0b' }}>{formatAmount(donationAmount!)}</strong>
+                  </div>
+                  <div style={{ borderTop: darkMode ? '1px solid rgba(255,255,255,0.1)' : '1px solid #e5e7eb', paddingTop: '6px', display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ fontWeight: 600 }}>Total:</span>
+                    <strong style={{ color: darkMode ? '#fff' : '#083A85' }}>{formatAmount(totalAmount)}</strong>
+                  </div>
+                </div>
+              ) : (
+                <p style={{ fontSize: '14px', color: darkMode ? '#9ca3af' : '#666', margin: 0 }}>
+                  Amount: <strong style={{ color: darkMode ? '#fff' : '#083A85' }}>{formatAmount(amount)}</strong>
+                </p>
+              )}
             </div>
 
             {/* Payment Method Selection */}
@@ -441,8 +464,8 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
               </div>
             </div>
 
-            {/* Phone Input - shown for mobile money methods only */}
-            {selectedMethod && selectedMethod !== 'card' && (
+            {/* Phone Input - shown for mobile money, and always for donations */}
+            {selectedMethod && (selectedMethod !== 'card' || paymentType === 'donation') && (
               <div style={{ marginBottom: '24px' }}>
                 <label style={{
                   display: 'block',
@@ -551,7 +574,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
                       <><rect x="1" y="4" width="22" height="16" rx="2" ry="2" /><line x1="1" y1="10" x2="23" y2="10" /></>
                     )}
                   </svg>
-                  {selectedMethod === 'card' ? `Proceed to Pay ${formatAmount(amount)}` : `Pay ${formatAmount(amount)}`}
+                  {selectedMethod === 'card' ? `Proceed to Pay ${formatAmount(totalAmount)}` : `Pay ${formatAmount(totalAmount)}`}
                 </>
               )}
             </button>
@@ -656,7 +679,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
               Payment Successful!
             </h3>
             <p style={{ fontSize: '15px', color: darkMode ? '#9ca3af' : '#666', margin: 0 }}>
-              Your payment of <strong>{formatAmount(amount)}</strong> has been completed.
+              Your payment of <strong>{formatAmount(totalAmount)}</strong> has been completed.
             </p>
           </div>
         )}
