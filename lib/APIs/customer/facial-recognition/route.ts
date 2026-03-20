@@ -16,6 +16,7 @@ export interface MatchedPhoto {
   eventTitle?: string;
   photographerId?: string;
   photographerName?: string;
+  pricePerImage?: number;
   createdAt?: string;
   alt?: string;
 }
@@ -27,13 +28,16 @@ export interface FacialRecognitionResponse {
 /**
  * Upload a selfie for facial recognition to find matching photos.
  * Public endpoint — backend resolves the event from the invite code.
+ * When inviteCode is empty, searches across all event albums (pending backend support).
  */
 export async function uploadSelfieForRecognition(
   inviteCode: string,
   selfieFile: File
 ): Promise<ApiResponse<FacialRecognitionResponse>> {
   const formData = new FormData();
-  formData.append('code', inviteCode);
+  if (inviteCode.trim()) {
+    formData.append('code', inviteCode.trim());
+  }
   formData.append('selfie', selfieFile);
 
   return apiClient.post<FacialRecognitionResponse>(

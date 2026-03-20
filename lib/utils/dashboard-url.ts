@@ -4,7 +4,8 @@
 function getRouteForType(customerType?: string): string {
   switch (customerType?.toLowerCase()) {
     case 'client': return '/user/client/home';
-    case 'event-coordinator': return '/user/event-coordinator/home';
+    case 'event-coordinator':
+    case 'coordinator': return '/user/event-coordinator/home';
     case 'photographer': return '/user/photographer/dashboard';
     default: return '/'; // Role selection page
   }

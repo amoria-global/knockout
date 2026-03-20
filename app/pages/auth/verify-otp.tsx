@@ -110,19 +110,26 @@ function VerifyOtpContent(): React.JSX.Element {
 
         if (response.success) {
           setSuccess(true);
-          showSuccess('Account verified successfully!');
-          // Redirect to dashboard photographer profile after 2 seconds
-          setTimeout(() => {
-            const dashboardBaseUrl = process.env.NEXT_PUBLIC_DASHBOARD_URL || '';
-            const token = getAuthToken();
-            const refreshTkn = getRefreshToken();
-            const params = new URLSearchParams();
-            if (token) params.set('token', token);
-            if (refreshTkn) params.set('refreshToken', refreshTkn);
-            const query = params.toString();
-            const dashboardProfileUrl = `${dashboardBaseUrl}/user/photographer/profile${query ? `?${query}` : ''}`;
-            window.location.href = dashboardProfileUrl;
-          }, 2000);
+
+          // If verify-otp returned a token, user is fully authenticated — go to dashboard
+          const token = response.data?.token || getAuthToken();
+          if (token) {
+            showSuccess('Account verified! Redirecting to dashboard...');
+            setTimeout(() => {
+              const dashboardBaseUrl = process.env.NEXT_PUBLIC_DASHBOARD_URL || '';
+              const refreshTkn = getRefreshToken();
+              const params = new URLSearchParams();
+              params.set('token', token);
+              if (refreshTkn) params.set('refreshToken', refreshTkn);
+              window.location.href = `${dashboardBaseUrl}/?${params.toString()}`;
+            }, 2000);
+          } else {
+            // No token — redirect to login so user can authenticate
+            showSuccess('Account verified! Please log in to continue.');
+            setTimeout(() => {
+              window.location.href = '/user/auth/login';
+            }, 2000);
+          }
         } else {
           const errorMessage = response.error || 'Invalid OTP. Please try again.';
           setError(errorMessage);
