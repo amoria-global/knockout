@@ -211,25 +211,38 @@ const FindMyPhotos = () => {
     setScanError(null);
     try {
       const response = await uploadSelfieForRecognition(inviteCode.trim(), uploadedFile);
-      if (response.success && response.data) {
-        const rawData = response.data as unknown as Record<string, unknown>;
-        const photos: MatchedPhoto[] = rawData?.data
-          ? (rawData.data as MatchedPhoto[])
-          : Array.isArray(response.data)
-            ? (response.data as unknown as MatchedPhoto[])
+      if (response.success) {
+        // response.data is the unwrapped array of matched photos
+        const photos: MatchedPhoto[] = Array.isArray(response.data)
+          ? (response.data as unknown as MatchedPhoto[])
+          : (response.data as unknown as Record<string, unknown>)?.data
+            ? ((response.data as unknown as Record<string, unknown>).data as MatchedPhoto[])
             : [];
+
+        if (photos.length === 0) {
+          setScanError('NO_MATCHES');
+          return;
+        }
+
         const mapped = photos.map((p: MatchedPhoto) => ({
           id: p.id,
           url: p.url || p.thumbnailUrl || '',
           alt: p.alt || p.eventTitle || 'Event photo',
+          price: p.pricePerImage ?? albumPricing?.pricePerImage,
         }));
-        // Only filter displayedPhotos — allPhotos stays as the full album
         setDisplayedPhotos(mapped);
         setIsFiltered(true);
         setIsCodeSubmitted(true);
         resetScanModal();
       } else {
-        setScanError(response.error || 'No matching photos found. Try a clearer photo.');
+        const err = response.error || '';
+        if (err.includes('code') && err.includes('missing')) {
+          setScanError('Please enter an event invite code to search for your photos.');
+        } else if (err.toLowerCase().includes('no face detected')) {
+          setScanError('NO_FACE');
+        } else {
+          setScanError(err || 'No matching photos found. Try a clearer photo.');
+        }
       }
     } catch {
       setScanError('Scan failed. Please check your connection and try again.');
@@ -308,17 +321,13 @@ const FindMyPhotos = () => {
   };
 
   const handleDownloadClick = (photo: { id: string; url: string; alt: string; price?: number }) => {
-    // If album has no pricing (free), allow direct download
-    if (!albumPricing) {
+    const photoPrice = photo.price ?? albumPricing?.pricePerImage ?? 0;
+    if (photoPrice <= 0) {
+      // Free photo — allow direct download
       triggerPhotoDownload(photo.url, `photo-${photo.id}.jpg`);
       return;
     }
-    // If pricing exists but price is 0, also allow direct download
-    if ((albumPricing.pricePerImage ?? 0) <= 0) {
-      triggerPhotoDownload(photo.url, `photo-${photo.id}.jpg`);
-      return;
-    }
-    // Otherwise, show payment modal
+    // Paid photo — show payment modal
     setDownloadTarget(photo);
     setShowDownloadModal(true);
   };
@@ -773,12 +782,33 @@ const FindMyPhotos = () => {
                 </button>
 
                 {scanError && (
-                  <p style={{
-                    color: '#FF6B6B',
-                    fontSize: '14px',
-                    marginTop: '12px',
-                    textAlign: 'center',
-                  }}>{scanError}</p>
+                  (scanError === 'NO_MATCHES' || scanError === 'NO_FACE') ? (
+                    <div style={{
+                      marginTop: '16px',
+                      padding: '20px',
+                      backgroundColor: scanError === 'NO_FACE' ? 'rgba(6, 182, 212, 0.08)' : 'rgba(251, 191, 36, 0.08)',
+                      border: `1px solid ${scanError === 'NO_FACE' ? 'rgba(6, 182, 212, 0.25)' : 'rgba(251, 191, 36, 0.25)'}`,
+                      borderRadius: '14px',
+                      textAlign: 'center',
+                    }}>
+                      <i className={scanError === 'NO_FACE' ? 'bi bi-person-bounding-box' : 'bi bi-camera'} style={{ fontSize: '28px', color: scanError === 'NO_FACE' ? '#06b6d4' : '#f59e0b', display: 'block', marginBottom: '8px' }}></i>
+                      <p style={{ color: scanError === 'NO_FACE' ? '#06b6d4' : '#f59e0b', fontSize: '15px', fontWeight: 600, margin: '0 0 4px' }}>
+                        {scanError === 'NO_FACE' ? 'No face detected in your photo' : 'No matching photos found'}
+                      </p>
+                      <p style={{ color: scanError === 'NO_FACE' ? '#0891b2' : '#fbbf24', fontSize: '13px', margin: 0, lineHeight: 1.5 }}>
+                        {scanError === 'NO_FACE'
+                          ? 'Upload a close-up selfie where your face is clearly visible and takes up most of the frame.'
+                          : 'Try a well-lit, front-facing photo with your face clearly visible. Group or distant shots may not match.'}
+                      </p>
+                    </div>
+                  ) : (
+                    <p style={{
+                      color: '#FF6B6B',
+                      fontSize: '14px',
+                      marginTop: '12px',
+                      textAlign: 'center',
+                    }}>{scanError}</p>
+                  )
                 )}
               </>
             )}
@@ -1135,23 +1165,27 @@ const FindMyPhotos = () => {
                       loading="lazy"
                     />
                     {/* Price badge */}
-                    <span style={{
-                      position: 'absolute',
-                      top: '8px',
-                      left: '8px',
-                      padding: '4px 10px',
-                      borderRadius: '20px',
-                      background: albumPricing && albumPricing.pricePerImage > 0 ? 'rgba(0,0,0,0.7)' : 'rgba(3,150,156,0.85)',
-                      color: '#fff',
-                      fontSize: '11px',
-                      fontWeight: 700,
-                      backdropFilter: 'blur(4px)',
-                      letterSpacing: '0.3px',
-                    }}>
-                      {albumPricing && albumPricing.pricePerImage > 0
-                        ? `${albumPricing.currencySymbol}${albumPricing.pricePerImage.toLocaleString()}`
-                        : 'Free'}
-                    </span>
+                    {(() => {
+                      const photoPrice = photo.price ?? albumPricing?.pricePerImage ?? 0;
+                      const symbol = albumPricing?.currencySymbol || 'RF';
+                      return (
+                        <span style={{
+                          position: 'absolute',
+                          top: '8px',
+                          left: '8px',
+                          padding: '4px 10px',
+                          borderRadius: '20px',
+                          background: photoPrice > 0 ? 'rgba(0,0,0,0.7)' : 'rgba(3,150,156,0.85)',
+                          color: '#fff',
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          backdropFilter: 'blur(4px)',
+                          letterSpacing: '0.3px',
+                        }}>
+                          {photoPrice > 0 ? `${symbol}${photoPrice.toLocaleString()}` : 'Free'}
+                        </span>
+                      );
+                    })()}
                   </div>
                   {/* Download button */}
                   <button
@@ -1184,8 +1218,8 @@ const FindMyPhotos = () => {
                       <polyline points="7 10 12 15 17 10"/>
                       <line x1="12" y1="15" x2="12" y2="3"/>
                     </svg>
-                    {albumPricing && albumPricing.pricePerImage > 0
-                      ? `Buy (${albumPricing.currencySymbol}${albumPricing.pricePerImage.toLocaleString()})`
+                    {(photo.price ?? albumPricing?.pricePerImage ?? 0) > 0
+                      ? `Buy (${albumPricing?.currencySymbol || 'RF'}${(photo.price ?? albumPricing?.pricePerImage ?? 0).toLocaleString()})`
                       : 'Download'}
                   </button>
                 </div>
@@ -1264,9 +1298,10 @@ const FindMyPhotos = () => {
                 <polyline points="7 10 12 15 17 10"/>
                 <line x1="12" y1="15" x2="12" y2="3"/>
               </svg>
-              {albumPricing && albumPricing.pricePerImage > 0
-                ? `Buy (${albumPricing.currencySymbol}${albumPricing.pricePerImage.toLocaleString()})`
-                : 'Download'}
+              {(() => {
+                const p = selectedPhoto?.price ?? albumPricing?.pricePerImage ?? 0;
+                return p > 0 ? `Buy (${albumPricing?.currencySymbol || 'RF'}${p.toLocaleString()})` : 'Download';
+              })()}
             </button>
             <button
               onClick={(e) => { e.stopPropagation(); setSelectedPhoto(null); }}
@@ -1401,7 +1436,7 @@ const FindMyPhotos = () => {
             }}>
               <span style={{ fontSize: '13px', color: '#adadb8', fontWeight: 500 }}>Photo price</span>
               <span style={{ fontSize: '18px', color: '#03969c', fontWeight: 700 }}>
-                {albumPricing?.currencySymbol || ''}{(albumPricing?.pricePerImage ?? downloadTarget.price ?? 0).toLocaleString()} {albumPricing?.currencyAbbreviation || ''}
+                {albumPricing?.currencySymbol || 'RF'}{(downloadTarget.price ?? albumPricing?.pricePerImage ?? 0).toLocaleString()} {albumPricing?.currencyAbbreviation || 'RWF'}
               </span>
             </div>
 
@@ -1816,18 +1851,39 @@ const FindMyPhotos = () => {
                 </button>
 
                 {scanError && (
-                  <div style={{
-                    marginTop: '12px',
-                    padding: '10px 14px',
-                    backgroundColor: 'rgba(239,68,68,0.1)',
-                    border: '1px solid rgba(239,68,68,0.3)',
-                    borderRadius: '10px',
-                    color: '#ef4444',
-                    fontSize: '13px',
-                    textAlign: 'center',
-                  }}>
-                    {scanError}
-                  </div>
+                  (scanError === 'NO_MATCHES' || scanError === 'NO_FACE') ? (
+                    <div style={{
+                      marginTop: '12px',
+                      padding: '16px',
+                      backgroundColor: scanError === 'NO_FACE' ? 'rgba(6, 182, 212, 0.1)' : 'rgba(251, 191, 36, 0.1)',
+                      border: `1px solid ${scanError === 'NO_FACE' ? 'rgba(6, 182, 212, 0.3)' : 'rgba(251, 191, 36, 0.3)'}`,
+                      borderRadius: '12px',
+                      textAlign: 'center',
+                    }}>
+                      <i className={scanError === 'NO_FACE' ? 'bi bi-person-bounding-box' : 'bi bi-camera'} style={{ fontSize: '24px', color: scanError === 'NO_FACE' ? '#06b6d4' : '#f59e0b', display: 'block', marginBottom: '6px' }}></i>
+                      <p style={{ color: scanError === 'NO_FACE' ? '#06b6d4' : '#f59e0b', fontSize: '14px', fontWeight: 600, margin: '0 0 4px' }}>
+                        {scanError === 'NO_FACE' ? 'No face detected in your photo' : 'No matching photos found'}
+                      </p>
+                      <p style={{ color: scanError === 'NO_FACE' ? '#0891b2' : '#fbbf24', fontSize: '12px', margin: 0, lineHeight: 1.5 }}>
+                        {scanError === 'NO_FACE'
+                          ? 'Upload a close-up selfie where your face is clearly visible.'
+                          : 'Try a well-lit, front-facing photo with your face clearly visible.'}
+                      </p>
+                    </div>
+                  ) : (
+                    <div style={{
+                      marginTop: '12px',
+                      padding: '10px 14px',
+                      backgroundColor: 'rgba(239,68,68,0.1)',
+                      border: '1px solid rgba(239,68,68,0.3)',
+                      borderRadius: '10px',
+                      color: '#ef4444',
+                      fontSize: '13px',
+                      textAlign: 'center',
+                    }}>
+                      {scanError}
+                    </div>
+                  )
                 )}
               </>
             )}
@@ -1840,13 +1896,13 @@ const FindMyPhotos = () => {
         isOpen={showXentriPayModal}
         onClose={() => { setShowXentriPayModal(false); resetDownloadModal(); }}
         onSuccess={handlePhotoPaymentSuccess}
-        amount={albumPricing?.pricePerImage ?? downloadTarget?.price ?? 0}
+        amount={downloadTarget?.price ?? albumPricing?.pricePerImage ?? 0}
         currencyCode={albumPricing?.currencyAbbreviation ?? 'RWF'}
         currencyId={albumPricing?.currencyId ?? ''}
         paymentType="photo_purchase"
         eventId={albumEventId}
         title="Pay for Photo"
-        subtitle={`Download this photo for ${albumPricing?.currencySymbol ?? ''}${(albumPricing?.pricePerImage ?? downloadTarget?.price ?? 0).toLocaleString()}`}
+        subtitle={`Download this photo for ${albumPricing?.currencySymbol ?? 'RF'}${(downloadTarget?.price ?? albumPricing?.pricePerImage ?? 0).toLocaleString()}`}
       />
 
       {/* ── Embedded Styles ── */}

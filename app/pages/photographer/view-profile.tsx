@@ -966,9 +966,9 @@ function ViewProfileContent(): React.JSX.Element {
             {photographer?.currentStatus === 'booked' ? (
               <div style={{
                 padding: isMobile ? 'clamp(12px, 3vw, 14px) clamp(20px, 5vw, 24px)' : '12px 24px',
-                backgroundColor: '#f3f4f6',
-                color: '#6b7280',
-                border: '1px solid #d1d5db',
+                backgroundColor: 'rgba(251, 191, 36, 0.25)',
+                color: '#92400e',
+                border: '1px solid rgba(251, 191, 36, 0.5)',
                 borderRadius: isMobile ? 'clamp(6px, 1.5vw, 8px)' : '8px',
                 fontSize: isMobile ? 'clamp(13px, 3.2vw, 14px)' : '14px',
                 fontWeight: '600',
@@ -979,10 +979,10 @@ function ViewProfileContent(): React.JSX.Element {
                 whiteSpace: 'nowrap',
                 cursor: 'not-allowed',
               }}>
-                <i className="bi bi-calendar-x" style={{ fontSize: '15px', color: '#9ca3af' }}></i>
+                <i className="bi bi-calendar-x" style={{ fontSize: '15px', color: '#b45309' }}></i>
                 Booked
                 {photographer.nextAvailableDate && (
-                  <span style={{ fontWeight: '400', color: '#9ca3af' }}>
+                  <span style={{ fontWeight: '400', color: '#92400e' }}>
                     · Available from {formatAvailableDate(photographer.nextAvailableDate)}
                   </span>
                 )}
