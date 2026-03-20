@@ -264,7 +264,8 @@ export default function LoginPage(): React.JSX.Element {
       if (returnToUrl.pathname.includes('book-now') && photographerId && packageId) {
         // Redirect directly to the dashboard events page with booking context
         const token = getAuthToken();
-        const userType = (loggedInUserType || 'Client').replace(/([A-Z])/g, (m, l, i) => (i > 0 ? '-' : '') + l.toLowerCase());
+        const rawType = loggedInUserType?.toLowerCase() || 'client';
+        const userType = rawType === 'coordinator' ? 'event-coordinator' : rawType;
         const dashUrl = process.env.NEXT_PUBLIC_DASHBOARD_URL || 'https://dashboard.connekyt.com';
         const dest = new URL(`${dashUrl}/user/${userType}/events`);
         dest.searchParams.set('photographerId', photographerId);
