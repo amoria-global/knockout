@@ -9,7 +9,7 @@ import Navbar from "../components/navbar";
 import Footer from "../components/footer";
 import MissionStatement from "../components/MissionStatement";
 import RotatingGlobe from "../components/RotatingGlobe";
-import { motion } from "framer-motion";
+import { motion, useScroll } from "framer-motion";
 
 const About = () => {
   const [targetMarketMousePos, setTargetMarketMousePos] = useState<{ x: number; y: number } | null>(null);
@@ -79,17 +79,24 @@ const About = () => {
         // Mockup starts fully clipped (wireframe visible)
         gsap.set(mockup, {
           clipPath: 'polygon(0% 100%, 100% 100%, 100% 100%, 0% 100%)',
+          willChange: 'clip-path',
         });
+
+        // GPU hints for smooth scroll-driven transforms
+        gsap.set(contentWrapper, { willChange: 'transform' });
+        gsap.set(section, { willChange: 'clip-path' });
 
         const isMobile = window.innerWidth < 768;
 
         // Single pin covers all phases: section peel → scroll to center → wireframe peel
+        // Reduced from 500% to 350% for snappier feel — less scrolling needed
+        // Scrub increased from 0.5 to 1.2 for smoother interpolation between scroll positions
         const tl = gsap.timeline({
           scrollTrigger: {
             trigger: section,
             start: 'top top',
-            end: '+=500%',
-            scrub: 0.5,
+            end: isMobile ? '+=250%' : '+=350%',
+            scrub: 1.2,
             pin: true,
             pinSpacing: true,
           },
@@ -105,28 +112,43 @@ const About = () => {
           tl.to(contentWrapper, {
             y: -scrollUpAmount,
             duration: 0.8,
-            ease: 'power1.inOut',
+            ease: 'power2.inOut',
           }, 1);
           tl.to(section, {
             clipPath: `inset(0px 0px ${scrollUpAmount}px 0px)`,
             duration: 0.8,
-            ease: 'power1.inOut',
+            ease: 'power2.inOut',
           }, 1);
         }
 
         // Phase 3: Pause — wireframe centered on screen
         // Phase 4: Wireframe-to-mockup peel (bottom → top)
         // On mobile, start peel earlier since Phase 2 is skipped
-        const peelStart = isMobile ? 0.6 : 2.5;
-        const peelEnd = isMobile ? 1.6 : 3.5;
+        const peelStart = isMobile ? 0.5 : 2.2;
+        const peelEnd = isMobile ? 1.5 : 3.2;
         tl.to(mockup, {
           clipPath: 'polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)',
           duration: 1,
-          ease: 'none',
+          ease: 'power2.inOut',
         }, peelStart);
 
-        // Phase 5: Dwell — completed mockup stays visible before unpin
-        tl.to({}, { duration: 0.3 }, peelEnd);
+        // Phase 5: Dwell — completed mockup stays visible before unpin (increased for appreciation)
+        tl.to({}, { duration: 0.6 }, peelEnd);
+
+        // Clean up will-change after animation completes to free GPU memory
+        ScrollTrigger.create({
+          trigger: section,
+          start: 'top top',
+          end: isMobile ? '+=250%' : '+=350%',
+          onLeave: () => {
+            gsap.set([mockup, contentWrapper, section], { willChange: 'auto' });
+          },
+          onEnterBack: () => {
+            gsap.set(mockup, { willChange: 'clip-path' });
+            gsap.set(contentWrapper, { willChange: 'transform' });
+            gsap.set(section, { willChange: 'clip-path' });
+          },
+        });
 
         // Ensure pin-spacer is transparent so it doesn't extend the dark background
         const pinSpacer = section.parentElement;
@@ -142,6 +164,8 @@ const About = () => {
 
     return () => clearTimeout(timer);
   }, []);
+
+  const { scrollYProgress } = useScroll();
 
   return (
     <div className="about-page">
@@ -431,6 +455,14 @@ const About = () => {
           box-shadow: inset -1px -1px 2px rgba(255, 255, 255, 0.8), 0 2px 4px rgba(0, 100, 150, 0.2);
         }
 
+        @media (prefers-reduced-motion: reduce) {
+          .about-page *, .about-page *::before, .about-page *::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+          }
+        }
+
         /* Default desktop font sizes - matched to homepage */
         .about-hero-title {
           font-size: 57px;
@@ -451,6 +483,9 @@ const About = () => {
         .about-mock-title {
           font-size: 55px;
           line-height: 1.0;
+        }
+        .about-mock-container:hover .about-mock-bg {
+          transform: scale(1.03);
         }
         .about-cta-title {
           font-size: 55px;
@@ -1176,6 +1211,19 @@ const About = () => {
         }
       `}</style>
       <Navbar />
+      <motion.div
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: '3px',
+          background: 'linear-gradient(90deg, #FF6B6B, #8B5CF6)',
+          transformOrigin: '0%',
+          scaleX: scrollYProgress,
+          zIndex: 9999,
+        }}
+      />
 
       {/* Wrapper: all sections before Smart Tools get zIndex:2 so pinned Smart Tools (zIndex:1) stays behind */}
       <div style={{ position: 'relative', zIndex: 2 }}>
@@ -1351,6 +1399,35 @@ const About = () => {
           />
         </div>
 
+        {/* Floating Badge */}
+        {!isMobile && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.8, delay: 1.2, ease: 'easeOut' }}
+            style={{
+              position: 'absolute',
+              bottom: '20%',
+              left: '55%',
+              zIndex: 6,
+              background: 'rgba(139, 92, 246, 0.15)',
+              backdropFilter: 'blur(10px)',
+              WebkitBackdropFilter: 'blur(10px)',
+              border: '1px solid rgba(139, 92, 246, 0.3)',
+              borderRadius: '16px',
+              padding: '10px 18px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              animation: 'float 4s ease-in-out infinite',
+              pointerEvents: 'none',
+            }}
+          >
+            <i className="bi bi-camera" style={{ color: '#8B5CF6', fontSize: '16px' }} />
+            <span style={{ color: 'rgba(255,255,255,0.9)', fontSize: '13px', fontWeight: 600 }}>Global Creative Network</span>
+          </motion.div>
+        )}
+
         {/* Content - Left Side */}
         <div
           className="about-hero-content"
@@ -1376,7 +1453,14 @@ const About = () => {
                 color: '#ffffff',
               }}
             >
-              Amoria
+              <motion.span
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.7, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                style={{ display: 'inline-block' }}
+              >
+                Amoria
+              </motion.span>
               <br />
               <span
                 style={{
@@ -1386,15 +1470,25 @@ const About = () => {
                   backgroundClip: 'text',
                 }}
               >
-                Connekyt
+                <motion.span
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.7, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                  style={{ display: 'inline-block' }}
+                >
+                  Connekyt
+                </motion.span>
               </span>
             </h1>
           </div>
 
           {/* Description */}
           <div className="about-hero-description-wrapper" style={{ marginTop: isMobile ? 0 : 'auto', paddingTop: isMobile ? '20px' : '40px' }}>
-            <p
+            <motion.p
               className="about-hero-subtitle"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.6, ease: 'easeOut' }}
               style={{
                 fontSize: isMobile ? '15px' : '16px',
                 fontWeight: 400,
@@ -1406,11 +1500,16 @@ const About = () => {
             >
               Amoria Connekyt is a digital ecosystem connecting verified photographers and creative professionals with clients worldwide.
               We combine smart tools, secure payments, and creative visibility to transform moments into meaningful, lasting experiences.
-            </p>
+            </motion.p>
           </div>
 
           {/* Button */}
-          <div className="about-hero-button-wrapper" style={{ marginTop: isMobile ? 0 : 'auto', paddingTop: isMobile ? '24px' : '40px' }}>
+          <motion.div
+            className="about-hero-button-wrapper"
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.8, ease: 'easeOut' }}
+            style={{ marginTop: isMobile ? 0 : 'auto', paddingTop: isMobile ? '24px' : '40px' }}>
             <a
               href="/user/auth/signup"
               style={{
@@ -1430,18 +1529,45 @@ const About = () => {
                 boxShadow: '0 4px 20px rgba(255, 107, 107, 0.4)',
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-3px)';
+                e.currentTarget.style.transform = 'translateY(-3px) scale(1.02)';
                 e.currentTarget.style.boxShadow = '0 8px 30px rgba(255, 107, 107, 0.5)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.transform = 'translateY(0) scale(1)';
                 e.currentTarget.style.boxShadow = '0 4px 20px rgba(255, 107, 107, 0.4)';
               }}
             >
               Get Started
             </a>
-          </div>
+          </motion.div>
         </div>
+
+        {/* Scroll Indicator */}
+        {!isMobile && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1.5, duration: 0.8 }}
+            style={{
+              position: 'absolute',
+              bottom: '30px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              zIndex: 10,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '8px',
+            }}
+          >
+            <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px', letterSpacing: '2px', textTransform: 'uppercase' }}>Scroll</span>
+            <motion.div
+              animate={{ y: [0, 8, 0] }}
+              transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+              style={{ width: '2px', height: '24px', background: 'linear-gradient(180deg, rgba(139,92,246,0.8), transparent)', borderRadius: '2px' }}
+            />
+          </motion.div>
+        )}
 
       </section>
 
@@ -1506,7 +1632,12 @@ const About = () => {
           {/* Left Column - Title and Strategy */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
             {/* Main Title */}
-            <div>
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+              viewport={{ once: true, amount: 0.3 }}
+            >
               <h2
                 style={{
                   fontSize: '56px',
@@ -1536,10 +1667,15 @@ const About = () => {
               >
                 Market
               </h2>
-            </div>
+            </motion.div>
 
             {/* Strategy Box */}
-            <div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.15, ease: 'easeOut' }}
+              viewport={{ once: true, amount: 0.3 }}
+            >
               <h3
                 style={{
                   fontSize: '23px',
@@ -1564,11 +1700,15 @@ const About = () => {
               >
                 Photographers, videographers, and visual storytellers who want to expand their reach, build their brand, and connect with clients globally.
               </p>
-            </div>
+            </motion.div>
           </div>
 
           {/* Center Column - Image */}
-          <div
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.7, delay: 0.1, ease: 'easeOut' }}
+            viewport={{ once: true, amount: 0.3 }}
             style={{
               position: 'relative',
               height: '380px',
@@ -1600,12 +1740,17 @@ const About = () => {
                 filter: 'grayscale(100%) blur(1px) brightness(0.7)',
               }}
             />
-          </div>
+          </motion.div>
 
           {/* Right Column - Text Blocks */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             {/* Top Text Block */}
-            <div>
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.1, ease: 'easeOut' }}
+              viewport={{ once: true, amount: 0.3 }}
+            >
               <p
                 style={{
                   fontSize: '16px',
@@ -1616,16 +1761,22 @@ const About = () => {
               >
                 Clients and businesses looking for verified creative talent to capture their special moments, corporate events, and brand stories with professionalism and creativity.
               </p>
-            </div>
+            </motion.div>
 
             {/* Highlighted Box */}
-            <div
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.2, ease: 'easeOut' }}
+              viewport={{ once: true, amount: 0.3 }}
+              whileHover={{ scale: 1.02, boxShadow: '0 15px 40px rgba(139, 92, 246, 0.4)' }}
               style={{
                 position: 'relative',
                 background: 'linear-gradient(135deg, #8B5CF6 0%, #FF6B6B 100%)',
                 borderRadius: '12px',
                 padding: '24px',
                 boxShadow: '0 10px 30px rgba(139, 92, 246, 0.3)',
+                cursor: 'default',
               }}
             >
               <h4
@@ -1649,10 +1800,15 @@ const About = () => {
               >
                 Wedding planners, corporate event managers, and celebration coordinators who need reliable creative coverage for memorable occasions.
               </p>
-            </div>
+            </motion.div>
 
             {/* Bottom Text Block */}
-            <div>
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.3, ease: 'easeOut' }}
+              viewport={{ once: true, amount: 0.3 }}
+            >
               <p
                 style={{
                   fontSize: '16px',
@@ -1663,7 +1819,7 @@ const About = () => {
               >
                 Families and individuals wanting to preserve precious moments through professional photography and videography services.
               </p>
-            </div>
+            </motion.div>
           </div>
         </div>
 
@@ -1699,6 +1855,8 @@ const About = () => {
           overflow: 'hidden',
         }}
       >
+        {/* Subtle dot pattern */}
+        <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(circle, rgba(0,0,0,0.04) 1px, transparent 1px)', backgroundSize: '20px 20px', pointerEvents: 'none', zIndex: 0 }} />
         <div
           style={{
             maxWidth: '1100px',
@@ -1879,7 +2037,7 @@ const About = () => {
                     whileInView={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.5, delay: 0.1 + index * 0.15, type: 'spring', stiffness: 200 }}
                     viewport={{ once: true, amount: 0.2 }}
-                    whileHover={{ scale: 1.1, boxShadow: `0 10px 30px ${value.color}30` }}
+                    whileHover={{ scale: 1.1, rotate: 5, boxShadow: `0 10px 30px ${value.color}40` }}
                     style={{
                       width: '120px',
                       height: '120px',
@@ -2108,7 +2266,12 @@ const About = () => {
           }}
         >
           {/* Left Column - Journey Intro */}
-          <div>
+          <motion.div
+            initial={{ opacity: 0, x: -30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+            viewport={{ once: true, amount: 0.2 }}
+          >
             <h2
               style={{
                 fontSize: '56px',
@@ -2164,10 +2327,15 @@ const About = () => {
             >
               Our trip is not finished yet- with each step we open new opportunities to the creators of the whole world.
             </p>
-          </div>
+          </motion.div>
 
           {/* Right Column - 2025 Vision Card */}
-          <div
+          <motion.div
+            initial={{ opacity: 0, x: 40 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.7, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+            viewport={{ once: true, amount: 0.2 }}
+            whileHover={{ y: -5, boxShadow: '0 20px 40px rgba(0,0,0,0.1)' }}
             style={{
               backgroundColor: '#ffffff',
               borderRadius: '20px',
@@ -2176,7 +2344,11 @@ const About = () => {
             }}
           >
             {/* Year Badge */}
-            <div
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.4, delay: 0.5, type: 'spring', stiffness: 300 }}
+              viewport={{ once: true }}
               style={{
                 display: 'inline-block',
                 backgroundColor: '#fff',
@@ -2191,7 +2363,7 @@ const About = () => {
               }}
             >
               2025
-            </div>
+            </motion.div>
 
             <h3
               style={{
@@ -2238,7 +2410,7 @@ const About = () => {
             >
               What began as a passion for supporting event creators, photographers, and storytellers has impacted us in numerous ways and heavily shaped the growth of our company. We listen to our customers and use their feedback and ideas to drive the changes and developments within the company. We've come a long way in our development, and, looking to the future, we will continue to evolve with our customers. We're only just getting started and are looking to build even more with you.
             </p>
-          </div>
+          </motion.div>
         </div>
 
         {/* Mobile Responsive Styles for Journey Section */}
@@ -2285,16 +2457,26 @@ const About = () => {
           }}
         >
           {/* Mission Card */}
-          <div
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+            viewport={{ once: true, amount: 0.2 }}
+            whileHover={{ y: -5 }}
             style={{
               backgroundColor: '#bfe0ff',
               borderRadius: '20px',
               padding: '40px',
               position: 'relative',
+              transition: 'box-shadow 0.3s ease',
             }}
           >
             {/* Badge */}
-            <div
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.4, delay: 0.2, type: 'spring', stiffness: 300 }}
+              viewport={{ once: true }}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -2312,7 +2494,7 @@ const About = () => {
             >
               <i className="bi bi-bullseye" style={{ fontSize: '16px' }} />
               Mission
-            </div>
+            </motion.div>
 
             <h3
               style={{
@@ -2378,19 +2560,29 @@ const About = () => {
                 </li>
               ))}
             </ul>
-          </div>
+          </motion.div>
 
           {/* Vision Card */}
-          <div
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
+            viewport={{ once: true, amount: 0.2 }}
+            whileHover={{ y: -5 }}
             style={{
               backgroundColor: '#bfe0ff',
               borderRadius: '20px',
               padding: '40px',
               position: 'relative',
+              transition: 'box-shadow 0.3s ease',
             }}
           >
             {/* Badge */}
-            <div
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.4, delay: 0.3, type: 'spring', stiffness: 300 }}
+              viewport={{ once: true }}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -2408,7 +2600,7 @@ const About = () => {
             >
               <i className="bi bi-globe2" style={{ fontSize: '16px' }} />
               Vision
-            </div>
+            </motion.div>
 
             <h3
               style={{
@@ -2474,7 +2666,7 @@ const About = () => {
                 </li>
               ))}
             </ul>
-          </div>
+          </motion.div>
         </div>
 
         {/* Mobile Responsive Styles for Mission & Vision */}
@@ -2983,6 +3175,7 @@ const About = () => {
         >
           {/* Background Image */}
           <div
+            className="about-mock-bg"
             style={{
               position: 'absolute',
               top: 0,
@@ -2990,6 +3183,7 @@ const About = () => {
               right: 0,
               bottom: 0,
               backgroundImage: 'url(/mock.png)',
+              transition: 'transform 0.8s ease',
               backgroundSize: 'cover',
               backgroundPosition: 'right center',
               backgroundRepeat: 'no-repeat',
@@ -3012,8 +3206,12 @@ const About = () => {
             }}
           >
             {/* Left Side Content */}
-            <div
+            <motion.div
               className="about-mock-content"
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+              viewport={{ once: true, amount: 0.3 }}
               style={{
                 maxWidth: '550px',
               }}
@@ -3051,7 +3249,7 @@ const About = () => {
                   color: '#fff',
                   fontSize: '16px',
                   fontWeight: 600,
-                  padding: '14px 32px', 
+                  padding: '14px 32px',
                   border: '2px solid  #f5652c',
                   borderRadius: '40px',
                   cursor: 'pointer',
@@ -3059,17 +3257,19 @@ const About = () => {
                   transition: 'all 0.3s ease',
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-3px)';
-                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+                  e.currentTarget.style.transform = 'translateY(-3px) scale(1.02)';
+                  e.currentTarget.style.backgroundColor = 'rgba(245, 101, 44, 0.15)';
+                  e.currentTarget.style.boxShadow = '0 8px 25px rgba(245, 101, 44, 0.3)';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.transform = 'translateY(0) scale(1)';
                   e.currentTarget.style.backgroundColor = 'transparent';
+                  e.currentTarget.style.boxShadow = 'none';
                 }}
               >
                 Get Started
               </a>
-            </div>
+            </motion.div>
           </div>
         </div>
       </section>
