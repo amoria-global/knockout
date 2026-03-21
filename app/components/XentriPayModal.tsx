@@ -239,9 +239,15 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
       startPolling(data.refid);
     } catch (err) {
       const raw = err instanceof Error ? err.message : '';
-      const msg = raw.toLowerCase().includes('network') || raw.toLowerCase().includes('fetch')
-        ? 'Unable to connect. Please check your internet connection and try again.'
-        : raw || 'Could not initiate payment. Please try again or choose a different payment method.';
+      const lower = raw.toLowerCase();
+      let msg: string;
+      if (lower.includes('network') || lower.includes('fetch')) {
+        msg = 'Unable to connect. Please check your internet connection and try again.';
+      } else if (lower.includes('failed to initiate') || lower.includes('initiate payment')) {
+        msg = 'Payment could not be initiated. Please verify your phone number matches the selected payment method (MTN or Airtel) and try again.';
+      } else {
+        msg = raw || 'Could not initiate payment. Please try again or choose a different payment method.';
+      }
       setError(msg);
       onError?.(msg);
     } finally {
@@ -635,6 +641,10 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
 
             <p style={{ fontSize: '13px', color: darkMode ? '#6b7280' : '#999' }}>
               Waiting for confirmation... This may take a moment.
+            </p>
+
+            <p style={{ fontSize: '13px', color: '#ef4444', marginTop: '12px', lineHeight: 1.5 }}>
+              {"Didn't receive the SMS? Check that your mobile money balance covers the payment amount."}
             </p>
 
             {/* Cancel button */}
