@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useState, useEffect, useRef } from 'react';
+
 import { useTranslations } from 'next-intl';
 import { useRouter, usePathname } from 'next/navigation';
 import { useLanguage } from '../providers/LanguageProvider';
@@ -343,12 +344,15 @@ const AmoriaKNavbar = () => {
 
   return (
     <nav
-      className={`sticky top-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-transparent' : ''}`}
+      className="sticky top-0 z-50 transition-all duration-300"
       style={{
         fontFamily: "'Pragati Narrow', sans-serif",
-        marginLeft: '0',
-        marginRight: '0',
-        backgroundColor: isScrolled ? 'transparent/1' : '#DBDBDB'
+        backgroundColor: isScrolled ? 'rgba(255, 255, 255, 0.85)' : '#ffffff',
+        backdropFilter: isScrolled ? 'blur(16px)' : 'none',
+        WebkitBackdropFilter: isScrolled ? 'blur(16px)' : 'none',
+        boxShadow: isScrolled
+          ? '0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.04)'
+          : '0 1px 0 rgba(0, 0, 0, 0.06)',
       }}
     >
       {/* Live Animation Styles for Event Category Cards */}
@@ -443,13 +447,13 @@ const AmoriaKNavbar = () => {
         }
 
         .nav-live-card {
-          animation: nav-sound-wave-pulse 1s ease-out infinite, nav-border-beep 1s ease-in-out infinite;
-          border: 2px solid rgba(16, 185, 129, 0.6) !important;
+          animation: nav-border-beep 1.5s ease-in-out infinite;
+          box-shadow: inset 0 0 0 1.5px rgba(16, 185, 129, 0.4);
         }
 
         .nav-live-card:hover {
           animation: none;
-          border-color: rgba(16, 185, 129, 0.6) !important;
+          box-shadow: inset 0 0 0 1.5px rgba(16, 185, 129, 0.6);
         }
 
         .nav-live-icon {
@@ -466,6 +470,22 @@ const AmoriaKNavbar = () => {
 
         .nav-live-card:hover .nav-live-text {
           color: #03803f !important;
+        }
+
+        @keyframes nav-skeleton-pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.4; }
+        }
+
+        @keyframes nav-dropdown-enter {
+          from {
+            opacity: 0;
+            margin-top: -8px;
+          }
+          to {
+            opacity: 1;
+            margin-top: 0;
+          }
         }
 
         @keyframes nav-events-border-vibrate {
@@ -501,17 +521,194 @@ const AmoriaKNavbar = () => {
           border-color: rgba(16, 185, 129, 1);
           background-color: rgba(16, 185, 129, 0.08);
         }
+
+        .nav-link-hover {
+          position: relative;
+          padding: 7px 18px;
+          border-radius: 50px;
+          transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+          color: #4b5563;
+          font-size: 14px;
+          font-weight: 500;
+        }
+
+        .nav-link-hover:hover {
+          background-color: rgba(8, 58, 133, 0.08);
+          color: #083A85 !important;
+        }
+
+        .nav-link-hover.nav-link-active {
+          background-color: #083A85;
+          color: #ffffff !important;
+          box-shadow: 0 2px 10px rgba(8, 58, 133, 0.35);
+        }
+
+        /* Logo animations */
+        @keyframes logo-power-on {
+          0% {
+            opacity: 0;
+            transform: scale(0.7) rotate(-12deg);
+            filter: drop-shadow(0 0 0px rgba(8, 58, 133, 0));
+          }
+          40% {
+            opacity: 1;
+            transform: scale(1.1) rotate(4deg);
+            filter: drop-shadow(0 0 20px rgba(8, 58, 133, 0.8));
+          }
+          70% {
+            transform: scale(0.98) rotate(-1deg);
+            filter: drop-shadow(0 0 8px rgba(8, 58, 133, 0.3));
+          }
+          100% {
+            opacity: 1;
+            transform: scale(1) rotate(0deg);
+            filter: drop-shadow(0 0 0px rgba(8, 58, 133, 0));
+          }
+        }
+
+        @keyframes text-neon-on {
+          0% {
+            opacity: 0;
+            transform: translateX(-8px);
+            text-shadow: none;
+            color: transparent;
+          }
+          30% {
+            opacity: 0.6;
+            color: #4a7fd4;
+            text-shadow:
+              0 0 7px rgba(8, 58, 133, 0.8),
+              0 0 20px rgba(8, 58, 133, 0.4);
+          }
+          50% {
+            opacity: 0.3;
+            color: #6da3f0;
+          }
+          70% {
+            opacity: 1;
+            transform: translateX(0);
+            color: #083A85;
+            text-shadow:
+              0 0 10px rgba(8, 58, 133, 0.9),
+              0 0 30px rgba(8, 58, 133, 0.5),
+              0 0 50px rgba(8, 58, 133, 0.2);
+          }
+          100% {
+            opacity: 1;
+            transform: translateX(0);
+            color: #083A85;
+            text-shadow: none;
+          }
+        }
+
+        @keyframes neon-glow-pulse {
+          0%, 100% {
+            color: #083A85;
+            text-shadow:
+              0 0 5px rgba(8, 58, 133, 0.4),
+              0 0 12px rgba(8, 58, 133, 0.2);
+          }
+          50% {
+            color: #0d4ea8;
+            text-shadow:
+              0 0 8px rgba(8, 58, 133, 0.6),
+              0 0 20px rgba(8, 58, 133, 0.3),
+              0 0 35px rgba(8, 58, 133, 0.12);
+          }
+        }
+
+        @keyframes logo-hover-glow {
+          0%, 100% {
+            transform: scale(1) rotate(0deg);
+            filter: drop-shadow(0 0 4px rgba(8, 58, 133, 0.35));
+          }
+          50% {
+            transform: scale(1.06) rotate(5deg);
+            filter: drop-shadow(0 0 10px rgba(8, 58, 133, 0.5)) drop-shadow(0 0 20px rgba(8, 58, 133, 0.2));
+          }
+        }
+
+        @keyframes dot-blink {
+          0%, 100% {
+            opacity: 1;
+            box-shadow: 0 0 3px rgba(8, 58, 133, 0.5), 0 0 6px rgba(8, 58, 133, 0.25);
+          }
+          50% {
+            opacity: 0.2;
+            box-shadow: 0 0 1px rgba(8, 58, 133, 0.2);
+          }
+        }
+
+        .nav-logo-group {
+          display: flex;
+          align-items: center;
+        }
+
+        .nav-logo-icon {
+          animation: logo-power-on 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          transition: filter 0.3s ease;
+        }
+
+        .nav-logo-text {
+          animation: text-neon-on 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
+          transition: text-shadow 0.3s ease, letter-spacing 0.3s ease, color 0.3s ease;
+        }
+
+        .nav-logo-dot {
+          width: 5px;
+          height: 5px;
+          border-radius: 50%;
+          background-color: #083A85;
+          margin-left: 3px;
+          margin-bottom: -2px;
+          opacity: 0;
+          transition: opacity 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .nav-logo-group:hover .nav-logo-icon {
+          animation: logo-hover-glow 1.2s ease-in-out infinite;
+        }
+
+        .nav-logo-group:hover .nav-logo-text {
+          animation: neon-glow-pulse 2s ease-in-out infinite;
+          letter-spacing: 1px;
+        }
+
+        .nav-logo-group:hover .nav-logo-dot {
+          opacity: 1;
+          animation: dot-blink 1.2s ease-in-out infinite;
+        }
       `}</style>
-      {/* Increased horizontal padding for more space */}
-      <div className="max-w-7xl mx-4 sm:mx-6 lg:mx-8" style={{ paddingLeft: isMobile ? '0.5rem' : '1rem', paddingRight: isMobile ? '0.5rem' : '1rem' }}>
-        <div className="flex items-center justify-between h-16">
-          <Link href="/" onClick={handleLinkClick} className="flex items-center flex-shrink-0">
-            <img src="/logo.png" alt="Connekyt Logo" style={{ width: isMobile ? '36px' : '50px', height: isMobile ? '36px' : '50px', objectFit: 'contain', position: 'relative', top: isMobile ? '-6px' : '-9px', left: isMobile ? '-1px' : '-13px' }} />
-            <span className="font-bold" style={{ color: '#083A85', fontSize: isMobile ? '1.25rem' : '1.4rem', marginLeft: isMobile ? '-10px' : '-26px', marginTop: isMobile ? '-1px' : '-2px', letterSpacing: '0.5px' }}>onnekyt</span>
+      {/* Main navbar container */}
+      <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 2rem', overflow: 'visible', position: 'relative' }}>
+        <div className="flex items-center justify-between" style={{ height: '64px', overflow: 'visible' }}>
+          {/* Left: Logo with neon glow + blinking dot */}
+          <Link href="/" onClick={handleLinkClick} className="nav-logo-group flex-shrink-0" style={{ zIndex: 1, textDecoration: 'none' }}>
+            <img
+              src="/logo.png"
+              alt="Connekyt Logo"
+              className="nav-logo-icon"
+              style={{ width: isMobile ? '36px' : '42px', height: isMobile ? '36px' : '42px', objectFit: 'contain', position: 'relative', top: '-6px', left: '-8px' }}
+            />
+            <span
+              className="nav-logo-text font-bold"
+              style={{ color: '#083A85', fontSize: isMobile ? '1.25rem' : '1.3rem', marginLeft: '-20px', letterSpacing: '0.3px' }}
+            >
+              onnekyt
+            </span>
+            <span className="nav-logo-dot"></span>
           </Link>
 
-          {/* Center: Navigation Links (Desktop) */}
-          <div className="hidden md:flex items-center gap-6 lg:gap-12 absolute left-1/3 transform -translate-x-1/2">
+          {/* Center: Navigation Links (Desktop) — glass pill, absolutely centered */}
+          <div className="hidden md:flex items-center gap-1 absolute left-1/2 -translate-x-1/2" style={{
+            overflow: 'visible',
+            background: 'rgba(8, 58, 133, 0.04)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            border: '1px solid rgba(8, 58, 133, 0.08)',
+            borderRadius: '50px',
+            padding: '4px 5px',
+          }}>
             {/* Photographers Dropdown */}
             <div
               ref={photographersDropdownRef}
@@ -521,7 +718,7 @@ const AmoriaKNavbar = () => {
             >
               <Link
                 href={getLocalePath('/user/photographers')}
-                className="flex items-center gap-1 text-gray-700 hover:text-[#083A85] text-sm lg:text-base font-semibold transition-colors duration-200 whitespace-nowrap cursor-pointer"
+                className={`nav-link-hover ${isPhotographersDropdownOpen ? 'nav-link-active' : ''} flex items-center gap-1 text-gray-700 hover:text-[#083A85] text-sm lg:text-base font-semibold transition-colors duration-200 whitespace-nowrap cursor-pointer`}
               >
                 <span>{t('photographers')}</span>
                 <i className={`bi bi-chevron-down transition-transform duration-200 ${isPhotographersDropdownOpen ? 'rotate-180' : ''}`}></i>
@@ -530,134 +727,124 @@ const AmoriaKNavbar = () => {
               {isPhotographersDropdownOpen && (
                 <>
                   {/* Invisible hover bridge */}
+                  <div style={{ position: 'absolute', top: '100%', left: '-20px', right: '-20px', height: '16px', zIndex: 9998 }} />
                   <div
                     style={{
                       position: 'absolute',
-                      top: '100%',
-                      left: '-50px',
-                      right: '-50px',
-                      height: '40px',
-                      zIndex: 9998
-                    }}
-                  />
-                  <div
-                    style={{
-                      position: 'fixed',
-                      top: '44px',
-                      left: '30%',
+                      top: 'calc(100% + 12px)',
+                      left: '50%',
                       transform: 'translateX(-50%)',
-                      width: '55vw',
-                      height: '555px',
-                      background: 'rgba(255, 255, 255, 0.70)',
-                      backdropFilter: 'blur(25px)',
-                      WebkitBackdropFilter: 'blur(25px)',
-                      boxShadow: '0 15px 50px rgba(0, 0, 0, 0.12)',
-                      borderBottom: '2px solid rgba(8, 58, 133, 0.15)',
                       zIndex: 9999,
-                      overflow: 'hidden'
+                      width: 'min(420px, 90vw)',
+                      background: '#ffffff',
+                      boxShadow: '0 20px 40px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.04)',
+                      borderRadius: '14px',
+                      overflow: 'hidden',
+                      animation: 'nav-dropdown-enter 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                      display: 'flex',
+                      flexDirection: 'column'
                     }}
                   >
-                  <div style={{
-                    width: '100%',
-                    height: '100%',
-                    padding: '4rem 5rem',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    maxWidth: '1400px',
-                    margin: '0 auto'
-                  }}>
-                    <div style={{ marginBottom: '0.5rem', flexShrink: 0 }}>
-                      <h3 style={{
-                        fontSize: '32px',
-                        fontWeight: '800',
-                        color: '#083A85',
-                        letterSpacing: '0.5px',
-                        marginBottom: '0.75rem',
-                        lineHeight: '1.2'
-                      }}>
-                        {t('photographerCategories.browseTitle')}
-                      </h3>
-                      <p style={{
-                        fontSize: '17px',
-                        color: '#6b7280',
-                        fontWeight: '600',
-                        marginBottom: '2.75rem',
-                        lineHeight: '1.5'
-                      }}>
-                        {t('photographerCategories.browseSubtitle')}
-                      </p>
-                    </div>
+                    {/* Slim header bar */}
                     <div style={{
-                      display: 'grid',
-                      gridTemplateColumns: 'repeat(3, 1fr)',
-                      gap: '1.75rem',
-                      flex: 1,
-                      alignContent: 'start'
+                      background: 'linear-gradient(135deg, #083A85 0%, #0a4da3 100%)',
+                      padding: '0.75rem 1.25rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between'
                     }}>
-                      {!categoriesLoading && photographerCategories.length === 0 && (
-                        <p style={{ gridColumn: '1 / -1', color: '#9ca3af', fontSize: '14px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <i className="bi bi-camera-fill" style={{ fontSize: '16px', color: 'white' }}></i>
+                        <span style={{ fontSize: '14px', fontWeight: '600', color: '#ffffff' }}>
+                          {t('photographerCategories.browseTitle')}
+                        </span>
+                      </div>
+                      <Link
+                        href={getLocalePath('/user/photographers')}
+                        onClick={() => setIsPhotographersDropdownOpen(false)}
+                        style={{
+                          fontSize: '12px',
+                          fontWeight: '600',
+                          color: 'rgba(255,255,255,0.85)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          textDecoration: 'none',
+                          padding: '4px 10px',
+                          borderRadius: '6px',
+                          background: 'rgba(255,255,255,0.12)',
+                          transition: 'background 0.2s ease'
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.22)'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.12)'; }}
+                      >
+                        View all <i className="bi bi-arrow-right" style={{ fontSize: '10px' }}></i>
+                      </Link>
+                    </div>
+
+                    {/* Categories — compact chips */}
+                    <div style={{ padding: '0.75rem 1rem' }}>
+                      {categoriesLoading ? (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                          {[...Array(6)].map((_, i) => (
+                            <div key={i} style={{
+                              height: '30px',
+                              width: '80px',
+                              borderRadius: '50px',
+                              background: '#f3f4f6',
+                              animation: 'nav-skeleton-pulse 1.5s ease-in-out infinite',
+                              animationDelay: `${i * 0.08}s`
+                            }} />
+                          ))}
+                        </div>
+                      ) : photographerCategories.length === 0 ? (
+                        <p style={{ color: '#9ca3af', fontSize: '13px', textAlign: 'center', padding: '1rem 0' }}>
                           No photographers available right now.
                         </p>
+                      ) : (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                          {photographerCategories.map((category) => (
+                            <Link
+                              key={category.value}
+                              href={getLocalePath(`/user/photographers?category=${category.value}`)}
+                              onClick={() => setIsPhotographersDropdownOpen(false)}
+                              className="block cursor-pointer"
+                              style={{
+                                padding: '6px 14px',
+                                fontSize: '12.5px',
+                                fontWeight: '500',
+                                color: '#374151',
+                                borderRadius: '50px',
+                                border: '1px solid #e5e7eb',
+                                transition: 'all 0.15s ease',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                textDecoration: 'none',
+                                whiteSpace: 'nowrap',
+                                background: '#ffffff'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = '#083A85';
+                                e.currentTarget.style.color = '#ffffff';
+                                e.currentTarget.style.borderColor = '#083A85';
+                                e.currentTarget.style.boxShadow = '0 2px 8px rgba(8, 58, 133, 0.25)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = '#ffffff';
+                                e.currentTarget.style.color = '#374151';
+                                e.currentTarget.style.borderColor = '#e5e7eb';
+                                e.currentTarget.style.boxShadow = 'none';
+                              }}
+                            >
+                              <i className={`bi ${category.icon}`} style={{ fontSize: '11px' }}></i>
+                              <span>{t(`photographerCategories.${category.translationKey}`)}</span>
+                            </Link>
+                          ))}
+                        </div>
                       )}
-                      {photographerCategories.map((category) => (
-                        <Link
-                          key={category.value}
-                          href={getLocalePath(`/user/photographers?category=${category.value}`)}
-                          onClick={() => setIsPhotographersDropdownOpen(false)}
-                          className="block cursor-pointer group"
-                          style={{
-                            padding: '1rem 1.25rem',
-                            fontSize: '16px',
-                            fontWeight: '600',
-                            color: '#1f2937',
-                            backgroundColor: 'rgba(255, 255, 255, 0.90)',
-                            borderRadius: '20px',
-                            transition: 'all 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'flex-start',
-                            gap: '0.875rem',
-                            border: '1px solid rgba(8, 58, 133, 0.12)',
-                            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
-                            minHeight: '120px',
-                            position: 'relative',
-                            overflow: 'hidden'
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.98)';
-                            e.currentTarget.style.color = '#083A85';
-                            e.currentTarget.style.transform = 'translateY(-8px)';
-                            e.currentTarget.style.boxShadow = '0 12px 28px rgba(8, 58, 133, 0.18)';
-                            e.currentTarget.style.borderColor = 'rgba(8, 58, 133, 0.25)';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.90)';
-                            e.currentTarget.style.color = '#1f2937';
-                            e.currentTarget.style.transform = 'translateY(0)';
-                            e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.04)';
-                            e.currentTarget.style.borderColor = 'rgba(8, 58, 133, 0.12)';
-                          }}
-                        >
-                          <div style={{
-                            width: '56px',
-                            height: '56px',
-                            borderRadius: '16px',
-                            background: 'linear-gradient(135deg, #083A85 0%, #0d4ea8 50%, #1059bd 100%)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            flexShrink: 0,
-                            boxShadow: '0 6px 16px rgba(8, 58, 133, 0.25)',
-                            transition: 'transform 0.3s ease'
-                          }}>
-                            <i className={`bi ${category.icon}`} style={{ fontSize: '22px', color: 'white' }}></i>
-                          </div>
-                          <span style={{ lineHeight: '1.4' }}>{t(`photographerCategories.${category.translationKey}`)}</span>
-                        </Link>
-                      ))}
                     </div>
                   </div>
-                </div>
                 </>
               )}
             </div>
@@ -671,7 +858,7 @@ const AmoriaKNavbar = () => {
             >
               <Link
                 href={getLocalePath('/user/events')}
-                className={`${hasLiveEvents ? 'nav-events-link' : 'text-gray-700 hover:text-[#083A85]'} flex items-center gap-1 text-sm lg:text-base font-semibold transition-colors duration-200 whitespace-nowrap cursor-pointer`}
+                className={`nav-link-hover ${isEventsDropdownOpen ? 'nav-link-active' : ''} ${hasLiveEvents ? 'nav-events-link' : 'text-gray-700 hover:text-[#083A85]'} flex items-center gap-1 text-sm lg:text-base font-semibold transition-colors duration-200 whitespace-nowrap cursor-pointer`}
               >
                 <span>{t('events')}</span>
                 <i className={`bi bi-chevron-down transition-transform duration-200 ${isEventsDropdownOpen ? 'rotate-180' : ''}`}></i>
@@ -680,158 +867,189 @@ const AmoriaKNavbar = () => {
               {isEventsDropdownOpen && (
                 <>
                   {/* Invisible hover bridge */}
+                  <div style={{ position: 'absolute', top: '100%', left: '-20px', right: '-20px', height: '16px', zIndex: 9998 }} />
                   <div
                     style={{
                       position: 'absolute',
-                      top: '100%',
-                      left: '-50px',
-                      right: '-50px',
-                      height: '40px',
-                      zIndex: 9998
-                    }}
-                  />
-                  <div
-                    style={{
-                      position: 'fixed',
-                      top: '44px',
-                      left: '30%',
+                      top: 'calc(100% + 12px)',
+                      left: '50%',
                       transform: 'translateX(-50%)',
-                      width: '55vw',
-                      height: '555px',
-                      background: 'rgba(255, 255, 255, 0.70)',
-                      backdropFilter: 'blur(25px)',
-                      WebkitBackdropFilter: 'blur(25px)',
-                      boxShadow: '0 15px 50px rgba(0, 0, 0, 0.12)',
-                      borderBottom: '2px solid rgba(8, 58, 133, 0.15)',
                       zIndex: 9999,
-                      overflow: 'hidden'
+                      width: 'min(420px, 90vw)',
+                      background: '#ffffff',
+                      boxShadow: '0 20px 40px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.04)',
+                      borderRadius: '14px',
+                      overflow: 'hidden',
+                      animation: 'nav-dropdown-enter 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                      display: 'flex',
+                      flexDirection: 'column'
                     }}
                   >
-                  <div style={{
-                    width: '100%',
-                    height: '100%',
-                    padding: '4rem 5rem',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    maxWidth: '1400px',
-                    margin: '0 auto'
-                  }}>
-                    <div style={{ marginBottom: '0.5rem', flexShrink: 0 }}>
-                      <h3 style={{
-                        fontSize: '32px',
-                        fontWeight: '800',
-                        color: '#083A85',
-                        letterSpacing: '0.5px',
-                        marginBottom: '0.75rem',
-                        lineHeight: '1.2'
-                      }}>
-                        {t('eventCategories.browseTitle')}
-                      </h3>
-                      <p style={{
-                        fontSize: '17px',
-                        color: '#6b7280',
-                        fontWeight: '600',
-                        marginBottom: '2.75rem',
-                        lineHeight: '1.5'
-                      }}>
-                        {t('eventCategories.browseSubtitle')}
-                      </p>
-                    </div>
+                    {/* Slim header bar */}
                     <div style={{
-                      display: 'grid',
-                      gridTemplateColumns: 'repeat(3, 1fr)',
-                      gap: '1.75rem',
-                      flex: 1,
-                      alignContent: 'start'
+                      background: hasLiveEvents
+                        ? 'linear-gradient(135deg, #059669 0%, #047857 100%)'
+                        : 'linear-gradient(135deg, #083A85 0%, #0a4da3 100%)',
+                      padding: '0.75rem 1.25rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between'
                     }}>
-                      {!eventCategoriesLoading && eventCategories.length === 0 && (
-                        <p style={{ gridColumn: '1 / -1', color: '#9ca3af', fontSize: '14px' }}>
-                          No events available right now.
-                        </p>
-                      )}
-                      {eventCategories.map((category) => (
-                        <Link
-                          key={category.value}
-                          href={getLocalePath(`/user/events?category=${category.value}`)}
-                          onClick={() => setIsEventsDropdownOpen(false)}
-                          className={`block cursor-pointer group ${category.isLive ? 'nav-live-card' : ''}`}
-                          style={{
-                            padding: '1rem 1.25rem',
-                            fontSize: '16px',
-                            fontWeight: '600',
-                            color: '#1f2937',
-                            backgroundColor: category.isLive ? 'rgba(240, 253, 244, 0.95)' : 'rgba(255, 255, 255, 0.90)',
-                            borderRadius: '20px',
-                            transition: 'all 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'flex-start',
-                            gap: '0.875rem',
-                            border: category.isLive ? '2px solid rgba(16, 185, 129, 0.5)' : '1px solid rgba(8, 58, 133, 0.12)',
-                            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
-                            minHeight: '120px',
-                            position: 'relative',
-                            overflow: 'hidden'
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.98)';
-                            e.currentTarget.style.color = '#083A85';
-                            e.currentTarget.style.transform = 'translateY(-8px)';
-                            e.currentTarget.style.boxShadow = '0 12px 28px rgba(8, 58, 133, 0.18)';
-                            e.currentTarget.style.borderColor = 'rgba(8, 58, 133, 0.25)';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor = category.isLive ? 'rgba(240, 253, 244, 0.95)' : 'rgba(255, 255, 255, 0.90)';
-                            e.currentTarget.style.color = '#1f2937';
-                            e.currentTarget.style.transform = 'translateY(0)';
-                            e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.04)';
-                            e.currentTarget.style.borderColor = category.isLive ? 'rgba(16, 185, 129, 0.5)' : 'rgba(8, 58, 133, 0.12)';
-                          }}
-                        >
-                          <div style={{
-                            width: '56px',
-                            height: '56px',
-                            borderRadius: '16px',
-                            background: category.isLive
-                              ? 'linear-gradient(135deg, #059669 0%, #10b981 50%, #34d399 100%)'
-                              : 'linear-gradient(135deg, #083A85 0%, #0d4ea8 50%, #1059bd 100%)',
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <i className="bi bi-calendar-event-fill" style={{ fontSize: '16px', color: 'white' }}></i>
+                        <span style={{ fontSize: '14px', fontWeight: '600', color: '#ffffff' }}>
+                          {t('eventCategories.browseTitle')}
+                        </span>
+                        {hasLiveEvents && (
+                          <span style={{
+                            padding: '2px 8px',
+                            borderRadius: '9999px',
+                            background: 'rgba(255, 255, 255, 0.2)',
+                            color: '#ffffff',
+                            fontSize: '10px',
+                            fontWeight: '700',
                             display: 'flex',
                             alignItems: 'center',
-                            justifyContent: 'center',
-                            flexShrink: 0,
-                            boxShadow: category.isLive
-                              ? '0 6px 16px rgba(16, 185, 129, 0.35)'
-                              : '0 6px 16px rgba(8, 58, 133, 0.25)',
-                            transition: 'transform 0.3s ease'
+                            gap: '4px',
+                            letterSpacing: '0.5px',
+                            textTransform: 'uppercase'
                           }}>
-                            <i className={`bi ${category.icon} ${category.isLive ? 'nav-live-icon' : ''}`} style={{ fontSize: '22px', color: 'white' }}></i>
-                          </div>
-                          <span className={category.isLive ? 'nav-live-text' : ''} style={{ lineHeight: '1.4', fontWeight: category.isLive ? '700' : '600' }}>{category.displayName ?? t(`eventCategories.${category.translationKey}`)}</span>
-                        </Link>
-                      ))}
+                            <span style={{
+                              width: '5px',
+                              height: '5px',
+                              borderRadius: '50%',
+                              backgroundColor: '#ffffff',
+                              animation: 'nav-icon-pulse 1.2s ease-in-out infinite'
+                            }}></span>
+                            Live
+                          </span>
+                        )}
+                      </div>
+                      <Link
+                        href={getLocalePath('/user/events')}
+                        onClick={() => setIsEventsDropdownOpen(false)}
+                        style={{
+                          fontSize: '12px',
+                          fontWeight: '600',
+                          color: 'rgba(255,255,255,0.85)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          textDecoration: 'none',
+                          padding: '4px 10px',
+                          borderRadius: '6px',
+                          background: 'rgba(255,255,255,0.12)',
+                          transition: 'background 0.2s ease'
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.22)'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.12)'; }}
+                      >
+                        View all <i className="bi bi-arrow-right" style={{ fontSize: '10px' }}></i>
+                      </Link>
+                    </div>
+
+                    {/* Categories — compact chips */}
+                    <div style={{ padding: '0.75rem 1rem' }}>
+                      {eventCategoriesLoading ? (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                          {[...Array(6)].map((_, i) => (
+                            <div key={i} style={{
+                              height: '30px',
+                              width: '80px',
+                              borderRadius: '50px',
+                              background: '#f3f4f6',
+                              animation: 'nav-skeleton-pulse 1.5s ease-in-out infinite',
+                              animationDelay: `${i * 0.08}s`
+                            }} />
+                          ))}
+                        </div>
+                      ) : eventCategories.length === 0 ? (
+                        <p style={{ color: '#9ca3af', fontSize: '13px', textAlign: 'center', padding: '1rem 0' }}>
+                          No events available right now.
+                        </p>
+                      ) : (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                          {eventCategories.map((category) => (
+                            <Link
+                              key={category.value}
+                              href={getLocalePath(`/user/events?category=${category.value}`)}
+                              onClick={() => setIsEventsDropdownOpen(false)}
+                              className={`block cursor-pointer ${category.isLive ? 'nav-live-card' : ''}`}
+                              style={{
+                                padding: '6px 14px',
+                                fontSize: '12.5px',
+                                fontWeight: category.isLive ? '600' : '500',
+                                color: category.isLive ? '#059669' : '#374151',
+                                borderRadius: '50px',
+                                border: category.isLive ? '1px solid rgba(16, 185, 129, 0.4)' : '1px solid #e5e7eb',
+                                transition: 'all 0.15s ease',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                textDecoration: 'none',
+                                whiteSpace: 'nowrap',
+                                background: category.isLive ? 'rgba(16, 185, 129, 0.06)' : '#ffffff'
+                              }}
+                              onMouseEnter={(e) => {
+                                if (category.isLive) {
+                                  e.currentTarget.style.backgroundColor = '#059669';
+                                  e.currentTarget.style.color = '#ffffff';
+                                  e.currentTarget.style.borderColor = '#059669';
+                                } else {
+                                  e.currentTarget.style.backgroundColor = '#083A85';
+                                  e.currentTarget.style.color = '#ffffff';
+                                  e.currentTarget.style.borderColor = '#083A85';
+                                }
+                                e.currentTarget.style.boxShadow = category.isLive
+                                  ? '0 2px 8px rgba(5, 150, 105, 0.3)'
+                                  : '0 2px 8px rgba(8, 58, 133, 0.25)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = category.isLive ? 'rgba(16, 185, 129, 0.06)' : '#ffffff';
+                                e.currentTarget.style.color = category.isLive ? '#059669' : '#374151';
+                                e.currentTarget.style.borderColor = category.isLive ? 'rgba(16, 185, 129, 0.4)' : '#e5e7eb';
+                                e.currentTarget.style.boxShadow = 'none';
+                              }}
+                            >
+                              <i className={`bi ${category.icon} ${category.isLive ? 'nav-live-icon' : ''}`} style={{ fontSize: '11px' }}></i>
+                              <span>{t(`eventCategories.${category.translationKey}`)}</span>
+                              {category.isLive && (
+                                <span style={{
+                                  width: '5px',
+                                  height: '5px',
+                                  borderRadius: '50%',
+                                  backgroundColor: 'currentColor',
+                                  animation: 'nav-icon-pulse 1.2s ease-in-out infinite',
+                                  flexShrink: 0
+                                }}></span>
+                              )}
+                            </Link>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
-                </div>
                 </>
               )}
             </div>
 
-            <Link href={getLocalePath('/user/about')} className="text-gray-700 hover:text-[#083A85] text-sm lg:text-base font-semibold transition-colors duration-200 whitespace-nowrap cursor-pointer">{t('about')}</Link>
-            <Link href={getLocalePath('/user/donations')} className="text-gray-700 hover:text-[#083A85] text-sm lg:text-base font-semibold transition-colors duration-200 whitespace-nowrap cursor-pointer">Donate</Link>
-            <Link href={getLocalePath('/user/find-my-photos')} className="text-gray-700 hover:text-[#083A85] text-sm lg:text-base font-semibold transition-colors duration-200 whitespace-nowrap cursor-pointer">Find My Photos</Link>
+            <Link href={getLocalePath('/user/about')} className="nav-link-hover text-gray-700 hover:text-[#083A85] text-sm lg:text-base font-semibold transition-colors duration-200 whitespace-nowrap cursor-pointer">{t('about')}</Link>
+            <Link href={getLocalePath('/user/donations')} className="nav-link-hover text-gray-700 hover:text-[#083A85] text-sm lg:text-base font-semibold transition-colors duration-200 whitespace-nowrap cursor-pointer">Donate</Link>
+            <Link href={getLocalePath('/user/find-my-photos')} className="nav-link-hover text-gray-700 hover:text-[#083A85] text-sm lg:text-base font-semibold transition-colors duration-200 whitespace-nowrap cursor-pointer">Find My Photos</Link>
           </div>
 
           {/* Right: Language and Auth Buttons (Desktop) */}
-          <div className="hidden md:flex items-center gap-6 flex-shrink-0">
-            {/* Location Dropdown (Desktop) - Hidden but location detection still active */}
-
+          <div className="hidden md:flex items-center gap-3 flex-shrink-0" style={{ zIndex: 1 }}>
             {/* Language Dropdown (Desktop) */}
             <div ref={langMenuRef} className="relative">
               <button
                 onClick={toggleLangMenu}
-                className="flex items-center gap-2 text-gray-700 hover:text-[#083A85] text-base font-medium transition-colors duration-200 cursor-pointer"
+                className="flex items-center gap-1.5 font-medium transition-all duration-200 cursor-pointer"
+                style={{ color: '#6b7280', fontSize: '13.5px', padding: '6px 10px', borderRadius: '8px' }}
+                onMouseEnter={(e) => { e.currentTarget.style.color = '#083A85'; e.currentTarget.style.backgroundColor = 'rgba(8, 58, 133, 0.06)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.color = '#6b7280'; e.currentTarget.style.backgroundColor = 'transparent'; }}
               >
-                 <i className="bi bi-globe text-lg"></i>
+                 <i className="bi bi-globe" style={{ fontSize: '15px' }}></i>
                 <span>{selectedLang}</span>
               </button>
               {isLangMenuOpen && (
@@ -1001,8 +1219,49 @@ const AmoriaKNavbar = () => {
               </div>
             ) : (
               <>
-                <Link href={`${getLocalePath('/user/auth/login')}?redirect=${encodeURIComponent(pathname)}`} className="text-gray-900 text-sm lg:text-base font-semibold hover:text-[#083A85] transition-colors duration-200 whitespace-nowrap cursor-pointer">{t('login')}</Link>
-                <Link href={`${getLocalePath('/user/auth/signup')}?redirect=${encodeURIComponent(pathname)}`} className="bg-[#083A85] text-white text-sm lg:text-base font-medium rounded-full hover:bg-[#001f4d] transition-all duration-300 whitespace-nowrap cursor-pointer" style={{ paddingLeft: '1.25rem', paddingRight: '1.25rem', paddingTop: '0.375rem', paddingBottom: '0.375rem' }}>{t('signup')}</Link>
+                <Link
+                  href={`${getLocalePath('/user/auth/login')}?redirect=${encodeURIComponent(pathname)}`}
+                  className="font-semibold transition-all duration-200 whitespace-nowrap cursor-pointer"
+                  style={{
+                    color: '#083A85',
+                    fontSize: '14px',
+                    padding: '9px 22px',
+                    borderRadius: '10px',
+                    border: '1.5px solid #083A85',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = 'rgba(8, 58, 133, 0.06)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                  }}
+                >
+                  {t('login')}
+                </Link>
+                <Link
+                  href={`${getLocalePath('/user/auth/signup')}?redirect=${encodeURIComponent(pathname)}`}
+                  className="text-white font-semibold whitespace-nowrap cursor-pointer"
+                  style={{
+                    fontSize: '14px',
+                    background: '#083A85',
+                    padding: '9px 22px',
+                    borderRadius: '10px',
+                    transition: 'all 0.25s ease',
+                    boxShadow: '0 2px 8px rgba(8, 58, 133, 0.3)',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = '#062d6b';
+                    e.currentTarget.style.boxShadow = '0 4px 14px rgba(8, 58, 133, 0.4)';
+                    e.currentTarget.style.transform = 'translateY(-1px)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = '#083A85';
+                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(8, 58, 133, 0.3)';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                  }}
+                >
+                  {t('signup')}
+                </Link>
               </>
             )}
           </div>
