@@ -145,14 +145,10 @@ export async function initiateXentriPayDonation(
 export async function initiateXentriPayPhotoPurchase(
   data: XentriPayPhotoPurchaseRequest
 ): Promise<ApiResponse<XentriPayResponse>> {
-  if (!isAuthenticated()) {
-    return { success: false, error: 'Authentication required' };
-  }
-
   return apiClient.post<XentriPayResponse>(
     API_ENDPOINTS.PAYMENTS.XENTRIPAY_INITIATE_PHOTO_PURCHASE,
     data,
-    { retries: 1 }
+    { skipAuth: true, retries: 1 }
   );
 }
 

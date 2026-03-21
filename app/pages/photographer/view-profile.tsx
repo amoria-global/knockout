@@ -7,25 +7,22 @@ import { getPhotographerById, type Photographer, getCities, getCurrencies, type 
 import { useToast } from '@/lib/notifications/ToastProvider';
 
 // Default images for fallback
-const DEFAULT_PROFILE_IMAGE = 'https://i.pinimg.com/1200x/e9/1f/59/e91f59ed85a702d7252f2b0c8e02c7d2.jpg';
-const DEFAULT_COVER_IMAGE = 'https://i.pinimg.com/736x/8b/89/70/8b8970fb8745252e4d36f60305967d37.jpg';
-
 // Helper function to get valid profile image
-const getProfileImage = (photographer: Photographer | null): string => {
-  if (!photographer) return DEFAULT_PROFILE_IMAGE;
+const getProfileImage = (photographer: Photographer | null): string | null => {
+  if (!photographer) return null;
   if (photographer.profilePicture && !photographer.profilePicture.includes('/null')) {
     return photographer.profilePicture;
   }
-  return DEFAULT_PROFILE_IMAGE;
+  return null;
 };
 
 // Helper function to get valid cover image
-const getCoverImage = (photographer: Photographer | null): string => {
-  if (!photographer) return DEFAULT_COVER_IMAGE;
+const getCoverImage = (photographer: Photographer | null): string | null => {
+  if (!photographer) return null;
   if (photographer.coverPicture && !photographer.coverPicture.includes('/null')) {
     return photographer.coverPicture;
   }
-  return DEFAULT_COVER_IMAGE;
+  return null;
 };
 
 // Helper to format date
@@ -189,6 +186,9 @@ function ViewProfileContent(): React.JSX.Element {
   }, [imageViewerOpen]);
 
   const openImageViewer = (type: 'profile' | 'cover') => {
+    // Don't open viewer if there's no image to show
+    const img = type === 'profile' ? photographerData?.profileImage : photographerData?.backgroundImage;
+    if (!img) return;
     setCurrentImageType(type);
     setImageViewerOpen(true);
   };
@@ -275,7 +275,7 @@ function ViewProfileContent(): React.JSX.Element {
     reviews: photographer?.reviews?.map((review, index) => ({
       id: index + 1,
       name: getReviewerName(review.reviewer),
-      avatar: review.reviewer?.profilePicture || 'https://i.pinimg.com/1200x/85/c5/96/85c596eec98acf0645c5c231f3f8b870.jpg',
+      avatar: review.reviewer?.profilePicture || null,
       rating: review.rating,
       date: review.createdAt || '',
       comment: getReviewText(review),
@@ -510,9 +510,9 @@ function ViewProfileContent(): React.JSX.Element {
           style={{
             position: 'relative',
             height: isMobile ? 'clamp(180px, 35vw, 270px)' : '270px',
-            backgroundImage: `url(${photographerData.backgroundImage})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
+            ...(photographerData.backgroundImage
+              ? { backgroundImage: `url("${photographerData.backgroundImage}")`, backgroundSize: 'cover' as const, backgroundPosition: 'center' }
+              : { backgroundColor: '#edf1f5' }),
             borderRadius: isMobile ? 'clamp(12px, 3vw, 17px)' : '17px',
             border: isMobile ? '2px solid #bab8b8' : '3px solid #bab8b8',
             overflow: 'hidden',
@@ -533,6 +533,11 @@ function ViewProfileContent(): React.JSX.Element {
             }
           }}
         >
+          {!photographerData.backgroundImage && (
+            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <i className="bi bi-image" style={{ fontSize: isMobile ? '3rem' : '4rem', color: '#94a3b8' }}></i>
+            </div>
+          )}
           {/* Back Button - Glassmorphism */}
           <button
               onClick={(e) => {
@@ -640,21 +645,37 @@ function ViewProfileContent(): React.JSX.Element {
               e.currentTarget.style.transform = 'scale(1)';
             }}
           >
-            <img
-              src={photographerData.profileImage}
-              alt={photographerData.name}
-              style={{
+            {photographerData.profileImage ? (
+              <img
+                src={photographerData.profileImage}
+                alt={photographerData.name}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  borderRadius: '50%',
+                  border: '2px solid white',
+                  objectFit: 'cover',
+                  objectPosition: 'center',
+                  display: 'block',
+                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
+                }}
+                loading="lazy"
+              />
+            ) : (
+              <div style={{
                 width: '100%',
                 height: '100%',
                 borderRadius: '50%',
-                border: '2px solid white',
-                objectFit: 'cover',
-                objectPosition: 'center',
-                display: 'block',
+                border: '3px solid white',
+                backgroundColor: '#cbd5e1',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
                 boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
-              }}
-              loading="lazy"
-            />
+              }}>
+                <i className="bi bi-person-fill" style={{ fontSize: isMobile ? '2.5rem' : '3.5rem', color: '#94a3b8' }}></i>
+              </div>
+            )}
             {/* Verification Badge - only shown when photographer is verified */}
             {photographer?.isVerified && (
               <div
@@ -1836,19 +1857,36 @@ function ViewProfileContent(): React.JSX.Element {
                         gap: '14px',
                         marginBottom: '14px',
                       }}>
-                        <img
-                          src={review.avatar}
-                          alt={review.name}
-                          style={{
+                        {review.avatar ? (
+                          <img
+                            src={review.avatar}
+                            alt={review.name}
+                            style={{
+                              width: '52px',
+                              height: '52px',
+                              borderRadius: '50%',
+                              objectFit: 'cover',
+                              border: '3px solid #f0f9ff',
+                              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                            }}
+                            loading="lazy"
+                          />
+                        ) : (
+                          <div style={{
                             width: '52px',
                             height: '52px',
                             borderRadius: '50%',
-                            objectFit: 'cover',
+                            background: 'linear-gradient(135deg, #e2e8f0 0%, #cbd5e1100%)',
                             border: '3px solid #f0f9ff',
                             boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-                          }}
-                          loading="lazy"
-                        />
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0,
+                          }}>
+                            <i className="bi bi-person-fill" style={{ fontSize: '1.4rem', color: '#94a3b8' }}></i>
+                          </div>
+                        )}
                         <div style={{ flex: 1 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
                             <h4 style={{
@@ -2145,7 +2183,7 @@ function ViewProfileContent(): React.JSX.Element {
           onClick={(e) => e.stopPropagation()}
         >
           <img
-            src={currentImageType === 'profile' ? photographerData.profileImage : photographerData.backgroundImage}
+            src={currentImageType === 'profile' ? photographerData.profileImage || undefined : photographerData.backgroundImage || undefined}
             alt={currentImageType === 'profile' ? `${photographerData.name} profile` : `${photographerData.name} cover`}
             style={{
               width: currentImageType === 'profile' ? '80vh' : '100%',

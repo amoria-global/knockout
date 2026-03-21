@@ -29,8 +29,8 @@ const FindMyPhotos = () => {
   const [gridMousePos, setGridMousePos] = useState<{ x: number; y: number } | null>(null);
 
   // Photo grid
-  const [allPhotos, setAllPhotos] = useState<{ id: string; url: string; alt: string; price?: number }[]>([]);
-  const [displayedPhotos, setDisplayedPhotos] = useState<{ id: string; url: string; alt: string; price?: number }[]>([]);
+  const [allPhotos, setAllPhotos] = useState<{ id: string; url: string; alt: string; price?: number; eventId?: string }[]>([]);
+  const [displayedPhotos, setDisplayedPhotos] = useState<{ id: string; url: string; alt: string; price?: number; eventId?: string }[]>([]);
   const [isFiltered, setIsFiltered] = useState(false);
 
   // Scan modal
@@ -48,7 +48,7 @@ const FindMyPhotos = () => {
   const streamRef = useRef<MediaStream | null>(null);
 
   // Image viewer modal
-  const [selectedPhoto, setSelectedPhoto] = useState<{ id: string; url: string; alt: string; price?: number } | null>(null);
+  const [selectedPhoto, setSelectedPhoto] = useState<{ id: string; url: string; alt: string; price?: number; eventId?: string } | null>(null);
 
   // Album metadata
   const [albumEventId, setAlbumEventId] = useState('');
@@ -59,9 +59,44 @@ const FindMyPhotos = () => {
 
   // Download payment modal
   const [showDownloadModal, setShowDownloadModal] = useState(false);
-  const [downloadTarget, setDownloadTarget] = useState<{ id: string; url: string; alt: string; price?: number } | null>(null);
+  const [downloadTarget, setDownloadTarget] = useState<{ id: string; url: string; alt: string; price?: number; eventId?: string } | null>(null);
   // XentriPay modal state for photo purchases
   const [showXentriPayModal, setShowXentriPayModal] = useState(false);
+  // Multi-select state
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isSelectMode, setIsSelectMode] = useState(false);
+  const [isBulkPaying, setIsBulkPaying] = useState(false);
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const selectedPhotosArr = displayedPhotos.filter(p => selectedIds.has(p.id));
+  const selectionTotal = selectedPhotosArr.reduce((sum, p) => sum + (p.price ?? albumPricing?.pricePerImage ?? 0), 0);
+  const selectionAllFree = selectedPhotosArr.every(p => (p.price ?? albumPricing?.pricePerImage ?? 0) <= 0);
+
+  const handleBulkDownload = () => {
+    if (selectionAllFree) {
+      selectedPhotosArr.forEach(p => triggerPhotoDownload(p.url, `photo-${p.id}.jpg`));
+      setSelectedIds(new Set());
+      setIsSelectMode(false);
+    } else {
+      setIsBulkPaying(true);
+      setShowXentriPayModal(true);
+    }
+  };
+
+  const handleBulkPaymentSuccess = () => {
+    setShowXentriPayModal(false);
+    setIsBulkPaying(false);
+    selectedPhotosArr.forEach(p => triggerPhotoDownload(p.url, `photo-${p.id}.jpg`));
+    setSelectedIds(new Set());
+    setIsSelectMode(false);
+  };
 
   // Auto-fill invite code from URL param and load album (e.g. /find-my-photos?code=ABC123)
   useEffect(() => {
@@ -229,6 +264,7 @@ const FindMyPhotos = () => {
           url: p.url || p.thumbnailUrl || '',
           alt: p.alt || p.eventTitle || 'Event photo',
           price: p.pricePerImage ?? albumPricing?.pricePerImage,
+          eventId: p.eventId,
         }));
         setDisplayedPhotos(mapped);
         setIsFiltered(true);
@@ -320,7 +356,7 @@ const FindMyPhotos = () => {
     resetDownloadModal();
   };
 
-  const handleDownloadClick = (photo: { id: string; url: string; alt: string; price?: number }) => {
+  const handleDownloadClick = (photo: { id: string; url: string; alt: string; price?: number; eventId?: string }) => {
     const photoPrice = photo.price ?? albumPricing?.pricePerImage ?? 0;
     if (photoPrice <= 0) {
       // Free photo — allow direct download
@@ -1130,6 +1166,43 @@ const FindMyPhotos = () => {
                 )}
               </div>
             )}
+            {/* Select mode toggle */}
+            {displayedPhotos.length > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px', gap: '10px', alignItems: 'center' }}>
+                {isSelectMode && selectedIds.size > 0 && (
+                  <button
+                    onClick={() => {
+                      if (selectedIds.size === displayedPhotos.length) {
+                        setSelectedIds(new Set());
+                      } else {
+                        setSelectedIds(new Set(displayedPhotos.map(p => p.id)));
+                      }
+                    }}
+                    style={{
+                      padding: '7px 16px', borderRadius: '20px', fontSize: '13px', fontWeight: 600,
+                      background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)',
+                      color: 'rgba(255,255,255,0.8)', cursor: 'pointer', transition: 'all 0.2s',
+                    }}
+                  >
+                    {selectedIds.size === displayedPhotos.length ? 'Deselect All' : 'Select All'}
+                  </button>
+                )}
+                <button
+                  onClick={() => { setIsSelectMode(!isSelectMode); if (isSelectMode) setSelectedIds(new Set()); }}
+                  style={{
+                    padding: '7px 16px', borderRadius: '20px', fontSize: '13px', fontWeight: 600,
+                    background: isSelectMode ? 'rgba(3,150,156,0.2)' : 'rgba(255,255,255,0.08)',
+                    border: `1px solid ${isSelectMode ? 'rgba(3,150,156,0.5)' : 'rgba(255,255,255,0.15)'}`,
+                    color: isSelectMode ? '#5eead4' : 'rgba(255,255,255,0.8)',
+                    cursor: 'pointer', transition: 'all 0.2s',
+                    display: 'flex', alignItems: 'center', gap: '6px',
+                  }}
+                >
+                  <i className={isSelectMode ? 'bi bi-x-lg' : 'bi bi-check2-square'} style={{ fontSize: '14px' }}></i>
+                  {isSelectMode ? 'Cancel' : 'Select'}
+                </button>
+              </div>
+            )}
             <div style={{
               display: 'grid',
               gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',
@@ -1151,8 +1224,37 @@ const FindMyPhotos = () => {
                 >
                   <div
                     style={{ aspectRatio: '4/3', overflow: 'hidden', position: 'relative' }}
-                    onClick={() => setSelectedPhoto(photo)}
+                    onClick={() => isSelectMode ? toggleSelect(photo.id) : setSelectedPhoto(photo)}
                   >
+                    {/* Selection checkbox */}
+                    {isSelectMode && (
+                      <div
+                        onClick={(e) => { e.stopPropagation(); toggleSelect(photo.id); }}
+                        style={{
+                          position: 'absolute', top: '8px', right: '8px', zIndex: 3,
+                          width: '28px', height: '28px', borderRadius: '50%',
+                          background: selectedIds.has(photo.id) ? '#03969c' : 'rgba(0,0,0,0.4)',
+                          border: selectedIds.has(photo.id) ? '2px solid #03969c' : '2px solid rgba(255,255,255,0.6)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          cursor: 'pointer', transition: 'all 0.2s ease',
+                          backdropFilter: 'blur(4px)',
+                        }}
+                      >
+                        {selectedIds.has(photo.id) && (
+                          <i className="bi bi-check-lg" style={{ color: '#fff', fontSize: '14px' }}></i>
+                        )}
+                      </div>
+                    )}
+                    {/* Selected overlay tint */}
+                    {isSelectMode && selectedIds.has(photo.id) && (
+                      <div style={{
+                        position: 'absolute', inset: 0, zIndex: 2,
+                        backgroundColor: 'rgba(3,150,156,0.15)',
+                        border: '3px solid #03969c',
+                        borderRadius: '0',
+                        pointerEvents: 'none',
+                      }} />
+                    )}
                     <img
                       src={photo.url}
                       alt={photo.alt}
@@ -1242,103 +1344,193 @@ const FindMyPhotos = () => {
       )}
 
       {/* ── Image Viewer Modal ── */}
-      {selectedPhoto && (
-        <div
-          onClick={() => setSelectedPhoto(null)}
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0,0,0,0.85)',
-            backdropFilter: 'blur(4px)',
-            zIndex: 2000,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '20px',
-          }}
-        >
-          {/* Top bar: close + download */}
+      {selectedPhoto && (() => {
+        const currentIdx = displayedPhotos.findIndex(p => p.id === selectedPhoto.id);
+        const hasPrev = currentIdx > 0;
+        const hasNext = currentIdx < displayedPhotos.length - 1;
+        const goTo = (idx: number) => { if (idx >= 0 && idx < displayedPhotos.length) setSelectedPhoto(displayedPhotos[idx]); };
+        const photoPrice = selectedPhoto.price ?? albumPricing?.pricePerImage ?? 0;
+
+        return (
           <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              position: 'absolute',
-              top: '20px',
-              left: '20px',
-              right: '20px',
-              display: 'flex',
-              justifyContent: 'flex-end',
-              gap: '10px',
-              zIndex: 2001,
-            }}
+            onClick={() => setSelectedPhoto(null)}
+            style={{ position: 'fixed', inset: 0, backgroundColor: '#000', zIndex: 2000 }}
           >
-            <button
-              onClick={(e) => { e.stopPropagation(); handleDownloadClick(selectedPhoto); }}
+            {/* Cinematic blurred background — uses same photo */}
+            <div style={{
+              position: 'absolute', inset: 0,
+              backgroundImage: `url("${selectedPhoto.url}")`,
+              backgroundSize: 'cover', backgroundPosition: 'center',
+              filter: 'blur(40px) brightness(0.3) saturate(1.4)',
+              transform: 'scale(1.2)',
+            }} />
+
+            {/* Centered image */}
+            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>
+              <img
+                src={selectedPhoto.url.replace('w=600&h=400', 'w=1200&h=800')}
+                alt={selectedPhoto.alt}
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  maxWidth: '100%',
+                  maxHeight: 'calc(100% - 1rem)',
+                  objectFit: 'contain',
+                  borderRadius: '16px',
+                  transition: 'opacity 0.3s ease',
+                }}
+              />
+            </div>
+
+            {/* Top gradient overlay — title bar + actions */}
+            <div
+              onClick={(e) => e.stopPropagation()}
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '7px',
-                padding: '10px 20px',
-                borderRadius: '50px',
-                background: '#03969c',
-                border: 'none',
-                color: '#ffffff',
-                fontSize: '14px',
-                fontWeight: 600,
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
+                position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10,
+                background: 'linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.3) 60%, transparent 100%)',
+                padding: '1.25rem 1.5rem 2.5rem',
+                display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = '#026d72'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = '#03969c'; }}
             >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                <polyline points="7 10 12 15 17 10"/>
-                <line x1="12" y1="15" x2="12" y2="3"/>
-              </svg>
-              {(() => {
-                const p = selectedPhoto?.price ?? albumPricing?.pricePerImage ?? 0;
-                return p > 0 ? `Buy (${albumPricing?.currencySymbol || 'RF'}${p.toLocaleString()})` : 'Download';
-              })()}
-            </button>
-            <button
-              onClick={(e) => { e.stopPropagation(); setSelectedPhoto(null); }}
+              {/* Left — counter + event info */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                {albumTitle && (
+                  <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '14px', fontWeight: 500 }}>
+                    {albumTitle}
+                  </span>
+                )}
+                <span style={{
+                  color: 'rgba(255,255,255,0.5)', fontSize: '13px', fontWeight: 500,
+                  padding: '4px 10px', backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: '20px',
+                }}>
+                  {currentIdx + 1} / {displayedPhotos.length}
+                </span>
+              </div>
+
+              {/* Right — buy/download + close */}
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleDownloadClick(selectedPhoto); }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '8px',
+                    padding: '10px 22px', borderRadius: '50px',
+                    background: photoPrice > 0 ? 'linear-gradient(135deg, #03969c, #026d72)' : 'rgba(255,255,255,0.12)',
+                    border: photoPrice > 0 ? 'none' : '1px solid rgba(255,255,255,0.2)',
+                    color: '#fff', fontSize: '14px', fontWeight: 600,
+                    cursor: 'pointer', transition: 'all 0.25s ease',
+                    backdropFilter: 'blur(8px)',
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.04)'; e.currentTarget.style.boxShadow = '0 4px 20px rgba(3,150,156,0.4)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = 'none'; }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                  </svg>
+                  {photoPrice > 0 ? `Buy (${albumPricing?.currencySymbol || 'RF'}${photoPrice.toLocaleString()})` : 'Download'}
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); setSelectedPhoto(null); }}
+                  style={{
+                    width: '40px', height: '40px', borderRadius: '50%',
+                    background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(8px)',
+                    border: '1px solid rgba(255,255,255,0.15)', color: '#fff',
+                    fontSize: '20px', cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    transition: 'all 0.25s ease',
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.25)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; }}
+                >
+                  <i className="bi bi-x-lg" style={{ fontSize: '16px' }}></i>
+                </button>
+              </div>
+            </div>
+
+            {/* Navigation arrows */}
+            {hasPrev && (
+              <button
+                onClick={(e) => { e.stopPropagation(); goTo(currentIdx - 1); }}
+                style={{
+                  position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)',
+                  zIndex: 10, width: '48px', height: '48px', borderRadius: '50%',
+                  background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)',
+                  border: '1px solid rgba(255,255,255,0.12)', color: '#fff',
+                  fontSize: '20px', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  transition: 'all 0.25s ease',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.15)'; e.currentTarget.style.transform = 'translateY(-50%) scale(1.1)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(0,0,0,0.4)'; e.currentTarget.style.transform = 'translateY(-50%) scale(1)'; }}
+              >
+                <i className="bi bi-chevron-left"></i>
+              </button>
+            )}
+            {hasNext && (
+              <button
+                onClick={(e) => { e.stopPropagation(); goTo(currentIdx + 1); }}
+                style={{
+                  position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)',
+                  zIndex: 10, width: '48px', height: '48px', borderRadius: '50%',
+                  background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)',
+                  border: '1px solid rgba(255,255,255,0.12)', color: '#fff',
+                  fontSize: '20px', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  transition: 'all 0.25s ease',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.15)'; e.currentTarget.style.transform = 'translateY(-50%) scale(1.1)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(0,0,0,0.4)'; e.currentTarget.style.transform = 'translateY(-50%) scale(1)'; }}
+              >
+                <i className="bi bi-chevron-right"></i>
+              </button>
+            )}
+
+            {/* Bottom gradient — price badge + photo info */}
+            <div
+              onClick={(e) => e.stopPropagation()}
               style={{
-                width: '44px',
-                height: '44px',
-                borderRadius: '50%',
-                background: 'rgba(255,255,255,0.15)',
-                border: 'none',
-                color: '#ffffff',
-                fontSize: '24px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                transition: 'all 0.3s ease',
+                position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 10,
+                background: 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.2) 50%, transparent 100%)',
+                padding: '2.5rem 1.5rem 1.25rem',
+                display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end',
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.3)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.15)'; }}
             >
-              &times;
-            </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {photoPrice > 0 && (
+                  <span style={{
+                    padding: '5px 14px', borderRadius: '20px',
+                    background: 'rgba(3,150,156,0.2)', border: '1px solid rgba(3,150,156,0.4)',
+                    color: '#5eead4', fontSize: '13px', fontWeight: 700,
+                  }}>
+                    {albumPricing?.currencySymbol || 'RF'}{photoPrice.toLocaleString()} {albumPricing?.currencyAbbreviation || ''}
+                  </span>
+                )}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                {selectedPhoto.alt && (
+                  <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', fontWeight: 400 }}>
+                    {selectedPhoto.alt}
+                  </span>
+                )}
+                <button
+                  onClick={() => { toggleSelect(selectedPhoto.id); if (!isSelectMode) setIsSelectMode(true); }}
+                  style={{
+                    padding: '8px 16px', borderRadius: '20px', fontSize: '13px', fontWeight: 600,
+                    background: selectedIds.has(selectedPhoto.id) ? 'rgba(3,150,156,0.3)' : 'rgba(255,255,255,0.1)',
+                    border: `1px solid ${selectedIds.has(selectedPhoto.id) ? 'rgba(3,150,156,0.6)' : 'rgba(255,255,255,0.2)'}`,
+                    color: selectedIds.has(selectedPhoto.id) ? '#5eead4' : 'rgba(255,255,255,0.8)',
+                    cursor: 'pointer', transition: 'all 0.2s', backdropFilter: 'blur(8px)',
+                    display: 'flex', alignItems: 'center', gap: '6px',
+                  }}
+                >
+                  <i className={selectedIds.has(selectedPhoto.id) ? 'bi bi-check-circle-fill' : 'bi bi-circle'} style={{ fontSize: '14px' }}></i>
+                  {selectedIds.has(selectedPhoto.id) ? 'Selected' : 'Select'}
+                </button>
+              </div>
+            </div>
           </div>
-          <img
-            src={selectedPhoto.url.replace('w=600&h=400', 'w=1200&h=800')}
-            alt={selectedPhoto.alt}
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              maxWidth: '90vw',
-              maxHeight: '85vh',
-              borderRadius: '12px',
-              objectFit: 'contain',
-              boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
-            }}
-          />
-        </div>
-      )}
+        );
+      })()}
 
       {/* ── Download Payment Modal ── */}
       {showDownloadModal && downloadTarget && (
@@ -1891,18 +2083,85 @@ const FindMyPhotos = () => {
         </div>
       )}
 
+      {/* ── Floating Selection Bar ── */}
+      {isSelectMode && selectedIds.size > 0 && !selectedPhoto && (
+        <div style={{
+          position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 1500,
+          background: 'linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.85) 70%, rgba(0,0,0,0.6) 100%)',
+          backdropFilter: 'blur(16px)',
+          padding: '16px 24px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          borderTop: '1px solid rgba(255,255,255,0.1)',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{
+              width: '36px', height: '36px', borderRadius: '50%',
+              background: 'rgba(3,150,156,0.2)', border: '1px solid rgba(3,150,156,0.4)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <span style={{ color: '#5eead4', fontSize: '14px', fontWeight: 700 }}>{selectedIds.size}</span>
+            </div>
+            <div>
+              <div style={{ color: '#fff', fontSize: '14px', fontWeight: 600 }}>
+                {selectedIds.size} photo{selectedIds.size !== 1 ? 's' : ''} selected
+              </div>
+              <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px' }}>
+                {selectionAllFree
+                  ? 'Free download'
+                  : `Total: ${albumPricing?.currencySymbol || 'RF'}${selectionTotal.toLocaleString()} ${albumPricing?.currencyAbbreviation || 'RWF'}`
+                }
+              </div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button
+              onClick={() => { setSelectedIds(new Set()); setIsSelectMode(false); }}
+              style={{
+                padding: '10px 18px', borderRadius: '10px', fontSize: '13px', fontWeight: 600,
+                background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)',
+                color: 'rgba(255,255,255,0.7)', cursor: 'pointer', transition: 'all 0.2s',
+              }}
+            >
+              Clear
+            </button>
+            <button
+              onClick={handleBulkDownload}
+              style={{
+                padding: '10px 24px', borderRadius: '10px', fontSize: '14px', fontWeight: 700,
+                background: 'linear-gradient(135deg, #03969c, #026d72)',
+                border: 'none', color: '#fff', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: '8px',
+                transition: 'all 0.25s ease',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.03)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              {selectionAllFree ? `Download (${selectedIds.size})` : `Buy All (${albumPricing?.currencySymbol || 'RF'}${selectionTotal.toLocaleString()})`}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* ── XentriPay Payment Modal ── */}
       <XentriPayModal
         isOpen={showXentriPayModal}
-        onClose={() => { setShowXentriPayModal(false); resetDownloadModal(); }}
-        onSuccess={handlePhotoPaymentSuccess}
-        amount={downloadTarget?.price ?? albumPricing?.pricePerImage ?? 0}
+        onClose={() => { setShowXentriPayModal(false); setIsBulkPaying(false); resetDownloadModal(); }}
+        onSuccess={isBulkPaying ? handleBulkPaymentSuccess : handlePhotoPaymentSuccess}
+        amount={isBulkPaying ? selectionTotal : (downloadTarget?.price ?? albumPricing?.pricePerImage ?? 0)}
         currencyCode={albumPricing?.currencyAbbreviation ?? 'RWF'}
         currencyId={albumPricing?.currencyId ?? ''}
         paymentType="photo_purchase"
-        eventId={albumEventId}
-        title="Pay for Photo"
-        subtitle={`Download this photo for ${albumPricing?.currencySymbol ?? 'RF'}${(downloadTarget?.price ?? albumPricing?.pricePerImage ?? 0).toLocaleString()}`}
+        eventId={albumEventId || (isBulkPaying ? selectedPhotosArr[0]?.eventId : downloadTarget?.eventId) || ''}
+        title={isBulkPaying ? `Buy ${selectedIds.size} Photos` : 'Pay for Photo'}
+        subtitle={isBulkPaying
+          ? `Download ${selectedIds.size} photo${selectedIds.size !== 1 ? 's' : ''} for ${albumPricing?.currencySymbol ?? 'RF'}${selectionTotal.toLocaleString()}`
+          : `Download this photo for ${albumPricing?.currencySymbol ?? 'RF'}${(downloadTarget?.price ?? albumPricing?.pricePerImage ?? 0).toLocaleString()}`
+        }
       />
 
       {/* ── Embedded Styles ── */}
