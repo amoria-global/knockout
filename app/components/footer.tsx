@@ -80,7 +80,7 @@ export default function Footer() {
   const footerStyles = `
     .footer-container { position: relative; width: 100%; margin-top: 2.8rem; }
     .subscribe-wrapper { position: absolute; top: -1.6rem; left: 50%; transform: translateX(-50%); width: 100%; max-width: 40rem; padding: 0 1.6rem; z-index: 10; }
-    .subscribe-container { background-color: #d6d6d6; border-radius: 9999px; padding: 0.001rem; box-shadow: 0 8px 12px -2.4px rgba(0, 0, 0, 0.1); }
+    .subscribe-container { background-color: #ffffff; border-radius: 9999px; padding: 0.001rem; box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.15), 0 4px 8px -2px rgba(8, 58, 133, 0.1); }
     .subscribe-form { display: flex; align-items: center; width: 100%; }
     .subscribe-input { width: 100%; padding: 0.44rem 1.2rem; background: transparent; color: #000; border: none; outline: none; font-size: 0.96rem; font-weight: 500; }
     .subscribe-button { background: #103E83; color: white; font-weight: 600; border-radius: 1.6rem; letter-spacing: 0.05em; font-size: 0.9rem; padding: 0.6rem 1.6rem; flex-shrink: 0; cursor: pointer; border: none; transition: background-color 0.2s; }
@@ -98,10 +98,10 @@ export default function Footer() {
     .social-section { margin: 5.4rem 0 -2.2rem; }
     .social-title { color: #D1D5DB; font-size: 1.04rem; display: block; margin-bottom: 0.8rem; }
     .social-links { display: flex; gap: 1.6rem; }
-    .social-link { color: #0D99FF; transition: color 0.2s; }
-    .social-link:hover { color: white; }
+    .social-link { color: rgba(255,255,255,0.6); transition: color 0.2s; }
+    .social-link:hover { color: #fff; }
     .social-icon { height: 1.3rem; width: 1.3rem; }
-    .footer-section h4 { font-size: 0.96rem; font-weight: 600; margin-bottom: 1.6rem; color: #A1A1A1; }
+    .footer-section h4 { font-size: 0.96rem; font-weight: 600; margin-bottom: 1.6rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.85rem; }
     .footer-section ul { list-style: none; padding: 0; margin: 0; }
     .footer-section li { margin-bottom: 0.8rem; }
     .footer-link { color: #D1D5DB; font-size: 0.96rem; text-decoration: none; display: block; transition: color 0.2s; }
@@ -184,7 +184,7 @@ export default function Footer() {
         { text: t('links.aboutUs'), href: '/user/about' },
         { text: t('links.contact'), href: '/user/contact_us' },
         { text: t('links.blog'), href: 'https://www.amoriaglobal.com/' },
-        { text: 'Donations', href: '/user/donations' },
+        { text: t('links.donations'), href: '/user/donations' },
       ],
     },
     {
@@ -303,10 +303,11 @@ export default function Footer() {
           >
             {/* Amoria connekyt Section */}
             <div className="footer-brand" style={{ paddingRight: '1.6rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-              <Link href="/" className="footer-logo" style={{ display: 'flex', alignItems: 'center', marginBottom: '3rem', marginLeft: '-1rem', cursor: 'pointer', textDecoration: 'none', color: 'inherit' }}>
+              <Link href="/" className="footer-logo" style={{ display: 'flex', alignItems: 'center', marginBottom: '1rem', marginLeft: '-1rem', cursor: 'pointer', textDecoration: 'none', color: 'inherit' }}>
                 <img src="/log.png" alt="Connekyt Logo" style={{ width: isMobile ? '36px' : '50px', height: isMobile ? '36px' : '50px', objectFit: 'contain', position: 'relative', top: isMobile ? '-4px' : '-5px', left: isMobile ? '-1px' : '-14px' }} />
                 <span style={{ fontWeight: 700, color: '#fff', fontSize: isMobile ? '1.25rem' : '1.4rem', marginLeft: isMobile ? '-10px' : '-26px', marginTop: isMobile ? '-1px' : '-2px', letterSpacing: '0.5px' }}>onnekyt</span>
               </Link>
+              <p className="footer-description">{t('description')}</p>
               <div className="social-section" style={{ marginTop: 'auto', marginBottom: isMobile ? '0' : '-3.5rem' }}>
                 <span className="social-title" style={{ color: '#D1D5DB', fontSize: '1.04rem', display: 'block', marginBottom: '0.8rem', gap: '2.4rem' }}>
                   {t('followUs')}
@@ -320,9 +321,9 @@ export default function Footer() {
                       rel="noopener noreferrer"
                       aria-label={social.label}
                       className="social-link"
-                      style={{ color: '#0D99FF', transition: 'color 0.2s' }}
-                      onMouseOver={(e) => (e.currentTarget.style.color = 'white')}
-                      onMouseOut={(e) => (e.currentTarget.style.color = '#0D99FF')}
+                      style={{ color: 'rgba(255,255,255,0.6)', transition: 'color 0.2s' }}
+                      onMouseOver={(e) => (e.currentTarget.style.color = '#fff')}
+                      onMouseOut={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.6)')}
                     >
                       <social.icon className="social-icon" style={{ height: '1.3rem', width: '1.3rem' }} />
                     </a>

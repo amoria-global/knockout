@@ -505,16 +505,11 @@ export default function SignupPage(): React.JSX.Element {
           password,
         });
 
-        // Debug: Log full response in development
-        console.log('[Signup] Full API response:', JSON.stringify(response, null, 2));
-
         if (response.success && response.data) {
-          // Extract applicant/customer ID - handle various field names from backend
-          const { applicant_id, applicantId: appId, customerId, customer_id } = response.data;
-          const applicantId = applicant_id || appId || customerId || customer_id;
+          const customerId = response.data.customerId;
 
-          if (!applicantId) {
-            const errorMsg = 'Signup succeeded but missing applicant ID. Please contact support.';
+          if (!customerId) {
+            const errorMsg = 'Signup succeeded but missing customer ID. Please contact support.';
             newErrors.email = errorMsg;
             setErrors(newErrors);
             showError(errorMsg);
@@ -525,7 +520,7 @@ export default function SignupPage(): React.JSX.Element {
           // Show success and redirect to OTP verification
           showSuccess('Account created! Please verify your phone number.');
           showInfo('Check your phone for the SMS verification code.');
-          router.push(`/user/auth/verify-otp?applicantId=${encodeURIComponent(String(applicantId))}&email=${encodeURIComponent(email)}${redirectUrl ? `&redirect=${encodeURIComponent(redirectUrl)}` : ''}`);
+          router.push(`/user/auth/verify-otp?applicantId=${encodeURIComponent(String(customerId))}&email=${encodeURIComponent(email)}${redirectUrl ? `&redirect=${encodeURIComponent(redirectUrl)}` : ''}`);
         } else {
           // Display the actual error message from the backend
           const errorMessage = response.error || 'Signup failed. Please try again.';

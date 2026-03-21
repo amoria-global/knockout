@@ -2106,18 +2106,18 @@ Trust and safety work is never finished. As long as Amoria Connekyt serves users
             width: 12px;
           }
           .left-nav-scrollbar::-webkit-scrollbar-track {
-            background: #C0C0C0;
+            background: #062d6b;
           }
           .left-nav-scrollbar::-webkit-scrollbar-thumb {
-            background: #083A85;
+            background: rgba(255,255,255,0.3);
             border-radius: 6px;
           }
           .left-nav-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: #062d6b;
+            background: rgba(255,255,255,0.5);
           }
           .left-nav-scrollbar {
             scrollbar-width: thin;
-            scrollbar-color: #083A85 #C0C0C0;
+            scrollbar-color: rgba(255,255,255,0.3) #062d6b;
             scroll-behavior: smooth;
           }
 
@@ -2347,14 +2347,15 @@ Trust and safety work is never finished. As long as Amoria Connekyt serves users
         style={{
         width: '100%',
         backgroundColor: 'white',
-        borderBottom: '1px solid #d1d5db',
+        borderBottom: '1px solid rgba(8, 58, 133, 0.1)',
         padding: '1.5rem 0',
         textAlign: 'center'
       }}>
         <h1 style={{
           fontSize: '1.875rem',
-          fontWeight: 'bold',
-          color: '#111827',
+          fontWeight: 700,
+          color: '#083A85',
+          fontFamily: "'Pragati Narrow', sans-serif",
           margin: 0
         }}>
           Privacy Policy & Trust Safety
@@ -2369,7 +2370,7 @@ Trust and safety work is never finished. As long as Amoria Connekyt serves users
           className={`left-nav-scrollbar left-sidebar ${isMobileMenuOpen ? 'open' : ''}`}
           style={{
             width: '30%',
-            backgroundColor: '#C0C0C0',
+            backgroundColor: '#083A85',
             overflowY: 'auto',
             overflowX: 'hidden',
             minHeight: '100%',
@@ -2384,7 +2385,7 @@ Trust and safety work is never finished. As long as Amoria Connekyt serves users
                   <div
                     key={`divider-${index}`}
                     style={{
-                      borderTop: '2px solid #666',
+                      borderTop: '2px solid rgba(255,255,255,0.2)',
                       margin: '1rem 1.5rem',
                       opacity: 0.5
                     }}
@@ -2420,27 +2421,24 @@ Trust and safety work is never finished. As long as Amoria Connekyt serves users
                     padding: '0.75rem 1rem',
                     fontSize: '16px',
                     lineHeight: '1.4',
-                    color: selectedSection === section.id ? '#ffffff' : '#000000',
+                    color: '#ffffff',
                     fontWeight: '600',
-                    backgroundColor: selectedSection === section.id ? '#083A85' : 'transparent',
+                    backgroundColor: selectedSection === section.id ? 'rgba(255,255,255,0.15)' : 'transparent',
                     transition: 'all 0.2s ease',
                     WebkitTapHighlightColor: 'rgba(0, 0, 0, 0)',
                     userSelect: 'none'
                   }}
                   onMouseEnter={(e) => {
                     if (window.innerWidth > 768) {
-                      e.currentTarget.style.backgroundColor = '#083A85';
-                      e.currentTarget.style.color = '#ffffff';
+                      e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.15)';
                     }
                   }}
                   onMouseLeave={(e) => {
                     if (window.innerWidth > 768) {
                       if (selectedSection === section.id) {
-                        e.currentTarget.style.backgroundColor = '#083A85';
-                        e.currentTarget.style.color = '#ffffff';
+                        e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.15)';
                       } else {
                         e.currentTarget.style.backgroundColor = 'transparent';
-                        e.currentTarget.style.color = '#000000';
                       }
                     }
                   }}
@@ -2459,7 +2457,7 @@ Trust and safety work is never finished. As long as Amoria Connekyt serves users
           key={selectedSection}
           style={{
             width: '70%',
-            backgroundColor: '#F2FFDD',
+            backgroundColor: '#ffffff',
             padding: '2.5rem',
             overflowY: 'auto',
             minHeight: '100%',
@@ -2469,8 +2467,9 @@ Trust and safety work is never finished. As long as Amoria Connekyt serves users
           <div className="content-header" style={{ marginBottom: '2rem' }}>
             <h2 style={{
               fontSize: '1.7rem',
-              fontWeight: 'bold',
-              color: '#000000',
+              fontWeight: 700,
+              color: '#083A85',
+              fontFamily: "'Pragati Narrow', sans-serif",
               marginBottom: '0.5rem',
               marginTop: 0
             }}>
@@ -2479,9 +2478,9 @@ Trust and safety work is never finished. As long as Amoria Connekyt serves users
 
             {/* Effective Date */}
             <p style={{
-              fontSize: '16px',
-              fontWeight: 'bold',
-              color: '#000000',
+              fontSize: '14px',
+              fontWeight: 600,
+              color: '#6b7280',
               marginBottom: '1.5rem',
               marginTop: 0
             }}>
@@ -2493,7 +2492,7 @@ Trust and safety work is never finished. As long as Amoria Connekyt serves users
             {/* Divider */}
             <hr style={{
               border: 'none',
-              borderTop: '1px solid #000000',
+              borderTop: '1px solid rgba(8, 58, 133, 0.15)',
               marginBottom: '1.5rem',
               marginTop: 0
             }} />
@@ -2502,7 +2501,7 @@ Trust and safety work is never finished. As long as Amoria Connekyt serves users
           {/* Content */}
           <div className="content-text" style={{
             fontSize: '1.06rem',
-            color: '#000000',
+            color: '#374151',
             lineHeight: '1.625',
             whiteSpace: 'pre-wrap',
             paddingBottom: '2rem'

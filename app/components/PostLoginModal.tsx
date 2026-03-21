@@ -27,7 +27,7 @@ export default function PostLoginModal({
     ? 'Photographer'
     : type === 'client'
       ? 'Client'
-      : type === 'event-coordinator'
+      : (type === 'event-coordinator' || type === 'coordinator')
         ? 'Event Coordinator'
         : '';
   const dashboardLabel = userTypeLabel

@@ -163,11 +163,11 @@ export default function ContactUsPage(): React.JSX.Element {
       {/* --- MODIFIED: Changed main background color to better match the image --- */}
       <div style={{
         minHeight: '100vh',
-        backgroundColor: '#E0E0E0',
+        backgroundColor: '#f8fafc',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: isMobile ? 'clamp(1rem, 3vw, 2rem)' : '2rem'
+        padding: isMobile ? '70px 1rem 1.5rem' : '72px 2rem 2rem'
       }}>
         {/* --- MODIFIED: Removed marginLeft to allow for true centering --- */}
         <div style={{width: '100%', maxWidth: isMobile ? '100%' : '1100px'}}>
@@ -178,44 +178,33 @@ export default function ContactUsPage(): React.JSX.Element {
           flexDirection: isMobile ? 'column' : 'row',
           alignItems: isMobile ? 'stretch' : 'center',
           width: '100%',
-          minHeight: isMobile ? 'auto' : '500px',
+          minHeight: isMobile ? 'auto' : 'auto',
           position: 'relative',
-          gap: isMobile ? '1.5rem' : '0'
+          gap: isMobile ? '1rem' : '0'
         }}>
 
           {/* LEFT PANEL */}
           <div style={{
             width: isMobile ? '100%' : '40%',
             position: 'relative',
-            // Using the same gradient as login.tsx
-            background: 'linear-gradient(180deg, rgba(8, 58, 133, 1) 0%, rgba(8, 58, 133, 0.6) 40%, rgba(217, 217, 217, 1) 55%, rgba(217, 217, 217, 0.8) 70%, rgba(227, 54, 41, 1) 100%)',
-            borderRadius: isMobile ? 'clamp(1rem, 2.5vw, 1.5rem)' : '1.5rem',
+            background: 'linear-gradient(135deg, #083A85 0%, #0a4da3 50%, #083A85 100%)',
+            borderRadius: isMobile ? '1rem' : '1.25rem',
             overflow: 'hidden',
             display: 'flex',
             flexDirection: 'column',
-            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)',
-            height: 'auto',
+            boxShadow: '0 4px 20px rgba(8, 58, 133, 0.1)',
             zIndex: isMobile ? 1 : 2,
             // --- MODIFIED: Adjusted the negative margin for a better overlap ---
             marginRight: isMobile ? '0' : '-10rem'
           }}>
-            {/* Overlay gradients (same as login.tsx) */}
+            {/* Subtle overlay for depth */}
             <div style={{
               position: 'absolute',
               top: 0,
               left: 0,
               right: 0,
               bottom: 0,
-              background: 'linear-gradient(63deg, rgba(8, 58, 133, 1) 0%, rgba(8, 58, 133, 0) 100%)',
-              pointerEvents: 'none'
-            }}></div>
-            <div style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: 'radial-gradient(circle at 90% 0%, rgba(137, 89, 0, 1) 0%, rgba(255, 166, 0, 1) 0%, rgba(255, 166, 0, 0) 90%)',
+              background: 'linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(0,0,0,0.1) 100%)',
               pointerEvents: 'none'
             }}></div>
 
@@ -225,56 +214,57 @@ export default function ContactUsPage(): React.JSX.Element {
               zIndex: 1,
               display: 'flex',
               flexDirection: 'column',
-              justifyContent: 'space-between',
-              padding: isMobile ? 'clamp(1.5rem, 4vw, 2rem) clamp(1rem, 3vw, 1.5rem)' : '2rem 1.5rem',
-              height: isMobile ? 'auto' : '500px',
-              minHeight: isMobile ? '300px' : '500px'
+              justifyContent: 'center',
+              padding: isMobile ? '1.25rem 1rem' : '1.25rem 1.25rem',
+              height: '100%',
+              gap: '0.5rem'
             }}>
               {/* Top Section */}
               <div style={{
                 width: '100%',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: isMobile ? 'clamp(0.75rem, 2vw, 1rem)' : '1rem'
+                gap: '0.5rem'
               }}>
                 <h2 style={{
-                  fontSize: isMobile ? 'clamp(1.5rem, 5vw, 2rem)' : '2rem',
+                  fontSize: isMobile ? '1.25rem' : '1.4rem',
                   fontWeight: '700',
-                  color: '#000000',
-                  marginBottom: isMobile ? 'clamp(0.5rem, 1.5vw, 1rem)' : '1rem',
-                  textAlign: 'center'
+                  color: '#ffffff',
+                  marginBottom: '0.3rem',
+                  textAlign: 'center',
+                  fontFamily: "'Pragati Narrow', sans-serif",
                 }}>
                   Contact Information
                 </h2>
 
                 {/* Phone Number */}
-                <div style={{display: 'flex', alignItems: 'center', gap: isMobile ? 'clamp(0.5rem, 1.5vw, 0.75rem)' : '0.75rem'}}>
-                  <i className="bi bi-telephone" style={{fontSize: isMobile ? 'clamp(1rem, 3vw, 1.2rem)' : '1.2rem', color: '#000000'}}></i>
-                  <div style={{fontSize: isMobile ? 'clamp(0.95rem, 2.8vw, 1.1rem)' : '1.1rem', fontWeight: '700', color: '#000000'}}>
+                <div style={{display: 'flex', alignItems: 'center', gap: '0.6rem'}}>
+                  <i className="bi bi-telephone" style={{fontSize: '0.9rem', color: 'rgba(255,255,255,0.85)'}}></i>
+                  <div style={{fontSize: '0.85rem', fontWeight: '600', color: '#ffffff'}}>
                     +250 788 437 347
                   </div>
                 </div>
 
                 {/* Email */}
-                <div style={{display: 'flex', alignItems: 'center', gap: '0.75rem'}}>
-                  <i className="bi bi-envelope" style={{fontSize: '1.2rem', color: '#000000'}}></i>
-                  <div style={{fontSize: '1.1rem', fontWeight: '700', color: '#000000'}}>
+                <div style={{display: 'flex', alignItems: 'center', gap: '0.6rem'}}>
+                  <i className="bi bi-envelope" style={{fontSize: '0.9rem', color: 'rgba(255,255,255,0.85)'}}></i>
+                  <div style={{fontSize: '0.85rem', fontWeight: '600', color: '#ffffff'}}>
                     info@amoriaconnekyt.com
                   </div>
                 </div>
 
                 {/* Address */}
-                <div style={{display: 'flex', alignItems: 'flex-start', gap: isMobile ? 'clamp(0.5rem, 1.5vw, 0.75rem)' : '0.75rem'}}>
-                  <i className="bi bi-geo-alt" style={{fontSize: isMobile ? 'clamp(1rem, 3vw, 1.2rem)' : '1.2rem', color: '#000000', flexShrink: 0}}></i>
-                  <div style={{fontSize: isMobile ? 'clamp(0.95rem, 2.8vw, 1.1rem)' : '1.1rem', fontWeight: '700', color: '#000000', lineHeight: '1.4'}}>
-                    Norrsken House Kigali - 1 KN 78 St, Kigali
+                <div style={{display: 'flex', alignItems: 'flex-start', gap: '0.6rem'}}>
+                  <i className="bi bi-geo-alt" style={{fontSize: '0.9rem', color: 'rgba(255,255,255,0.85)', flexShrink: 0}}></i>
+                  <div style={{fontSize: '0.85rem', fontWeight: '600', color: '#ffffff', lineHeight: '1.4'}}>
+                    KK 84B St, EVA PLAZA, Kanombe 3rd Floor, Left Wing, Kicukiro, Kigali
                   </div>
                 </div>
 
                 {/* Business Hours */}
-                <div style={{display: 'flex', alignItems: 'flex-start', gap: isMobile ? 'clamp(0.5rem, 1.5vw, 0.75rem)' : '0.75rem'}}>
-                  <i className="bi bi-clock" style={{fontSize: isMobile ? 'clamp(1rem, 3vw, 1.2rem)' : '1.2rem', color: '#000000', flexShrink: 0}}></i>
-                  <div style={{fontSize: isMobile ? 'clamp(0.95rem, 2.8vw, 1.1rem)' : '1.1rem', fontWeight: '700', color: '#000000', lineHeight: '1.4'}}>
+                <div style={{display: 'flex', alignItems: 'flex-start', gap: '0.6rem'}}>
+                  <i className="bi bi-clock" style={{fontSize: '0.9rem', color: 'rgba(255,255,255,0.85)', flexShrink: 0}}></i>
+                  <div style={{fontSize: '0.85rem', fontWeight: '600', color: '#ffffff', lineHeight: '1.4'}}>
                     <div>Monday - Sunday</div>
                     <div>9:00 AM - 6:00 PM EAT</div>
                   </div>
@@ -285,16 +275,13 @@ export default function ContactUsPage(): React.JSX.Element {
               <div style={{
                 width: '100%',
                 display: isMobile ? 'none' : 'flex',
-                justifyContent: 'flex-start',
-                marginTop: '1rem',
-                position: 'absolute',
-                bottom: '0.1rem',
-                left: '150px'
+                justifyContent: 'center',
+                marginTop: '0.5rem',
               }}>
                 <img
                   src="/contakt.png"
                   alt="Contact Us Illustration"
-                  style={{width: '120px', height: 'auto'}}
+                  style={{width: '75px', height: 'auto'}}
                 />
               </div>
             </div>
@@ -304,12 +291,12 @@ export default function ContactUsPage(): React.JSX.Element {
           <div style={{
             width: isMobile ? '100%' : '60%',
             // --- MODIFIED: Background color changed from white to light grey ---
-            backgroundColor: '#D1D1D1',
-            borderRadius: isMobile ? 'clamp(1rem, 2.5vw, 1.5rem)' : '1.5rem',
+            backgroundColor: '#ffffff',
+            borderRadius: isMobile ? '1rem' : '1.25rem',
             display: 'flex',
             flexDirection: 'row',
-            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)',
-            minHeight: isMobile ? 'auto' : '550px',
+            boxShadow: '0 4px 20px rgba(8, 58, 133, 0.1)',
+            minHeight: isMobile ? 'auto' : 'auto',
             zIndex: 1,
             overflow: 'hidden'
           }}>
@@ -320,23 +307,24 @@ export default function ContactUsPage(): React.JSX.Element {
               flexDirection: 'column',
               // --- MODIFIED: Adjusted padding to account for the overlapping left panel ---
               padding: isMobile
-                ? 'clamp(1.5rem, 4vw, 2rem) clamp(1rem, 3vw, 2rem)'
-                : '2rem 2rem 2rem 12rem',
+                ? '1rem 1rem'
+                : '1rem 1.5rem 1rem 11rem',
               justifyContent: 'center'
             }}>
               {/* Heading Section */}
-              <div style={{marginBottom: isMobile ? 'clamp(1rem, 3vw, 1.5rem)' : '1.5rem', textAlign: 'left'}}>
+              <div style={{marginBottom: '0.3rem', textAlign: 'left'}}>
                 <h1 style={{
-                  fontSize: isMobile ? 'clamp(1.5rem, 5vw, 2rem)' : '2rem',
+                  fontSize: isMobile ? '1.25rem' : '1.4rem',
                   fontWeight: '700',
-                  color: '#000000',
-                  marginBottom: isMobile ? 'clamp(0.35rem, 1vw, 0.5rem)' : '0.5rem'
+                  color: '#083A85',
+                  marginBottom: '0.25rem',
+                  fontFamily: "'Pragati Narrow', sans-serif",
                 }}>
                   Send us a message
                 </h1>
                 <p style={{
-                  fontSize: isMobile ? 'clamp(0.9rem, 2.5vw, 1rem)' : '1rem',
-                  color: '#262626'
+                  fontSize: '0.8rem',
+                  color: '#6b7280'
                 }}>
                   Feel free to ask any question below!
                 </p>
@@ -346,17 +334,17 @@ export default function ContactUsPage(): React.JSX.Element {
               <form onSubmit={handleSubmit} style={{
                 display: 'flex',
                 flexDirection: 'column',
-                gap: isMobile ? 'clamp(1rem, 2.5vw, 1.25rem)' : '1.25rem',
+                gap: '0.5rem',
                 width: '100%'
               }}>
                 {/* Success/Error Message */}
                 {submitStatus === 'success' && (
                   <div style={{
-                    padding: '0.75rem',
-                    borderRadius: '0.75rem',
+                    padding: '0.5rem',
+                    borderRadius: '0.5rem',
                     backgroundColor: '#10b981',
                     color: '#ffffff',
-                    fontSize: '1rem',
+                    fontSize: '0.85rem',
                     textAlign: 'center',
                     fontWeight: '500'
                   }}>
@@ -365,8 +353,8 @@ export default function ContactUsPage(): React.JSX.Element {
                 )}
                 {submitStatus === 'error' && errorMessage && (
                   <div style={{
-                    padding: '0.75rem',
-                    borderRadius: '0.75rem',
+                    padding: '0.5rem',
+                    borderRadius: '0.5rem',
                     backgroundColor: '#ef4444',
                     color: '#ffffff',
                     fontSize: '0.8rem',
@@ -380,10 +368,10 @@ export default function ContactUsPage(): React.JSX.Element {
                 <div>
                   <label htmlFor="fullName" style={{
                     display: 'block',
-                    fontSize: isMobile ? 'clamp(0.75rem, 2vw, 0.8rem)' : '0.8rem',
+                    fontSize: '0.8rem',
                     fontWeight: '600',
                     color: '#000000',
-                    marginBottom: isMobile ? 'clamp(0.4rem, 1vw, 0.5rem)' : '0.5rem'
+                    marginBottom: '0.2rem'
                   }}>
                     Full Name
                   </label>
@@ -397,13 +385,13 @@ export default function ContactUsPage(): React.JSX.Element {
                     disabled={isSubmitting}
                     style={{
                       width: '100%',
-                      padding: isMobile ? 'clamp(0.65rem, 2vw, 0.75rem)' : '0.75rem',
-                      fontSize: isMobile ? 'clamp(0.8rem, 2.2vw, 0.85rem)' : '0.85rem',
-                      border: '2px solid #C4C4C4',
-                      borderRadius: isMobile ? 'clamp(0.6rem, 1.5vw, 0.75rem)' : '0.75rem',
+                      padding: '0.5rem',
+                      fontSize: '0.8rem',
+                      border: '1px solid rgba(8, 58, 133, 0.15)',
+                      borderRadius: '0.6rem',
                       outline: 'none',
-                      backgroundColor: isSubmitting ? '#B0B0B0' : '#FFFFFF',
-                      boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)',
+                      backgroundColor: isSubmitting ? '#f3f4f6' : '#FFFFFF',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
                       color: '#000000',
                       cursor: isSubmitting ? 'not-allowed' : 'text'
                     }}
@@ -412,10 +400,10 @@ export default function ContactUsPage(): React.JSX.Element {
                 <div>
                   <label htmlFor="email" style={{
                     display: 'block',
-                    fontSize: isMobile ? 'clamp(0.75rem, 2vw, 0.8rem)' : '0.8rem',
+                    fontSize: '0.8rem',
                     fontWeight: '600',
                     color: '#000000',
-                    marginBottom: isMobile ? 'clamp(0.4rem, 1vw, 0.5rem)' : '0.5rem'
+                    marginBottom: '0.2rem'
                   }}>
                     Email Address
                   </label>
@@ -429,13 +417,13 @@ export default function ContactUsPage(): React.JSX.Element {
                     disabled={isSubmitting}
                     style={{
                       width: '100%',
-                      padding: isMobile ? 'clamp(0.65rem, 2vw, 0.75rem)' : '0.75rem',
-                      fontSize: isMobile ? 'clamp(0.8rem, 2.2vw, 0.85rem)' : '0.85rem',
-                      border: '2px solid #C4C4C4',
-                      borderRadius: isMobile ? 'clamp(0.6rem, 1.5vw, 0.75rem)' : '0.75rem',
+                      padding: '0.5rem',
+                      fontSize: '0.8rem',
+                      border: '1px solid rgba(8, 58, 133, 0.15)',
+                      borderRadius: '0.6rem',
                       outline: 'none',
-                      backgroundColor: isSubmitting ? '#B0B0B0' : '#FFFFFF',
-                      boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)',
+                      backgroundColor: isSubmitting ? '#f3f4f6' : '#FFFFFF',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
                       color: '#000',
                       cursor: isSubmitting ? 'not-allowed' : 'text'
                     }}
@@ -444,10 +432,10 @@ export default function ContactUsPage(): React.JSX.Element {
                 <div>
                   <label htmlFor="phone" style={{
                     display: 'block',
-                    fontSize: isMobile ? 'clamp(0.75rem, 2vw, 0.8rem)' : '0.8rem',
+                    fontSize: '0.8rem',
                     fontWeight: '600',
                     color: '#000000',
-                    marginBottom: isMobile ? 'clamp(0.4rem, 1vw, 0.5rem)' : '0.5rem'
+                    marginBottom: '0.2rem'
                   }}>
                     Phone Number
                   </label>
@@ -461,13 +449,13 @@ export default function ContactUsPage(): React.JSX.Element {
                     disabled={isSubmitting}
                     style={{
                       width: '100%',
-                      padding: isMobile ? 'clamp(0.65rem, 2vw, 0.75rem)' : '0.75rem',
-                      fontSize: isMobile ? 'clamp(0.8rem, 2.2vw, 0.85rem)' : '0.85rem',
-                      border: '2px solid #C4C4C4',
-                      borderRadius: isMobile ? 'clamp(0.6rem, 1.5vw, 0.75rem)' : '0.75rem',
+                      padding: '0.5rem',
+                      fontSize: '0.8rem',
+                      border: '1px solid rgba(8, 58, 133, 0.15)',
+                      borderRadius: '0.6rem',
                       outline: 'none',
-                      backgroundColor: isSubmitting ? '#B0B0B0' : '#FFFFFF',
-                      boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)',
+                      backgroundColor: isSubmitting ? '#f3f4f6' : '#FFFFFF',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
                       color: '#000',
                       cursor: isSubmitting ? 'not-allowed' : 'text'
                     }}
@@ -476,10 +464,10 @@ export default function ContactUsPage(): React.JSX.Element {
                 <div>
                   <label htmlFor="subject" style={{
                     display: 'block',
-                    fontSize: isMobile ? 'clamp(0.75rem, 2vw, 0.8rem)' : '0.8rem',
+                    fontSize: '0.8rem',
                     fontWeight: '600',
                     color: '#000000',
-                    marginBottom: isMobile ? 'clamp(0.4rem, 1vw, 0.5rem)' : '0.5rem'
+                    marginBottom: '0.2rem'
                   }}>
                     Subject
                   </label>
@@ -493,13 +481,13 @@ export default function ContactUsPage(): React.JSX.Element {
                     disabled={isSubmitting}
                     style={{
                       width: '100%',
-                      padding: isMobile ? 'clamp(0.65rem, 2vw, 0.75rem)' : '0.75rem',
-                      fontSize: isMobile ? 'clamp(0.8rem, 2.2vw, 0.85rem)' : '0.85rem',
-                      border: '2px solid #C4C4C4',
-                      borderRadius: isMobile ? 'clamp(0.6rem, 1.5vw, 0.75rem)' : '0.75rem',
+                      padding: '0.5rem',
+                      fontSize: '0.8rem',
+                      border: '1px solid rgba(8, 58, 133, 0.15)',
+                      borderRadius: '0.6rem',
                       outline: 'none',
-                      backgroundColor: isSubmitting ? '#B0B0B0' : '#FFFFFF',
-                      boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)',
+                      backgroundColor: isSubmitting ? '#f3f4f6' : '#FFFFFF',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
                       color: '#000000',
                       cursor: isSubmitting ? 'not-allowed' : 'text'
                     }}
@@ -508,10 +496,10 @@ export default function ContactUsPage(): React.JSX.Element {
                 <div>
                   <label htmlFor="message" style={{
                     display: 'block',
-                    fontSize: isMobile ? 'clamp(0.75rem, 2vw, 0.8rem)' : '0.8rem',
+                    fontSize: '0.8rem',
                     fontWeight: '600',
                     color: '#000000',
-                    marginBottom: isMobile ? 'clamp(0.4rem, 1vw, 0.5rem)' : '0.5rem'
+                    marginBottom: '0.2rem'
                   }}>
                     Message
                   </label>
@@ -521,17 +509,17 @@ export default function ContactUsPage(): React.JSX.Element {
                     value={formData.message}
                     onChange={handleInputChange}
                     placeholder="Tell us how we can help you..."
-                    rows={isMobile ? 3 : 4}
+                    rows={2}
                     disabled={isSubmitting}
                     style={{
                       width: '100%',
-                      padding: isMobile ? 'clamp(0.65rem, 2vw, 0.75rem)' : '0.75rem',
-                      fontSize: isMobile ? 'clamp(0.8rem, 2.2vw, 0.85rem)' : '0.85rem',
-                      border: '2px solid #C4C4C4',
-                      borderRadius: isMobile ? 'clamp(0.6rem, 1.5vw, 0.75rem)' : '0.75rem',
+                      padding: '0.5rem',
+                      fontSize: '0.8rem',
+                      border: '1px solid rgba(8, 58, 133, 0.15)',
+                      borderRadius: '0.6rem',
                       outline: 'none',
-                      backgroundColor: isSubmitting ? '#B0B0B0' : '#FFFFFF',
-                      boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)',
+                      backgroundColor: isSubmitting ? '#f3f4f6' : '#FFFFFF',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
                       resize: 'none',
                       fontFamily: 'inherit',
                       color: '#000',
@@ -544,20 +532,20 @@ export default function ContactUsPage(): React.JSX.Element {
                   disabled={isSubmitting || !isFormComplete()}
                   style={{
                     width: '100%',
-                    padding: isMobile ? 'clamp(0.7rem, 2vw, 0.75rem)' : '0.75rem',
-                    fontSize: isMobile ? 'clamp(0.85rem, 2.3vw, 0.9rem)' : '0.9rem',
+                    padding: '0.5rem',
+                    fontSize: '0.8rem',
                     fontWeight: '600',
-                    borderRadius: isMobile ? 'clamp(0.6rem, 1.5vw, 0.75rem)' : '0.75rem',
+                    borderRadius: '0.5rem',
                     backgroundColor: isSubmitting || !isFormComplete() ? '#6b7280' : '#083A85',
                     color: '#ffffff',
                     border: 'none',
                     cursor: isSubmitting || !isFormComplete() ? 'not-allowed' : 'pointer',
-                    marginTop: isMobile ? 'clamp(0.4rem, 1vw, 0.5rem)' : '0.5rem',
+                    marginTop: '0.15rem',
                     transition: 'all 0.3s',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: isMobile ? 'clamp(0.4rem, 1vw, 0.5rem)' : '0.5rem',
+                    gap: '0.4rem',
                     opacity: isSubmitting || !isFormComplete() ? 0.6 : 1
                   }}
                   onMouseEnter={(e) => { if (!(isSubmitting || !isFormComplete())) e.currentTarget.style.transform = 'translateY(-2px)'; }}
@@ -566,8 +554,8 @@ export default function ContactUsPage(): React.JSX.Element {
                   {isSubmitting ? (
                     <>
                       <span style={{
-                        width: isMobile ? 'clamp(12px, 3vw, 14px)' : '14px',
-                        height: isMobile ? 'clamp(12px, 3vw, 14px)' : '14px',
+                        width: '14px',
+                        height: '14px',
                         border: '2px solid #ffffff',
                         borderTopColor: 'transparent',
                         borderRadius: '50%',
@@ -586,8 +574,7 @@ export default function ContactUsPage(): React.JSX.Element {
             <div style={{
               width: isMobile ? '0%' : '5%',
               display: isMobile ? 'none' : 'block',
-              // --- MODIFIED: Changed to a simple glow effect as seen on the far right of the image ---
-              background: 'linear-gradient(to left, #F2C94C, rgba(242, 201, 76, 0))',
+              background: 'linear-gradient(to left, #083A85, rgba(8, 58, 133, 0))',
             }}>
             </div>
           </div>

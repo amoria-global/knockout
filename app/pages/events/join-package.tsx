@@ -38,8 +38,9 @@ function JoinPackageContent(): React.JSX.Element {
   const [groupPeopleCount, setGroupPeopleCount] = useState<number>(0);
   const [groupPaymentRef, setGroupPaymentRef] = useState<string | null>(null);
 
-  // Solo invite code input
-  const [soloInviteCode, setSoloInviteCode] = useState('');
+  // Solo invite code input — auto-fill from URL if shared via group link
+  const [soloInviteCode, setSoloInviteCode] = useState(searchParams.get('inviteToken') || '');
+  const [groupRedeemError, setGroupRedeemError] = useState<string | null>(null);
 
   // Load saved group code from localStorage on mount
   useEffect(() => {
@@ -91,9 +92,9 @@ function JoinPackageContent(): React.JSX.Element {
         const res = await googleAuth({ email: userInfo.email, firstName: userInfo.given_name || '', lastName: userInfo.family_name || '', customerType: 'Viewer' });
         if (res.success && res.data?.token) {
           const d = res.data as unknown as Record<string, string>;
-          await authLogin({ id: d.id || d.customerId || d.customer_id || '', firstName: d.firstName || userInfo.given_name || '', lastName: d.lastName || userInfo.family_name || '', email: d.email || userInfo.email, phone: d.phone || '', customerId: d.customerId || d.customer_id || d.id || '', customerType: d.customerType || d.userType || 'Viewer' }, d.token);
+          await authLogin({ id: d.id || d.customerId || '', firstName: d.firstName || userInfo.given_name || '', lastName: d.lastName || userInfo.family_name || '', email: d.email || userInfo.email, phone: d.phone || '', customerId: d.customerId || '', customerType: d.customerType || 'Viewer' }, d.token);
           setShowAuthModal(false);
-          setShowPaymentModal(true);
+          if ((selectedEvent?.price || 0) > 0) setShowPaymentModal(true);
         } else {
           setAuthError((res.data as unknown as Record<string, string>)?.message || res.error || 'Could not sign in with Google. Please try another method.');
         }
@@ -109,9 +110,9 @@ function JoinPackageContent(): React.JSX.Element {
       const res = await apiLogin({ email: loginEmail, password: loginPassword });
       if (res.success && res.data?.token) {
         const d = res.data as unknown as Record<string, string>;
-        await authLogin({ id: d.id || d.customerId || d.customer_id || '', firstName: d.firstName || '', lastName: d.lastName || '', email: d.email || loginEmail, phone: d.phone || '', customerId: d.customerId || d.customer_id || d.id || '', customerType: d.customerType || d.userType || 'Viewer' }, d.token);
+        await authLogin({ id: d.id || d.customerId || '', firstName: d.firstName || '', lastName: d.lastName || '', email: d.email || loginEmail, phone: d.phone || '', customerId: d.customerId || '', customerType: d.customerType || 'Viewer' }, d.token);
         setShowAuthModal(false);
-        setShowPaymentModal(true);
+        if ((selectedEvent?.price || 0) > 0) setShowPaymentModal(true);
       } else { setAuthError((res.data as unknown as Record<string, string>)?.message || res.error || 'Incorrect email or password. Please try again.'); }
     } catch { setAuthError('Unable to connect. Please check your internet connection and try again.'); } finally { setAuthLoading(false); }
   };
@@ -123,8 +124,8 @@ function JoinPackageContent(): React.JSX.Element {
       const res = await apiSignup({ firstName: signupFirstName, lastName: signupLastName, email: signupEmail, phone: signupPhone, password: signupPassword, customerType: 'Viewer' });
       if (res.success && res.data) {
         const d = res.data as unknown as Record<string, string>;
-        if (d.customerId || d.customer_id || d.id) {
-          setOtpCustomerId(d.customerId || d.customer_id || d.id || '');
+        if (d.customerId) {
+          setOtpCustomerId(d.customerId || '');
           setAuthStep('otp');
         } else { setAuthError('Could not create your account. Please try again.'); }
       } else { setAuthError((res.data as unknown as Record<string, string>)?.message || res.error || 'Could not create your account. The email may already be registered.'); }
@@ -138,9 +139,9 @@ function JoinPackageContent(): React.JSX.Element {
       const res = await verifyOtp({ customerId: otpCustomerId, otp: Number(otpValue) });
       if (res.success && res.data?.token) {
         const d = res.data as unknown as Record<string, string>;
-        await authLogin({ id: d.id || d.customerId || d.customer_id || otpCustomerId, firstName: d.firstName || signupFirstName, lastName: d.lastName || signupLastName, email: d.email || signupEmail, phone: d.phone || signupPhone, customerId: d.customerId || d.customer_id || d.id || otpCustomerId, customerType: d.customerType || 'Viewer' }, d.token);
+        await authLogin({ id: d.id || d.customerId || otpCustomerId, firstName: d.firstName || signupFirstName, lastName: d.lastName || signupLastName, email: d.email || signupEmail, phone: d.phone || signupPhone, customerId: d.customerId || otpCustomerId, customerType: d.customerType || 'Viewer' }, d.token);
         setShowAuthModal(false);
-        setShowPaymentModal(true);
+        if ((selectedEvent?.price || 0) > 0) setShowPaymentModal(true);
       } else { setAuthError((res.data as unknown as Record<string, string>)?.message || res.error || 'The verification code is incorrect or has expired.'); }
     } catch { setAuthError('Unable to verify. Please check your internet connection and try again.'); } finally { setAuthLoading(false); }
   };
@@ -189,6 +190,49 @@ function JoinPackageContent(): React.JSX.Element {
     };
     fetchEvent();
   }, [eventId]);
+
+  // Auto-redeem group invite code from URL for free events
+  // Requires auth since group codes are limited to a set number of viewers
+  useEffect(() => {
+    if (!selectedEvent || isLoading) return;
+    const urlToken = searchParams.get('inviteToken');
+    if (!urlToken) return;
+    const price = selectedEvent.price || 0;
+    if (price > 0) return; // Paid event — let user go through normal flow
+
+    if (!isAuthenticated) {
+      // Show login modal — viewer must authenticate to claim a group code slot
+      setAuthStep('login');
+      setAuthError('');
+      setShowAuthModal(true);
+      return;
+    }
+
+    (async () => {
+      setGroupRedeemError(null);
+      try {
+        const userStr = localStorage.getItem('authUser');
+        const userName = userStr ? `${JSON.parse(userStr).firstName || ''} ${JSON.parse(userStr).lastName || ''}`.trim() : 'Viewer';
+        const res = await redeemGroupCode(selectedEvent.id, { inviteCode: urlToken, viewerUsername: userName });
+        if (res.success && res.data) {
+          router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&paid=true&inviteToken=${encodeURIComponent(urlToken)}`);
+        } else {
+          const msg = res.error || '';
+          if (msg.includes('viewer limit')) {
+            setGroupRedeemError('This group invite code has reached its viewer limit. Please ask the host for a new code.');
+          } else if (msg.includes('expired')) {
+            setGroupRedeemError('This group invite code has expired. Please ask the host for a new one.');
+          } else if (msg.includes('Invalid')) {
+            setGroupRedeemError('This group invite code is invalid. Please check the code and try again.');
+          } else {
+            setGroupRedeemError(msg || 'Unable to redeem this invite code.');
+          }
+        }
+      } catch {
+        setGroupRedeemError('Unable to redeem invite code. Please check your connection and try again.');
+      }
+    })();
+  }, [selectedEvent, isLoading, searchParams, router, isAuthenticated]);
 
   // Fetch currencies for XentriPay
   useEffect(() => {
@@ -281,13 +325,7 @@ function JoinPackageContent(): React.JSX.Element {
     const tokenParam = inviteToken ? `&inviteToken=${encodeURIComponent(inviteToken)}` : '';
 
     if (price > 0) {
-      // Paid event — require auth, then show XentriPay payment modal
-      if (!isAuthenticated) {
-        setAuthStep('login');
-        setAuthError('');
-        setShowAuthModal(true);
-        return;
-      }
+      // Paid event — viewer is already authenticated from view-event page
       setShowPaymentModal(true);
     } else {
       // Free event — redirect to join-event for invite token input
@@ -363,19 +401,19 @@ function JoinPackageContent(): React.JSX.Element {
           const userName = userStr ? `${JSON.parse(userStr).firstName || ''} ${JSON.parse(userStr).lastName || ''}`.trim() : 'Viewer';
           const res = await redeemGroupCode(selectedEvent.id, { inviteCode: code, viewerUsername: userName });
           if (res.success && res.data) {
-            router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&inviteToken=${encodeURIComponent(code)}`);
+            router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&paid=true&inviteToken=${encodeURIComponent(code)}`);
           } else {
-            router.push(`/user/events/live-stream?eventId=${selectedEvent.id}`);
+            router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&paid=true`);
           }
         } catch {
-          router.push(`/user/events/live-stream?eventId=${selectedEvent.id}`);
+          router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&paid=true`);
         }
       } else {
         const inviteToken = searchParams.get('inviteToken') || '';
         if (inviteToken) {
-          router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&inviteToken=${encodeURIComponent(inviteToken)}`);
+          router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&paid=true&inviteToken=${encodeURIComponent(inviteToken)}`);
         } else {
-          router.push(`/user/events/live-stream?eventId=${selectedEvent.id}`);
+          router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&paid=true`);
         }
       }
     }
@@ -439,6 +477,20 @@ function JoinPackageContent(): React.JSX.Element {
   return (
     <div style={{ backgroundColor: '#0e0e10', minHeight: '100vh' }}>
       <AmoriaKNavbar />
+
+      {/* Group code redeem error banner */}
+      {groupRedeemError && (
+        <div style={{
+          position: 'relative', zIndex: 50, maxWidth: '600px', margin: '16px auto',
+          padding: '16px 20px', backgroundColor: 'rgba(239, 68, 68, 0.1)',
+          border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '12px',
+          display: 'flex', alignItems: 'center', gap: '12px', color: '#fca5a5', fontSize: '14px',
+        }}>
+          <i className="bi bi-exclamation-triangle-fill" style={{ color: '#ef4444', fontSize: '18px', flexShrink: 0 }}></i>
+          <span>{groupRedeemError}</span>
+        </div>
+      )}
+
       <div style={{ position: 'relative', overflow: 'hidden' }}>
         {/* Cinematic background image */}
         <div style={{ position: 'absolute', inset: 0, backgroundImage: `url(${eventImage})`, backgroundSize: 'cover', backgroundPosition: 'center right' }} />
@@ -882,47 +934,54 @@ function JoinPackageContent(): React.JSX.Element {
                   {pkg.id === 'individual' && selectedPackage === 'individual' && (
                     <div
                       style={{
-                        marginTop: '10px',
-                        paddingTop: '10px',
-                        borderTop: '1px dashed #00BFFF',
+                        marginTop: '12px',
+                        padding: '12px',
+                        background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.08) 0%, rgba(139, 92, 246, 0.08) 100%)',
+                        border: '1.5px solid rgba(6, 182, 212, 0.3)',
+                        borderRadius: '12px',
                         animation: 'fadeIn 0.3s ease',
                       }}
                     >
-                      <label
-                        style={{
-                          display: 'block',
-                          fontSize: '12px',
-                          fontWeight: '600',
-                          color: '#6b7280',
-                          marginBottom: '6px',
-                        }}
-                      >
-                        <i className="bi bi-ticket-perforated" style={{ marginRight: '6px', fontSize: '13px' }}></i>
-                        Have a group invite code? (optional)
-                      </label>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                        <div style={{
+                          width: '28px', height: '28px', borderRadius: '8px',
+                          background: 'linear-gradient(135deg, #06b6d4, #8b5cf6)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                        }}>
+                          <i className="bi bi-ticket-perforated-fill" style={{ color: '#fff', fontSize: '13px' }}></i>
+                        </div>
+                        <div>
+                          <div style={{ fontSize: '13px', fontWeight: '700', color: '#083A85' }}>
+                            Have a group invite code?
+                          </div>
+                          <div style={{ fontSize: '11px', color: '#6b7280' }}>
+                            Enter it here to join without paying
+                          </div>
+                        </div>
+                      </div>
                       <input
                         type="text"
-                        placeholder="Enter invite code"
+                        placeholder="e.g. ABC12345"
                         value={soloInviteCode}
                         onChange={(e) => setSoloInviteCode(e.target.value.toUpperCase())}
                         onClick={(e) => e.stopPropagation()}
                         style={{
                           width: '100%',
-                          padding: '8px 14px',
-                          fontSize: '13px',
+                          padding: '10px 14px',
+                          fontSize: '14px',
                           fontWeight: '700',
                           textAlign: 'center',
-                          backgroundColor: '#f8f9fa',
-                          border: '2px solid #e0e0e0',
+                          backgroundColor: '#fff',
+                          border: '2px solid rgba(6, 182, 212, 0.4)',
                           borderRadius: '10px',
                           color: '#083A85',
                           outline: 'none',
                           boxSizing: 'border-box',
-                          letterSpacing: '2px',
+                          letterSpacing: '3px',
                           textTransform: 'uppercase',
                         }}
-                        onFocus={(e) => { e.currentTarget.style.borderColor = '#22D3EE'; }}
-                        onBlur={(e) => { e.currentTarget.style.borderColor = '#e0e0e0'; }}
+                        onFocus={(e) => { e.currentTarget.style.borderColor = '#06b6d4'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(6, 182, 212, 0.15)'; }}
+                        onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(6, 182, 212, 0.4)'; e.currentTarget.style.boxShadow = 'none'; }}
                       />
                     </div>
                   )}
@@ -1180,7 +1239,7 @@ function JoinPackageContent(): React.JSX.Element {
             <div style={{ display: 'flex', gap: 10 }}>
               <button
                 onClick={() => {
-                  const text = `Join my live stream!\n\nEvent: ${selectedEvent?.title || 'Live Stream'}\nInvite Code: ${groupShareCode}\nValid for ${groupPeopleCount} people\nExpires: ${groupCodeExpiry ? new Date(groupCodeExpiry).toLocaleString() : '24 hours'}\n\nJoin here: ${window.location.origin}/user/events/join-package?id=${selectedEvent?.id}`;
+                  const text = `Join my live stream!\n\nEvent: ${selectedEvent?.title || 'Live Stream'}\nInvite Code: ${groupShareCode}\nValid for ${groupPeopleCount} people\nExpires: ${groupCodeExpiry ? new Date(groupCodeExpiry).toLocaleString() : '24 hours'}\n\nJoin here: ${window.location.origin}/user/events/join-package?id=${selectedEvent?.id}&inviteToken=${encodeURIComponent(groupShareCode)}`;
                   navigator.clipboard.writeText(text);
                 }}
                 style={{ flex: 1, padding: '12px', background: 'linear-gradient(135deg, #FDE047, #F59E0B)', border: 'none', borderRadius: 10, color: '#1f2937', fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
@@ -1190,7 +1249,7 @@ function JoinPackageContent(): React.JSX.Element {
               <button
                 onClick={() => {
                   setShowGroupCodeModal(false);
-                  router.push(`/user/events/live-stream?eventId=${selectedEvent?.id}&inviteToken=${encodeURIComponent(groupShareCode)}`);
+                  router.push(`/user/events/live-stream?eventId=${selectedEvent?.id}&paid=true&inviteToken=${encodeURIComponent(groupShareCode)}`);
                 }}
                 style={{ flex: 1, padding: '12px', background: 'linear-gradient(135deg, #03969c, #027a7f)', border: 'none', borderRadius: 10, color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
               >

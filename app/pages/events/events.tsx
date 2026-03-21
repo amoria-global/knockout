@@ -35,6 +35,7 @@ const Events: React.FC = () => {
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [isMobile, setIsMobile] = useState(false);
+  const [showBanner, setShowBanner] = useState(true);
   const [userLocation, setUserLocation] = useState<LocationData | null>(null);
   const [availableDistricts, setAvailableDistricts] = useState<string[]>([]);
   const itemsPerPage = 12;
@@ -103,7 +104,18 @@ const Events: React.FC = () => {
             }
           });
         }
-        setEventsData(events);
+        // Hide completed events older than 2 days
+        const twoDaysAgo = Date.now() - 2 * 24 * 60 * 60 * 1000;
+        const filtered = events.filter(ev => {
+          if ((ev.eventStatus || '').toUpperCase() !== 'COMPLETED') return true;
+          // Use updatedAt (status change timestamp), fall back to eventDate, keep if neither exists
+          const dateStr = ev.updatedAt || ev.eventDate;
+          if (!dateStr) return true;
+          const ts = new Date(dateStr).getTime();
+          if (isNaN(ts)) return true;
+          return ts > twoDaysAgo;
+        });
+        setEventsData(filtered);
         setLiveStreamIds(trulyLiveIds);
         setApiTotalPages(response.data.totalPages);
         // Accumulate categories seen across pages and update the filter dropdown
@@ -132,296 +144,6 @@ const Events: React.FC = () => {
     fetchEvents();
   }, [fetchEvents]);
 
-  const _mockEventsData = [
-    {
-      id: 1,
-      title: 'APR BBC Vs Espoir BCC',
-      image: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?w=500&q=80',
-      category: 'Sports',
-      date: '2025-08-15',
-      time: '08:00 AM - 11:50 PM',
-      location: 'BK Arena - KN 4 Ave, Kigali',
-      status: 'UPCOMING',
-      price: '15,000 RWF',
-      attendees: 450
-    },
-    {
-      id: 2,
-      title: 'Joseph & Solange Wedding',
-      image: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80',
-      category: 'Wedding',
-      date: '2025-07-20',
-      time: '10:00 AM - 06:00 PM',
-      location: 'Kigali Serena Hotel - KN 3 Ave, Kigali',
-      status: 'ongoing',
-      price: '50,000 RWF',
-      attendees: 200
-    },
-    {
-      id: 3,
-      title: '2021 Graduation Ceremony',
-      image: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=500&q=80',
-      category: 'Academic',
-      date: '2025-09-10',
-      time: '09:00 AM - 02:00 PM',
-      location: 'University of Rwanda - KK 737 St, Kigali',
-      status: 'UPCOMING',
-      price: 'Free',
-      attendees: 1500
-    },
-    {
-      id: 4,
-      title: 'Zuba Sisterhood',
-      image: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=500&q=80',
-      category: 'Gathering',
-      date: '2025-08-05',
-      time: '03:00 PM - 07:00 PM',
-      location: 'Inema Arts Center - KG 518 St, Kigali',
-      status: 'ongoing',
-      price: '10,000 RWF',
-      attendees: 80
-    },
-    {
-      id: 5,
-      title: 'The Toxxyk Experience',
-      image: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=500&q=80',
-      category: 'Concert',
-      date: '2025-07-20',
-      time: '08:00 AM - 11:50 PM',
-      location: 'Heza Beach Resort - RBV 187 Ave, Gisenyi',
-      status: 'UPCOMING',
-      price: '25,000 RWF',
-      attendees: 500
-    },
-    {
-      id: 6,
-      title: 'New Jersey Fashion Week',
-      image: 'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=500&q=80',
-      category: 'Fashion',
-      date: '2025-10-15',
-      time: '06:00 PM - 11:00 PM',
-      location: 'Kigali Convention Centre - KN 3 Ave, Kigali',
-      status: 'UPCOMING',
-      price: '30,000 RWF',
-      attendees: 350
-    },
-    {
-      id: 7,
-      title: 'Rebecca Holy Service',
-      image: 'https://images.unsplash.com/photo-1438032005730-c779502df39b?w=500&q=80',
-      category: 'Religious',
-      date: '2025-07-25',
-      time: '10:00 AM - 01:00 PM',
-      location: 'Christian Life Assembly - KG 7 Ave, Kigali',
-      status: 'UPCOMING',
-      price: 'Free',
-      attendees: 800
-    },
-    {
-      id: 8,
-      title: 'Kwita Izina - Gorilla Naming',
-      image: 'https://images.unsplash.com/photo-1540573133985-87b6da6d54a9?w=500&q=80',
-      category: 'Cultural',
-      date: '2025-09-05',
-      time: '08:00 AM - 05:00 PM',
-      location: 'Volcanoes National Park, Musanze',
-      status: 'UPCOMING',
-      price: '100,000 RWF',
-      attendees: 250
-    },
-    {
-      id: 9,
-      title: 'Pervision Experience',
-      image: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=500&q=80',
-      category: 'Corporate',
-      date: '2025-11-20',
-      time: '02:00 PM - 06:00 PM',
-      location: 'Radisson Blu Hotel - KN 3 Ave, Kigali',
-      status: 'UPCOMING',
-      price: '40,000 RWF',
-      attendees: 150
-    },
-    {
-      id: 10,
-      title: 'Iwacu Music Festival',
-      image: 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=500&q=80',
-      category: 'Concert',
-      date: '2025-12-10',
-      time: '05:00 PM - 11:30 PM',
-      location: 'Amahoro Stadium - KN 3 Ave, Kigali',
-      status: 'UPCOMING',
-      price: '20,000 RWF',
-      attendees: 2000
-    },
-    {
-      id: 11,
-      title: 'Tech Startup Summit',
-      image: 'https://images.unsplash.com/photo-1505373877841-8d25f7d46678?w=500&q=80',
-      category: 'Conference',
-      date: '2025-08-30',
-      time: '09:00 AM - 05:00 PM',
-      location: 'Norrsken House - KG 17 Ave, Kigali',
-      status: 'ongoing',
-      price: '35,000 RWF',
-      attendees: 300
-    },
-    {
-      id: 12,
-      title: 'Rwanda Film Festival',
-      image: 'https://images.unsplash.com/photo-1478720568477-152d9b164e26?w=500&q=80',
-      category: 'Entertainment',
-      date: '2025-07-18',
-      time: '06:00 PM - 10:00 PM',
-      location: 'Century Cinema - UTC, Kigali',
-      status: 'ongoing',
-      price: '12,000 RWF',
-      attendees: 180
-    },
-    {
-      id: 13,
-      title: 'Jazz & Wine Evening',
-      image: 'https://images.unsplash.com/photo-1415201364774-f6f0bb35f28f?w=500&q=80',
-      category: 'Concert',
-      date: '2025-08-22',
-      time: '07:00 PM - 11:00 PM',
-      location: 'Heaven Restaurant - KN 6 Ave, Kigali',
-      status: 'UPCOMING',
-      price: '25,000 RWF',
-      attendees: 120
-    },
-    {
-      id: 14,
-      title: 'Startup Pitch Competition',
-      image: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=500&q=80',
-      category: 'Conference',
-      date: '2025-09-15',
-      time: '10:00 AM - 05:00 PM',
-      location: 'Impact Hub - KG 9 Ave, Kigali',
-      status: 'ongoing',
-      price: '20,000 RWF',
-      attendees: 200
-    },
-    {
-      id: 15,
-      title: 'Annual Charity Gala',
-      image: 'https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=500&q=80',
-      category: 'Corporate',
-      date: '2025-10-05',
-      time: '06:00 PM - 11:00 PM',
-      location: 'Kigali Marriott Hotel - KN 3 Ave, Kigali',
-      status: 'UPCOMING',
-      price: '75,000 RWF',
-      attendees: 300
-    },
-    {
-      id: 16,
-      title: 'Traditional Dance Festival',
-      image: 'https://images.unsplash.com/photo-1504609813442-a8924e83f76e?w=500&q=80',
-      category: 'Cultural',
-      date: '2025-08-18',
-      time: '03:00 PM - 08:00 PM',
-      location: 'Kigali Cultural Village - KG 14 Ave, Kigali',
-      status: 'ongoing',
-      price: '8,000 RWF',
-      attendees: 400
-    },
-    {
-      id: 17,
-      title: 'E-Commerce Summit 2025',
-      image: 'https://images.unsplash.com/photo-1556761175-4b46a572b786?w=500&q=80',
-      category: 'Conference',
-      date: '2025-11-08',
-      time: '08:00 AM - 06:00 PM',
-      location: 'Radisson Blu Hotel - KN 3 Ave, Kigali',
-      status: 'UPCOMING',
-      price: '45,000 RWF',
-      attendees: 250
-    },
-    {
-      id: 18,
-      title: 'Photography Exhibition',
-      image: 'https://images.unsplash.com/photo-1542038784456-1ea8e935640e?w=500&q=80',
-      category: 'Entertainment',
-      date: '2025-09-20',
-      time: '10:00 AM - 08:00 PM',
-      location: 'Ivuka Arts Center - KG 563 St, Kigali',
-      status: 'UPCOMING',
-      price: '5,000 RWF',
-      attendees: 150
-    },
-    {
-      id: 19,
-      title: 'Youth Leadership Forum',
-      image: 'https://images.unsplash.com/photo-1523580494863-6f3031224c94?w=500&q=80',
-      category: 'Conference',
-      date: '2025-10-12',
-      time: '09:00 AM - 04:00 PM',
-      location: 'Kigali Convention Centre - KN 3 Ave, Kigali',
-      status: 'UPCOMING',
-      price: 'Free',
-      attendees: 500
-    },
-    {
-      id: 20,
-      title: 'International Food Fair',
-      image: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=500&q=80',
-      category: 'Entertainment',
-      date: '2025-08-28',
-      time: '12:00 PM - 09:00 PM',
-      location: 'Kigali Heights - KN 4 Ave, Kigali',
-      status: 'UPCOMING',
-      price: '15,000 RWF',
-      attendees: 600
-    },
-    {
-      id: 21,
-      title: 'Marathon for Peace',
-      image: 'https://images.unsplash.com/photo-1532444458054-01a7dd3e9fca?w=500&q=80',
-      category: 'Sports',
-      date: '2025-09-25',
-      time: '06:00 AM - 12:00 PM',
-      location: 'Kigali City Centre - KN 3 Ave, Kigali',
-      status: 'ongoing',
-      price: '10,000 RWF',
-      attendees: 1000
-    },
-    {
-      id: 22,
-      title: 'Classical Music Night',
-      image: 'https://images.unsplash.com/photo-1465847899084-d164df4dedc6?w=500&q=80',
-      category: 'Concert',
-      date: '2025-11-15',
-      time: '07:30 PM - 10:30 PM',
-      location: 'Kigali Serena Hotel - KN 3 Ave, Kigali',
-      status: 'UPCOMING',
-      price: '30,000 RWF',
-      attendees: 180
-    },
-    {
-      id: 23,
-      title: 'Digital Marketing Bootcamp',
-      image: 'https://images.unsplash.com/photo-1432888498266-38ffec3eaf0a?w=500&q=80',
-      category: 'Conference',
-      date: '2025-10-20',
-      time: '09:00 AM - 05:00 PM',
-      location: 'Norrsken House - KG 17 Ave, Kigali',
-      status: 'ongoing',
-      price: '50,000 RWF',
-      attendees: 100
-    },
-    {
-      id: 24,
-      title: 'Comedy & Brunch Special',
-      image: 'https://images.unsplash.com/photo-1527224857830-43a7acc85260?w=500&q=80',
-      category: 'Entertainment',
-      date: '2025-08-10',
-      time: '11:00 AM - 03:00 PM',
-      location: 'The Hut - KG 623 St, Kigali',
-      status: 'UPCOMING',
-      price: '18,000 RWF',
-      attendees: 90
-    }
-  ];
 
   // An event is "live" only when it is ONGOING AND has an active live stream
   const isEventLive = (event: PublicEvent) =>
@@ -484,7 +206,7 @@ const Events: React.FC = () => {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(to bottom, #f9fafb 0%, #f3f4f6 50%, #e5e7eb 100%)'
+      background: '#f8fafc'
     }}>
       <style>{`
         .event-card {
@@ -554,6 +276,44 @@ const Events: React.FC = () => {
 
       <AmoriaKNavbar />
 
+      {/* CTA Banner Strip */}
+      {showBanner && (
+        <div style={{
+          padding: '0.65rem 1.5rem',
+          background: '#083A85',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '0.875rem'
+        }}>
+          <i className="bi bi-megaphone-fill" style={{ fontSize: '1rem', color: '#ffffff' }} />
+          <span style={{ fontSize: '0.9rem', color: 'rgba(255, 255, 255, 0.8)' }}>
+            The Smart Way to Capture Life
+          </span>
+          <span style={{ width: '1px', height: '18px', background: 'rgba(255, 255, 255, 0.25)' }} />
+          <span style={{ fontSize: '0.9rem', fontWeight: '700', color: '#ffffff' }}>
+            Discover amazing events near you!
+          </span>
+          <button
+            onClick={() => setShowBanner(false)}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'rgba(255, 255, 255, 0.5)',
+              cursor: 'pointer',
+              fontSize: '1.1rem',
+              padding: '0 0.25rem',
+              marginLeft: '0.5rem',
+              transition: 'color 0.2s ease'
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = 'rgba(255, 255, 255, 0.9)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = 'rgba(255, 255, 255, 0.5)'; }}
+          >
+            <i className="bi bi-x-lg" style={{ fontSize: '0.8rem' }} />
+          </button>
+        </div>
+      )}
+
       {/* Hero Section with Search and Filters */}
       <div style={{
         position: 'relative',
@@ -569,7 +329,7 @@ const Events: React.FC = () => {
         {/* Background Image with Blur Overlay */}
         <div style={{ position: 'absolute', inset: 0 }}>
           <img
-            src="https://i.pinimg.com/736x/1b/97/8d/1b978dbaab62a500d6915617c0cc43bb.jpg"
+            src="https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=1200&q=80"
             alt="Events Background"
             style={{
               width: '100%',
@@ -581,8 +341,8 @@ const Events: React.FC = () => {
           <div style={{
             position: 'absolute',
             inset: 0,
-            backgroundColor: 'linear-gradient(135deg, #ec4899 0%, #f97316 50%, #8b5cf6 100%)',
-            backdropFilter: 'blur(20px)'
+            background: 'linear-gradient(135deg, #083A85 0%, #0a4da3 50%, #083A85 100%)',
+            opacity: 0.78
           }}></div>
         </div>
 
@@ -634,7 +394,7 @@ const Events: React.FC = () => {
                   border: 'none',
                   fontSize: '1rem',
                   outline: 'none',
-                  backgroundColor: '#d4d4d4',
+                  backgroundColor: '#ffffff',
                   color: '#000000'
                 }}
               />
@@ -647,7 +407,7 @@ const Events: React.FC = () => {
                   transform: 'translateY(-50%)',
                   background: 'none',
                   border: 'none',
-                  color: '#9ca3af',
+                  color: '#083A85',
                   cursor: 'pointer',
                   fontSize: '1.25rem',
                   transition: 'all 0.3s ease'
@@ -774,7 +534,6 @@ const Events: React.FC = () => {
                 <option value="all">{t('allStatuses')}</option>
                 <option value="PUBLISHED">{t('status.upcoming')}</option>
                 <option value="ONGOING">{t('liveNow')}</option>
-                <option value="COMPLETED">Past Events</option>
               </select>
             </div>
           </div>
@@ -807,14 +566,14 @@ const Events: React.FC = () => {
             right: '0',
             top: '50%',
             height: '3px',
-            background: 'linear-gradient(90deg, #ec4899 0%, #f97316 50%, #8b5cf6 100%)',
+            background: 'linear-gradient(90deg, #083A85 0%, #0a4da3 50%, #083A85 100%)',
             transform: 'translateY(-50%)',
             zIndex: 0
           }}></div>
 
           {/* Hot Live Trends Badge */}
           <div style={{
-            background: 'linear-gradient(135deg, #ec4899 0%, #f97316 50%, #8b5cf6 100%)',
+            background: 'linear-gradient(135deg, #083A85 0%, #0a4da3 100%)',
             padding: isMobile ? 'clamp(0.5rem, 2vw, 0.75rem) clamp(1rem, 3vw, 1.5rem)' : '0.75rem 1.5rem',
             borderRadius: '50px',
             display: 'flex',
@@ -824,26 +583,36 @@ const Events: React.FC = () => {
             fontSize: '1.1rem',
             color: 'white',
             whiteSpace: 'nowrap',
-            boxShadow: '0 4px 15px rgba(236, 72, 153, 0.4)',
+            boxShadow: '0 4px 15px rgba(8, 58, 133, 0.4)',
             flexShrink: 0,
-            marginRight: isMobile ? 'clamp(0.75rem, 2vw, 1.5rem)' : '1.5rem',
             position: 'relative',
             zIndex: 2
           }}>
             {t('hotLiveTrends')}
           </div>
 
-          {/* Trending Events Circles */}
+          {/* Connector Line — spans from badge to last circle */}
+          <div style={{
+            width: isMobile ? '1rem' : '1.5rem',
+            height: '3px',
+            background: 'linear-gradient(90deg, #ec4899, #f97316)',
+            flexShrink: 0,
+            zIndex: 0
+          }}></div>
+
+          {/* Trending Events Circles — background line auto-spans the circles */}
           <div style={{
             display: 'flex',
             alignItems: 'center',
-            justifyContent: isMobile ? 'flex-start' : 'space-between',
-            flex: 1,
             position: 'relative',
             zIndex: 1,
-            gap: isMobile ? 'clamp(0.5rem, 2vw, 1rem)' : '0.5rem',
-            paddingRight: isMobile ? 'clamp(0.75rem, 2vw, 1.5rem)' : '1.5rem',
-            minWidth: isMobile ? 'max-content' : 'auto'
+            gap: isMobile ? 'clamp(0.5rem, 2vw, 0.75rem)' : '0.75rem',
+            minWidth: isMobile ? 'max-content' : 'auto',
+            backgroundImage: 'linear-gradient(90deg, #f97316 0%, #8b5cf6 100%)',
+            backgroundSize: '100% 3px',
+            backgroundRepeat: 'no-repeat',
+            backgroundPosition: 'center',
+            paddingRight: '4px'
           }}>
             {trendingEvents.map((event) => (
               <div
@@ -868,8 +637,8 @@ const Events: React.FC = () => {
                   height: isMobile ? 'clamp(50px, 10vw, 70px)' : '70px',
                   borderRadius: '50%',
                   overflow: 'hidden',
-                  border: '3px solid #cf5704',
-                  boxShadow: '0 4px 10px rgba(249, 115, 22, 0.4)',
+                  border: '3px solid #083A85',
+                  boxShadow: '0 4px 10px rgba(8, 58, 133, 0.3)',
                   backgroundColor: 'white'
                 }}>
                   <img

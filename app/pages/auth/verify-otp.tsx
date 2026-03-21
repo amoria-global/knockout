@@ -12,11 +12,10 @@ function VerifyOtpContent(): React.JSX.Element {
   const searchParams = useSearchParams();
   const { success: showSuccess, error: showError, warning: showWarning, isOnline } = useToast();
 
-  // Get query params and validate they're not "undefined" strings
   const applicantIdFromQuery = searchParams.get('applicantId');
   const emailFromQuery = searchParams.get('email');
-  const [applicantId, setApplicantId] = useState(applicantIdFromQuery && applicantIdFromQuery !== 'undefined' ? applicantIdFromQuery : '');
-  const [email, setEmail] = useState(emailFromQuery && emailFromQuery !== 'undefined' ? emailFromQuery : '');
+  const [applicantId, setApplicantId] = useState(applicantIdFromQuery || '');
+  const [email, setEmail] = useState(emailFromQuery || '');
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -27,12 +26,8 @@ function VerifyOtpContent(): React.JSX.Element {
 
   // Update state when query params change
   useEffect(() => {
-    if (applicantIdFromQuery && applicantIdFromQuery !== 'undefined') {
-      setApplicantId(applicantIdFromQuery);
-    }
-    if (emailFromQuery && emailFromQuery !== 'undefined') {
-      setEmail(emailFromQuery);
-    }
+    if (applicantIdFromQuery) setApplicantId(applicantIdFromQuery);
+    if (emailFromQuery) setEmail(emailFromQuery);
   }, [applicantIdFromQuery, emailFromQuery]);
 
   // Show error if no applicantId
@@ -115,19 +110,26 @@ function VerifyOtpContent(): React.JSX.Element {
 
         if (response.success) {
           setSuccess(true);
-          showSuccess('Account verified successfully!');
-          // Redirect to dashboard photographer profile after 2 seconds
-          setTimeout(() => {
-            const dashboardBaseUrl = process.env.NEXT_PUBLIC_DASHBOARD_URL || '';
-            const token = getAuthToken();
-            const refreshTkn = getRefreshToken();
-            const params = new URLSearchParams();
-            if (token) params.set('token', token);
-            if (refreshTkn) params.set('refreshToken', refreshTkn);
-            const query = params.toString();
-            const dashboardProfileUrl = `${dashboardBaseUrl}/user/photographer/profile${query ? `?${query}` : ''}`;
-            window.location.href = dashboardProfileUrl;
-          }, 2000);
+
+          // If verify-otp returned a token, user is fully authenticated — go to dashboard
+          const token = response.data?.token || getAuthToken();
+          if (token) {
+            showSuccess('Account verified! Redirecting to dashboard...');
+            setTimeout(() => {
+              const dashboardBaseUrl = process.env.NEXT_PUBLIC_DASHBOARD_URL || '';
+              const refreshTkn = getRefreshToken();
+              const params = new URLSearchParams();
+              params.set('token', token);
+              if (refreshTkn) params.set('refreshToken', refreshTkn);
+              window.location.href = `${dashboardBaseUrl}/?${params.toString()}`;
+            }, 2000);
+          } else {
+            // No token — redirect to login so user can authenticate
+            showSuccess('Account verified! Please log in to continue.');
+            setTimeout(() => {
+              window.location.href = '/user/auth/login';
+            }, 2000);
+          }
         } else {
           const errorMessage = response.error || 'Invalid OTP. Please try again.';
           setError(errorMessage);
@@ -154,13 +156,7 @@ function VerifyOtpContent(): React.JSX.Element {
     }
 
     try {
-      // Debug: Log the request
-      console.log('[ResendOTP] Sending request with customerId:', applicantId);
-
       const response = await resendOtp({ customerId: applicantId });
-
-      // Debug: Log full response
-      console.log('[ResendOTP] Full API response:', JSON.stringify(response, null, 2));
 
       if (response.success) {
         showSuccess('Verification code sent successfully!');
