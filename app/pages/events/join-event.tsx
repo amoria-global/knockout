@@ -103,10 +103,6 @@ export default function JoinEvent() {
   const [detectedEvent, setDetectedEvent] = useState<{ id: string; title: string; category: string; fee: number; location: string; image: string; status: string } | null>(null);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string | null>(null);
   const [paymentPhone, setPaymentPhone] = useState('');
-  const [cardNumber, setCardNumber] = useState('');
-  const [cardExpiry, setCardExpiry] = useState('');
-  const [cardCvv, setCardCvv] = useState('');
-  const [cardHolderName, setCardHolderName] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
 
@@ -117,10 +113,6 @@ export default function JoinEvent() {
 
   // Input validation error states
   const [phoneError, setPhoneError] = useState('');
-  const [cardNumberError, setCardNumberError] = useState('');
-  const [cardExpiryError, setCardExpiryError] = useState('');
-  const [cardCvvError, setCardCvvError] = useState('');
-  const [cardHolderNameError, setCardHolderNameError] = useState('');
 
   // Input validation handlers
   const handlePhoneChange = (value: string) => {
@@ -132,50 +124,6 @@ export default function JoinEvent() {
       setPhoneError('');
     }
     setPaymentPhone(digitsOnly);
-  };
-
-  const handleCardNumberChange = (value: string) => {
-    // Only allow digits and spaces for formatting
-    const digitsOnly = value.replace(/[^0-9\s]/g, '');
-    if (value !== digitsOnly) {
-      setCardNumberError('Only numbers allowed');
-    } else {
-      setCardNumberError('');
-    }
-    setCardNumber(digitsOnly);
-  };
-
-  const handleCardExpiryChange = (value: string) => {
-    // Only allow digits and forward slash
-    const validChars = value.replace(/[^0-9/]/g, '');
-    if (value !== validChars) {
-      setCardExpiryError('Format: MM/YY');
-    } else {
-      setCardExpiryError('');
-    }
-    setCardExpiry(validChars);
-  };
-
-  const handleCardCvvChange = (value: string) => {
-    // Only allow digits
-    const digitsOnly = value.replace(/[^0-9]/g, '');
-    if (value !== digitsOnly) {
-      setCardCvvError('Only numbers allowed');
-    } else {
-      setCardCvvError('');
-    }
-    setCardCvv(digitsOnly);
-  };
-
-  const handleCardHolderNameChange = (value: string) => {
-    // Only allow letters and spaces
-    const lettersOnly = value.replace(/[^a-zA-Z\s]/g, '');
-    if (value !== lettersOnly) {
-      setCardHolderNameError('Only letters allowed');
-    } else {
-      setCardHolderNameError('');
-    }
-    setCardHolderName(lettersOnly);
   };
 
   // Payment methods
@@ -304,7 +252,7 @@ export default function JoinEvent() {
           setDetectedEvent(eventData);
         } else if (hasPackageFromJoinPackage) {
           // Free event from join-package — skip payment, go directly to live stream
-          router.push(`/user/events/live-stream?eventId=${eventId}`);
+          router.push(`/user/events/live-stream?eventId=${eventId}&paid=true`);
         }
         // For upcoming, free, or non-paid category events without package param - show original content
       }
@@ -327,7 +275,7 @@ export default function JoinEvent() {
       case 'airtel':
         return paymentPhone.length >= 10;
       case 'card':
-        return cardNumber.length >= 16 && cardExpiry.length >= 4 && cardCvv.length >= 3 && cardHolderName.trim() !== '';
+        return true;
       default:
         return false;
     }
@@ -338,10 +286,6 @@ export default function JoinEvent() {
     setDetectedEvent(null);
     setSelectedPaymentMethod(null);
     setPaymentPhone('');
-    setCardNumber('');
-    setCardExpiry('');
-    setCardCvv('');
-    setCardHolderName('');
     setIsProcessing(false);
     setPaymentSuccess(false);
     setPaymentError('');
@@ -376,7 +320,7 @@ export default function JoinEvent() {
             const paymentId = (response.data as { data?: { id?: string } } | undefined)?.data?.id || '';
             router.push(`/user/event/${eid}?inviteToken=${encodeURIComponent(inviteToken)}${paymentId ? `&paymentId=${encodeURIComponent(paymentId)}` : ''}`);
           } else {
-            router.push(`/user/events/live-stream?eventId=${eid}`);
+            router.push(`/user/events/live-stream?eventId=${eid}&paid=true`);
           }
         }, 2000);
       } else if (response.statusCode === 402) {
@@ -835,115 +779,11 @@ export default function JoinEvent() {
                     </div>
                   )}
 
-                  {/* Payment Details - Card */}
+                  {/* Card payments are handled via XentriPay redirect — no card fields needed */}
                   {selectedPaymentMethod === 'card' && (
-                    <div style={{ marginBottom: '14px', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr 1fr', gap: '12px' }}>
-                      <div>
-                        <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#fff', marginBottom: '6px' }}>
-                          <i className="bi bi-person" style={{ marginRight: '6px', color: '#10b981' }}></i>
-                          Cardholder Name
-                        </label>
-                        <input
-                          type="text"
-                          value={cardHolderName}
-                          onChange={(e) => handleCardHolderNameChange(e.target.value)}
-                          placeholder="Enter cardholder name"
-                          style={{
-                            width: '100%',
-                            padding: '12px 14px',
-                            fontSize: '14px',
-                            backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                            border: `2px solid ${cardHolderNameError ? '#ef4444' : 'rgba(255, 255, 255, 0.1)'}`,
-                            borderRadius: '10px',
-                            color: '#fff',
-                            outline: 'none',
-                            boxSizing: 'border-box',
-                          }}
-                        />
-                        {cardHolderNameError && (
-                          <p style={{ color: '#ef4444', fontSize: '11px', margin: '4px 0 0 0' }}>{cardHolderNameError}</p>
-                        )}
-                      </div>
-                      <div>
-                        <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#fff', marginBottom: '6px' }}>
-                          <i className="bi bi-credit-card" style={{ marginRight: '6px', color: '#10b981' }}></i>
-                          Card Number
-                        </label>
-                        <input
-                          type="text"
-                          value={cardNumber}
-                          onChange={(e) => handleCardNumberChange(e.target.value)}
-                          placeholder="1234 5678 9012 3456"
-                          maxLength={19}
-                          style={{
-                            width: '100%',
-                            padding: '12px 14px',
-                            fontSize: '14px',
-                            backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                            border: `2px solid ${cardNumberError ? '#ef4444' : 'rgba(255, 255, 255, 0.1)'}`,
-                            borderRadius: '10px',
-                            color: '#fff',
-                            outline: 'none',
-                            boxSizing: 'border-box',
-                          }}
-                        />
-                        {cardNumberError && (
-                          <p style={{ color: '#ef4444', fontSize: '11px', margin: '4px 0 0 0' }}>{cardNumberError}</p>
-                        )}
-                      </div>
-                      <div>
-                        <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#fff', marginBottom: '6px' }}>
-                          Expiry Date
-                        </label>
-                        <input
-                          type="text"
-                          value={cardExpiry}
-                          onChange={(e) => handleCardExpiryChange(e.target.value)}
-                          placeholder="MM/YY"
-                          maxLength={5}
-                          style={{
-                            width: '100%',
-                            padding: '12px 14px',
-                            fontSize: '14px',
-                            backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                            border: `2px solid ${cardExpiryError ? '#ef4444' : 'rgba(255, 255, 255, 0.1)'}`,
-                            borderRadius: '10px',
-                            color: '#fff',
-                            outline: 'none',
-                            boxSizing: 'border-box',
-                          }}
-                        />
-                        {cardExpiryError && (
-                          <p style={{ color: '#ef4444', fontSize: '11px', margin: '4px 0 0 0' }}>{cardExpiryError}</p>
-                        )}
-                      </div>
-                      <div>
-                        <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#fff', marginBottom: '6px' }}>
-                          CVV
-                        </label>
-                        <input
-                          type="text"
-                          value={cardCvv}
-                          onChange={(e) => handleCardCvvChange(e.target.value)}
-                          placeholder="123"
-                          maxLength={4}
-                          style={{
-                            width: '100%',
-                            padding: '12px 14px',
-                            fontSize: '14px',
-                            backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                            border: `2px solid ${cardCvvError ? '#ef4444' : 'rgba(255, 255, 255, 0.1)'}`,
-                            borderRadius: '10px',
-                            color: '#fff',
-                            outline: 'none',
-                            boxSizing: 'border-box',
-                          }}
-                        />
-                        {cardCvvError && (
-                          <p style={{ color: '#ef4444', fontSize: '11px', margin: '4px 0 0 0' }}>{cardCvvError}</p>
-                        )}
-                      </div>
-                    </div>
+                    <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)', marginBottom: '14px' }}>
+                      You will be redirected to a secure payment page to enter your card details.
+                    </p>
                   )}
 
                   {/* Pay Button */}

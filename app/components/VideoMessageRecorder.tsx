@@ -115,7 +115,6 @@ const VideoMessageRecorder: React.FC<VideoMessageRecorderProps> = ({ onClose, on
         // Create blob from recorded chunks
         const blob = new Blob(chunksRef.current, { type: 'video/webm' });
         setRecordedBlob(blob);
-        console.log('Recording saved, size:', blob.size);
       };
 
       mediaRecorder.start();
@@ -216,8 +215,6 @@ const VideoMessageRecorder: React.FC<VideoMessageRecorderProps> = ({ onClose, on
       videoRef.current.src = url;
       videoRef.current.muted = false;
       videoRef.current.play();
-
-      console.log('Preview playing, size:', recordedBlob.size);
     }
   }, [recordedBlob]);
 

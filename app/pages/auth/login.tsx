@@ -264,7 +264,8 @@ export default function LoginPage(): React.JSX.Element {
       if (returnToUrl.pathname.includes('book-now') && photographerId && packageId) {
         // Redirect directly to the dashboard events page with booking context
         const token = getAuthToken();
-        const userType = (loggedInUserType || 'Client').replace(/([A-Z])/g, (m, l, i) => (i > 0 ? '-' : '') + l.toLowerCase());
+        const rawType = loggedInUserType?.toLowerCase() || 'client';
+        const userType = rawType === 'coordinator' ? 'event-coordinator' : rawType;
         const dashUrl = process.env.NEXT_PUBLIC_DASHBOARD_URL || 'https://dashboard.connekyt.com';
         const dest = new URL(`${dashUrl}/user/${userType}/events`);
         dest.searchParams.set('photographerId', photographerId);
@@ -301,24 +302,14 @@ export default function LoginPage(): React.JSX.Element {
       try {
         const response = await login({ email: email.trim().toLowerCase(), password });
 
-        // Debug: Log full response in development
-        console.log('[Login] Full API response:', JSON.stringify(response, null, 2));
-
         // Get data from response
         const data = response.data;
 
-        // Get customerId from response data (may use different field names)
-        const customerId = data?.customerId ||
-          data?.customer_id ||
-          data?.applicantId ||
-          data?.applicant_id;
+        const customerId = data?.customerId;
 
         // Check if OTP verification is needed
         // Backend returns: { action: 0, customerId: "...", otpVerified: false, message: "OTP not verified..." }
-        // Handle both boolean false and string "false"
-        const isOtpNotVerified = data?.otpVerified === false || data?.otpVerified === 'false';
-
-        console.log('[Login] OTP check:', { isOtpNotVerified, otpVerified: data?.otpVerified, customerId, data });
+        const isOtpNotVerified = data?.otpVerified === false;
 
         if (isOtpNotVerified && customerId) {
           // Backend has already sent a new OTP, redirect to verification page
@@ -326,7 +317,6 @@ export default function LoginPage(): React.JSX.Element {
           showWarning(message);
           setLoading(false); // Stop loading before redirect
           const redirectUrl = `/user/auth/verify-otp?applicantId=${encodeURIComponent(String(customerId))}&email=${encodeURIComponent(email)}`;
-          console.log('[Login] Redirecting to:', redirectUrl);
           router.push(redirectUrl);
           return;
         }
@@ -343,7 +333,7 @@ export default function LoginPage(): React.JSX.Element {
         if (response.success && data) {
           // Successful login - store user in AuthContext and show modal
           // Get customerType from user object or root-level fields
-          const customerType = data.user?.userType || data.userType || data.customerType || '';
+          const customerType = data.user?.userType || data.customerType || '';
 
           // Viewers can only log in through the built-in modals on view-event and live-stream pages
           if (customerType === 'Viewer') {

@@ -68,7 +68,6 @@ export default function ForgotPasswordPage(): React.JSX.Element {
       const code = verificationCode.join('');
       // Navigate to reset password page with email and code (set-new-password endpoint expects 'code')
       router.push(`/user/auth/resetpswd?email=${encodeURIComponent(email)}&code=${code}`);
-      console.log('Verification code entered:', code);
     }
   };
 

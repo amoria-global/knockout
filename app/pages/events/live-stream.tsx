@@ -6,7 +6,7 @@ import dynamic from 'next/dynamic';
 import Hls from 'hls.js';
 import { getCurrencies, type Currency as APICurrency } from '@/lib/APIs/public';
 import { recordTip, recordStreamingPayment } from '@/lib/APIs/payments/route';
-import XentriPayModal from '../../components/XentriPayModal';
+import { initiateXentriPayStreaming, pollXentriPayStatus, type XentriPayStatusResponse } from '@/lib/APIs/payments/xentripay';
 import { getPublicEventById } from '@/lib/APIs/public/get-events/route';
 import { useAuth } from '../../providers/AuthProvider';
 import { login } from '@/lib/APIs/auth/login/route';
@@ -15,8 +15,7 @@ import { verifyOtp } from '@/lib/APIs/auth/verify-otp/route';
 import { googleAuth } from '@/lib/APIs/auth/google/route';
 import { useGoogleLogin } from '@react-oauth/google';
 import { getStreamChats, type StreamChatMessage } from '@/lib/APIs/streams/chat/route';
-import { sendStreamChat, sendStreamVideoChat, getStreamViewerCount, getPublicViewerCount, requestStreamAccess, purchaseStreamAccess } from '@/lib/APIs/streams/route';
-import { pollXentriPayStatus } from '@/lib/APIs/payments/xentripay';
+import { sendStreamChat, sendStreamVideoChat, getStreamViewerCount, getPublicViewerCount, requestStreamAccess } from '@/lib/APIs/streams/route';
 import { contactUs } from '@/lib/APIs/public/contact-us/route';
 import { apiClient } from '@/lib/api/client';
 import { API_ENDPOINTS } from '@/lib/api/config';
@@ -92,9 +91,9 @@ function GoogleAuthButton({ onSuccess, onError, loading, label }: {
 function getInitialEventId(): string {
   if (typeof window !== 'undefined') {
     const params = new URLSearchParams(window.location.search);
-    return params.get('eventId') || params.get('id') || 'event-1';
+    return params.get('eventId') || params.get('id') || '';
   }
-  return 'event-1';
+  return '';
 }
 
 // Main App Component
@@ -139,14 +138,6 @@ const App = () => {
   const [inviteTokenError, setInviteTokenError] = useState('');
   const [inviteTokenLoading, setInviteTokenLoading] = useState(false);
   const [viewerUsername, setViewerUsername] = useState('');
-  // Entry fee payment state
-  const [entryFeePaymentMethod, setEntryFeePaymentMethod] = useState<'mtn' | 'airtel' | 'card' | null>(null);
-  const [entryFeePhone, setEntryFeePhone] = useState('');
-  const [entryFeeLoading, setEntryFeeLoading] = useState(false);
-  const [entryFeeError, setEntryFeeError] = useState('');
-  const [entryFeePaymentPending, setEntryFeePaymentPending] = useState(false);
-  const [entryFeePaymentMessage, setEntryFeePaymentMessage] = useState('');
-  const entryFeePollingCleanup = useRef<(() => void) | null>(null);
 
   // ── Viewer auth modal state ──
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -196,13 +187,13 @@ const App = () => {
       if (res.success && res.data?.token) {
         const d = res.data;
         await authLogin({
-          id: d.id || d.customerId || d.customer_id || '',
+          id: d.id || d.customerId || '',
           firstName: d.firstName || '',
           lastName: d.lastName || '',
           email: d.email || loginEmail,
           phone: d.phone || '',
-          customerId: d.customerId || d.customer_id || d.id || '',
-          customerType: d.customerType || d.userType || 'Viewer',
+          customerId: d.customerId || '',
+          customerType: d.customerType || 'Viewer',
         }, d.token!);
         setShowAuthModal(false);
       } else {
@@ -232,7 +223,7 @@ const App = () => {
         customerType: 'Viewer',
       });
       if (res.success && res.data) {
-        const customerId = res.data.customerId || res.data.customer_id || res.data.applicantId || res.data.applicant_id || '';
+        const customerId = res.data.customerId || '';
         setOtpCustomerId(customerId);
         setAuthStep('otp');
         setAuthError('');
@@ -257,13 +248,13 @@ const App = () => {
         if (loginRes.success && loginRes.data?.token) {
           const d = loginRes.data;
           await authLogin({
-            id: d.id || d.customerId || d.customer_id || '',
+            id: d.id || d.customerId || '',
             firstName: d.firstName || signupFirstName,
             lastName: d.lastName || signupLastName,
             email: d.email || signupEmail,
             phone: d.phone || signupPhone,
-            customerId: d.customerId || d.customer_id || d.id || '',
-            customerType: d.customerType || d.userType || 'Viewer',
+            customerId: d.customerId || '',
+            customerType: d.customerType || 'Viewer',
           }, d.token!);
           setShowAuthModal(false);
         } else {
@@ -336,7 +327,7 @@ const App = () => {
             id: eventId,
             title: (ev.title as string) || prev[0].title,
             photographer: (ev.photographerName as string) || prev[0].photographer,
-            photographerId: (ev.photographerId as string) || (ev.organizerId as string) || prev[0].photographerId,
+            photographerId: (ev.photographerId as string) || prev[0].photographerId,
             photographerAvatar: ((ev.photographer as Record<string, unknown>)?.profilePicture as string) || undefined,
             category: (ev.eventType as string) || (ev.category as string) || prev[0].category,
             hlsManifestUrl: (ev.hlsManifestUrl as string) || undefined,
@@ -356,45 +347,62 @@ const App = () => {
     loadEventDetails();
   }, [searchParams]);
 
-  // Cleanup payment polling on unmount
-  useEffect(() => {
-    return () => { if (entryFeePollingCleanup.current) entryFeePollingCleanup.current(); };
-  }, []);
 
   // Stream access gate — determine flow based on streamType
+  // entry_fee: backend already guards hlsManifestUrl (nulls it for unpaid viewers)
+  // invite_token: backend fix pending — frontend must validate token
+  // paid=true param: viewer came from join-package/join-event after completing flow
   useEffect(() => {
     if (!mainEvent?.id || mainEvent.title === 'Loading...') return;
 
     const type = getStreamType(mainEvent);
+    const paid = searchParams.get('paid') === 'true';
+    const urlToken = searchParams.get('inviteToken');
+
+    // Fast path: viewer came from join-package/join-event after payment or token validation
+    if (paid) {
+      setStreamAccessGranted(true);
+      return;
+    }
 
     if (type === 'entry_fee') {
-      // Entry fee stream — check URL for payment callback
-      const paid = searchParams.get('paid');
-      if (paid === 'true') {
+      // Backend guards hlsManifestUrl for entry_fee streams:
+      // authenticated + paid → hlsManifestUrl is populated
+      // unauthenticated or unpaid → hlsManifestUrl is null
+      if (isAuthenticated && mainEvent.hlsManifestUrl) {
         setStreamAccessGranted(true);
       }
-      // Otherwise, payment form overlay will show
+      // Otherwise, "Purchase Access" overlay will show
     } else if (type === 'invite_token') {
-      // Check if invite token was already provided via URL (from join-event page)
-      const urlToken = searchParams.get('inviteToken');
-      if (urlToken) {
-        // Auto-submit the token from URL
-        setInviteTokenInput(urlToken);
+      // Check URL token first, then localStorage for previously validated token
+      const savedToken = localStorage.getItem(`streamToken_${mainEvent.id}`);
+      const token = urlToken || savedToken;
+
+      if (token) {
+        setInviteTokenInput(token);
         (async () => {
           const username = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email : 'Viewer';
           setInviteTokenLoading(true);
           try {
-            const res = await requestStreamAccess(mainEvent.id!, urlToken, username || 'Viewer');
+            const res = await requestStreamAccess(mainEvent.id!, token, username || 'Viewer');
             if (res.success && res.data?.hlsManifestUrl) {
+              // Persist token so viewer doesn't need to re-enter on return
+              localStorage.setItem(`streamToken_${mainEvent.id}`, token);
               setEvents(prev => [{
                 ...prev[0],
                 hlsManifestUrl: res.data!.hlsManifestUrl,
               }, ...prev.slice(1)]);
               setStreamAccessGranted(true);
             } else {
-              // Token from URL was invalid — fall back to manual input
-              setInviteTokenError(res.error || 'Invalid invite token. Please try again.');
-              setShowInviteTokenModal(true);
+              // Token invalid — clear saved token and prompt
+              localStorage.removeItem(`streamToken_${mainEvent.id}`);
+              if (savedToken && !urlToken) {
+                // Saved token expired — don't show error, just prompt fresh
+                setShowInviteTokenModal(true);
+              } else {
+                setInviteTokenError(res.error || 'Invalid invite token. Please try again.');
+                setShowInviteTokenModal(true);
+              }
             }
           } catch {
             setShowInviteTokenModal(true);
@@ -403,7 +411,7 @@ const App = () => {
           }
         })();
       } else {
-        // No token in URL — show token input
+        // No token anywhere — show token input overlay
         setShowInviteTokenModal(true);
       }
     } else {
@@ -411,7 +419,7 @@ const App = () => {
       setStreamAccessGranted(true);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mainEvent?.id, mainEvent?.streamType, mainEvent?.streamFee, mainEvent?.hasInviteCode, mainEvent?.title]);
+  }, [mainEvent?.id, mainEvent?.streamType, mainEvent?.streamFee, mainEvent?.hasInviteCode, mainEvent?.title, mainEvent?.hlsManifestUrl, isAuthenticated]);
 
   // Handle invite token submission (username auto-filled from auth profile)
   const handleInviteTokenSubmit = async () => {
@@ -422,6 +430,8 @@ const App = () => {
     try {
       const res = await requestStreamAccess(mainEvent.id, inviteTokenInput.trim(), username || 'Viewer');
       if (res.success && res.data?.hlsManifestUrl) {
+        // Persist so viewer doesn't need to re-enter on return
+        localStorage.setItem(`streamToken_${mainEvent.id}`, inviteTokenInput.trim());
         setEvents(prev => [{
           ...prev[0],
           hlsManifestUrl: res.data!.hlsManifestUrl,
@@ -435,79 +445,6 @@ const App = () => {
       setInviteTokenError('Unable to validate token. Please check your connection and try again.');
     } finally {
       setInviteTokenLoading(false);
-    }
-  };
-
-  // Handle entry fee payment submission (username auto-filled from auth profile)
-  const handleEntryFeeSubmit = async () => {
-    if (!entryFeePaymentMethod || !mainEvent?.id) return;
-    if (entryFeePaymentMethod !== 'card' && !entryFeePhone.trim()) return;
-    const username = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email : viewerUsername.trim();
-    setEntryFeeLoading(true);
-    setEntryFeeError('');
-    try {
-      const res = await purchaseStreamAccess(mainEvent.id, {
-        paymentMethod: entryFeePaymentMethod,
-        phoneNumber: entryFeePhone.trim(),
-        viewerUsername: username || 'Viewer',
-        currencyId: mainEvent.streamFeeCurrencyAbbreviation || undefined,
-      });
-
-      if (res.success && res.data) {
-        const data = res.data as Record<string, unknown>;
-        const refid = (data.refid as string) || '';
-        const paymentUrl = ((data.paymentUrl as string) || '').trim();
-        const hlsUrl = (data.hlsManifestUrl as string) || '';
-        const statusMessage = (data.message as string) || '';
-        const status = (data.status as string) || '';
-
-        if (hlsUrl) {
-          // Direct access granted (unlikely for entry fee, but handle it)
-          setEvents(prev => [{
-            ...prev[0],
-            hlsManifestUrl: hlsUrl,
-          }, ...prev.slice(1)]);
-          setStreamAccessGranted(true);
-        } else if (paymentUrl && paymentUrl.length > 1) {
-          // Card payment — redirect to payment URL
-          window.location.href = paymentUrl;
-        } else if (status === 'PENDING' && refid) {
-          // Mobile money push — show message and poll for confirmation
-          setEntryFeePaymentPending(true);
-          setEntryFeePaymentMessage(statusMessage || 'Check your phone to confirm the payment.');
-          setEntryFeeLoading(false);
-
-          // Start polling payment status
-          if (entryFeePollingCleanup.current) entryFeePollingCleanup.current();
-          entryFeePollingCleanup.current = pollXentriPayStatus(
-            refid,
-            {
-              onSuccess: () => {
-                setEntryFeePaymentPending(false);
-                setStreamAccessGranted(true);
-              },
-              onFailure: () => {
-                setEntryFeePaymentPending(false);
-                setEntryFeeError('Payment was declined. Please try again.');
-              },
-              onError: (err) => {
-                setEntryFeePaymentPending(false);
-                setEntryFeeError(err || 'Could not verify payment. Please try again.');
-              },
-            },
-            5000,
-            60,
-            true // usePublic — no auth required
-          );
-          return; // don't hit finally block's setEntryFeeLoading
-        }
-      } else {
-        setEntryFeeError(res.error || 'Payment failed. Please try again.');
-      }
-    } catch {
-      setEntryFeeError('Unable to process payment. Please check your connection and try again.');
-    } finally {
-      setEntryFeeLoading(false);
     }
   };
 
@@ -711,9 +648,7 @@ const App = () => {
   useEffect(() => {
     const hlsUrl = mainEvent?.hlsManifestUrl;
     const eventId = mainEvent?.id;
-    console.log(`[HLS Effect] Triggered — eventId=${eventId}, hlsUrl=${hlsUrl ? hlsUrl.substring(0, 60) + '...' : 'NULL'}`);
     if (!hlsUrl || !eventId) {
-      console.log('[HLS Effect] Skipping — no hlsUrl or eventId');
       return;
     }
 
@@ -726,15 +661,12 @@ const App = () => {
       if (!videoEl) {
         // Video element not mounted yet — retry up to 10 times (2s total)
         if (attempt < 10) {
-          console.log(`[HLS Init] Video element not ready, retry ${attempt + 1}/10`);
           retryTimer = setTimeout(() => initHls(attempt + 1), 200);
         } else {
-          console.warn(`[HLS Init] Video element not found after 10 retries for ${eventId}`);
         }
         return;
       }
 
-      console.log(`[HLS Init] Attaching HLS for ${eventId}: ${hlsUrl}`);
 
       // Destroy existing HLS instance for this event
       const existing = hlsInstancesRef.current[eventId];
@@ -754,7 +686,7 @@ const App = () => {
         hls.attachMedia(videoEl);
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
           if (cancelled) return;
-          console.log(`[HLS Init] Manifest parsed, stream ready for ${eventId}`);
+
           // Set volume from saved preference
           const savedVol = volumeRef.current[eventId] ?? getSavedVolume();
           videoEl.volume = savedVol / 100;
@@ -763,7 +695,6 @@ const App = () => {
           videoEl.muted = true;
           videoEl.play().then(() => {
             if (cancelled) return;
-            console.log(`[HLS Init] Autoplay succeeded (muted) for ${eventId}`);
             setPlaybackState(prev => ({
               ...prev,
               [eventId]: {
@@ -773,7 +704,7 @@ const App = () => {
                 volume: savedVol,
               }
             }));
-          }).catch(err => console.warn('[HLS Init] Autoplay blocked even when muted:', err));
+          }).catch(() => {});
         });
         hls.on(Hls.Events.ERROR, (_e, data) => {
           if (!data.fatal) {
@@ -783,11 +714,9 @@ const App = () => {
           console.error(`[HLS Fatal]`, data.type, data.details);
           switch (data.type) {
             case Hls.ErrorTypes.NETWORK_ERROR:
-              console.log('[HLS Recovery] Attempting network recovery...');
               hls.startLoad();
               break;
             case Hls.ErrorTypes.MEDIA_ERROR:
-              console.log('[HLS Recovery] Attempting media recovery...');
               hls.recoverMediaError();
               break;
             default:
@@ -800,7 +729,7 @@ const App = () => {
       } else if (videoEl.canPlayType('application/vnd.apple.mpegurl')) {
         // Safari — native HLS support
         videoEl.src = hlsUrl;
-        videoEl.play().catch(err => console.log('[HLS Init] Safari autoplay blocked:', err));
+        videoEl.play().catch(() => {});
       }
     };
 
@@ -858,7 +787,6 @@ const App = () => {
           get() { return _muted; },
           set(val: boolean) {
             if (val !== _muted) {
-              console.warn(`[MUTED TRACE] muted changing from ${_muted} to ${val}`);
               console.trace();
             }
             _muted = val;
@@ -890,7 +818,6 @@ const App = () => {
       const volume = playbackState[mainEventId].volume;
       if (typeof window !== 'undefined') {
         localStorage.setItem('livestream-volume', volume.toString());
-        console.log(`[localStorage] Saved volume: ${volume}`);
       }
     }
   }, [playbackState, mainEventIndex, events]);
@@ -904,8 +831,7 @@ const App = () => {
   // Settings state
   const [showSettings, setShowSettings] = useState(false);
   const [showReportIssues, setShowReportIssues] = useState(false);
-  const [videoQuality, setVideoQuality] = useState<'auto' | '1080p' | '720p' | '480p' | '360p' | 'source'>('auto');
-  const [captionsEnabled, setCaptionsEnabled] = useState(false);
+  const [lowLatencyMode, setLowLatencyMode] = useState(true);
   // Rating state
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [rating, setRating] = useState(0);
@@ -942,31 +868,18 @@ const App = () => {
   const [giftMessage, setGiftMessage] = useState("");
   // Donation prompt modal state
   const [showDonationPrompt, setShowDonationPrompt] = useState(false);
-  const [showDonationModal, setShowDonationModal] = useState(false);
+  const [includeDonation, setIncludeDonation] = useState(false);
   const [donationAmount, setDonationAmount] = useState("");
-  const [donationPaymentMethod, setDonationPaymentMethod] = useState<string | null>(null);
-  const [donationPhone, setDonationPhone] = useState("");
-  const [donationCardNumber, setDonationCardNumber] = useState("");
-  const [donationCardExpiry, setDonationCardExpiry] = useState("");
-  const [donationCardCvv, setDonationCardCvv] = useState("");
-  const [donationCardHolderName, setDonationCardHolderName] = useState("");
   // Payment details state
   const [paymentPhone, setPaymentPhone] = useState("");
-  const [cardNumber, setCardNumber] = useState("");
-  const [cardExpiry, setCardExpiry] = useState("");
-  const [cardCvv, setCardCvv] = useState("");
-  const [cardHolderName, setCardHolderName] = useState("");
   // API currencies & gift/donation loading state
   const [streamCurrencies, setStreamCurrencies] = useState<APICurrency[]>([]);
   const [giftLoading, setGiftLoading] = useState(false);
   const [giftError, setGiftError] = useState<string | null>(null);
-  const [donationApiLoading, setDonationApiLoading] = useState(false);
-  const [donationApiError, setDonationApiError] = useState<string | null>(null);
-  // XentriPay modal state
-  const [showXentriPayModal, setShowXentriPayModal] = useState(false);
-  const [xentriPayAmount, setXentriPayAmount] = useState(0);
-  const [xentriPayType, setXentriPayType] = useState<'tip' | 'streaming'>('streaming');
-  const [xentriPayEventId, setXentriPayEventId] = useState<string>('');
+  // Gift payment inline state (replaces XentriPayModal)
+  const [giftStep, setGiftStep] = useState<'form' | 'processing' | 'success' | 'failed'>('form');
+  const [giftPaymentUrl, setGiftPaymentUrl] = useState<string | null>(null);
+  const stopGiftPollingRef = useRef<(() => void) | null>(null);
 
   // Fetch currencies on mount
   useEffect(() => {
@@ -1003,57 +916,15 @@ const App = () => {
   // Handle donation prompt responses
   const handleDonationPromptYes = () => {
     setShowDonationPrompt(false);
-    setShowDonationModal(true);
+    setIncludeDonation(true);
+    setShowGiftModal(true);
   };
 
   const handleDonationPromptNo = () => {
     setShowDonationPrompt(false);
-    setShowGiftModal(true);
-  };
-
-  // Reset donation modal state
-  const resetDonationModal = () => {
-    setShowDonationModal(false);
+    setIncludeDonation(false);
     setDonationAmount("");
-    setDonationPaymentMethod(null);
-    setDonationPhone("");
-    setDonationCardNumber("");
-    setDonationCardExpiry("");
-    setDonationCardCvv("");
-    setDonationCardHolderName("");
-  };
-
-  // Validate donation payment details
-  const isDonationPaymentValid = () => {
-    if (!donationPaymentMethod || !donationAmount) return false;
-
-    switch (donationPaymentMethod) {
-      case 'mtn':
-      case 'airtel':
-        return donationPhone.length >= 10;
-      case 'card':
-        return donationCardNumber.length >= 16 && donationCardExpiry.length >= 4 && donationCardCvv.length >= 3 && donationCardHolderName.trim() !== '';
-      default:
-        return false;
-    }
-  };
-
-  // Handle sending donation - open XentriPay modal
-  const handleSendDonation = async () => {
-    if (!isAuthenticated) {
-      requireAuth(() => {});
-      return;
-    }
-    if (!donationAmount || parseInt(donationAmount) <= 0) {
-      alert('Please enter a donation amount');
-      return;
-    }
-
-    setXentriPayEventId(mainEvent?.id || '');
-    setXentriPayAmount(parseInt(donationAmount));
-    setXentriPayType('tip');
-    setShowDonationModal(false);
-    setShowXentriPayModal(true);
+    setShowGiftModal(true);
   };
 
   // Payment methods
@@ -1063,7 +934,7 @@ const App = () => {
     { id: 'card', name: 'VISA & Master Card', image: '/cards.png' }
   ];
 
-  // Helper to reset all gift modal state
+  // Helper to reset all gift modal state (also clears donation from merged flow)
   const resetGiftModal = () => {
     setShowGiftModal(false);
     setGiftTargetEvent(null);
@@ -1071,10 +942,15 @@ const App = () => {
     setGiftAmount("");
     setGiftMessage("");
     setPaymentPhone("");
-    setCardNumber("");
-    setCardExpiry("");
-    setCardCvv("");
-    setCardHolderName("");
+    setIncludeDonation(false);
+    setDonationAmount("");
+    setGiftStep('form');
+    setGiftPaymentUrl(null);
+    setGiftError(null);
+    if (stopGiftPollingRef.current) {
+      stopGiftPollingRef.current();
+      stopGiftPollingRef.current = null;
+    }
   };
 
   // Validate payment details based on selected method
@@ -1086,13 +962,13 @@ const App = () => {
       case 'airtel':
         return paymentPhone.length >= 10;
       case 'card':
-        return cardNumber.length >= 16 && cardExpiry.length >= 4 && cardCvv.length >= 3 && cardHolderName.trim() !== '';
+        return true;
       default:
         return false;
     }
   };
 
-  // Handle sending gift - open XentriPay modal
+  // Handle sending gift - call API directly, no XentriPayModal
   const handleSendGift = async () => {
     if (!isAuthenticated) {
       requireAuth(() => {});
@@ -1103,18 +979,75 @@ const App = () => {
       return;
     }
 
-    const targetEvent = giftTargetEvent || mainEvent;
-    setXentriPayEventId(targetEvent.id);
-    setXentriPayAmount(parseInt(giftAmount));
-    setXentriPayType('streaming');
-    setShowGiftModal(false);
-    setShowXentriPayModal(true);
-  };
+    setGiftLoading(true);
+    setGiftError(null);
 
-  // Handle XentriPay payment success
-  const handleXentriPaySuccess = () => {
-    setShowXentriPayModal(false);
-    resetGiftModal();
+    const targetEvent = giftTargetEvent || mainEvent;
+    const isCard = selectedPaymentMethod === 'card';
+    const providerMap: Record<string, string> = { mtn: 'MTN', airtel: 'AIRTEL' };
+    const paymentMethodType = isCard ? 'CARD' : 'MOBILE_MONEY';
+
+    // Resolve currency — use event's currency, default to RWF
+    const abbr = mainEvent?.streamFeeCurrencyAbbreviation;
+    const matchedCurrency = abbr ? streamCurrencies.find(c => c.code === abbr) : null;
+    const currencyId = matchedCurrency?.id
+      || streamCurrencies.find(c => c.code === 'RWF')?.id
+      || (streamCurrencies.length > 0 ? streamCurrencies[0].id : '');
+
+    const donAmt = parseInt(donationAmount) || 0;
+
+    try {
+      const response = await initiateXentriPayStreaming({
+        eventId: targetEvent.id,
+        amount: parseInt(giftAmount),
+        currencyId,
+        ...(donAmt > 0 ? { donationAmount: donAmt } : {}),
+        ...(isCard ? {} : { phone: paymentPhone, telecomProvider: providerMap[selectedPaymentMethod!] }),
+        paymentMethod: paymentMethodType,
+        ...(isCard ? { redirectUrl: window.location.href } : {}),
+      });
+
+      if (!response.success || !response.data) {
+        throw new Error(response.error || 'Failed to initiate payment');
+      }
+
+      const data = response.data;
+
+      // For card payments, open redirect URL
+      if (isCard && data.paymentUrl) {
+        setGiftPaymentUrl(data.paymentUrl);
+        window.open(data.paymentUrl, '_blank');
+      }
+
+      setGiftStep('processing');
+
+      // Start polling for payment status
+      stopGiftPollingRef.current = pollXentriPayStatus(
+        data.refid,
+        {
+          onSuccess: (_data: XentriPayStatusResponse) => {
+            setGiftStep('success');
+            setTimeout(() => resetGiftModal(), 2500);
+          },
+          onFailure: (_data: XentriPayStatusResponse) => {
+            setGiftStep('failed');
+            setGiftError('Payment was declined or timed out. Please try again.');
+          },
+          onError: (errorMsg: string) => {
+            setGiftStep('failed');
+            setGiftError(errorMsg || 'Something went wrong while processing your payment.');
+          },
+        },
+        5000,
+        60
+      );
+    } catch (err) {
+      const raw = err instanceof Error ? err.message : '';
+      setGiftError(raw || 'Could not initiate payment. Please try again.');
+      setGiftStep('failed');
+    } finally {
+      setGiftLoading(false);
+    }
   };
 
   // Get current time
@@ -1175,7 +1108,7 @@ const App = () => {
           }
           // Keep mini-players playing at all times
           if (video.paused) {
-            video.play().catch(err => console.log(`Mini-player play error for ${event.id}:`, err));
+            video.play().catch(() => {});
           }
         } else {
           // Main player: Only enforce volume and pause state — never touch muted
@@ -1399,12 +1332,11 @@ const App = () => {
 
       // Only play or pause — do not touch muted or volume
       if (willBePlaying) {
-        video.play().catch(err => console.log('Play error:', err));
+        video.play().catch(() => {});
       } else {
         video.pause();
       }
 
-      console.log(`[togglePlay] ===== TOGGLE PLAY END =====`);
     }
   };
 
@@ -1435,16 +1367,13 @@ const App = () => {
 
   // Handle volume change
   const handleVolumeChange = (eventId: string, newVolume: number) => {
-    console.log(`[handleVolumeChange] ===== VOLUME CHANGE START ===== Setting volume to ${newVolume} for ${eventId}`);
     const video = videoRefs.current[eventId];
     if (video) {
       // STEP 1: Store in direct volume ref FIRST - this is the source of truth
       volumeRef.current[eventId] = newVolume;
-      console.log(`[handleVolumeChange] Stored in volumeRef:`, volumeRef.current[eventId]);
 
       // STEP 2: Set video element volume immediately
       video.volume = newVolume / 100;
-      console.log(`[handleVolumeChange] Video element volume set to:`, video.volume);
 
       // STEP 3: Update the playbackStateRef (before state) - for enforcement loop
       const updatedEventState = {
@@ -1456,7 +1385,6 @@ const App = () => {
         ...playbackStateRef.current,
         [eventId]: updatedEventState
       };
-      console.log(`[handleVolumeChange] Updated playbackStateRef:`, playbackStateRef.current[eventId]);
 
       // STEP 4: Update React state (async) - for UI
       setPlaybackState(prev => {
@@ -1468,14 +1396,12 @@ const App = () => {
             isMuted: newVolume === 0
           }
         };
-        console.log(`[handleVolumeChange] Updated React state:`, newState[eventId]);
         return newState;
       });
 
       // STEP 5: Sync mute with volume — volume > 0 means unmute, volume = 0 means mute
       video.muted = newVolume === 0;
 
-      console.log(`[handleVolumeChange] ===== VOLUME CHANGE END =====`);
     }
   };
 
@@ -1569,7 +1495,7 @@ const App = () => {
         mainVideo.volume = (mainState.volume ?? 100) / 100;
 
         if (mainState.isPlaying && mainVideo.paused) {
-          mainVideo.play().catch(err => console.log('Main play error:', err));
+          mainVideo.play().catch(() => {});
         } else if (!mainState.isPlaying && !mainVideo.paused) {
           mainVideo.pause();
         }
@@ -1588,7 +1514,7 @@ const App = () => {
           video.volume = 0;
           // Keep mini-players playing
           if (video.paused) {
-            video.play().catch(err => console.log(`[Sync] Mini play error for ${event.id}:`, err));
+            video.play().catch(() => {});
           }
         } else {
           // Main player: Only enforce play/pause — never touch muted
@@ -1596,7 +1522,7 @@ const App = () => {
             if (!state.isPlaying && !video.paused) {
               video.pause();
             } else if (state.isPlaying && video.paused) {
-              video.play().catch(err => console.log(`[Sync] Play error for ${event.id}:`, err));
+              video.play().catch(() => {});
             }
           }
         }
@@ -1635,7 +1561,6 @@ const App = () => {
       // Use saved volume from localStorage or current main volume
       const savedVolume = getSavedVolume();
       const currentMainVolume = playbackState[events[mainEventIndex].id]?.volume ?? savedVolume;
-      console.log(`[handleAddEvent] New event volume: ${currentMainVolume}`);
 
       setEvents(prev => [...prev, newEvent]);
       setPlaybackState(prev => ({
@@ -1753,7 +1678,7 @@ const App = () => {
               }
               freshNewMainVideo.muted = false;
               freshNewMainVideo.volume = targetVolume / 100;
-              freshNewMainVideo.play().catch(err => console.log('Play error:', err));
+              freshNewMainVideo.play().catch(() => {});
             }
 
             // Ensure all mini-players (including old main) stay muted with zero volume and PLAYING
@@ -1769,7 +1694,7 @@ const App = () => {
                   video.volume = 0;
                   // Mini-players ALWAYS play
                   if (video.paused) {
-                    video.play().catch(err => console.log('Mini play error:', err));
+                    video.play().catch(() => {});
                   }
                 }
               }
@@ -2122,21 +2047,22 @@ const App = () => {
     };
   }, [playbackState, mainEvent.id, isFullscreen]);
 
-  // Handle quality change
-  const handleQualityChange = (quality: 'auto' | '1080p' | '720p' | '480p' | '360p' | 'source') => {
-    setVideoQuality(quality);
-    console.log('Quality changed to:', quality);
-  };
-
-  // Handle captions toggle
-  const handleCaptionsToggle = () => {
-    setCaptionsEnabled(!captionsEnabled);
-    const video = videoRefs.current[mainEvent.id];
-    if (video) {
-      const tracks = video.textTracks;
-      if (tracks.length > 0) {
-        tracks[0].mode = !captionsEnabled ? 'showing' : 'hidden';
-      }
+  // Toggle low-latency mode — trades latency for smoother playback
+  const handleLowLatencyToggle = () => {
+    const next = !lowLatencyMode;
+    setLowLatencyMode(next);
+    const hls = hlsInstancesRef.current[mainEvent.id];
+    if (!hls) return;
+    if (next) {
+      // Low latency: stay close to live edge, smaller buffer
+      hls.config.liveSyncDurationCount = 3;
+      hls.config.liveMaxLatencyDurationCount = 6;
+      hls.config.lowLatencyMode = true;
+    } else {
+      // Smooth playback: larger buffer, fewer stalls
+      hls.config.liveSyncDurationCount = 6;
+      hls.config.liveMaxLatencyDurationCount = 12;
+      hls.config.lowLatencyMode = false;
     }
   };
 
@@ -2280,10 +2206,7 @@ const App = () => {
     ? playbackState[mainEvent.id]
     : { isPlaying: false, isMuted: false, progress: 0, volume: 100 };
 
-  // Log if we're using default state
-  if (!playbackState[mainEvent.id]) {
-    console.warn(`[mainState] No playback state found for ${mainEvent.id}, using defaults`);
-  }
+
 
   // Main component render
   return (
@@ -3391,122 +3314,34 @@ const App = () => {
                   textAlign: 'center',
                   gap: '16px',
                 }}>
-                  {/* ── Entry Fee Form (coordinator streams) ── */}
+                  {/* ── Entry Fee — redirect to purchase page (payment handled there) ── */}
                   {isEntryFeeStream(mainEvent) ? (
-                    entryFeePaymentPending ? (
-                      /* Payment pending — waiting for mobile money confirmation */
-                      <>
-                        <div style={{
-                          width: '48px', height: '48px', border: '4px solid #03969c',
-                          borderTopColor: 'transparent', borderRadius: '50%',
-                          animation: 'spin 1s linear infinite'
-                        }} />
-                        <h3 style={{ color: '#fff', fontSize: '20px', fontWeight: '600', margin: 0 }}>
-                          Confirming Payment
-                        </h3>
-                        <p style={{ color: '#adadb8', fontSize: '14px', margin: 0, maxWidth: '320px', lineHeight: '1.5' }}>
-                          {entryFeePaymentMessage}
-                        </p>
-                        <p style={{ color: '#71717a', fontSize: '12px', margin: 0 }}>
-                          This may take a moment. Do not close this page.
-                        </p>
-                        {entryFeeError && (
-                          <p style={{ color: '#EF4444', fontSize: '13px', margin: 0 }}>{entryFeeError}</p>
-                        )}
-                      </>
-                    ) : (
                     <>
                       <i className="bi bi-lock-fill" style={{ fontSize: '42px', color: '#03969c' }}></i>
                       <h3 style={{ color: '#fff', fontSize: '20px', fontWeight: '600', margin: 0 }}>
                         Paid Stream
                       </h3>
-                      <p style={{ color: '#adadb8', fontSize: '14px', margin: 0 }}>
-                        Entry fee:{' '}
-                        <strong style={{ color: '#fff', fontSize: '18px' }}>
-                          {mainEvent.streamFee?.toLocaleString()}{' '}
-                          {mainEvent.streamFeeCurrencyAbbreviation || mainEvent.streamFeeCurrencySymbol || ''}
-                        </strong>
+                      <p style={{ color: '#adadb8', fontSize: '14px', margin: 0, maxWidth: '320px' }}>
+                        You need to purchase access to watch this stream.
                       </p>
-
-                      <div style={{ width: '100%', maxWidth: '340px', display: 'flex', flexDirection: 'column', gap: '10px', textAlign: 'left' }}>
-                        {/* Payment method selector */}
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                          {(['mtn', 'airtel', 'card'] as const).map(method => (
-                            <button
-                              key={method}
-                              onClick={() => setEntryFeePaymentMethod(method)}
-                              style={{
-                                flex: 1,
-                                padding: '10px 8px',
-                                backgroundColor: entryFeePaymentMethod === method ? 'rgba(3, 150, 156, 0.2)' : '#27272a',
-                                border: entryFeePaymentMethod === method ? '2px solid #03969c' : '1px solid rgba(255, 255, 255, 0.15)',
-                                borderRadius: '10px',
-                                color: entryFeePaymentMethod === method ? '#03969c' : '#adadb8',
-                                fontSize: '12px',
-                                fontWeight: '600',
-                                cursor: 'pointer',
-                                textTransform: 'uppercase',
-                                transition: 'all 0.2s',
-                              }}
-                            >
-                              {method === 'mtn' ? 'MTN' : method === 'airtel' ? 'Airtel' : 'Card'}
-                            </button>
-                          ))}
-                        </div>
-
-                        {/* Phone number (for mobile money) */}
-                        {entryFeePaymentMethod && entryFeePaymentMethod !== 'card' && (
-                          <input
-                            type="tel"
-                            value={entryFeePhone}
-                            onChange={(e) => setEntryFeePhone(e.target.value)}
-                            placeholder="Phone number (e.g. 250788123456)"
-                            style={{
-                              width: '100%',
-                              padding: '12px 16px',
-                              backgroundColor: '#27272a',
-                              border: '1px solid rgba(255, 255, 255, 0.15)',
-                              borderRadius: '10px',
-                              color: '#fff',
-                              fontSize: '14px',
-                              outline: 'none',
-                              boxSizing: 'border-box',
-                            }}
-                          />
-                        )}
-
-                        {entryFeeError && (
-                          <p style={{ color: '#EF4444', fontSize: '13px', margin: 0, textAlign: 'center' }}>{entryFeeError}</p>
-                        )}
-
-                        {/* Submit */}
-                        <button
-                          onClick={handleEntryFeeSubmit}
-                          disabled={entryFeeLoading || !entryFeePaymentMethod || (entryFeePaymentMethod !== 'card' && !entryFeePhone.trim())}
-                          style={{
-                            width: '100%',
-                            padding: '14px',
-                            background: entryFeeLoading ? '#3f3f46' : 'linear-gradient(135deg, #03969c 0%, #026d72 100%)',
-                            border: 'none',
-                            borderRadius: '12px',
-                            color: entryFeeLoading ? '#71717a' : '#fff',
-                            fontSize: '15px',
-                            fontWeight: '600',
-                            cursor: entryFeeLoading ? 'not-allowed' : 'pointer',
-                            transition: 'all 0.3s ease',
-                            opacity: !entryFeePaymentMethod ? 0.5 : 1,
-                          }}
-                        >
-                          {entryFeeLoading ? 'Processing...' : (
-                            <>
-                              <i className="bi bi-credit-card-fill" style={{ marginRight: '8px' }}></i>
-                              Pay & Watch
-                            </>
-                          )}
-                        </button>
-                      </div>
+                      <button
+                        onClick={() => window.location.href = `/user/events/view-event?id=${mainEvent.id}`}
+                        style={{
+                          padding: '14px 32px',
+                          background: 'linear-gradient(135deg, #03969c 0%, #026d72 100%)',
+                          border: 'none',
+                          borderRadius: '12px',
+                          color: '#fff',
+                          fontSize: '15px',
+                          fontWeight: '600',
+                          cursor: 'pointer',
+                          transition: 'all 0.3s ease',
+                        }}
+                      >
+                        <i className="bi bi-ticket-perforated-fill" style={{ marginRight: '8px' }}></i>
+                        Purchase Access
+                      </button>
                     </>
-                    )
                   ) : isInviteTokenStream(mainEvent) ? (
                     /* ── Invite Token Form (client streams) ── */
                     <>
@@ -4160,70 +3995,7 @@ const App = () => {
                         zIndex: 100,
                         overflowY: 'auto'
                       }}>
-                        {/* Quality Settings */}
-                        <div style={{ padding: 'clamp(6px, 2vw, 8px)' }}>
-                          <div style={{
-                            fontSize: 'clamp(11px, 2.5vw, 12px)',
-                            fontWeight: '600',
-                            color: '#adadb8',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.5px',
-                            marginBottom: '8px'
-                          }}>Quality</div>
-                          <div className="custom-scrollbar" style={{
-                            maxHeight: 'clamp(140px, 30vh, 180px)',
-                            overflowY: 'auto',
-                            marginRight: '-4px',
-                            paddingRight: '4px'
-                          }}>
-                            {(['auto', 'source', '1080p', '720p', '480p', '360p'] as const).map((quality) => (
-                              <button
-                                key={quality}
-                                onClick={() => handleQualityChange(quality)}
-                                style={{
-                                  width: '100%',
-                                  padding: 'clamp(8px, 2.5vw, 10px) clamp(10px, 3vw, 12px)',
-                                  backgroundColor: videoQuality === quality ? 'rgba(3, 150, 156, 0.2)' : 'transparent',
-                                  border: 'none',
-                                  borderRadius: '12px',
-                                  color: videoQuality === quality ? '#03969c' : '#efeff1',
-                                  fontSize: 'clamp(13px, 3vw, 14px)',
-                                  cursor: 'pointer',
-                                  textAlign: 'left',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'space-between',
-                                  marginBottom: '2px',
-                                  transition: 'all 0.2s',
-                                  minHeight: '40px'
-                                }}
-                                onMouseEnter={(e) => {
-                                  if (videoQuality !== quality) {
-                                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
-                                  }
-                                }}
-                                onMouseLeave={(e) => {
-                                  if (videoQuality !== quality) {
-                                    e.currentTarget.style.backgroundColor = 'transparent';
-                                  }
-                                }}
-                              >
-                                <span style={{ textTransform: 'capitalize' }}>{quality}</span>
-                                {videoQuality === quality && (
-                                  <i className="bi bi-check-lg" style={{ fontSize: 'clamp(14px, 3.5vw, 16px)' }}></i>
-                                )}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div style={{
-                          height: '1px',
-                          backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                          margin: '8px 0'
-                        }}></div>
-
-                        {/* Captions Settings */}
+                        {/* Low Latency Mode */}
                         <div style={{ padding: '8px' }}>
                           <div style={{
                             fontSize: '12px',
@@ -4232,9 +4004,9 @@ const App = () => {
                             textTransform: 'uppercase',
                             letterSpacing: '0.5px',
                             marginBottom: '8px'
-                          }}>Captions</div>
+                          }}>Latency</div>
                           <button
-                            onClick={handleCaptionsToggle}
+                            onClick={handleLowLatencyToggle}
                             style={{
                               width: '100%',
                               padding: '10px 12px',
@@ -4253,11 +4025,16 @@ const App = () => {
                             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)'}
                             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                           >
-                            <span>{captionsEnabled ? 'On' : 'Off'}</span>
+                            <div>
+                              <span>{lowLatencyMode ? 'Low Latency' : 'Smooth'}</span>
+                              <div style={{ fontSize: '11px', color: '#71717a', marginTop: '2px' }}>
+                                {lowLatencyMode ? 'Closer to real-time' : 'Fewer stalls, more buffer'}
+                              </div>
+                            </div>
                             <div style={{
                               width: '36px',
                               height: '20px',
-                              backgroundColor: captionsEnabled ? '#016a6e' : 'rgba(255, 255, 255, 0.2)',
+                              backgroundColor: lowLatencyMode ? '#016a6e' : 'rgba(255, 255, 255, 0.2)',
                               borderRadius: '10px',
                               position: 'relative',
                               transition: 'all 0.2s'
@@ -4269,7 +4046,7 @@ const App = () => {
                                 borderRadius: '50%',
                                 position: 'absolute',
                                 top: '2px',
-                                left: captionsEnabled ? '18px' : '2px',
+                                left: lowLatencyMode ? '18px' : '2px',
                                 transition: 'all 0.2s'
                               }}></div>
                             </div>
@@ -6268,337 +6045,6 @@ const App = () => {
         </div>
       )}
 
-      {/* Donation Payment Modal */}
-      {showDonationModal && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 2000,
-            backdropFilter: 'blur(4px)',
-          }}
-          onClick={resetDonationModal}
-        >
-          <div
-            style={{
-              backgroundColor: '#18181b',
-              borderRadius: '16px',
-              padding: 'clamp(16px, 4vw, 24px)',
-              width: 'clamp(320px, 95vw, 480px)',
-              maxHeight: '90vh',
-              overflowY: 'auto',
-              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: '20px',
-              paddingBottom: '16px',
-              borderBottom: '1px solid #333',
-            }}>
-              <div>
-                <h3 style={{
-                  fontSize: 'clamp(18px, 4vw, 22px)',
-                  fontWeight: '700',
-                  color: '#fff',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px',
-                  marginBottom: '4px',
-                }}>
-                  <i className="bi bi-heart-fill" style={{ color: '#ef4444' }}></i>
-                  Make a Donation
-                </h3>
-                <p style={{ fontSize: '13px', color: '#9ca3af' }}>
-                  Support families in need
-                </p>
-              </div>
-              <button
-                onClick={resetDonationModal}
-                style={{
-                  width: '36px',
-                  height: '36px',
-                  borderRadius: '50%',
-                  backgroundColor: '#333',
-                  border: 'none',
-                  color: '#fff',
-                  fontSize: '18px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                ×
-              </button>
-            </div>
-
-            {/* Amount Input */}
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#fff', marginBottom: '8px' }}>
-                Donation Amount (UGX)
-              </label>
-              <input
-                type="number"
-                value={donationAmount}
-                onChange={(e) => setDonationAmount(e.target.value)}
-                placeholder="Enter amount"
-                style={{
-                  width: '100%',
-                  padding: '14px 16px',
-                  fontSize: '16px',
-                  backgroundColor: '#27272a',
-                  border: '1px solid #3f3f46',
-                  borderRadius: '10px',
-                  color: '#fff',
-                  outline: 'none',
-                }}
-              />
-              <div style={{
-                display: 'flex',
-                flexWrap: 'wrap',
-                gap: '8px',
-                marginTop: '12px',
-              }}>
-                {['10000', '20000', '50000', '100000'].map((amount) => (
-                  <button
-                    key={amount}
-                    onClick={() => setDonationAmount(amount)}
-                    style={{
-                      padding: '8px 16px',
-                      fontSize: '13px',
-                      fontWeight: '600',
-                      backgroundColor: donationAmount === amount ? '#f59e0b' : '#27272a',
-                      color: donationAmount === amount ? '#000' : '#fff',
-                      border: '1px solid',
-                      borderColor: donationAmount === amount ? '#f59e0b' : '#3f3f46',
-                      borderRadius: '8px',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease',
-                    }}
-                  >
-                    {parseInt(amount).toLocaleString()}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Payment Methods */}
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#fff', marginBottom: '8px' }}>
-                Payment Method
-              </label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
-                {paymentMethods.map((method) => (
-                  <button
-                    key={method.id}
-                    onClick={() => setDonationPaymentMethod(method.id)}
-                    style={{
-                      padding: '12px',
-                      backgroundColor: donationPaymentMethod === method.id ? '#f59e0b' : '#27272a',
-                      border: '1px solid',
-                      borderColor: donationPaymentMethod === method.id ? '#f59e0b' : '#3f3f46',
-                      borderRadius: '10px',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '10px',
-                      transition: 'all 0.2s ease',
-                    }}
-                  >
-                    <img src={method.image} alt={method.name} style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
-                    <span style={{
-                      fontSize: '12px',
-                      fontWeight: '600',
-                      color: donationPaymentMethod === method.id ? '#000' : '#fff',
-                      textAlign: 'left',
-                    }}>
-                      {method.name}
-                    </span>
-                    {donationPaymentMethod === method.id && (
-                      <i className="bi bi-check-circle-fill" style={{ marginLeft: 'auto', color: '#000' }}></i>
-                    )}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Payment Details */}
-            {(donationPaymentMethod === 'mtn' || donationPaymentMethod === 'airtel') && (
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#fff', marginBottom: '8px' }}>
-                  Phone Number
-                </label>
-                <input
-                  type="tel"
-                  value={donationPhone}
-                  onChange={(e) => setDonationPhone(e.target.value)}
-                  placeholder="Enter phone number"
-                  style={{
-                    width: '100%',
-                    padding: '14px 16px',
-                    fontSize: '16px',
-                    backgroundColor: '#27272a',
-                    border: '1px solid #3f3f46',
-                    borderRadius: '10px',
-                    color: '#fff',
-                    outline: 'none',
-                  }}
-                />
-              </div>
-            )}
-
-            {donationPaymentMethod === 'card' && (
-              <div style={{ marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#fff', marginBottom: '8px' }}>
-                    Cardholder Name
-                  </label>
-                  <input
-                    type="text"
-                    value={donationCardHolderName}
-                    onChange={(e) => setDonationCardHolderName(e.target.value)}
-                    placeholder="Enter cardholder name"
-                    style={{
-                      width: '100%',
-                      padding: '14px 16px',
-                      fontSize: '16px',
-                      backgroundColor: '#27272a',
-                      border: '1px solid #3f3f46',
-                      borderRadius: '10px',
-                      color: '#fff',
-                      outline: 'none',
-                    }}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#fff', marginBottom: '8px' }}>
-                    Card Number
-                  </label>
-                  <input
-                    type="text"
-                    value={donationCardNumber}
-                    onChange={(e) => setDonationCardNumber(e.target.value)}
-                    placeholder="Enter card number"
-                    maxLength={19}
-                    style={{
-                      width: '100%',
-                      padding: '14px 16px',
-                      fontSize: '16px',
-                      backgroundColor: '#27272a',
-                      border: '1px solid #3f3f46',
-                      borderRadius: '10px',
-                      color: '#fff',
-                      outline: 'none',
-                    }}
-                  />
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#fff', marginBottom: '8px' }}>
-                      Expiry Date
-                    </label>
-                    <input
-                      type="text"
-                      value={donationCardExpiry}
-                      onChange={(e) => setDonationCardExpiry(e.target.value)}
-                      placeholder="MM/YY"
-                      maxLength={5}
-                      style={{
-                        width: '100%',
-                        padding: '14px 16px',
-                        fontSize: '16px',
-                        backgroundColor: '#27272a',
-                        border: '1px solid #3f3f46',
-                        borderRadius: '10px',
-                        color: '#fff',
-                        outline: 'none',
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#fff', marginBottom: '8px' }}>
-                      CVV
-                    </label>
-                    <input
-                      type="text"
-                      value={donationCardCvv}
-                      onChange={(e) => setDonationCardCvv(e.target.value)}
-                      placeholder="CVV"
-                      maxLength={4}
-                      style={{
-                        width: '100%',
-                        padding: '14px 16px',
-                        fontSize: '16px',
-                        backgroundColor: '#27272a',
-                        border: '1px solid #3f3f46',
-                        borderRadius: '10px',
-                        color: '#fff',
-                        outline: 'none',
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Donation error message */}
-            {donationApiError && (
-              <div style={{
-                padding: '10px 14px',
-                marginBottom: '12px',
-                backgroundColor: 'rgba(239, 68, 68, 0.15)',
-                border: '1px solid #EF4444',
-                borderRadius: '10px',
-                color: '#EF4444',
-                fontSize: '13px',
-              }}>
-                {donationApiError}
-              </div>
-            )}
-
-            {/* Submit Button */}
-            <button
-              onClick={handleSendDonation}
-              disabled={!isDonationPaymentValid() || donationApiLoading}
-              style={{
-                width: '100%',
-                padding: '16px',
-                fontSize: '16px',
-                fontWeight: '700',
-                color: '#fff',
-                background: (isDonationPaymentValid() && !donationApiLoading)
-                  ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'
-                  : '#3f3f46',
-                border: 'none',
-                borderRadius: '12px',
-                cursor: (isDonationPaymentValid() && !donationApiLoading) ? 'pointer' : 'not-allowed',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '10px',
-                transition: 'all 0.3s ease',
-                boxShadow: (isDonationPaymentValid() && !donationApiLoading) ? '0 4px 20px rgba(245, 158, 11, 0.4)' : 'none',
-              }}
-            >
-              <i className="bi bi-heart-fill" style={{ color: '#ef4444' }}></i>
-              {donationApiLoading ? 'Processing...' : `Donate ${donationAmount ? `(UGX ${parseInt(donationAmount).toLocaleString()})` : ''}`}
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Gift Modal */}
       {showGiftModal && (
         <div
@@ -6671,7 +6117,8 @@ const App = () => {
               <i className="bi bi-x-lg"></i>
             </button>
 
-            {/* Title */}
+            {/* ── STEP: Form ── */}
+            {giftStep === 'form' && (<>
             <h2 style={{
               fontSize: 'clamp(18px, 5vw, 24px)',
               fontWeight: '600',
@@ -6694,6 +6141,82 @@ const App = () => {
               lineHeight: '1.5'
             }}>Show your appreciation to {giftTargetEvent?.photographer || mainEvent.photographer}</p>
 
+            {/* Donation Amount Section — shown when user opted to donate */}
+            {includeDonation && (
+              <div style={{
+                marginBottom: '20px',
+                padding: '16px',
+                backgroundColor: 'rgba(245, 158, 11, 0.08)',
+                border: '1px solid rgba(245, 158, 11, 0.25)',
+                borderRadius: '12px',
+              }}>
+                <label style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  fontSize: '13px',
+                  fontWeight: '600',
+                  color: '#f59e0b',
+                  marginBottom: '10px'
+                }}>
+                  <i className="bi bi-heart-fill" style={{ color: '#ef4444' }}></i>
+                  Donation Amount ({mainEvent?.streamFeeCurrencyAbbreviation || 'RWF'})
+                </label>
+                <input
+                  type="number"
+                  value={donationAmount}
+                  onChange={(e) => setDonationAmount(e.target.value)}
+                  placeholder="Enter donation amount"
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    backgroundColor: '#27272a',
+                    border: '1px solid rgba(245, 158, 11, 0.3)',
+                    borderRadius: '10px',
+                    color: '#efeff1',
+                    fontSize: '14px',
+                    outline: 'none',
+                    transition: 'border-color 0.2s',
+                    boxSizing: 'border-box'
+                  }}
+                  onFocus={(e) => e.currentTarget.style.borderColor = '#f59e0b'}
+                  onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(245, 158, 11, 0.3)'}
+                />
+                <div style={{
+                  display: 'flex',
+                  gap: '8px',
+                  flexWrap: 'wrap',
+                  marginTop: '10px',
+                }}>
+                  {['10000', '20000', '50000', '100000'].map((amt) => (
+                    <button
+                      key={amt}
+                      onClick={() => setDonationAmount(amt)}
+                      style={{
+                        flex: '1 1 calc(25% - 6px)',
+                        minWidth: '60px',
+                        padding: '8px 10px',
+                        fontSize: '12px',
+                        fontWeight: '600',
+                        backgroundColor: donationAmount === amt ? '#f59e0b' : '#27272a',
+                        color: donationAmount === amt ? '#000' : '#fff',
+                        border: '1px solid',
+                        borderColor: donationAmount === amt ? '#f59e0b' : 'rgba(245, 158, 11, 0.2)',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                      }}
+                    >
+                      {parseInt(amt).toLocaleString()}
+                    </button>
+                  ))}
+                </div>
+                <p style={{ fontSize: '11px', color: '#9ca3af', marginTop: '8px', marginBottom: 0 }}>
+                  Supports families in need, medical bills, school requirements, and food for children
+                </p>
+              </div>
+            )}
+
             {/* Gift Amount Input */}
             <div style={{ marginBottom: '20px' }}>
               <label style={{
@@ -6702,7 +6225,7 @@ const App = () => {
                 fontWeight: '600',
                 color: '#efeff1',
                 marginBottom: '8px'
-              }}>Gift Amount (UGX)</label>
+              }}>Gift Amount ({mainEvent?.streamFeeCurrencyAbbreviation || 'RWF'})</label>
               <input
                 type="number"
                 value={giftAmount}
@@ -6882,137 +6405,11 @@ const App = () => {
               </div>
             )}
 
-            {/* Payment Details Input - Card */}
+            {/* Card payments are handled via XentriPay redirect — no card fields needed */}
             {selectedPaymentMethod === 'card' && (
-              <div style={{ marginBottom: '20px' }}>
-                <div style={{ marginBottom: '12px' }}>
-                  <label style={{
-                    display: 'block',
-                    fontSize: '13px',
-                    fontWeight: '600',
-                    color: '#efeff1',
-                    marginBottom: '8px'
-                  }}>Card Holder Name *</label>
-                  <input
-                    type="text"
-                    value={cardHolderName}
-                    onChange={(e) => setCardHolderName(e.target.value)}
-                    placeholder="Name on card"
-                    style={{
-                      width: '100%',
-                      padding: '12px 16px',
-                      backgroundColor: '#27272a',
-                      border: '1px solid rgba(255, 255, 255, 0.1)',
-                      borderRadius: '12px',
-                      color: '#efeff1',
-                      fontSize: '14px',
-                      outline: 'none',
-                      transition: 'border-color 0.2s',
-                      boxSizing: 'border-box'
-                    }}
-                    onFocus={(e) => e.currentTarget.style.borderColor = '#03969c'}
-                    onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'}
-                  />
-                </div>
-                <div style={{ marginBottom: '12px' }}>
-                  <label style={{
-                    display: 'block',
-                    fontSize: '13px',
-                    fontWeight: '600',
-                    color: '#efeff1',
-                    marginBottom: '8px'
-                  }}>Card Number *</label>
-                  <input
-                    type="text"
-                    value={cardNumber}
-                    onChange={(e) => setCardNumber(e.target.value.replace(/\D/g, '').slice(0, 16))}
-                    placeholder="1234 5678 9012 3456"
-                    style={{
-                      width: '100%',
-                      padding: '12px 16px',
-                      backgroundColor: '#27272a',
-                      border: '1px solid rgba(255, 255, 255, 0.1)',
-                      borderRadius: '12px',
-                      color: '#efeff1',
-                      fontSize: '14px',
-                      outline: 'none',
-                      transition: 'border-color 0.2s',
-                      boxSizing: 'border-box',
-                      letterSpacing: '2px'
-                    }}
-                    onFocus={(e) => e.currentTarget.style.borderColor = '#03969c'}
-                    onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'}
-                  />
-                </div>
-                <div style={{ display: 'flex', gap: '12px' }}>
-                  <div style={{ flex: 1 }}>
-                    <label style={{
-                      display: 'block',
-                      fontSize: '13px',
-                      fontWeight: '600',
-                      color: '#efeff1',
-                      marginBottom: '8px'
-                    }}>Expiry Date *</label>
-                    <input
-                      type="text"
-                      value={cardExpiry}
-                      onChange={(e) => {
-                        let value = e.target.value.replace(/\D/g, '').slice(0, 4);
-                        if (value.length >= 2) {
-                          value = value.slice(0, 2) + '/' + value.slice(2);
-                        }
-                        setCardExpiry(value);
-                      }}
-                      placeholder="MM/YY"
-                      maxLength={5}
-                      style={{
-                        width: '100%',
-                        padding: '12px 16px',
-                        backgroundColor: '#27272a',
-                        border: '1px solid rgba(255, 255, 255, 0.1)',
-                        borderRadius: '12px',
-                        color: '#efeff1',
-                        fontSize: '14px',
-                        outline: 'none',
-                        transition: 'border-color 0.2s',
-                        boxSizing: 'border-box'
-                      }}
-                      onFocus={(e) => e.currentTarget.style.borderColor = '#03969c'}
-                      onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'}
-                    />
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <label style={{
-                      display: 'block',
-                      fontSize: '13px',
-                      fontWeight: '600',
-                      color: '#efeff1',
-                      marginBottom: '8px'
-                    }}>CVV *</label>
-                    <input
-                      type="password"
-                      value={cardCvv}
-                      onChange={(e) => setCardCvv(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                      placeholder="***"
-                      maxLength={4}
-                      style={{
-                        width: '100%',
-                        padding: '12px 16px',
-                        backgroundColor: '#27272a',
-                        border: '1px solid rgba(255, 255, 255, 0.1)',
-                        borderRadius: '12px',
-                        color: '#efeff1',
-                        fontSize: '14px',
-                        outline: 'none',
-                        transition: 'border-color 0.2s',
-                        boxSizing: 'border-box'
-                      }}
-                      onFocus={(e) => e.currentTarget.style.borderColor = '#03969c'}
-                      onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'}
-                    />
-                  </div>
-                </div>
-              </div>
+              <p style={{ fontSize: '13px', color: '#71717a', marginBottom: '20px' }}>
+                You will be redirected to a secure payment page to enter your card details.
+              </p>
             )}
 
             {/* Gift Message */}
@@ -7063,6 +6460,30 @@ const App = () => {
               </div>
             )}
 
+            {/* Sub-total breakdown when donation is included */}
+            {donationAmount && parseInt(donationAmount) > 0 && giftAmount && parseInt(giftAmount) > 0 && (
+              <div style={{
+                marginBottom: '20px',
+                padding: '16px',
+                backgroundColor: '#27272a',
+                borderRadius: '12px',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '14px' }}>
+                  <span style={{ color: '#9ca3af' }}>Gift</span>
+                  <span style={{ color: '#efeff1', fontWeight: '500' }}>{(mainEvent?.streamFeeCurrencyAbbreviation || 'RWF')} {parseInt(giftAmount).toLocaleString()}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', fontSize: '14px' }}>
+                  <span style={{ color: '#9ca3af' }}>Donation</span>
+                  <span style={{ color: '#f59e0b', fontWeight: '500' }}>{(mainEvent?.streamFeeCurrencyAbbreviation || 'RWF')} {parseInt(donationAmount).toLocaleString()}</span>
+                </div>
+                <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.15)', paddingTop: '10px', display: 'flex', justifyContent: 'space-between', fontSize: '15px' }}>
+                  <span style={{ color: '#efeff1', fontWeight: '700' }}>Total</span>
+                  <span style={{ color: '#03969c', fontWeight: '700' }}>{(mainEvent?.streamFeeCurrencyAbbreviation || 'RWF')} {(parseInt(giftAmount) + parseInt(donationAmount)).toLocaleString()}</span>
+                </div>
+              </div>
+            )}
+
             {/* Send Gift Button */}
             <button
               onClick={handleSendGift}
@@ -7102,8 +6523,104 @@ const App = () => {
               }}
             >
               <i className="bi bi-gift-fill" style={{ fontSize: '18px' }}></i>
-              {giftLoading ? 'Processing...' : `Send Gift ${giftAmount ? `(UGX ${parseInt(giftAmount).toLocaleString()})` : ''}`}
+              {giftLoading ? 'Processing...' : (() => {
+                const currency = mainEvent?.streamFeeCurrencyAbbreviation || 'RWF';
+                const gift = parseInt(giftAmount) || 0;
+                const donation = parseInt(donationAmount) || 0;
+                const total = gift + donation;
+                return total > 0 ? `Send Gift (${currency} ${total.toLocaleString()})` : 'Send Gift';
+              })()}
             </button>
+            </>)}
+
+            {/* ── STEP: Processing ── */}
+            {giftStep === 'processing' && (
+              <div style={{ textAlign: 'center', padding: '30px 0' }}>
+                <div style={{
+                  width: '70px',
+                  height: '70px',
+                  margin: '0 auto 20px',
+                  border: '4px solid #333',
+                  borderTopColor: '#03969c',
+                  borderRadius: '50%',
+                  animation: 'spin 1s linear infinite',
+                }} />
+                <h3 style={{ fontSize: '20px', fontWeight: 700, color: '#efeff1', marginBottom: '10px' }}>
+                  {selectedPaymentMethod === 'card' ? 'Complete Payment' : 'Payment Initiated'}
+                </h3>
+                {selectedPaymentMethod === 'card' ? (
+                  <>
+                    <p style={{ fontSize: '14px', color: '#9ca3af', marginBottom: '14px', lineHeight: '1.5' }}>
+                      A secure payment page has been opened in a new tab. Please complete the payment there.
+                    </p>
+                    {giftPaymentUrl && (
+                      <a href={giftPaymentUrl} target="_blank" rel="noopener noreferrer" style={{
+                        display: 'inline-block', padding: '10px 20px', backgroundColor: '#03969c',
+                        color: '#fff', borderRadius: '10px', textDecoration: 'none', fontSize: '14px', fontWeight: 500, marginBottom: '14px',
+                      }}>Open Payment Page</a>
+                    )}
+                  </>
+                ) : (
+                  <p style={{ fontSize: '14px', color: '#9ca3af', marginBottom: '14px', lineHeight: '1.5' }}>
+                    A payment prompt has been sent to your phone. Please check and confirm.
+                  </p>
+                )}
+                <p style={{ fontSize: '12px', color: '#6b7280' }}>Waiting for confirmation...</p>
+                <button onClick={resetGiftModal} style={{
+                  marginTop: '16px', padding: '10px 24px', backgroundColor: 'transparent',
+                  border: '1px solid #333', borderRadius: '10px', color: '#9ca3af', fontSize: '14px', cursor: 'pointer',
+                }}>Cancel</button>
+                <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+              </div>
+            )}
+
+            {/* ── STEP: Success ── */}
+            {giftStep === 'success' && (
+              <div style={{ textAlign: 'center', padding: '30px 0' }}>
+                <div style={{
+                  width: '70px', height: '70px', margin: '0 auto 20px',
+                  backgroundColor: 'rgba(34,197,94,0.15)', borderRadius: '50%',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="3">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                </div>
+                <h3 style={{ fontSize: '20px', fontWeight: 700, color: '#16A34A', marginBottom: '8px' }}>Payment Successful!</h3>
+                <p style={{ fontSize: '14px', color: '#9ca3af', margin: 0 }}>
+                  Your gift has been sent successfully.
+                </p>
+              </div>
+            )}
+
+            {/* ── STEP: Failed ── */}
+            {giftStep === 'failed' && (
+              <div style={{ textAlign: 'center', padding: '30px 0' }}>
+                <div style={{
+                  width: '70px', height: '70px', margin: '0 auto 20px',
+                  backgroundColor: 'rgba(239,68,68,0.15)', borderRadius: '50%',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="3">
+                    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </div>
+                <h3 style={{ fontSize: '20px', fontWeight: 700, color: '#EF4444', marginBottom: '8px' }}>Payment Failed</h3>
+                <p style={{ fontSize: '14px', color: '#9ca3af', marginBottom: '20px' }}>
+                  {giftError || 'The payment could not be completed. Please try again.'}
+                </p>
+                <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+                  <button onClick={() => { setGiftStep('form'); setGiftError(null); }} style={{
+                    padding: '12px 24px', background: 'linear-gradient(135deg, #03969c 0%, #026d72 100%)',
+                    border: 'none', borderRadius: '12px', color: '#fff', fontSize: '15px', fontWeight: 600, cursor: 'pointer',
+                  }}>Try Again</button>
+                  <button onClick={resetGiftModal} style={{
+                    padding: '12px 24px', backgroundColor: '#27272a', border: 'none',
+                    borderRadius: '12px', color: '#9ca3af', fontSize: '15px', fontWeight: 500, cursor: 'pointer',
+                  }}>Close</button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -7128,17 +6645,6 @@ const App = () => {
         />
       )}
 
-      {/* XentriPay Payment Modal */}
-      <XentriPayModal
-        isOpen={showXentriPayModal}
-        onClose={() => setShowXentriPayModal(false)}
-        onSuccess={handleXentriPaySuccess}
-        amount={xentriPayAmount}
-        currencyCode={streamCurrencies.length > 0 ? streamCurrencies[0].code : 'RWF'}
-        currencyId={streamCurrencies.length > 0 ? streamCurrencies[0].id : ''}
-        paymentType={xentriPayType}
-        eventId={xentriPayEventId}
-      />
 
       {/* ── VIEWER AUTH MODAL ── */}
       {showAuthModal && (

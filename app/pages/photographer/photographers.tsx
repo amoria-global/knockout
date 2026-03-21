@@ -46,6 +46,7 @@ const Photographers: React.FC = () => {
   const [totalElements, setTotalElements] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showBanner, setShowBanner] = useState(true);
 
   const itemsPerPage = 12;
 
@@ -282,6 +283,44 @@ const Photographers: React.FC = () => {
       
       <AmoriaKNavbar />
 
+      {/* CTA Banner Strip - below navbar, full width */}
+      {showBanner && (
+        <div style={{
+          padding: '0.65rem 1.5rem',
+          background: '#083A85',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '0.875rem'
+        }}>
+          <i className="bi bi-megaphone-fill" style={{ fontSize: '1rem', color: '#ffffff' }} />
+          <span style={{ fontSize: '0.9rem', color: 'rgba(255, 255, 255, 0.8)' }}>
+            The Smart Way to Capture Life
+          </span>
+          <span style={{ width: '1px', height: '18px', background: 'rgba(255, 255, 255, 0.2)' }} />
+          <span style={{ fontSize: '0.9rem', fontWeight: '700', color: '#ffffff' }}>
+            Book your perfect photographer today!
+          </span>
+          <button
+            onClick={() => setShowBanner(false)}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'rgba(255, 255, 255, 0.5)',
+              cursor: 'pointer',
+              fontSize: '1.1rem',
+              padding: '0 0.25rem',
+              marginLeft: '0.5rem',
+              transition: 'color 0.2s ease'
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = 'rgba(255, 255, 255, 0.9)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = 'rgba(255, 255, 255, 0.5)'; }}
+          >
+            <i className="bi bi-x-lg" style={{ fontSize: '0.8rem' }} />
+          </button>
+        </div>
+      )}
+
       {/* Hero Section with Search and Filters */}
       <div style={{
         position: 'relative',
@@ -309,8 +348,8 @@ const Photographers: React.FC = () => {
           <div style={{
             position: 'absolute',
             inset: 0,
-            backgroundColor: 'linear-gradient(135deg, #ec4899 0%, #f97316 50%, #8b5cf6 100%)',
-            backdropFilter: 'blur(20px)'
+            background: 'linear-gradient(135deg, #083A85 0%, #0a4da3 50%, #083A85 100%)',
+            opacity: 0.78
           }}></div>
         </div>
 
@@ -321,6 +360,7 @@ const Photographers: React.FC = () => {
           padding: '0 clamp(0.5rem, 2vw, 1rem)',
           textAlign: 'center'
         }}>
+
           <h1 style={{
             fontSize: 'clamp(1.5rem, 4vw, 2.25rem)',
             fontWeight: 'bold',
@@ -1144,6 +1184,7 @@ const Photographers: React.FC = () => {
             </div>
           )}
         </div>
+
       </main>
     </div>
   );
