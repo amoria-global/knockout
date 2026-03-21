@@ -3,7 +3,7 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import AmoriaKNavbar from '../../components/navbar';
-import { getPhotographerById, type Photographer, getCities, getCurrencies, type City, type Currency, getReviewerName, getReviewText, formatTimeValue, getBookedDates, type BookedDate } from '@/lib/APIs/public';
+import { getPhotographerById, type Photographer, getCities, type City, getReviewerName, getReviewText, formatTimeValue, getBookedDates, type BookedDate } from '@/lib/APIs/public';
 import { useToast } from '@/lib/notifications/ToastProvider';
 
 // Default images for fallback
@@ -65,7 +65,6 @@ function ViewProfileContent(): React.JSX.Element {
   const [photographer, setPhotographer] = useState<Photographer | null>(null);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [cities, setCities] = useState<City[]>([]);
-  const [currencyMap, setCurrencyMap] = useState<Map<string, Currency>>(new Map());
   const [bookedDates, setBookedDates] = useState<BookedDate[]>([]);
   const [bookedCalendarMonth, setBookedCalendarMonth] = useState(() => {
     const now = new Date();
@@ -124,18 +123,6 @@ function ViewProfileContent(): React.JSX.Element {
       } catch { /* silent */ }
     };
     fetchCities();
-  }, []);
-
-  // Fetch currencies for price display
-  useEffect(() => {
-    getCurrencies().then(res => {
-      if (res.success && res.data) {
-        const currencies = Array.isArray(res.data) ? res.data : [];
-        const map = new Map<string, Currency>();
-        currencies.forEach(c => map.set(c.id, c));
-        setCurrencyMap(map);
-      }
-    }).catch(() => {});
   }, []);
 
   // Fetch booked dates for mini calendar (next 60 days)
@@ -306,11 +293,6 @@ function ViewProfileContent(): React.JSX.Element {
     phone: photographer?.phone || '',
     email: photographer?.email || '',
   };
-
-  const handleBookNow = () => {
-    // Navigate to booking page
-  };
-
 
   const renderStars = (rating: number) => {
     const stars = [];
@@ -617,10 +599,10 @@ function ViewProfileContent(): React.JSX.Element {
         <div
           style={{
             position: 'absolute',
-            top: isMobile ? 'clamp(150px, 28vw, 230px)' : '230px',
+            top: isMobile ? 'clamp(140px, 28vw, 210px)' : '210px',
             left: isMobile ? 'clamp(12px, 3vw, 20px)' : '20px',
-            width: isMobile ? 'clamp(60px, 12vw, 70px)' : '70px',
-            height: isMobile ? 'clamp(60px, 12vw, 70px)' : '70px',
+            width: isMobile ? 'clamp(70px, 16vw, 90px)' : '110px',
+            height: isMobile ? 'clamp(70px, 16vw, 90px)' : '110px',
             zIndex: 10,
             cursor: 'pointer',
           }}
@@ -718,7 +700,7 @@ function ViewProfileContent(): React.JSX.Element {
         {/* Profile Content - Hybrid Layout */}
         <div
           style={{
-            paddingTop: isMobile ? 'clamp(32px, 7vw, 38px)' : '38px',
+            paddingTop: isMobile ? 'clamp(40px, 9vw, 52px)' : '58px',
             paddingLeft: isMobile ? 'clamp(12px, 3vw, 16px)' : '16px',
             paddingRight: isMobile ? 'clamp(12px, 3vw, 16px)' : '16px',
             paddingBottom: isMobile ? 'clamp(12px, 3vw, 16px)' : '16px',
@@ -866,7 +848,7 @@ function ViewProfileContent(): React.JSX.Element {
                   textTransform: 'uppercase',
                 }}
               >
-                Availability
+                {t('overview.availability')}
               </div>
               <div style={{ fontSize: '14px', color: '#111827', fontWeight: '600' }}>
                 {(() => {
@@ -890,7 +872,7 @@ function ViewProfileContent(): React.JSX.Element {
                   textTransform: 'uppercase',
                 }}
               >
-                Working Hours
+                {t('overview.workingHours')}
               </div>
               <div
                 style={{
@@ -925,7 +907,7 @@ function ViewProfileContent(): React.JSX.Element {
                   textTransform: 'uppercase',
                 }}
               >
-                Starting Price
+                {t('overview.startingPrice')}
               </div>
               <div
                 style={{
@@ -1030,23 +1012,23 @@ function ViewProfileContent(): React.JSX.Element {
           </div>
         </div>
 
-        {/* Tabs - Modernized with Better Transitions */}
+        {/* Tabs - Rounded Pill Style */}
         <div
           style={{
-            display: isMobile ? 'grid' : 'flex',
-            gridTemplateColumns: isMobile ? 'repeat(3, 1fr)' : undefined,
-            backgroundColor: '#f9fafb',
-            padding: '0',
-            gap: '0',
-            overflow: isMobile ? 'visible' : 'hidden',
-            boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.06)',
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: isMobile ? '8px' : '10px',
+            padding: isMobile ? '12px 12px' : '16px 16px',
+            backgroundColor: '#f3f4f6',
+            borderRadius: '12px',
+            margin: '0',
           }}
         >
           {[
-            { key: 'overview', label: t('tabs.overview') },
-            { key: 'portfolio', label: t('tabs.portfolio') },
-            { key: 'reviews', label: t('tabs.reviews') },
-            { key: 'working-experience', label: t('tabs.workingExperience') }
+            { key: 'overview', label: t('tabs.overview'), icon: 'bi-person-lines-fill' },
+            { key: 'portfolio', label: t('tabs.portfolio'), icon: 'bi-briefcase-fill' },
+            { key: 'reviews', label: t('tabs.reviews'), icon: 'bi-chat-square-quote-fill' },
+            { key: 'working-experience', label: t('tabs.workingExperience'), icon: 'bi-building' }
           ].map((tab) => {
             const isActive = activeTab === tab.key;
             return (
@@ -1054,32 +1036,41 @@ function ViewProfileContent(): React.JSX.Element {
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
                 style={{
-                  flex: isMobile ? undefined : 1,
-                  padding: isMobile ? 'clamp(12px, 3vw, 16px) clamp(8px, 2vw, 12px)' : '16px 12px',
+                  flex: isMobile ? '1 1 calc(50% - 4px)' : '1 1 0',
+                  padding: isMobile ? '10px 12px' : '12px 20px',
                   border: 'none',
-                  backgroundColor: isActive ? '#fff' : 'transparent',
-                  fontSize: isMobile ? 'clamp(13px, 3.2vw, 15px)' : '15px',
+                  backgroundColor: isActive ? '#083A85' : '#fff',
+                  fontSize: isMobile ? '13px' : '14px',
                   fontWeight: isActive ? '700' : '600',
-                  color: isActive ? '#083A85' : '#6b7280',
+                  color: isActive ? '#fff' : '#4b5563',
                   cursor: 'pointer',
                   transition: 'all 0.3s ease',
-                  borderBottom: isActive ? '3px solid #083A85' : '3px solid transparent',
-                  position: 'relative',
-                  boxShadow: isActive ? '0 2px 8px rgba(8, 58, 133, 0.1)' : 'none',
+                  borderRadius: '10px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  boxShadow: isActive
+                    ? '0 4px 12px rgba(8, 58, 133, 0.3)'
+                    : '0 1px 3px rgba(0, 0, 0, 0.08)',
+                  whiteSpace: 'nowrap',
                 }}
                 onMouseEnter={(e) => {
                   if (!isActive && !isMobile) {
+                    e.currentTarget.style.backgroundColor = '#e5e7eb';
                     e.currentTarget.style.color = '#083A85';
-                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.5)';
+                    e.currentTarget.style.transform = 'translateY(-1px)';
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (!isActive && !isMobile) {
-                    e.currentTarget.style.color = '#6b7280';
-                    e.currentTarget.style.backgroundColor = 'transparent';
+                    e.currentTarget.style.backgroundColor = '#fff';
+                    e.currentTarget.style.color = '#4b5563';
+                    e.currentTarget.style.transform = 'translateY(0)';
                   }
                 }}
               >
+                <i className={`bi ${tab.icon}`} style={{ fontSize: isMobile ? '14px' : '15px' }}></i>
                 {tab.label}
               </button>
             );
@@ -1123,7 +1114,6 @@ function ViewProfileContent(): React.JSX.Element {
                     padding: '16px',
                     backgroundColor: '#f9fafb',
                     borderRadius: '10px',
-                    borderLeft: '3px solid #083A85',
                   }}>
                     {photographerData.about}
                   </p>
@@ -1148,42 +1138,25 @@ function ViewProfileContent(): React.JSX.Element {
                   </h3>
                 </div>
                 {photographerData.specialties.length > 0 ? (
-                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                  <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     {photographerData.specialties.map((specialty, index) => (
-                      <span
+                      <li
                         key={index}
                         style={{
-                          padding: '12px 20px',
-                          backgroundColor: '#f0f9ff',
-                          border: '2px solid #dbeafe',
-                          borderRadius: '25px',
-                          fontSize: '15px',
-                          color: '#083A85',
-                          fontWeight: '600',
-                          cursor: 'default',
-                          transition: 'all 0.3s ease',
-                          display: 'inline-flex',
+                          display: 'flex',
                           alignItems: 'center',
-                          gap: '6px',
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = '#083A85';
-                          e.currentTarget.style.color = '#fff';
-                          e.currentTarget.style.transform = 'translateY(-2px)';
-                          e.currentTarget.style.boxShadow = '0 4px 12px rgba(8, 58, 133, 0.25)';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = '#f0f9ff';
-                          e.currentTarget.style.color = '#083A85';
-                          e.currentTarget.style.transform = 'translateY(0)';
-                          e.currentTarget.style.boxShadow = 'none';
+                          gap: '10px',
+                          fontSize: '15px',
+                          color: '#374151',
+                          fontWeight: '500',
+                          padding: '6px 0',
                         }}
                       >
-                        <i className="bi bi-camera-fill" style={{ fontSize: '14px' }}></i>
+                        <i className="bi bi-check-circle-fill" style={{ color: '#083A85', fontSize: '16px', flexShrink: 0 }}></i>
                         {specialty}
-                      </span>
+                      </li>
                     ))}
-                  </div>
+                  </ul>
                 ) : (
                   <p style={{ fontSize: '14px', color: '#9ca3af', fontStyle: 'italic' }}>No specialties listed yet.</p>
                 )}
@@ -1203,46 +1176,25 @@ function ViewProfileContent(): React.JSX.Element {
                   </h3>
                 </div>
                 {photographerData.equipments.length > 0 ? (
-                  <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: isMobile
-                      ? 'repeat(auto-fill, minmax(min(180px, 100%), 1fr))'
-                      : 'repeat(auto-fill, minmax(220px, 1fr))',
-                    gap: isMobile ? 'clamp(10px, 2.5vw, 12px)' : '12px'
-                  }}>
+                  <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     {photographerData.equipments.map((equipment, index) => (
-                      <div
+                      <li
                         key={index}
                         style={{
-                          padding: '14px 18px',
-                          backgroundColor: '#fff',
-                          border: '2px solid #e5e7eb',
-                          borderRadius: '10px',
-                          fontSize: '15px',
-                          color: '#374151',
-                          fontWeight: '500',
                           display: 'flex',
                           alignItems: 'center',
                           gap: '10px',
-                          transition: 'all 0.3s ease',
-                          cursor: 'default',
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.borderColor = '#083A85';
-                          e.currentTarget.style.backgroundColor = '#f0f9ff';
-                          e.currentTarget.style.transform = 'translateX(4px)';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.borderColor = '#e5e7eb';
-                          e.currentTarget.style.backgroundColor = '#fff';
-                          e.currentTarget.style.transform = 'translateX(0)';
+                          fontSize: '15px',
+                          color: '#374151',
+                          fontWeight: '500',
+                          padding: '6px 0',
                         }}
                       >
-                        <i className="bi bi-gear-fill" style={{ color: '#083A85', fontSize: '16px' }}></i>
+                        <i className="bi bi-check-circle-fill" style={{ color: '#083A85', fontSize: '16px', flexShrink: 0 }}></i>
                         {equipment}
-                      </div>
+                      </li>
                     ))}
-                  </div>
+                  </ul>
                 ) : (
                   <p style={{ fontSize: '14px', color: '#9ca3af', fontStyle: 'italic' }}>{t('overview.noEquipment')}</p>
                 )}
@@ -1256,114 +1208,162 @@ function ViewProfileContent(): React.JSX.Element {
                     Availability Calendar
                   </h3>
                 </div>
-                {/* Month navigation */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                  <button
-                    onClick={() => {
-                      setBookedCalendarMonth(prev => {
-                        const d = new Date(prev.year, prev.month - 1, 1);
-                        return { year: d.getFullYear(), month: d.getMonth() };
-                      });
-                    }}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px', fontSize: '18px', color: '#083A85' }}
-                  >
-                    <i className="bi bi-chevron-left"></i>
-                  </button>
-                  <span style={{ fontSize: '16px', fontWeight: '600', color: '#111827' }}>
-                    {new Date(bookedCalendarMonth.year, bookedCalendarMonth.month).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-                  </span>
-                  <button
-                    onClick={() => {
-                      setBookedCalendarMonth(prev => {
-                        const d = new Date(prev.year, prev.month + 1, 1);
-                        return { year: d.getFullYear(), month: d.getMonth() };
-                      });
-                    }}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px', fontSize: '18px', color: '#083A85' }}
-                  >
-                    <i className="bi bi-chevron-right"></i>
-                  </button>
-                </div>
-                {/* Day headers */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px', marginBottom: '4px' }}>
-                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
-                    <div key={d} style={{ textAlign: 'center', fontSize: '12px', fontWeight: '600', color: '#6b7280', padding: '4px 0' }}>{d}</div>
-                  ))}
-                </div>
-                {/* Calendar grid */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px' }}>
-                  {(() => {
-                    const { year, month } = bookedCalendarMonth;
-                    const firstDay = new Date(year, month, 1).getDay();
-                    const daysInMonth = new Date(year, month + 1, 0).getDate();
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
-                    const bookedSet = new Map<string, BookedDate>();
-                    bookedDates.forEach(b => bookedSet.set(b.date, b));
+                <div style={{
+                  maxWidth: '420px',
+                  backgroundColor: '#fff',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '16px',
+                  padding: isMobile ? '16px' : '20px',
+                  boxShadow: '0 2px 10px rgba(0, 0, 0, 0.06)',
+                }}>
+                  {/* Month navigation */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                    <button
+                      onClick={() => {
+                        setBookedCalendarMonth(prev => {
+                          const d = new Date(prev.year, prev.month - 1, 1);
+                          return { year: d.getFullYear(), month: d.getMonth() };
+                        });
+                      }}
+                      style={{
+                        width: '36px',
+                        height: '36px',
+                        borderRadius: '50%',
+                        border: '1px solid #e5e7eb',
+                        backgroundColor: '#fff',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '16px',
+                        color: '#083A85',
+                        transition: 'all 0.2s ease',
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#f0f9ff'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#fff'; }}
+                    >
+                      <i className="bi bi-chevron-left"></i>
+                    </button>
+                    <span style={{ fontSize: '16px', fontWeight: '700', color: '#111827' }}>
+                      {new Date(bookedCalendarMonth.year, bookedCalendarMonth.month).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                    </span>
+                    <button
+                      onClick={() => {
+                        setBookedCalendarMonth(prev => {
+                          const d = new Date(prev.year, prev.month + 1, 1);
+                          return { year: d.getFullYear(), month: d.getMonth() };
+                        });
+                      }}
+                      style={{
+                        width: '36px',
+                        height: '36px',
+                        borderRadius: '50%',
+                        border: '1px solid #e5e7eb',
+                        backgroundColor: '#fff',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '16px',
+                        color: '#083A85',
+                        transition: 'all 0.2s ease',
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#f0f9ff'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#fff'; }}
+                    >
+                      <i className="bi bi-chevron-right"></i>
+                    </button>
+                  </div>
+                  {/* Day headers */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px', marginBottom: '8px' }}>
+                    {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => (
+                      <div key={d} style={{ textAlign: 'center', fontSize: '12px', fontWeight: '700', color: '#9ca3af', padding: '4px 0', textTransform: 'uppercase' }}>{d}</div>
+                    ))}
+                  </div>
+                  {/* Calendar grid */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px' }}>
+                    {(() => {
+                      const { year, month } = bookedCalendarMonth;
+                      const firstDay = new Date(year, month, 1).getDay();
+                      const daysInMonth = new Date(year, month + 1, 0).getDate();
+                      const today = new Date();
+                      today.setHours(0, 0, 0, 0);
+                      const bookedSet = new Map<string, BookedDate>();
+                      bookedDates.forEach(b => bookedSet.set(b.date, b));
 
-                    const cells = [];
-                    // Empty cells for days before the 1st
-                    for (let i = 0; i < firstDay; i++) {
-                      cells.push(<div key={`empty-${i}`}></div>);
-                    }
-                    for (let day = 1; day <= daysInMonth; day++) {
-                      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                      const dateObj = new Date(year, month, day);
-                      const isPast = dateObj < today;
-                      const booked = bookedSet.get(dateStr);
-                      const isFullDay = booked?.isFullDay === true;
-                      const isPartial = booked && !booked.isFullDay;
-                      const isToday = dateObj.getTime() === today.getTime();
+                      const cells = [];
+                      for (let i = 0; i < firstDay; i++) {
+                        cells.push(<div key={`empty-${i}`}></div>);
+                      }
+                      for (let day = 1; day <= daysInMonth; day++) {
+                        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                        const dateObj = new Date(year, month, day);
+                        const isPast = dateObj < today;
+                        const booked = bookedSet.get(dateStr);
+                        const isFullDay = booked?.isFullDay === true;
+                        const isPartial = booked && !booked.isFullDay;
+                        const isToday = dateObj.getTime() === today.getTime();
+                        const isAvailable = !isPast && !isFullDay && !isPartial && !isToday;
 
-                      cells.push(
-                        <div
-                          key={day}
-                          title={isFullDay ? 'Fully booked' : isPartial && booked.startTime && booked.endTime ? `Booked: ${formatTimeValue(booked.startTime)} - ${formatTimeValue(booked.endTime)}` : undefined}
-                          style={{
-                            textAlign: 'center',
-                            padding: '6px 0',
-                            fontSize: '13px',
-                            fontWeight: isToday ? '700' : '500',
-                            color: isPast ? '#d1d5db' : isFullDay ? '#fff' : '#111827',
-                            backgroundColor: isFullDay ? '#ef4444' : isPartial ? '#fef3c7' : isToday ? '#dbeafe' : 'transparent',
-                            borderRadius: '6px',
-                            position: 'relative',
-                            cursor: 'default',
-                            border: isToday ? '2px solid #083A85' : '1px solid transparent',
-                          }}
-                        >
-                          {day}
-                          {isPartial && (
-                            <div style={{
-                              position: 'absolute',
-                              bottom: '2px',
-                              left: '50%',
-                              transform: 'translateX(-50%)',
-                              width: '5px',
-                              height: '5px',
+                        cells.push(
+                          <div
+                            key={day}
+                            title={isFullDay ? 'Fully booked' : isPartial && booked.startTime && booked.endTime ? `Booked: ${formatTimeValue(booked.startTime)} - ${formatTimeValue(booked.endTime)}` : isAvailable ? 'Available' : undefined}
+                            style={{
+                              textAlign: 'center',
+                              padding: '8px 0',
+                              fontSize: '13px',
+                              fontWeight: isToday ? '800' : '500',
+                              color: isPast ? '#d1d5db' : isFullDay ? '#fff' : isToday ? '#083A85' : '#374151',
+                              backgroundColor: isFullDay ? '#ef4444' : isPartial ? '#fef3c7' : isToday ? '#dbeafe' : isAvailable ? '#f0fdf4' : 'transparent',
                               borderRadius: '50%',
-                              backgroundColor: '#f59e0b',
-                            }}></div>
-                          )}
-                        </div>
-                      );
-                    }
-                    return cells;
-                  })()}
-                </div>
-                {/* Legend */}
-                <div style={{ display: 'flex', gap: '16px', marginTop: '12px', fontSize: '12px', color: '#6b7280', flexWrap: 'wrap' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <div style={{ width: '12px', height: '12px', backgroundColor: '#ef4444', borderRadius: '3px' }}></div>
-                    Fully booked
+                              aspectRatio: '1',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              cursor: 'default',
+                              border: isToday ? '2px solid #083A85' : isAvailable ? '1px solid #bbf7d0' : '1px solid transparent',
+                              position: 'relative',
+                              transition: 'all 0.2s ease',
+                            }}
+                          >
+                            {day}
+                            {isPartial && (
+                              <div style={{
+                                position: 'absolute',
+                                bottom: '4px',
+                                left: '50%',
+                                transform: 'translateX(-50%)',
+                                width: '4px',
+                                height: '4px',
+                                borderRadius: '50%',
+                                backgroundColor: '#f59e0b',
+                              }}></div>
+                            )}
+                          </div>
+                        );
+                      }
+                      return cells;
+                    })()}
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <div style={{ width: '12px', height: '12px', backgroundColor: '#fef3c7', borderRadius: '3px', border: '1px solid #fde68a' }}></div>
-                    Partially booked
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <div style={{ width: '12px', height: '12px', backgroundColor: '#dbeafe', borderRadius: '3px', border: '2px solid #083A85' }}></div>
-                    Today
+                  {/* Legend */}
+                  <div style={{ display: 'flex', gap: '14px', marginTop: '16px', paddingTop: '12px', borderTop: '1px solid #f3f4f6', fontSize: '11px', color: '#6b7280', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                      <div style={{ width: '10px', height: '10px', backgroundColor: '#f0fdf4', borderRadius: '50%', border: '1px solid #bbf7d0' }}></div>
+                      Available
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                      <div style={{ width: '10px', height: '10px', backgroundColor: '#ef4444', borderRadius: '50%' }}></div>
+                      Booked
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                      <div style={{ width: '10px', height: '10px', backgroundColor: '#fef3c7', borderRadius: '50%', border: '1px solid #fde68a' }}></div>
+                      Partial
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                      <div style={{ width: '10px', height: '10px', backgroundColor: '#dbeafe', borderRadius: '50%', border: '2px solid #083A85' }}></div>
+                      Today
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1391,7 +1391,6 @@ function ViewProfileContent(): React.JSX.Element {
                     padding: '24px 28px',
                     backgroundColor: 'linear-gradient(135deg, #f0f9ff 0%, #dbeafe 100%)',
                     background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
-                    borderLeft: '4px solid #083A85',
                     borderRadius: '12px',
                     boxShadow: '0 4px 12px rgba(8, 58, 133, 0.1)',
                   }}>
@@ -1458,7 +1457,7 @@ function ViewProfileContent(): React.JSX.Element {
                             fontSize: '15px',
                             fontWeight: '700',
                             color: '#fff',
-                            backgroundColor: '#036920',
+                            backgroundColor: '#083A85',
                             padding: '4px 12px',
                             borderRadius: '12px',
                           }}>
@@ -1477,7 +1476,7 @@ function ViewProfileContent(): React.JSX.Element {
                             style={{
                               width: `${skill.level}%`,
                               height: '100%',
-                              background: 'linear-gradient(90deg, #083A85 0%, #05a332 0%)',
+                              background: 'linear-gradient(90deg, #083A85 0%, #3b82f6 100%)',
                               borderRadius: '10px',
                               transition: 'width 0.8s ease',
                               boxShadow: '0 0 10px rgba(8, 58, 133, 0.3)',
@@ -1494,9 +1493,12 @@ function ViewProfileContent(): React.JSX.Element {
 
               {/* Education */}
               <div style={{ marginBottom: '28px' }}>
-                <h3 style={{ fontSize: '19px', fontWeight: '700', color: '#000', marginBottom: '14px' }}>
-                  {t('portfolio.education')}
-                </h3>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
+                  <div style={{ width: '4px', height: '24px', backgroundColor: '#083A85', borderRadius: '2px' }}></div>
+                  <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#000', margin: 0 }}>
+                    {t('portfolio.education')}
+                  </h3>
+                </div>
                 {photographerData.portfolio.education.length > 0 ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     {photographerData.portfolio.education.map((edu) => (
@@ -1533,9 +1535,12 @@ function ViewProfileContent(): React.JSX.Element {
 
               {/* Qualifications & Certifications */}
               <div style={{ marginBottom: '28px' }}>
-                <h3 style={{ fontSize: '19px', fontWeight: '700', color: '#000', marginBottom: '14px' }}>
-                  {t('portfolio.qualifications')}
-                </h3>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
+                  <div style={{ width: '4px', height: '24px', backgroundColor: '#083A85', borderRadius: '2px' }}></div>
+                  <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#000', margin: 0 }}>
+                    {t('portfolio.qualifications')}
+                  </h3>
+                </div>
                 {photographerData.portfolio.qualifications.length > 0 ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     {photographerData.portfolio.qualifications.map((qual) => (
@@ -1579,9 +1584,12 @@ function ViewProfileContent(): React.JSX.Element {
 
               {/* Training */}
               <div style={{ marginBottom: '28px' }}>
-                <h3 style={{ fontSize: '19px', fontWeight: '700', color: '#000', marginBottom: '14px' }}>
-                  Professional Training
-                </h3>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
+                  <div style={{ width: '4px', height: '24px', backgroundColor: '#083A85', borderRadius: '2px' }}></div>
+                  <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#000', margin: 0 }}>
+                    Professional Training
+                  </h3>
+                </div>
                 {photographerData.portfolio.training.length > 0 ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     {photographerData.portfolio.training.map((training) => (
@@ -1591,7 +1599,6 @@ function ViewProfileContent(): React.JSX.Element {
                           padding: '16px',
                           backgroundColor: '#f0f9ff',
                           borderRadius: '10px',
-                          borderLeft: '4px solid #083A85',
                           position: 'relative',
                           overflow: 'hidden',
                         }}

@@ -35,6 +35,7 @@ const Events: React.FC = () => {
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [isMobile, setIsMobile] = useState(false);
+  const [showBanner, setShowBanner] = useState(true);
   const [userLocation, setUserLocation] = useState<LocationData | null>(null);
   const [availableDistricts, setAvailableDistricts] = useState<string[]>([]);
   const itemsPerPage = 12;
@@ -205,7 +206,7 @@ const Events: React.FC = () => {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(to bottom, #f9fafb 0%, #f3f4f6 50%, #e5e7eb 100%)'
+      background: '#f8fafc'
     }}>
       <style>{`
         .event-card {
@@ -275,6 +276,44 @@ const Events: React.FC = () => {
 
       <AmoriaKNavbar />
 
+      {/* CTA Banner Strip */}
+      {showBanner && (
+        <div style={{
+          padding: '0.65rem 1.5rem',
+          background: '#083A85',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '0.875rem'
+        }}>
+          <i className="bi bi-megaphone-fill" style={{ fontSize: '1rem', color: '#ffffff' }} />
+          <span style={{ fontSize: '0.9rem', color: 'rgba(255, 255, 255, 0.8)' }}>
+            The Smart Way to Capture Life
+          </span>
+          <span style={{ width: '1px', height: '18px', background: 'rgba(255, 255, 255, 0.25)' }} />
+          <span style={{ fontSize: '0.9rem', fontWeight: '700', color: '#ffffff' }}>
+            Discover amazing events near you!
+          </span>
+          <button
+            onClick={() => setShowBanner(false)}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'rgba(255, 255, 255, 0.5)',
+              cursor: 'pointer',
+              fontSize: '1.1rem',
+              padding: '0 0.25rem',
+              marginLeft: '0.5rem',
+              transition: 'color 0.2s ease'
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = 'rgba(255, 255, 255, 0.9)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = 'rgba(255, 255, 255, 0.5)'; }}
+          >
+            <i className="bi bi-x-lg" style={{ fontSize: '0.8rem' }} />
+          </button>
+        </div>
+      )}
+
       {/* Hero Section with Search and Filters */}
       <div style={{
         position: 'relative',
@@ -290,7 +329,7 @@ const Events: React.FC = () => {
         {/* Background Image with Blur Overlay */}
         <div style={{ position: 'absolute', inset: 0 }}>
           <img
-            src="https://i.pinimg.com/736x/1b/97/8d/1b978dbaab62a500d6915617c0cc43bb.jpg"
+            src="https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=1200&q=80"
             alt="Events Background"
             style={{
               width: '100%',
@@ -302,8 +341,8 @@ const Events: React.FC = () => {
           <div style={{
             position: 'absolute',
             inset: 0,
-            backgroundColor: 'linear-gradient(135deg, #ec4899 0%, #f97316 50%, #8b5cf6 100%)',
-            backdropFilter: 'blur(20px)'
+            background: 'linear-gradient(135deg, #083A85 0%, #0a4da3 50%, #083A85 100%)',
+            opacity: 0.78
           }}></div>
         </div>
 
@@ -355,7 +394,7 @@ const Events: React.FC = () => {
                   border: 'none',
                   fontSize: '1rem',
                   outline: 'none',
-                  backgroundColor: '#d4d4d4',
+                  backgroundColor: '#ffffff',
                   color: '#000000'
                 }}
               />
@@ -368,7 +407,7 @@ const Events: React.FC = () => {
                   transform: 'translateY(-50%)',
                   background: 'none',
                   border: 'none',
-                  color: '#9ca3af',
+                  color: '#083A85',
                   cursor: 'pointer',
                   fontSize: '1.25rem',
                   transition: 'all 0.3s ease'
@@ -520,9 +559,21 @@ const Events: React.FC = () => {
           WebkitOverflowScrolling: 'touch',
           scrollbarWidth: 'thin'
         }}>
+          {/* Connector Line - Full Width (attached to badge) */}
+          <div style={{
+            position: 'absolute',
+            left: '0',
+            right: '0',
+            top: '50%',
+            height: '3px',
+            background: 'linear-gradient(90deg, #083A85 0%, #0a4da3 50%, #083A85 100%)',
+            transform: 'translateY(-50%)',
+            zIndex: 0
+          }}></div>
+
           {/* Hot Live Trends Badge */}
           <div style={{
-            background: 'linear-gradient(135deg, #ec4899 0%, #f97316 50%, #8b5cf6 100%)',
+            background: 'linear-gradient(135deg, #083A85 0%, #0a4da3 100%)',
             padding: isMobile ? 'clamp(0.5rem, 2vw, 0.75rem) clamp(1rem, 3vw, 1.5rem)' : '0.75rem 1.5rem',
             borderRadius: '50px',
             display: 'flex',
@@ -532,7 +583,7 @@ const Events: React.FC = () => {
             fontSize: '1.1rem',
             color: 'white',
             whiteSpace: 'nowrap',
-            boxShadow: '0 4px 15px rgba(236, 72, 153, 0.4)',
+            boxShadow: '0 4px 15px rgba(8, 58, 133, 0.4)',
             flexShrink: 0,
             position: 'relative',
             zIndex: 2
@@ -586,8 +637,8 @@ const Events: React.FC = () => {
                   height: isMobile ? 'clamp(50px, 10vw, 70px)' : '70px',
                   borderRadius: '50%',
                   overflow: 'hidden',
-                  border: '3px solid #cf5704',
-                  boxShadow: '0 4px 10px rgba(249, 115, 22, 0.4)',
+                  border: '3px solid #083A85',
+                  boxShadow: '0 4px 10px rgba(8, 58, 133, 0.3)',
                   backgroundColor: 'white'
                 }}>
                   <img
