@@ -169,7 +169,11 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
 
     const isCard = selectedMethod === 'card';
     const paymentMethodType = isCard ? 'CARD' : 'MOBILE_MONEY';
-    const redirectUrl = isCard ? window.location.href : undefined;
+    // Use production URL for http (localhost), keep current URL for https (production)
+    const currentUrl = window.location.href;
+    const redirectUrl = isCard
+      ? (currentUrl.startsWith('http://') ? 'https://connekyt.com' : currentUrl)
+      : undefined;
 
     try {
       let response: { success: boolean; data?: XentriPayResponse; error?: string };
