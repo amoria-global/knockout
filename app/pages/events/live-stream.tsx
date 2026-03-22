@@ -1004,7 +1004,11 @@ const App = () => {
         ...(donAmt > 0 ? { donationAmount: donAmt } : {}),
         ...(isCard ? {} : { phone: paymentPhone, telecomProvider: providerMap[selectedPaymentMethod!] }),
         paymentMethod: paymentMethodType,
-        ...(isCard ? { redirectUrl: window.location.href } : {}),
+        ...(isCard ? {
+          redirectUrl: window.location.href.startsWith('http://')
+            ? 'https://connekyt.com'
+            : window.location.href
+        } : {}),
       });
 
       if (!response.success || !response.data) {
