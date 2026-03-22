@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
+import 'bootstrap-icons/font/bootstrap-icons.css';
 import Navbar from "../components/navbar";
 import Footer from "../components/footer";
 import { getCurrencies, createPublicDonation, getDonationTiers, getCurrencyRates, type Currency as APICurrency, type ExchangeRate } from '@/lib/APIs/public';
@@ -56,39 +57,29 @@ const FALLBACK_CURRENCY_CONFIG: Record<string, { symbol: string; rate: number; n
 
 const FALLBACK_TIER_AMOUNTS = [1000, 2000, 5000, 10000];
 
-// Get background color for impact cards based on main color
-const getImpactCardBg = (color: string): string => {
-  const colorMap: Record<string, string> = {
-    '#083A85': '#e8f4ff', // Blue -> Light blue
-    '#8B5CF6': '#f0e8ff', // Purple -> Light purple
-    '#FF6B6B': '#ffe8e8', // Red/coral -> Light pink
-    '#10B981': '#e8fff4', // Green -> Light green
-  };
-  return colorMap[color] || '#f5f5f5';
-};
-
 // Impact Counter Component
 const ImpactCounter = ({
   targetNumber,
   label,
   suffix = "",
+  icon,
   color = '#083A85',
   isVisible = false
 }: {
   targetNumber: number;
   label: string;
   suffix?: string;
+  icon: string;
   color?: string;
   isVisible?: boolean;
 }) => {
   const count = useCountUp(targetNumber, 2500, isVisible);
-  const bgColor = getImpactCardBg(color);
 
   return (
     <div style={{
       textAlign: 'center',
-      padding: '40px 25px',
-      backgroundColor: bgColor,
+      padding: '35px 25px',
+      backgroundColor: '#fff',
       borderRadius: '20px',
       transition: 'all 0.3s ease',
       cursor: 'default',
@@ -98,100 +89,55 @@ const ImpactCounter = ({
       display: 'flex',
       flexDirection: 'column',
       justifyContent: 'center',
+      boxShadow: '0 8px 30px rgba(0, 0, 0, 0.08)',
+      borderTop: `4px solid ${color}`,
+      borderBottom: `4px solid ${color}`,
     }}
     className="impact-card"
     >
-      {/* Grid Pattern Background */}
-      <svg
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          opacity: 0.3,
-          pointerEvents: 'none',
-        }}
-        viewBox="0 0 200 200"
-        preserveAspectRatio="xMidYMid slice"
-      >
-        {/* Row 1 */}
-        {/* Top left - Circle */}
-        <circle cx="25" cy="25" r="18" fill="none" stroke={color} strokeWidth="1.2" />
-
-        {/* Top left-center - Triangle */}
-        <polygon points="70,8 85,38 55,38" fill="none" stroke={color} strokeWidth="1.2" />
-
-        {/* Top center - Rounded square */}
-        <rect x="105" y="10" width="30" height="30" rx="6" fill="none" stroke={color} strokeWidth="1.2" />
-
-        {/* Top right - Small circle with dot */}
-        <circle cx="170" cy="25" r="15" fill="none" stroke={color} strokeWidth="1.2" />
-        <circle cx="170" cy="25" r="3" fill={color} fillOpacity="0.4" />
-
-        {/* Row 2 */}
-        {/* Left - Rounded rectangle */}
-        <rect x="8" y="60" width="32" height="42" rx="8" fill="none" stroke={color} strokeWidth="1.2" />
-
-        {/* Left-center - Circle */}
-        <circle cx="70" cy="80" r="16" fill="none" stroke={color} strokeWidth="1.2" />
-
-        {/* Center - Diamond/Rotated square */}
-        <rect x="110" y="65" width="24" height="24" rx="4" fill="none" stroke={color} strokeWidth="1.2" transform="rotate(45, 122, 77)" />
-
-        {/* Right - Tall rounded rectangle */}
-        <rect x="158" y="55" width="28" height="45" rx="8" fill="none" stroke={color} strokeWidth="1.2" />
-
-        {/* Row 3 */}
-        {/* Bottom left - Triangle pointing down */}
-        <polygon points="30,130 45,160 15,160" fill="none" stroke={color} strokeWidth="1.2" />
-
-        {/* Bottom left-center - Rounded square */}
-        <rect x="55" y="135" width="35" height="35" rx="10" fill="none" stroke={color} strokeWidth="1.2" />
-
-        {/* Bottom center - Circle */}
-        <circle cx="125" cy="155" r="20" fill="none" stroke={color} strokeWidth="1.2" />
-
-        {/* Bottom right - Cone/Triangle */}
-        <polygon points="170,130 185,175 155,175" fill="none" stroke={color} strokeWidth="1.2" />
-
-        {/* Extra small shapes for density */}
-        {/* Small circle top */}
-        <circle cx="145" cy="45" r="8" fill="none" stroke={color} strokeWidth="1" />
-
-        {/* Small square middle */}
-        <rect x="42" y="115" width="16" height="16" rx="3" fill="none" stroke={color} strokeWidth="1" />
-
-        {/* Small triangle */}
-        <polygon points="95,115 103,130 87,130" fill="none" stroke={color} strokeWidth="1" />
-
-        {/* Small circle bottom right */}
-        <circle cx="145" cy="125" r="10" fill="none" stroke={color} strokeWidth="1" />
-      </svg>
-
-      {/* Number */}
+      {/* Icon circle */}
       <div style={{
-        fontSize: '48px',
-        fontWeight: 800,
-        color: color,
-        lineHeight: 1.1,
-        marginBottom: '10px',
+        width: '56px',
+        height: '56px',
+        borderRadius: '16px',
+        backgroundColor: color,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        margin: '0 auto 16px',
         position: 'relative',
         zIndex: 2,
       }}>
-        {formatNumber(count)}{suffix}
+        <i className={icon} style={{
+          fontSize: '24px',
+          color: '#fff',
+        }} />
       </div>
 
-      {/* Label */}
-      <div style={{
-        fontSize: '15px',
-        color: '#555',
-        fontWeight: 600,
-        letterSpacing: '0.3px',
-        position: 'relative',
-        zIndex: 2,
-      }}>
-        {label}
+      {/* Number */}
+      <div>
+        <div style={{
+          fontSize: '44px',
+          fontWeight: 800,
+          color: '#1a1a2e',
+          lineHeight: 1.1,
+          marginBottom: '8px',
+          position: 'relative',
+          zIndex: 2,
+        }}>
+          {formatNumber(count)}{suffix}
+        </div>
+
+        <div style={{
+          fontSize: '14px',
+          color: '#6b7280',
+          fontWeight: 600,
+          letterSpacing: '0.3px',
+          position: 'relative',
+          zIndex: 2,
+        }}>
+          {label}
+        </div>
       </div>
     </div>
   );
@@ -205,7 +151,7 @@ const DonationCard = ({
   isActive,
   onClick
 }: {
-  icon: React.ReactNode;
+  icon: string;
   title: string;
   description: string;
   isActive: boolean;
@@ -221,28 +167,30 @@ const DonationCard = ({
       transition: 'all 0.3s ease',
       boxShadow: isActive
         ? '0 10px 40px rgba(8, 58, 133, 0.3)'
-        : '0 4px 20px rgba(0, 0, 0, 0.08)',
-      border: isActive ? '2px solid #083A85' : '2px solid transparent',
+        : '0 6px 24px rgba(0, 0, 0, 0.08)',
+      border: isActive ? '2px solid #083A85' : '2px solid #e5e7eb',
       transform: isActive ? 'translateY(-5px)' : 'translateY(0)',
     }}
   >
     <div style={{
-      width: '60px',
-      height: '60px',
-      borderRadius: '15px',
-      backgroundColor: isActive ? 'rgba(255,255,255,0.15)' : '#E8F4F8',
+      width: '56px',
+      height: '56px',
+      borderRadius: '16px',
+      backgroundColor: isActive ? 'rgba(255,255,255,0.15)' : '#083A85',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
       marginBottom: '20px',
-      color: isActive ? '#fff' : '#083A85',
     }}>
-      {icon}
+      <i className={icon} style={{
+        fontSize: '24px',
+        color: '#fff',
+      }} />
     </div>
     <h3 style={{
       fontSize: '20px',
       fontWeight: 700,
-      color: isActive ? '#fff' : '#000',
+      color: isActive ? '#fff' : '#1a1a2e',
       marginBottom: '12px',
     }}>
       {title}
@@ -250,7 +198,7 @@ const DonationCard = ({
     <p style={{
       fontSize: '14px',
       lineHeight: 1.6,
-      color: isActive ? 'rgba(255,255,255,0.85)' : '#666',
+      color: isActive ? 'rgba(255,255,255,0.85)' : '#6b7280',
       margin: 0,
     }}>
       {description}
@@ -289,34 +237,6 @@ const AmountButton = ({
   </button>
 );
 
-// Hero Stat Card Component with counting animation
-const HeroStatCard = ({
-  targetNumber,
-  label,
-  prefix = "",
-  suffix = "",
-  color,
-  isVisible
-}: {
-  targetNumber: number;
-  label: string;
-  prefix?: string;
-  suffix?: string;
-  color: string;
-  isVisible: boolean;
-}) => {
-  const count = useCountUp(targetNumber, 2000, isVisible);
-
-  return (
-    <>
-      <div style={{ fontSize: '24px', fontWeight: 700, color }}>
-        {prefix}{formatNumber(count)}{suffix}
-      </div>
-      <div style={{ fontSize: '12px', color: '#666' }}>{label}</div>
-    </>
-  );
-};
-
 
 const Donations = () => {
   const [activeCategory, setActiveCategory] = useState(0);
@@ -329,8 +249,6 @@ const Donations = () => {
   const [apiCurrencies, setApiCurrencies] = useState<APICurrency[]>([]);
 
   // Build currency config from API exchange rates, falling back to static config.
-  // rateToUsd semantics: "units of this currency per 1 USD" (e.g. KES=129.5 means 1 USD = 129.5 KES).
-  // To convert from base to target: rate = target.rateToUsd / base.rateToUsd
   const getCurrencyConfig = (code: string): { symbol: string; rate: number; name: string } => {
     const base = exchangeRateMap[apiBaseCurrency];
     const target = exchangeRateMap[code];
@@ -361,6 +279,8 @@ const Donations = () => {
   const impactSectionRef = useRef<HTMLDivElement>(null);
   const heroSectionRef = useRef<HTMLElement>(null);
 
+  const [showBanner, setShowBanner] = useState(true);
+
   // Payment modal state
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [donorFirstName, setDonorFirstName] = useState('');
@@ -375,10 +295,12 @@ const Donations = () => {
   // XentriPay modal state
   const [showXentriPayModal, setShowXentriPayModal] = useState(false);
   const [pendingDonationId, setPendingDonationId] = useState<string | null>(null);
+  const [donationFrequency, setDonationFrequency] = useState<'one-time' | 'monthly'>('one-time');
 
   // Reset payment modal state
   const resetPaymentModal = () => {
     setShowPaymentModal(false);
+    setDonationError(null);
   };
 
   // Handle donation - record donation then open XentriPay for payment
@@ -504,7 +426,6 @@ const Donations = () => {
     getCurrencyRates()
       .then(res => {
         if (res.success && res.data && Object.keys(res.data).length > 0) {
-          // Normalize to the ExchangeRate shape used by getCurrencyConfig
           const normalized: Record<string, ExchangeRate> = {};
           for (const [code, r] of Object.entries(res.data)) {
             normalized[code] = { symbol: r.symbol, rateToUsd: r.rateToUsd, rateUpdatedAt: r.rateUpdatedAt ?? undefined };
@@ -526,9 +447,7 @@ const Donations = () => {
       .catch(() => {});
   }, []);
 
-  // Build currency toggle list: use API exchange rates if available, otherwise API currencies, otherwise fallback
-  // Only offer multi-currency selection when the base currency rate is known.
-  // Without it, cross-currency conversion is impossible and would show wrong amounts.
+  // Build currency toggle list
   const baseRateKnown =
     exchangeRateMap[apiBaseCurrency]?.rateToUsd != null ||
     FALLBACK_CURRENCY_CONFIG[apiBaseCurrency] != null;
@@ -588,47 +507,22 @@ const Donations = () => {
 
   const categories = [
     {
-      icon: (
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-          <circle cx="9" cy="7" r="4"/>
-          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-        </svg>
-      ),
+      icon: "bi bi-people-fill",
       title: "Family Support",
       description: "Help families access healthcare, housing assistance, and essential living needs."
     },
     {
-      icon: (
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
-          <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
-        </svg>
-      ),
+      icon: "bi bi-book-fill",
       title: "Education",
       description: "Provide books, school supplies, and educational resources to children in need."
     },
     {
-      icon: (
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M12 2a10 10 0 1 0 10 10 4 4 0 0 1-5-5 4 4 0 0 1-5-5"/>
-          <path d="M8.5 8.5v.01"/>
-          <path d="M16 15.5v.01"/>
-          <path d="M12 12v.01"/>
-          <path d="M11 17v.01"/>
-          <path d="M7 14v.01"/>
-        </svg>
-      ),
+      icon: "bi bi-basket3-fill",
       title: "Food Programs",
       description: "Ensure nutritious meals reach those facing food insecurity in our communities."
     },
     {
-      icon: (
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
-        </svg>
-      ),
+      icon: "bi bi-heart-pulse-fill",
       title: "Disability Support",
       description: "Provide assistive devices and care for individuals with disabilities."
     },
@@ -637,25 +531,9 @@ const Donations = () => {
   return (
     <div className="donations-page">
       <style>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-10px); }
-        }
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.7; }
-        }
-        @keyframes slideInLeft {
-          from { opacity: 0; transform: translateX(-30px); }
-          to { opacity: 1; transform: translateX(0); }
-        }
-        @keyframes slideInRight {
-          from { opacity: 0; transform: translateX(30px); }
-          to { opacity: 1; transform: translateX(0); }
-        }
         .donation-card:hover {
           transform: translateY(-8px) !important;
-          box-shadow: 0 15px 45px rgba(8, 58, 133, 0.2) !important;
+          box-shadow: 0 15px 45px rgba(8, 58, 133, 0.15) !important;
         }
         .amount-btn:hover {
           border-color: #083A85 !important;
@@ -668,23 +546,18 @@ const Donations = () => {
         }
         .impact-card:hover {
           transform: translateY(-8px) !important;
-          box-shadow: 0 20px 50px rgba(0,0,0,0.12) !important;
+          box-shadow: 0 20px 50px rgba(0,0,0,0.1) !important;
         }
 
         @media (max-width: 768px) {
           /* Hero Section */
           .donations-page > section:first-of-type { min-height: auto !important; }
-          .hero-content { flex-direction: column !important; text-align: center !important; padding: 40px 15px 30px !important; gap: 10px !important; }
-          .hero-left, .hero-right { width: 100% !important; max-width: 100% !important; }
+          .hero-content { padding: 50px 15px 40px !important; }
           .hero-title { font-size: 32px !important; line-height: 1.15 !important; }
-          .hero-left p { font-size: 15px !important; margin-bottom: 20px !important; }
-          .hero-left > div:first-child { justify-content: center !important; }
-          .hero-right { margin-top: 10px !important; height: 280px !important; display: flex !important; align-items: center !important; justify-content: center !important; }
-          .hero-right > div:first-child { width: 140px !important; height: 140px !important; border-radius: 22px !important; }
-          .hero-right > div:first-child svg { width: 55px !important; height: 55px !important; }
-          .hero-right > div:nth-child(2) { top: 5px !important; right: 15% !important; padding: 10px 14px !important; }
-          .hero-right > div:nth-child(3) { bottom: 15px !important; left: 15% !important; padding: 10px 14px !important; }
-          .hero-left > div:last-child { justify-content: center !important; }
+          .hero-content p { font-size: 15px !important; }
+          .hero-stats { gap: 20px !important; }
+          .hero-stat-item { padding: 12px 16px !important; }
+          .hero-buttons { justify-content: center !important; }
 
           /* Impact Statistics Section */
           .impact-section { padding: 60px 15px !important; }
@@ -733,9 +606,8 @@ const Donations = () => {
 
         @media (max-width: 480px) {
           .hero-title { font-size: 26px !important; }
-          .hero-right { height: 220px !important; }
-          .hero-right > div:first-child { width: 110px !important; height: 110px !important; }
-          .hero-right > div:first-child svg { width: 42px !important; height: 42px !important; }
+          .hero-stats { flex-direction: column !important; align-items: center !important; }
+          .hero-stat-item { width: 100% !important; max-width: 280px !important; }
           .impact-grid { grid-template-columns: 1fr 1fr !important; gap: 12px !important; }
           .impact-card { padding: 20px 10px !important; min-height: 120px !important; }
           .impact-card > div:nth-child(2) { font-size: 28px !important; }
@@ -749,213 +621,231 @@ const Donations = () => {
 
       <Navbar />
 
-      {/* Hero Section - Inspired by CLP design with dark gradient */}
+      {/* CTA Banner Strip */}
+      {showBanner && (
+        <div style={{
+          padding: '0.65rem 1.5rem',
+          background: '#083A85',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '0.875rem',
+          cursor: 'pointer',
+          position: 'fixed',
+          top: '68px',
+          left: 0,
+          right: 0,
+          zIndex: 49,
+        }}
+          onClick={() => document.getElementById('donate-section')?.scrollIntoView({ behavior: 'smooth' })}
+        >
+          <i className="bi bi-heart-fill" style={{ fontSize: '1rem', color: '#ffffff' }} />
+          <span style={{ fontSize: '0.9rem', color: 'rgba(255, 255, 255, 0.8)' }}>
+            Every Contribution Matters
+          </span>
+          <span style={{ width: '1px', height: '18px', background: 'rgba(255, 255, 255, 0.25)' }} />
+          <span style={{ fontSize: '0.9rem', fontWeight: '700', color: '#ffffff' }}>
+            Transform lives with your generosity!
+          </span>
+          <button
+            onClick={(e) => { e.stopPropagation(); document.getElementById('donate-section')?.scrollIntoView({ behavior: 'smooth' }); }}
+            style={{
+              background: '#fff',
+              color: '#083A85',
+              border: 'none',
+              padding: '0.35rem 1rem',
+              borderRadius: '6px',
+              fontSize: '0.8rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              marginLeft: '0.25rem',
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
+          >
+            Donate Now
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); setShowBanner(false); }}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'rgba(255, 255, 255, 0.5)',
+              cursor: 'pointer',
+              fontSize: '1.1rem',
+              padding: '0 0.25rem',
+              marginLeft: '0.5rem',
+              transition: 'color 0.2s ease',
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = 'rgba(255, 255, 255, 0.9)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = 'rgba(255, 255, 255, 0.5)'; }}
+          >
+            <i className="bi bi-x-lg" style={{ fontSize: '0.8rem' }} />
+          </button>
+        </div>
+      )}
+
+      {/* Hero Section */}
       <section
         ref={heroSectionRef}
         style={{
-          background: 'linear-gradient(135deg, #0a1628 0%, #1a3a5c 50%, #0d2847 100%)',
           position: 'relative',
           overflow: 'hidden',
-          minHeight: '500px',
         }}
       >
-        {/* Animated background elements */}
-        <div style={{
-          position: 'absolute',
-          top: '10%',
-          left: '5%',
-          width: '300px',
-          height: '300px',
-          background: 'radial-gradient(circle, rgba(8, 58, 133, 0.3) 0%, transparent 70%)',
-          borderRadius: '50%',
-          filter: 'blur(60px)',
-          animation: 'pulse 4s ease-in-out infinite',
-        }} />
-        <div style={{
-          position: 'absolute',
-          bottom: '10%',
-          right: '10%',
-          width: '250px',
-          height: '250px',
-          background: 'radial-gradient(circle, rgba(255, 107, 107, 0.2) 0%, transparent 70%)',
-          borderRadius: '50%',
-          filter: 'blur(50px)',
-          animation: 'pulse 5s ease-in-out infinite',
-        }} />
-
-        {/* Dashed border box decoration */}
-        <div style={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: '60%',
-          height: '70%',
-          border: '2px dashed rgba(255,255,255,0.15)',
-          borderRadius: '30px',
-          pointerEvents: 'none',
-        }} />
+        {/* Background image with overlay — same pattern as events page */}
+        <div style={{ position: 'absolute', inset: 0 }}>
+          <img
+            src="/students.png"
+            alt="Donations Background"
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              objectPosition: 'center',
+              filter: 'blur(6px)',
+              transform: 'scale(1.05)',
+            }}
+          />
+          <div style={{
+            position: 'absolute',
+            inset: 0,
+            background: 'linear-gradient(135deg, #083A85 0%, #0a4da3 50%, #083A85 100%)',
+            opacity: 0.78,
+          }} />
+        </div>
 
         <div className="hero-content" style={{
-          maxWidth: '1200px',
+          maxWidth: '900px',
           margin: '0 auto',
-          padding: '80px 40px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
+          padding: 'clamp(24px, 4vw, 48px) clamp(15px, 4vw, 40px)',
           position: 'relative',
           zIndex: 2,
+          textAlign: 'center',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: 'calc(100vh - 110px)',
         }}>
-          <div className="hero-left" style={{ maxWidth: '550px' }}>
-            {/* Badge */}
-            <div style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '8px',
-              backgroundColor: 'rgba(255,255,255,0.1)',
-              padding: '10px 20px',
-              borderRadius: '50px',
-              marginBottom: '25px',
-              backdropFilter: 'blur(10px)',
-            }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="#FF6B6B">
-                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-              </svg>
-              <span style={{ color: '#fff', fontSize: '14px', fontWeight: 500 }}>Making a Difference Together</span>
-            </div>
-
-            <h1 className="hero-title" style={{
-              fontSize: '59px',
-              fontWeight: 700,
-              color: '#fff',
-              lineHeight: 1.1,
-              marginBottom: '20px',
-              letterSpacing: '-0.02em',
-            }}>
-              <span style={{ color: '#FF6B6B' }}>Transform Lives</span>
-              <br />
-              Through Your Generosity
-            </h1>
-
-            <p style={{
-              fontSize: '17px',
-              color: 'rgba(255,255,255,0.8)',
-              lineHeight: 1.7,
-              marginBottom: '30px',
-            }}>
-              At Amoria Connekyt, we believe in the power of community. Every donation helps us support vulnerable families, educate children, feed the hungry, and empower those with disabilities.
-            </p>
-
-            <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
-              <button
-                onClick={() => document.getElementById('donate-section')?.scrollIntoView({ behavior: 'smooth' })}
-                style={{
-                  backgroundColor: '#FF6B6B',
-                  color: '#fff',
-                  padding: '14px 32px',
-                  borderRadius: '50px',
-                  border: 'none',
-                  fontSize: '16px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease',
-                  boxShadow: '0 4px 20px rgba(255, 107, 107, 0.4)',
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
-              >
-                Donate Now
-              </button>
-              <button
-                onClick={() => document.getElementById('impact-section')?.scrollIntoView({ behavior: 'smooth' })}
-                style={{
-                  backgroundColor: 'transparent',
-                  color: '#fff',
-                  padding: '14px 32px',
-                  borderRadius: '50px',
-                  border: '2px solid rgba(255,255,255,0.4)',
-                  fontSize: '16px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease',
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
-              >
-                See Our Impact
-              </button>
-            </div>
+          {/* Badge */}
+          <div style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            backgroundColor: 'rgba(255,255,255,0.12)',
+            padding: '8px 18px',
+            borderRadius: '50px',
+            marginBottom: '14px',
+            backdropFilter: 'blur(10px)',
+            border: '1px solid rgba(255,255,255,0.15)',
+          }}>
+            <i className="bi bi-heart-fill" style={{ fontSize: '12px', color: '#fff' }} />
+            <span style={{ color: '#fff', fontSize: '13px', fontWeight: 500 }}>Making a Difference Together</span>
           </div>
 
-          {/* Right side - Decorative elements */}
-          <div className="hero-right" style={{
-            position: 'relative',
-            width: '400px',
-            height: '400px',
+          <h1 className="hero-title" style={{
+            fontSize: 'clamp(28px, 5vw, 48px)',
+            fontWeight: 700,
+            color: '#fff',
+            lineHeight: 1.15,
+            marginBottom: '12px',
+            letterSpacing: '-0.02em',
+            fontFamily: "'Pragati Narrow', sans-serif",
           }}>
-            {/* Central icon/graphic */}
-            <div style={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              width: '200px',
-              height: '200px',
-              background: 'linear-gradient(135deg, #083A85 0%, #FF6B6B 100%)',
-              borderRadius: '30px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
-              animation: 'float 3s ease-in-out infinite',
-            }}>
-              <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.5">
-                <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
-                <path d="M12 5v14M5 12h14" strokeOpacity="0.5"/>
-              </svg>
-            </div>
+            Transform Lives Through
+            <br />
+            Your Generosity
+          </h1>
 
-            {/* Floating cards */}
-            <div style={{
-              position: 'absolute',
-              top: '20px',
-              right: '30px',
-              backgroundColor: '#fff',
-              padding: '15px 20px',
-              borderRadius: '15px',
-              boxShadow: '0 10px 30px rgba(0,0,0,0.15)',
-              animation: 'float 4s ease-in-out infinite',
-              animationDelay: '0.5s',
-            }}>
-              <HeroStatCard
-                targetNumber={50}
-                label="Families Helped"
-                suffix="+"
-                color="#083A85"
-                isVisible={heroVisible}
-              />
-            </div>
+          <p style={{
+            fontSize: '16px',
+            color: 'rgba(255,255,255,0.85)',
+            lineHeight: 1.6,
+            maxWidth: '600px',
+            margin: '0 auto 22px',
+          }}>
+            At Amoria Connekyt, we believe in the power of community. Every donation helps us support vulnerable families, educate children, feed the hungry, and empower those with disabilities.
+          </p>
 
-            <div style={{
-              position: 'absolute',
-              bottom: '40px',
-              left: '20px',
-              backgroundColor: '#fff',
-              padding: '15px 20px',
-              borderRadius: '15px',
-              boxShadow: '0 10px 30px rgba(0,0,0,0.15)',
-              animation: 'float 4s ease-in-out infinite',
-              animationDelay: '1s',
-            }}>
-              <HeroStatCard
-                targetNumber={2}
-                label="Donated"
-                prefix="$"
-                suffix="K+"
-                color="#FF6B6B"
-                isVisible={heroVisible}
-              />
-            </div>
+          {/* Buttons */}
+          <div className="hero-buttons" style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '28px' }}>
+            <button
+              onClick={() => document.getElementById('donate-section')?.scrollIntoView({ behavior: 'smooth' })}
+              style={{
+                backgroundColor: '#fff',
+                color: '#083A85',
+                padding: '12px 32px',
+                borderRadius: '12px',
+                border: 'none',
+                fontSize: '15px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                boxShadow: '0 4px 14px rgba(0, 0, 0, 0.15)',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.2)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(0,0,0,0.15)'; }}
+            >
+              Donate Now
+            </button>
+            <button
+              onClick={() => document.getElementById('impact-section')?.scrollIntoView({ behavior: 'smooth' })}
+              style={{
+                backgroundColor: 'transparent',
+                color: '#fff',
+                padding: '12px 32px',
+                borderRadius: '12px',
+                border: '2px solid rgba(255,255,255,0.35)',
+                fontSize: '15px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.6)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.35)'; }}
+            >
+              See Our Impact
+            </button>
+          </div>
+
+          {/* Stat badges - inline row */}
+          <div className="hero-stats" style={{
+            display: 'flex',
+            justifyContent: 'center',
+            gap: '20px',
+            flexWrap: 'wrap',
+          }}>
+            {[
+              { icon: 'bi bi-people-fill', number: 50, suffix: '+', label: 'Families Helped' },
+              { icon: 'bi bi-mortarboard-fill', number: 120, suffix: '+', label: 'Children Educated' },
+              { icon: 'bi bi-cash-stack', number: 2, prefix: '$', suffix: 'K+', label: 'Total Donated' },
+            ].map((stat, i) => {
+              const count = useCountUp(stat.number, 2000, heroVisible);
+              return (
+                <div key={i} className="hero-stat-item" style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  backgroundColor: 'rgba(255,255,255,0.1)',
+                  backdropFilter: 'blur(10px)',
+                  padding: '10px 18px',
+                  borderRadius: '12px',
+                  border: '1px solid rgba(255,255,255,0.12)',
+                }}>
+                  <i className={stat.icon} style={{ fontSize: '18px', color: '#fff', opacity: 0.9 }} />
+                  <div>
+                    <div style={{ fontSize: '19px', fontWeight: 700, color: '#fff', lineHeight: 1.1 }}>
+                      {stat.prefix || ''}{formatNumber(count)}{stat.suffix}
+                    </div>
+                    <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.7)', fontWeight: 500 }}>
+                      {stat.label}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -966,31 +856,31 @@ const Donations = () => {
         ref={impactSectionRef}
         className="impact-section"
         style={{
-          background: 'linear-gradient(180deg, #fff 0%, #f0f4f8 100%)',
-          padding: '100px 20px',
+          background: '#f0f4f8',
+          padding: '80px 20px',
           position: 'relative',
           overflow: 'hidden',
         }}
       >
-        {/* Background decorative elements */}
+        {/* Subtle background accents */}
         <div style={{
           position: 'absolute',
-          top: '10%',
-          left: '-5%',
+          top: '-50px',
+          right: '-80px',
           width: '300px',
           height: '300px',
           borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(8, 58, 133, 0.05) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(8, 58, 133, 0.06) 0%, transparent 70%)',
           pointerEvents: 'none',
         }} />
         <div style={{
           position: 'absolute',
-          bottom: '10%',
-          right: '-5%',
+          bottom: '-40px',
+          left: '-60px',
           width: '250px',
           height: '250px',
           borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(255, 107, 107, 0.05) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(8, 58, 133, 0.04) 0%, transparent 70%)',
           pointerEvents: 'none',
         }} />
 
@@ -1000,7 +890,7 @@ const Donations = () => {
           position: 'relative',
           zIndex: 1,
         }}>
-          <div style={{ textAlign: 'center', marginBottom: '60px' }}>
+          <div style={{ textAlign: 'center', marginBottom: '50px' }}>
             {/* Badge */}
             <div style={{
               display: 'inline-flex',
@@ -1009,35 +899,25 @@ const Donations = () => {
               backgroundColor: 'rgba(8, 58, 133, 0.08)',
               padding: '8px 20px',
               borderRadius: '50px',
-              marginBottom: '20px',
+              marginBottom: '18px',
             }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#083A85" strokeWidth="2">
-                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                <polyline points="22 4 12 14.01 9 11.01"/>
-              </svg>
+              <i className="bi bi-bar-chart-fill" style={{ fontSize: '14px', color: '#083A85' }} />
               <span style={{ color: '#083A85', fontSize: '14px', fontWeight: 600 }}>Making Real Difference</span>
             </div>
 
             <h2 className="section-title" style={{
-              fontSize: '59px',
+              fontSize: 'clamp(30px, 5vw, 48px)',
               fontWeight: 700,
-              marginBottom: '18px',
+              marginBottom: '14px',
               lineHeight: 1.1,
             }}>
-              <span style={{
-                background: 'linear-gradient(90deg, #FF6B6B 0%, #8B5CF6 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-              }}>
-                Our Impact
-              </span>{' '}
-              <span style={{ color: '#000' }}>in Numbers</span>
+              <span style={{ color: '#083A85' }}>Our Impact</span>{' '}
+              <span style={{ color: '#1a1a2e' }}>in Numbers</span>
             </h2>
             <p className="section-subtitle" style={{
-              fontSize: '18px',
-              color: '#666',
-              maxWidth: '650px',
+              fontSize: '17px',
+              color: '#6b7280',
+              maxWidth: '600px',
               margin: '0 auto',
               lineHeight: 1.7,
             }}>
@@ -1054,6 +934,7 @@ const Donations = () => {
               targetNumber={120}
               label="Children Educated"
               suffix="+"
+              icon="bi bi-mortarboard-fill"
               color="#083A85"
               isVisible={impactVisible}
             />
@@ -1061,157 +942,132 @@ const Donations = () => {
               targetNumber={50}
               label="Families Supported"
               suffix="+"
-              color="#8B5CF6"
+              icon="bi bi-people-fill"
+              color="#0a4da3"
               isVisible={impactVisible}
             />
             <ImpactCounter
               targetNumber={300}
               label="Meals Provided"
               suffix="+"
-              color="#FF6B6B"
+              icon="bi bi-basket3-fill"
+              color="#1060b5"
               isVisible={impactVisible}
             />
             <ImpactCounter
               targetNumber={15}
               label="Disabilities Aided"
               suffix="+"
-              color="#10B981"
+              icon="bi bi-heart-pulse-fill"
+              color="#1873c7"
               isVisible={impactVisible}
             />
           </div>
         </div>
       </section>
 
-      {/* Education Section - Curved design inspired by BRD */}
+      {/* Education Section */}
       <section className="education-section" style={{
+        backgroundColor: '#fff',
+        padding: '80px 20px',
         position: 'relative',
-        overflow: 'hidden',
-        padding: '0',
-        marginTop: '-1px',
       }}>
-        {/* Curved top background shape */}
-        <div className="education-bg-curve" style={{
-          position: 'absolute',
-          top: 0,
-          left: '-10%',
-          width: '120%',
-          height: '100%',
-          backgroundColor: '#083A85',
-          borderRadius: '500px 500px 0 0',
-          zIndex: 0,
-        }} />
-
-        {/* Inner curved container for the content */}
-        <div className="education-inner" style={{
+        <div className="mission-content" style={{
+          maxWidth: '1200px',
+          margin: '0 auto',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '60px',
           position: 'relative',
-          zIndex: 1,
-          paddingTop: '30px',
         }}>
-          {/* Top curved edge overlay */}
-          <div className="education-curve-overlay" style={{
-            position: 'absolute',
-            top: 0,
-            left: '50%',
-            transform: 'translateX(-50%)',
-            width: '120%',
-            height: '100px',
-            backgroundColor: '#fff',
-            borderRadius: '0 0 50% 50%',
-          }} />
-
-          <div className="mission-content" style={{
-            maxWidth: '1200px',
-            margin: '0 auto',
-            padding: '100px 40px 80px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '60px',
-            position: 'relative',
-            zIndex: 2,
-          }}>
-            <div className="mission-left" style={{ flex: 1, maxWidth: '550px' }}>
-              <h2 style={{
-                fontSize: '57px',
-                fontWeight: 700,
-                color: '#fff',
-                marginBottom: '25px',
-                lineHeight: 1.2,
-              }}>
-                Education for Every Child
-              </h2>
-              <p style={{
-                fontSize: '18px',
-                color: 'rgba(255,255,255,0.85)',
-                lineHeight: 1.8,
-                marginBottom: '20px',
-              }}>
-                Through donations collected on Amoria Connekyt, we provide essential educational resources to underprivileged children. Books, school supplies, and learning materials open doors to brighter futures.
-              </p>
-              <p style={{
-                fontSize: '18px',
-                color: 'rgba(255,255,255,0.85)',
-                lineHeight: 1.8,
-                marginBottom: '30px',
-              }}>
-                Your contribution directly impacts a child's ability to learn, grow, and dream. Together, we're building a foundation for the next generation of leaders, thinkers, and changemakers.
-              </p>
-              <button
-                onClick={() => document.getElementById('donate-section')?.scrollIntoView({ behavior: 'smooth' })}
-                style={{
-                  backgroundColor: '#fff',
-                  color: '#083A85',
-                  padding: '14px 32px',
-                  borderRadius: '50px',
-                  border: 'none',
-                  fontSize: '16px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease',
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
-              >
-                Support Education
-              </button>
+          <div className="mission-left" style={{ flex: 1, maxWidth: '550px' }}>
+            {/* Badge */}
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              backgroundColor: 'rgba(8, 58, 133, 0.08)',
+              padding: '8px 18px',
+              borderRadius: '50px',
+              marginBottom: '18px',
+            }}>
+              <i className="bi bi-mortarboard-fill" style={{ fontSize: '13px', color: '#083A85' }} />
+              <span style={{ color: '#083A85', fontSize: '13px', fontWeight: 600 }}>Education</span>
             </div>
 
-            <div className="mission-right" style={{
-              flex: 1,
-              display: 'flex',
-              justifyContent: 'flex-end',
-              alignItems: 'center',
+            <h2 style={{
+              fontSize: 'clamp(30px, 5vw, 48px)',
+              fontWeight: 700,
+              color: '#1a1a2e',
+              marginBottom: '20px',
+              lineHeight: 1.2,
             }}>
-              {/* Large rounded container matching BRD style */}
-              <div style={{
-                position: 'relative',
-                width: '100%',
-                maxWidth: '550px',
-                backgroundColor: 'rgba(255,255,255,0.08)',
-                borderRadius: '0 200px 200px 0',
-                padding: '50px 50px 50px 0',
-                marginRight: '-50px',
-              }}>
-                <div style={{
-                  position: 'relative',
-                  borderRadius: '30px 180px 180px 30px',
-                  overflow: 'hidden',
-                  backgroundColor: '#fff',
-                }}>
-                  <img
-                    className="section-img"
-                    src="/students.png"
-                    alt="Children receiving educational support"
-                    style={{
-                      width: '100%',
-                      height: 'auto',
-                      display: 'block',
-                      minHeight: '380px',
-                      minWidth: '450px',
-                      objectFit: 'cover',
-                    }}
-                  />
-                </div>
-              </div>
+              Education for{' '}
+              <span style={{ color: '#083A85' }}>Every Child</span>
+            </h2>
+            <p style={{
+              fontSize: '16px',
+              color: '#374151',
+              lineHeight: 1.8,
+              marginBottom: '16px',
+            }}>
+              Through donations collected on Amoria Connekyt, we provide essential educational resources to underprivileged children. Books, school supplies, and learning materials open doors to brighter futures.
+            </p>
+            <p style={{
+              fontSize: '16px',
+              color: '#374151',
+              lineHeight: 1.8,
+              marginBottom: '28px',
+            }}>
+              Your contribution directly impacts a child's ability to learn, grow, and dream. Together, we're building a foundation for the next generation of leaders, thinkers, and changemakers.
+            </p>
+            <button
+              onClick={() => document.getElementById('donate-section')?.scrollIntoView({ behavior: 'smooth' })}
+              style={{
+                backgroundColor: '#083A85',
+                color: '#fff',
+                padding: '12px 32px',
+                borderRadius: '12px',
+                border: 'none',
+                fontSize: '15px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                boxShadow: '0 4px 14px rgba(8, 58, 133, 0.3)',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 20px rgba(8,58,133,0.4)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(8,58,133,0.3)'; }}
+            >
+              Support Education
+            </button>
+          </div>
+
+          <div className="mission-right" style={{
+            flex: 1,
+            display: 'flex',
+            justifyContent: 'flex-end',
+            alignItems: 'center',
+          }}>
+            <div style={{
+              position: 'relative',
+              borderRadius: '20px',
+              overflow: 'hidden',
+              boxShadow: '0 20px 50px rgba(0,0,0,0.12)',
+            }}>
+              <img
+                className="section-img"
+                src="/students.png"
+                alt="Children receiving educational support"
+                style={{
+                  width: '100%',
+                  maxWidth: '550px',
+                  minWidth: '450px',
+                  minHeight: '360px',
+                  height: 'auto',
+                  display: 'block',
+                  objectFit: 'cover',
+                }}
+              />
             </div>
           </div>
         </div>
@@ -1219,7 +1075,7 @@ const Donations = () => {
 
       {/* Family Support Section */}
       <section className="family-section" style={{
-        backgroundColor: '#f8f9fa',
+        backgroundColor: '#f0f4f8',
         padding: '80px 20px',
         position: 'relative',
       }}>
@@ -1232,59 +1088,53 @@ const Donations = () => {
           flexDirection: 'row-reverse',
         }}>
           <div className="mission-left" style={{ flex: 1, maxWidth: '550px' }}>
+            {/* Badge */}
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              backgroundColor: 'rgba(8, 58, 133, 0.08)',
+              padding: '8px 18px',
+              borderRadius: '50px',
+              marginBottom: '18px',
+            }}>
+              <i className="bi bi-people-fill" style={{ fontSize: '13px', color: '#083A85' }} />
+              <span style={{ color: '#083A85', fontSize: '13px', fontWeight: 600 }}>Family Support</span>
+            </div>
+
             <h2 style={{
-              fontSize: '59px',
+              fontSize: 'clamp(30px, 5vw, 48px)',
               fontWeight: 700,
-              color: '#000',
-              marginBottom: '25px',
+              color: '#1a1a2e',
+              marginBottom: '20px',
               lineHeight: 1.2,
             }}>
-              <span style={{
-                background: 'linear-gradient(90deg, #FF6B6B 0%, #8B5CF6 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-              }}>
-                Supporting Families
-              </span>
-              <br />
-              In Times of Need
+              Supporting Families{' '}
+              <span style={{ color: '#083A85' }}>In Times of Need</span>
             </h2>
             <p style={{
-              fontSize: '18px',
-              color: '#1f1d1d',
+              fontSize: '16px',
+              color: '#374151',
               lineHeight: 1.8,
-              marginBottom: '20px',
+              marginBottom: '16px',
             }}>
               Healthcare costs shouldn't force families to choose between medicine and meals. Amoria Connekyt channels your donations to provide medical bill assistance, insurance support, and essential healthcare access.
             </p>
             <p style={{
-              fontSize: '18px',
-              color: '#1f1d1d',
+              fontSize: '16px',
+              color: '#374151',
               lineHeight: 1.8,
-              marginBottom: '30px',
+              marginBottom: '28px',
             }}>
               From emergency medical needs to ongoing care, your generosity ensures no family faces health challenges alone. Together, we create a safety net of compassion and support.
             </p>
 
             {/* Feature list */}
-            <div className="feature-list" style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+            <div className="feature-list" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {['Medical Bills Assistance', 'Health Insurance Support', 'Emergency Care Fund'].map((item, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{
-                    width: '24px',
-                    height: '24px',
-                    borderRadius: '50%',
-                    backgroundColor: '#083A85',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3">
-                      <polyline points="20 6 9 17 4 12"/>
-                    </svg>
-                  </div>
-                  <span style={{ fontSize: '18px', color: '#1f1d1d', fontWeight: 500 }}>{item}</span>
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <i className="bi bi-check-circle-fill" style={{ fontSize: '16px', color: '#083A85' }} />
+                  <span style={{ fontSize: '16px', color: '#374151', fontWeight: 500 }}>{item}</span>
                 </div>
               ))}
             </div>
@@ -1297,9 +1147,9 @@ const Donations = () => {
           }}>
             <div style={{
               position: 'relative',
-              borderRadius: '25px',
+              borderRadius: '20px',
               overflow: 'hidden',
-              boxShadow: '0 25px 60px rgba(0,0,0,0.15)',
+              boxShadow: '0 20px 50px rgba(0,0,0,0.12)',
             }}>
               <img
                 className="section-img"
@@ -1307,9 +1157,9 @@ const Donations = () => {
                 alt="Family receiving healthcare support"
                 style={{
                   width: '100%',
-                  maxWidth: '600px',
-                  minWidth: '500px',
-                  minHeight: '350px',
+                  maxWidth: '550px',
+                  minWidth: '450px',
+                  minHeight: '360px',
                   height: 'auto',
                   display: 'block',
                   objectFit: 'cover',
@@ -1320,7 +1170,7 @@ const Donations = () => {
         </div>
       </section>
 
-      {/* Donation Categories Section - Card design inspired */}
+      {/* Donation Categories Section */}
       <section style={{
         backgroundColor: '#fff',
         padding: '80px 20px',
@@ -1330,25 +1180,32 @@ const Donations = () => {
           margin: '0 auto',
         }}>
           <div style={{ textAlign: 'center', marginBottom: '50px' }}>
+            {/* Badge */}
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              backgroundColor: 'rgba(8, 58, 133, 0.08)',
+              padding: '8px 18px',
+              borderRadius: '50px',
+              marginBottom: '18px',
+            }}>
+              <i className="bi bi-grid-fill" style={{ fontSize: '13px', color: '#083A85' }} />
+              <span style={{ color: '#083A85', fontSize: '13px', fontWeight: 600 }}>Categories</span>
+            </div>
+
             <h2 className="categories-title" style={{
-              fontSize: '59px',
+              fontSize: 'clamp(30px, 5vw, 48px)',
               fontWeight: 700,
-              marginBottom: '15px',
+              marginBottom: '14px',
               lineHeight: 1.1,
             }}>
-              <span style={{ color: '#000' }}>Choose Where Your</span>{' '}
-              <span style={{
-                background: 'linear-gradient(90deg, #FF6B6B 0%, #8B5CF6 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-              }}>
-                Donation Goes
-              </span>
+              <span style={{ color: '#1a1a2e' }}>Choose Where Your</span>{' '}
+              <span style={{ color: '#083A85' }}>Donation Goes</span>
             </h2>
             <p className="section-subtitle" style={{
-              fontSize: '18px',
-              color: '#666',
+              fontSize: '17px',
+              color: '#6b7280',
               maxWidth: '600px',
               margin: '0 auto',
               lineHeight: 1.6,
@@ -1378,7 +1235,7 @@ const Donations = () => {
 
       {/* Donation Form Section */}
       <section id="donate-section" style={{
-        background: 'linear-gradient(135deg, #E8F4F8 0%, #f0f4f8 100%)',
+        background: 'linear-gradient(135deg, #f8fafc 0%, #f0f4f8 100%)',
         padding: '80px 20px',
       }}>
         <div style={{
@@ -1387,23 +1244,17 @@ const Donations = () => {
         }}>
           <div style={{ textAlign: 'center', marginBottom: '50px' }}>
             <h2 className="section-title" style={{
-              fontSize: '59px',
+              fontSize: 'clamp(30px, 5vw, 48px)',
               fontWeight: 700,
-              marginBottom: '15px',
+              marginBottom: '14px',
               lineHeight: 1.1,
             }}>
-              <span style={{
-                background: 'linear-gradient(90deg, #083A85 0%, #8B5CF6 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-              }}>
-                Make Your Donation
-              </span>
+              <span style={{ color: '#1a1a2e' }}>Make Your</span>{' '}
+              <span style={{ color: '#083A85' }}>Donation</span>
             </h2>
             <p className="section-subtitle" style={{
               fontSize: '18px',
-              color: '#666',
+              color: '#6b7280',
               maxWidth: '500px',
               margin: '0 auto',
               lineHeight: 1.6,
@@ -1416,7 +1267,7 @@ const Donations = () => {
             backgroundColor: '#fff',
             borderRadius: '30px',
             padding: '50px',
-            boxShadow: '0 20px 60px rgba(0,0,0,0.1)',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.08)',
           }}>
             <div className="donation-form-container" style={{
               display: 'flex',
@@ -1438,7 +1289,7 @@ const Donations = () => {
                   <div style={{
                     display: 'flex',
                     gap: '8px',
-                    backgroundColor: '#f5f5f5',
+                    backgroundColor: '#f3f4f6',
                     padding: '4px',
                     borderRadius: '10px',
                   }}>
@@ -1456,7 +1307,7 @@ const Donations = () => {
                           borderRadius: '8px',
                           border: 'none',
                           backgroundColor: currency === curr ? '#083A85' : 'transparent',
-                          color: currency === curr ? '#fff' : '#666',
+                          color: currency === curr ? '#fff' : '#6b7280',
                           cursor: 'pointer',
                           transition: 'all 0.2s ease',
                         }}
@@ -1493,7 +1344,7 @@ const Donations = () => {
                     display: 'block',
                     fontSize: '14px',
                     fontWeight: 500,
-                    color: '#666',
+                    color: '#6b7280',
                     marginBottom: '10px',
                   }}>
                     Or enter custom amount ({getCurrencyConfig(currency).name})
@@ -1506,7 +1357,7 @@ const Donations = () => {
                     padding: '0 15px',
                     transition: 'all 0.3s ease',
                   }}>
-                    <span style={{ fontSize: '18px', color: '#666', fontWeight: 600, marginRight: '5px' }}>
+                    <span style={{ fontSize: '18px', color: '#6b7280', fontWeight: 600, marginRight: '5px' }}>
                       {currency === 'RWF' ? '' : getCurrencyConfig(currency).symbol}
                     </span>
                     <input
@@ -1527,11 +1378,52 @@ const Donations = () => {
                       }}
                     />
                     {currency === 'RWF' && (
-                      <span style={{ fontSize: '16px', color: '#666', fontWeight: 600 }}>RWF</span>
+                      <span style={{ fontSize: '16px', color: '#6b7280', fontWeight: 600 }}>RWF</span>
                     )}
                   </div>
                 </div>
 
+                {/* Donation frequency */}
+                <div style={{ display: 'flex', gap: '15px' }}>
+                  <button
+                    onClick={() => setDonationFrequency('one-time')}
+                    style={{
+                      flex: 1,
+                      padding: '12px',
+                      borderRadius: '10px',
+                      border: donationFrequency === 'one-time' ? '2px solid #083A85' : '2px solid #e0e0e0',
+                      backgroundColor: donationFrequency === 'one-time' ? '#083A85' : '#fff',
+                      color: donationFrequency === 'one-time' ? '#fff' : '#6b7280',
+                      fontSize: '14px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
+                  >
+                    One-time
+                  </button>
+                  <button
+                    onClick={() => setDonationFrequency('monthly')}
+                    style={{
+                      flex: 1,
+                      padding: '12px',
+                      borderRadius: '10px',
+                      border: donationFrequency === 'monthly' ? '2px solid #083A85' : '2px solid #e0e0e0',
+                      backgroundColor: donationFrequency === 'monthly' ? '#083A85' : '#fff',
+                      color: donationFrequency === 'monthly' ? '#fff' : '#6b7280',
+                      fontSize: '14px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
+                  >
+                    Monthly
+                  </button>
+                </div>
               </div>
 
               {/* Right - Donor Info */}
@@ -1613,7 +1505,7 @@ const Donations = () => {
                     alignItems: 'center',
                     gap: '10px',
                     fontSize: '14px',
-                    color: '#666',
+                    color: '#6b7280',
                     cursor: 'pointer',
                   }}>
                     <input
@@ -1662,24 +1554,16 @@ const Donations = () => {
               paddingTop: '25px',
               borderTop: '1px solid #e0e0e0',
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#666', fontSize: '13px' }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                  <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                </svg>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#6b7280', fontSize: '13px' }}>
+                <i className="bi bi-lock-fill" style={{ fontSize: '14px' }} />
                 Secure Payment
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#666', fontSize: '13px' }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                </svg>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#6b7280', fontSize: '13px' }}>
+                <i className="bi bi-shield-check" style={{ fontSize: '14px' }} />
                 100% Tax Deductible
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#666', fontSize: '13px' }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                  <polyline points="22 4 12 14.01 9 11.01"/>
-                </svg>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#6b7280', fontSize: '13px' }}>
+                <i className="bi bi-check-circle-fill" style={{ fontSize: '14px' }} />
                 Verified Nonprofit
               </div>
             </div>
@@ -1689,7 +1573,7 @@ const Donations = () => {
 
       {/* Call to Action Section */}
       <section style={{
-        backgroundColor: '#DBDBDB',
+        backgroundColor: '#f8fafc',
         padding: '80px 20px',
         position: 'relative',
         textAlign: 'center',
@@ -1699,26 +1583,19 @@ const Donations = () => {
           margin: '0 auto',
         }}>
           <h2 className="cta-title" style={{
-            fontSize: '59px',
+            fontSize: 'clamp(30px, 5vw, 48px)',
             fontWeight: 700,
-            marginBottom: '20px',
+            marginBottom: '18px',
             lineHeight: 1.1,
           }}>
-            <span style={{
-              background: 'linear-gradient(90deg, #FF6B6B 0%, #8B5CF6 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
-            }}>
-              Together, We Can Create
-            </span>
+            <span style={{ color: '#083A85' }}>Together, We Can Create</span>
             <br />
-            <span style={{ color: '#000' }}>Lasting Change</span>
+            <span style={{ color: '#1a1a2e' }}>Lasting Change</span>
           </h2>
 
           <p style={{
             fontSize: '18px',
-            color: '#1f1d1d',
+            color: '#374151',
             lineHeight: 1.7,
             marginBottom: '35px',
             maxWidth: '600px',
@@ -1738,21 +1615,21 @@ const Donations = () => {
               style={{
                 backgroundColor: '#083A85',
                 color: '#fff',
-                padding: '15px 35px',
-                borderRadius: '50px',
+                padding: '12px 32px',
+                borderRadius: '12px',
                 border: 'none',
-                fontSize: '16px',
+                fontSize: '15px',
                 fontWeight: 600,
                 cursor: 'pointer',
                 transition: 'all 0.3s ease',
-                boxShadow: '0 4px 15px rgba(8, 58, 133, 0.3)',
+                boxShadow: '0 4px 14px rgba(8, 58, 133, 0.3)',
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
+              onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 20px rgba(8,58,133,0.4)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(8,58,133,0.3)'; }}
             >
               Start Donating
             </button>
-            
+
           </div>
         </div>
       </section>
@@ -1807,9 +1684,9 @@ const Donations = () => {
                 position: 'absolute',
                 top: 'clamp(12px, 3vw, 20px)',
                 right: 'clamp(12px, 3vw, 20px)',
-                background: '#f5f5f5',
+                background: '#f3f4f6',
                 border: 'none',
-                color: '#666',
+                color: '#6b7280',
                 cursor: 'pointer',
                 fontSize: '18px',
                 padding: '10px',
@@ -1822,18 +1699,15 @@ const Donations = () => {
                 borderRadius: '50%'
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#e0e0e0';
+                e.currentTarget.style.backgroundColor = '#e5e7eb';
                 e.currentTarget.style.transform = 'translateY(-2px)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = '#f5f5f5';
+                e.currentTarget.style.backgroundColor = '#f3f4f6';
                 e.currentTarget.style.transform = 'translateY(0)';
               }}
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <line x1="18" y1="6" x2="6" y2="18"/>
-                <line x1="6" y1="6" x2="18" y2="18"/>
-              </svg>
+              <i className="bi bi-x-lg" style={{ fontSize: '16px' }} />
             </button>
 
             {/* Modal Header */}
@@ -1848,14 +1722,12 @@ const Donations = () => {
                 alignItems: 'center',
                 gap: '12px',
               }}>
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="#FF6B6B" stroke="#FF6B6B" strokeWidth="2">
-                  <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
-                </svg>
+                <i className="bi bi-heart-fill" style={{ fontSize: '24px', color: '#083A85' }} />
                 Complete Your Donation
               </h2>
               <p style={{
                 fontSize: '14px',
-                color: '#666',
+                color: '#6b7280',
                 margin: 0,
               }}>
                 You're donating <strong style={{ color: '#083A85' }}>{formatCurrency(getDisplayAmount(), currency)}</strong> to <strong>{categories[activeCategory].title}</strong>
@@ -1886,10 +1758,10 @@ const Donations = () => {
                 padding: '16px 24px',
                 background: (donationLoading || getDisplayAmount() <= 0)
                   ? '#e0e0e0'
-                  : 'linear-gradient(135deg, #083A85 0%, #0d4a9e 100%)',
+                  : 'linear-gradient(135deg, #083A85 0%, #0a4da3 100%)',
                 border: 'none',
                 borderRadius: '14px',
-                color: (donationLoading || getDisplayAmount() <= 0) ? '#999' : '#fff',
+                color: (donationLoading || getDisplayAmount() <= 0) ? '#9ca3af' : '#fff',
                 fontSize: '16px',
                 fontWeight: 600,
                 cursor: (donationLoading || getDisplayAmount() <= 0) ? 'not-allowed' : 'pointer',
@@ -1903,9 +1775,7 @@ const Donations = () => {
               onMouseEnter={(e) => { if (!donationLoading && getDisplayAmount() > 0) e.currentTarget.style.transform = 'translateY(-2px)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
-              </svg>
+              <i className="bi bi-heart-fill" style={{ fontSize: '16px' }} />
               {donationLoading ? 'Processing...' : `Proceed to Payment ${formatCurrency(getDisplayAmount(), currency)}`}
             </button>
 
@@ -1916,13 +1786,10 @@ const Donations = () => {
               justifyContent: 'center',
               gap: '8px',
               marginTop: '16px',
-              color: '#888',
+              color: '#9ca3af',
               fontSize: '13px',
             }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-              </svg>
+              <i className="bi bi-lock-fill" style={{ fontSize: '12px' }} />
               Your payment is secure and encrypted
             </div>
           </div>
@@ -1951,14 +1818,18 @@ const Donations = () => {
           left: '50%',
           transform: 'translateX(-50%)',
           padding: '16px 28px',
-          backgroundColor: '#16A34A',
+          backgroundColor: '#059669',
           color: '#fff',
           borderRadius: '14px',
           fontSize: '15px',
           fontWeight: 600,
           zIndex: 3000,
-          boxShadow: '0 8px 24px rgba(22, 163, 74, 0.3)',
+          boxShadow: '0 8px 24px rgba(5, 150, 105, 0.3)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
         }}>
+          <i className="bi bi-check-circle-fill" style={{ fontSize: '18px' }} />
           Donation successful! Thank you for your generosity.
         </div>
       )}

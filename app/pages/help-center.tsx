@@ -70,6 +70,10 @@ const categories = [
 const HelpSupportCenter: React.FC = () => {
   const router = useRouter();
 
+  // Mouse spotlight state
+  const [heroMousePos, setHeroMousePos] = useState<{ x: number; y: number } | null>(null);
+  const heroRef = React.useRef<HTMLDivElement>(null);
+
   // States
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -220,41 +224,68 @@ const HelpSupportCenter: React.FC = () => {
 
 
   return (
-    <div className="min-h-screen" style={{ background: 'linear-gradient(to bottom, #f9fafb 0%, #f3f4f6 50%, #e5e7eb 100%)' }}>
+    <div className="min-h-screen" style={{ background: '#f8fafc' }}>
       <Navbar />
 
       {/* Hero Section with Search */}
-      <div style={{
-        position: 'relative',
-        paddingTop: isMobile ? 'clamp(3rem, 8vw, 6rem)' : '6rem',
-        paddingBottom: isMobile ? 'clamp(4rem, 10vw, 8rem)' : '8rem',
-        paddingLeft: isMobile ? 'clamp(1rem, 4vw, 1.5rem)' : '1rem',
-        paddingRight: isMobile ? 'clamp(1rem, 4vw, 1.5rem)' : '1rem',
-        overflow: 'hidden',
-        marginLeft: '0',
-        marginRight: '0',
-        marginTop: '0rem'
-      }}>
+      <div
+        ref={heroRef}
+        onMouseMove={(e) => {
+          if (heroRef.current) {
+            const rect = heroRef.current.getBoundingClientRect();
+            setHeroMousePos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+          }
+        }}
+        onMouseLeave={() => setHeroMousePos(null)}
+        style={{
+          position: 'relative',
+          paddingTop: isMobile ? 'clamp(2rem, 5vw, 3rem)' : '3rem',
+          paddingBottom: isMobile ? 'clamp(3rem, 6vw, 4rem)' : '4rem',
+          paddingLeft: isMobile ? 'clamp(1rem, 4vw, 1.5rem)' : '1rem',
+          paddingRight: isMobile ? 'clamp(1rem, 4vw, 1.5rem)' : '1rem',
+          overflow: 'hidden',
+          marginLeft: '0',
+          marginRight: '0',
+          marginTop: '0rem'
+        }}
+      >
         {/* Background Image with Blur Overlay */}
         <div style={{
           position: 'absolute',
           inset: 0
         }}>
-          <img src="https://i.pinimg.com/736x/9c/df/a9/9cdfa9455775771fb2bc020c10329698.jpg" alt="Photography Background"style={{width: '100%',height: '100%',objectFit: 'cover'}}/>
+          <img src="/camm.png" alt="Help Center Background" style={{width: '100%', height: '100%', objectFit: 'cover'}}/>
           <div style={{
             position: 'absolute',
             inset: 0,
-            backgroundColor: 'rgba(8, 58, 133, 0.9)',
-            backdropFilter: 'blur(1px)'
+            background: 'linear-gradient(135deg, #083A85 0%, #0a4da3 50%, #083A85 100%)',
+            opacity: 0.78
           }}></div>
         </div>
+
+        {/* Mouse spotlight effect */}
+        {heroMousePos && !isMobile && (
+          <div style={{
+            position: 'absolute',
+            left: heroMousePos.x - 150,
+            top: heroMousePos.y - 150,
+            width: '300px',
+            height: '300px',
+            borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(255,255,255,0.12) 0%, transparent 70%)',
+            pointerEvents: 'none',
+            zIndex: 1,
+            transition: 'opacity 0.15s ease',
+          }} />
+        )}
 
         <div style={{
           position: 'relative',
           maxWidth: '56rem',
           margin: '0 auto',
           padding: isMobile ? '0 0.5rem' : '0 1rem',
-          textAlign: 'center'
+          textAlign: 'center',
+          zIndex: 2,
         }}>
           <h1 style={{
             fontSize: isMobile ? 'clamp(1.5rem, 7vw, 2.5rem)' : 'clamp(1.875rem, 5vw, 3rem)',
@@ -279,12 +310,12 @@ const HelpSupportCenter: React.FC = () => {
                   padding: isMobile
                     ? '0.75rem 2.5rem 0.75rem 1rem'
                     : '0.8rem 3rem 0.8rem 1.5rem',
-                  borderRadius: isMobile ? '0.5rem' : '0.5rem',
+                  borderRadius: '0.5rem',
                   boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
                   border: 'none',
                   fontSize: isMobile ? '0.875rem' : '1rem',
                   outline: 'none',
-                  backgroundColor: '#d4d4d4',
+                  backgroundColor: '#ffffff',
                   color: '#000000'
                 }}
               />
@@ -307,6 +338,96 @@ const HelpSupportCenter: React.FC = () => {
               >
                 <i className="bi bi-search"></i>
               </button>
+
+              {/* Live search dropdown */}
+              {searchTerm.trim() && filteredFAQs.length > 0 && (
+                <div style={{
+                  position: 'absolute',
+                  top: '100%',
+                  left: 0,
+                  right: 0,
+                  marginTop: '8px',
+                  backgroundColor: '#fff',
+                  borderRadius: '12px',
+                  boxShadow: '0 12px 40px rgba(0, 0, 0, 0.15)',
+                  border: '1px solid rgba(8, 58, 133, 0.1)',
+                  maxHeight: '320px',
+                  overflowY: 'auto',
+                  zIndex: 10,
+                  textAlign: 'left',
+                }}>
+                  {filteredFAQs.slice(0, 6).map((faq) => (
+                    <div
+                      key={faq.id}
+                      onClick={() => {
+                        setOpenFAQ(faq.id);
+                        setSearchTerm('');
+                        document.getElementById('faq-section')?.scrollIntoView({ behavior: 'smooth' });
+                      }}
+                      style={{
+                        padding: '12px 16px',
+                        cursor: 'pointer',
+                        borderBottom: '1px solid #f3f4f6',
+                        transition: 'background 0.15s ease',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#f0f4f8'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#fff'; }}
+                    >
+                      <i className="bi bi-question-circle" style={{ fontSize: '16px', color: '#083A85', flexShrink: 0 }} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: '14px', fontWeight: 600, color: '#1a1a2e', lineHeight: 1.4 }}>
+                          {faq.question}
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '2px' }}>
+                          {faq.category}
+                        </div>
+                      </div>
+                      <i className="bi bi-arrow-right" style={{ fontSize: '12px', color: '#9ca3af', flexShrink: 0 }} />
+                    </div>
+                  ))}
+                  {filteredFAQs.length > 6 && (
+                    <div style={{
+                      padding: '10px 16px',
+                      textAlign: 'center',
+                      fontSize: '13px',
+                      color: '#083A85',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                    }}
+                      onClick={() => {
+                        document.getElementById('faq-section')?.scrollIntoView({ behavior: 'smooth' });
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#f0f4f8'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#fff'; }}
+                    >
+                      View all {filteredFAQs.length} results
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* No results message */}
+              {searchTerm.trim() && filteredFAQs.length === 0 && (
+                <div style={{
+                  position: 'absolute',
+                  top: '100%',
+                  left: 0,
+                  right: 0,
+                  marginTop: '8px',
+                  backgroundColor: '#fff',
+                  borderRadius: '12px',
+                  boxShadow: '0 12px 40px rgba(0, 0, 0, 0.15)',
+                  padding: '20px 16px',
+                  textAlign: 'center',
+                  zIndex: 10,
+                }}>
+                  <i className="bi bi-search" style={{ fontSize: '20px', color: '#9ca3af', marginBottom: '8px', display: 'block' }} />
+                  <div style={{ fontSize: '14px', color: '#6b7280' }}>No results found for "<strong>{searchTerm}</strong>"</div>
+                </div>
+              )}
             </div>
           </form>
         </div>
@@ -336,7 +457,7 @@ const HelpSupportCenter: React.FC = () => {
         )}
 
         {/* Category Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 mb-16" style={{
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 mb-16" style={{
           gap: isMobile ? '1rem' : '2rem',
           marginBottom: isMobile ? '2.5rem' : '4rem',
           paddingTop: isMobile ? '2rem' : '3rem'
@@ -444,6 +565,7 @@ const HelpSupportCenter: React.FC = () => {
 
         {/* Popular Topics / FAQs */}
         <div
+          id="faq-section"
           style={{
             background: 'rgba(255, 255, 255, 0.98)',
             backdropFilter: 'blur(12px)',
