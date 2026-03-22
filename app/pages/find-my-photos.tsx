@@ -406,7 +406,7 @@ const FindMyPhotos = () => {
   };
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#052047' }}>
+    <div style={{ minHeight: '100vh', backgroundColor: '#083A85' }}>
       <Navbar />
 
       {!isCodeSubmitted ? (
@@ -416,14 +416,14 @@ const FindMyPhotos = () => {
           onMouseMove={handleMouseMove(heroSectionRef, setHeroMousePos)}
           onMouseLeave={() => setHeroMousePos(null)}
           style={{
-            minHeight: '100vh',
-            background: 'linear-gradient(to right, #052047, #052047, #103E83)',
+            minHeight: 'auto',
+            background: 'linear-gradient(135deg, #083A85 0%, #0a4da3 50%, #083A85 100%)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             position: 'relative',
             overflow: 'hidden',
-            padding: isMobile ? '100px 20px 40px' : '80px 20px 40px',
+            padding: isMobile ? '90px 20px 30px' : '80px 20px 30px',
           }}
         >
           {/* Dotted pattern background - base layer (dim) */}
@@ -460,25 +460,25 @@ const FindMyPhotos = () => {
             textAlign: 'center',
             position: 'relative',
             zIndex: 2,
-            background: 'linear-gradient(135deg, rgba(5, 32, 71, 0.95) 0%, rgba(16, 62, 131, 0.92) 100%)',
+            background: 'linear-gradient(135deg, rgba(8, 58, 133, 0.95) 0%, rgba(10, 77, 163, 0.92) 100%)',
             borderRadius: '28px',
-            padding: isMobile ? '48px 28px' : '40px 52px',
+            padding: isMobile ? '32px 24px' : '30px 44px',
             border: '1px solid rgba(255,255,255,0.08)',
             boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
           }}>
             {/* Badge */}
             <div style={{
               display: 'inline-block',
-              padding: '8px 20px',
+              padding: '6px 16px',
               borderRadius: '50px',
               background: 'rgba(255,255,255,0.08)',
               border: '1px solid rgba(255,255,255,0.15)',
-              marginBottom: '18px',
+              marginBottom: '12px',
             }}>
               <span style={{
-                color: '#FF6B6B',
-                fontSize: '14px',
-                fontWeight: 600,
+                color: '#fff',
+                fontSize: '13px',
+                fontWeight: 500,
                 letterSpacing: '1px',
                 textTransform: 'uppercase',
               }}>Face Recognition</span>
@@ -486,21 +486,22 @@ const FindMyPhotos = () => {
 
             {/* Headline */}
             <h1 style={{
-              fontSize: isMobile ? '32px' : '48px',
-              fontWeight: 800,
+              fontSize: 'clamp(28px, 5vw, 48px)',
+              fontWeight: 700,
               color: '#ffffff',
               lineHeight: 1.15,
-              marginBottom: '12px',
+              marginBottom: '8px',
+              letterSpacing: '-0.02em',
               fontFamily: "'Pragati Narrow', sans-serif",
             }}>
-              Find <span style={{ color: '#FF6B6B' }}>Your Photos</span>
+              Find Your Photos
             </h1>
 
             <p style={{
-              fontSize: isMobile ? '16px' : '16px',
-              color: 'rgba(255,255,255,0.7)',
+              fontSize: '15px',
+              color: 'rgba(255,255,255,0.85)',
               lineHeight: 1.5,
-              marginBottom: '24px',
+              marginBottom: '16px',
               maxWidth: '520px',
               marginLeft: 'auto',
               marginRight: 'auto',
@@ -520,39 +521,39 @@ const FindMyPhotos = () => {
 
             {/* === Facial Recognition Scan Section === */}
             {!isScanning && !isCameraActive && (
-              <div style={{ marginBottom: '14px' }}>
+              <div style={{ marginBottom: '10px' }}>
                 <h3 style={{
-                  fontSize: '15px',
+                  fontSize: '16px',
                   fontWeight: 700,
                   color: '#ffffff',
-                  marginBottom: '4px',
+                  marginBottom: '2px',
                 }}>
                   Facial Recognition Scan
                 </h3>
                 <p style={{
                   fontSize: '13px',
-                  color: 'rgba(255,255,255,0.5)',
-                  lineHeight: 1.5,
+                  color: 'rgba(255,255,255,0.85)',
+                  lineHeight: 1.4,
                   maxWidth: '420px',
                   marginLeft: 'auto',
                   marginRight: 'auto',
                   marginBottom: '0',
                 }}>
-                  {`Don't have an invite code? No problem. Take a selfie or upload your photo and we'll scan all event photos on the platform to find every photo you appear in.`}
+                  Take a selfie or upload your photo to find every photo you appear in.
                 </p>
               </div>
             )}
             {isScanning ? (
-              <div style={{ textAlign: 'center', padding: '20px 0' }}>
+              <div style={{ textAlign: 'center', padding: '12px 0' }}>
                 <div style={{
-                  width: '180px',
-                  height: '180px',
+                  width: '140px',
+                  height: '140px',
                   borderRadius: '50%',
                   overflow: 'hidden',
-                  margin: '0 auto 24px',
+                  margin: '0 auto 16px',
                   position: 'relative',
-                  border: '4px solid #FF6B6B',
-                  boxShadow: '0 0 30px rgba(255,107,107,0.4)',
+                  border: '3px solid rgba(255,255,255,0.6)',
+                  boxShadow: '0 0 20px rgba(255,255,255,0.2)',
                 }}>
                   {uploadedPreview && (
                     <img
@@ -572,31 +573,31 @@ const FindMyPhotos = () => {
                     left: 0,
                     right: 0,
                     height: '3px',
-                    background: 'linear-gradient(90deg, transparent 0%, #FF6B6B 30%, #ffffff 50%, #FF6B6B 70%, transparent 100%)',
-                    boxShadow: '0 0 12px rgba(255,107,107,0.8), 0 0 30px rgba(255,107,107,0.4)',
+                    background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.8) 30%, #ffffff 50%, rgba(255,255,255,0.8) 70%, transparent 100%)',
+                    boxShadow: '0 0 12px rgba(255,255,255,0.6), 0 0 30px rgba(255,255,255,0.3)',
                     zIndex: 2,
                   }} />
                   <div className="scan-pulse-ring" style={{
                     position: 'absolute',
                     inset: '-4px',
                     borderRadius: '50%',
-                    border: '3px solid rgba(255,107,107,0.5)',
+                    border: '3px solid rgba(255,255,255,0.4)',
                     zIndex: 1,
                   }} />
                 </div>
                 <p style={{ fontSize: '16px', fontWeight: 600, color: '#ffffff' }}>Scanning...</p>
-                <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginTop: '8px' }}>Matching your face across event photos</p>
+                <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.85)', marginTop: '8px' }}>Matching your face across event photos</p>
               </div>
             ) : isCameraActive ? (
               <div style={{ textAlign: 'center' }}>
                 <div style={{
-                  width: '200px',
-                  height: '200px',
+                  width: '160px',
+                  height: '160px',
                   borderRadius: '50%',
                   overflow: 'hidden',
-                  margin: '0 auto 20px',
-                  border: '4px solid #FF6B6B',
-                  boxShadow: '0 4px 20px rgba(255,107,107,0.3)',
+                  margin: '0 auto 14px',
+                  border: '3px solid rgba(255,255,255,0.6)',
+                  boxShadow: '0 4px 20px rgba(255,255,255,0.15)',
                 }}>
                   <video
                     ref={videoRef}
@@ -611,7 +612,7 @@ const FindMyPhotos = () => {
                     }}
                   />
                 </div>
-                <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginBottom: '16px' }}>
+                <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.85)', marginBottom: '16px' }}>
                   Position your face in the circle
                 </p>
                 <div style={{ display: 'flex', gap: '12px', maxWidth: '340px', margin: '0 auto' }}>
@@ -621,11 +622,11 @@ const FindMyPhotos = () => {
                       flex: 1,
                       padding: '14px',
                       borderRadius: '12px',
-                      background: 'rgba(255,255,255,0.1)',
+                      background: 'transparent',
                       color: '#ffffff',
                       fontSize: '15px',
                       fontWeight: 600,
-                      border: '1px solid rgba(255,255,255,0.2)',
+                      border: '2px solid rgba(255,255,255,0.35)',
                       cursor: 'pointer',
                       transition: 'all 0.3s ease',
                     }}
@@ -638,8 +639,8 @@ const FindMyPhotos = () => {
                       flex: 1,
                       padding: '14px',
                       borderRadius: '12px',
-                      background: '#FF6B6B',
-                      color: '#ffffff',
+                      background: '#fff',
+                      color: '#083A85',
                       fontSize: '15px',
                       fontWeight: 700,
                       border: 'none',
@@ -649,9 +650,10 @@ const FindMyPhotos = () => {
                       alignItems: 'center',
                       justifyContent: 'center',
                       gap: '8px',
+                      boxShadow: '0 4px 14px rgba(0, 0, 0, 0.15)',
                     }}
-                    onMouseEnter={(e) => { (e.target as HTMLButtonElement).style.background = '#ff5252'; }}
-                    onMouseLeave={(e) => { (e.target as HTMLButtonElement).style.background = '#FF6B6B'; }}
+                    onMouseEnter={(e) => { (e.target as HTMLButtonElement).style.transform = 'translateY(-2px)'; (e.target as HTMLButtonElement).style.boxShadow = '0 8px 20px rgba(0,0,0,0.2)'; }}
+                    onMouseLeave={(e) => { (e.target as HTMLButtonElement).style.transform = 'translateY(0)'; (e.target as HTMLButtonElement).style.boxShadow = '0 4px 14px rgba(0,0,0,0.15)'; }}
                   >
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <circle cx="12" cy="12" r="10"/>
@@ -664,14 +666,14 @@ const FindMyPhotos = () => {
             ) : (
               <>
                 {uploadedPreview ? (
-                  <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+                  <div style={{ textAlign: 'center', marginBottom: '14px' }}>
                     <div style={{
-                      width: '120px',
-                      height: '120px',
+                      width: '100px',
+                      height: '100px',
                       borderRadius: '50%',
                       overflow: 'hidden',
-                      border: '3px solid #FF6B6B',
-                      boxShadow: '0 4px 12px rgba(255,107,107,0.3)',
+                      border: '3px solid rgba(255,255,255,0.6)',
+                      boxShadow: '0 4px 12px rgba(255,255,255,0.15)',
                       margin: '0 auto 12px',
                     }}>
                       <img
@@ -680,7 +682,7 @@ const FindMyPhotos = () => {
                         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                       />
                     </div>
-                    <p style={{ fontSize: '13px', color: '#10b981', fontWeight: 600 }}>Photo ready for scan</p>
+                    <p style={{ fontSize: '14px', color: '#10b981', fontWeight: 600 }}>Photo ready for scan</p>
                     <button
                       onClick={() => { setUploadedFile(null); setUploadedPreview(null); setScanError(null); if (fileInputRef.current) fileInputRef.current.value = ''; }}
                       style={{
@@ -702,9 +704,9 @@ const FindMyPhotos = () => {
                 ) : (
                   <div style={{
                     display: 'flex',
-                    gap: '12px',
-                    marginBottom: '14px',
-                    maxWidth: '340px',
+                    gap: '10px',
+                    marginBottom: '10px',
+                    maxWidth: '320px',
                     marginLeft: 'auto',
                     marginRight: 'auto',
                   }}>
@@ -714,32 +716,32 @@ const FindMyPhotos = () => {
                       style={{
                         flex: 1,
                         border: '2px dashed rgba(255,255,255,0.2)',
-                        borderRadius: '16px',
-                        padding: '18px 12px',
+                        borderRadius: '14px',
+                        padding: '14px 10px',
                         textAlign: 'center',
                         cursor: 'pointer',
                         transition: 'all 0.3s ease',
                       }}
-                      onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#FF6B6B'; e.currentTarget.style.background = 'rgba(255,107,107,0.08)'; }}
+                      onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.5)'; e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; }}
                       onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; e.currentTarget.style.background = 'transparent'; }}
                     >
                       <div style={{
-                        width: '40px',
-                        height: '40px',
+                        width: '36px',
+                        height: '36px',
                         borderRadius: '50%',
-                        background: 'rgba(255,107,107,0.15)',
+                        background: 'rgba(255,255,255,0.12)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        margin: '0 auto 8px',
+                        margin: '0 auto 6px',
                       }}>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FF6B6B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
                           <circle cx="12" cy="13" r="4"/>
                         </svg>
                       </div>
-                      <p style={{ fontSize: '14px', fontWeight: 600, color: '#ffffff' }}>Take Selfie</p>
-                      <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', marginTop: '2px' }}>Use camera</p>
+                      <p style={{ fontSize: '13px', fontWeight: 600, color: '#ffffff' }}>Take Selfie</p>
+                      <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)', marginTop: '2px' }}>Use camera</p>
                     </div>
 
                     {/* Upload Photo button */}
@@ -748,33 +750,33 @@ const FindMyPhotos = () => {
                       style={{
                         flex: 1,
                         border: '2px dashed rgba(255,255,255,0.2)',
-                        borderRadius: '16px',
-                        padding: '18px 12px',
+                        borderRadius: '14px',
+                        padding: '14px 10px',
                         textAlign: 'center',
                         cursor: 'pointer',
                         transition: 'all 0.3s ease',
                       }}
-                      onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#83B4FF'; e.currentTarget.style.background = 'rgba(131,180,255,0.08)'; }}
+                      onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.5)'; e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; }}
                       onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; e.currentTarget.style.background = 'transparent'; }}
                     >
                       <div style={{
-                        width: '40px',
-                        height: '40px',
+                        width: '36px',
+                        height: '36px',
                         borderRadius: '50%',
-                        background: 'rgba(131,180,255,0.15)',
+                        background: 'rgba(255,255,255,0.12)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        margin: '0 auto 8px',
+                        margin: '0 auto 6px',
                       }}>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#83B4FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                           <polyline points="17 8 12 3 7 8"/>
                           <line x1="12" y1="3" x2="12" y2="15"/>
                         </svg>
                       </div>
-                      <p style={{ fontSize: '14px', fontWeight: 600, color: '#ffffff' }}>Upload Photo</p>
-                      <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', marginTop: '2px' }}>From gallery</p>
+                      <p style={{ fontSize: '13px', fontWeight: 600, color: '#ffffff' }}>Upload Photo</p>
+                      <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)', marginTop: '2px' }}>From gallery</p>
                     </div>
                   </div>
                 )}
@@ -782,8 +784,8 @@ const FindMyPhotos = () => {
                 {/* Selfie guidance hint */}
                 {!uploadedPreview && (
                   <p style={{
-                    fontSize: '12px',
-                    color: 'rgba(255,255,255,0.4)',
+                    fontSize: '13px',
+                    color: 'rgba(255,255,255,0.7)',
                     textAlign: 'center',
                     marginBottom: '12px',
                     lineHeight: 1.4,
@@ -801,18 +803,19 @@ const FindMyPhotos = () => {
                     maxWidth: '340px',
                     display: 'block',
                     margin: '0 auto',
-                    padding: '16px',
+                    padding: '14px',
                     borderRadius: '12px',
-                    background: uploadedFile ? '#FF6B6B' : 'rgba(255,255,255,0.08)',
-                    color: uploadedFile ? '#ffffff' : 'rgba(255,255,255,0.3)',
-                    fontSize: '16px',
-                    fontWeight: 700,
+                    background: uploadedFile ? '#fff' : 'rgba(255,255,255,0.08)',
+                    color: uploadedFile ? '#083A85' : 'rgba(255,255,255,0.3)',
+                    fontSize: '15px',
+                    fontWeight: 600,
                     border: 'none',
                     cursor: uploadedFile ? 'pointer' : 'not-allowed',
                     transition: 'all 0.3s ease',
+                    boxShadow: uploadedFile ? '0 4px 14px rgba(0, 0, 0, 0.15)' : 'none',
                   }}
-                  onMouseEnter={(e) => { if (uploadedFile) (e.target as HTMLButtonElement).style.background = '#ff5252'; }}
-                  onMouseLeave={(e) => { if (uploadedFile) (e.target as HTMLButtonElement).style.background = '#FF6B6B'; }}
+                  onMouseEnter={(e) => { if (uploadedFile) { (e.target as HTMLButtonElement).style.transform = 'translateY(-3px)'; (e.target as HTMLButtonElement).style.boxShadow = '0 8px 20px rgba(0,0,0,0.2)'; } }}
+                  onMouseLeave={(e) => { if (uploadedFile) { (e.target as HTMLButtonElement).style.transform = 'translateY(0)'; (e.target as HTMLButtonElement).style.boxShadow = '0 4px 14px rgba(0,0,0,0.15)'; } }}
                 >
                   Find My Photos
                 </button>
@@ -854,8 +857,8 @@ const FindMyPhotos = () => {
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
-                margin: '20px 0 18px',
-                gap: '16px',
+                margin: '14px 0 12px',
+                gap: '14px',
               }}>
                 <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.15)' }} />
                 <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '14px', fontWeight: 600, letterSpacing: '1px' }}>OR</span>
@@ -867,23 +870,23 @@ const FindMyPhotos = () => {
             {!isScanning && !isCameraActive && (
               <>
                 <h3 style={{
-                  fontSize: '15px',
+                  fontSize: '16px',
                   fontWeight: 700,
                   color: '#ffffff',
-                  marginBottom: '4px',
+                  marginBottom: '2px',
                 }}>
                   Enter Invite Code
                 </h3>
                 <p style={{
                   fontSize: '13px',
-                  color: 'rgba(255,255,255,0.5)',
-                  lineHeight: 1.5,
+                  color: 'rgba(255,255,255,0.85)',
+                  lineHeight: 1.4,
                   maxWidth: '420px',
                   marginLeft: 'auto',
                   marginRight: 'auto',
-                  marginBottom: '12px',
+                  marginBottom: '10px',
                 }}>
-                  Received an invite code from your photographer or event owner? Enter it below to go directly to that specific event gallery.
+                  Enter the code from your photographer or event owner to access the gallery.
                 </p>
 
                 <div style={{
@@ -901,9 +904,9 @@ const FindMyPhotos = () => {
                     placeholder="Enter invite code"
                     style={{
                       flex: 1,
-                      padding: '16px 20px',
-                      borderRadius: '12px',
-                      border: inviteError ? '2px solid #FF6B6B' : '2px solid rgba(255,255,255,0.15)',
+                      padding: '12px 16px',
+                      borderRadius: '10px',
+                      border: inviteError ? '2px solid #ef4444' : '2px solid rgba(255,255,255,0.15)',
                       background: 'rgba(255,255,255,0.06)',
                       color: '#ffffff',
                       fontSize: '16px',
@@ -913,26 +916,27 @@ const FindMyPhotos = () => {
                       letterSpacing: '2px',
                       fontWeight: 600,
                     }}
-                    onFocus={(e) => { e.target.style.borderColor = '#FF6B6B'; e.target.style.background = 'rgba(255,255,255,0.1)'; }}
+                    onFocus={(e) => { e.target.style.borderColor = 'rgba(255,255,255,0.5)'; e.target.style.background = 'rgba(255,255,255,0.1)'; }}
                     onBlur={(e) => { if (!inviteError) { e.target.style.borderColor = 'rgba(255,255,255,0.15)'; e.target.style.background = 'rgba(255,255,255,0.06)'; } }}
                   />
                   <button
                     onClick={handleInviteSubmit}
                     disabled={isLoadingAlbum}
                     style={{
-                      padding: '16px 32px',
-                      borderRadius: '12px',
-                      background: isLoadingAlbum ? 'rgba(255,107,107,0.6)' : '#FF6B6B',
-                      color: '#ffffff',
-                      fontSize: '16px',
-                      fontWeight: 700,
+                      padding: '12px 28px',
+                      borderRadius: '10px',
+                      background: isLoadingAlbum ? 'rgba(255,255,255,0.6)' : '#fff',
+                      color: '#083A85',
+                      fontSize: '15px',
+                      fontWeight: 600,
                       border: 'none',
                       cursor: isLoadingAlbum ? 'not-allowed' : 'pointer',
                       transition: 'all 0.3s ease',
                       whiteSpace: 'nowrap',
+                      boxShadow: '0 4px 14px rgba(0, 0, 0, 0.15)',
                     }}
-                    onMouseEnter={(e) => { if (!isLoadingAlbum) { (e.target as HTMLButtonElement).style.background = '#ff5252'; (e.target as HTMLButtonElement).style.transform = 'translateY(-2px)'; } }}
-                    onMouseLeave={(e) => { if (!isLoadingAlbum) { (e.target as HTMLButtonElement).style.background = '#FF6B6B'; (e.target as HTMLButtonElement).style.transform = 'translateY(0)'; } }}
+                    onMouseEnter={(e) => { if (!isLoadingAlbum) { (e.target as HTMLButtonElement).style.transform = 'translateY(-3px)'; (e.target as HTMLButtonElement).style.boxShadow = '0 8px 20px rgba(0,0,0,0.2)'; } }}
+                    onMouseLeave={(e) => { if (!isLoadingAlbum) { (e.target as HTMLButtonElement).style.transform = 'translateY(0)'; (e.target as HTMLButtonElement).style.boxShadow = '0 4px 14px rgba(0,0,0,0.15)'; } }}
                   >
                     {isLoadingAlbum ? 'Loading...' : 'Access Gallery'}
                   </button>
@@ -940,7 +944,7 @@ const FindMyPhotos = () => {
 
                 {inviteError && (
                   <p style={{
-                    color: '#FF6B6B',
+                    color: '#ef4444',
                     fontSize: '14px',
                     marginTop: '12px',
                   }}>{inviteError}</p>
@@ -948,12 +952,12 @@ const FindMyPhotos = () => {
 
                 {/* Dashed decorative border */}
                 <div style={{
-                  marginTop: '24px',
+                  marginTop: '14px',
                   borderTop: '1px dashed rgba(255,255,255,0.15)',
-                  paddingTop: '16px',
+                  paddingTop: '10px',
                 }}>
                   <p style={{
-                    color: 'rgba(255,255,255,0.4)',
+                    color: 'rgba(255,255,255,0.7)',
                     fontSize: '13px',
                   }}>
                     Your photographer or event owner can share the invite code after the event
@@ -972,8 +976,8 @@ const FindMyPhotos = () => {
             onMouseMove={handleMouseMove(headerSectionRef, setHeaderMousePos)}
             onMouseLeave={() => setHeaderMousePos(null)}
             style={{
-              background: 'linear-gradient(to right, #052047, #052047, #103E83)',
-              padding: isMobile ? '100px 20px 40px' : '120px 40px 50px',
+              background: 'linear-gradient(135deg, #083A85 0%, #0a4da3 50%, #083A85 100%)',
+              padding: isMobile ? '90px 20px 30px' : '100px 40px 36px',
               textAlign: 'center',
               position: 'relative',
               overflow: 'hidden',
@@ -1010,27 +1014,27 @@ const FindMyPhotos = () => {
             <div style={{
               position: 'relative',
               zIndex: 2,
-              background: 'linear-gradient(135deg, rgba(5, 32, 71, 0.95) 0%, rgba(16, 62, 131, 0.92) 100%)',
+              background: 'linear-gradient(135deg, rgba(8, 58, 133, 0.95) 0%, rgba(10, 77, 163, 0.92) 100%)',
               borderRadius: '28px',
-              padding: isMobile ? '32px 24px' : '40px 48px',
+              padding: isMobile ? '24px 20px' : '30px 40px',
               border: '1px solid rgba(255,255,255,0.08)',
               boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
               maxWidth: '700px',
               margin: '0 auto',
             }}>
             <h2 style={{
-              fontSize: isMobile ? '28px' : '59px',
-              fontWeight: 800,
+              fontSize: isMobile ? '24px' : '40px',
+              fontWeight: 700,
               color: '#ffffff',
-              marginBottom: '8px',
+              marginBottom: '6px',
               fontFamily: "'Pragati Narrow', sans-serif",
             }}>
               Event Gallery
             </h2>
             <p style={{
               color: 'rgba(255,255,255,0.6)',
-              fontSize: '16px',
-              marginBottom: '24px',
+              fontSize: '14px',
+              marginBottom: '16px',
             }}>
               {displayedPhotos.length} photo{displayedPhotos.length !== 1 ? 's' : ''}{isFiltered ? ' matched' : ' available'}
             </p>
@@ -1047,19 +1051,20 @@ const FindMyPhotos = () => {
                 style={{
                   padding: '14px 28px',
                   borderRadius: '50px',
-                  background: '#FF6B6B',
-                  color: '#ffffff',
+                  background: '#fff',
+                  color: '#083A85',
                   fontSize: '15px',
-                  fontWeight: 700,
+                  fontWeight: 600,
                   border: 'none',
                   cursor: 'pointer',
                   transition: 'all 0.3s ease',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '8px',
+                  boxShadow: '0 4px 14px rgba(0, 0, 0, 0.15)',
                 }}
-                onMouseEnter={(e) => { (e.target as HTMLButtonElement).style.background = '#ff5252'; (e.target as HTMLButtonElement).style.transform = 'translateY(-2px)'; }}
-                onMouseLeave={(e) => { (e.target as HTMLButtonElement).style.background = '#FF6B6B'; (e.target as HTMLButtonElement).style.transform = 'translateY(0)'; }}
+                onMouseEnter={(e) => { (e.target as HTMLButtonElement).style.transform = 'translateY(-3px)'; (e.target as HTMLButtonElement).style.boxShadow = '0 8px 20px rgba(0,0,0,0.2)'; }}
+                onMouseLeave={(e) => { (e.target as HTMLButtonElement).style.transform = 'translateY(0)'; (e.target as HTMLButtonElement).style.boxShadow = '0 4px 14px rgba(0,0,0,0.15)'; }}
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/><circle cx="12" cy="10" r="3"/><path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662"/></svg>
                 Find Your Photo Using Facial Recognition Scan
@@ -1095,40 +1100,14 @@ const FindMyPhotos = () => {
             onMouseMove={handleMouseMove(gridSectionRef, setGridMousePos)}
             onMouseLeave={() => setGridMousePos(null)}
             style={{
-              padding: isMobile ? '24px 16px' : '40px',
-              background: 'linear-gradient(to right, #052047, #052047, #103E83)',
+              padding: isMobile ? '20px 16px' : '30px 40px',
+              background: 'linear-gradient(180deg, #fff 0%, #f8fafc 100%)',
               minHeight: '400px',
               position: 'relative',
               overflow: 'hidden',
             }}
           >
-            {/* Dotted pattern background - base layer (dim) */}
-            <div style={{
-              position: 'absolute',
-              inset: 0,
-              backgroundImage: 'radial-gradient(circle, rgba(255, 255, 255, 0.3) 1px, transparent 1px)',
-              backgroundSize: '20px 20px',
-              opacity: 0.3,
-              zIndex: 0,
-              pointerEvents: 'none',
-            }} />
-            {/* Spotlight layer - reveals brighter dots where cursor is */}
-            <div style={{
-              position: 'absolute',
-              inset: 0,
-              backgroundImage: 'radial-gradient(circle, rgba(255, 255, 255, 0.85) 1.5px, transparent 0.5px)',
-              backgroundSize: '20px 20px',
-              opacity: gridMousePos ? 0.7 : 0,
-              zIndex: 1,
-              pointerEvents: 'none',
-              maskImage: gridMousePos
-                ? `radial-gradient(circle 80px at ${gridMousePos.x}px ${gridMousePos.y}px, black 0%, black 50%, transparent 80%)`
-                : 'none',
-              WebkitMaskImage: gridMousePos
-                ? `radial-gradient(circle 80px at ${gridMousePos.x}px ${gridMousePos.y}px, black 0%, black 50%, transparent 80%)`
-                : 'none',
-              transition: 'opacity 0s ease',
-            }} />
+            {/* Removed dot pattern — light background section */}
 
           <div style={{
             maxWidth: '1200px',
@@ -1147,7 +1126,7 @@ const FindMyPhotos = () => {
                 gap: '8px',
               }}>
                 {albumTitle && (
-                  <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#fff', margin: 0 }}>
+                  <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#083A85', margin: 0 }}>
                     {albumTitle}
                   </h3>
                 )}
@@ -1157,7 +1136,7 @@ const FindMyPhotos = () => {
                     alignItems: 'center',
                     gap: '6px',
                     fontSize: '14px',
-                    color: 'rgba(255,255,255,0.8)',
+                    color: '#6b7280',
                     fontWeight: '500',
                   }}>
                     <i className="bi bi-camera-fill" style={{ fontSize: '14px' }}></i>
@@ -1312,7 +1291,7 @@ const FindMyPhotos = () => {
                       transition: 'all 0.2s ease',
                       zIndex: 2,
                     }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = '#03969c'; e.currentTarget.style.borderColor = '#03969c'; }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = '#083A85'; e.currentTarget.style.borderColor = '#083A85'; }}
                     onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(0,0,0,0.65)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; }}
                   >
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -1332,9 +1311,9 @@ const FindMyPhotos = () => {
               <div style={{
                 textAlign: 'center',
                 padding: '60px 20px',
-                color: 'rgba(255,255,255,0.5)',
+                color: '#6b7280',
               }}>
-                <p style={{ fontSize: '18px', fontWeight: 600, color: 'rgba(255,255,255,0.7)' }}>No photos found</p>
+                <p style={{ fontSize: '18px', fontWeight: 600, color: '#083A85' }}>No photos found</p>
                 <p style={{ fontSize: '14px', marginTop: '8px' }}>Try scanning again or show all photos</p>
               </div>
             )}
@@ -1604,7 +1583,7 @@ const FindMyPhotos = () => {
               alignItems: 'center',
               gap: '10px',
             }}>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#03969c" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#083A85" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                 <polyline points="7 10 12 15 17 10"/>
                 <line x1="12" y1="15" x2="12" y2="3"/>
@@ -1618,8 +1597,8 @@ const FindMyPhotos = () => {
             {/* Price display */}
             <div style={{
               padding: '14px 16px',
-              backgroundColor: 'rgba(3,150,156,0.12)',
-              border: '1px solid rgba(3,150,156,0.3)',
+              backgroundColor: 'rgba(8,58,133,0.08)',
+              border: '1px solid rgba(8,58,133,0.2)',
               borderRadius: '12px',
               marginBottom: '20px',
               display: 'flex',
@@ -1638,7 +1617,7 @@ const FindMyPhotos = () => {
               style={{
                 width: '100%',
                 padding: '14px 24px',
-                background: 'linear-gradient(135deg, #03969c 0%, #026d72 100%)',
+                background: '#083A85',
                 border: 'none',
                 borderRadius: '12px',
                 color: '#fff',
@@ -1650,10 +1629,10 @@ const FindMyPhotos = () => {
                 justifyContent: 'center',
                 gap: '8px',
                 transition: 'all 0.3s ease',
-                boxShadow: '0 4px 15px rgba(3,150,156,0.3)',
+                boxShadow: '0 4px 15px rgba(8,58,133,0.3)',
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.02)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(3,150,156,0.4)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 4px 15px rgba(3,150,156,0.3)'; }}
+              onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.02)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(8,58,133,0.4)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 4px 15px rgba(8,58,133,0.3)'; }}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -1690,8 +1669,8 @@ const FindMyPhotos = () => {
             style={{
               background: '#ffffff',
               borderRadius: '24px',
-              padding: isMobile ? '28px 20px' : '36px 32px',
-              maxWidth: '500px',
+              padding: isMobile ? '24px 18px' : '28px 28px',
+              maxWidth: '460px',
               width: '100%',
               position: 'relative',
               boxShadow: '0 25px 60px rgba(0,0,0,0.3)',
@@ -1726,19 +1705,19 @@ const FindMyPhotos = () => {
             )}
 
             <h3 style={{
-              fontSize: '22px',
+              fontSize: '20px',
               fontWeight: 700,
               color: '#1f2937',
-              marginBottom: '8px',
+              marginBottom: '6px',
               textAlign: 'center',
             }}>
               Facial Recognition Scan
             </h3>
             <p style={{
-              fontSize: '14px',
+              fontSize: '13px',
               color: '#6b7280',
               textAlign: 'center',
-              marginBottom: '28px',
+              marginBottom: '20px',
               lineHeight: 1.5,
             }}>
               Upload or take a selfie to find your photos in this event gallery
@@ -1758,17 +1737,17 @@ const FindMyPhotos = () => {
               /* Scanning state — blurred photo with overlay */
               <div style={{
                 textAlign: 'center',
-                padding: '20px 0',
+                padding: '12px 0',
               }}>
                 <div style={{
-                  width: '180px',
-                  height: '180px',
+                  width: '140px',
+                  height: '140px',
                   borderRadius: '50%',
                   overflow: 'hidden',
-                  margin: '0 auto 24px',
+                  margin: '0 auto 16px',
                   position: 'relative',
-                  border: '4px solid #FF6B6B',
-                  boxShadow: '0 0 30px rgba(255,107,107,0.4)',
+                  border: '4px solid #083A85',
+                  boxShadow: '0 0 30px rgba(8,58,133,0.3)',
                 }}>
                   {uploadedPreview && (
                     <img
@@ -1789,8 +1768,8 @@ const FindMyPhotos = () => {
                     left: 0,
                     right: 0,
                     height: '3px',
-                    background: 'linear-gradient(90deg, transparent 0%, #FF6B6B 30%, #ffffff 50%, #FF6B6B 70%, transparent 100%)',
-                    boxShadow: '0 0 12px rgba(255,107,107,0.8), 0 0 30px rgba(255,107,107,0.4)',
+                    background: 'linear-gradient(90deg, transparent 0%, #083A85 30%, #ffffff 50%, #083A85 70%, transparent 100%)',
+                    boxShadow: '0 0 12px rgba(8,58,133,0.6), 0 0 30px rgba(8,58,133,0.3)',
                     zIndex: 2,
                   }} />
                   {/* Pulsing border ring */}
@@ -1798,7 +1777,7 @@ const FindMyPhotos = () => {
                     position: 'absolute',
                     inset: '-4px',
                     borderRadius: '50%',
-                    border: '3px solid rgba(255,107,107,0.5)',
+                    border: '3px solid rgba(8,58,133,0.4)',
                     zIndex: 1,
                   }} />
                 </div>
@@ -1817,13 +1796,13 @@ const FindMyPhotos = () => {
               /* Live camera view */
               <div style={{ textAlign: 'center' }}>
                 <div style={{
-                  width: '200px',
-                  height: '200px',
+                  width: '160px',
+                  height: '160px',
                   borderRadius: '50%',
                   overflow: 'hidden',
-                  margin: '0 auto 20px',
-                  border: '4px solid #FF6B6B',
-                  boxShadow: '0 4px 20px rgba(255,107,107,0.3)',
+                  margin: '0 auto 14px',
+                  border: '3px solid #083A85',
+                  boxShadow: '0 4px 20px rgba(8,58,133,0.2)',
                 }}>
                   <video
                     ref={videoRef}
@@ -1865,7 +1844,7 @@ const FindMyPhotos = () => {
                       flex: 1,
                       padding: '14px',
                       borderRadius: '12px',
-                      background: '#FF6B6B',
+                      background: '#083A85',
                       color: '#ffffff',
                       fontSize: '15px',
                       fontWeight: 700,
@@ -1877,8 +1856,8 @@ const FindMyPhotos = () => {
                       justifyContent: 'center',
                       gap: '8px',
                     }}
-                    onMouseEnter={(e) => { (e.target as HTMLButtonElement).style.background = '#ff5252'; }}
-                    onMouseLeave={(e) => { (e.target as HTMLButtonElement).style.background = '#FF6B6B'; }}
+                    onMouseEnter={(e) => { (e.target as HTMLButtonElement).style.background = '#062d6b'; }}
+                    onMouseLeave={(e) => { (e.target as HTMLButtonElement).style.background = '#083A85'; }}
                   >
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <circle cx="12" cy="12" r="10"/>
@@ -1894,15 +1873,15 @@ const FindMyPhotos = () => {
                 {uploadedPreview ? (
                   <div style={{
                     textAlign: 'center',
-                    marginBottom: '24px',
+                    marginBottom: '16px',
                   }}>
                     <div style={{
-                      width: '120px',
-                      height: '120px',
+                      width: '100px',
+                      height: '100px',
                       borderRadius: '50%',
                       overflow: 'hidden',
-                      border: '3px solid #FF6B6B',
-                      boxShadow: '0 4px 12px rgba(255,107,107,0.3)',
+                      border: '3px solid #083A85',
+                      boxShadow: '0 4px 12px rgba(8,58,133,0.2)',
                       margin: '0 auto 12px',
                     }}>
                       <img
@@ -1934,8 +1913,8 @@ const FindMyPhotos = () => {
                   /* Two option buttons: Camera & Upload */
                   <div style={{
                     display: 'flex',
-                    gap: '12px',
-                    marginBottom: '24px',
+                    gap: '10px',
+                    marginBottom: '16px',
                   }}>
                     {/* Take Selfie button */}
                     <div
@@ -1943,42 +1922,8 @@ const FindMyPhotos = () => {
                       style={{
                         flex: 1,
                         border: '2px dashed #d1d5db',
-                        borderRadius: '16px',
-                        padding: '28px 12px',
-                        textAlign: 'center',
-                        cursor: 'pointer',
-                        transition: 'all 0.3s ease',
-                      }}
-                      onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#FF6B6B'; e.currentTarget.style.background = 'rgba(255,107,107,0.03)'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#d1d5db'; e.currentTarget.style.background = 'transparent'; }}
-                    >
-                      <div style={{
-                        width: '48px',
-                        height: '48px',
-                        borderRadius: '50%',
-                        background: 'rgba(255,107,107,0.1)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        margin: '0 auto 10px',
-                      }}>
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FF6B6B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-                          <circle cx="12" cy="13" r="4"/>
-                        </svg>
-                      </div>
-                      <p style={{ fontSize: '14px', fontWeight: 600, color: '#374151' }}>Take Selfie</p>
-                      <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: '2px' }}>Use camera</p>
-                    </div>
-
-                    {/* Upload Photo button */}
-                    <div
-                      onClick={() => fileInputRef.current?.click()}
-                      style={{
-                        flex: 1,
-                        border: '2px dashed #d1d5db',
-                        borderRadius: '16px',
-                        padding: '28px 12px',
+                        borderRadius: '14px',
+                        padding: '18px 10px',
                         textAlign: 'center',
                         cursor: 'pointer',
                         transition: 'all 0.3s ease',
@@ -1987,23 +1932,57 @@ const FindMyPhotos = () => {
                       onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#d1d5db'; e.currentTarget.style.background = 'transparent'; }}
                     >
                       <div style={{
-                        width: '48px',
-                        height: '48px',
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '50%',
+                        background: 'rgba(8,58,133,0.08)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        margin: '0 auto 8px',
+                      }}>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#083A85" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                          <circle cx="12" cy="13" r="4"/>
+                        </svg>
+                      </div>
+                      <p style={{ fontSize: '13px', fontWeight: 600, color: '#374151' }}>Take Selfie</p>
+                      <p style={{ fontSize: '11px', color: '#9ca3af', marginTop: '2px' }}>Use camera</p>
+                    </div>
+
+                    {/* Upload Photo button */}
+                    <div
+                      onClick={() => fileInputRef.current?.click()}
+                      style={{
+                        flex: 1,
+                        border: '2px dashed #d1d5db',
+                        borderRadius: '14px',
+                        padding: '18px 10px',
+                        textAlign: 'center',
+                        cursor: 'pointer',
+                        transition: 'all 0.3s ease',
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#083A85'; e.currentTarget.style.background = 'rgba(8,58,133,0.03)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#d1d5db'; e.currentTarget.style.background = 'transparent'; }}
+                    >
+                      <div style={{
+                        width: '40px',
+                        height: '40px',
                         borderRadius: '50%',
                         background: 'rgba(8,58,133,0.1)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        margin: '0 auto 10px',
+                        margin: '0 auto 8px',
                       }}>
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#083A85" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#083A85" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                           <polyline points="17 8 12 3 7 8"/>
                           <line x1="12" y1="3" x2="12" y2="15"/>
                         </svg>
                       </div>
-                      <p style={{ fontSize: '14px', fontWeight: 600, color: '#374151' }}>Upload Photo</p>
-                      <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: '2px' }}>From gallery</p>
+                      <p style={{ fontSize: '13px', fontWeight: 600, color: '#374151' }}>Upload Photo</p>
+                      <p style={{ fontSize: '11px', color: '#9ca3af', marginTop: '2px' }}>From gallery</p>
                     </div>
                   </div>
                 )}
@@ -2028,16 +2007,16 @@ const FindMyPhotos = () => {
                     width: '100%',
                     padding: '16px',
                     borderRadius: '12px',
-                    background: uploadedFile ? '#FF6B6B' : '#e5e7eb',
+                    background: uploadedFile ? '#083A85' : '#e5e7eb',
                     color: uploadedFile ? '#ffffff' : '#9ca3af',
-                    fontSize: '16px',
-                    fontWeight: 700,
+                    fontSize: '15px',
+                    fontWeight: 600,
                     border: 'none',
                     cursor: uploadedFile ? 'pointer' : 'not-allowed',
                     transition: 'all 0.3s ease',
                   }}
-                  onMouseEnter={(e) => { if (uploadedFile) (e.target as HTMLButtonElement).style.background = '#ff5252'; }}
-                  onMouseLeave={(e) => { if (uploadedFile) (e.target as HTMLButtonElement).style.background = '#FF6B6B'; }}
+                  onMouseEnter={(e) => { if (uploadedFile) (e.target as HTMLButtonElement).style.background = '#062d6b'; }}
+                  onMouseLeave={(e) => { if (uploadedFile) (e.target as HTMLButtonElement).style.background = '#083A85'; }}
                 >
                   Start Scan
                 </button>
@@ -2188,7 +2167,7 @@ const FindMyPhotos = () => {
           transform: scale(1.08);
         }
         .scan-btn:hover {
-          box-shadow: 0 8px 24px rgba(255,107,107,0.35);
+          box-shadow: 0 8px 24px rgba(8,58,133,0.25);
         }
       `}</style>
     </div>

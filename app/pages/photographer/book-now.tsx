@@ -6,7 +6,7 @@ import AmoriaKNavbar from '../../components/navbar';
 import { useAuth } from '@/app/providers/AuthProvider';
 import { getAuthToken } from '@/lib/api/client';
 import { getPublicPhotographerPackages, type PublicPackage } from '@/lib/APIs/packages/get-packages/route';
-import { getPhotographers, type Photographer, getCurrencies, type Currency } from '@/lib/APIs/public';
+import { getPhotographerById, type Photographer, getCurrencies, type Currency } from '@/lib/APIs/public';
 
 
 function BookNowContent(): React.JSX.Element {
@@ -69,18 +69,17 @@ function BookNowContent(): React.JSX.Element {
       setPhotographerError(null);
 
       try {
-        // Fetch all photographers and filter by ID (same as view-profile.tsx)
-        const response = await getPhotographers({ size: 100 });
+        const response = await getPhotographerById(photographerId);
 
-        if (response.success && response.data?.content) {
-          const found = response.data.content.find(p => p.id === photographerId);
-          if (found) {
-            setPhotographer(found);
-          } else {
-            setPhotographerError('Photographer not found');
-          }
+        if (response.success && response.data) {
+          // Handle both direct data and wrapped { action, data } response formats
+          const rawData = response.data as unknown as Record<string, unknown>;
+          const photographerData = rawData?.data
+            ? rawData.data as Photographer
+            : response.data as Photographer;
+          setPhotographer(photographerData);
         } else {
-          setPhotographerError(response.error || 'Failed to load photographer profile');
+          setPhotographerError(response.error || 'Photographer not found');
         }
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'An error occurred';
@@ -502,8 +501,8 @@ function BookNowContent(): React.JSX.Element {
             <i className="bi bi-check-lg" style={{ fontSize: '20px', fontWeight: 'bold' }}></i>
           </div>
           <div>
-            <div style={{ fontSize: '16px', fontWeight: '700' }}>Booking Photographer Successfully!</div>
-            <div style={{ fontSize: '13px', opacity: 0.9 }}>Redirecting to your events...</div>
+            <div style={{ fontSize: '16px', fontWeight: '700' }}>Package Selected Successfully!</div>
+            <div style={{ fontSize: '13px', opacity: 0.9 }}>Redirecting to complete your booking...</div>
           </div>
           <div style={{
             marginLeft: '20px',
@@ -554,6 +553,100 @@ function BookNowContent(): React.JSX.Element {
             padding: isMobile ? '32px 16px 40px' : '40px 24px 40px',
           }}
         >
+          {/* Photographer Mini-Card */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: isMobile ? '12px' : '16px',
+            padding: isMobile ? '14px' : '16px 20px',
+            backgroundColor: '#fff',
+            borderRadius: '14px',
+            border: '2px solid #e5e7eb',
+            boxShadow: '0 2px 10px rgba(0, 0, 0, 0.06)',
+            marginBottom: isMobile ? '20px' : '28px',
+            maxWidth: '500px',
+            marginLeft: 'auto',
+            marginRight: 'auto',
+          }}>
+            <img
+              src={photographer.profilePicture && !photographer.profilePicture.includes('/null')
+                ? photographer.profilePicture
+                : 'https://i.pinimg.com/1200x/e9/1f/59/e91f59ed85a702d7252f2b0c8e02c7d2.jpg'}
+              alt={`${photographer.firstName} ${photographer.lastName}`}
+              style={{
+                width: isMobile ? '48px' : '56px',
+                height: isMobile ? '48px' : '56px',
+                borderRadius: '50%',
+                objectFit: 'cover',
+                border: '2px solid #dbeafe',
+                flexShrink: 0,
+              }}
+            />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                <h3 style={{
+                  fontSize: isMobile ? '15px' : '17px',
+                  fontWeight: '700',
+                  color: '#111827',
+                  margin: 0,
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}>
+                  {photographer.firstName} {photographer.lastName}
+                </h3>
+                {photographer.isVerified && (
+                  <i className="bi bi-patch-check-fill" style={{ color: '#3b82f6', fontSize: '16px', flexShrink: 0 }}></i>
+                )}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '4px', flexWrap: 'wrap' }}>
+                {(photographer.rating ?? 0) > 0 && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <i className="bi bi-star-fill" style={{ color: '#FFA500', fontSize: '13px' }}></i>
+                    <span style={{ fontSize: '13px', fontWeight: '600', color: '#374151' }}>{photographer.rating}</span>
+                  </div>
+                )}
+                {photographer.address && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <i className="bi bi-geo-alt-fill" style={{ color: '#6b7280', fontSize: '12px' }}></i>
+                    <span style={{
+                      fontSize: '13px',
+                      color: '#6b7280',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      maxWidth: '180px',
+                    }}>{photographer.address}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+            <button
+              onClick={() => window.location.href = `/user/photographers/view-profile?id=${photographerId}`}
+              style={{
+                padding: '6px 14px',
+                backgroundColor: '#f0f9ff',
+                border: '1px solid #bfdbfe',
+                borderRadius: '8px',
+                fontSize: '12px',
+                fontWeight: '600',
+                color: '#083A85',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#dbeafe';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '#f0f9ff';
+              }}
+            >
+              View Profile
+            </button>
+          </div>
+
           {/* Page Header - Choose Your Preferred Package */}
           <div style={{ marginBottom: isMobile ? '24px' : '32px', textAlign: 'center' }}>
             <h1
@@ -1279,7 +1372,29 @@ function BookNowContent(): React.JSX.Element {
 
 export default function BookNowPage(): React.JSX.Element {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#f0f4f8',
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{
+            width: '48px',
+            height: '48px',
+            border: '4px solid #e5e7eb',
+            borderTopColor: '#083A85',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+            margin: '0 auto 16px',
+          }}></div>
+          <p style={{ fontSize: '16px', fontWeight: '600', color: '#083A85' }}>Loading packages...</p>
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        </div>
+      </div>
+    }>
       <BookNowContent />
     </Suspense>
   );

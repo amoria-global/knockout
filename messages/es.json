@@ -145,7 +145,8 @@
       "helpCenter": "Centro de Ayuda",
       "privacyPolicy": "Política de Privacidad",
       "termsOfService": "Términos de Servicio",
-      "trustSafety": "Confianza y Seguridad"
+      "trustSafety": "Confianza y Seguridad",
+      "donations": "Donaciones"
     },
     "copyright": "© {year} Amoria Connekyt. Todos los derechos reservados."
   },
@@ -378,7 +379,10 @@
       "about": "Acerca de",
       "specialties": "Especialidades",
       "equipment": "Equipo",
-      "noEquipment": "No hay equipo listado"
+      "noEquipment": "No hay equipo listado",
+      "availability": "Disponibilidad",
+      "workingHours": "Horario de Trabajo",
+      "startingPrice": "Precio Inicial"
     },
     "portfolio": {
       "professionalSkills": "Habilidades Profesionales",
