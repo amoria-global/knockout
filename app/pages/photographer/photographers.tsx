@@ -170,18 +170,18 @@ const Photographers: React.FC = () => {
     return photographer.address || 'Location not specified';
   };
 
-  const getProfileImage = (photographer: Photographer) => {
+  const getProfileImage = (photographer: Photographer): string | null => {
     if (photographer.profilePicture && !photographer.profilePicture.includes('/null')) {
       return photographer.profilePicture;
     }
-    return 'https://i.pinimg.com/1200x/e9/1f/59/e91f59ed85a702d7252f2b0c8e02c7d2.jpg';
+    return null;
   };
 
-  const getCoverImage = (photographer: Photographer) => {
+  const getCoverImage = (photographer: Photographer): string | null => {
     if (photographer.coverPicture && !photographer.coverPicture.includes('/null')) {
       return photographer.coverPicture;
     }
-    return 'https://i.pinimg.com/736x/8b/89/70/8b8970fb8745252e4d36f60305967d37.jpg';
+    return null;
   };
 
   // Pagination handlers (0-indexed for API)
@@ -758,9 +758,9 @@ const Photographers: React.FC = () => {
                   position: 'relative',
                   width: '100%',
                   height: '140px',
-                  backgroundImage: `url(${coverImage})`,
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center',
+                  ...(coverImage
+                    ? { backgroundImage: `url("${coverImage}")`, backgroundSize: 'cover', backgroundPosition: 'center' }
+                    : { backgroundColor: '#cbd5e1' }),
                   borderTopLeftRadius: '17px',
                   borderTopRightRadius: '17px',
                   borderBottomRightRadius: '17px',
@@ -770,29 +770,49 @@ const Photographers: React.FC = () => {
                   <div style={{
                     position: 'absolute',
                     inset: 0,
-                    backgroundColor: 'rgba(13, 27, 42, 0.3)',
+                    backgroundColor: coverImage ? 'rgba(13, 27, 42, 0.3)' : 'transparent',
                     borderTopLeftRadius: '17px',
                     borderBottomRightRadius: '17px',
                     borderBottomLeftRadius: '17px',
                     borderTopRightRadius: '17px'
                   }}></div>
+                  {!coverImage && (
+                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <i className="bi bi-image" style={{ fontSize: '2.5rem', color: '#94a3b8' }}></i>
+                    </div>
+                  )}
                 </div>
 
                 {/* Profile Image Container with Verification Badge */}
                 <div className="profile-image-container">
-                  <img
-                    src={profileImage}
-                    alt={displayName}
-                    style={{
+                  {profileImage ? (
+                    <img
+                      src={profileImage}
+                      alt={displayName}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        borderRadius: '50%',
+                        border: '2px solid white',
+                        objectFit: 'cover',
+                        objectPosition: 'center',
+                        display: 'block'
+                      }}
+                    />
+                  ) : (
+                    <div style={{
                       width: '100%',
                       height: '100%',
                       borderRadius: '50%',
                       border: '2px solid white',
-                      objectFit: 'cover',
-                      objectPosition: 'center',
-                      display: 'block'
-                    }}
-                  />
+                      backgroundColor: '#cbd5e1',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}>
+                      <i className="bi bi-person-fill" style={{ fontSize: '2rem', color: '#94a3b8' }}></i>
+                    </div>
+                  )}
                   <div className="verification-badge">
                     <i className="bi bi-patch-check-fill" style={{ color: '#3b82f6', fontSize: '1rem' }}></i>
                   </div>
