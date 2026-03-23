@@ -347,12 +347,12 @@ const AmoriaKNavbar = () => {
       className="sticky top-0 z-50 transition-all duration-300"
       style={{
         fontFamily: "'Pragati Narrow', sans-serif",
-        backgroundColor: isScrolled ? 'rgba(255, 255, 255, 0.85)' : '#ffffff',
+        backgroundColor: isScrolled ? 'rgba(255, 255, 255, 0.85)' : '#DBDBDB',
         backdropFilter: isScrolled ? 'blur(16px)' : 'none',
         WebkitBackdropFilter: isScrolled ? 'blur(16px)' : 'none',
         boxShadow: isScrolled
           ? '0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.04)'
-          : '0 1px 0 rgba(0, 0, 0, 0.06)',
+          : 'none',
       }}
     >
       {/* Live Animation Styles for Event Category Cards */}
@@ -510,7 +510,7 @@ const AmoriaKNavbar = () => {
         .nav-events-link {
           color: #059669 !important;
           border: 1px solid rgba(16, 185, 129, 0.7);
-          border-radius: 12px;
+          border-radius: 10px;
           padding: 6px 12px !important;
           animation: nav-events-border-vibrate 1s ease-out infinite;
         }
@@ -525,7 +525,7 @@ const AmoriaKNavbar = () => {
         .nav-link-hover {
           position: relative;
           padding: 7px 18px;
-          border-radius: 50px;
+          border-radius: 10px;
           transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
           color: #4b5563;
           font-size: 14px;
@@ -702,11 +702,11 @@ const AmoriaKNavbar = () => {
           {/* Center: Navigation Links (Desktop) — glass pill, absolutely centered */}
           <div className="hidden md:flex items-center gap-1 absolute left-1/2 -translate-x-1/2" style={{
             overflow: 'visible',
-            background: 'rgba(8, 58, 133, 0.04)',
+            background: 'rgba(255, 255, 255, 0.85)',
             backdropFilter: 'blur(12px)',
             WebkitBackdropFilter: 'blur(12px)',
             border: '1px solid rgba(8, 58, 133, 0.08)',
-            borderRadius: '50px',
+            borderRadius: '10px',
             padding: '4px 5px',
           }}>
             {/* Photographers Dropdown */}
@@ -790,7 +790,7 @@ const AmoriaKNavbar = () => {
                             <div key={i} style={{
                               height: '30px',
                               width: '80px',
-                              borderRadius: '50px',
+                              borderRadius: '10px',
                               background: '#f3f4f6',
                               animation: 'nav-skeleton-pulse 1.5s ease-in-out infinite',
                               animationDelay: `${i * 0.08}s`
@@ -814,7 +814,7 @@ const AmoriaKNavbar = () => {
                                 fontSize: '12.5px',
                                 fontWeight: '500',
                                 color: '#374151',
-                                borderRadius: '50px',
+                                borderRadius: '10px',
                                 border: '1px solid #e5e7eb',
                                 transition: 'all 0.15s ease',
                                 display: 'inline-flex',
@@ -903,7 +903,7 @@ const AmoriaKNavbar = () => {
                         {hasLiveEvents && (
                           <span style={{
                             padding: '2px 8px',
-                            borderRadius: '9999px',
+                            borderRadius: '10px',
                             background: 'rgba(255, 255, 255, 0.2)',
                             color: '#ffffff',
                             fontSize: '10px',
@@ -956,7 +956,7 @@ const AmoriaKNavbar = () => {
                             <div key={i} style={{
                               height: '30px',
                               width: '80px',
-                              borderRadius: '50px',
+                              borderRadius: '10px',
                               background: '#f3f4f6',
                               animation: 'nav-skeleton-pulse 1.5s ease-in-out infinite',
                               animationDelay: `${i * 0.08}s`
@@ -980,7 +980,7 @@ const AmoriaKNavbar = () => {
                                 fontSize: '12.5px',
                                 fontWeight: category.isLive ? '600' : '500',
                                 color: category.isLive ? '#059669' : '#374151',
-                                borderRadius: '50px',
+                                borderRadius: '10px',
                                 border: category.isLive ? '1px solid rgba(16, 185, 129, 0.4)' : '1px solid #e5e7eb',
                                 transition: 'all 0.15s ease',
                                 display: 'inline-flex',
@@ -1054,8 +1054,9 @@ const AmoriaKNavbar = () => {
               </button>
               {isLangMenuOpen && (
                 <div
-                  className="absolute right-0 mt-2 w-44"
+                  className="absolute right-0 w-44"
                   style={{
+                    top: 'calc(100% + 12px)',
                     background: 'rgba(255, 255, 255, 0.98)',
                     backdropFilter: 'blur(12px)',
                     WebkitBackdropFilter: 'blur(12px)',
@@ -1101,12 +1102,12 @@ const AmoriaKNavbar = () => {
                         }
                       }}
                     >
-                      {lang.name}
                       <img
                         src={`https://flagcdn.com/w40/${lang.flagCode}.png`}
                         alt={lang.name}
-                        style={{ width: '20px', height: '14px', marginLeft: '8px', borderRadius: '2px', objectFit: 'cover' }}
+                        style={{ width: '20px', height: '14px', marginRight: '8px', borderRadius: '2px', objectFit: 'cover' }}
                       />
+                      {lang.name}
                     </a>
                   ))}
                 </div>
@@ -1525,12 +1526,12 @@ const AmoriaKNavbar = () => {
                               }
                             }}
                         >
-                            {lang.name}
                             <img
                               src={`https://flagcdn.com/w40/${lang.flagCode}.png`}
                               alt={lang.name}
-                              style={{ width: '20px', height: '14px', marginLeft: '8px', borderRadius: '2px', objectFit: 'cover' }}
+                              style={{ width: '20px', height: '14px', marginRight: '8px', borderRadius: '2px', objectFit: 'cover' }}
                             />
+                            {lang.name}
                         </a>
                     ))}
                 </div>
@@ -1612,7 +1613,7 @@ const AmoriaKNavbar = () => {
                     border: '1px solid #dc2626',
                     backgroundColor: 'transparent',
                     color: '#dc2626',
-                    borderRadius: '9999px',
+                    borderRadius: '10px',
                     marginTop: isMobile ? '0.25rem' : '0.5rem',
                     display: 'flex',
                     alignItems: 'center',
@@ -1627,7 +1628,7 @@ const AmoriaKNavbar = () => {
             ) : (
               <>
                 <Link href={`${getLocalePath('/user/auth/login')}?redirect=${encodeURIComponent(pathname)}`} onClick={handleLinkClick} className="block text-center rounded-md text-gray-900 hover:bg-gray-50 font-medium transition-colors cursor-pointer" style={{ padding: isMobile ? '0.5rem 0.75rem' : '0.625rem 0.75rem', fontSize: isMobile ? '0.9375rem' : '1rem' }}>{t('login')}</Link>
-                <Link href={`${getLocalePath('/user/auth/signup')}?redirect=${encodeURIComponent(pathname)}`} onClick={handleLinkClick} className="block text-center bg-[#002D72] text-white rounded-full hover:bg-[#001f4d] font-semibold transition-all duration-300 shadow-sm cursor-pointer" style={{ padding: isMobile ? '0.5rem 0.75rem' : '0.625rem 0.75rem', fontSize: isMobile ? '0.9375rem' : '1rem' }}>{t('signup')}</Link>
+                <Link href={`${getLocalePath('/user/auth/signup')}?redirect=${encodeURIComponent(pathname)}`} onClick={handleLinkClick} className="block text-center bg-[#002D72] text-white rounded-[10px] hover:bg-[#001f4d] font-semibold transition-all duration-300 shadow-sm cursor-pointer" style={{ padding: isMobile ? '0.5rem 0.75rem' : '0.625rem 0.75rem', fontSize: isMobile ? '0.9375rem' : '1rem' }}>{t('signup')}</Link>
               </>
             )}
           </div>

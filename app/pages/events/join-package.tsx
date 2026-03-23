@@ -465,7 +465,7 @@ function JoinPackageContent(): React.JSX.Element {
           <div style={{ textAlign: 'center', color: '#ef4444' }}>
             <div style={{ fontSize: '48px', marginBottom: '16px' }}><i className="bi bi-exclamation-circle"></i></div>
             <p style={{ fontSize: '18px', fontWeight: '600' }}>Event not found</p>
-            <button onClick={() => window.history.back()} style={{ marginTop: '16px', padding: '12px 32px', backgroundColor: '#083A85', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer' }}>Go Back</button>
+            <button onClick={() => window.history.back()} style={{ marginTop: '16px', padding: '12px 32px', backgroundColor: '#083A85', color: '#fff', border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: '600', cursor: 'pointer' }}>Go Back</button>
           </div>
         </div>
       </>
@@ -1281,7 +1281,7 @@ function JoinPackageContent(): React.JSX.Element {
             {authStep !== 'otp' && (
               <div style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: 3, marginBottom: 20 }}>
                 {(['login', 'signup'] as const).map(tab => (
-                  <button key={tab} onClick={() => { setAuthStep(tab); setAuthError(''); }} style={{ flex: 1, padding: '8px 0', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 600, transition: 'all 0.2s', background: authStep === tab ? 'linear-gradient(135deg, #03969c, #027a7f)' : 'transparent', color: authStep === tab ? '#fff' : '#6b7280' }}>
+                  <button key={tab} onClick={() => { setAuthStep(tab); setAuthError(''); }} style={{ flex: 1, padding: '8px 0', borderRadius: 10, border: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 600, transition: 'all 0.2s', background: authStep === tab ? 'linear-gradient(135deg, #03969c, #027a7f)' : 'transparent', color: authStep === tab ? '#fff' : '#6b7280' }}>
                     {tab === 'login' ? 'Log In' : 'Sign Up'}
                   </button>
                 ))}
