@@ -98,13 +98,15 @@ const FindMyPhotos = () => {
     setIsSelectMode(false);
   };
 
-  // Auto-fill invite code from URL param and load album (e.g. /find-my-photos?code=ABC123)
+  // Auto-fill invite code from URL param, localStorage, or load album
   useEffect(() => {
     const codeFromUrl = searchParams.get('code');
-    if (codeFromUrl && !inviteCode) {
-      setInviteCode(codeFromUrl);
+    const savedCode = typeof window !== 'undefined' ? localStorage.getItem('findMyPhotos_inviteCode') : null;
+    const code = codeFromUrl || savedCode;
+    if (code && !inviteCode) {
+      setInviteCode(code);
       setIsLoadingAlbum(true);
-      getAlbumByCode(codeFromUrl).then(response => {
+      getAlbumByCode(code).then(response => {
         if (response.success && response.data) {
           const albumData = response.data;
           setAlbumEventId(albumData.eventId || '');
@@ -121,8 +123,12 @@ const FindMyPhotos = () => {
           setAllPhotos(photos);
           setDisplayedPhotos(photos);
           setIsCodeSubmitted(true);
+          // Persist invite code for future visits
+          localStorage.setItem('findMyPhotos_inviteCode', code);
         } else {
           setInviteError(response.error || 'This invite code is invalid or has expired. Please check and try again.');
+          // Clear stale saved code
+          if (savedCode) localStorage.removeItem('findMyPhotos_inviteCode');
         }
       }).catch(() => {
         setInviteError('Unable to load album. Please check your internet connection and try again.');
@@ -176,6 +182,8 @@ const FindMyPhotos = () => {
         setAllPhotos(photos);
         setDisplayedPhotos(photos);
         setIsCodeSubmitted(true);
+        // Persist invite code for future visits
+        localStorage.setItem('findMyPhotos_inviteCode', inviteCode.trim());
       } else {
         setInviteError(response.error || 'This invite code is invalid or has expired. Please check and try again.');
       }
@@ -272,9 +280,7 @@ const FindMyPhotos = () => {
         resetScanModal();
       } else {
         const err = response.error || '';
-        if (err.includes('code') && err.includes('missing')) {
-          setScanError('Please enter an event invite code to search for your photos.');
-        } else if (err.toLowerCase().includes('no face detected')) {
+        if (err.toLowerCase().includes('no face detected')) {
           setScanError('NO_FACE');
         } else {
           setScanError(err || 'No matching photos found. Try a clearer photo.');
@@ -1158,7 +1164,7 @@ const FindMyPhotos = () => {
                       }
                     }}
                     style={{
-                      padding: '7px 16px', borderRadius: '20px', fontSize: '13px', fontWeight: 600,
+                      padding: '7px 16px', borderRadius: '10px', fontSize: '13px', fontWeight: 600,
                       background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)',
                       color: 'rgba(255,255,255,0.8)', cursor: 'pointer', transition: 'all 0.2s',
                     }}
@@ -1169,7 +1175,7 @@ const FindMyPhotos = () => {
                 <button
                   onClick={() => { setIsSelectMode(!isSelectMode); if (isSelectMode) setSelectedIds(new Set()); }}
                   style={{
-                    padding: '7px 16px', borderRadius: '20px', fontSize: '13px', fontWeight: 600,
+                    padding: '7px 16px', borderRadius: '10px', fontSize: '13px', fontWeight: 600,
                     background: isSelectMode ? 'rgba(3,150,156,0.2)' : 'rgba(255,255,255,0.08)',
                     border: `1px solid ${isSelectMode ? 'rgba(3,150,156,0.5)' : 'rgba(255,255,255,0.15)'}`,
                     color: isSelectMode ? '#5eead4' : 'rgba(255,255,255,0.8)',
@@ -1494,7 +1500,7 @@ const FindMyPhotos = () => {
                 <button
                   onClick={() => { toggleSelect(selectedPhoto.id); if (!isSelectMode) setIsSelectMode(true); }}
                   style={{
-                    padding: '8px 16px', borderRadius: '20px', fontSize: '13px', fontWeight: 600,
+                    padding: '8px 16px', borderRadius: '10px', fontSize: '13px', fontWeight: 600,
                     background: selectedIds.has(selectedPhoto.id) ? 'rgba(3,150,156,0.3)' : 'rgba(255,255,255,0.1)',
                     border: `1px solid ${selectedIds.has(selectedPhoto.id) ? 'rgba(3,150,156,0.6)' : 'rgba(255,255,255,0.2)'}`,
                     color: selectedIds.has(selectedPhoto.id) ? '#5eead4' : 'rgba(255,255,255,0.8)',

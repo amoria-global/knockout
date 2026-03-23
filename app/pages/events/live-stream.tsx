@@ -6673,7 +6673,7 @@ const App = () => {
             {authStep !== 'otp' && (
               <div style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: 3, marginBottom: 20 }}>
                 {(['login', 'signup'] as const).map(tab => (
-                  <button key={tab} onClick={() => { setAuthStep(tab); setAuthError(''); }} style={{ flex: 1, padding: '8px 0', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 600, transition: 'all 0.2s', background: authStep === tab ? 'linear-gradient(135deg, #03969c, #027a7f)' : 'transparent', color: authStep === tab ? '#fff' : '#6b7280' }}>
+                  <button key={tab} onClick={() => { setAuthStep(tab); setAuthError(''); }} style={{ flex: 1, padding: '8px 0', borderRadius: 10, border: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 600, transition: 'all 0.2s', background: authStep === tab ? 'linear-gradient(135deg, #03969c, #027a7f)' : 'transparent', color: authStep === tab ? '#fff' : '#6b7280' }}>
                     {tab === 'login' ? 'Log In' : 'Sign Up'}
                   </button>
                 ))}
@@ -6682,7 +6682,7 @@ const App = () => {
 
             {/* Error */}
             {authError && (
-              <div style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.35)', borderRadius: 8, padding: '10px 14px', marginBottom: 16, display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+              <div style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.35)', borderRadius: 10, padding: '10px 14px', marginBottom: 16, display: 'flex', gap: 8, alignItems: 'flex-start' }}>
                 <i className="bi bi-exclamation-triangle-fill" style={{ color: '#ef4444', fontSize: 14, marginTop: 1, flexShrink: 0 }}></i>
                 <span style={{ color: '#fca5a5', fontSize: 13 }}>{authError}</span>
               </div>

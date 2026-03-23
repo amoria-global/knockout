@@ -80,10 +80,10 @@ export default function Footer() {
   const footerStyles = `
     .footer-container { position: relative; width: 100%; margin-top: 2.8rem; }
     .subscribe-wrapper { position: absolute; top: -1.6rem; left: 50%; transform: translateX(-50%); width: 100%; max-width: 40rem; padding: 0 1.6rem; z-index: 10; }
-    .subscribe-container { background-color: #ffffff; border-radius: 9999px; padding: 0.001rem; box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.15), 0 4px 8px -2px rgba(8, 58, 133, 0.1); }
+    .subscribe-container { background-color: #ffffff; border-radius: 10px; padding: 0.001rem; box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.15), 0 4px 8px -2px rgba(8, 58, 133, 0.1); }
     .subscribe-form { display: flex; align-items: center; width: 100%; }
     .subscribe-input { width: 100%; padding: 0.44rem 1.2rem; background: transparent; color: #000; border: none; outline: none; font-size: 0.96rem; font-weight: 500; }
-    .subscribe-button { background: #103E83; color: white; font-weight: 600; border-radius: 1.6rem; letter-spacing: 0.05em; font-size: 0.9rem; padding: 0.6rem 1.6rem; flex-shrink: 0; cursor: pointer; border: none; transition: background-color 0.2s; }
+    .subscribe-button { background: #103E83; color: white; font-weight: 600; border-radius: 10px; letter-spacing: 0.05em; font-size: 0.9rem; padding: 0.6rem 1.6rem; flex-shrink: 0; cursor: pointer; border: none; transition: background-color 0.2s; }
     .subscribe-button:hover { background-color: #0d3268; }
     .footer-body { background: linear-gradient(to right, #052047, #052047, #103E83); border-radius: 2rem 2rem 0 0; color: white; position: relative; overflow: hidden; }
     .footer-dotted-bg { position: absolute; inset: 0; background-image: radial-gradient(circle, rgba(255, 255, 255, 0.15) 1px, transparent 1px); background-size: 25px 25px; opacity: 0.4; z-index: 0; pointer-events: none; transition: opacity 0.3s ease; }
