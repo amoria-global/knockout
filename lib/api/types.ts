@@ -35,6 +35,8 @@ export interface RequestOptions {
   skipAuth?: boolean;
   /** Custom request ID for tracing */
   requestId?: string;
+  /** Include credentials (cookies) in cross-origin requests */
+  credentials?: RequestCredentials;
 }
 
 /**
