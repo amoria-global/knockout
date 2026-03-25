@@ -29,8 +29,8 @@ const FindMyPhotos = () => {
   const [gridMousePos, setGridMousePos] = useState<{ x: number; y: number } | null>(null);
 
   // Photo grid
-  const [allPhotos, setAllPhotos] = useState<{ id: string; url: string; alt: string; price?: number; eventId?: string }[]>([]);
-  const [displayedPhotos, setDisplayedPhotos] = useState<{ id: string; url: string; alt: string; price?: number; eventId?: string }[]>([]);
+  const [allPhotos, setAllPhotos] = useState<{ id: string; url: string; alt: string; price?: number; eventId?: string; isPurchased?: boolean }[]>([]);
+  const [displayedPhotos, setDisplayedPhotos] = useState<{ id: string; url: string; alt: string; price?: number; eventId?: string; isPurchased?: boolean }[]>([]);
   const [isFiltered, setIsFiltered] = useState(false);
 
   // Scan modal
@@ -48,7 +48,7 @@ const FindMyPhotos = () => {
   const streamRef = useRef<MediaStream | null>(null);
 
   // Image viewer modal
-  const [selectedPhoto, setSelectedPhoto] = useState<{ id: string; url: string; alt: string; price?: number; eventId?: string } | null>(null);
+  const [selectedPhoto, setSelectedPhoto] = useState<{ id: string; url: string; alt: string; price?: number; eventId?: string; isPurchased?: boolean } | null>(null);
 
   // Album metadata
   const [albumEventId, setAlbumEventId] = useState('');
@@ -59,7 +59,7 @@ const FindMyPhotos = () => {
 
   // Download payment modal
   const [showDownloadModal, setShowDownloadModal] = useState(false);
-  const [downloadTarget, setDownloadTarget] = useState<{ id: string; url: string; alt: string; price?: number; eventId?: string } | null>(null);
+  const [downloadTarget, setDownloadTarget] = useState<{ id: string; url: string; alt: string; price?: number; eventId?: string; isPurchased?: boolean } | null>(null);
   // XentriPay modal state for photo purchases
   const [showXentriPayModal, setShowXentriPayModal] = useState(false);
   // Multi-select state
@@ -273,6 +273,7 @@ const FindMyPhotos = () => {
           alt: p.alt || p.eventTitle || 'Event photo',
           price: p.pricePerImage ?? albumPricing?.pricePerImage,
           eventId: p.eventId,
+          isPurchased: p.isPurchased ?? true,  // Default to true for backward compatibility
         }));
         setDisplayedPhotos(mapped);
         setIsFiltered(true);
@@ -282,6 +283,8 @@ const FindMyPhotos = () => {
         const err = response.error || '';
         if (err.toLowerCase().includes('no face detected')) {
           setScanError('NO_FACE');
+        } else if (err.toLowerCase().includes('free album') || err.toLowerCase().includes('not searchable via facial recognition')) {
+          setScanError('FREE_ALBUM');
         } else {
           setScanError(err || 'No matching photos found. Try a clearer photo.');
         }
@@ -827,24 +830,43 @@ const FindMyPhotos = () => {
                 </button>
 
                 {scanError && (
-                  (scanError === 'NO_MATCHES' || scanError === 'NO_FACE') ? (
+                  (scanError === 'NO_MATCHES' || scanError === 'NO_FACE' || scanError === 'FREE_ALBUM') ? (
                     <div style={{
                       marginTop: '16px',
                       padding: '20px',
-                      backgroundColor: scanError === 'NO_FACE' ? 'rgba(6, 182, 212, 0.08)' : 'rgba(251, 191, 36, 0.08)',
-                      border: `1px solid ${scanError === 'NO_FACE' ? 'rgba(6, 182, 212, 0.25)' : 'rgba(251, 191, 36, 0.25)'}`,
+                      backgroundColor: scanError === 'FREE_ALBUM' ? 'rgba(59, 130, 246, 0.08)' : (scanError === 'NO_FACE' ? 'rgba(6, 182, 212, 0.08)' : 'rgba(251, 191, 36, 0.08)'),
+                      border: `1px solid ${scanError === 'FREE_ALBUM' ? 'rgba(59, 130, 246, 0.25)' : (scanError === 'NO_FACE' ? 'rgba(6, 182, 212, 0.25)' : 'rgba(251, 191, 36, 0.25)')}`,
                       borderRadius: '14px',
                       textAlign: 'center',
                     }}>
-                      <i className={scanError === 'NO_FACE' ? 'bi bi-person-bounding-box' : 'bi bi-camera'} style={{ fontSize: '28px', color: scanError === 'NO_FACE' ? '#06b6d4' : '#f59e0b', display: 'block', marginBottom: '8px' }}></i>
-                      <p style={{ color: scanError === 'NO_FACE' ? '#06b6d4' : '#f59e0b', fontSize: '15px', fontWeight: 600, margin: '0 0 4px' }}>
-                        {scanError === 'NO_FACE' ? 'No face detected in your photo' : 'No matching photos found'}
+                      <i className={scanError === 'FREE_ALBUM' ? 'bi bi-lock-fill' : (scanError === 'NO_FACE' ? 'bi bi-person-bounding-box' : 'bi bi-camera')} style={{ fontSize: '28px', color: scanError === 'FREE_ALBUM' ? '#3b82f6' : (scanError === 'NO_FACE' ? '#06b6d4' : '#f59e0b'), display: 'block', marginBottom: '8px' }}></i>
+                      <p style={{ color: scanError === 'FREE_ALBUM' ? '#3b82f6' : (scanError === 'NO_FACE' ? '#06b6d4' : '#f59e0b'), fontSize: '15px', fontWeight: 600, margin: '0 0 4px' }}>
+                        {scanError === 'FREE_ALBUM' ? 'This is a FREE Album' : (scanError === 'NO_FACE' ? 'No face detected in your photo' : 'No matching photos found')}
                       </p>
-                      <p style={{ color: scanError === 'NO_FACE' ? '#0891b2' : '#fbbf24', fontSize: '13px', margin: 0, lineHeight: 1.5 }}>
-                        {scanError === 'NO_FACE'
-                          ? 'Upload a close-up selfie where your face is clearly visible and takes up most of the frame.'
-                          : 'Try a well-lit, front-facing photo with your face clearly visible. Group or distant shots may not match.'}
+                      <p style={{ color: scanError === 'FREE_ALBUM' ? '#2563eb' : (scanError === 'NO_FACE' ? '#0891b2' : '#fbbf24'), fontSize: '13px', margin: scanError === 'FREE_ALBUM' ? '0 0 12px' : 0, lineHeight: 1.5 }}>
+                        {scanError === 'FREE_ALBUM'
+                          ? 'FREE albums are not searchable via facial recognition. Please check your email for the access link.'
+                          : (scanError === 'NO_FACE'
+                            ? 'Upload a close-up selfie where your face is clearly visible and takes up most of the frame.'
+                            : 'Try a well-lit, front-facing photo with your face clearly visible. Group or distant shots may not match.')}
                       </p>
+                      {scanError === 'FREE_ALBUM' && inviteCode && (
+                        <a
+                          href={`/user/albums/free/${inviteCode.trim()}`}
+                          style={{
+                            display: 'inline-block',
+                            padding: '10px 20px',
+                            backgroundColor: '#3b82f6',
+                            color: '#ffffff',
+                            borderRadius: '8px',
+                            textDecoration: 'none',
+                            fontSize: '14px',
+                            fontWeight: 600,
+                          }}
+                        >
+                          Access FREE Album
+                        </a>
+                      )}
                     </div>
                   ) : (
                     <p style={{
@@ -1209,7 +1231,19 @@ const FindMyPhotos = () => {
                 >
                   <div
                     style={{ aspectRatio: '4/3', overflow: 'hidden', position: 'relative' }}
-                    onClick={() => isSelectMode ? toggleSelect(photo.id) : setSelectedPhoto(photo)}
+                    onClick={() => {
+                      if (isSelectMode) {
+                        toggleSelect(photo.id);
+                      } else {
+                        const photoPrice = photo.price ?? albumPricing?.pricePerImage ?? 0;
+                        // Block full-view for unpurchased paid photos
+                        if (!photo.isPurchased && photoPrice > 0) {
+                          handleDownloadClick(photo);  // Show purchase modal
+                        } else {
+                          setSelectedPhoto(photo);  // Open full viewer
+                        }
+                      }
+                    }}
                   >
                     {/* Selection checkbox */}
                     {isSelectMode && (
@@ -1273,6 +1307,32 @@ const FindMyPhotos = () => {
                         </span>
                       );
                     })()}
+                    {/* Unpurchased lock overlay */}
+                    {!photo.isPurchased && (photo.price ?? albumPricing?.pricePerImage ?? 0) > 0 && (
+                      <div style={{
+                        position: 'absolute',
+                        inset: 0,
+                        background: 'rgba(0,0,0,0.4)',
+                        backdropFilter: 'blur(2px)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 2,
+                      }}>
+                        <div style={{
+                          background: 'rgba(255,255,255,0.95)',
+                          borderRadius: '50%',
+                          width: '48px',
+                          height: '48px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+                        }}>
+                          <i className="bi bi-lock-fill" style={{ color: '#03969c', fontSize: '24px' }}></i>
+                        </div>
+                      </div>
+                    )}
                   </div>
                   {/* Download button */}
                   <button
@@ -1335,6 +1395,7 @@ const FindMyPhotos = () => {
         const hasNext = currentIdx < displayedPhotos.length - 1;
         const goTo = (idx: number) => { if (idx >= 0 && idx < displayedPhotos.length) setSelectedPhoto(displayedPhotos[idx]); };
         const photoPrice = selectedPhoto.price ?? albumPricing?.pricePerImage ?? 0;
+        const isPurchased = selectedPhoto.isPurchased ?? true;
 
         return (
           <div
@@ -1352,18 +1413,61 @@ const FindMyPhotos = () => {
 
             {/* Centered image */}
             <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>
-              <img
-                src={selectedPhoto.url.replace('w=600&h=400', 'w=1200&h=800')}
-                alt={selectedPhoto.alt}
-                onClick={(e) => e.stopPropagation()}
-                style={{
-                  maxWidth: '100%',
-                  maxHeight: 'calc(100% - 1rem)',
-                  objectFit: 'contain',
-                  borderRadius: '16px',
-                  transition: 'opacity 0.3s ease',
-                }}
-              />
+              <div style={{ position: 'relative', maxWidth: '100%', maxHeight: 'calc(100% - 1rem)' }}>
+                <img
+                  src={isPurchased ? selectedPhoto.url.replace('w=600&h=400', 'w=1200&h=800') : selectedPhoto.url}
+                  alt={selectedPhoto.alt}
+                  onClick={(e) => e.stopPropagation()}
+                  style={{
+                    maxWidth: '100%',
+                    maxHeight: 'calc(100vh - 1rem)',
+                    objectFit: 'contain',
+                    borderRadius: '16px',
+                    transition: 'opacity 0.3s ease',
+                    filter: (!isPurchased && photoPrice > 0) ? 'blur(20px)' : 'none',
+                  }}
+                />
+                {/* Lock overlay for unpurchased photos */}
+                {!isPurchased && photoPrice > 0 && (
+                  <div
+                    onClick={(e) => { e.stopPropagation(); handleDownloadClick(selectedPhoto); }}
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '16px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <div style={{
+                      background: 'rgba(255,255,255,0.95)',
+                      borderRadius: '50%',
+                      width: '80px',
+                      height: '80px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
+                    }}>
+                      <i className="bi bi-lock-fill" style={{ color: '#03969c', fontSize: '40px' }}></i>
+                    </div>
+                    <div style={{
+                      background: 'rgba(0,0,0,0.8)',
+                      padding: '12px 24px',
+                      borderRadius: '50px',
+                      color: '#fff',
+                      fontSize: '16px',
+                      fontWeight: 600,
+                      backdropFilter: 'blur(8px)',
+                    }}>
+                      Purchase to View Full Size
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Top gradient overlay — title bar + actions */}
@@ -2028,24 +2132,43 @@ const FindMyPhotos = () => {
                 </button>
 
                 {scanError && (
-                  (scanError === 'NO_MATCHES' || scanError === 'NO_FACE') ? (
+                  (scanError === 'NO_MATCHES' || scanError === 'NO_FACE' || scanError === 'FREE_ALBUM') ? (
                     <div style={{
                       marginTop: '12px',
                       padding: '16px',
-                      backgroundColor: scanError === 'NO_FACE' ? 'rgba(6, 182, 212, 0.1)' : 'rgba(251, 191, 36, 0.1)',
-                      border: `1px solid ${scanError === 'NO_FACE' ? 'rgba(6, 182, 212, 0.3)' : 'rgba(251, 191, 36, 0.3)'}`,
+                      backgroundColor: scanError === 'FREE_ALBUM' ? 'rgba(59, 130, 246, 0.1)' : (scanError === 'NO_FACE' ? 'rgba(6, 182, 212, 0.1)' : 'rgba(251, 191, 36, 0.1)'),
+                      border: `1px solid ${scanError === 'FREE_ALBUM' ? 'rgba(59, 130, 246, 0.3)' : (scanError === 'NO_FACE' ? 'rgba(6, 182, 212, 0.3)' : 'rgba(251, 191, 36, 0.3)')}`,
                       borderRadius: '12px',
                       textAlign: 'center',
                     }}>
-                      <i className={scanError === 'NO_FACE' ? 'bi bi-person-bounding-box' : 'bi bi-camera'} style={{ fontSize: '24px', color: scanError === 'NO_FACE' ? '#06b6d4' : '#f59e0b', display: 'block', marginBottom: '6px' }}></i>
-                      <p style={{ color: scanError === 'NO_FACE' ? '#06b6d4' : '#f59e0b', fontSize: '14px', fontWeight: 600, margin: '0 0 4px' }}>
-                        {scanError === 'NO_FACE' ? 'No face detected in your photo' : 'No matching photos found'}
+                      <i className={scanError === 'FREE_ALBUM' ? 'bi bi-lock-fill' : (scanError === 'NO_FACE' ? 'bi bi-person-bounding-box' : 'bi bi-camera')} style={{ fontSize: '24px', color: scanError === 'FREE_ALBUM' ? '#3b82f6' : (scanError === 'NO_FACE' ? '#06b6d4' : '#f59e0b'), display: 'block', marginBottom: '6px' }}></i>
+                      <p style={{ color: scanError === 'FREE_ALBUM' ? '#3b82f6' : (scanError === 'NO_FACE' ? '#06b6d4' : '#f59e0b'), fontSize: '14px', fontWeight: 600, margin: '0 0 4px' }}>
+                        {scanError === 'FREE_ALBUM' ? 'This is a FREE Album' : (scanError === 'NO_FACE' ? 'No face detected in your photo' : 'No matching photos found')}
                       </p>
-                      <p style={{ color: scanError === 'NO_FACE' ? '#0891b2' : '#fbbf24', fontSize: '12px', margin: 0, lineHeight: 1.5 }}>
-                        {scanError === 'NO_FACE'
-                          ? 'Upload a close-up selfie where your face is clearly visible.'
-                          : 'Try a well-lit, front-facing photo with your face clearly visible.'}
+                      <p style={{ color: scanError === 'FREE_ALBUM' ? '#2563eb' : (scanError === 'NO_FACE' ? '#0891b2' : '#fbbf24'), fontSize: '12px', margin: scanError === 'FREE_ALBUM' ? '0 0 10px' : 0, lineHeight: 1.5 }}>
+                        {scanError === 'FREE_ALBUM'
+                          ? 'FREE albums are not searchable. Check your email for the access link.'
+                          : (scanError === 'NO_FACE'
+                            ? 'Upload a close-up selfie where your face is clearly visible.'
+                            : 'Try a well-lit, front-facing photo with your face clearly visible.')}
                       </p>
+                      {scanError === 'FREE_ALBUM' && inviteCode && (
+                        <a
+                          href={`/user/albums/free/${inviteCode.trim()}`}
+                          style={{
+                            display: 'inline-block',
+                            padding: '8px 16px',
+                            backgroundColor: '#3b82f6',
+                            color: '#ffffff',
+                            borderRadius: '6px',
+                            textDecoration: 'none',
+                            fontSize: '13px',
+                            fontWeight: 600,
+                          }}
+                        >
+                          Access FREE Album
+                        </a>
+                      )}
                     </div>
                   ) : (
                     <div style={{
