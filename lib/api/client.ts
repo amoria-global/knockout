@@ -302,7 +302,7 @@ class ApiClient {
       headers,
       signal: combinedController.signal,
       mode: 'cors',
-      credentials: 'omit',
+      credentials: options.credentials || 'omit',  // Use provided credentials or default to 'omit'
     };
 
     // Add body for non-GET requests
