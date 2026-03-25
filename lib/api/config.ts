@@ -116,6 +116,9 @@ export const API_ENDPOINTS = {
     FAQS: "/api/remote/public/faqs",
     ALBUM_BY_CODE: "/api/remote/public/albums",
     FACE_SEARCH: "/api/remote/public/face-search",
+    FREE_ALBUM_REQUEST_ACCESS: "/api/remote/public/albums/free/request-access",
+    FREE_ALBUM_VERIFY_ACCESS: "/api/remote/public/albums/free/verify-access",
+    FREE_ALBUM_GET: (albumId: string) => `/api/remote/public/albums/free/${albumId}`,
     EVENT_VIEWERS: (eventId: string) => `/api/remote/public/events/${eventId}/viewers`,
   },
 
