@@ -17,13 +17,21 @@ export interface AlbumPhoto {
   eventTitle?: string;
 }
 
+export interface AlbumPricing {
+  pricePerImage?: number;
+  currencyId?: string;
+  currencySymbol?: string;
+  currencyAbbreviation?: string;
+}
+
 export interface AlbumData {
   albumId: string;
   eventId?: string;
   title?: string;
   eventTitle?: string;
   pricePerPhoto?: number;
-  albumType?: 'event' | 'free' | string;
+  pricing?: AlbumPricing | null;
+  albumType?: 'event' | 'free' | 'paid' | string;
   photographerName?: string;
   photos: AlbumPhoto[];
 }

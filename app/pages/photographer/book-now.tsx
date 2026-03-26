@@ -229,7 +229,9 @@ function BookNowContent(): React.JSX.Element {
         hasLiveStream: pkg.hasLiveStream || false,
         photobookPhotos: pkg.photobookPhotos,
         description: pkg.description || '',
+        deliveryDays: pkg.deliveryDays ?? null,
         features: [...(pkg.features || [])]
+          .filter(f => !f.featureName.toLowerCase().includes('same-day') && !f.featureName.toLowerCase().includes('same day'))
           .sort((a, b) => a.displayOrder - b.displayOrder)
           .map(f => ({ text: f.featureName, available: f.isIncluded })),
         // Keep raw feature names for this package (included ones)
@@ -243,7 +245,7 @@ function BookNowContent(): React.JSX.Element {
   const allFeatureNames: string[] = [];
   const seenFeatures = new Set<string>();
   for (const pkg of [...apiPackages].sort((a, b) => (TIER_ORDER[a.packageName] ?? 99) - (TIER_ORDER[b.packageName] ?? 99))) {
-    for (const f of [...(pkg.features || [])].sort((a, b) => a.displayOrder - b.displayOrder)) {
+    for (const f of [...(pkg.features || [])].filter(ft => !ft.featureName.toLowerCase().includes('same-day') && !ft.featureName.toLowerCase().includes('same day')).sort((a, b) => a.displayOrder - b.displayOrder)) {
       if (!seenFeatures.has(f.featureName)) {
         seenFeatures.add(f.featureName);
         allFeatureNames.push(f.featureName);
@@ -521,134 +523,38 @@ function BookNowContent(): React.JSX.Element {
       )}
 
       <div className="min-h-screen" style={{ backgroundColor: '#f0f4f8', position: 'relative' }}>
-        {/* Back Button */}
-        <div style={{ padding: isMobile ? '16px' : '20px 24px' }}>
-          <button
-            onClick={() => window.history.back()}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '8px 16px',
-              backgroundColor: '#fff',
-              border: '1px solid #e5e7eb',
-              borderRadius: '8px',
-              fontSize: '14px',
-              fontWeight: '600',
-              color: '#374151',
-              cursor: 'pointer',
-              boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-            }}
-          >
-            <i className="bi bi-chevron-left"></i>
-            Back
-          </button>
-        </div>
-
         {/* Main Content Container */}
         <div
           style={{
             maxWidth: '1400px',
             margin: '0 auto',
-            padding: isMobile ? '32px 16px 40px' : '40px 24px 40px',
+            padding: isMobile ? '8px 16px 40px' : '10px 24px 40px',
           }}
         >
-          {/* Photographer Mini-Card */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: isMobile ? '12px' : '16px',
-            padding: isMobile ? '14px' : '16px 20px',
-            backgroundColor: '#fff',
-            borderRadius: '14px',
-            border: '2px solid #e5e7eb',
-            boxShadow: '0 2px 10px rgba(0, 0, 0, 0.06)',
-            marginBottom: isMobile ? '20px' : '28px',
-            maxWidth: '500px',
-            marginLeft: 'auto',
-            marginRight: 'auto',
-          }}>
-            <img
-              src={photographer.profilePicture && !photographer.profilePicture.includes('/null')
-                ? photographer.profilePicture
-                : 'https://i.pinimg.com/1200x/e9/1f/59/e91f59ed85a702d7252f2b0c8e02c7d2.jpg'}
-              alt={`${photographer.firstName} ${photographer.lastName}`}
-              style={{
-                width: isMobile ? '48px' : '56px',
-                height: isMobile ? '48px' : '56px',
-                borderRadius: '50%',
-                objectFit: 'cover',
-                border: '2px solid #dbeafe',
-                flexShrink: 0,
-              }}
-            />
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                <h3 style={{
-                  fontSize: isMobile ? '15px' : '17px',
-                  fontWeight: '700',
-                  color: '#111827',
-                  margin: 0,
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                }}>
-                  {photographer.firstName} {photographer.lastName}
-                </h3>
-                {photographer.isVerified && (
-                  <i className="bi bi-patch-check-fill" style={{ color: '#3b82f6', fontSize: '16px', flexShrink: 0 }}></i>
-                )}
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '4px', flexWrap: 'wrap' }}>
-                {(photographer.rating ?? 0) > 0 && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <i className="bi bi-star-fill" style={{ color: '#FFA500', fontSize: '13px' }}></i>
-                    <span style={{ fontSize: '13px', fontWeight: '600', color: '#374151' }}>{photographer.rating}</span>
-                  </div>
-                )}
-                {photographer.address && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <i className="bi bi-geo-alt-fill" style={{ color: '#6b7280', fontSize: '12px' }}></i>
-                    <span style={{
-                      fontSize: '13px',
-                      color: '#6b7280',
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      maxWidth: '180px',
-                    }}>{photographer.address}</span>
-                  </div>
-                )}
-              </div>
-            </div>
+          {/* Back Button + Page Header */}
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: isMobile ? '16px' : '24px' }}>
             <button
-              onClick={() => window.location.href = `/user/photographers/view-profile?id=${photographerId}`}
+              onClick={() => window.history.back()}
               style={{
-                padding: '6px 14px',
-                backgroundColor: '#f0f9ff',
-                border: '1px solid #bfdbfe',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '8px 16px',
+                backgroundColor: '#fff',
+                border: '1px solid #e5e7eb',
                 borderRadius: '8px',
-                fontSize: '12px',
+                fontSize: '14px',
                 fontWeight: '600',
-                color: '#083A85',
+                color: '#374151',
                 cursor: 'pointer',
-                whiteSpace: 'nowrap',
+                boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
                 flexShrink: 0,
-                transition: 'all 0.2s ease',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#dbeafe';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = '#f0f9ff';
               }}
             >
-              View Profile
+              <i className="bi bi-chevron-left"></i>
+              Back
             </button>
-          </div>
-
-          {/* Page Header - Choose Your Preferred Package */}
-          <div style={{ marginBottom: isMobile ? '24px' : '32px', textAlign: 'center' }}>
+            <div style={{ flex: 1, textAlign: 'center' }}>
             <h1
               style={{
                 fontSize: isMobile ? '26px' : '54px',
@@ -662,6 +568,7 @@ function BookNowContent(): React.JSX.Element {
             <p style={{ fontSize: isMobile ? '14px' : '18px', color: '#40444d', maxWidth: '600px', margin: '0 auto' }}>
               Choose the perfect package that suits your needs and budget
             </p>
+            </div>
           </div>
 
           {/* Package Cards Section */}
@@ -820,15 +727,12 @@ function BookNowContent(): React.JSX.Element {
                     marginBottom: '10px',
                     color: pkg.isPremium ? '#7C3AED' : '#374151',
                   }}>
-                    {pkg.isPremium
-                      ? 'Unlimited photos & videos'
-                      : (() => {
-                          const parts = [];
-                          if (pkg.includedPhotos) parts.push(`${pkg.includedPhotos} photos`);
-                          if (pkg.includedVideos) parts.push(`${pkg.includedVideos} videos`);
-                          return parts.join(' · ') || '—';
-                        })()
-                    }
+                    {(() => {
+                      const parts = [];
+                      if (pkg.includedPhotos) parts.push(`${pkg.includedPhotos} photos`);
+                      if (pkg.includedVideos) parts.push(`${pkg.includedVideos} videos`);
+                      return parts.join(' · ') || '—';
+                    })()}
                   </div>
 
                   {/* Duration */}
@@ -883,8 +787,8 @@ function BookNowContent(): React.JSX.Element {
                         const hasPhotos = pkg.isPremium || (pkg.includedPhotos ?? 0) > 0;
                         const hasVideos = pkg.isPremium || (pkg.includedVideos ?? 0) > 0;
                         if (!hasPhotos && !hasVideos) return [];
-                        const photoPart = pkg.isPremium ? 'Unlimited photos' : pkg.includedPhotos ? `${pkg.includedPhotos} photos` : '';
-                        const videoPart = pkg.isPremium ? 'Unlimited videos' : pkg.includedVideos ? `${pkg.includedVideos} videos` : '';
+                        const photoPart = pkg.includedPhotos ? `${pkg.includedPhotos} photos` : '';
+                        const videoPart = pkg.includedVideos ? `${pkg.includedVideos} videos` : '';
                         const combined = [photoPart, videoPart].filter(Boolean).join(' & ') + ' included';
                         return [{ text: combined, available: true }];
                       })(),
@@ -943,6 +847,19 @@ function BookNowContent(): React.JSX.Element {
                         </span>
                       </div>
                     ))}
+                    {/* Delivery time from backend */}
+                    {pkg.deliveryDays != null && pkg.deliveryDays > 0 && (
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+                        <i className="bi bi-clock-fill" style={{ color: selectedPackage === pkg.id ? '#059669' : '#10b981', fontSize: '17px' }}></i>
+                        <span style={{
+                          fontSize: '15px',
+                          color: selectedPackage === pkg.id ? '#1f2937' : '#374151',
+                          fontWeight: selectedPackage === pkg.id ? '600' : '500',
+                        }}>
+                          {pkg.deliveryDays}-days delivery time
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Extra Photos & Videos Input - Only shows when selected and package supports extras */}
@@ -976,10 +893,7 @@ function BookNowContent(): React.JSX.Element {
                         textAlign: 'center',
                         marginBottom: '6px',
                       }}>
-                        {pkg.isPremium
-                          ? <>This package includes <strong style={{ color: '#7C3AED' }}>unlimited photos &amp; videos</strong>.</>
-                          : <>This package already includes <strong style={{ color: '#083A85' }}>{pkg.includedPhotos} photos</strong> &amp; <strong style={{ color: '#083A85' }}>{pkg.includedVideos} videos</strong>.</>
-                        }
+                        {<>This package already includes <strong style={{ color: '#083A85' }}>{pkg.includedPhotos || 0} photos</strong> &amp; <strong style={{ color: '#083A85' }}>{pkg.includedVideos || 0} videos</strong>.</>}
                       </p>
                       <p style={{
                         fontSize: '13px',
@@ -1139,7 +1053,7 @@ function BookNowContent(): React.JSX.Element {
                           }}
                         >
                           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                            <span style={{ fontSize: '14px', color: '#374151' }}>Base package ({pkg.isPremium ? 'Unlimited' : `${pkg.includedPhotos} photos & ${pkg.includedVideos} videos`})</span>
+                            <span style={{ fontSize: '14px', color: '#374151' }}>Base package ({`${pkg.includedPhotos || 0} photos & ${pkg.includedVideos || 0} videos`})</span>
                             <span style={{ fontSize: '14px', color: '#374151' }}>{pkg.currencySymbol}{pkg.basePrice.toLocaleString()}</span>
                           </div>
                           {typeof extraPhotos[pkg.id] === 'number' && (extraPhotos[pkg.id] as number) > 0 && (
@@ -1183,18 +1097,16 @@ function BookNowContent(): React.JSX.Element {
                             paddingTop: '4px',
                             borderTop: '1px dashed #a7f3d0',
                           }}>
-                            {pkg.isPremium ? 'Unlimited photos & videos' : (
-                              <>
-                                You&apos;ll get{' '}
-                                {typeof extraPhotos[pkg.id] === 'number' && (extraPhotos[pkg.id] as number) > 0
-                                  ? `${(pkg.includedPhotos ?? 0) + (extraPhotos[pkg.id] as number)} total photos`
-                                  : `${pkg.includedPhotos} photos`}
-                                {' '}&amp;{' '}
-                                {typeof extraVideos[pkg.id] === 'number' && (extraVideos[pkg.id] as number) > 0
-                                  ? `${(pkg.includedVideos ?? 0) + (extraVideos[pkg.id] as number)} total videos`
-                                  : `${pkg.includedVideos} videos`}
-                              </>
-                            )}
+                            <>
+                              You&apos;ll get{' '}
+                              {typeof extraPhotos[pkg.id] === 'number' && (extraPhotos[pkg.id] as number) > 0
+                                ? `${(pkg.includedPhotos ?? 0) + (extraPhotos[pkg.id] as number)} total photos`
+                                : `${pkg.includedPhotos || 0} photos`}
+                              {' '}&amp;{' '}
+                              {typeof extraVideos[pkg.id] === 'number' && (extraVideos[pkg.id] as number) > 0
+                                ? `${(pkg.includedVideos ?? 0) + (extraVideos[pkg.id] as number)} total videos`
+                                : `${pkg.includedVideos || 0} videos`}
+                            </>
                           </div>
                         </div>
                       )}

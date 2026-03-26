@@ -55,6 +55,8 @@ const FindMyPhotos = () => {
 
   // Album metadata for payment
   const [albumEventId, setAlbumEventId] = useState('');
+  const [albumCurrencyId, setAlbumCurrencyId] = useState('');
+  const [albumCurrencySymbol, setAlbumCurrencySymbol] = useState('');
   const [currencies, setCurrencies] = useState<Currency[]>([]);
 
   // Download payment modal
@@ -98,7 +100,9 @@ const FindMyPhotos = () => {
             return;
           }
           setAlbumEventId(response.data.eventId ?? response.data.albumId);
-          const perPhotoPrice = response.data.pricePerPhoto;
+          if (response.data.pricing?.currencyId) setAlbumCurrencyId(response.data.pricing.currencyId);
+          if (response.data.pricing?.currencySymbol) setAlbumCurrencySymbol(response.data.pricing.currencySymbol);
+          const perPhotoPrice = response.data.pricing?.pricePerImage ?? response.data.pricePerPhoto;
           const photos = (response.data.photos ?? []).map((p: AlbumPhoto) => ({
             id: p.id,
             url: p.url || p.thumbnailUrl || '',
@@ -156,7 +160,9 @@ const FindMyPhotos = () => {
           return;
         }
         setAlbumEventId(response.data.eventId ?? response.data.albumId);
-        const perPhotoPrice = response.data.pricePerPhoto;
+        if (response.data.pricing?.currencyId) setAlbumCurrencyId(response.data.pricing.currencyId);
+        if (response.data.pricing?.currencySymbol) setAlbumCurrencySymbol(response.data.pricing.currencySymbol);
+        const perPhotoPrice = response.data.pricing?.pricePerImage ?? response.data.pricePerPhoto;
         const photos = (response.data.photos ?? []).map((p: AlbumPhoto) => ({
           id: p.id,
           url: p.url || p.thumbnailUrl || '',
@@ -395,7 +401,7 @@ const FindMyPhotos = () => {
     setDlError(null);
     try {
       const amount = String(downloadTarget.price ?? 0);
-      const currencyId = currencies.length > 0 ? currencies[0].id : undefined;
+      const currencyId = albumCurrencyId || (currencies.length > 0 ? currencies[0].id : undefined);
       const response = await recordStreamingPayment({
         eventId: albumEventId || downloadTarget.id,
         amount,
@@ -1298,7 +1304,7 @@ const FindMyPhotos = () => {
               position: 'absolute',
               inset: 0,
               backgroundImage: 'radial-gradient(circle, rgba(255, 255, 255, 0.3) 1px, transparent 1px)',
-              backgroundSize: '20px 20px',
+              backgroundSize: '10px 10px',
               opacity: 0.3,
               zIndex: 0,
               pointerEvents: 'none',
@@ -1308,7 +1314,7 @@ const FindMyPhotos = () => {
               position: 'absolute',
               inset: 0,
               backgroundImage: 'radial-gradient(circle, rgba(255, 255, 255, 0.85) 1.5px, transparent 0.5px)',
-              backgroundSize: '20px 20px',
+              backgroundSize: '10px 10px',
               opacity: headerMousePos ? 0.7 : 0,
               zIndex: 1,
               pointerEvents: 'none',
@@ -1421,7 +1427,7 @@ const FindMyPhotos = () => {
               position: 'absolute',
               inset: 0,
               backgroundImage: 'radial-gradient(circle, rgba(255, 255, 255, 0.3) 1px, transparent 1px)',
-              backgroundSize: '20px 20px',
+              backgroundSize: '10px 10px',
               opacity: 0.3,
               zIndex: 0,
               pointerEvents: 'none',
@@ -1431,7 +1437,7 @@ const FindMyPhotos = () => {
               position: 'absolute',
               inset: 0,
               backgroundImage: 'radial-gradient(circle, rgba(255, 255, 255, 0.85) 1.5px, transparent 0.5px)',
-              backgroundSize: '20px 20px',
+              backgroundSize: '10px 10px',
               opacity: gridMousePos ? 0.7 : 0,
               zIndex: 1,
               pointerEvents: 'none',
@@ -1516,7 +1522,7 @@ const FindMyPhotos = () => {
                       <polyline points="7 10 12 15 17 10"/>
                       <line x1="12" y1="15" x2="12" y2="3"/>
                     </svg>
-                    {(photo.price ?? 0) > 0 ? `Buy (${photo.price?.toLocaleString()})` : 'Download'}
+                    {(photo.price ?? 0) > 0 ? `Buy (${albumCurrencySymbol || 'RF'} ${photo.price?.toLocaleString()})` : 'Download'}
                   </button>
                 </div>
               ))}
@@ -1594,7 +1600,7 @@ const FindMyPhotos = () => {
                 <polyline points="7 10 12 15 17 10"/>
                 <line x1="12" y1="15" x2="12" y2="3"/>
               </svg>
-              {(selectedPhoto.price ?? 0) > 0 ? `Buy (${selectedPhoto.price?.toLocaleString()} UGX)` : 'Download'}
+              {(selectedPhoto.price ?? 0) > 0 ? `Buy (${albumCurrencySymbol || 'RF'} ${selectedPhoto.price?.toLocaleString()})` : 'Download'}
             </button>
             <button
               onClick={(e) => { e.stopPropagation(); setSelectedPhoto(null); }}
@@ -1729,7 +1735,7 @@ const FindMyPhotos = () => {
             }}>
               <span style={{ fontSize: '13px', color: '#adadb8', fontWeight: 500 }}>Photo price</span>
               <span style={{ fontSize: '18px', color: '#03969c', fontWeight: 700 }}>
-                UGX {(downloadTarget.price ?? 0).toLocaleString()}
+                {albumCurrencySymbol || 'RF'} {(downloadTarget.price ?? 0).toLocaleString()}
               </span>
             </div>
 
@@ -1878,7 +1884,7 @@ const FindMyPhotos = () => {
                 <polyline points="7 10 12 15 17 10"/>
                 <line x1="12" y1="15" x2="12" y2="3"/>
               </svg>
-              {dlLoading ? 'Processing...' : dlSuccess ? 'Downloading…' : `Pay & Download (UGX ${(downloadTarget.price ?? 0).toLocaleString()})`}
+              {dlLoading ? 'Processing...' : dlSuccess ? 'Downloading…' : `Pay & Download (${albumCurrencySymbol || 'RF'} ${(downloadTarget.price ?? 0).toLocaleString()})`}
             </button>
           </div>
         </div>
