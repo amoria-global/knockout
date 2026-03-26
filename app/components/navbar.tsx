@@ -79,6 +79,7 @@ const AmoriaKNavbar = () => {
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
   const langMenuRef = useRef<HTMLDivElement>(null);
+  const navPillRef = useRef<HTMLDivElement>(null);
   const photographersDropdownRef = useRef<HTMLDivElement>(null);
   const eventsDropdownRef = useRef<HTMLDivElement>(null);
   const profileDropdownRef = useRef<HTMLDivElement>(null);
@@ -700,7 +701,7 @@ const AmoriaKNavbar = () => {
           </Link>
 
           {/* Center: Navigation Links (Desktop) — glass pill, absolutely centered */}
-          <div className="hidden md:flex items-center gap-1 absolute left-1/2 -translate-x-1/2" style={{
+          <div ref={navPillRef} className="hidden md:flex items-center gap-1 absolute left-1/2 -translate-x-1/2" style={{
             overflow: 'visible',
             background: 'rgba(255, 255, 255, 0.85)',
             backdropFilter: 'blur(12px)',
@@ -732,10 +733,9 @@ const AmoriaKNavbar = () => {
                     style={{
                       position: 'absolute',
                       top: 'calc(100% + 12px)',
-                      left: '50%',
-                      transform: 'translateX(-50%)',
+                      left: (() => { if (!navPillRef.current || !photographersDropdownRef.current) return '50%'; const pill = navPillRef.current.getBoundingClientRect(); const link = photographersDropdownRef.current.getBoundingClientRect(); return `${pill.left - link.left}px`; })(),
                       zIndex: 9999,
-                      width: 'min(420px, 90vw)',
+                      width: navPillRef.current ? `${navPillRef.current.offsetWidth}px` : 'min(420px, 90vw)',
                       background: '#ffffff',
                       boxShadow: '0 20px 40px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.04)',
                       borderRadius: '14px',
@@ -872,10 +872,9 @@ const AmoriaKNavbar = () => {
                     style={{
                       position: 'absolute',
                       top: 'calc(100% + 12px)',
-                      left: '50%',
-                      transform: 'translateX(-50%)',
+                      left: (() => { if (!navPillRef.current || !eventsDropdownRef.current) return '50%'; const pill = navPillRef.current.getBoundingClientRect(); const link = eventsDropdownRef.current.getBoundingClientRect(); return `${pill.left - link.left}px`; })(),
                       zIndex: 9999,
-                      width: 'min(420px, 90vw)',
+                      width: navPillRef.current ? `${navPillRef.current.offsetWidth}px` : 'min(420px, 90vw)',
                       background: '#ffffff',
                       boxShadow: '0 20px 40px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.04)',
                       borderRadius: '14px',
