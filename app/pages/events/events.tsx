@@ -709,7 +709,7 @@ const Events: React.FC = () => {
           <div style={{
             display: 'grid',
             gridTemplateColumns: isMobile
-              ? 'repeat(auto-fill, minmax(min(280px, 100%), 1fr))'
+              ? 'repeat(2, 1fr)'
               : 'repeat(auto-fill, minmax(300px, 1fr))',
             gap: isMobile ? 'clamp(1rem, 3vw, 1.5rem)' : '1.5rem',
             width: '100%'
