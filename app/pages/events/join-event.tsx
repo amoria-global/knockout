@@ -3,9 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Navbar from '../../components/navbar';
-import { getPublicEvents, getPublicEventById, type PublicEvent } from '@/lib/APIs/public';
+import { getPublicEvents, type PublicEvent } from '@/lib/APIs/public';
 import { joinEvent } from '@/lib/APIs/events/join-event/route';
-import { validateStreamToken } from '@/lib/APIs/streams/route';
 
 // Event type used by this page's UI
 interface EventItem {
@@ -21,31 +20,21 @@ interface EventItem {
   attendees: number;
 }
 
-function formatTime12h(t: string): string {
-  const [h, m] = t.split(':');
-  const hour = parseInt(h, 10);
-  const ampm = hour >= 12 ? 'PM' : 'AM';
-  const h12 = hour % 12 || 12;
-  return `${h12}:${m} ${ampm}`;
-}
-
 // Map API PublicEvent to local EventItem
 function mapPublicEvent(e: PublicEvent): EventItem {
   const price = e.price && e.price > 0 ? `${e.price.toLocaleString()} RWF` : 'Free';
-  const start = e.startTime ? formatTime12h(e.startTime) : null;
-  const end = e.endTime ? formatTime12h(e.endTime) : null;
-  const time = start ? (end ? `${start} - ${end}` : start) : 'TBD';
+  const time = [e.startTime, e.endTime].filter(Boolean).join(' - ') || 'TBD';
   return {
     id: e.id,
     title: e.title,
-    image: e.eventPhoto || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=500&q=80',
-    category: e.eventCategory?.name || e.eventTags?.split(',')[0] || 'Event',
-    date: e.eventDate || '',
+    image: (typeof e.coverImage === 'string' ? e.coverImage : '') || (typeof e.bannerImage === 'string' ? e.bannerImage : '') || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=500&q=80',
+    category: (typeof e.eventType === 'string' ? e.eventType : '') || (typeof e.category === 'string' ? e.category : '') || 'Event',
+    date: (typeof e.eventDate === 'string' ? e.eventDate : '') || '',
     time,
-    location: e.location || 'TBD',
-    status: e.eventStatus || 'UPCOMING',
+    location: (typeof e.location === 'string' ? e.location : '') || 'TBD',
+    status: (typeof e.status === 'string' ? e.status : '') || 'UPCOMING',
     price,
-    attendees: 0,
+    attendees: (typeof e.guestCount === 'number' ? e.guestCount : 0) || 0,
   };
 }
 
@@ -85,16 +74,6 @@ export default function JoinEvent() {
   // True when arriving from join-package (id + package params in URL)
   const hasDirectPayment = !!(searchParams.get('id') && searchParams.get('package'));
 
-  // True when arriving from view-event for a free LIVE event (id present, no package param)
-  const freeEventId = (!searchParams.get('package') && searchParams.get('id')) ? searchParams.get('id') : null;
-
-  // Free event token flow state
-  const [streamToken, setStreamToken] = useState('');
-  const [tokenLoading, setTokenLoading] = useState(false);
-  const [tokenError, setTokenError] = useState('');
-  const [freeEventCover, setFreeEventCover] = useState<string | null>(null);
-  const [freeEventTitle, setFreeEventTitle] = useState<string | null>(null);
-
   // Real events from API
   const [eventsData, setEventsData] = useState<EventItem[]>([]);
   const [eventsLoading, setEventsLoading] = useState(true);
@@ -103,16 +82,26 @@ export default function JoinEvent() {
   const [detectedEvent, setDetectedEvent] = useState<{ id: string; title: string; category: string; fee: number; location: string; image: string; status: string } | null>(null);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string | null>(null);
   const [paymentPhone, setPaymentPhone] = useState('');
+  const [cardNumber, setCardNumber] = useState('');
+  const [cardExpiry, setCardExpiry] = useState('');
+  const [cardCvv, setCardCvv] = useState('');
+  const [cardHolderName, setCardHolderName] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
 
   // Package state from URL params
   const [packageType, setPackageType] = useState<string | null>(null);
   const [numberOfPeople, setNumberOfPeople] = useState(1);
-  const [paymentError, setPaymentError] = useState('');
+  const [showShareableLink, setShowShareableLink] = useState(false);
+  const [shareableLink, setShareableLink] = useState('');
+  const [linkCopied, setLinkCopied] = useState(false);
 
   // Input validation error states
   const [phoneError, setPhoneError] = useState('');
+  const [cardNumberError, setCardNumberError] = useState('');
+  const [cardExpiryError, setCardExpiryError] = useState('');
+  const [cardCvvError, setCardCvvError] = useState('');
+  const [cardHolderNameError, setCardHolderNameError] = useState('');
 
   // Input validation handlers
   const handlePhoneChange = (value: string) => {
@@ -124,6 +113,50 @@ export default function JoinEvent() {
       setPhoneError('');
     }
     setPaymentPhone(digitsOnly);
+  };
+
+  const handleCardNumberChange = (value: string) => {
+    // Only allow digits and spaces for formatting
+    const digitsOnly = value.replace(/[^0-9\s]/g, '');
+    if (value !== digitsOnly) {
+      setCardNumberError('Only numbers allowed');
+    } else {
+      setCardNumberError('');
+    }
+    setCardNumber(digitsOnly);
+  };
+
+  const handleCardExpiryChange = (value: string) => {
+    // Only allow digits and forward slash
+    const validChars = value.replace(/[^0-9/]/g, '');
+    if (value !== validChars) {
+      setCardExpiryError('Format: MM/YY');
+    } else {
+      setCardExpiryError('');
+    }
+    setCardExpiry(validChars);
+  };
+
+  const handleCardCvvChange = (value: string) => {
+    // Only allow digits
+    const digitsOnly = value.replace(/[^0-9]/g, '');
+    if (value !== digitsOnly) {
+      setCardCvvError('Only numbers allowed');
+    } else {
+      setCardCvvError('');
+    }
+    setCardCvv(digitsOnly);
+  };
+
+  const handleCardHolderNameChange = (value: string) => {
+    // Only allow letters and spaces
+    const lettersOnly = value.replace(/[^a-zA-Z\s]/g, '');
+    if (value !== lettersOnly) {
+      setCardHolderNameError('Only letters allowed');
+    } else {
+      setCardHolderNameError('');
+    }
+    setCardHolderName(lettersOnly);
   };
 
   // Payment methods
@@ -170,17 +203,6 @@ export default function JoinEvent() {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
-
-  // Fetch cover image for free event flow
-  useEffect(() => {
-    if (!freeEventId) return;
-    getPublicEventById(freeEventId).then(res => {
-      if (res.success && res.data) {
-        setFreeEventCover(res.data.eventPhoto || null);
-        setFreeEventTitle(res.data.title || null);
-      }
-    }).catch(() => {});
-  }, [freeEventId]);
 
   // Fetch real events from API
   useEffect(() => {
@@ -252,7 +274,7 @@ export default function JoinEvent() {
           setDetectedEvent(eventData);
         } else if (hasPackageFromJoinPackage) {
           // Free event from join-package — skip payment, go directly to live stream
-          router.push(`/user/events/live-stream?eventId=${eventId}&paid=true`);
+          router.push('/user/events/live-stream');
         }
         // For upcoming, free, or non-paid category events without package param - show original content
       }
@@ -275,7 +297,7 @@ export default function JoinEvent() {
       case 'airtel':
         return paymentPhone.length >= 10;
       case 'card':
-        return true;
+        return cardNumber.length >= 16 && cardExpiry.length >= 4 && cardCvv.length >= 3 && cardHolderName.trim() !== '';
       default:
         return false;
     }
@@ -286,9 +308,27 @@ export default function JoinEvent() {
     setDetectedEvent(null);
     setSelectedPaymentMethod(null);
     setPaymentPhone('');
+    setCardNumber('');
+    setCardExpiry('');
+    setCardCvv('');
+    setCardHolderName('');
     setIsProcessing(false);
     setPaymentSuccess(false);
-    setPaymentError('');
+  };
+
+  // Generate unique shareable link
+  const generateShareableLink = () => {
+    const uniqueId = Math.random().toString(36).substring(2, 10).toUpperCase();
+    const eventId = detectedEvent?.id || 0;
+    return `STREAM-${eventId}-${uniqueId}-${numberOfPeople}`;
+  };
+
+  // Copy link to clipboard
+  const copyLinkToClipboard = () => {
+    navigator.clipboard.writeText(shareableLink).then(() => {
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2000);
+    });
   };
 
   // Handle payment submission
@@ -299,7 +339,6 @@ export default function JoinEvent() {
     }
 
     setIsProcessing(true);
-    setPaymentError('');
 
     try {
       const response = await joinEvent({
@@ -312,49 +351,25 @@ export default function JoinEvent() {
 
       if (response.success) {
         setPaymentSuccess(true);
+
+        // After showing success message
         setTimeout(() => {
-          resetPaymentForm();
-          const inviteToken = searchParams.get('inviteToken');
-          const eid = detectedEvent?.id || '';
-          if (inviteToken && eid) {
-            const paymentId = (response.data as { data?: { id?: string } } | undefined)?.data?.id || '';
-            router.push(`/user/event/${eid}?inviteToken=${encodeURIComponent(inviteToken)}${paymentId ? `&paymentId=${encodeURIComponent(paymentId)}` : ''}`);
+          if (packageType === 'group') {
+            setPaymentSuccess(false);
+            const newLink = generateShareableLink();
+            setShareableLink(newLink);
+            setShowShareableLink(true);
           } else {
-            router.push(`/user/events/live-stream?eventId=${eid}&paid=true`);
+            resetPaymentForm();
+            router.push('/user/events/live-stream');
           }
         }, 2000);
-      } else if (response.statusCode === 402) {
-        const fee = response.data?.data?.streamFee;
-        const symbol = response.data?.data?.streamFeeCurrencySymbol || response.data?.data?.streamFeeCurrencyAbbreviation || '';
-        setPaymentError(
-          fee
-            ? `Stream access requires a fee of ${fee.toLocaleString()} ${symbol}. Please contact the event organizer.`
-            : (response.data?.message || response.error || 'Additional payment required for stream access.')
-        );
       } else {
-        setPaymentError(response.error || 'Payment failed. Please try again.');
+        alert(response.error || 'Payment failed. Please try again.');
       }
     } catch {
       setIsProcessing(false);
       alert('Payment failed. Please try again.');
-    }
-  };
-
-  const handleTokenJoin = async () => {
-    if (!streamToken.trim() || !freeEventId) return;
-    setTokenLoading(true);
-    setTokenError('');
-    try {
-      const res = await validateStreamToken(freeEventId, streamToken.trim());
-      if (res.success) {
-        router.push(`/user/events/live-stream?eventId=${freeEventId}&inviteToken=${encodeURIComponent(streamToken.trim())}`);
-      } else {
-        setTokenError(res.error || 'Invalid token. Please check your invite code and try again.');
-      }
-    } catch {
-      setTokenError('Something went wrong. Please try again.');
-    } finally {
-      setTokenLoading(false);
     }
   };
 
@@ -388,10 +403,10 @@ export default function JoinEvent() {
           setDetectedEvent(eventData);
         } else {
           // Free event, non-LIVE, or non-paid category - proceed directly
-          router.push(`/user/events/live-stream?eventId=${event.id}`);
+          router.push('/user/events/live-stream');
         }
       } else {
-        // Event not found - proceed directly
+        // Event not found - proceed directly (could show error instead)
         router.push('/user/events/live-stream');
       }
     }
@@ -407,24 +422,18 @@ export default function JoinEvent() {
         overflowY: 'auto',
       }}
     >
-      {/* Background image */}
+      {/* Background image only */}
       <div
         style={{
           position: 'absolute',
           inset: 0,
-          backgroundImage: freeEventCover ? `url(${freeEventCover})` : 'url(/arms.png)',
+          backgroundImage: 'url(/arms.png)',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
-          filter: freeEventCover ? undefined : 'brightness(0.2)',
+          filter: 'brightness(0.2)',
         }}
-      />
-      {/* Cinematic gradient overlay — top to bottom */}
-      {freeEventCover && (
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(14,14,16,0.92) 0%, rgba(14,14,16,0.82) 25%, rgba(14,14,16,0.7) 50%, rgba(14,14,16,0.88) 74%, rgba(14,14,16,0.96) 88%, #0e0e10 100%)' }} />
-      )}
-      {/* Dark overlay for fallback /arms.png */}
-      {!freeEventCover && <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.55)' }} />}
+      ></div>
 
       {/* Content container */}
       <div
@@ -497,8 +506,155 @@ export default function JoinEvent() {
                     Payment Successful!
                   </h3>
                   <p style={{ color: '#9ca3af', fontSize: '15px' }}>
-                    Redirecting to live stream...
+                    {packageType === 'group' ? 'Generating your shareable link...' : 'Redirecting to live stream...'}
                   </p>
+                </div>
+              )}
+
+              {/* Shareable Link Card for Group Package */}
+              {showShareableLink && packageType === 'group' && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    backgroundColor: 'rgba(0, 0, 0, 0.95)',
+                    borderRadius: '24px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 10,
+                    padding: '24px',
+                  }}
+                >
+                  {/* Success Icon */}
+                  <div
+                    style={{
+                      width: '70px',
+                      height: '70px',
+                      borderRadius: '50%',
+                      background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      marginBottom: '16px',
+                    }}
+                  >
+                    <i className="bi bi-link-45deg" style={{ fontSize: '32px', color: '#fff' }}></i>
+                  </div>
+
+                  <h3 style={{ color: '#fff', fontSize: '22px', fontWeight: '700', marginBottom: '8px', textAlign: 'center' }}>
+                    Your Shareable Stream Link
+                  </h3>
+                  <p style={{ color: '#9ca3af', fontSize: '14px', marginBottom: '20px', textAlign: 'center' }}>
+                    Share this link with your group. It can be used by up to {numberOfPeople} people (including you).
+                  </p>
+
+                  {/* Link Display Box */}
+                  <div
+                    style={{
+                      width: '100%',
+                      maxWidth: '400px',
+                      backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                      border: '2px solid #10b981',
+                      borderRadius: '12px',
+                      padding: '16px',
+                      marginBottom: '16px',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div
+                        style={{
+                          flex: 1,
+                          backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                          borderRadius: '8px',
+                          padding: '12px 16px',
+                          fontFamily: 'monospace',
+                          fontSize: '15px',
+                          color: '#10b981',
+                          fontWeight: '600',
+                          letterSpacing: '1px',
+                          wordBreak: 'break-all',
+                        }}
+                      >
+                        {shareableLink}
+                      </div>
+                      <button
+                        onClick={copyLinkToClipboard}
+                        style={{
+                          padding: '12px 16px',
+                          backgroundColor: linkCopied ? '#059669' : '#10b981',
+                          border: 'none',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          transition: 'all 0.3s ease',
+                        }}
+                      >
+                        <i className={linkCopied ? 'bi bi-check-lg' : 'bi bi-clipboard'} style={{ color: '#fff', fontSize: '16px' }}></i>
+                        <span style={{ color: '#fff', fontSize: '13px', fontWeight: '600' }}>
+                          {linkCopied ? 'Copied!' : 'Copy'}
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Usage Info */}
+                  <div
+                    style={{
+                      width: '100%',
+                      maxWidth: '400px',
+                      backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                      border: '1px solid rgba(59, 130, 246, 0.3)',
+                      borderRadius: '10px',
+                      padding: '14px',
+                      marginBottom: '20px',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                      <i className="bi bi-info-circle-fill" style={{ color: '#3b82f6', fontSize: '18px', marginTop: '2px' }}></i>
+                      <div>
+                        <p style={{ color: '#fff', fontSize: '14px', fontWeight: '600', marginBottom: '4px' }}>
+                          Link Usage Limit: {numberOfPeople} people (including you)
+                        </p>
+                        <p style={{ color: '#9ca3af', fontSize: '13px', margin: 0 }}>
+                          This link can be used by you and {numberOfPeople - 1} other {numberOfPeople - 1 === 1 ? 'person' : 'people'}. Each person can use it once to access the stream.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div style={{ display: 'flex', gap: '12px', width: '100%', maxWidth: '400px' }}>
+                    <button
+                      onClick={() => {
+                        setShowShareableLink(false);
+                        resetPaymentForm();
+                        router.push('/user/events/live-stream');
+                      }}
+                      style={{
+                        flex: 1,
+                        padding: '14px',
+                        background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
+                        border: 'none',
+                        borderRadius: '10px',
+                        color: '#fff',
+                        fontSize: '14px',
+                        fontWeight: '700',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px',
+                        boxShadow: '0 4px 15px rgba(16, 185, 129, 0.4)',
+                      }}
+                    >
+                      <i className="bi bi-play-circle-fill" style={{ fontSize: '16px' }}></i>
+                      Watch Now
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -779,11 +935,115 @@ export default function JoinEvent() {
                     </div>
                   )}
 
-                  {/* Card payments are handled via XentriPay redirect — no card fields needed */}
+                  {/* Payment Details - Card */}
                   {selectedPaymentMethod === 'card' && (
-                    <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)', marginBottom: '14px' }}>
-                      You will be redirected to a secure payment page to enter your card details.
-                    </p>
+                    <div style={{ marginBottom: '14px', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr 1fr', gap: '12px' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#fff', marginBottom: '6px' }}>
+                          <i className="bi bi-person" style={{ marginRight: '6px', color: '#10b981' }}></i>
+                          Cardholder Name
+                        </label>
+                        <input
+                          type="text"
+                          value={cardHolderName}
+                          onChange={(e) => handleCardHolderNameChange(e.target.value)}
+                          placeholder="Enter cardholder name"
+                          style={{
+                            width: '100%',
+                            padding: '12px 14px',
+                            fontSize: '14px',
+                            backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                            border: `2px solid ${cardHolderNameError ? '#ef4444' : 'rgba(255, 255, 255, 0.1)'}`,
+                            borderRadius: '10px',
+                            color: '#fff',
+                            outline: 'none',
+                            boxSizing: 'border-box',
+                          }}
+                        />
+                        {cardHolderNameError && (
+                          <p style={{ color: '#ef4444', fontSize: '11px', margin: '4px 0 0 0' }}>{cardHolderNameError}</p>
+                        )}
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#fff', marginBottom: '6px' }}>
+                          <i className="bi bi-credit-card" style={{ marginRight: '6px', color: '#10b981' }}></i>
+                          Card Number
+                        </label>
+                        <input
+                          type="text"
+                          value={cardNumber}
+                          onChange={(e) => handleCardNumberChange(e.target.value)}
+                          placeholder="1234 5678 9012 3456"
+                          maxLength={19}
+                          style={{
+                            width: '100%',
+                            padding: '12px 14px',
+                            fontSize: '14px',
+                            backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                            border: `2px solid ${cardNumberError ? '#ef4444' : 'rgba(255, 255, 255, 0.1)'}`,
+                            borderRadius: '10px',
+                            color: '#fff',
+                            outline: 'none',
+                            boxSizing: 'border-box',
+                          }}
+                        />
+                        {cardNumberError && (
+                          <p style={{ color: '#ef4444', fontSize: '11px', margin: '4px 0 0 0' }}>{cardNumberError}</p>
+                        )}
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#fff', marginBottom: '6px' }}>
+                          Expiry Date
+                        </label>
+                        <input
+                          type="text"
+                          value={cardExpiry}
+                          onChange={(e) => handleCardExpiryChange(e.target.value)}
+                          placeholder="MM/YY"
+                          maxLength={5}
+                          style={{
+                            width: '100%',
+                            padding: '12px 14px',
+                            fontSize: '14px',
+                            backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                            border: `2px solid ${cardExpiryError ? '#ef4444' : 'rgba(255, 255, 255, 0.1)'}`,
+                            borderRadius: '10px',
+                            color: '#fff',
+                            outline: 'none',
+                            boxSizing: 'border-box',
+                          }}
+                        />
+                        {cardExpiryError && (
+                          <p style={{ color: '#ef4444', fontSize: '11px', margin: '4px 0 0 0' }}>{cardExpiryError}</p>
+                        )}
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#fff', marginBottom: '6px' }}>
+                          CVV
+                        </label>
+                        <input
+                          type="text"
+                          value={cardCvv}
+                          onChange={(e) => handleCardCvvChange(e.target.value)}
+                          placeholder="123"
+                          maxLength={4}
+                          style={{
+                            width: '100%',
+                            padding: '12px 14px',
+                            fontSize: '14px',
+                            backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                            border: `2px solid ${cardCvvError ? '#ef4444' : 'rgba(255, 255, 255, 0.1)'}`,
+                            borderRadius: '10px',
+                            color: '#fff',
+                            outline: 'none',
+                            boxSizing: 'border-box',
+                          }}
+                        />
+                        {cardCvvError && (
+                          <p style={{ color: '#ef4444', fontSize: '11px', margin: '4px 0 0 0' }}>{cardCvvError}</p>
+                        )}
+                      </div>
+                    </div>
                   )}
 
                   {/* Pay Button */}
@@ -814,25 +1074,6 @@ export default function JoinEvent() {
                     <i className="bi bi-lock-fill" style={{ fontSize: '16px' }}></i>
                     Pay {detectedEvent.fee.toLocaleString()} RWF {packageType === 'group' ? `for ${numberOfPeople} People` : '& Join'}
                   </button>
-
-                  {/* Payment error */}
-                  {paymentError && (
-                    <div style={{
-                      marginBottom: '10px',
-                      padding: '12px 16px',
-                      backgroundColor: 'rgba(239, 68, 68, 0.15)',
-                      border: '1px solid rgba(239, 68, 68, 0.4)',
-                      borderRadius: '10px',
-                      color: '#fca5a5',
-                      fontSize: '13px',
-                      display: 'flex',
-                      alignItems: 'flex-start',
-                      gap: '8px',
-                    }}>
-                      <i className="bi bi-exclamation-triangle-fill" style={{ color: '#ef4444', fontSize: '15px', marginTop: '1px', flexShrink: 0 }}></i>
-                      {paymentError}
-                    </div>
-                  )}
 
                   {/* Security note */}
                   <div style={{
@@ -890,18 +1131,13 @@ export default function JoinEvent() {
                   fontSize: isMobile ? 'clamp(1.75rem, 8vw, 2.5rem)' : '3rem',
                   fontWeight: 'bold',
                   color: 'white',
-                  marginBottom: freeEventTitle ? '8px' : isMobile ? '16px' : '24px',
+                  marginBottom: isMobile ? '16px' : '24px',
                   lineHeight: '1.2',
                   fontFamily: "'Pragati Narrow', sans-serif",
                 }}
               >
-                {freeEventTitle ?? 'Live Moments, Shared Instantly'}
+                Live Moments, Shared Instantly
               </h1>
-              {freeEventTitle && (
-                <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: isMobile ? '0.875rem' : '1rem', marginBottom: isMobile ? '24px' : '36px', fontFamily: "'Pragati Narrow', sans-serif" }}>
-                  Enter the invite token shared by your host to join the live stream
-                </p>
-              )}
 
               {/* Description */}
               <div
@@ -929,23 +1165,15 @@ export default function JoinEvent() {
                     fontFamily: "'Pragati Narrow', sans-serif",
                   }}
                 >
-                  {freeEventId ? 'Enter Your Stream Invite Token' : 'Join Live Now'}
+                  Join Live Now
                 </h2>
-
-                {/* Error message for token validation */}
-                {freeEventId && tokenError && (
-                  <p style={{ color: '#f87171', fontSize: '14px', marginBottom: '12px', textAlign: 'center' }}>
-                    <i className="bi bi-exclamation-circle-fill" style={{ marginRight: 6 }}></i>{tokenError}
-                  </p>
-                )}
 
                 {/* Input field */}
                 <input
                   type="text"
-                  placeholder={freeEventId ? 'Enter invite token from your host' : 'Enter Event Link or Host ID from your event host'}
-                  value={freeEventId ? streamToken : eventLink}
-                  onChange={(e) => freeEventId ? setStreamToken(e.target.value) : setEventLink(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter' && freeEventId) handleTokenJoin(); }}
+                  placeholder="Enter Event Link or Host ID from your event host"
+                  value={eventLink}
+                  onChange={(e) => setEventLink(e.target.value)}
                   style={{
                     width: '100%',
                     padding: isMobile ? '10px 16px' : '12px 20px',
@@ -999,43 +1227,41 @@ export default function JoinEvent() {
 
                 {/* Join button */}
                 <button
-                  onClick={freeEventId ? handleTokenJoin : handleJoin}
-                  disabled={freeEventId ? tokenLoading : false}
+                  onClick={handleJoin}
                   style={{
                     width: '100%',
                     maxWidth: isMobile ? '100%' : '384px',
                     margin: '0 auto',
                     display: 'block',
-                    backgroundColor: (freeEventId ? streamToken : eventLink) ? '#039130' : 'white',
-                    color: (freeEventId ? streamToken : eventLink) ? '#FFFFFF' : '#374151',
+                    backgroundColor: eventLink ? '#039130' : 'white',
+                    color: eventLink ? '#FFFFFF' : '#374151',
                     fontWeight: '600',
                     padding: isMobile ? '10px 24px' : '12px 32px',
                     borderRadius: isMobile ? '12px' : '16px',
                     border: 'none',
-                    cursor: tokenLoading ? 'not-allowed' : 'pointer',
+                    cursor: 'pointer',
                     fontSize: isMobile ? '0.9375rem' : '1rem',
                     boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
                     transition: 'all 0.3s ease',
                     fontFamily: "'Pragati Narrow', sans-serif",
                     boxSizing: 'border-box',
-                    opacity: tokenLoading ? 0.7 : 1,
                   }}
                   onMouseEnter={(e) => {
-                    if (freeEventId ? streamToken : eventLink) {
-                      e.currentTarget.style.backgroundColor = '#027a28';
+                    if (eventLink) {
+                      e.currentTarget.style.backgroundColor = '#039130';
                     } else {
                       e.currentTarget.style.backgroundColor = '#f3f4f6';
                     }
                   }}
                   onMouseLeave={(e) => {
-                    if (freeEventId ? streamToken : eventLink) {
+                    if (eventLink) {
                       e.currentTarget.style.backgroundColor = '#039130';
                     } else {
                       e.currentTarget.style.backgroundColor = 'white';
                     }
                   }}
                 >
-                  {tokenLoading ? 'Verifying...' : (freeEventId ? 'Join Stream' : 'Join')}
+                  Join
                 </button>
               </div>
             </div>
