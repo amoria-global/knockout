@@ -96,7 +96,37 @@ const FindMyPhotos = () => {
             setFreeAlbumId(response.data.albumId || response.data.eventId || '');
             setFreeAlbumTitle(response.data.eventTitle || response.data.title || '');
             setFreeAlbumPhotographer(response.data.photographerName || '');
-            setFreeAlbumFlow('email');
+            // If email is in URL (from email link), auto-verify using access code as OTP
+            const emailFromUrl = searchParams.get('email');
+            if (emailFromUrl) {
+              setFreeAlbumEmail(emailFromUrl);
+              setFreeAlbumFlow('otp');
+              setFreeAlbumLoading(true);
+              // Auto-submit: use the access code itself as the OTP (proves email ownership)
+              verifyFreeAlbumAccess(codeFromUrl, emailFromUrl, codeFromUrl).then((verifyRes) => {
+                if (verifyRes.success && verifyRes.data) {
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  const d = verifyRes.data as any;
+                  setFreeAlbumId(d.albumId || '');
+                  if (d.photos?.length) {
+                    setFreeAlbumPhotos(d.photos);
+                    if (d.title) setFreeAlbumTitle(d.title);
+                    if (d.photographerName) setFreeAlbumPhotographer(d.photographerName);
+                    if (d.expiresAt) setFreeAlbumExpiresAt(d.expiresAt);
+                    setFreeAlbumFlow('verified');
+                  } else {
+                    // No photos in response — fall back to OTP screen
+                    setFreeAlbumOtp(codeFromUrl);
+                  }
+                } else {
+                  // Auto-verify failed — fall back to manual OTP entry
+                  setFreeAlbumError('');
+                }
+                setFreeAlbumLoading(false);
+              }).catch(() => { setFreeAlbumLoading(false); });
+            } else {
+              setFreeAlbumFlow('email');
+            }
             return;
           }
           setAlbumEventId(response.data.eventId ?? response.data.albumId);
@@ -208,18 +238,25 @@ const FindMyPhotos = () => {
           : Array.isArray(response.data)
             ? (response.data as unknown as MatchedPhoto[])
             : [];
-        const mapped = photos.map((p: MatchedPhoto) => ({
-          id: p.id,
-          url: p.url || p.thumbnailUrl || '',
-          alt: p.alt || p.eventTitle || 'Event photo',
-        }));
-        // Only filter displayedPhotos — allPhotos stays as the full album
-        setDisplayedPhotos(mapped);
-        setIsFiltered(true);
-        setIsCodeSubmitted(true);
-        resetScanModal();
+
+        {
+          const mapped = photos.map((p: MatchedPhoto) => ({
+            id: p.id,
+            url: p.url || p.thumbnailUrl || '',
+            alt: p.alt || p.eventTitle || 'Event photo',
+          }));
+          setDisplayedPhotos(mapped);
+          setIsFiltered(true);
+          setIsCodeSubmitted(true);
+          resetScanModal();
+        }
       } else {
-        setScanError(response.error || 'No matching photos found. Try a clearer photo.');
+        const err = response.error || '';
+        if (err.toLowerCase().includes('no face detected')) {
+          setScanError('NO_FACE');
+        } else {
+          setScanError(err || 'No matching photos found. Try a clearer photo.');
+        }
       }
     } catch {
       setScanError('Scan failed. Please check your connection and try again.');
@@ -281,18 +318,29 @@ const FindMyPhotos = () => {
     try {
       const response = await verifyFreeAlbumAccess(inviteCode.trim(), freeAlbumEmail.trim(), freeAlbumOtp.trim());
       if (response.success && response.data) {
-        const albumId = response.data.albumId || freeAlbumId;
-        if (response.data.albumTitle) setFreeAlbumTitle(response.data.albumTitle);
-        // Fetch the actual album photos
-        const albumRes = await getFreeAlbum(albumId);
-        if (albumRes.success && albumRes.data) {
-          setFreeAlbumPhotos(albumRes.data.photos || []);
-          setFreeAlbumTitle(albumRes.data.title || freeAlbumTitle);
-          setFreeAlbumPhotographer(albumRes.data.photographerName || freeAlbumPhotographer);
-          if (albumRes.data.expiresAt) setFreeAlbumExpiresAt(albumRes.data.expiresAt);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const d = response.data as any;
+        const albumId = d.albumId || freeAlbumId;
+        setFreeAlbumId(albumId);
+        if (d.title) setFreeAlbumTitle(d.title);
+        if (d.photographerName) setFreeAlbumPhotographer(d.photographerName);
+        if (d.expiresAt) setFreeAlbumExpiresAt(d.expiresAt);
+        if (d.photos?.length) {
+          // Photos included in verify response — render directly
+          setFreeAlbumPhotos(d.photos);
           setFreeAlbumFlow('verified');
         } else {
-          setFreeAlbumError(albumRes.error || 'Failed to load album photos.');
+          // Fallback: fetch photos separately
+          const albumRes = await getFreeAlbum(albumId);
+          if (albumRes.success && albumRes.data) {
+            setFreeAlbumPhotos(albumRes.data.photos || []);
+            if (albumRes.data.title) setFreeAlbumTitle(albumRes.data.title);
+            if (albumRes.data.photographerName) setFreeAlbumPhotographer(albumRes.data.photographerName);
+            if (albumRes.data.expiresAt) setFreeAlbumExpiresAt(albumRes.data.expiresAt);
+            setFreeAlbumFlow('verified');
+          } else {
+            setFreeAlbumError(albumRes.error || 'Failed to load album photos.');
+          }
         }
       } else {
         const err = response.error || '';
