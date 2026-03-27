@@ -355,8 +355,9 @@ function ViewEventContent(): React.JSX.Element {
 
   const eventImage = selectedEvent.eventPhoto || PLACEHOLDER_IMAGE;
   const rawStatus = (selectedEvent.eventStatus || '').toUpperCase();
-  const isLive = rawStatus === 'ONGOING';
-  const isCompleted = rawStatus === 'COMPLETED';
+  const streamEnded = (selectedEvent as Record<string, unknown>).streamStatus === 'ended';
+  const isLive = rawStatus === 'ONGOING' && !streamEnded;
+  const isCompleted = rawStatus === 'COMPLETED' || streamEnded;
   const isCancelled = rawStatus === 'CANCELLED';
   const isUpcoming = !isLive && !isCompleted && !isCancelled; // PUBLISHED or UPCOMING
   const streamFee = selectedEvent.streamFee || 0;
