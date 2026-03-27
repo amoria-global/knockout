@@ -107,7 +107,8 @@ const Events: React.FC = () => {
         // Hide completed events older than 2 days
         const twoDaysAgo = Date.now() - 2 * 24 * 60 * 60 * 1000;
         const filtered = events.filter(ev => {
-          if ((ev.eventStatus || '').toUpperCase() !== 'COMPLETED') return true;
+          const isEnded = (ev.eventStatus || '').toUpperCase() === 'COMPLETED' || ev.streamStatus === 'ended';
+          if (!isEnded) return true;
           // Use updatedAt (status change timestamp), fall back to eventDate, keep if neither exists
           const dateStr = ev.updatedAt || ev.eventDate;
           if (!dateStr) return true;
@@ -145,10 +146,12 @@ const Events: React.FC = () => {
   }, [fetchEvents]);
 
 
-  // An event is "live" only when it is ONGOING AND has an active live stream
+  // An event is "live" only when it is ONGOING AND has an active live stream AND stream hasn't ended
   const isEventLive = (event: PublicEvent) =>
     (event.eventStatus || '').toUpperCase() === 'ONGOING' &&
+    event.streamStatus !== 'ended' &&
     (event.hasLiveStream === true || liveStreamIds.has(event.id));
+
 
   // Trending Events Data - Filter only truly live events
   const allTrendingEvents = eventsData.filter(event => isEventLive(event)).map(event => ({
@@ -777,7 +780,7 @@ const Events: React.FC = () => {
                     {(() => {
                       const status = (event.eventStatus || '').toUpperCase();
                       const isLive = isEventLive(event);
-                      const isCompleted = status === 'COMPLETED';
+                      const isCompleted = status === 'COMPLETED' || event.streamStatus === 'ended';
                       const isCancelled = status === 'CANCELLED';
 
                       let borderColor = '#3b82f6';
@@ -873,8 +876,8 @@ const Events: React.FC = () => {
                         alignItems: 'center',
                         justifyContent: 'center',
                         gap: '0.4rem',
-                        background: isEventLive(event) ? '#039130' : (event.eventStatus || '').toUpperCase() === 'COMPLETED' ? '#4b5563' : '#083A85',
-                        border: `2.5px solid ${isEventLive(event) ? '#059669' : (event.eventStatus || '').toUpperCase() === 'COMPLETED' ? '#4b5563' : '#083A85'}`,
+                        background: isEventLive(event) ? '#039130' : ((event.eventStatus || '').toUpperCase() === 'COMPLETED' || event.streamStatus === 'ended') ? '#4b5563' : '#083A85',
+                        border: `2.5px solid ${isEventLive(event) ? '#059669' : ((event.eventStatus || '').toUpperCase() === 'COMPLETED' || event.streamStatus === 'ended') ? '#4b5563' : '#083A85'}`,
                         color: '#FFFFFF',
                         padding: 'clamp(0.625rem, 2.5vw, 0.75rem) clamp(1rem, 3vw, 1.25rem)',
                         borderRadius: '20px',
