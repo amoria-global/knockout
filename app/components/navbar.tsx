@@ -172,7 +172,7 @@ const AmoriaKNavbar = () => {
           const events = res.data.content;
           // First pass: record which categories have any event (regardless of live status)
           const catMap = new Map<string, boolean>(); // category → isVerifiedLive
-          const ongoingEvents = events.filter(ev => (ev.eventStatus as string)?.toLowerCase() === 'ongoing');
+          const ongoingEvents = events.filter(ev => (ev.eventStatus as string)?.toLowerCase() === 'ongoing' && (ev as Record<string, unknown>).streamStatus !== 'ended');
 
           for (const ev of events) {
             const raw = (ev.eventCategory?.name || '').toLowerCase().trim();
