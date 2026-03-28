@@ -119,9 +119,9 @@ const Events: React.FC = () => {
         setEventsData(filtered);
         setLiveStreamIds(trulyLiveIds);
         setApiTotalPages(response.data.totalPages);
-        // Accumulate categories seen across pages and update the filter dropdown
+        // Accumulate categories only from visible (filtered) events
         let changed = false;
-        for (const ev of events) {
+        for (const ev of filtered) {
           const cat = ev.eventCategory?.name?.trim();
           if (cat && !seenCategoriesRef.current.has(cat)) {
             seenCategoriesRef.current.add(cat);
