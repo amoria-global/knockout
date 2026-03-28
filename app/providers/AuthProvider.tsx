@@ -180,6 +180,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     initializeAuth();
   }, []);
 
+  // Handle dashboard logout redirect (?logged_out=true)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('logged_out') === 'true') {
+      // Clear landing auth state
+      removeAuthToken();
+      removeRefreshToken();
+      clearStoredUser();
+      setUser(null);
+      // Expire dashboard-set cookies
+      ['authToken', 'refreshToken', 'userRole'].forEach(name => {
+        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+      });
+      // Remove the param from URL so refresh doesn't re-trigger
+      params.delete('logged_out');
+      const cleanUrl = params.toString()
+        ? `${window.location.pathname}?${params.toString()}`
+        : window.location.pathname;
+      window.history.replaceState({}, '', cleanUrl);
+    }
+  }, []);
+
   // Listen for logout messages from dashboard (opened via window.open)
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
