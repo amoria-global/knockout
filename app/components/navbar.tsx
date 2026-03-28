@@ -169,8 +169,19 @@ const AmoriaKNavbar = () => {
       try {
         const res = await getPublicEvents({ size: 100 });
         if (res.success && res.data) {
-          const events = res.data.content;
-          // First pass: record which categories have any event (regardless of live status)
+          const allEvents = res.data.content;
+          // Filter out completed/stream-ended events older than 2 days (match events page)
+          const twoDaysAgo = Date.now() - 2 * 24 * 60 * 60 * 1000;
+          const events = allEvents.filter(ev => {
+            const isEnded = (ev.eventStatus || '').toUpperCase() === 'COMPLETED' || (ev as Record<string, unknown>).streamStatus === 'ended';
+            if (!isEnded) return true;
+            const dateStr = ev.updatedAt || ev.eventDate;
+            if (!dateStr) return true;
+            const ts = new Date(dateStr).getTime();
+            if (isNaN(ts)) return true;
+            return ts > twoDaysAgo;
+          });
+          // First pass: record which categories have any visible event
           const catMap = new Map<string, boolean>(); // category → isVerifiedLive
           const ongoingEvents = events.filter(ev => (ev.eventStatus as string)?.toLowerCase() === 'ongoing' && (ev as Record<string, unknown>).streamStatus !== 'ended');
 
