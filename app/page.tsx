@@ -10,6 +10,7 @@ import GlobalNetwork from "./components/GlobalNetwork";
 // import Preloader from "./components/Preloader"; // Commented out — client requested no preloader
 import { getPublicEvents } from '@/lib/APIs/public';
 import { getStreamVideo } from '@/lib/APIs/streams/route';
+import TextType from './components/TextType';
 
 // Register GSAP plugins
 if (typeof window !== 'undefined') {
@@ -19,6 +20,9 @@ if (typeof window !== 'undefined') {
 export default function Home() {
   const t = useTranslations();
   const [hasLiveEvents, setHasLiveEvents] = useState(false);
+  const [heroEventImages, setHeroEventImages] = useState<string[]>([]);
+  const [heroEventSlide, setHeroEventSlide] = useState(0);
+  const [heroSlideKey, setHeroSlideKey] = useState(0);
   const [activeCard, setActiveCard] = useState(0) // rated, 1: live, 2: pay, 3: gallery
   const [networkMousePos, setNetworkMousePos] = useState<{ x: number; y: number } | null>(null)
   const [whyAmoriaMousePos, setWhyAmoriaMousePos] = useState<{ x: number; y: number } | null>(null)
@@ -67,8 +71,26 @@ export default function Home() {
       try {
         const res = await getPublicEvents({ size: 100 });
         if (!res.success || !res.data) return;
-        const ongoingEvents = res.data.content.filter(
-          ev => (ev.eventStatus as string)?.toLowerCase() === 'ongoing'
+        // Collect event cover images for hero carousel — same filter as events page
+        const allEvents = res.data.content;
+        const twoDaysAgo = Date.now() - 2 * 24 * 60 * 60 * 1000;
+        const visibleEvents = allEvents.filter(ev => {
+          const isEnded = (ev.eventStatus || '').toUpperCase() === 'COMPLETED' || (ev as Record<string, unknown>).streamStatus === 'ended';
+          if (!isEnded) return true;
+          const dateStr = ev.updatedAt || ev.eventDate;
+          if (!dateStr) return true;
+          const ts = new Date(dateStr).getTime();
+          if (isNaN(ts)) return true;
+          return ts > twoDaysAgo;
+        });
+        const covers = visibleEvents
+          .filter(ev => ev.eventPhoto)
+          .map(ev => ev.eventPhoto as string)
+          .slice(0, 8);
+        if (covers.length > 0) setHeroEventImages(covers);
+
+        const ongoingEvents = allEvents.filter(
+          ev => (ev.eventStatus as string)?.toLowerCase() === 'ongoing' && (ev as Record<string, unknown>).streamStatus !== 'ended'
         );
         if (ongoingEvents.length === 0) return;
 
@@ -92,6 +114,16 @@ export default function Home() {
     };
     checkLiveEvents();
   }, []);
+
+  // Auto-slide hero event images carousel
+  useEffect(() => {
+    if (heroEventImages.length <= 1) return;
+    const interval = setInterval(() => {
+      setHeroEventSlide(prev => (prev + 1) % heroEventImages.length);
+      setHeroSlideKey(prev => prev + 1);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [heroEventImages.length]);
 
   // Auto-rotation effect for Why Amoria Connekt cards - rotate every 3 seconds
   useEffect(() => {
@@ -310,14 +342,26 @@ export default function Home() {
         <main style={{ flex: 1, position: 'relative' }}>
         <style jsx>{`
           @media (max-width: 768px) {
-            .hero-content { flex-direction: column !important; padding: 20px 15px 20px !important; min-height: auto !important; gap: 10px !important; }
-            .hero-left { width: 100% !important; max-width: 100% !important; text-align: center; padding: 0 15px !important; }
+            .hero-content { flex-direction: column !important; padding: 20px 15px 20px !important; min-height: auto !important; gap: 10px !important; max-width: 100% !important; }
+            .hero-left { width: 100% !important; max-width: 100% !important; text-align: center; padding: 0 15px !important; display: flex !important; flex-direction: column !important; }
+            .hero-left .hero-glow { order: 0; }
+            .hero-left .hero-title { order: 1; }
+            .hero-left .hero-description { order: 2; }
+            .hero-left .hero-buttons { order: 3; margin-bottom: 20px !important; }
+            .hero-left .hero-glass-card { order: 4 !important; }
             .hero-right { width: 100% !important; height: 525px !important; margin-top: 0 !important; position: relative !important; overflow: visible !important; transform: scale(0.52) !important; transform-origin: top center !important; margin-bottom: -220px !important; }
             .hero-title { font-size: 32px !important; line-height: 1.1 !important; }
             .hero-description { max-width: 100% !important; font-size: 14px !important; padding: 0 5px !important; }
             .hero-buttons { justify-content: center !important; flex-direction: column !important; align-items: center !important; gap: 10px !important; }
             .hero-buttons button { width: 100% !important; max-width: 280px !important; }
-            .twitter-badge { margin-left: auto; margin-right: auto; }
+            .hero-glass-card { width: 100% !important; max-width: 100% !important; margin-left: auto; margin-right: auto; padding: 10px !important; margin-bottom: 16px !important; order: 4 !important; }
+            .hero-glass-card .glass-sub-cards { flex-direction: row !important; gap: 8px !important; }
+            .hero-glass-card .glass-sub-cards > div { min-height: 110px !important; }
+            .hero-glass-card .glass-btns { gap: 8px !important; margin-top: 8px !important; }
+            .hero-glass-card .glass-btns button { padding: 6px 10px !important; font-size: 10.5px !important; }
+            .hero-glass-card .glass-sub-cards > div p { font-size: 10px !important; }
+            .hero-glass-card .glass-sub-cards > div span { font-size: 9px !important; }
+            .hero-glass-card .glass-sub-cards > div i { font-size: 11px !important; }
             .hero-glow { left: 50% !important; transform: translateX(-50%) !important; width: 400px !important; top: 10px !important; }
             .hero-floating-card { transform: none !important; }
 
@@ -438,20 +482,21 @@ export default function Home() {
           {/* Hero Content Container */}
           <div className="hero-content" style={{
             position: 'relative',
-            maxWidth: '1080px',
+            maxWidth: '1200px',
             margin: '0 auto',
-            padding: '40px 20px 128px',
+            padding: '40px 30px 95px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
+            gap: '40px',
             minHeight: 'calc(80vh - 64px)'
           }}>
 
             {/* Left Content */}
             <div className="hero-left" style={{
               position: 'relative',
-              width: '48%',
-              maxWidth: '450px',
+              width: '45%',
+              maxWidth: '420px',
               zIndex: 10
             }}>
               {/* Blue lighting bulb-like glow effect */}
@@ -468,30 +513,171 @@ export default function Home() {
                 pointerEvents: 'none'
               }} />
 
-              {/* Twitter Handle Badge */}
-              <button className="twitter-badge" style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '7.5px',
-                padding: '9px 19.5px',
-                border: 'none',
-                borderRadius: '10px',
+              {/* Hero Feature Glass Card */}
+              <div className="hero-glass-card" style={{
+                background: 'rgba(255, 255, 255, 0.65)',
+                backdropFilter: 'blur(12px)',
+                WebkitBackdropFilter: 'blur(12px)',
+                border: '1px solid rgba(8, 58, 133, 0.08)',
+                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08)',
+                borderRadius: '20px',
+                padding: '16px',
                 marginBottom: '24px',
-                backgroundColor: '#101012',
-                color: '#fff',
-                fontWeight: 600,
-                fontSize: '13px',
-                cursor: 'pointer',
-                transition: 'all 0.3s ease',
-              }}
-                onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
-              >
-                <svg width="15.5" height="15.5" viewBox="0 0 24 24" fill="none">
-                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" fill="#fff"/>
-                </svg>
-                {t('hero.twitter')}
-              </button>
+                maxWidth: '440px',
+              }}>
+                <div className="glass-sub-cards" style={{ display: 'flex', gap: '12px' }}>
+                  {/* Events Sub-Card */}
+                  <div
+                    onClick={() => window.location.href = '/user/events'}
+                    style={{
+                      flex: 1,
+                      position: 'relative',
+                      minHeight: '160px',
+                      borderRadius: '14px',
+                      overflow: 'hidden',
+                      cursor: 'pointer',
+                      background: '#0a1628',
+                      border: hasLiveEvents ? '2px solid rgba(16, 185, 129, 0.6)' : '1px solid rgba(255, 255, 255, 0.1)',
+                      animation: hasLiveEvents ? 'hero-card-twinkle 1.5s ease-in-out infinite' : 'none',
+                      transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.08)'; e.currentTarget.style.boxShadow = '0 16px 40px rgba(0,0,0,0.35)'; e.currentTarget.style.zIndex = '10'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.zIndex = '1'; }}
+                  >
+                    {/* Carousel background with toss-in / spin-in animations */}
+                    {heroEventImages.length > 0 ? (
+                      <img
+                        key={heroSlideKey}
+                        src={heroEventImages[heroEventSlide]}
+                        alt=""
+                        style={{
+                          position: 'absolute',
+                          inset: 0,
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                          animation: `${heroEventSlide % 2 === 0 ? 'hero-toss-in' : 'hero-spin-in'} 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards`,
+                        }}
+                      />
+                    ) : (
+                      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, #0a1628 0%, #1a2d4a 100%)' }} />
+                    )}
+                    {/* Dark overlay for text readability */}
+                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.6) 100%)' }} />
+                    {/* Content */}
+                    <div style={{ position: 'relative', zIndex: 2, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <i className="bi bi-camera-video-fill" style={{ fontSize: '14px', color: hasLiveEvents ? '#10b981' : '#fff' }}></i>
+                        <span style={{ fontSize: '11px', fontWeight: 700, color: '#fff', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Events</span>
+                        {hasLiveEvents && (
+                          <span style={{ fontSize: '9px', fontWeight: 700, color: '#10b981', background: 'rgba(16,185,129,0.15)', padding: '2px 6px', borderRadius: '8px' }}>LIVE</span>
+                        )}
+                      </div>
+                      <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)', margin: 0, lineHeight: 1.3 }}>
+                        {hasLiveEvents ? 'Live streams happening now' : 'Upcoming events & streams'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Facial Recognition Sub-Card */}
+                  <div
+                    onClick={() => window.location.href = '/user/find-my-photos'}
+                    onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.08)'; e.currentTarget.style.boxShadow = '0 16px 40px rgba(0,0,0,0.35)'; e.currentTarget.style.zIndex = '10'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.zIndex = '1'; }}
+                    style={{
+                      flex: 1,
+                      position: 'relative',
+                      minHeight: '160px',
+                      borderRadius: '14px',
+                      overflow: 'hidden',
+                      cursor: 'pointer',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+                    }}
+                  >
+                    {/* scan.png background */}
+                    <img
+                      src="/scan.png"
+                      alt=""
+                      style={{
+                        position: 'absolute',
+                        inset: 0,
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                      }}
+                    />
+                    {/* Dark overlay for text readability */}
+                    <div style={{
+                      position: 'absolute',
+                      inset: 0,
+                      background: 'linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.5) 100%)',
+                    }} />
+                    {/* Content */}
+                    <div style={{ position: 'relative', zIndex: 2, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <i className="bi bi-person-bounding-box" style={{ fontSize: '14px', color: '#60a5fa' }}></i>
+                        <span style={{ fontSize: '11px', fontWeight: 700, color: '#fff', letterSpacing: '0.05em', textTransform: 'uppercase' }}>AI Scan</span>
+                      </div>
+                      <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)', margin: 0, lineHeight: 1.3 }}>Find your photos with facial recognition</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Buttons row — outside sub-cards, inside main card */}
+                <div className="glass-btns" style={{ display: 'flex', gap: '12px', marginTop: '10px' }}>
+                  <button
+                    onClick={() => window.location.href = '/user/events'}
+                    style={{
+                      flex: 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '5px',
+                      padding: '7px 12px',
+                      borderRadius: '10px',
+                      background: 'transparent',
+                      border: hasLiveEvents ? '1.5px solid rgba(16, 185, 129, 0.6)' : '1.5px solid #1a1a1a',
+                      color: hasLiveEvents ? '#059669' : '#1a1a1a',
+                      fontSize: '11.5px',
+                      fontWeight: 500,
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                      animation: hasLiveEvents ? 'hero-card-twinkle 1.5s ease-in-out infinite' : 'none',
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = hasLiveEvents ? 'rgba(16,185,129,0.08)' : 'rgba(0,0,0,0.05)'; e.currentTarget.style.borderColor = hasLiveEvents ? '#10b981' : '#000000'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = hasLiveEvents ? 'rgba(16,185,129,0.6)' : '#1a1a1a'; }}
+                  >
+                    <i className={hasLiveEvents ? 'bi bi-broadcast' : 'bi bi-compass'} style={{ fontSize: '12px' }}></i>
+                    {hasLiveEvents ? 'Go Streaming' : 'Explore all'}
+                  </button>
+                  <button
+                    onClick={() => window.location.href = '/user/find-my-photos'}
+                    style={{
+                      flex: 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '5px',
+                      padding: '7px 12px',
+                      borderRadius: '10px',
+                      background: '#000000',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      color: '#ffffff',
+                      fontSize: '11.5px',
+                      fontWeight: 500,
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = '#1a1a1a'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = '#000000'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; }}
+                  >
+                    <i className="bi bi-search" style={{ fontSize: '11px' }}></i>
+                    Scan now
+                  </button>
+                </div>
+              </div>
 
               {/* Main Heading */}
               <h1 className="hero-title" style={{
@@ -501,7 +687,19 @@ export default function Home() {
                 marginBottom: '19.5px',
                 letterSpacing: '-0.02em'
               }}>
-                <div style={{ color: '#083A85', marginBottom: '3px' }}>{t('hero.title1')}</div>
+                <div style={{ color: '#083A85', marginBottom: '3px' }}>
+                  <TextType
+                    text={['Connekyt', 'Meet', 'Work', 'Chat', 'Grow']}
+                    typingSpeed={80}
+                    deletingSpeed={50}
+                    pauseDuration={1500}
+                    showCursor
+                    cursorCharacter="_"
+                    cursorBlinkDuration={0.5}
+                    loop
+                    style={{ display: 'inline' }}
+                  />
+                </div>
                 <div style={{ color: '#000', marginBottom: '3px' }}>{t('hero.title2')}</div>
                 <div style={{ color: '#000' }}>{t('hero.title3')}</div>
               </h1>
@@ -562,9 +760,10 @@ export default function Home() {
             {/* Right Content - Image Section */}
             <div className="hero-right" style={{
               position: 'relative',
-              width: '52%',
+              width: '55%',
               height: '525px',
-              zIndex: 5
+              zIndex: 5,
+              marginRight: '-80px',
             }}>
               {/* Full Circle - Upper Left */}
               <div className="hero-circle" style={{
@@ -694,7 +893,7 @@ export default function Home() {
                 {/* Call UI Card - Left Middle (under camera) */}
                 <div className="hero-floating-card" style={{
                   position: 'absolute',
-                  left: '-200px',
+                  left: '-170px',
                   top: '130px',
                   height: '40px',
                   width: '160px',
@@ -2883,6 +3082,20 @@ export default function Home() {
             }
           }
 
+          @keyframes hero-card-twinkle {
+            0%, 100% { border-color: rgba(16, 185, 129, 0.6); box-shadow: 0 0 8px rgba(16, 185, 129, 0.2); }
+            50% { border-color: rgba(52, 211, 153, 1); box-shadow: 0 0 16px rgba(16, 185, 129, 0.4); }
+          }
+          @keyframes hero-toss-in {
+            0% { transform: translateY(100%) rotate(15deg) scale(0.6); opacity: 0; }
+            60% { transform: translateY(-8%) rotate(-3deg) scale(1.02); opacity: 1; }
+            100% { transform: translateY(0) rotate(0deg) scale(1); opacity: 1; }
+          }
+          @keyframes hero-spin-in {
+            0% { transform: scale(0.3) rotate(-180deg); opacity: 0; }
+            60% { transform: scale(1.05) rotate(10deg); opacity: 1; }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+          }
           @keyframes find-events-border-vibrate {
             0%, 100% {
               box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7),
