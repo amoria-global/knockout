@@ -91,9 +91,9 @@ export default function Footer() {
     .footer-content { max-width: 90rem; margin: 0 auto; padding: 3.2rem 3rem 1.6rem; }
     .footer-grid { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr 1fr; gap: 4rem; margin-bottom: 4rem; }
     .footer-brand { padding-right: 1.6rem; }
-    .footer-logo { display: flex; align-items: center; margin: -1.9rem 0 1.9rem -1rem; cursor: pointer; text-decoration: none; color: inherit; }
+    .footer-logo { display: flex; flex-direction: column; align-items: center; margin: 0 0 1rem 0; cursor: pointer; text-decoration: none; color: inherit; width: fit-content; line-height: 1; }
     .footer-logo span { font-weight: 700; }
-    .footer-logo img { border-radius: 50%; }
+    .footer-logo img { border-radius: 0; }
     .footer-description { color: #D1D5DB; font-size: 0.96rem; line-height: 1.625; margin-bottom: 2rem; }
     .social-section { margin: 5.4rem 0 -2.2rem; }
     .social-title { color: #D1D5DB; font-size: 1.04rem; display: block; margin-bottom: 0.8rem; }
@@ -303,11 +303,10 @@ export default function Footer() {
           >
             {/* Amoria connekyt Section */}
             <div className="footer-brand" style={{ paddingRight: '1.6rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-              <Link href="/" className="footer-logo" style={{ display: 'flex', alignItems: 'center', marginBottom: '1rem', marginLeft: '-1rem', cursor: 'pointer', textDecoration: 'none', color: 'inherit' }}>
-                <img src="/log.png" alt="Connekyt Logo" style={{ width: isMobile ? '36px' : '50px', height: isMobile ? '36px' : '50px', objectFit: 'contain', position: 'relative', top: isMobile ? '-4px' : '-5px', left: isMobile ? '-1px' : '-14px' }} />
-                <span style={{ fontWeight: 700, color: '#fff', fontSize: isMobile ? '1.25rem' : '1.4rem', marginLeft: isMobile ? '-10px' : '-26px', marginTop: isMobile ? '-1px' : '-2px', letterSpacing: '0.5px' }}>onnekyt</span>
+              <Link href="/" className="footer-logo" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '1rem', marginTop: '-2rem', cursor: 'pointer', textDecoration: 'none', color: 'inherit', lineHeight: 1, width: 'fit-content' }}>
+                <img src="/logo.png" alt="Connekyt Logo" style={{ width: isMobile ? '42px' : '54px', height: isMobile ? '42px' : '54px', objectFit: 'contain' }} />
+                <span style={{ fontWeight: 700, color: '#fff', fontSize: isMobile ? '1.1rem' : '1.35rem', letterSpacing: '0.5px', marginTop: '-4px' }}>Connekyt</span>
               </Link>
-              <p className="footer-description">{t('description')}</p>
               <div className="social-section" style={{ marginTop: 'auto', marginBottom: isMobile ? '0' : '-3.5rem' }}>
                 <span className="social-title" style={{ color: '#D1D5DB', fontSize: '1.04rem', display: 'block', marginBottom: '0.8rem', gap: '2.4rem' }}>
                   {t('followUs')}
