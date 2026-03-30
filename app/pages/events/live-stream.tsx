@@ -46,6 +46,7 @@ interface EventStream {
   streamFeeCurrencySymbol?: string | null;
   streamFeeCurrencyAbbreviation?: string | null;
   hasInviteCode?: boolean | null;
+  hasPurchasedAccess?: boolean;
 }
 
 interface Message {
@@ -196,6 +197,8 @@ const App = () => {
           customerType: d.customerType || 'Viewer',
         }, d.token!);
         setShowAuthModal(false);
+        // Reload to refetch event with auth — backend returns hlsManifestUrl + hasPurchasedAccess for paid viewers
+        window.location.reload();
       } else {
         setAuthError(res.data?.message || res.error || 'Incorrect email or password. Please try again.');
       }
@@ -257,7 +260,8 @@ const App = () => {
             customerType: d.customerType || 'Viewer',
           }, d.token!);
           setShowAuthModal(false);
-        } else {
+          window.location.reload();
+          } else {
           setAuthError(loginRes.data?.message || loginRes.error || 'Email verified successfully! Please switch to the Log In tab to sign in.');
         }
       } else {
@@ -297,6 +301,7 @@ const App = () => {
           customerType: d.customerType || 'Viewer',
         }, d.token!);
         setShowAuthModal(false);
+        window.location.reload();
       } else {
         setAuthError(res.data?.message || res.error || 'Could not sign in with Google. Please try another method.');
       }
@@ -359,9 +364,22 @@ const App = () => {
     const paid = searchParams.get('paid') === 'true';
     const urlToken = searchParams.get('inviteToken');
 
-    // Fast path: viewer came from join-package/join-event after payment or token validation
+    // Paid param: viewer came from join-package/join-event or email notification after payment
+    // Verify with backend to prevent spoofing
     if (paid) {
-      setStreamAccessGranted(true);
+      if (isAuthenticated) {
+        // Check backend — hlsManifestUrl is only returned for paid viewers
+        if (mainEvent.hlsManifestUrl) {
+          setStreamAccessGranted(true);
+        }
+        // If hlsManifestUrl is null, the viewer hasn't actually paid — show payment gate
+      } else {
+        // Viewer clicked email link on unlogged-in device — show login modal
+        // After login, the useEffect will re-run and check hlsManifestUrl
+        setAuthStep('login');
+        setAuthError('');
+        setShowAuthModal(true);
+      }
       return;
     }
 
@@ -1004,7 +1022,11 @@ const App = () => {
         ...(donAmt > 0 ? { donationAmount: donAmt } : {}),
         ...(isCard ? {} : { phone: paymentPhone, telecomProvider: providerMap[selectedPaymentMethod!] }),
         paymentMethod: paymentMethodType,
-        ...(isCard ? { redirectUrl: window.location.href } : {}),
+        ...(isCard ? {
+          redirectUrl: window.location.href.startsWith('http://')
+            ? 'https://connekyt.com'
+            : window.location.href
+        } : {}),
       });
 
       if (!response.success || !response.data) {
@@ -3314,34 +3336,104 @@ const App = () => {
                   textAlign: 'center',
                   gap: '16px',
                 }}>
-                  {/* ── Entry Fee — redirect to purchase page (payment handled there) ── */}
+                  {/* ── Entry Fee — check if already paid or need purchase ── */}
                   {isEntryFeeStream(mainEvent) ? (
-                    <>
-                      <i className="bi bi-lock-fill" style={{ fontSize: '42px', color: '#03969c' }}></i>
-                      <h3 style={{ color: '#fff', fontSize: '20px', fontWeight: '600', margin: 0 }}>
-                        Paid Stream
-                      </h3>
-                      <p style={{ color: '#adadb8', fontSize: '14px', margin: 0, maxWidth: '320px' }}>
-                        You need to purchase access to watch this stream.
-                      </p>
-                      <button
-                        onClick={() => window.location.href = `/user/events/view-event?id=${mainEvent.id}`}
-                        style={{
-                          padding: '14px 32px',
-                          background: 'linear-gradient(135deg, #03969c 0%, #026d72 100%)',
-                          border: 'none',
-                          borderRadius: '12px',
-                          color: '#fff',
-                          fontSize: '15px',
-                          fontWeight: '600',
-                          cursor: 'pointer',
-                          transition: 'all 0.3s ease',
-                        }}
-                      >
-                        <i className="bi bi-ticket-perforated-fill" style={{ marginRight: '8px' }}></i>
-                        Purchase Access
-                      </button>
-                    </>
+                    mainEvent.hasPurchasedAccess && !isAuthenticated ? (
+                      // Paid viewer but not logged in — show login prompt
+                      <>
+                        <i className="bi bi-check-circle-fill" style={{ fontSize: '42px', color: '#10b981' }}></i>
+                        <h3 style={{ color: '#fff', fontSize: '20px', fontWeight: '600', margin: 0 }}>
+                          Access Purchased
+                        </h3>
+                        <p style={{ color: '#adadb8', fontSize: '14px', margin: 0, maxWidth: '320px' }}>
+                          Log in to start watching.
+                        </p>
+                        <button
+                          onClick={() => { setAuthStep('login'); setAuthError(''); setShowAuthModal(true); }}
+                          style={{
+                            padding: '14px 32px',
+                            background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+                            border: 'none',
+                            borderRadius: '12px',
+                            color: '#fff',
+                            fontSize: '15px',
+                            fontWeight: '600',
+                            cursor: 'pointer',
+                            transition: 'all 0.3s ease',
+                          }}
+                        >
+                          <i className="bi bi-box-arrow-in-right" style={{ marginRight: '8px' }}></i>
+                          Log In to Watch
+                        </button>
+                      </>
+                    ) : isAuthenticated && mainEvent.hasPurchasedAccess ? (
+                      // Paid and logged in but hlsManifestUrl is null (stream not started yet or loading)
+                      <>
+                        <i className="bi bi-hourglass-split" style={{ fontSize: '42px', color: '#10b981' }}></i>
+                        <h3 style={{ color: '#fff', fontSize: '20px', fontWeight: '600', margin: 0 }}>
+                          Access Confirmed
+                        </h3>
+                        <p style={{ color: '#adadb8', fontSize: '14px', margin: 0, maxWidth: '320px' }}>
+                          Waiting for the stream to start...
+                        </p>
+                      </>
+                    ) : !isAuthenticated ? (
+                      // Not logged in, not paid — show login first
+                      <>
+                        <i className="bi bi-lock-fill" style={{ fontSize: '42px', color: '#03969c' }}></i>
+                        <h3 style={{ color: '#fff', fontSize: '20px', fontWeight: '600', margin: 0 }}>
+                          Paid Stream
+                        </h3>
+                        <p style={{ color: '#adadb8', fontSize: '14px', margin: 0, maxWidth: '320px' }}>
+                          Purchase access or sign in if you already paid.
+                        </p>
+                        <button
+                          onClick={() => { setAuthStep('login'); setAuthError(''); setShowAuthModal(true); }}
+                          style={{
+                            padding: '14px 32px',
+                            background: 'linear-gradient(135deg, #03969c 0%, #026d72 100%)',
+                            border: 'none',
+                            borderRadius: '12px',
+                            color: '#fff',
+                            fontSize: '15px',
+                            fontWeight: '600',
+                            cursor: 'pointer',
+                            transition: 'all 0.3s ease',
+                          }}
+                        >
+                          <i className="bi bi-ticket-perforated-fill" style={{ marginRight: '8px' }}></i>
+                          Purchase Access or Sign In if Paid
+                        </button>
+                      </>
+                    ) : (
+                      // Logged in but hasn't paid — redirect to purchase
+                      <>
+                        <i className="bi bi-lock-fill" style={{ fontSize: '42px', color: '#03969c' }}></i>
+                        <h3 style={{ color: '#fff', fontSize: '20px', fontWeight: '600', margin: 0 }}>
+                          Paid Stream
+                        </h3>
+                        <p style={{ color: '#adadb8', fontSize: '14px', margin: 0, maxWidth: '320px' }}>
+                          You need to purchase access to watch this stream.
+                        </p>
+                        <button
+                          onClick={() => window.location.href = `/user/events/view-event?id=${mainEvent.id}`}
+                          style={{
+                            padding: '14px 32px',
+                            background: 'linear-gradient(135deg, #03969c 0%, #026d72 100%)',
+                            border: 'none',
+                            borderRadius: '12px',
+                            color: '#fff',
+                            fontSize: '15px',
+                            fontWeight: '600',
+                            cursor: 'pointer',
+                            transition: 'all 0.3s ease',
+                          }}
+                        >
+                          <i className="bi bi-ticket-perforated-fill" style={{ marginRight: '8px' }}></i>
+                          Purchase Access
+                        </button>
+                      </>
+                    )
                   ) : isInviteTokenStream(mainEvent) ? (
                     /* ── Invite Token Form (client streams) ── */
                     <>

@@ -118,7 +118,7 @@ function ViewEventContent(): React.JSX.Element {
   const t = useTranslations('events.viewEvent');
   const tStatus = useTranslations('events.status');
   const searchParams = useSearchParams();
-  const eventId = searchParams.get('id');
+  const eventId = searchParams.get('id') || searchParams.get('eventId');
 
   const [isLoading, setIsLoading] = useState(true);
   const [selectedEvent, setSelectedEvent] = useState<PublicEvent | null>(null);
@@ -144,6 +144,11 @@ function ViewEventContent(): React.JSX.Element {
   // Pending destination after auth
   const [pendingJoinUrl, setPendingJoinUrl] = useState('');
   const [googleLoading, setGoogleLoading] = useState(false);
+  // Group invite code — auto-fill from URL param (from email link)
+  const [groupCode, setGroupCode] = useState(searchParams.get('groupCode') || '');
+  const [groupCodeError, setGroupCodeError] = useState('');
+  const [groupCodeLoading, setGroupCodeLoading] = useState(false);
+  const [pendingGroupCode, setPendingGroupCode] = useState('');
 
   // Listen for session expiry — show login modal instead of redirecting
   useEffect(() => {
@@ -173,7 +178,43 @@ function ViewEventContent(): React.JSX.Element {
         customerType: 'Viewer',
       });
       if (res.success && res.data?.token) {
+        const gd = res.data;
+        localStorage.setItem('authUser', JSON.stringify({
+          id: gd.customerId || '',
+          firstName: gd.firstName || userInfo.given_name || '',
+          lastName: gd.lastName || userInfo.family_name || '',
+          email: gd.email || userInfo.email,
+          customerType: gd.customerType || 'Viewer',
+          profilePicture: (gd as unknown as Record<string, unknown>).profilePicture as string || userInfo.picture || '',
+        }));
         setShowAuthModal(false);
+        // If there's a pending group code, redeem it after Google auth
+        if (pendingGroupCode && selectedEvent?.id) {
+          try {
+            const redeemRes = await fetch(`/api/proxy/api/remote/public/streams/${selectedEvent.id}/redeem-group-code`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${gd.token}` },
+              body: JSON.stringify({ inviteCode: pendingGroupCode, viewerUsername: gd.email || userInfo.email }),
+            });
+            const redeemData = await redeemRes.json();
+            if (redeemData.action === 1 || redeemData.message?.toLowerCase().includes('access granted')) {
+              setPendingGroupCode('');
+              window.location.href = `/user/events/live-stream?eventId=${selectedEvent.id}&paid=true&inviteToken=${encodeURIComponent(pendingGroupCode)}`;
+              return;
+            } else {
+              setGroupCodeError(redeemData.message || 'Failed to redeem group code.');
+            }
+          } catch { setGroupCodeError('Failed to redeem group code.'); }
+          setPendingGroupCode('');
+          return;
+        }
+        if (selectedEvent?.id) {
+          const eventCheck = await getPublicEventById(selectedEvent.id);
+          if (eventCheck.success && eventCheck.data?.hasPurchasedAccess) {
+            window.location.href = `/user/events/live-stream?eventId=${selectedEvent.id}&paid=true`;
+            return;
+          }
+        }
         window.location.href = pendingJoinUrl;
       } else {
         setAuthError(res.data?.message || res.error || 'Could not sign in with Google. Please try another method.');
@@ -215,6 +256,18 @@ function ViewEventContent(): React.JSX.Element {
 
     fetchEvent();
   }, [eventId]);
+
+  // Auto-trigger group code flow when arriving from email link (?groupCode=XXX)
+  const groupCodeFromUrl = searchParams.get('groupCode');
+  const [autoGroupCodeTriggered, setAutoGroupCodeTriggered] = useState(false);
+  useEffect(() => {
+    if (groupCodeFromUrl && selectedEvent && !isLoading && !autoGroupCodeTriggered) {
+      setAutoGroupCodeTriggered(true);
+      // Small delay to ensure UI is rendered
+      setTimeout(() => handleGroupCodeSubmit(), 500);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [groupCodeFromUrl, selectedEvent, isLoading, autoGroupCodeTriggered]);
 
   // Loading state
   if (isLoading) {
@@ -266,6 +319,74 @@ function ViewEventContent(): React.JSX.Element {
     );
   }
 
+  // Handle group code submission
+  const handleGroupCodeSubmit = async () => {
+    if (!groupCode.trim()) { setGroupCodeError('Please enter a group invite code'); return; }
+    setGroupCodeError('');
+    setGroupCodeLoading(true);
+    try {
+      // Validate code first (no slot consumed, no auth required)
+      // Pass email if authenticated to check email restrictions
+      const user = isAuthenticated() ? JSON.parse(localStorage.getItem('authUser') || '{}') : {};
+      const validateBody: Record<string, string> = { inviteCode: groupCode.trim() };
+      if (user.email) validateBody.email = user.email;
+      const validateRes = await fetch(`/api/proxy/api/remote/public/streams/${selectedEvent?.id}/validate-group-code`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(validateBody),
+      });
+      const validateData = await validateRes.json();
+      if (validateData.action !== 1) {
+        const msg = validateData.message || '';
+        if (msg.includes('not shared with')) setGroupCodeError('This code was not shared with your email address.');
+        else if (msg.includes('viewer limit')) setGroupCodeError(msg);
+        else if (msg.includes('expired')) setGroupCodeError('This group code has expired.');
+        else if (msg.includes('Invalid')) setGroupCodeError('Invalid group invite code.');
+        else setGroupCodeError(msg || 'Invalid code.');
+        setGroupCodeLoading(false);
+        return;
+      }
+      // Code is valid — now redeem or prompt login
+      const isEmailRestricted = validateData.data?.emailRestricted === true;
+      if (isAuthenticated()) {
+        const user = JSON.parse(localStorage.getItem('authUser') || '{}');
+        const res = await fetch(`/api/proxy/api/remote/public/streams/${selectedEvent?.id}/redeem-group-code`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...(localStorage.getItem('authToken') ? { Authorization: `Bearer ${localStorage.getItem('authToken')}` } : {}) },
+          body: JSON.stringify({ inviteCode: groupCode.trim(), viewerUsername: user.email || '' }),
+        });
+        const data = await res.json();
+        if (data.action === 1 || data.message?.toLowerCase().includes('access granted')) {
+          window.location.href = `/user/events/live-stream?eventId=${selectedEvent?.id}&paid=true&inviteToken=${encodeURIComponent(groupCode.trim())}`;
+        } else {
+          setGroupCodeError(data.message || 'Failed to redeem code.');
+        }
+      } else {
+        // Valid code, not logged in — save code, show appropriate auth form
+        setPendingGroupCode(groupCode.trim());
+        const authorizedEmail = validateData.data?.authorizedEmail || '';
+        const accountExists = validateData.data?.accountExists;
+        if (authorizedEmail) {
+          // Pre-fill the email from the invited address
+          if (accountExists === false) {
+            // No account — show signup with email pre-filled
+            setSignupEmail(authorizedEmail);
+            setAuthStep('signup');
+          } else {
+            // Has account or unknown — show login with email pre-filled
+            setLoginEmail(authorizedEmail);
+            setAuthStep('login');
+          }
+        } else {
+          setAuthStep('login');
+        }
+        setAuthError(isEmailRestricted ? 'This code is restricted to invited emails only. Please sign in with the email this code was sent to.' : '');
+        setShowAuthModal(true);
+      }
+    } catch { setGroupCodeError('Connection error. Please try again.'); }
+    finally { setGroupCodeLoading(false); }
+  };
+
   // Open auth modal or proceed directly if already authenticated
   const handlePurchaseAccess = (joinUrl: string) => {
     if (isAuthenticated()) {
@@ -285,7 +406,45 @@ function ViewEventContent(): React.JSX.Element {
     try {
       const res = await login({ email: loginEmail, password: loginPassword });
       if (res.success && res.data?.token) {
+        // Store user data so AuthProvider can restore the session
+        const d = res.data;
+        localStorage.setItem('authUser', JSON.stringify({
+          id: d.customerId || '',
+          firstName: d.firstName || '',
+          lastName: d.lastName || '',
+          email: d.email || loginEmail,
+          customerType: d.customerType || 'Viewer',
+          profilePicture: (d as unknown as Record<string, unknown>).profilePicture as string || '',
+        }));
         setShowAuthModal(false);
+        // If there's a pending group code, redeem it after login
+        if (pendingGroupCode && selectedEvent?.id) {
+          try {
+            const redeemRes = await fetch(`/api/proxy/api/remote/public/streams/${selectedEvent.id}/redeem-group-code`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${d.token}` },
+              body: JSON.stringify({ inviteCode: pendingGroupCode, viewerUsername: d.email || loginEmail }),
+            });
+            const redeemData = await redeemRes.json();
+            if (redeemData.action === 1 || redeemData.message?.toLowerCase().includes('access granted')) {
+              setPendingGroupCode('');
+              window.location.href = `/user/events/live-stream?eventId=${selectedEvent.id}&paid=true&inviteToken=${encodeURIComponent(pendingGroupCode)}`;
+              return;
+            } else {
+              setGroupCodeError(redeemData.message || 'Failed to redeem group code.');
+            }
+          } catch { setGroupCodeError('Failed to redeem group code.'); }
+          setPendingGroupCode('');
+          return;
+        }
+        // Check if viewer already paid — redirect to stream instead of join-package
+        if (selectedEvent?.id) {
+          const eventCheck = await getPublicEventById(selectedEvent.id);
+          if (eventCheck.success && eventCheck.data?.hasPurchasedAccess) {
+            window.location.href = `/user/events/live-stream?eventId=${selectedEvent.id}&paid=true`;
+            return;
+          }
+        }
         window.location.href = pendingJoinUrl;
       } else {
         setAuthError(res.data?.message || res.error || 'Incorrect email or password. Please try again.');
@@ -338,7 +497,43 @@ function ViewEventContent(): React.JSX.Element {
         // OTP verify only confirms email — token comes from login. Auto-login with signup credentials.
         const loginRes = await login({ email: signupEmail, password: signupPassword });
         if (loginRes.success && loginRes.data?.token) {
+          const ld = loginRes.data;
+          localStorage.setItem('authUser', JSON.stringify({
+            id: ld.customerId || '',
+            firstName: ld.firstName || signupFirstName || '',
+            lastName: ld.lastName || signupLastName || '',
+            email: ld.email || signupEmail,
+            customerType: ld.customerType || 'Viewer',
+            profilePicture: (ld as unknown as Record<string, unknown>).profilePicture as string || '',
+          }));
           setShowAuthModal(false);
+          // If there's a pending group code, redeem it after OTP verify
+          if (pendingGroupCode && selectedEvent?.id) {
+            try {
+              const redeemRes = await fetch(`/api/proxy/api/remote/public/streams/${selectedEvent.id}/redeem-group-code`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${ld.token}` },
+                body: JSON.stringify({ inviteCode: pendingGroupCode, viewerUsername: ld.email || signupEmail }),
+              });
+              const redeemData = await redeemRes.json();
+              if (redeemData.action === 1 || redeemData.message?.toLowerCase().includes('access granted')) {
+                setPendingGroupCode('');
+                window.location.href = `/user/events/live-stream?eventId=${selectedEvent.id}&paid=true&inviteToken=${encodeURIComponent(pendingGroupCode)}`;
+                return;
+              } else {
+                setGroupCodeError(redeemData.message || 'Failed to redeem group code.');
+              }
+            } catch { setGroupCodeError('Failed to redeem group code.'); }
+            setPendingGroupCode('');
+            return;
+          }
+          if (selectedEvent?.id) {
+            const eventCheck = await getPublicEventById(selectedEvent.id);
+            if (eventCheck.success && eventCheck.data?.hasPurchasedAccess) {
+              window.location.href = `/user/events/live-stream?eventId=${selectedEvent.id}&paid=true`;
+              return;
+            }
+          }
           window.location.href = pendingJoinUrl;
         } else {
           setAuthError(loginRes.data?.message || loginRes.error || 'Email verified successfully! Please switch to the Log In tab to sign in.');
@@ -362,8 +557,7 @@ function ViewEventContent(): React.JSX.Element {
   const isUpcoming = !isLive && !isCompleted && !isCancelled; // PUBLISHED or UPCOMING
   const streamFee = selectedEvent.streamFee || 0;
   const isPaid = streamFee > 0 || (selectedEvent.price || 0) > 0;
-  // Backend returns hlsManifestUrl for authenticated viewers who have already paid
-  const hasStreamAccess = !!selectedEvent.hlsManifestUrl;
+  const hasPurchasedAccess = !!selectedEvent.hasPurchasedAccess;
   const tags = getTagsArray(selectedEvent);
   const photographerName = getPhotographerName(selectedEvent);
 
@@ -416,14 +610,18 @@ function ViewEventContent(): React.JSX.Element {
 
         {/* ── Price badge — bottom-right ── */}
         {isPaid && (
-          <div style={{ position: 'absolute', bottom: 28, right: 28, zIndex: 20, background: isCompleted ? 'rgba(127,29,29,0.15)' : 'rgba(246,173,85,0.13)', border: `2px solid ${isCompleted ? '#ef4444' : '#f6ad55'}`, borderRadius: 12, padding: '12px 24px', textAlign: 'center', backdropFilter: 'blur(10px)', pointerEvents: 'none' }}>
-            {isCompleted && (
+          <div style={{ position: 'absolute', bottom: 28, right: 28, zIndex: 20, background: isCompleted ? 'rgba(127,29,29,0.15)' : hasPurchasedAccess ? 'rgba(16,185,129,0.1)' : 'rgba(246,173,85,0.13)', border: `2px solid ${isCompleted ? '#ef4444' : hasPurchasedAccess ? '#10b981' : '#f6ad55'}`, borderRadius: 12, padding: '12px 24px', textAlign: 'center', backdropFilter: 'blur(10px)', pointerEvents: 'none' }}>
+            {isCompleted ? (
               <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
                 <i className="bi bi-x-lg" style={{ fontSize: 48, color: 'rgba(239,68,68,0.6)', fontWeight: 900 }}></i>
               </div>
-            )}
-            <div style={{ fontSize: 26, fontWeight: 800, color: isCompleted ? 'rgba(246,173,85,0.5)' : '#f6ad55', lineHeight: 1 }}>{(selectedEvent.price || 0).toLocaleString()} RWF</div>
-            <div style={{ fontSize: 12, color: isCompleted ? 'rgba(160,174,192,0.5)' : '#a0aec0', marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{isCompleted ? 'Event ended' : 'Entry fee'}</div>
+            ) : hasPurchasedAccess ? (
+              <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
+                <i className="bi bi-check-circle-fill" style={{ fontSize: 36, color: 'rgba(16,185,129,0.6)' }}></i>
+              </div>
+            ) : null}
+            <div style={{ fontSize: 26, fontWeight: 800, color: isCompleted ? 'rgba(246,173,85,0.5)' : hasPurchasedAccess ? 'rgba(16,185,129,0.9)' : '#f6ad55', lineHeight: 1 }}>{(selectedEvent.price || 0).toLocaleString()} RWF</div>
+            <div style={{ fontSize: 12, color: isCompleted ? 'rgba(160,174,192,0.5)' : hasPurchasedAccess ? '#10b981' : '#a0aec0', marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{isCompleted ? 'Event ended' : hasPurchasedAccess ? 'Spot reserved' : 'Entry fee'}</div>
           </div>
         )}
 
@@ -507,20 +705,57 @@ function ViewEventContent(): React.JSX.Element {
         </div>
 
         {/* ── CTA — bottom center of full page ── */}
-        <div style={{ position: 'absolute', bottom: 36, left: 0, right: 0, zIndex: 20, display: 'flex', justifyContent: 'center' }}>
+        <div style={{ position: 'absolute', bottom: 36, left: 0, right: 0, zIndex: 20, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
           {isLive ? (
-            isPaid ? (
-              // Paid event — require auth then payment flow
+            isPaid && hasPurchasedAccess ? (
+              // Paid event, already purchased — go straight to watch
               <button
                 className="live-stream-button"
-                onClick={() => handlePurchaseAccess(`/user/events/join-package?id=${selectedEvent.id}`)}
+                onClick={() => { window.location.href = `/user/events/live-stream?eventId=${selectedEvent.id}&paid=true`; }}
                 style={{ padding: '15px 48px', backgroundColor: '#039130', color: '#fff', border: '2px solid #10b981', borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, transition: 'background 0.2s', textTransform: 'uppercase' }}
                 onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#027a28'; }}
                 onMouseLeave={e => { e.currentTarget.style.backgroundColor = '#039130'; }}
               >
-                <i className="bi bi-ticket-perforated-fill live-badge-icon" style={{ fontSize: 16 }}></i>
-                Purchase Access
+                <i className="bi bi-play-circle-fill live-badge-icon" style={{ fontSize: 16 }}></i>
+                Start Watching
               </button>
+            ) : isPaid ? (
+              <>
+                {/* Paid event — purchase or sign in if already paid */}
+                <button
+                  className="live-stream-button"
+                  onClick={() => handlePurchaseAccess(`/user/events/join-package?id=${selectedEvent.id}`)}
+                  style={{ padding: '15px 48px', backgroundColor: '#039130', color: '#fff', border: '2px solid #10b981', borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, transition: 'background 0.2s', textTransform: 'uppercase' }}
+                  onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#027a28'; }}
+                  onMouseLeave={e => { e.currentTarget.style.backgroundColor = '#039130'; }}
+                >
+                  <i className="bi bi-ticket-perforated-fill live-badge-icon" style={{ fontSize: 16 }}></i>
+                  Purchase Access or Sign In if Paid
+                </button>
+                {/* Group invite code input */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
+                  <input
+                    type="text"
+                    placeholder="Have a group invite code?"
+                    value={groupCode}
+                    onChange={e => { setGroupCode(e.target.value); setGroupCodeError(''); }}
+                    style={{ width: 280, padding: '12px 16px', borderRadius: 10, border: groupCodeError ? '1.5px solid #ef4444' : '1.5px solid rgba(255,255,255,0.3)', background: 'rgba(255,255,255,0.85)', color: '#1a1a1a', fontSize: 14, outline: 'none', letterSpacing: '0.5px' }}
+                    onFocus={e => { e.currentTarget.style.borderColor = '#10b981'; }}
+                    onBlur={e => { e.currentTarget.style.borderColor = groupCodeError ? '#ef4444' : 'rgba(255,255,255,0.3)'; }}
+                  />
+                  <button
+                    onClick={handleGroupCodeSubmit}
+                    disabled={groupCodeLoading || !groupCode.trim()}
+                    className={groupCode.trim() ? 'live-stream-button' : ''}
+                    style={{ padding: '12px 22px', borderRadius: 10, border: groupCode.trim() ? '2px solid #10b981' : '1.5px solid rgba(255,255,255,0.3)', background: groupCode.trim() ? '#039130' : 'rgba(255,255,255,0.85)', color: groupCode.trim() ? '#fff' : 'rgba(0,0,0,0.3)', fontSize: 14, fontWeight: 600, cursor: groupCode.trim() ? 'pointer' : 'not-allowed', transition: 'all 0.2s', whiteSpace: 'nowrap' }}
+                  >
+                    {groupCodeLoading ? '...' : 'Redeem'}
+                  </button>
+                </div>
+                {groupCodeError && (
+                  <p style={{ color: '#ef4444', fontSize: 12, margin: '4px 0 0', textAlign: 'center' }}>{groupCodeError}</p>
+                )}
+              </>
             ) : (
               // Free event — no auth needed, enter stream invite token
               <button
@@ -532,6 +767,27 @@ function ViewEventContent(): React.JSX.Element {
               >
                 <i className="bi bi-play-circle-fill live-badge-icon" style={{ fontSize: 16 }}></i>
                 Watch Live
+              </button>
+            )
+          ) : isUpcoming && isPaid ? (
+            hasPurchasedAccess ? (
+              // Upcoming paid event, already pre-purchased
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ padding: '12px 36px', backgroundColor: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: '2px solid rgba(16, 185, 129, 0.4)', borderRadius: 10, fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 10, backdropFilter: 'blur(8px)' }}>
+                  <i className="bi bi-check-circle-fill" style={{ fontSize: 16 }}></i>
+                  Access Reserved — We&apos;ll notify you when it&apos;s live
+                </div>
+              </div>
+            ) : (
+              // Upcoming paid event, not purchased — allow pre-purchase
+              <button
+                onClick={() => handlePurchaseAccess(`/user/events/join-package?id=${selectedEvent.id}`)}
+                style={{ padding: '15px 48px', backgroundColor: '#083A85', color: '#fff', border: '2px solid #3b82f6', borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, transition: 'background 0.2s', textTransform: 'uppercase' }}
+                onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#062d6b'; }}
+                onMouseLeave={e => { e.currentTarget.style.backgroundColor = '#083A85'; }}
+              >
+                <i className="bi bi-ticket-perforated-fill" style={{ fontSize: 16 }}></i>
+                Reserve Your Spot or Sign In
               </button>
             )
           ) : null}
@@ -585,7 +841,7 @@ function ViewEventContent(): React.JSX.Element {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 <div>
                   <label style={{ display: 'block', color: '#d1d5db', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Email</label>
-                  <input type="email" value={loginEmail} onChange={e => setLoginEmail(e.target.value)} placeholder="your@email.com" onKeyDown={e => e.key === 'Enter' && handleLogin()} style={{ width: '100%', padding: '11px 14px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 9, color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} onFocus={e => { e.currentTarget.style.borderColor = '#03969c'; }} onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }} />
+                  <input type="email" value={loginEmail} onChange={e => { if (!pendingGroupCode) setLoginEmail(e.target.value); }} readOnly={!!pendingGroupCode} placeholder="your@email.com" onKeyDown={e => e.key === 'Enter' && handleLogin()} style={{ width: '100%', padding: '11px 14px', background: pendingGroupCode ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 9, color: pendingGroupCode ? '#9ca3af' : '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box', cursor: pendingGroupCode ? 'not-allowed' : 'text' }} onFocus={e => { if (!pendingGroupCode) e.currentTarget.style.borderColor = '#03969c'; }} onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }} />
                 </div>
                 <div>
                   <label style={{ display: 'block', color: '#d1d5db', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Password</label>
@@ -627,7 +883,7 @@ function ViewEventContent(): React.JSX.Element {
                 </div>
                 <div>
                   <label style={{ display: 'block', color: '#d1d5db', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Email</label>
-                  <input type="email" value={signupEmail} onChange={e => setSignupEmail(e.target.value)} placeholder="your@email.com" style={{ width: '100%', padding: '11px 14px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 9, color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} onFocus={e => { e.currentTarget.style.borderColor = '#03969c'; }} onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }} />
+                  <input type="email" value={signupEmail} onChange={e => { if (!pendingGroupCode) setSignupEmail(e.target.value); }} readOnly={!!pendingGroupCode} placeholder="your@email.com" style={{ width: '100%', padding: '11px 14px', background: pendingGroupCode ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 9, color: pendingGroupCode ? '#9ca3af' : '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box', cursor: pendingGroupCode ? 'not-allowed' : 'text' }} onFocus={e => { if (!pendingGroupCode) e.currentTarget.style.borderColor = '#03969c'; }} onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }} />
                 </div>
                 <div>
                   <label style={{ display: 'block', color: '#d1d5db', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Phone</label>

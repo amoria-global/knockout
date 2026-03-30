@@ -369,7 +369,7 @@ export default function Home() {
             .how-it-works-steps { flex-direction: column !important; gap: 30px !important; align-items: center !important; position: relative !important; }
             .how-it-works-svg { display: none !important; }
             .how-it-works-mobile-line { display: block !important; }
-            .how-it-works-steps > div { background: #fff !important; z-index: 2 !important; position: relative !important; padding: 10px 20px !important; }
+            .how-it-works-steps > div { background: transparent !important; z-index: 2 !important; position: relative !important; padding: 10px 20px !important; }
             .step-img { width: 180px !important; height: 180px !important; }
             .step-title { font-size: 24px !important; text-align: center !important; }
             .step-description { font-size: 15px !important; text-align: center !important; }
@@ -538,7 +538,7 @@ export default function Home() {
                       cursor: 'pointer',
                       background: '#0a1628',
                       border: hasLiveEvents ? '2px solid rgba(16, 185, 129, 0.6)' : '1px solid rgba(255, 255, 255, 0.1)',
-                      animation: hasLiveEvents ? 'hero-card-twinkle 1.5s ease-in-out infinite' : 'none',
+                      animation: hasLiveEvents ? 'hero-card-twinkle 1s ease-out infinite' : 'none',
                       transition: 'transform 0.3s ease, box-shadow 0.3s ease',
                     }}
                     onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.08)'; e.currentTarget.style.boxShadow = '0 16px 40px rgba(0,0,0,0.35)'; e.currentTarget.style.zIndex = '10'; }}
@@ -643,7 +643,7 @@ export default function Home() {
                       fontWeight: 500,
                       cursor: 'pointer',
                       transition: 'all 0.3s ease',
-                      animation: hasLiveEvents ? 'hero-card-twinkle 1.5s ease-in-out infinite' : 'none',
+                      animation: hasLiveEvents ? 'hero-card-twinkle 1s ease-out infinite' : 'none',
                     }}
                     onMouseEnter={(e) => { e.currentTarget.style.background = hasLiveEvents ? 'rgba(16,185,129,0.08)' : 'rgba(0,0,0,0.05)'; e.currentTarget.style.borderColor = hasLiveEvents ? '#10b981' : '#000000'; }}
                     onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = hasLiveEvents ? 'rgba(16,185,129,0.6)' : '#1a1a1a'; }}
@@ -1234,21 +1234,21 @@ export default function Home() {
                 />
               </svg>
 
-              {/* Single vertical S-curve connector for mobile - mirrors desktop horizontal arc */}
+              {/* Vertical S-curve connector for mobile — flows through avatar centers */}
               <svg
                 className="how-it-works-mobile-line"
                 style={{
                   position: 'absolute',
                   top: '0',
-                  left: '50%',
-                  transform: 'translateX(-50%)',
+                  left: '0',
                   width: '100%',
                   height: '100%',
-                  zIndex: 1,
-                  pointerEvents: 'none'
+                  zIndex: 0,
+                  pointerEvents: 'none',
+                  overflow: 'visible',
                 }}
-                viewBox="-100 0 600 1000"
-                preserveAspectRatio="none"
+                viewBox="0 0 300 1000"
+                preserveAspectRatio="xMidYMid meet"
               >
                 <defs>
                   <linearGradient id="mobileFlowGrad" gradientUnits="userSpaceOnUse" x1="200" y1="0" x2="200" y2="1000">
@@ -1281,11 +1281,12 @@ export default function Home() {
                     </stop>
                   </linearGradient>
                 </defs>
+                {/* Vertical S-curve — same flowing dots as desktop, rotated vertically */}
                 <path
-                  d="M 350 30 Q 500 250, 50 500 Q -100 750, 350 970"
+                  d="M 150 0 C 300 160, 0 340, 150 500 C 300 660, 0 840, 150 1000"
                   stroke="url(#mobileFlowGrad)"
-                  strokeWidth="4"
-                  strokeDasharray="12,12"
+                  strokeWidth="2"
+                  strokeDasharray="6,6"
                   fill="none"
                   strokeLinecap="round"
                 />
@@ -3083,8 +3084,28 @@ export default function Home() {
           }
 
           @keyframes hero-card-twinkle {
-            0%, 100% { border-color: rgba(16, 185, 129, 0.6); box-shadow: 0 0 8px rgba(16, 185, 129, 0.2); }
-            50% { border-color: rgba(52, 211, 153, 1); box-shadow: 0 0 16px rgba(16, 185, 129, 0.4); }
+            0%, 100% {
+              border-color: rgba(16, 185, 129, 0.8);
+              box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.8),
+                          0 0 0 0 rgba(16, 185, 129, 0.6),
+                          0 0 12px rgba(16, 185, 129, 0.3);
+            }
+            25% {
+              box-shadow: 0 0 0 10px rgba(16, 185, 129, 0),
+                          0 0 0 20px rgba(16, 185, 129, 0),
+                          0 0 20px rgba(16, 185, 129, 0.15);
+            }
+            50% {
+              border-color: rgba(52, 211, 153, 1);
+              box-shadow: 0 0 0 18px rgba(16, 185, 129, 0),
+                          0 0 0 32px rgba(16, 185, 129, 0),
+                          0 0 28px rgba(16, 185, 129, 0.2);
+            }
+            75% {
+              box-shadow: 0 0 0 10px rgba(16, 185, 129, 0),
+                          0 0 0 20px rgba(16, 185, 129, 0),
+                          0 0 20px rgba(16, 185, 129, 0.15);
+            }
           }
           @keyframes hero-toss-in {
             0% { transform: translateY(100%) rotate(15deg) scale(0.6); opacity: 0; }

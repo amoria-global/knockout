@@ -74,6 +74,7 @@ export interface PublicEvent {
   liveInputId?: string | null;
   hlsManifestUrl?: string | null;
   streamStatus?: string | null;
+  hasPurchasedAccess?: boolean;
   eventPriceId?: string | null;
   [key: string]: unknown;
 }

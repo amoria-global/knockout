@@ -440,10 +440,22 @@ const AmoriaKNavbar = () => {
 
         @keyframes nav-border-beep {
           0%, 100% {
-            border-color: rgba(16, 185, 129, 0.6);
+            border-color: rgba(16, 185, 129, 0.7);
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7),
+                        0 0 0 0 rgba(16, 185, 129, 0.5);
+          }
+          25% {
+            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0),
+                        0 0 0 8px rgba(16, 185, 129, 0);
           }
           50% {
             border-color: rgba(52, 211, 153, 1);
+            box-shadow: 0 0 0 8px rgba(16, 185, 129, 0),
+                        0 0 0 16px rgba(16, 185, 129, 0);
+          }
+          75% {
+            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0),
+                        0 0 0 8px rgba(16, 185, 129, 0);
           }
         }
 
@@ -459,8 +471,8 @@ const AmoriaKNavbar = () => {
         }
 
         .nav-live-card {
-          animation: nav-border-beep 1.5s ease-in-out infinite;
-          box-shadow: inset 0 0 0 1.5px rgba(16, 185, 129, 0.4);
+          animation: nav-border-beep 1s ease-out infinite;
+          border: 1.5px solid rgba(16, 185, 129, 0.7);
         }
 
         .nav-live-card:hover {
@@ -502,6 +514,7 @@ const AmoriaKNavbar = () => {
 
         @keyframes nav-events-border-vibrate {
           0%, 100% {
+            border-color: rgba(16, 185, 129, 0.7);
             box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7),
                         0 0 0 0 rgba(16, 185, 129, 0.5);
           }
@@ -510,6 +523,7 @@ const AmoriaKNavbar = () => {
                         0 0 0 16px rgba(16, 185, 129, 0);
           }
           50% {
+            border-color: rgba(52, 211, 153, 1);
             box-shadow: 0 0 0 16px rgba(16, 185, 129, 0),
                         0 0 0 28px rgba(16, 185, 129, 0);
           }
@@ -531,7 +545,7 @@ const AmoriaKNavbar = () => {
           color: #047857 !important;
           animation: none;
           border-color: rgba(16, 185, 129, 1);
-          background-color: rgba(16, 185, 129, 0.08);
+          background-color: rgba(16, 185, 129, 0.08) !important;
         }
 
         .nav-link-hover {
@@ -547,6 +561,11 @@ const AmoriaKNavbar = () => {
         .nav-link-hover:hover {
           background-color: rgba(8, 58, 133, 0.08);
           color: #083A85 !important;
+        }
+
+        .nav-link-hover.nav-events-link:hover {
+          color: #047857 !important;
+          background-color: rgba(16, 185, 129, 0.08) !important;
         }
 
         .nav-link-hover.nav-link-active {
@@ -1123,7 +1142,9 @@ const AmoriaKNavbar = () => {
                     className="w-9 h-9 rounded-full bg-[#083A85] flex items-center justify-center overflow-hidden"
                     style={{ boxShadow: '0 2px 8px rgba(8, 58, 133, 0.25)' }}
                   >
-                    {user.profilePicture ? (
+                    {user.customerType?.toLowerCase() === 'viewer' ? (
+                      <i className="bi bi-person-fill" style={{ color: '#fff', fontSize: '18px' }}></i>
+                    ) : user.profilePicture ? (
                       <img src={user.profilePicture} alt={`${user.firstName} ${user.lastName}`} className="w-full h-full object-cover" />
                     ) : (
                       <span className="text-white font-semibold text-sm">
@@ -1157,36 +1178,38 @@ const AmoriaKNavbar = () => {
                       </p>
                     </div>
                     <div style={{ padding: '8px' }}>
-                      <a
-                        href={getDashboardUrl()}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="block cursor-pointer"
-                        style={{
-                          padding: '10px 12px',
-                          borderRadius: '8px',
-                          fontSize: '14px',
-                          fontWeight: '500',
-                          color: '#374151',
-                          backgroundColor: 'transparent',
-                          transition: 'all 0.2s ease',
-                          textDecoration: 'none',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '10px',
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = 'rgba(8, 58, 133, 0.05)';
-                          e.currentTarget.style.color = '#083A85';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = 'transparent';
-                          e.currentTarget.style.color = '#374151';
-                        }}
-                      >
-                        <i className="bi bi-speedometer2" style={{ fontSize: '16px' }}></i>
-                        Dashboard
-                      </a>
+                      {user.customerType?.toLowerCase() !== 'viewer' && (
+                        <a
+                          href={getDashboardUrl()}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block cursor-pointer"
+                          style={{
+                            padding: '10px 12px',
+                            borderRadius: '8px',
+                            fontSize: '14px',
+                            fontWeight: '500',
+                            color: '#374151',
+                            backgroundColor: 'transparent',
+                            transition: 'all 0.2s ease',
+                            textDecoration: 'none',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '10px',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = 'rgba(8, 58, 133, 0.05)';
+                            e.currentTarget.style.color = '#083A85';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                            e.currentTarget.style.color = '#374151';
+                          }}
+                        >
+                          <i className="bi bi-speedometer2" style={{ fontSize: '16px' }}></i>
+                          Dashboard
+                        </a>
+                      )}
                       <button
                         onClick={handleLogout}
                         className="w-full text-left cursor-pointer"
@@ -1562,7 +1585,9 @@ const AmoriaKNavbar = () => {
                         overflow: 'hidden',
                       }}
                     >
-                      {user.profilePicture ? (
+                      {user.customerType?.toLowerCase() === 'viewer' ? (
+                        <i className="bi bi-person-fill" style={{ color: '#fff', fontSize: '18px' }}></i>
+                      ) : user.profilePicture ? (
                         <img src={user.profilePicture} alt={`${user.firstName} ${user.lastName}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       ) : (
                         <span style={{ color: '#fff', fontWeight: '600', fontSize: isMobile ? '12px' : '14px' }}>
@@ -1581,26 +1606,28 @@ const AmoriaKNavbar = () => {
                   </div>
                 </div>
 
-                {/* Dashboard Link */}
-                <a
-                  href={getDashboardUrl()}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={handleLinkClick}
-                  className="block text-center rounded-md text-gray-900 hover:bg-gray-50 font-medium transition-colors cursor-pointer"
-                  style={{
-                    padding: isMobile ? '0.5rem 0.75rem' : '0.625rem 0.75rem',
-                    fontSize: isMobile ? '0.9375rem' : '1rem',
-                    textDecoration: 'none',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px',
-                  }}
-                >
-                  <i className="bi bi-speedometer2"></i>
-                  Dashboard
-                </a>
+                {/* Dashboard Link — hidden for viewers */}
+                {user.customerType?.toLowerCase() !== 'viewer' && (
+                  <a
+                    href={getDashboardUrl()}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={handleLinkClick}
+                    className="block text-center rounded-md text-gray-900 hover:bg-gray-50 font-medium transition-colors cursor-pointer"
+                    style={{
+                      padding: isMobile ? '0.5rem 0.75rem' : '0.625rem 0.75rem',
+                      fontSize: isMobile ? '0.9375rem' : '1rem',
+                      textDecoration: 'none',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                    }}
+                  >
+                    <i className="bi bi-speedometer2"></i>
+                    Dashboard
+                  </a>
+                )}
 
                 {/* Logout Button */}
                 <button

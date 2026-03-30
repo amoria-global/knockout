@@ -220,7 +220,7 @@ const Events: React.FC = () => {
           box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
         }
 
-        /* Live Now Badge Animation with Sound Wave Effect */
+        /* Live Now Badge Animation with Sound Wave Effect — duration synced with navbar */
         @keyframes sound-wave-pulse {
           0% {
             box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7),
@@ -268,7 +268,7 @@ const Events: React.FC = () => {
 
         .live-badge {
           position: relative;
-          animation: sound-wave-pulse 0.9s ease-out infinite, border-beep 0.9s ease-in-out infinite;
+          animation: sound-wave-pulse 1s ease-out infinite, border-beep 1s ease-in-out infinite;
         }
 
         .live-badge-icon {
