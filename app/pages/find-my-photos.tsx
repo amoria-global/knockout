@@ -3,10 +3,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Navbar from '../components/navbar';
-import { getAlbumByCode, type AlbumPhoto, type AlbumPricing } from '@/lib/APIs/public/get-album/route';
+import { getAlbumByCode, type AlbumPhoto } from '@/lib/APIs/public/get-album/route';
 import { uploadSelfieForRecognition, type MatchedPhoto } from '@/lib/APIs/customer/facial-recognition/route';
 import { getCurrencies, type Currency } from '@/lib/APIs/public';
-import XentriPayModal from '../components/XentriPayModal';
+import { recordStreamingPayment } from '@/lib/APIs/payments/route';
+import { requestFreeAlbumAccess } from '@/lib/APIs/public/request-free-access/route';
+import { verifyFreeAlbumAccess } from '@/lib/APIs/public/verify-free-access/route';
+import { getFreeAlbum, type FreeAlbumPhoto } from '@/lib/APIs/public/get-free-album/route';
 
 const FindMyPhotos = () => {
   const searchParams = useSearchParams();
@@ -50,18 +53,36 @@ const FindMyPhotos = () => {
   // Image viewer modal
   const [selectedPhoto, setSelectedPhoto] = useState<{ id: string; url: string; alt: string; price?: number } | null>(null);
 
-  // Album metadata
+  // Album metadata for payment
   const [albumEventId, setAlbumEventId] = useState('');
-  const [albumPhotographerName, setAlbumPhotographerName] = useState('');
-  const [albumTitle, setAlbumTitle] = useState('');
-  const [albumPricing, setAlbumPricing] = useState<AlbumPricing | null>(null);
+  const [albumCurrencyId, setAlbumCurrencyId] = useState('');
+  const [albumCurrencySymbol, setAlbumCurrencySymbol] = useState('');
   const [currencies, setCurrencies] = useState<Currency[]>([]);
 
   // Download payment modal
   const [showDownloadModal, setShowDownloadModal] = useState(false);
   const [downloadTarget, setDownloadTarget] = useState<{ id: string; url: string; alt: string; price?: number } | null>(null);
-  // XentriPay modal state for photo purchases
-  const [showXentriPayModal, setShowXentriPayModal] = useState(false);
+  const [dlPaymentMethod, setDlPaymentMethod] = useState<string | null>(null);
+  const [dlPhone, setDlPhone] = useState('');
+  const [dlCardNumber, setDlCardNumber] = useState('');
+  const [dlCardExpiry, setDlCardExpiry] = useState('');
+  const [dlCardCvv, setDlCardCvv] = useState('');
+  const [dlCardHolderName, setDlCardHolderName] = useState('');
+  const [dlLoading, setDlLoading] = useState(false);
+  const [dlError, setDlError] = useState<string | null>(null);
+  const [dlSuccess, setDlSuccess] = useState(false);
+
+  // Free album flow state (DO NOT modify existing state above)
+  const [freeAlbumFlow, setFreeAlbumFlow] = useState<'idle' | 'email' | 'otp' | 'verified'>('idle');
+  const [freeAlbumEmail, setFreeAlbumEmail] = useState('');
+  const [freeAlbumId, setFreeAlbumId] = useState('');
+  const [freeAlbumTitle, setFreeAlbumTitle] = useState('');
+  const [freeAlbumPhotographer, setFreeAlbumPhotographer] = useState('');
+  const [freeAlbumPhotos, setFreeAlbumPhotos] = useState<FreeAlbumPhoto[]>([]);
+  const [freeAlbumExpiresAt, setFreeAlbumExpiresAt] = useState('');
+  const [freeAlbumError, setFreeAlbumError] = useState('');
+  const [freeAlbumLoading, setFreeAlbumLoading] = useState(false);
+  const [freeAlbumOtp, setFreeAlbumOtp] = useState('');
 
   // Auto-fill invite code from URL param and load album (e.g. /find-my-photos?code=ABC123)
   useEffect(() => {
@@ -71,26 +92,61 @@ const FindMyPhotos = () => {
       setIsLoadingAlbum(true);
       getAlbumByCode(codeFromUrl).then(response => {
         if (response.success && response.data) {
-          const albumData = response.data;
-          setAlbumEventId(albumData.eventId || '');
-          setAlbumPhotographerName(albumData.photographerName || '');
-          setAlbumTitle(albumData.eventTitle || '');
-          setAlbumPricing(albumData.pricing || null);
-          const pricePerImg = albumData.pricing?.pricePerImage;
-          const photos = (albumData.photos ?? []).map((p: AlbumPhoto) => ({
+          if (response.data.albumType === 'free') {
+            setFreeAlbumId(response.data.albumId || response.data.eventId || '');
+            setFreeAlbumTitle(response.data.eventTitle || response.data.title || '');
+            setFreeAlbumPhotographer(response.data.photographerName || '');
+            // If email is in URL (from email link), auto-verify using access code as OTP
+            const emailFromUrl = searchParams.get('email');
+            if (emailFromUrl) {
+              setFreeAlbumEmail(emailFromUrl);
+              setFreeAlbumFlow('otp');
+              setFreeAlbumLoading(true);
+              // Auto-submit: use the access code itself as the OTP (proves email ownership)
+              verifyFreeAlbumAccess(codeFromUrl, emailFromUrl, codeFromUrl).then((verifyRes) => {
+                if (verifyRes.success && verifyRes.data) {
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  const d = verifyRes.data as any;
+                  setFreeAlbumId(d.albumId || '');
+                  if (d.photos?.length) {
+                    setFreeAlbumPhotos(d.photos);
+                    if (d.title) setFreeAlbumTitle(d.title);
+                    if (d.photographerName) setFreeAlbumPhotographer(d.photographerName);
+                    if (d.expiresAt) setFreeAlbumExpiresAt(d.expiresAt);
+                    setFreeAlbumFlow('verified');
+                  } else {
+                    // No photos in response — fall back to OTP screen
+                    setFreeAlbumOtp(codeFromUrl);
+                  }
+                } else {
+                  // Auto-verify failed — fall back to manual OTP entry
+                  setFreeAlbumError('');
+                }
+                setFreeAlbumLoading(false);
+              }).catch(() => { setFreeAlbumLoading(false); });
+            } else {
+              setFreeAlbumFlow('email');
+            }
+            return;
+          }
+          setAlbumEventId(response.data.eventId ?? response.data.albumId);
+          if (response.data.pricing?.currencyId) setAlbumCurrencyId(response.data.pricing.currencyId);
+          if (response.data.pricing?.currencySymbol) setAlbumCurrencySymbol(response.data.pricing.currencySymbol);
+          const perPhotoPrice = response.data.pricing?.pricePerImage ?? response.data.pricePerPhoto;
+          const photos = (response.data.photos ?? []).map((p: AlbumPhoto) => ({
             id: p.id,
-            url: p.imageUrl || p.url || p.thumbnailUrl || '',
-            alt: p.alt || albumData.eventTitle || 'Event photo',
-            price: pricePerImg,
+            url: p.url || p.thumbnailUrl || '',
+            alt: p.alt || p.eventTitle || 'Event photo',
+            price: p.price ?? perPhotoPrice,
           }));
           setAllPhotos(photos);
           setDisplayedPhotos(photos);
           setIsCodeSubmitted(true);
         } else {
-          setInviteError(response.error || 'This invite code is invalid or has expired. Please check and try again.');
+          setInviteError(response.error || 'Invalid invite code');
         }
       }).catch(() => {
-        setInviteError('Unable to load album. Please check your internet connection and try again.');
+        setInviteError('Failed to load album');
       }).finally(() => {
         setIsLoadingAlbum(false);
       });
@@ -118,7 +174,7 @@ const FindMyPhotos = () => {
 
   const handleInviteSubmit = async () => {
     if (!inviteCode.trim()) {
-      setInviteError('Please enter your album invite code.');
+      setInviteError('Please enter a valid invite code');
       return;
     }
     setInviteError('');
@@ -126,82 +182,46 @@ const FindMyPhotos = () => {
     try {
       const response = await getAlbumByCode(inviteCode.trim());
       if (response.success && response.data) {
-        const albumData = response.data;
-        setAlbumEventId(albumData.eventId || '');
-        setAlbumPhotographerName(albumData.photographerName || '');
-        setAlbumTitle(albumData.eventTitle || '');
-        setAlbumPricing(albumData.pricing || null);
-        const pricePerImg = albumData.pricing?.pricePerImage;
-        const photos = (albumData.photos ?? []).map((p: AlbumPhoto) => ({
+        if (response.data.albumType === 'free') {
+          setFreeAlbumId(response.data.albumId || response.data.eventId || '');
+          setFreeAlbumTitle(response.data.title || '');
+          setFreeAlbumPhotographer(response.data.photographerName || '');
+          setFreeAlbumFlow('email');
+          return;
+        }
+        setAlbumEventId(response.data.eventId ?? response.data.albumId);
+        if (response.data.pricing?.currencyId) setAlbumCurrencyId(response.data.pricing.currencyId);
+        if (response.data.pricing?.currencySymbol) setAlbumCurrencySymbol(response.data.pricing.currencySymbol);
+        const perPhotoPrice = response.data.pricing?.pricePerImage ?? response.data.pricePerPhoto;
+        const photos = (response.data.photos ?? []).map((p: AlbumPhoto) => ({
           id: p.id,
-          url: p.imageUrl || p.url || p.thumbnailUrl || '',
-          alt: p.alt || albumData.eventTitle || 'Event photo',
-          price: pricePerImg,
+          url: p.url || p.thumbnailUrl || '',
+          alt: p.alt || p.eventTitle || 'Event photo',
+          price: p.price ?? perPhotoPrice,
         }));
         setAllPhotos(photos);
         setDisplayedPhotos(photos);
         setIsCodeSubmitted(true);
       } else {
-        setInviteError(response.error || 'This invite code is invalid or has expired. Please check and try again.');
+        setInviteError(response.error || 'Invalid invite code');
       }
     } catch {
-      setInviteError('Unable to load album. Please check your internet connection and try again.');
+      setInviteError('Failed to load album. Please try again.');
     } finally {
       setIsLoadingAlbum(false);
     }
   };
 
-  /**
-   * Normalize an uploaded image to JPEG with max 1280px dimension.
-   * This matches what the camera capture produces and avoids backend
-   * issues with HEIC, PNG, large files, or missing EXIF orientation.
-   */
-  const normalizeImageFile = (file: File): Promise<{ file: File; preview: string }> => {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => {
-        const MAX = 1280;
-        let { width, height } = img;
-        if (width > MAX || height > MAX) {
-          const scale = MAX / Math.max(width, height);
-          width = Math.round(width * scale);
-          height = Math.round(height * scale);
-        }
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) { reject(new Error('Canvas not supported')); return; }
-        ctx.drawImage(img, 0, 0, width, height);
-        const preview = canvas.toDataURL('image/jpeg', 0.9);
-        canvas.toBlob((blob) => {
-          if (!blob) { reject(new Error('Failed to convert image')); return; }
-          const normalized = new File([blob], 'selfie.jpg', { type: 'image/jpeg' });
-          resolve({ file: normalized, preview });
-        }, 'image/jpeg', 0.9);
-      };
-      img.onerror = () => reject(new Error('Failed to load image'));
-      img.src = URL.createObjectURL(file);
-    });
-  };
-
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setUploadedFile(file);
     setScanError(null);
-    try {
-      const { file: normalized, preview } = await normalizeImageFile(file);
-      setUploadedFile(normalized);
-      setUploadedPreview(preview);
-    } catch {
-      // Fallback: use original file if normalization fails
-      setUploadedFile(file);
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        setUploadedPreview(ev.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setUploadedPreview(ev.target?.result as string);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleStartScan = async () => {
@@ -211,34 +231,28 @@ const FindMyPhotos = () => {
     setScanError(null);
     try {
       const response = await uploadSelfieForRecognition(inviteCode.trim(), uploadedFile);
-      if (response.success) {
-        // response.data is the unwrapped array of matched photos
-        const photos: MatchedPhoto[] = Array.isArray(response.data)
-          ? (response.data as unknown as MatchedPhoto[])
-          : (response.data as unknown as Record<string, unknown>)?.data
-            ? ((response.data as unknown as Record<string, unknown>).data as MatchedPhoto[])
+      if (response.success && response.data) {
+        const rawData = response.data as unknown as Record<string, unknown>;
+        const photos: MatchedPhoto[] = rawData?.data
+          ? (rawData.data as MatchedPhoto[])
+          : Array.isArray(response.data)
+            ? (response.data as unknown as MatchedPhoto[])
             : [];
 
-        if (photos.length === 0) {
-          setScanError('NO_MATCHES');
-          return;
+        {
+          const mapped = photos.map((p: MatchedPhoto) => ({
+            id: p.id,
+            url: p.url || p.thumbnailUrl || '',
+            alt: p.alt || p.eventTitle || 'Event photo',
+          }));
+          setDisplayedPhotos(mapped);
+          setIsFiltered(true);
+          setIsCodeSubmitted(true);
+          resetScanModal();
         }
-
-        const mapped = photos.map((p: MatchedPhoto) => ({
-          id: p.id,
-          url: p.url || p.thumbnailUrl || '',
-          alt: p.alt || p.eventTitle || 'Event photo',
-          price: p.pricePerImage ?? albumPricing?.pricePerImage,
-        }));
-        setDisplayedPhotos(mapped);
-        setIsFiltered(true);
-        setIsCodeSubmitted(true);
-        resetScanModal();
       } else {
         const err = response.error || '';
-        if (err.includes('code') && err.includes('missing')) {
-          setScanError('Please enter an event invite code to search for your photos.');
-        } else if (err.toLowerCase().includes('no face detected')) {
+        if (err.toLowerCase().includes('no face detected')) {
           setScanError('NO_FACE');
         } else {
           setScanError(err || 'No matching photos found. Try a clearer photo.');
@@ -273,6 +287,102 @@ const FindMyPhotos = () => {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
+  // Free album handlers
+  const handleFreeAlbumRequestAccess = async () => {
+    if (!freeAlbumEmail.trim() || !inviteCode.trim()) return;
+    setFreeAlbumLoading(true);
+    setFreeAlbumError('');
+    try {
+      const response = await requestFreeAlbumAccess(inviteCode.trim(), freeAlbumEmail.trim());
+      if (response.success) {
+        setFreeAlbumFlow('otp');
+      } else {
+        const err = response.error || '';
+        if (err.toLowerCase().includes('not authorized') || (err.toLowerCase().includes('email') && err.toLowerCase().includes('match'))) {
+          setFreeAlbumError('This email was not invited to this album');
+        } else {
+          setFreeAlbumError(err || 'Failed to request access. Please try again.');
+        }
+      }
+    } catch {
+      setFreeAlbumError('Connection error. Please try again.');
+    } finally {
+      setFreeAlbumLoading(false);
+    }
+  };
+
+  const handleFreeAlbumVerify = async () => {
+    if (!freeAlbumOtp.trim()) return;
+    setFreeAlbumLoading(true);
+    setFreeAlbumError('');
+    try {
+      const response = await verifyFreeAlbumAccess(inviteCode.trim(), freeAlbumEmail.trim(), freeAlbumOtp.trim());
+      if (response.success && response.data) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const d = response.data as any;
+        const albumId = d.albumId || freeAlbumId;
+        setFreeAlbumId(albumId);
+        if (d.title) setFreeAlbumTitle(d.title);
+        if (d.photographerName) setFreeAlbumPhotographer(d.photographerName);
+        if (d.expiresAt) setFreeAlbumExpiresAt(d.expiresAt);
+        if (d.photos?.length) {
+          // Photos included in verify response — render directly
+          setFreeAlbumPhotos(d.photos);
+          setFreeAlbumFlow('verified');
+        } else {
+          // Fallback: fetch photos separately
+          const albumRes = await getFreeAlbum(albumId);
+          if (albumRes.success && albumRes.data) {
+            setFreeAlbumPhotos(albumRes.data.photos || []);
+            if (albumRes.data.title) setFreeAlbumTitle(albumRes.data.title);
+            if (albumRes.data.photographerName) setFreeAlbumPhotographer(albumRes.data.photographerName);
+            if (albumRes.data.expiresAt) setFreeAlbumExpiresAt(albumRes.data.expiresAt);
+            setFreeAlbumFlow('verified');
+          } else {
+            setFreeAlbumError(albumRes.error || 'Failed to load album photos.');
+          }
+        }
+      } else {
+        const err = response.error || '';
+        if (err.toLowerCase().includes('invalid') && err.toLowerCase().includes('otp')) {
+          setFreeAlbumError('Invalid verification code. Please try again.');
+        } else if (err.toLowerCase().includes('expired')) {
+          setFreeAlbumError('Code expired. Click Resend to get a new code.');
+        } else {
+          setFreeAlbumError(err || 'Verification failed. Please try again.');
+        }
+      }
+    } catch {
+      setFreeAlbumError('Connection error. Please try again.');
+    } finally {
+      setFreeAlbumLoading(false);
+    }
+  };
+
+  const handleFreeAlbumResendOtp = async () => {
+    setFreeAlbumOtp('');
+    setFreeAlbumError('');
+    await handleFreeAlbumRequestAccess();
+  };
+
+  const maskEmail = (email: string) => {
+    const [local, domain] = email.split('@');
+    if (!domain) return email;
+    return `${local[0]}${'*'.repeat(Math.max(local.length - 1, 2))}@${domain}`;
+  };
+
+  const handleFreePhotoDownload = async (photo: FreeAlbumPhoto) => {
+    const url = photo.url || photo.thumbnailUrl;
+    if (!url) return;
+    await triggerPhotoDownload(url, `photo-${photo.id}.jpg`);
+  };
+
+  const handleFreeDownloadAll = async () => {
+    for (const photo of freeAlbumPhotos) {
+      await handleFreePhotoDownload(photo);
+    }
+  };
+
   // Load currencies for payment
   useEffect(() => {
     getCurrencies().then(res => {
@@ -282,9 +392,38 @@ const FindMyPhotos = () => {
     }).catch(() => {});
   }, []);
 
+  // Payment methods
+  const paymentMethods = [
+    { id: 'mtn', name: 'MTN Mobile Money', image: '/mtn.png' },
+    { id: 'airtel', name: 'Airtel Money', image: '/airtel.png' },
+    { id: 'card', name: 'VISA & Master Card', image: '/cards.png' },
+  ];
+
   const resetDownloadModal = () => {
     setShowDownloadModal(false);
     setDownloadTarget(null);
+    setDlPaymentMethod(null);
+    setDlPhone('');
+    setDlCardNumber('');
+    setDlCardExpiry('');
+    setDlCardCvv('');
+    setDlCardHolderName('');
+    setDlLoading(false);
+    setDlError(null);
+    setDlSuccess(false);
+  };
+
+  const isDlPaymentValid = () => {
+    if (!dlPaymentMethod) return false;
+    switch (dlPaymentMethod) {
+      case 'mtn':
+      case 'airtel':
+        return dlPhone.length >= 10;
+      case 'card':
+        return dlCardNumber.length >= 16 && dlCardExpiry.length >= 4 && dlCardCvv.length >= 3 && dlCardHolderName.trim() !== '';
+      default:
+        return false;
+    }
   };
 
   const triggerPhotoDownload = async (url: string, filename: string) => {
@@ -304,32 +443,41 @@ const FindMyPhotos = () => {
     }
   };
 
-  // Open XentriPay modal for photo purchase payment
   const handleDownloadPayment = async () => {
-    if (!downloadTarget) return;
-    setShowDownloadModal(false);
-    setShowXentriPayModal(true);
-  };
-
-  // Handle XentriPay payment success for photo purchase
-  const handlePhotoPaymentSuccess = () => {
-    setShowXentriPayModal(false);
-    if (downloadTarget) {
-      triggerPhotoDownload(downloadTarget.url, `photo-${downloadTarget.id}.jpg`);
+    if (!downloadTarget || !dlPaymentMethod) return;
+    setDlLoading(true);
+    setDlError(null);
+    try {
+      const amount = String(downloadTarget.price ?? 0);
+      const currencyId = albumCurrencyId || (currencies.length > 0 ? currencies[0].id : undefined);
+      const response = await recordStreamingPayment({
+        eventId: albumEventId || downloadTarget.id,
+        amount,
+        currencyId,
+        remarks: `Photo download via ${dlPaymentMethod}`,
+      });
+      if (!response.success) {
+        throw new Error(response.error || 'Payment failed');
+      }
+      setDlSuccess(true);
+      setTimeout(() => {
+        triggerPhotoDownload(downloadTarget.url, `photo-${downloadTarget.id}.jpg`);
+        resetDownloadModal();
+      }, 1200);
+    } catch (err) {
+      setDlError(err instanceof Error ? err.message : 'Payment failed. Please try again.');
+    } finally {
+      setDlLoading(false);
     }
-    resetDownloadModal();
   };
 
   const handleDownloadClick = (photo: { id: string; url: string; alt: string; price?: number }) => {
-    const photoPrice = photo.price ?? albumPricing?.pricePerImage ?? 0;
-    if (photoPrice <= 0) {
-      // Free photo — allow direct download
+    if ((photo.price ?? 0) > 0) {
+      setDownloadTarget(photo);
+      setShowDownloadModal(true);
+    } else {
       triggerPhotoDownload(photo.url, `photo-${photo.id}.jpg`);
-      return;
     }
-    // Paid photo — show payment modal
-    setDownloadTarget(photo);
-    setShowDownloadModal(true);
   };
 
   const startCamera = async () => {
@@ -370,24 +518,314 @@ const FindMyPhotos = () => {
   };
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#083A85' }}>
+    <div style={{ minHeight: '100vh', backgroundColor: '#052047' }}>
       <Navbar />
 
-      {!isCodeSubmitted ? (
+      {freeAlbumFlow !== 'idle' ? (
+        /* ── Free Album Flow ── */
+        <div style={{
+          minHeight: '100vh',
+          background: 'linear-gradient(135deg, #052047 0%, #103E83 100%)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: isMobile ? '100px 20px 40px' : '80px 20px 40px',
+        }}>
+          {freeAlbumFlow === 'email' && (
+            <div style={{
+              background: 'rgba(255,255,255,0.06)',
+              borderRadius: '24px',
+              padding: isMobile ? '36px 24px' : '48px 44px',
+              border: '1px solid rgba(255,255,255,0.1)',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+              maxWidth: '440px',
+              width: '100%',
+              textAlign: 'center',
+            }}>
+              <div style={{ fontSize: '40px', marginBottom: '16px' }}>📸</div>
+              <h2 style={{ color: '#fff', fontSize: '22px', fontWeight: 700, marginBottom: '6px' }}>Free Album Access</h2>
+              {freeAlbumTitle && <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '14px', marginBottom: '4px' }}>{freeAlbumTitle}</p>}
+              {freeAlbumPhotographer && <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px', marginBottom: '20px' }}>by {freeAlbumPhotographer}</p>}
+              <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px', marginBottom: '24px', lineHeight: 1.6 }}>
+                This album requires email verification to view.
+              </p>
+              <input
+                type="email"
+                placeholder="Enter your email address"
+                value={freeAlbumEmail}
+                onChange={(e) => { setFreeAlbumEmail(e.target.value); setFreeAlbumError(''); }}
+                onKeyDown={(e) => e.key === 'Enter' && handleFreeAlbumRequestAccess()}
+                style={{
+                  width: '100%',
+                  padding: '14px 16px',
+                  borderRadius: '12px',
+                  border: freeAlbumError ? '1px solid #ef4444' : '1px solid rgba(255,255,255,0.15)',
+                  background: 'rgba(255,255,255,0.06)',
+                  color: '#fff',
+                  fontSize: '15px',
+                  outline: 'none',
+                  marginBottom: '12px',
+                  boxSizing: 'border-box',
+                }}
+              />
+              {freeAlbumError && (
+                <p style={{ color: '#ef4444', fontSize: '13px', marginBottom: '12px' }}>{freeAlbumError}</p>
+              )}
+              <button
+                onClick={handleFreeAlbumRequestAccess}
+                disabled={freeAlbumLoading || !freeAlbumEmail.trim()}
+                style={{
+                  width: '100%',
+                  padding: '14px',
+                  borderRadius: '12px',
+                  border: 'none',
+                  background: freeAlbumLoading || !freeAlbumEmail.trim() ? 'rgba(255,255,255,0.1)' : '#fff',
+                  color: freeAlbumLoading || !freeAlbumEmail.trim() ? 'rgba(255,255,255,0.4)' : '#052047',
+                  fontSize: '15px',
+                  fontWeight: 700,
+                  cursor: freeAlbumLoading || !freeAlbumEmail.trim() ? 'not-allowed' : 'pointer',
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                {freeAlbumLoading ? 'Sending...' : 'Request Access'}
+              </button>
+              <button
+                onClick={() => { setFreeAlbumFlow('idle'); setFreeAlbumError(''); }}
+                style={{ marginTop: '16px', background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', fontSize: '13px', cursor: 'pointer' }}
+              >
+                ← Back to invite code
+              </button>
+            </div>
+          )}
+
+          {freeAlbumFlow === 'otp' && (
+            <div style={{
+              background: 'rgba(255,255,255,0.06)',
+              borderRadius: '24px',
+              padding: isMobile ? '36px 24px' : '48px 44px',
+              border: '1px solid rgba(255,255,255,0.1)',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+              maxWidth: '440px',
+              width: '100%',
+              textAlign: 'center',
+            }}>
+              <h2 style={{ color: '#fff', fontSize: '22px', fontWeight: 700, marginBottom: '8px' }}>Enter Verification Code</h2>
+              <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px', marginBottom: '24px', lineHeight: 1.6 }}>
+                We sent a 6-digit code to<br />
+                <span style={{ color: 'rgba(255,255,255,0.85)', fontWeight: 600 }}>{maskEmail(freeAlbumEmail)}</span>
+              </p>
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginBottom: '16px' }}>
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <input
+                    key={i}
+                    type="text"
+                    maxLength={1}
+                    value={freeAlbumOtp[i] || ''}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\D/g, '');
+                      const arr = freeAlbumOtp.split('');
+                      arr[i] = val;
+                      setFreeAlbumOtp(arr.join('').slice(0, 6));
+                      setFreeAlbumError('');
+                      if (val && e.target.nextElementSibling instanceof HTMLInputElement) {
+                        e.target.nextElementSibling.focus();
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Backspace' && !freeAlbumOtp[i] && e.target instanceof HTMLInputElement && e.target.previousElementSibling instanceof HTMLInputElement) {
+                        e.target.previousElementSibling.focus();
+                      }
+                      if (e.key === 'Enter' && freeAlbumOtp.length === 6) handleFreeAlbumVerify();
+                    }}
+                    style={{
+                      width: '44px',
+                      height: '52px',
+                      borderRadius: '10px',
+                      border: freeAlbumError ? '1px solid #ef4444' : '1px solid rgba(255,255,255,0.2)',
+                      background: 'rgba(255,255,255,0.06)',
+                      color: '#fff',
+                      fontSize: '20px',
+                      fontWeight: 700,
+                      textAlign: 'center',
+                      outline: 'none',
+                    }}
+                  />
+                ))}
+              </div>
+              {freeAlbumError && (
+                <p style={{ color: '#ef4444', fontSize: '13px', marginBottom: '12px' }}>{freeAlbumError}</p>
+              )}
+              <button
+                onClick={handleFreeAlbumVerify}
+                disabled={freeAlbumLoading || freeAlbumOtp.length < 6}
+                style={{
+                  width: '100%',
+                  padding: '14px',
+                  borderRadius: '12px',
+                  border: 'none',
+                  background: freeAlbumLoading || freeAlbumOtp.length < 6 ? 'rgba(255,255,255,0.1)' : '#fff',
+                  color: freeAlbumLoading || freeAlbumOtp.length < 6 ? 'rgba(255,255,255,0.4)' : '#052047',
+                  fontSize: '15px',
+                  fontWeight: 700,
+                  cursor: freeAlbumLoading || freeAlbumOtp.length < 6 ? 'not-allowed' : 'pointer',
+                  transition: 'all 0.2s ease',
+                  marginBottom: '12px',
+                }}
+              >
+                {freeAlbumLoading ? 'Verifying...' : 'Verify'}
+              </button>
+              <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px' }}>
+                {"Didn't receive? "}
+                <button
+                  onClick={handleFreeAlbumResendOtp}
+                  disabled={freeAlbumLoading}
+                  style={{ background: 'none', border: 'none', color: '#60a5fa', fontSize: '13px', cursor: 'pointer', textDecoration: 'underline' }}
+                >
+                  Resend
+                </button>
+              </p>
+              <button
+                onClick={() => { setFreeAlbumFlow('email'); setFreeAlbumOtp(''); setFreeAlbumError(''); }}
+                style={{ marginTop: '12px', background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', fontSize: '13px', cursor: 'pointer' }}
+              >
+                ← Change email
+              </button>
+            </div>
+          )}
+
+          {freeAlbumFlow === 'verified' && (
+            <div style={{ width: '100%', maxWidth: '1200px', margin: '0 auto' }}>
+              {/* Album header */}
+              <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+                <div style={{
+                  display: 'inline-block',
+                  padding: '4px 14px',
+                  borderRadius: '20px',
+                  background: 'rgba(16, 185, 129, 0.15)',
+                  color: '#10b981',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  marginBottom: '12px',
+                  letterSpacing: '0.05em',
+                }}>FREE</div>
+                <h2 style={{ color: '#fff', fontSize: isMobile ? '24px' : '32px', fontWeight: 700, marginBottom: '6px' }}>{freeAlbumTitle}</h2>
+                {freeAlbumPhotographer && <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px', marginBottom: '8px' }}>by {freeAlbumPhotographer}</p>}
+                {freeAlbumExpiresAt && (() => {
+                  const daysLeft = Math.ceil((new Date(freeAlbumExpiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+                  if (daysLeft <= 0) return <p style={{ color: '#ef4444', fontSize: '13px' }}>This album has expired and is no longer available</p>;
+                  if (daysLeft <= 7) return <p style={{ color: '#f59e0b', fontSize: '13px' }}>⚠ Expires in {daysLeft} day{daysLeft !== 1 ? 's' : ''}</p>;
+                  return null;
+                })()}
+                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px', marginTop: '8px' }}>{freeAlbumPhotos.length} photo{freeAlbumPhotos.length !== 1 ? 's' : ''}</p>
+                {freeAlbumPhotos.length > 1 && (
+                  <button
+                    onClick={handleFreeDownloadAll}
+                    style={{
+                      marginTop: '16px',
+                      padding: '10px 24px',
+                      borderRadius: '10px',
+                      border: '1px solid rgba(255,255,255,0.2)',
+                      background: 'rgba(255,255,255,0.06)',
+                      color: '#fff',
+                      fontSize: '14px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                    }}
+                    onMouseEnter={(e) => { (e.target as HTMLButtonElement).style.background = 'rgba(255,255,255,0.12)'; }}
+                    onMouseLeave={(e) => { (e.target as HTMLButtonElement).style.background = 'rgba(255,255,255,0.06)'; }}
+                  >
+                    <i className="bi bi-download" style={{ marginRight: '6px' }}></i>
+                    Download All
+                  </button>
+                )}
+              </div>
+
+              {/* Photo grid */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(auto-fill, minmax(240px, 1fr))',
+                gap: '12px',
+              }}>
+                {freeAlbumPhotos.map((photo) => (
+                  <div
+                    key={photo.id}
+                    style={{
+                      position: 'relative',
+                      borderRadius: '14px',
+                      overflow: 'hidden',
+                      aspectRatio: '1',
+                      cursor: 'pointer',
+                      border: '1px solid rgba(255,255,255,0.08)',
+                    }}
+                    onClick={() => setSelectedPhoto({
+                      id: photo.id,
+                      url: photo.url || photo.thumbnailUrl,
+                      alt: photo.caption || 'Free album photo',
+                    })}
+                  >
+                    <img
+                      src={photo.url || photo.thumbnailUrl}
+                      alt={photo.caption || 'Free album photo'}
+                      loading="lazy"
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                    {/* FREE badge */}
+                    <div style={{
+                      position: 'absolute',
+                      top: '8px',
+                      right: '8px',
+                      padding: '3px 10px',
+                      borderRadius: '8px',
+                      background: 'rgba(16, 185, 129, 0.85)',
+                      color: '#fff',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      backdropFilter: 'blur(4px)',
+                    }}>FREE</div>
+                    {/* Download button */}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleFreePhotoDownload(photo); }}
+                      style={{
+                        position: 'absolute',
+                        bottom: '8px',
+                        right: '8px',
+                        width: '34px',
+                        height: '34px',
+                        borderRadius: '10px',
+                        border: 'none',
+                        background: 'rgba(0,0,0,0.5)',
+                        color: '#fff',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backdropFilter: 'blur(4px)',
+                      }}
+                    >
+                      <i className="bi bi-download" style={{ fontSize: '14px' }}></i>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      ) : !isCodeSubmitted ? (
         /* ── Phase 1: Hero + Invite Code ── */
         <div
           ref={heroSectionRef}
           onMouseMove={handleMouseMove(heroSectionRef, setHeroMousePos)}
           onMouseLeave={() => setHeroMousePos(null)}
           style={{
-            minHeight: 'auto',
-            background: 'linear-gradient(135deg, #083A85 0%, #0a4da3 50%, #083A85 100%)',
+            minHeight: '100vh',
+            background: 'linear-gradient(to right, #052047, #052047, #103E83)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             position: 'relative',
             overflow: 'hidden',
-            padding: isMobile ? '90px 20px 30px' : '80px 20px 30px',
+            padding: isMobile ? '100px 20px 40px' : '80px 20px 40px',
           }}
         >
           {/* Dotted pattern background - base layer (dim) */}
@@ -424,25 +862,25 @@ const FindMyPhotos = () => {
             textAlign: 'center',
             position: 'relative',
             zIndex: 2,
-            background: 'linear-gradient(135deg, rgba(8, 58, 133, 0.95) 0%, rgba(10, 77, 163, 0.92) 100%)',
+            background: 'linear-gradient(135deg, rgba(5, 32, 71, 0.95) 0%, rgba(16, 62, 131, 0.92) 100%)',
             borderRadius: '28px',
-            padding: isMobile ? '32px 24px' : '30px 44px',
+            padding: isMobile ? '48px 28px' : '56px 52px',
             border: '1px solid rgba(255,255,255,0.08)',
             boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
           }}>
             {/* Badge */}
             <div style={{
               display: 'inline-block',
-              padding: '6px 16px',
+              padding: '8px 20px',
               borderRadius: '50px',
               background: 'rgba(255,255,255,0.08)',
               border: '1px solid rgba(255,255,255,0.15)',
-              marginBottom: '12px',
+              marginBottom: '28px',
             }}>
               <span style={{
-                color: '#fff',
-                fontSize: '13px',
-                fontWeight: 500,
+                color: '#FF6B6B',
+                fontSize: '14px',
+                fontWeight: 600,
                 letterSpacing: '1px',
                 textTransform: 'uppercase',
               }}>Face Recognition</span>
@@ -450,22 +888,21 @@ const FindMyPhotos = () => {
 
             {/* Headline */}
             <h1 style={{
-              fontSize: 'clamp(28px, 5vw, 48px)',
-              fontWeight: 700,
+              fontSize: isMobile ? '32px' : '59px',
+              fontWeight: 800,
               color: '#ffffff',
               lineHeight: 1.15,
-              marginBottom: '8px',
-              letterSpacing: '-0.02em',
+              marginBottom: '16px',
               fontFamily: "'Pragati Narrow', sans-serif",
             }}>
-              Find Your Photos
+              Find <span style={{ color: '#FF6B6B' }}>Your Photos</span>
             </h1>
 
             <p style={{
-              fontSize: '15px',
-              color: 'rgba(255,255,255,0.85)',
-              lineHeight: 1.5,
-              marginBottom: '16px',
+              fontSize: isMobile ? '16px' : '18px',
+              color: 'rgba(255,255,255,0.7)',
+              lineHeight: 1.6,
+              marginBottom: '36px',
               maxWidth: '520px',
               marginLeft: 'auto',
               marginRight: 'auto',
@@ -485,39 +922,39 @@ const FindMyPhotos = () => {
 
             {/* === Facial Recognition Scan Section === */}
             {!isScanning && !isCameraActive && (
-              <div style={{ marginBottom: '10px' }}>
+              <div style={{ marginBottom: '20px' }}>
                 <h3 style={{
                   fontSize: '16px',
                   fontWeight: 700,
                   color: '#ffffff',
-                  marginBottom: '2px',
+                  marginBottom: '6px',
                 }}>
                   Facial Recognition Scan
                 </h3>
                 <p style={{
                   fontSize: '13px',
-                  color: 'rgba(255,255,255,0.85)',
-                  lineHeight: 1.4,
+                  color: 'rgba(255,255,255,0.5)',
+                  lineHeight: 1.5,
                   maxWidth: '420px',
                   marginLeft: 'auto',
                   marginRight: 'auto',
                   marginBottom: '0',
                 }}>
-                  Take a selfie or upload your photo to find every photo you appear in.
+                  {`Don't have an invite code? No problem. Take a selfie or upload your photo and we'll scan all event photos on the platform to find every photo you appear in.`}
                 </p>
               </div>
             )}
             {isScanning ? (
-              <div style={{ textAlign: 'center', padding: '12px 0' }}>
+              <div style={{ textAlign: 'center', padding: '20px 0' }}>
                 <div style={{
-                  width: '140px',
-                  height: '140px',
+                  width: '180px',
+                  height: '180px',
                   borderRadius: '50%',
                   overflow: 'hidden',
-                  margin: '0 auto 16px',
+                  margin: '0 auto 24px',
                   position: 'relative',
-                  border: '3px solid rgba(255,255,255,0.6)',
-                  boxShadow: '0 0 20px rgba(255,255,255,0.2)',
+                  border: '4px solid #FF6B6B',
+                  boxShadow: '0 0 30px rgba(255,107,107,0.4)',
                 }}>
                   {uploadedPreview && (
                     <img
@@ -537,31 +974,31 @@ const FindMyPhotos = () => {
                     left: 0,
                     right: 0,
                     height: '3px',
-                    background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.8) 30%, #ffffff 50%, rgba(255,255,255,0.8) 70%, transparent 100%)',
-                    boxShadow: '0 0 12px rgba(255,255,255,0.6), 0 0 30px rgba(255,255,255,0.3)',
+                    background: 'linear-gradient(90deg, transparent 0%, #FF6B6B 30%, #ffffff 50%, #FF6B6B 70%, transparent 100%)',
+                    boxShadow: '0 0 12px rgba(255,107,107,0.8), 0 0 30px rgba(255,107,107,0.4)',
                     zIndex: 2,
                   }} />
                   <div className="scan-pulse-ring" style={{
                     position: 'absolute',
                     inset: '-4px',
                     borderRadius: '50%',
-                    border: '3px solid rgba(255,255,255,0.4)',
+                    border: '3px solid rgba(255,107,107,0.5)',
                     zIndex: 1,
                   }} />
                 </div>
                 <p style={{ fontSize: '16px', fontWeight: 600, color: '#ffffff' }}>Scanning...</p>
-                <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.85)', marginTop: '8px' }}>Matching your face across event photos</p>
+                <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginTop: '8px' }}>Matching your face across event photos</p>
               </div>
             ) : isCameraActive ? (
               <div style={{ textAlign: 'center' }}>
                 <div style={{
-                  width: '160px',
-                  height: '160px',
+                  width: '200px',
+                  height: '200px',
                   borderRadius: '50%',
                   overflow: 'hidden',
-                  margin: '0 auto 14px',
-                  border: '3px solid rgba(255,255,255,0.6)',
-                  boxShadow: '0 4px 20px rgba(255,255,255,0.15)',
+                  margin: '0 auto 20px',
+                  border: '4px solid #FF6B6B',
+                  boxShadow: '0 4px 20px rgba(255,107,107,0.3)',
                 }}>
                   <video
                     ref={videoRef}
@@ -576,7 +1013,7 @@ const FindMyPhotos = () => {
                     }}
                   />
                 </div>
-                <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.85)', marginBottom: '16px' }}>
+                <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginBottom: '16px' }}>
                   Position your face in the circle
                 </p>
                 <div style={{ display: 'flex', gap: '12px', maxWidth: '340px', margin: '0 auto' }}>
@@ -586,11 +1023,11 @@ const FindMyPhotos = () => {
                       flex: 1,
                       padding: '14px',
                       borderRadius: '12px',
-                      background: 'transparent',
+                      background: 'rgba(255,255,255,0.1)',
                       color: '#ffffff',
                       fontSize: '15px',
                       fontWeight: 600,
-                      border: '2px solid rgba(255,255,255,0.35)',
+                      border: '1px solid rgba(255,255,255,0.2)',
                       cursor: 'pointer',
                       transition: 'all 0.3s ease',
                     }}
@@ -603,8 +1040,8 @@ const FindMyPhotos = () => {
                       flex: 1,
                       padding: '14px',
                       borderRadius: '12px',
-                      background: '#fff',
-                      color: '#083A85',
+                      background: '#FF6B6B',
+                      color: '#ffffff',
                       fontSize: '15px',
                       fontWeight: 700,
                       border: 'none',
@@ -614,10 +1051,9 @@ const FindMyPhotos = () => {
                       alignItems: 'center',
                       justifyContent: 'center',
                       gap: '8px',
-                      boxShadow: '0 4px 14px rgba(0, 0, 0, 0.15)',
                     }}
-                    onMouseEnter={(e) => { (e.target as HTMLButtonElement).style.transform = 'translateY(-2px)'; (e.target as HTMLButtonElement).style.boxShadow = '0 8px 20px rgba(0,0,0,0.2)'; }}
-                    onMouseLeave={(e) => { (e.target as HTMLButtonElement).style.transform = 'translateY(0)'; (e.target as HTMLButtonElement).style.boxShadow = '0 4px 14px rgba(0,0,0,0.15)'; }}
+                    onMouseEnter={(e) => { (e.target as HTMLButtonElement).style.background = '#ff5252'; }}
+                    onMouseLeave={(e) => { (e.target as HTMLButtonElement).style.background = '#FF6B6B'; }}
                   >
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <circle cx="12" cy="12" r="10"/>
@@ -630,14 +1066,14 @@ const FindMyPhotos = () => {
             ) : (
               <>
                 {uploadedPreview ? (
-                  <div style={{ textAlign: 'center', marginBottom: '14px' }}>
+                  <div style={{ textAlign: 'center', marginBottom: '20px' }}>
                     <div style={{
-                      width: '100px',
-                      height: '100px',
+                      width: '120px',
+                      height: '120px',
                       borderRadius: '50%',
                       overflow: 'hidden',
-                      border: '3px solid rgba(255,255,255,0.6)',
-                      boxShadow: '0 4px 12px rgba(255,255,255,0.15)',
+                      border: '3px solid #FF6B6B',
+                      boxShadow: '0 4px 12px rgba(255,107,107,0.3)',
                       margin: '0 auto 12px',
                     }}>
                       <img
@@ -646,7 +1082,7 @@ const FindMyPhotos = () => {
                         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                       />
                     </div>
-                    <p style={{ fontSize: '14px', color: '#10b981', fontWeight: 600 }}>Photo ready for scan</p>
+                    <p style={{ fontSize: '13px', color: '#10b981', fontWeight: 600 }}>Photo ready for scan</p>
                     <button
                       onClick={() => { setUploadedFile(null); setUploadedPreview(null); setScanError(null); if (fileInputRef.current) fileInputRef.current.value = ''; }}
                       style={{
@@ -668,9 +1104,9 @@ const FindMyPhotos = () => {
                 ) : (
                   <div style={{
                     display: 'flex',
-                    gap: '10px',
-                    marginBottom: '10px',
-                    maxWidth: '320px',
+                    gap: '12px',
+                    marginBottom: '20px',
+                    maxWidth: '340px',
                     marginLeft: 'auto',
                     marginRight: 'auto',
                   }}>
@@ -680,32 +1116,32 @@ const FindMyPhotos = () => {
                       style={{
                         flex: 1,
                         border: '2px dashed rgba(255,255,255,0.2)',
-                        borderRadius: '14px',
-                        padding: '14px 10px',
+                        borderRadius: '16px',
+                        padding: '24px 12px',
                         textAlign: 'center',
                         cursor: 'pointer',
                         transition: 'all 0.3s ease',
                       }}
-                      onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.5)'; e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; }}
+                      onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#FF6B6B'; e.currentTarget.style.background = 'rgba(255,107,107,0.08)'; }}
                       onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; e.currentTarget.style.background = 'transparent'; }}
                     >
                       <div style={{
-                        width: '36px',
-                        height: '36px',
+                        width: '48px',
+                        height: '48px',
                         borderRadius: '50%',
-                        background: 'rgba(255,255,255,0.12)',
+                        background: 'rgba(255,107,107,0.15)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        margin: '0 auto 6px',
+                        margin: '0 auto 10px',
                       }}>
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FF6B6B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
                           <circle cx="12" cy="13" r="4"/>
                         </svg>
                       </div>
-                      <p style={{ fontSize: '13px', fontWeight: 600, color: '#ffffff' }}>Take Selfie</p>
-                      <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)', marginTop: '2px' }}>Use camera</p>
+                      <p style={{ fontSize: '14px', fontWeight: 600, color: '#ffffff' }}>Take Selfie</p>
+                      <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginTop: '2px' }}>Use camera</p>
                     </div>
 
                     {/* Upload Photo button */}
@@ -714,48 +1150,35 @@ const FindMyPhotos = () => {
                       style={{
                         flex: 1,
                         border: '2px dashed rgba(255,255,255,0.2)',
-                        borderRadius: '14px',
-                        padding: '14px 10px',
+                        borderRadius: '16px',
+                        padding: '24px 12px',
                         textAlign: 'center',
                         cursor: 'pointer',
                         transition: 'all 0.3s ease',
                       }}
-                      onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.5)'; e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; }}
+                      onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#83B4FF'; e.currentTarget.style.background = 'rgba(131,180,255,0.08)'; }}
                       onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; e.currentTarget.style.background = 'transparent'; }}
                     >
                       <div style={{
-                        width: '36px',
-                        height: '36px',
+                        width: '48px',
+                        height: '48px',
                         borderRadius: '50%',
-                        background: 'rgba(255,255,255,0.12)',
+                        background: 'rgba(131,180,255,0.15)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        margin: '0 auto 6px',
+                        margin: '0 auto 10px',
                       }}>
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#83B4FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                           <polyline points="17 8 12 3 7 8"/>
                           <line x1="12" y1="3" x2="12" y2="15"/>
                         </svg>
                       </div>
-                      <p style={{ fontSize: '13px', fontWeight: 600, color: '#ffffff' }}>Upload Photo</p>
-                      <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)', marginTop: '2px' }}>From gallery</p>
+                      <p style={{ fontSize: '14px', fontWeight: 600, color: '#ffffff' }}>Upload Photo</p>
+                      <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginTop: '2px' }}>From gallery</p>
                     </div>
                   </div>
-                )}
-
-                {/* Selfie guidance hint */}
-                {!uploadedPreview && (
-                  <p style={{
-                    fontSize: '13px',
-                    color: 'rgba(255,255,255,0.7)',
-                    textAlign: 'center',
-                    marginBottom: '12px',
-                    lineHeight: 1.4,
-                  }}>
-                    Use a close-up selfie where your face fills most of the frame for best results
-                  </p>
                 )}
 
                 {/* Find My Photos button */}
@@ -767,51 +1190,29 @@ const FindMyPhotos = () => {
                     maxWidth: '340px',
                     display: 'block',
                     margin: '0 auto',
-                    padding: '14px',
+                    padding: '16px',
                     borderRadius: '12px',
-                    background: uploadedFile ? '#fff' : 'rgba(255,255,255,0.08)',
-                    color: uploadedFile ? '#083A85' : 'rgba(255,255,255,0.3)',
-                    fontSize: '15px',
-                    fontWeight: 600,
+                    background: uploadedFile ? '#FF6B6B' : 'rgba(255,255,255,0.08)',
+                    color: uploadedFile ? '#ffffff' : 'rgba(255,255,255,0.3)',
+                    fontSize: '16px',
+                    fontWeight: 700,
                     border: 'none',
                     cursor: uploadedFile ? 'pointer' : 'not-allowed',
                     transition: 'all 0.3s ease',
-                    boxShadow: uploadedFile ? '0 4px 14px rgba(0, 0, 0, 0.15)' : 'none',
                   }}
-                  onMouseEnter={(e) => { if (uploadedFile) { (e.target as HTMLButtonElement).style.transform = 'translateY(-3px)'; (e.target as HTMLButtonElement).style.boxShadow = '0 8px 20px rgba(0,0,0,0.2)'; } }}
-                  onMouseLeave={(e) => { if (uploadedFile) { (e.target as HTMLButtonElement).style.transform = 'translateY(0)'; (e.target as HTMLButtonElement).style.boxShadow = '0 4px 14px rgba(0,0,0,0.15)'; } }}
+                  onMouseEnter={(e) => { if (uploadedFile) (e.target as HTMLButtonElement).style.background = '#ff5252'; }}
+                  onMouseLeave={(e) => { if (uploadedFile) (e.target as HTMLButtonElement).style.background = '#FF6B6B'; }}
                 >
                   Find My Photos
                 </button>
 
                 {scanError && (
-                  (scanError === 'NO_MATCHES' || scanError === 'NO_FACE') ? (
-                    <div style={{
-                      marginTop: '16px',
-                      padding: '20px',
-                      backgroundColor: scanError === 'NO_FACE' ? 'rgba(6, 182, 212, 0.08)' : 'rgba(251, 191, 36, 0.08)',
-                      border: `1px solid ${scanError === 'NO_FACE' ? 'rgba(6, 182, 212, 0.25)' : 'rgba(251, 191, 36, 0.25)'}`,
-                      borderRadius: '14px',
-                      textAlign: 'center',
-                    }}>
-                      <i className={scanError === 'NO_FACE' ? 'bi bi-person-bounding-box' : 'bi bi-camera'} style={{ fontSize: '28px', color: scanError === 'NO_FACE' ? '#06b6d4' : '#f59e0b', display: 'block', marginBottom: '8px' }}></i>
-                      <p style={{ color: scanError === 'NO_FACE' ? '#06b6d4' : '#f59e0b', fontSize: '15px', fontWeight: 600, margin: '0 0 4px' }}>
-                        {scanError === 'NO_FACE' ? 'No face detected in your photo' : 'No matching photos found'}
-                      </p>
-                      <p style={{ color: scanError === 'NO_FACE' ? '#0891b2' : '#fbbf24', fontSize: '13px', margin: 0, lineHeight: 1.5 }}>
-                        {scanError === 'NO_FACE'
-                          ? 'Upload a close-up selfie where your face is clearly visible and takes up most of the frame.'
-                          : 'Try a well-lit, front-facing photo with your face clearly visible. Group or distant shots may not match.'}
-                      </p>
-                    </div>
-                  ) : (
-                    <p style={{
-                      color: '#FF6B6B',
-                      fontSize: '14px',
-                      marginTop: '12px',
-                      textAlign: 'center',
-                    }}>{scanError}</p>
-                  )
+                  <p style={{
+                    color: '#FF6B6B',
+                    fontSize: '14px',
+                    marginTop: '12px',
+                    textAlign: 'center',
+                  }}>{scanError}</p>
                 )}
               </>
             )}
@@ -821,8 +1222,8 @@ const FindMyPhotos = () => {
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
-                margin: '14px 0 12px',
-                gap: '14px',
+                margin: '32px 0 28px',
+                gap: '16px',
               }}>
                 <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.15)' }} />
                 <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '14px', fontWeight: 600, letterSpacing: '1px' }}>OR</span>
@@ -837,20 +1238,20 @@ const FindMyPhotos = () => {
                   fontSize: '16px',
                   fontWeight: 700,
                   color: '#ffffff',
-                  marginBottom: '2px',
+                  marginBottom: '6px',
                 }}>
                   Enter Invite Code
                 </h3>
                 <p style={{
                   fontSize: '13px',
-                  color: 'rgba(255,255,255,0.85)',
-                  lineHeight: 1.4,
+                  color: 'rgba(255,255,255,0.5)',
+                  lineHeight: 1.5,
                   maxWidth: '420px',
                   marginLeft: 'auto',
                   marginRight: 'auto',
-                  marginBottom: '10px',
+                  marginBottom: '16px',
                 }}>
-                  Enter the code from your photographer or event owner to access the gallery.
+                  Received an invite code from your photographer or event owner? Enter it below to go directly to that specific event gallery.
                 </p>
 
                 <div style={{
@@ -868,9 +1269,9 @@ const FindMyPhotos = () => {
                     placeholder="Enter invite code"
                     style={{
                       flex: 1,
-                      padding: '12px 16px',
-                      borderRadius: '10px',
-                      border: inviteError ? '2px solid #ef4444' : '2px solid rgba(255,255,255,0.15)',
+                      padding: '16px 20px',
+                      borderRadius: '12px',
+                      border: inviteError ? '2px solid #FF6B6B' : '2px solid rgba(255,255,255,0.15)',
                       background: 'rgba(255,255,255,0.06)',
                       color: '#ffffff',
                       fontSize: '16px',
@@ -880,27 +1281,26 @@ const FindMyPhotos = () => {
                       letterSpacing: '2px',
                       fontWeight: 600,
                     }}
-                    onFocus={(e) => { e.target.style.borderColor = 'rgba(255,255,255,0.5)'; e.target.style.background = 'rgba(255,255,255,0.1)'; }}
+                    onFocus={(e) => { e.target.style.borderColor = '#FF6B6B'; e.target.style.background = 'rgba(255,255,255,0.1)'; }}
                     onBlur={(e) => { if (!inviteError) { e.target.style.borderColor = 'rgba(255,255,255,0.15)'; e.target.style.background = 'rgba(255,255,255,0.06)'; } }}
                   />
                   <button
                     onClick={handleInviteSubmit}
                     disabled={isLoadingAlbum}
                     style={{
-                      padding: '12px 28px',
-                      borderRadius: '10px',
-                      background: isLoadingAlbum ? 'rgba(255,255,255,0.6)' : '#fff',
-                      color: '#083A85',
-                      fontSize: '15px',
-                      fontWeight: 600,
+                      padding: '16px 32px',
+                      borderRadius: '12px',
+                      background: isLoadingAlbum ? 'rgba(255,107,107,0.6)' : '#FF6B6B',
+                      color: '#ffffff',
+                      fontSize: '16px',
+                      fontWeight: 700,
                       border: 'none',
                       cursor: isLoadingAlbum ? 'not-allowed' : 'pointer',
                       transition: 'all 0.3s ease',
                       whiteSpace: 'nowrap',
-                      boxShadow: '0 4px 14px rgba(0, 0, 0, 0.15)',
                     }}
-                    onMouseEnter={(e) => { if (!isLoadingAlbum) { (e.target as HTMLButtonElement).style.transform = 'translateY(-3px)'; (e.target as HTMLButtonElement).style.boxShadow = '0 8px 20px rgba(0,0,0,0.2)'; } }}
-                    onMouseLeave={(e) => { if (!isLoadingAlbum) { (e.target as HTMLButtonElement).style.transform = 'translateY(0)'; (e.target as HTMLButtonElement).style.boxShadow = '0 4px 14px rgba(0,0,0,0.15)'; } }}
+                    onMouseEnter={(e) => { if (!isLoadingAlbum) { (e.target as HTMLButtonElement).style.background = '#ff5252'; (e.target as HTMLButtonElement).style.transform = 'translateY(-2px)'; } }}
+                    onMouseLeave={(e) => { if (!isLoadingAlbum) { (e.target as HTMLButtonElement).style.background = '#FF6B6B'; (e.target as HTMLButtonElement).style.transform = 'translateY(0)'; } }}
                   >
                     {isLoadingAlbum ? 'Loading...' : 'Access Gallery'}
                   </button>
@@ -908,7 +1308,7 @@ const FindMyPhotos = () => {
 
                 {inviteError && (
                   <p style={{
-                    color: '#ef4444',
+                    color: '#FF6B6B',
                     fontSize: '14px',
                     marginTop: '12px',
                   }}>{inviteError}</p>
@@ -916,12 +1316,12 @@ const FindMyPhotos = () => {
 
                 {/* Dashed decorative border */}
                 <div style={{
-                  marginTop: '14px',
+                  marginTop: '40px',
                   borderTop: '1px dashed rgba(255,255,255,0.15)',
-                  paddingTop: '10px',
+                  paddingTop: '24px',
                 }}>
                   <p style={{
-                    color: 'rgba(255,255,255,0.7)',
+                    color: 'rgba(255,255,255,0.4)',
                     fontSize: '13px',
                   }}>
                     Your photographer or event owner can share the invite code after the event
@@ -940,8 +1340,8 @@ const FindMyPhotos = () => {
             onMouseMove={handleMouseMove(headerSectionRef, setHeaderMousePos)}
             onMouseLeave={() => setHeaderMousePos(null)}
             style={{
-              background: 'linear-gradient(135deg, #083A85 0%, #0a4da3 50%, #083A85 100%)',
-              padding: isMobile ? '90px 20px 30px' : '100px 40px 36px',
+              background: 'linear-gradient(to right, #052047, #052047, #103E83)',
+              padding: isMobile ? '100px 20px 40px' : '120px 40px 50px',
               textAlign: 'center',
               position: 'relative',
               overflow: 'hidden',
@@ -952,7 +1352,7 @@ const FindMyPhotos = () => {
               position: 'absolute',
               inset: 0,
               backgroundImage: 'radial-gradient(circle, rgba(255, 255, 255, 0.3) 1px, transparent 1px)',
-              backgroundSize: '20px 20px',
+              backgroundSize: '10px 10px',
               opacity: 0.3,
               zIndex: 0,
               pointerEvents: 'none',
@@ -962,7 +1362,7 @@ const FindMyPhotos = () => {
               position: 'absolute',
               inset: 0,
               backgroundImage: 'radial-gradient(circle, rgba(255, 255, 255, 0.85) 1.5px, transparent 0.5px)',
-              backgroundSize: '20px 20px',
+              backgroundSize: '10px 10px',
               opacity: headerMousePos ? 0.7 : 0,
               zIndex: 1,
               pointerEvents: 'none',
@@ -978,27 +1378,27 @@ const FindMyPhotos = () => {
             <div style={{
               position: 'relative',
               zIndex: 2,
-              background: 'linear-gradient(135deg, rgba(8, 58, 133, 0.95) 0%, rgba(10, 77, 163, 0.92) 100%)',
+              background: 'linear-gradient(135deg, rgba(5, 32, 71, 0.95) 0%, rgba(16, 62, 131, 0.92) 100%)',
               borderRadius: '28px',
-              padding: isMobile ? '24px 20px' : '30px 40px',
+              padding: isMobile ? '32px 24px' : '40px 48px',
               border: '1px solid rgba(255,255,255,0.08)',
               boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
               maxWidth: '700px',
               margin: '0 auto',
             }}>
             <h2 style={{
-              fontSize: isMobile ? '24px' : '40px',
-              fontWeight: 700,
+              fontSize: isMobile ? '28px' : '59px',
+              fontWeight: 800,
               color: '#ffffff',
-              marginBottom: '6px',
+              marginBottom: '8px',
               fontFamily: "'Pragati Narrow', sans-serif",
             }}>
               Event Gallery
             </h2>
             <p style={{
               color: 'rgba(255,255,255,0.6)',
-              fontSize: '14px',
-              marginBottom: '16px',
+              fontSize: '16px',
+              marginBottom: '24px',
             }}>
               {displayedPhotos.length} photo{displayedPhotos.length !== 1 ? 's' : ''}{isFiltered ? ' matched' : ' available'}
             </p>
@@ -1015,20 +1415,19 @@ const FindMyPhotos = () => {
                 style={{
                   padding: '14px 28px',
                   borderRadius: '50px',
-                  background: '#fff',
-                  color: '#083A85',
+                  background: '#FF6B6B',
+                  color: '#ffffff',
                   fontSize: '15px',
-                  fontWeight: 600,
+                  fontWeight: 700,
                   border: 'none',
                   cursor: 'pointer',
                   transition: 'all 0.3s ease',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '8px',
-                  boxShadow: '0 4px 14px rgba(0, 0, 0, 0.15)',
                 }}
-                onMouseEnter={(e) => { (e.target as HTMLButtonElement).style.transform = 'translateY(-3px)'; (e.target as HTMLButtonElement).style.boxShadow = '0 8px 20px rgba(0,0,0,0.2)'; }}
-                onMouseLeave={(e) => { (e.target as HTMLButtonElement).style.transform = 'translateY(0)'; (e.target as HTMLButtonElement).style.boxShadow = '0 4px 14px rgba(0,0,0,0.15)'; }}
+                onMouseEnter={(e) => { (e.target as HTMLButtonElement).style.background = '#ff5252'; (e.target as HTMLButtonElement).style.transform = 'translateY(-2px)'; }}
+                onMouseLeave={(e) => { (e.target as HTMLButtonElement).style.background = '#FF6B6B'; (e.target as HTMLButtonElement).style.transform = 'translateY(0)'; }}
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/><circle cx="12" cy="10" r="3"/><path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662"/></svg>
                 Find Your Photo Using Facial Recognition Scan
@@ -1064,14 +1463,40 @@ const FindMyPhotos = () => {
             onMouseMove={handleMouseMove(gridSectionRef, setGridMousePos)}
             onMouseLeave={() => setGridMousePos(null)}
             style={{
-              padding: isMobile ? '20px 16px' : '30px 40px',
-              background: 'linear-gradient(180deg, #fff 0%, #f8fafc 100%)',
+              padding: isMobile ? '24px 16px' : '40px',
+              background: 'linear-gradient(to right, #052047, #052047, #103E83)',
               minHeight: '400px',
               position: 'relative',
               overflow: 'hidden',
             }}
           >
-            {/* Removed dot pattern — light background section */}
+            {/* Dotted pattern background - base layer (dim) */}
+            <div style={{
+              position: 'absolute',
+              inset: 0,
+              backgroundImage: 'radial-gradient(circle, rgba(255, 255, 255, 0.3) 1px, transparent 1px)',
+              backgroundSize: '10px 10px',
+              opacity: 0.3,
+              zIndex: 0,
+              pointerEvents: 'none',
+            }} />
+            {/* Spotlight layer - reveals brighter dots where cursor is */}
+            <div style={{
+              position: 'absolute',
+              inset: 0,
+              backgroundImage: 'radial-gradient(circle, rgba(255, 255, 255, 0.85) 1.5px, transparent 0.5px)',
+              backgroundSize: '10px 10px',
+              opacity: gridMousePos ? 0.7 : 0,
+              zIndex: 1,
+              pointerEvents: 'none',
+              maskImage: gridMousePos
+                ? `radial-gradient(circle 80px at ${gridMousePos.x}px ${gridMousePos.y}px, black 0%, black 50%, transparent 80%)`
+                : 'none',
+              WebkitMaskImage: gridMousePos
+                ? `radial-gradient(circle 80px at ${gridMousePos.x}px ${gridMousePos.y}px, black 0%, black 50%, transparent 80%)`
+                : 'none',
+              transition: 'opacity 0s ease',
+            }} />
 
           <div style={{
             maxWidth: '1200px',
@@ -1079,36 +1504,6 @@ const FindMyPhotos = () => {
             position: 'relative',
             zIndex: 2,
           }}>
-            {/* Photographer credit & album info */}
-            {(albumPhotographerName || albumTitle) && (
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                marginBottom: '20px',
-                flexWrap: 'wrap',
-                gap: '8px',
-              }}>
-                {albumTitle && (
-                  <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#083A85', margin: 0 }}>
-                    {albumTitle}
-                  </h3>
-                )}
-                {albumPhotographerName && (
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    fontSize: '14px',
-                    color: '#6b7280',
-                    fontWeight: '500',
-                  }}>
-                    <i className="bi bi-camera-fill" style={{ fontSize: '14px' }}></i>
-                    Photos by {albumPhotographerName}
-                  </div>
-                )}
-              </div>
-            )}
             <div style={{
               display: 'grid',
               gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',
@@ -1129,7 +1524,7 @@ const FindMyPhotos = () => {
                   }}
                 >
                   <div
-                    style={{ aspectRatio: '4/3', overflow: 'hidden', position: 'relative' }}
+                    style={{ aspectRatio: '4/3', overflow: 'hidden' }}
                     onClick={() => setSelectedPhoto(photo)}
                   >
                     <img
@@ -1143,28 +1538,6 @@ const FindMyPhotos = () => {
                       }}
                       loading="lazy"
                     />
-                    {/* Price badge */}
-                    {(() => {
-                      const photoPrice = photo.price ?? albumPricing?.pricePerImage ?? 0;
-                      const symbol = albumPricing?.currencySymbol || 'RF';
-                      return (
-                        <span style={{
-                          position: 'absolute',
-                          top: '8px',
-                          left: '8px',
-                          padding: '4px 10px',
-                          borderRadius: '20px',
-                          background: photoPrice > 0 ? 'rgba(0,0,0,0.7)' : 'rgba(3,150,156,0.85)',
-                          color: '#fff',
-                          fontSize: '11px',
-                          fontWeight: 700,
-                          backdropFilter: 'blur(4px)',
-                          letterSpacing: '0.3px',
-                        }}>
-                          {photoPrice > 0 ? `${symbol}${photoPrice.toLocaleString()}` : 'Free'}
-                        </span>
-                      );
-                    })()}
                   </div>
                   {/* Download button */}
                   <button
@@ -1189,7 +1562,7 @@ const FindMyPhotos = () => {
                       transition: 'all 0.2s ease',
                       zIndex: 2,
                     }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = '#083A85'; e.currentTarget.style.borderColor = '#083A85'; }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = '#03969c'; e.currentTarget.style.borderColor = '#03969c'; }}
                     onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(0,0,0,0.65)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; }}
                   >
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -1197,9 +1570,7 @@ const FindMyPhotos = () => {
                       <polyline points="7 10 12 15 17 10"/>
                       <line x1="12" y1="15" x2="12" y2="3"/>
                     </svg>
-                    {(photo.price ?? albumPricing?.pricePerImage ?? 0) > 0
-                      ? `Buy (${albumPricing?.currencySymbol || 'RF'}${(photo.price ?? albumPricing?.pricePerImage ?? 0).toLocaleString()})`
-                      : 'Download'}
+                    {(photo.price ?? 0) > 0 ? `Buy (${albumCurrencySymbol || 'RF'} ${photo.price?.toLocaleString()})` : 'Download'}
                   </button>
                 </div>
               ))}
@@ -1209,9 +1580,9 @@ const FindMyPhotos = () => {
               <div style={{
                 textAlign: 'center',
                 padding: '60px 20px',
-                color: '#6b7280',
+                color: 'rgba(255,255,255,0.5)',
               }}>
-                <p style={{ fontSize: '18px', fontWeight: 600, color: '#083A85' }}>No photos found</p>
+                <p style={{ fontSize: '18px', fontWeight: 600, color: 'rgba(255,255,255,0.7)' }}>No photos found</p>
                 <p style={{ fontSize: '14px', marginTop: '8px' }}>Try scanning again or show all photos</p>
               </div>
             )}
@@ -1261,7 +1632,7 @@ const FindMyPhotos = () => {
                 gap: '7px',
                 padding: '10px 20px',
                 borderRadius: '50px',
-                background: '#083A85',
+                background: '#03969c',
                 border: 'none',
                 color: '#ffffff',
                 fontSize: '14px',
@@ -1269,18 +1640,15 @@ const FindMyPhotos = () => {
                 cursor: 'pointer',
                 transition: 'all 0.2s ease',
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = '#062d6b'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = '#083A85'; }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = '#026d72'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = '#03969c'; }}
             >
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                 <polyline points="7 10 12 15 17 10"/>
                 <line x1="12" y1="15" x2="12" y2="3"/>
               </svg>
-              {(() => {
-                const p = selectedPhoto?.price ?? albumPricing?.pricePerImage ?? 0;
-                return p > 0 ? `Buy (${albumPricing?.currencySymbol || 'RF'}${p.toLocaleString()})` : 'Download';
-              })()}
+              {(selectedPhoto.price ?? 0) > 0 ? `Buy (${albumCurrencySymbol || 'RF'} ${selectedPhoto.price?.toLocaleString()})` : 'Download'}
             </button>
             <button
               onClick={(e) => { e.stopPropagation(); setSelectedPhoto(null); }}
@@ -1391,7 +1759,7 @@ const FindMyPhotos = () => {
               alignItems: 'center',
               gap: '10px',
             }}>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#083A85" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#03969c" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                 <polyline points="7 10 12 15 17 10"/>
                 <line x1="12" y1="15" x2="12" y2="3"/>
@@ -1405,8 +1773,8 @@ const FindMyPhotos = () => {
             {/* Price display */}
             <div style={{
               padding: '14px 16px',
-              backgroundColor: 'rgba(8,58,133,0.08)',
-              border: '1px solid rgba(8,58,133,0.2)',
+              backgroundColor: 'rgba(3,150,156,0.12)',
+              border: '1px solid rgba(3,150,156,0.3)',
               borderRadius: '12px',
               marginBottom: '20px',
               display: 'flex',
@@ -1415,39 +1783,156 @@ const FindMyPhotos = () => {
             }}>
               <span style={{ fontSize: '13px', color: '#adadb8', fontWeight: 500 }}>Photo price</span>
               <span style={{ fontSize: '18px', color: '#03969c', fontWeight: 700 }}>
-                {albumPricing?.currencySymbol || 'RF'}{(downloadTarget.price ?? albumPricing?.pricePerImage ?? 0).toLocaleString()} {albumPricing?.currencyAbbreviation || 'RWF'}
+                {albumCurrencySymbol || 'RF'} {(downloadTarget.price ?? 0).toLocaleString()}
               </span>
             </div>
 
-            {/* Proceed to Payment button */}
+            {/* Payment Method */}
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#efeff1', marginBottom: '12px' }}>
+                Select Payment Method
+              </label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {paymentMethods.map((method) => (
+                  <button
+                    key={method.id}
+                    onClick={() => setDlPaymentMethod(method.id)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      padding: '12px 16px',
+                      backgroundColor: dlPaymentMethod === method.id ? 'rgba(3,150,156,0.15)' : '#27272a',
+                      border: `2px solid ${dlPaymentMethod === method.id ? '#03969c' : 'rgba(255,255,255,0.1)'}`,
+                      borderRadius: '12px',
+                      cursor: 'pointer',
+                      width: '100%',
+                      textAlign: 'left',
+                      transition: 'all 0.2s',
+                    }}
+                    onMouseEnter={(e) => { if (dlPaymentMethod !== method.id) e.currentTarget.style.borderColor = 'rgba(3,150,156,0.5)'; }}
+                    onMouseLeave={(e) => { if (dlPaymentMethod !== method.id) e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; }}
+                  >
+                    <div style={{ width: '44px', height: '44px', borderRadius: '10px', overflow: 'hidden', flexShrink: 0 }}>
+                      <img src={method.image} alt={method.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    </div>
+                    <span style={{ color: '#efeff1', fontSize: '14px', fontWeight: 500 }}>{method.name}</span>
+                    {dlPaymentMethod === method.id && (
+                      <span style={{ marginLeft: 'auto', color: '#03969c', fontSize: '20px' }}>✓</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Mobile Money phone */}
+            {(dlPaymentMethod === 'mtn' || dlPaymentMethod === 'airtel') && (
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#efeff1', marginBottom: '8px' }}>
+                  Your Phone Number *
+                </label>
+                <input
+                  type="tel"
+                  value={dlPhone}
+                  onChange={(e) => setDlPhone(e.target.value.replace(/\D/g, '').slice(0, 12))}
+                  placeholder={dlPaymentMethod === 'mtn' ? 'e.g., 0781234567' : 'e.g., 0721234567'}
+                  style={{
+                    width: '100%', padding: '12px 16px',
+                    backgroundColor: '#27272a', border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: '12px', color: '#efeff1', fontSize: '14px',
+                    outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.2s',
+                  }}
+                  onFocus={(e) => e.currentTarget.style.borderColor = '#03969c'}
+                  onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'}
+                />
+                <p style={{ fontSize: '11px', color: '#71717a', marginTop: '6px', marginBottom: 0 }}>
+                  You will receive a payment confirmation SMS on this number
+                </p>
+              </div>
+            )}
+
+            {/* Card details */}
+            {dlPaymentMethod === 'card' && (
+              <div style={{ marginBottom: '20px' }}>
+                <div style={{ marginBottom: '12px' }}>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#efeff1', marginBottom: '8px' }}>Card Holder Name *</label>
+                  <input type="text" value={dlCardHolderName} onChange={(e) => setDlCardHolderName(e.target.value)} placeholder="Name on card"
+                    style={{ width: '100%', padding: '12px 16px', backgroundColor: '#27272a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#efeff1', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
+                    onFocus={(e) => e.currentTarget.style.borderColor = '#03969c'}
+                    onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'} />
+                </div>
+                <div style={{ marginBottom: '12px' }}>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#efeff1', marginBottom: '8px' }}>Card Number *</label>
+                  <input type="text" value={dlCardNumber} onChange={(e) => setDlCardNumber(e.target.value.replace(/\D/g, '').slice(0, 16))} placeholder="1234 5678 9012 3456"
+                    style={{ width: '100%', padding: '12px 16px', backgroundColor: '#27272a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#efeff1', fontSize: '14px', outline: 'none', boxSizing: 'border-box', letterSpacing: '2px' }}
+                    onFocus={(e) => e.currentTarget.style.borderColor = '#03969c'}
+                    onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'} />
+                </div>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#efeff1', marginBottom: '8px' }}>Expiry Date *</label>
+                    <input type="text" value={dlCardExpiry}
+                      onChange={(e) => { let v = e.target.value.replace(/\D/g, '').slice(0, 4); if (v.length >= 2) v = v.slice(0, 2) + '/' + v.slice(2); setDlCardExpiry(v); }}
+                      placeholder="MM/YY" maxLength={5}
+                      style={{ width: '100%', padding: '12px 16px', backgroundColor: '#27272a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#efeff1', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
+                      onFocus={(e) => e.currentTarget.style.borderColor = '#03969c'}
+                      onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#efeff1', marginBottom: '8px' }}>CVV *</label>
+                    <input type="password" value={dlCardCvv} onChange={(e) => setDlCardCvv(e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="***" maxLength={4}
+                      style={{ width: '100%', padding: '12px 16px', backgroundColor: '#27272a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#efeff1', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
+                      onFocus={(e) => e.currentTarget.style.borderColor = '#03969c'}
+                      onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'} />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Error */}
+            {dlError && (
+              <div style={{ padding: '10px 14px', marginBottom: '12px', backgroundColor: 'rgba(239,68,68,0.15)', border: '1px solid #EF4444', borderRadius: '10px', color: '#EF4444', fontSize: '13px' }}>
+                {dlError}
+              </div>
+            )}
+
+            {/* Success */}
+            {dlSuccess && (
+              <div style={{ padding: '10px 14px', marginBottom: '12px', backgroundColor: 'rgba(16,185,129,0.15)', border: '1px solid #10b981', borderRadius: '10px', color: '#10b981', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                ✓ Payment successful! Starting download…
+              </div>
+            )}
+
+            {/* Pay & Download button */}
             <button
               onClick={handleDownloadPayment}
+              disabled={!isDlPaymentValid() || dlLoading || dlSuccess}
               style={{
                 width: '100%',
                 padding: '14px 24px',
-                background: '#083A85',
+                background: (!isDlPaymentValid() || dlLoading || dlSuccess) ? '#3f3f46' : 'linear-gradient(135deg, #03969c 0%, #026d72 100%)',
                 border: 'none',
                 borderRadius: '12px',
-                color: '#fff',
+                color: (!isDlPaymentValid() || dlLoading || dlSuccess) ? '#71717a' : '#fff',
                 fontSize: '15px',
                 fontWeight: 600,
-                cursor: 'pointer',
+                cursor: (!isDlPaymentValid() || dlLoading || dlSuccess) ? 'not-allowed' : 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '8px',
                 transition: 'all 0.3s ease',
-                boxShadow: '0 4px 15px rgba(8,58,133,0.3)',
+                boxShadow: (!isDlPaymentValid() || dlLoading || dlSuccess) ? 'none' : '0 4px 15px rgba(3,150,156,0.3)',
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.02)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(8,58,133,0.4)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 4px 15px rgba(8,58,133,0.3)'; }}
+              onMouseEnter={(e) => { if (isDlPaymentValid() && !dlLoading && !dlSuccess) { e.currentTarget.style.transform = 'scale(1.02)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(3,150,156,0.4)'; } }}
+              onMouseLeave={(e) => { if (isDlPaymentValid() && !dlLoading && !dlSuccess) { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 4px 15px rgba(3,150,156,0.3)'; } }}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                 <polyline points="7 10 12 15 17 10"/>
                 <line x1="12" y1="15" x2="12" y2="3"/>
               </svg>
-              Proceed to Payment
+              {dlLoading ? 'Processing...' : dlSuccess ? 'Downloading…' : `Pay & Download (${albumCurrencySymbol || 'RF'} ${(downloadTarget.price ?? 0).toLocaleString()})`}
             </button>
           </div>
         </div>
@@ -1477,8 +1962,8 @@ const FindMyPhotos = () => {
             style={{
               background: '#ffffff',
               borderRadius: '24px',
-              padding: isMobile ? '24px 18px' : '28px 28px',
-              maxWidth: '460px',
+              padding: isMobile ? '28px 20px' : '36px 32px',
+              maxWidth: '500px',
               width: '100%',
               position: 'relative',
               boxShadow: '0 25px 60px rgba(0,0,0,0.3)',
@@ -1513,19 +1998,19 @@ const FindMyPhotos = () => {
             )}
 
             <h3 style={{
-              fontSize: '20px',
+              fontSize: '22px',
               fontWeight: 700,
               color: '#1f2937',
-              marginBottom: '6px',
+              marginBottom: '8px',
               textAlign: 'center',
             }}>
               Facial Recognition Scan
             </h3>
             <p style={{
-              fontSize: '13px',
+              fontSize: '14px',
               color: '#6b7280',
               textAlign: 'center',
-              marginBottom: '20px',
+              marginBottom: '28px',
               lineHeight: 1.5,
             }}>
               Upload or take a selfie to find your photos in this event gallery
@@ -1545,17 +2030,17 @@ const FindMyPhotos = () => {
               /* Scanning state — blurred photo with overlay */
               <div style={{
                 textAlign: 'center',
-                padding: '12px 0',
+                padding: '20px 0',
               }}>
                 <div style={{
-                  width: '140px',
-                  height: '140px',
+                  width: '180px',
+                  height: '180px',
                   borderRadius: '50%',
                   overflow: 'hidden',
-                  margin: '0 auto 16px',
+                  margin: '0 auto 24px',
                   position: 'relative',
-                  border: '4px solid #083A85',
-                  boxShadow: '0 0 30px rgba(8,58,133,0.3)',
+                  border: '4px solid #FF6B6B',
+                  boxShadow: '0 0 30px rgba(255,107,107,0.4)',
                 }}>
                   {uploadedPreview && (
                     <img
@@ -1576,8 +2061,8 @@ const FindMyPhotos = () => {
                     left: 0,
                     right: 0,
                     height: '3px',
-                    background: 'linear-gradient(90deg, transparent 0%, #083A85 30%, #ffffff 50%, #083A85 70%, transparent 100%)',
-                    boxShadow: '0 0 12px rgba(8,58,133,0.6), 0 0 30px rgba(8,58,133,0.3)',
+                    background: 'linear-gradient(90deg, transparent 0%, #FF6B6B 30%, #ffffff 50%, #FF6B6B 70%, transparent 100%)',
+                    boxShadow: '0 0 12px rgba(255,107,107,0.8), 0 0 30px rgba(255,107,107,0.4)',
                     zIndex: 2,
                   }} />
                   {/* Pulsing border ring */}
@@ -1585,7 +2070,7 @@ const FindMyPhotos = () => {
                     position: 'absolute',
                     inset: '-4px',
                     borderRadius: '50%',
-                    border: '3px solid rgba(8,58,133,0.4)',
+                    border: '3px solid rgba(255,107,107,0.5)',
                     zIndex: 1,
                   }} />
                 </div>
@@ -1604,13 +2089,13 @@ const FindMyPhotos = () => {
               /* Live camera view */
               <div style={{ textAlign: 'center' }}>
                 <div style={{
-                  width: '160px',
-                  height: '160px',
+                  width: '200px',
+                  height: '200px',
                   borderRadius: '50%',
                   overflow: 'hidden',
-                  margin: '0 auto 14px',
-                  border: '3px solid #083A85',
-                  boxShadow: '0 4px 20px rgba(8,58,133,0.2)',
+                  margin: '0 auto 20px',
+                  border: '4px solid #FF6B6B',
+                  boxShadow: '0 4px 20px rgba(255,107,107,0.3)',
                 }}>
                   <video
                     ref={videoRef}
@@ -1652,7 +2137,7 @@ const FindMyPhotos = () => {
                       flex: 1,
                       padding: '14px',
                       borderRadius: '12px',
-                      background: '#083A85',
+                      background: '#FF6B6B',
                       color: '#ffffff',
                       fontSize: '15px',
                       fontWeight: 700,
@@ -1664,8 +2149,8 @@ const FindMyPhotos = () => {
                       justifyContent: 'center',
                       gap: '8px',
                     }}
-                    onMouseEnter={(e) => { (e.target as HTMLButtonElement).style.background = '#062d6b'; }}
-                    onMouseLeave={(e) => { (e.target as HTMLButtonElement).style.background = '#083A85'; }}
+                    onMouseEnter={(e) => { (e.target as HTMLButtonElement).style.background = '#ff5252'; }}
+                    onMouseLeave={(e) => { (e.target as HTMLButtonElement).style.background = '#FF6B6B'; }}
                   >
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <circle cx="12" cy="12" r="10"/>
@@ -1681,15 +2166,15 @@ const FindMyPhotos = () => {
                 {uploadedPreview ? (
                   <div style={{
                     textAlign: 'center',
-                    marginBottom: '16px',
+                    marginBottom: '24px',
                   }}>
                     <div style={{
-                      width: '100px',
-                      height: '100px',
+                      width: '120px',
+                      height: '120px',
                       borderRadius: '50%',
                       overflow: 'hidden',
-                      border: '3px solid #083A85',
-                      boxShadow: '0 4px 12px rgba(8,58,133,0.2)',
+                      border: '3px solid #FF6B6B',
+                      boxShadow: '0 4px 12px rgba(255,107,107,0.3)',
                       margin: '0 auto 12px',
                     }}>
                       <img
@@ -1721,8 +2206,8 @@ const FindMyPhotos = () => {
                   /* Two option buttons: Camera & Upload */
                   <div style={{
                     display: 'flex',
-                    gap: '10px',
-                    marginBottom: '16px',
+                    gap: '12px',
+                    marginBottom: '24px',
                   }}>
                     {/* Take Selfie button */}
                     <div
@@ -1730,32 +2215,32 @@ const FindMyPhotos = () => {
                       style={{
                         flex: 1,
                         border: '2px dashed #d1d5db',
-                        borderRadius: '14px',
-                        padding: '18px 10px',
+                        borderRadius: '16px',
+                        padding: '28px 12px',
                         textAlign: 'center',
                         cursor: 'pointer',
                         transition: 'all 0.3s ease',
                       }}
-                      onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#083A85'; e.currentTarget.style.background = 'rgba(8,58,133,0.03)'; }}
+                      onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#FF6B6B'; e.currentTarget.style.background = 'rgba(255,107,107,0.03)'; }}
                       onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#d1d5db'; e.currentTarget.style.background = 'transparent'; }}
                     >
                       <div style={{
-                        width: '40px',
-                        height: '40px',
+                        width: '48px',
+                        height: '48px',
                         borderRadius: '50%',
-                        background: 'rgba(8,58,133,0.08)',
+                        background: 'rgba(255,107,107,0.1)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        margin: '0 auto 8px',
+                        margin: '0 auto 10px',
                       }}>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#083A85" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FF6B6B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
                           <circle cx="12" cy="13" r="4"/>
                         </svg>
                       </div>
-                      <p style={{ fontSize: '13px', fontWeight: 600, color: '#374151' }}>Take Selfie</p>
-                      <p style={{ fontSize: '11px', color: '#9ca3af', marginTop: '2px' }}>Use camera</p>
+                      <p style={{ fontSize: '14px', fontWeight: 600, color: '#374151' }}>Take Selfie</p>
+                      <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: '2px' }}>Use camera</p>
                     </div>
 
                     {/* Upload Photo button */}
@@ -1764,8 +2249,8 @@ const FindMyPhotos = () => {
                       style={{
                         flex: 1,
                         border: '2px dashed #d1d5db',
-                        borderRadius: '14px',
-                        padding: '18px 10px',
+                        borderRadius: '16px',
+                        padding: '28px 12px',
                         textAlign: 'center',
                         cursor: 'pointer',
                         transition: 'all 0.3s ease',
@@ -1774,37 +2259,25 @@ const FindMyPhotos = () => {
                       onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#d1d5db'; e.currentTarget.style.background = 'transparent'; }}
                     >
                       <div style={{
-                        width: '40px',
-                        height: '40px',
+                        width: '48px',
+                        height: '48px',
                         borderRadius: '50%',
                         background: 'rgba(8,58,133,0.1)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        margin: '0 auto 8px',
+                        margin: '0 auto 10px',
                       }}>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#083A85" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#083A85" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                           <polyline points="17 8 12 3 7 8"/>
                           <line x1="12" y1="3" x2="12" y2="15"/>
                         </svg>
                       </div>
-                      <p style={{ fontSize: '13px', fontWeight: 600, color: '#374151' }}>Upload Photo</p>
-                      <p style={{ fontSize: '11px', color: '#9ca3af', marginTop: '2px' }}>From gallery</p>
+                      <p style={{ fontSize: '14px', fontWeight: 600, color: '#374151' }}>Upload Photo</p>
+                      <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: '2px' }}>From gallery</p>
                     </div>
                   </div>
-                )}
-
-                {!uploadedPreview && (
-                  <p style={{
-                    fontSize: '12px',
-                    color: '#9ca3af',
-                    textAlign: 'center',
-                    marginBottom: '12px',
-                    lineHeight: 1.4,
-                  }}>
-                    Use a close-up selfie where your face fills most of the frame for best results
-                  </p>
                 )}
 
                 {/* Start Scan button */}
@@ -1815,74 +2288,39 @@ const FindMyPhotos = () => {
                     width: '100%',
                     padding: '16px',
                     borderRadius: '12px',
-                    background: uploadedFile ? '#083A85' : '#e5e7eb',
+                    background: uploadedFile ? '#FF6B6B' : '#e5e7eb',
                     color: uploadedFile ? '#ffffff' : '#9ca3af',
-                    fontSize: '15px',
-                    fontWeight: 600,
+                    fontSize: '16px',
+                    fontWeight: 700,
                     border: 'none',
                     cursor: uploadedFile ? 'pointer' : 'not-allowed',
                     transition: 'all 0.3s ease',
                   }}
-                  onMouseEnter={(e) => { if (uploadedFile) (e.target as HTMLButtonElement).style.background = '#062d6b'; }}
-                  onMouseLeave={(e) => { if (uploadedFile) (e.target as HTMLButtonElement).style.background = '#083A85'; }}
+                  onMouseEnter={(e) => { if (uploadedFile) (e.target as HTMLButtonElement).style.background = '#ff5252'; }}
+                  onMouseLeave={(e) => { if (uploadedFile) (e.target as HTMLButtonElement).style.background = '#FF6B6B'; }}
                 >
                   Start Scan
                 </button>
 
                 {scanError && (
-                  (scanError === 'NO_MATCHES' || scanError === 'NO_FACE') ? (
-                    <div style={{
-                      marginTop: '12px',
-                      padding: '16px',
-                      backgroundColor: scanError === 'NO_FACE' ? 'rgba(6, 182, 212, 0.1)' : 'rgba(251, 191, 36, 0.1)',
-                      border: `1px solid ${scanError === 'NO_FACE' ? 'rgba(6, 182, 212, 0.3)' : 'rgba(251, 191, 36, 0.3)'}`,
-                      borderRadius: '12px',
-                      textAlign: 'center',
-                    }}>
-                      <i className={scanError === 'NO_FACE' ? 'bi bi-person-bounding-box' : 'bi bi-camera'} style={{ fontSize: '24px', color: scanError === 'NO_FACE' ? '#06b6d4' : '#f59e0b', display: 'block', marginBottom: '6px' }}></i>
-                      <p style={{ color: scanError === 'NO_FACE' ? '#06b6d4' : '#f59e0b', fontSize: '14px', fontWeight: 600, margin: '0 0 4px' }}>
-                        {scanError === 'NO_FACE' ? 'No face detected in your photo' : 'No matching photos found'}
-                      </p>
-                      <p style={{ color: scanError === 'NO_FACE' ? '#0891b2' : '#fbbf24', fontSize: '12px', margin: 0, lineHeight: 1.5 }}>
-                        {scanError === 'NO_FACE'
-                          ? 'Upload a close-up selfie where your face is clearly visible.'
-                          : 'Try a well-lit, front-facing photo with your face clearly visible.'}
-                      </p>
-                    </div>
-                  ) : (
-                    <div style={{
-                      marginTop: '12px',
-                      padding: '10px 14px',
-                      backgroundColor: 'rgba(239,68,68,0.1)',
-                      border: '1px solid rgba(239,68,68,0.3)',
-                      borderRadius: '10px',
-                      color: '#ef4444',
-                      fontSize: '13px',
-                      textAlign: 'center',
-                    }}>
-                      {scanError}
-                    </div>
-                  )
+                  <div style={{
+                    marginTop: '12px',
+                    padding: '10px 14px',
+                    backgroundColor: 'rgba(239,68,68,0.1)',
+                    border: '1px solid rgba(239,68,68,0.3)',
+                    borderRadius: '10px',
+                    color: '#ef4444',
+                    fontSize: '13px',
+                    textAlign: 'center',
+                  }}>
+                    {scanError}
+                  </div>
                 )}
               </>
             )}
           </div>
         </div>
       )}
-
-      {/* ── XentriPay Payment Modal ── */}
-      <XentriPayModal
-        isOpen={showXentriPayModal}
-        onClose={() => { setShowXentriPayModal(false); resetDownloadModal(); }}
-        onSuccess={handlePhotoPaymentSuccess}
-        amount={downloadTarget?.price ?? albumPricing?.pricePerImage ?? 0}
-        currencyCode={albumPricing?.currencyAbbreviation ?? 'RWF'}
-        currencyId={albumPricing?.currencyId ?? ''}
-        paymentType="photo_purchase"
-        eventId={albumEventId}
-        title="Pay for Photo"
-        subtitle={`Download this photo for ${albumPricing?.currencySymbol ?? 'RF'}${(downloadTarget?.price ?? albumPricing?.pricePerImage ?? 0).toLocaleString()}`}
-      />
 
       {/* ── Embedded Styles ── */}
       <style>{`
@@ -1908,7 +2346,7 @@ const FindMyPhotos = () => {
           transform: scale(1.08);
         }
         .scan-btn:hover {
-          box-shadow: 0 8px 24px rgba(8,58,133,0.25);
+          box-shadow: 0 8px 24px rgba(255,107,107,0.35);
         }
       `}</style>
     </div>

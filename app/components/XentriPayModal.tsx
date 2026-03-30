@@ -120,11 +120,9 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
   // Validate payment details
   const isValid = useCallback(() => {
     if (!selectedMethod) return false;
-    // Donations always require phone (even for card)
-    if (paymentType === 'donation') return phone.length >= 10;
     if (selectedMethod === 'card') return true;
     return phone.length >= 10;
-  }, [selectedMethod, phone, paymentType]);
+  }, [selectedMethod, phone]);
 
   // Start payment status polling
   const startPolling = useCallback((paymentRefid: string) => {
@@ -169,7 +167,11 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
 
     const isCard = selectedMethod === 'card';
     const paymentMethodType = isCard ? 'CARD' : 'MOBILE_MONEY';
-    const redirectUrl = isCard ? window.location.href : undefined;
+    // Use production URL for http (localhost), keep current URL for https (production)
+    const currentUrl = window.location.href;
+    const redirectUrl = isCard
+      ? (currentUrl.startsWith('http://') ? 'https://connekyt.com' : currentUrl)
+      : undefined;
 
     try {
       let response: { success: boolean; data?: XentriPayResponse; error?: string };
@@ -239,9 +241,15 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
       startPolling(data.refid);
     } catch (err) {
       const raw = err instanceof Error ? err.message : '';
-      const msg = raw.toLowerCase().includes('network') || raw.toLowerCase().includes('fetch')
-        ? 'Unable to connect. Please check your internet connection and try again.'
-        : raw || 'Could not initiate payment. Please try again or choose a different payment method.';
+      const lower = raw.toLowerCase();
+      let msg: string;
+      if (lower.includes('network') || lower.includes('fetch')) {
+        msg = 'Unable to connect. Please check your internet connection and try again.';
+      } else if (lower.includes('failed to initiate') || lower.includes('initiate payment')) {
+        msg = 'Payment could not be initiated. Please verify your phone number matches the selected payment method (MTN or Airtel) and try again.';
+      } else {
+        msg = raw || 'Could not initiate payment. Please try again or choose a different payment method.';
+      }
       setError(msg);
       onError?.(msg);
     } finally {
@@ -465,7 +473,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
             </div>
 
             {/* Phone Input - shown for mobile money, and always for donations */}
-            {selectedMethod && (selectedMethod !== 'card' || paymentType === 'donation') && (
+            {selectedMethod && selectedMethod !== 'card' && (
               <div style={{ marginBottom: '24px' }}>
                 <label style={{
                   display: 'block',
@@ -635,6 +643,10 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
 
             <p style={{ fontSize: '13px', color: darkMode ? '#6b7280' : '#999' }}>
               Waiting for confirmation... This may take a moment.
+            </p>
+
+            <p style={{ fontSize: '13px', color: '#ef4444', marginTop: '12px', lineHeight: 1.5 }}>
+              {"Didn't receive the SMS? Check that your mobile money balance covers the payment amount."}
             </p>
 
             {/* Cancel button */}

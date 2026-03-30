@@ -10,6 +10,7 @@ import GlobalNetwork from "./components/GlobalNetwork";
 // import Preloader from "./components/Preloader"; // Commented out — client requested no preloader
 import { getPublicEvents } from '@/lib/APIs/public';
 import { getStreamVideo } from '@/lib/APIs/streams/route';
+import TextType from './components/TextType';
 
 // Register GSAP plugins
 if (typeof window !== 'undefined') {
@@ -19,7 +20,10 @@ if (typeof window !== 'undefined') {
 export default function Home() {
   const t = useTranslations();
   const [hasLiveEvents, setHasLiveEvents] = useState(false);
-  const [activeCard, setActiveCard] = useState(-1) // -1: cover, 0: rated, 1: live, 2: pay, 3: gallery
+  const [heroEventImages, setHeroEventImages] = useState<string[]>([]);
+  const [heroEventSlide, setHeroEventSlide] = useState(0);
+  const [heroSlideKey, setHeroSlideKey] = useState(0);
+  const [activeCard, setActiveCard] = useState(0) // rated, 1: live, 2: pay, 3: gallery
   const [networkMousePos, setNetworkMousePos] = useState<{ x: number; y: number } | null>(null)
   const [whyAmoriaMousePos, setWhyAmoriaMousePos] = useState<{ x: number; y: number } | null>(null)
   const [heroMousePos, setHeroMousePos] = useState<{ x: number; y: number } | null>(null)
@@ -36,17 +40,6 @@ export default function Home() {
 
   // Ref for Why Amoria section peel effect
   const whyAmoriaSectionRef = useRef<HTMLElement>(null)
-  const flipBookRef = useRef<HTMLDivElement>(null)
-  const bookCoverRef = useRef<HTMLDivElement>(null)
-  const bookPage1Ref = useRef<HTMLDivElement>(null)
-  const bookPage2Ref = useRef<HTMLDivElement>(null)
-  const bookPage3Ref = useRef<HTMLDivElement>(null)
-  const bookPage4Ref = useRef<HTMLDivElement>(null)
-  const bookPage5Ref = useRef<HTMLDivElement>(null)
-  const bookPage6Ref = useRef<HTMLDivElement>(null)
-  const bookPage7Ref = useRef<HTMLDivElement>(null)
-  const bookPage8Ref = useRef<HTMLDivElement>(null)
-  const book3dRef = useRef<HTMLDivElement>(null)
 
   const phoneRef = useRef<HTMLDivElement>(null)
   const tabletRef = useRef<HTMLDivElement>(null)
@@ -78,8 +71,26 @@ export default function Home() {
       try {
         const res = await getPublicEvents({ size: 100 });
         if (!res.success || !res.data) return;
-        const ongoingEvents = res.data.content.filter(
-          ev => (ev.eventStatus as string)?.toLowerCase() === 'ongoing'
+        // Collect event cover images for hero carousel — same filter as events page
+        const allEvents = res.data.content;
+        const twoDaysAgo = Date.now() - 2 * 24 * 60 * 60 * 1000;
+        const visibleEvents = allEvents.filter(ev => {
+          const isEnded = (ev.eventStatus || '').toUpperCase() === 'COMPLETED' || (ev as Record<string, unknown>).streamStatus === 'ended';
+          if (!isEnded) return true;
+          const dateStr = ev.updatedAt || ev.eventDate;
+          if (!dateStr) return true;
+          const ts = new Date(dateStr).getTime();
+          if (isNaN(ts)) return true;
+          return ts > twoDaysAgo;
+        });
+        const covers = visibleEvents
+          .filter(ev => ev.eventPhoto)
+          .map(ev => ev.eventPhoto as string)
+          .slice(0, 8);
+        if (covers.length > 0) setHeroEventImages(covers);
+
+        const ongoingEvents = allEvents.filter(
+          ev => (ev.eventStatus as string)?.toLowerCase() === 'ongoing' && (ev as Record<string, unknown>).streamStatus !== 'ended'
         );
         if (ongoingEvents.length === 0) return;
 
@@ -104,114 +115,24 @@ export default function Home() {
     checkLiveEvents();
   }, []);
 
-  // Scroll-driven book flip for Why Amoria section — GSAP animates each page's rotation
+  // Auto-slide hero event images carousel
   useEffect(() => {
-    if (typeof window === 'undefined' || showPreloader) return
+    if (heroEventImages.length <= 1) return;
+    const interval = setInterval(() => {
+      setHeroEventSlide(prev => (prev + 1) % heroEventImages.length);
+      setHeroSlideKey(prev => prev + 1);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [heroEventImages.length]);
 
-    const timer = setTimeout(() => {
-      const flipBook = flipBookRef.current
-      const cover = bookCoverRef.current
-      const page1 = bookPage1Ref.current
-      const page2 = bookPage2Ref.current
-      const page3 = bookPage3Ref.current
-      const page4 = bookPage4Ref.current
-      const page5 = bookPage5Ref.current
-      const page6 = bookPage6Ref.current
-      const page7 = bookPage7Ref.current
-      const page8 = bookPage8Ref.current
-      const book = book3dRef.current
-      if (!flipBook || !cover || !page1 || !page2 || !page3 || !page4 || !page5 || !page6 || !page7 || !page8 || !book) return
+  // Auto-rotation effect for Why Amoria Connekt cards - rotate every 3 seconds
+  useEffect(() => {
+    const cardInterval = setInterval(() => {
+      setActiveCard((prev) => (prev + 1) % 4)
+    }, 3000)
 
-      const ctx = gsap.context(() => {
-        const isMobile = window.innerWidth <= 768
-        // Set initial states
-        const allPages = [cover, page1, page2, page3, page4, page5, page6, page7, page8]
-        gsap.set(allPages, { rotateY: 0, transformOrigin: 'left center' })
-        if (isMobile) {
-          gsap.set(book, { marginLeft: 0 })
-        } else {
-          gsap.set(book, { width: 380, height: 420 })
-        }
-
-        const tl = gsap.timeline({
-          scrollTrigger: {
-            trigger: flipBook,
-            start: 'top 20%',
-            end: isMobile ? '+=3500' : '+=5500',
-            pin: true,
-            pinSpacing: true,
-            scrub: 0.5,
-          }
-        })
-
-        // 10 phases: cover + 8 pages + back cover close
-        // Each phase ~0.09 of timeline, with slight overlaps
-
-        // Phase 0: Cover flips (0.02 - 0.10)
-        tl.to(cover, { rotateY: -180, duration: 0.08, ease: 'power2.inOut' }, 0.02)
-        if (!isMobile) {
-          tl.to(book, { height: 400, duration: 0.08, ease: 'power2.inOut' }, 0.02)
-        }
-
-        // Phase 1: Page 1 flips (0.10 - 0.20)
-        tl.to(page1, { rotateY: -180, duration: 0.10, ease: 'power1.inOut' }, 0.10)
-
-        // Phase 2: Page 2 flips (0.20 - 0.30)
-        tl.to(page2, { rotateY: -180, duration: 0.10, ease: 'power1.inOut' }, 0.19)
-
-        // Phase 3: Page 3 flips (0.30 - 0.40)
-        tl.to(page3, { rotateY: -180, duration: 0.10, ease: 'power1.inOut' }, 0.28)
-
-        // Phase 4: Page 4 flips (0.40 - 0.50)
-        tl.to(page4, { rotateY: -180, duration: 0.10, ease: 'power1.inOut' }, 0.37)
-
-        // Phase 5: Page 5 flips (0.50 - 0.60)
-        tl.to(page5, { rotateY: -180, duration: 0.10, ease: 'power1.inOut' }, 0.46)
-
-        // Phase 6: Page 6 flips (0.60 - 0.70)
-        tl.to(page6, { rotateY: -180, duration: 0.10, ease: 'power1.inOut' }, 0.55)
-
-        // Phase 7: Page 7 flips (0.70 - 0.80)
-        tl.to(page7, { rotateY: -180, duration: 0.10, ease: 'power1.inOut' }, 0.64)
-
-        // Phase 8: Page 8 flips (0.80 - 0.90)
-        tl.to(page8, { rotateY: -180, duration: 0.10, ease: 'power1.inOut' }, 0.73)
-
-        // Phase 9: Book closes to back cover (0.90 - 1.0)
-        if (!isMobile) {
-          tl.to(book, { height: 420, duration: 0.08, ease: 'power2.inOut' }, 0.90)
-        }
-
-        // All flipped pages stay flat at -180 — no fan-out
-
-        // Track activeCard for UI state
-        ScrollTrigger.create({
-          trigger: flipBook,
-          start: 'top 20%',
-          end: '+=5500',
-          scrub: 0.3,
-          onUpdate: (self) => {
-            const p = self.progress
-            if (p < 0.05) setActiveCard(-1)
-            else if (p < 0.12) setActiveCard(0)
-            else if (p < 0.21) setActiveCard(1)
-            else if (p < 0.30) setActiveCard(2)
-            else if (p < 0.39) setActiveCard(3)
-            else if (p < 0.48) setActiveCard(4)
-            else if (p < 0.57) setActiveCard(5)
-            else if (p < 0.66) setActiveCard(6)
-            else if (p < 0.75) setActiveCard(7)
-            else if (p < 0.88) setActiveCard(8)
-            else setActiveCard(9)
-          }
-        })
-      })
-
-      return () => ctx.revert()
-    }, 600)
-
-    return () => clearTimeout(timer)
-  }, [showPreloader])
+    return () => clearInterval(cardInterval)
+  }, [])
 
 
   // GSAP ScrollTrigger effect for mockups peel transitions + Why Amoria peel
@@ -377,82 +298,6 @@ export default function Home() {
   // This needs a different approach - possibly wrapping both sections in a container
 
   // Mouse handlers for Global Network section dotted background effect
-  // Hero section entrance animations
-  useEffect(() => {
-    if (typeof window === 'undefined' || showPreloader) return;
-
-    const timer = setTimeout(() => {
-      const ctx = gsap.context(() => {
-        // Staggered entrance for left content
-        gsap.from('.hero-badge', {
-          opacity: 0,
-          y: 20,
-          duration: 0.6,
-          ease: 'power3.out',
-          delay: 0.1,
-        });
-
-        gsap.from('.hero-title-line', {
-          opacity: 0,
-          y: 30,
-          duration: 0.7,
-          stagger: 0.12,
-          ease: 'power3.out',
-          delay: 0.25,
-        });
-
-        gsap.from('.hero-description', {
-          opacity: 0,
-          y: 20,
-          duration: 0.6,
-          ease: 'power3.out',
-          delay: 0.6,
-        });
-
-        gsap.from('.hero-buttons', {
-          opacity: 0,
-          y: 20,
-          duration: 0.6,
-          ease: 'power3.out',
-          delay: 0.75,
-        });
-
-        // Right side — image slides in
-        gsap.from('.hero-right', {
-          opacity: 0,
-          x: 60,
-          duration: 0.9,
-          ease: 'power3.out',
-          delay: 0.3,
-        });
-
-        // Floating cards pop in with stagger
-        gsap.from('.hero-floating-card', {
-          opacity: 0,
-          scale: 0.7,
-          duration: 0.5,
-          stagger: 0.15,
-          ease: 'back.out(1.7)',
-          delay: 0.8,
-        });
-
-        // Decorative circles
-        gsap.from('.hero-circle', {
-          opacity: 0,
-          scale: 0,
-          duration: 0.6,
-          stagger: 0.1,
-          ease: 'back.out(2)',
-          delay: 1.0,
-        });
-      });
-
-      return () => ctx.revert();
-    }, 100);
-
-    return () => clearTimeout(timer);
-  }, [showPreloader]);
-
   const handleNetworkMouseMove = (e: React.MouseEvent<HTMLElement>) => {
     if (networkSectionRef.current) {
       const rect = networkSectionRef.current.getBoundingClientRect();
@@ -497,25 +342,34 @@ export default function Home() {
         <main style={{ flex: 1, position: 'relative' }}>
         <style jsx>{`
           @media (max-width: 768px) {
-            .hero-content { flex-direction: column !important; padding: 32px 20px 24px !important; min-height: auto !important; gap: 16px !important; }
-            .hero-left { width: 100% !important; max-width: 100% !important; text-align: center; padding: 0 10px !important; }
-            .hero-right { width: 100% !important; height: 420px !important; margin-top: 8px !important; position: relative !important; overflow: visible !important; transform: scale(0.5) !important; transform-origin: top center !important; margin-bottom: -200px !important; }
-            .hero-title { font-size: 34px !important; line-height: 1.08 !important; letter-spacing: -0.03em !important; }
-            .hero-description { max-width: 340px !important; margin-left: auto !important; margin-right: auto !important; font-size: 14px !important; padding: 0 !important; line-height: 1.6 !important; color: #4b5563 !important; margin-bottom: 24px !important; }
+            .hero-content { flex-direction: column !important; padding: 20px 15px 20px !important; min-height: auto !important; gap: 10px !important; max-width: 100% !important; }
+            .hero-left { width: 100% !important; max-width: 100% !important; text-align: center; padding: 0 15px !important; display: flex !important; flex-direction: column !important; }
+            .hero-left .hero-glow { order: 0; }
+            .hero-left .hero-title { order: 1; }
+            .hero-left .hero-description { order: 2; }
+            .hero-left .hero-buttons { order: 3; margin-bottom: 20px !important; }
+            .hero-left .hero-glass-card { order: 4 !important; }
+            .hero-right { width: 100% !important; height: 525px !important; margin-top: 0 !important; position: relative !important; overflow: visible !important; transform: scale(0.52) !important; transform-origin: top center !important; margin-bottom: -220px !important; }
+            .hero-title { font-size: 32px !important; line-height: 1.1 !important; }
+            .hero-description { max-width: 100% !important; font-size: 14px !important; padding: 0 5px !important; }
             .hero-buttons { justify-content: center !important; flex-direction: column !important; align-items: center !important; gap: 10px !important; }
-            .hero-buttons button { width: 100% !important; max-width: 260px !important; padding: 14px 24px !important; border-radius: 50px !important; font-size: 14.5px !important; }
-            .hero-badge { margin-bottom: 18px !important; }
-            .twitter-badge { margin-left: auto; margin-right: auto; font-size: 12px !important; padding: 8px 16px !important; }
-            .hero-glow { left: 50% !important; transform: translateX(-50%) !important; width: 350px !important; top: 0px !important; opacity: 0.6 !important; }
+            .hero-buttons button { width: 100% !important; max-width: 280px !important; }
+            .hero-glass-card { width: 100% !important; max-width: 100% !important; margin-left: auto; margin-right: auto; padding: 10px !important; margin-bottom: 16px !important; order: 4 !important; }
+            .hero-glass-card .glass-sub-cards { flex-direction: row !important; gap: 8px !important; }
+            .hero-glass-card .glass-sub-cards > div { min-height: 110px !important; }
+            .hero-glass-card .glass-btns { gap: 8px !important; margin-top: 8px !important; }
+            .hero-glass-card .glass-btns button { padding: 6px 10px !important; font-size: 10.5px !important; }
+            .hero-glass-card .glass-sub-cards > div p { font-size: 10px !important; }
+            .hero-glass-card .glass-sub-cards > div span { font-size: 9px !important; }
+            .hero-glass-card .glass-sub-cards > div i { font-size: 11px !important; }
+            .hero-glow { left: 50% !important; transform: translateX(-50%) !important; width: 400px !important; top: 10px !important; }
             .hero-floating-card { transform: none !important; }
-            .hero-circle:first-child { left: -115px !important; top: 250px !important; }
-            .hero-circle:nth-child(2) { left: -60px !important; bottom: 130px !important; }
 
             .how-it-works-title { font-size: 36px !important; margin-bottom: 40px !important; text-align: center !important; }
             .how-it-works-steps { flex-direction: column !important; gap: 30px !important; align-items: center !important; position: relative !important; }
             .how-it-works-svg { display: none !important; }
             .how-it-works-mobile-line { display: block !important; }
-            .how-it-works-steps > div { background: #fff !important; z-index: 2 !important; position: relative !important; padding: 10px 20px !important; }
+            .how-it-works-steps > div { background: transparent !important; z-index: 2 !important; position: relative !important; padding: 10px 20px !important; }
             .step-img { width: 180px !important; height: 180px !important; }
             .step-title { font-size: 24px !important; text-align: center !important; }
             .step-description { font-size: 15px !important; text-align: center !important; }
@@ -564,15 +418,14 @@ export default function Home() {
           }
 
           @media (max-width: 400px) {
-            .hero-right { transform: scale(0.42) !important; margin-bottom: -240px !important; }
+            .hero-right { transform: scale(0.44) !important; margin-bottom: -260px !important; }
             .hero-title { font-size: 28px !important; }
-            .hero-description { font-size: 13px !important; max-width: 280px !important; }
-            .hero-buttons button { max-width: 240px !important; font-size: 13.5px !important; }
+            .hero-description { font-size: 13px !important; }
           }
 
           @media (min-width: 769px) and (max-width: 1024px) {
-            .hero-title { font-size: 42px !important; }
-            .hero-content { padding: 20px 20px 30px !important; }
+            .hero-title { font-size: 48px !important; }
+            .hero-content { padding: 30px 20px 80px !important; }
             .mockups-section { padding: 80px 40px !important; }
             .mockups-container { height: 450px !important; }
             .mockup-heading-text h2 { font-size: 38px !important; }
@@ -608,12 +461,7 @@ export default function Home() {
           onMouseLeave={() => setHeroMousePos(null)}
           style={{
             position: 'relative',
-            background: `
-              radial-gradient(ellipse 80% 60% at 10% 90%, rgba(8, 58, 133, 0.08) 0%, transparent 50%),
-              radial-gradient(ellipse 60% 50% at 80% 20%, rgba(8, 58, 133, 0.06) 0%, transparent 50%),
-              radial-gradient(ellipse 50% 40% at 50% 50%, rgba(8, 58, 133, 0.03) 0%, transparent 50%),
-              linear-gradient(180deg, #edf1f8 0%, #e8eef6 40%, #e2e9f3 100%)
-            `,
+            backgroundColor: '#DBDBDB',
             overflow: 'hidden',
           }}
         >
@@ -634,21 +482,21 @@ export default function Home() {
           {/* Hero Content Container */}
           <div className="hero-content" style={{
             position: 'relative',
-            maxWidth: '1080px',
+            maxWidth: '1200px',
             margin: '0 auto',
-            padding: '24px 20px 32px',
+            padding: '40px 30px 95px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            minHeight: 'calc(100vh - 64px)',
-            maxHeight: 'calc(100vh - 64px)',
+            gap: '40px',
+            minHeight: 'calc(80vh - 64px)'
           }}>
 
             {/* Left Content */}
             <div className="hero-left" style={{
               position: 'relative',
-              width: '48%',
-              maxWidth: '450px',
+              width: '45%',
+              maxWidth: '420px',
               zIndex: 10
             }}>
               {/* Blue lighting bulb-like glow effect */}
@@ -658,63 +506,210 @@ export default function Home() {
                 left: '-135px',
                 width: '612px',
                 height: '212.5px',
-                background: 'radial-gradient(circle, rgba(8, 58, 133, 0.3) 0% 10%, rgba(8, 58, 133, 0.2) 4% 10%, rgba(8, 58, 133, 0) 90% 90%)',
+                background: 'radial-gradient(circle, rgba(4, 25, 255, 0.3) 0% 10%, rgba(37, 17, 220, 0.43) 4% 10%, rgba(37, 17, 220, 0) 90% 90%)',
                 borderRadius: '50%',
                 filter: 'blur(55px)',
                 zIndex: -1,
                 pointerEvents: 'none'
               }} />
 
-              {/* Twitter Handle Badge */}
-              <button className="hero-badge twitter-badge" style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '7.5px',
-                padding: '9px 19.5px',
-                border: 'none',
-                borderRadius: '37.5px',
-                marginBottom: '16px',
-                backgroundColor: '#101012',
-                color: '#fff',
-                fontWeight: 600,
-                fontSize: '13px',
-                cursor: 'pointer',
-                transition: 'all 0.3s ease',
-              }}
-                onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
-              >
-                <svg width="15.5" height="15.5" viewBox="0 0 24 24" fill="none">
-                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" fill="#fff"/>
-                </svg>
-                {t('hero.twitter')}
-              </button>
+              {/* Hero Feature Glass Card */}
+              <div className="hero-glass-card" style={{
+                background: 'rgba(255, 255, 255, 0.65)',
+                backdropFilter: 'blur(12px)',
+                WebkitBackdropFilter: 'blur(12px)',
+                border: '1px solid rgba(8, 58, 133, 0.08)',
+                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08)',
+                borderRadius: '20px',
+                padding: '16px',
+                marginBottom: '24px',
+                maxWidth: '440px',
+              }}>
+                <div className="glass-sub-cards" style={{ display: 'flex', gap: '12px' }}>
+                  {/* Events Sub-Card */}
+                  <div
+                    onClick={() => window.location.href = '/user/events'}
+                    style={{
+                      flex: 1,
+                      position: 'relative',
+                      minHeight: '160px',
+                      borderRadius: '14px',
+                      overflow: 'hidden',
+                      cursor: 'pointer',
+                      background: '#0a1628',
+                      border: hasLiveEvents ? '2px solid rgba(16, 185, 129, 0.6)' : '1px solid rgba(255, 255, 255, 0.1)',
+                      animation: hasLiveEvents ? 'hero-card-twinkle 1s ease-out infinite' : 'none',
+                      transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.08)'; e.currentTarget.style.boxShadow = '0 16px 40px rgba(0,0,0,0.35)'; e.currentTarget.style.zIndex = '10'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.zIndex = '1'; }}
+                  >
+                    {/* Carousel background with toss-in / spin-in animations */}
+                    {heroEventImages.length > 0 ? (
+                      <img
+                        key={heroSlideKey}
+                        src={heroEventImages[heroEventSlide]}
+                        alt=""
+                        style={{
+                          position: 'absolute',
+                          inset: 0,
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                          animation: `${heroEventSlide % 2 === 0 ? 'hero-toss-in' : 'hero-spin-in'} 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards`,
+                        }}
+                      />
+                    ) : (
+                      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, #0a1628 0%, #1a2d4a 100%)' }} />
+                    )}
+                    {/* Dark overlay for text readability */}
+                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.6) 100%)' }} />
+                    {/* Content */}
+                    <div style={{ position: 'relative', zIndex: 2, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <i className="bi bi-camera-video-fill" style={{ fontSize: '14px', color: hasLiveEvents ? '#10b981' : '#fff' }}></i>
+                        <span style={{ fontSize: '11px', fontWeight: 700, color: '#fff', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Events</span>
+                        {hasLiveEvents && (
+                          <span style={{ fontSize: '9px', fontWeight: 700, color: '#10b981', background: 'rgba(16,185,129,0.15)', padding: '2px 6px', borderRadius: '8px' }}>LIVE</span>
+                        )}
+                      </div>
+                      <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)', margin: 0, lineHeight: 1.3 }}>
+                        {hasLiveEvents ? 'Live streams happening now' : 'Upcoming events & streams'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Facial Recognition Sub-Card */}
+                  <div
+                    onClick={() => window.location.href = '/user/find-my-photos'}
+                    onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.08)'; e.currentTarget.style.boxShadow = '0 16px 40px rgba(0,0,0,0.35)'; e.currentTarget.style.zIndex = '10'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.zIndex = '1'; }}
+                    style={{
+                      flex: 1,
+                      position: 'relative',
+                      minHeight: '160px',
+                      borderRadius: '14px',
+                      overflow: 'hidden',
+                      cursor: 'pointer',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+                    }}
+                  >
+                    {/* scan.png background */}
+                    <img
+                      src="/scan.png"
+                      alt=""
+                      style={{
+                        position: 'absolute',
+                        inset: 0,
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                      }}
+                    />
+                    {/* Dark overlay for text readability */}
+                    <div style={{
+                      position: 'absolute',
+                      inset: 0,
+                      background: 'linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.5) 100%)',
+                    }} />
+                    {/* Content */}
+                    <div style={{ position: 'relative', zIndex: 2, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <i className="bi bi-person-bounding-box" style={{ fontSize: '14px', color: '#60a5fa' }}></i>
+                        <span style={{ fontSize: '11px', fontWeight: 700, color: '#fff', letterSpacing: '0.05em', textTransform: 'uppercase' }}>AI Scan</span>
+                      </div>
+                      <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)', margin: 0, lineHeight: 1.3 }}>Find your photos with facial recognition</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Buttons row — outside sub-cards, inside main card */}
+                <div className="glass-btns" style={{ display: 'flex', gap: '12px', marginTop: '10px' }}>
+                  <button
+                    onClick={() => window.location.href = '/user/events'}
+                    style={{
+                      flex: 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '5px',
+                      padding: '7px 12px',
+                      borderRadius: '10px',
+                      background: 'transparent',
+                      border: hasLiveEvents ? '1.5px solid rgba(16, 185, 129, 0.6)' : '1.5px solid #1a1a1a',
+                      color: hasLiveEvents ? '#059669' : '#1a1a1a',
+                      fontSize: '11.5px',
+                      fontWeight: 500,
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                      animation: hasLiveEvents ? 'hero-card-twinkle 1s ease-out infinite' : 'none',
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = hasLiveEvents ? 'rgba(16,185,129,0.08)' : 'rgba(0,0,0,0.05)'; e.currentTarget.style.borderColor = hasLiveEvents ? '#10b981' : '#000000'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = hasLiveEvents ? 'rgba(16,185,129,0.6)' : '#1a1a1a'; }}
+                  >
+                    <i className={hasLiveEvents ? 'bi bi-broadcast' : 'bi bi-compass'} style={{ fontSize: '12px' }}></i>
+                    {hasLiveEvents ? 'Go Streaming' : 'Explore all'}
+                  </button>
+                  <button
+                    onClick={() => window.location.href = '/user/find-my-photos'}
+                    style={{
+                      flex: 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '5px',
+                      padding: '7px 12px',
+                      borderRadius: '10px',
+                      background: '#000000',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      color: '#ffffff',
+                      fontSize: '11.5px',
+                      fontWeight: 500,
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = '#1a1a1a'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = '#000000'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; }}
+                  >
+                    <i className="bi bi-search" style={{ fontSize: '11px' }}></i>
+                    Scan now
+                  </button>
+                </div>
+              </div>
 
               {/* Main Heading */}
               <h1 className="hero-title" style={{
-                fontSize: '50px',
+                fontSize: '57px',
                 fontWeight: 700,
                 lineHeight: '1.05',
-                marginBottom: '14px',
+                marginBottom: '19.5px',
                 letterSpacing: '-0.02em'
               }}>
-                <div className="hero-title-line" style={{
-                  marginBottom: '3px',
-                  background: 'linear-gradient(135deg, #083A85 0%, #0a5dc2 50%, #083A85 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  backgroundClip: 'text',
-                }}>{t('hero.title1')}</div>
-                <div className="hero-title-line" style={{ color: '#0f172a', marginBottom: '3px' }}>{t('hero.title2')}</div>
-                <div className="hero-title-line" style={{ color: '#0f172a' }}>{t('hero.title3')}</div>
+                <div style={{ color: '#083A85', marginBottom: '3px' }}>
+                  <TextType
+                    text={['Connekyt', 'Meet', 'Work', 'Chat', 'Grow']}
+                    typingSpeed={80}
+                    deletingSpeed={50}
+                    pauseDuration={1500}
+                    showCursor
+                    cursorCharacter="_"
+                    cursorBlinkDuration={0.5}
+                    loop
+                    style={{ display: 'inline' }}
+                  />
+                </div>
+                <div style={{ color: '#000', marginBottom: '3px' }}>{t('hero.title2')}</div>
+                <div style={{ color: '#000' }}>{t('hero.title3')}</div>
               </h1>
 
               {/* Description */}
               <p className="hero-description" style={{
                 fontSize: '15px',
                 color: '#1f1d1d',
-                lineHeight: '1.6',
-                marginBottom: '22px',
+                lineHeight: '1.65',
+                marginBottom: '30px',
                 maxWidth: '390px'
               }}>
                 {t('hero.description')}
@@ -727,51 +722,35 @@ export default function Home() {
                   style={{
                     backgroundColor: '#083A85',
                     color: '#fff',
-                    padding: '13px 28px',
-                    borderRadius: '12px',
+                    padding: '11.25px 25.5px',
+                    borderRadius: '10px',
                     border: 'none',
                     fontSize: '15px',
                     fontWeight: 600,
                     cursor: 'pointer',
-                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                    boxShadow: '0 4px 14px rgba(8, 58, 133, 0.3)',
+                    transition: 'all 0.3s ease',
+                    boxShadow: '0 3px 9px rgba(8, 58, 133, 0.2)'
                   }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-3px)';
-                    e.currentTarget.style.boxShadow = '0 8px 25px rgba(8, 58, 133, 0.4)';
-                    e.currentTarget.style.backgroundColor = '#062d6b';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 4px 14px rgba(8, 58, 133, 0.3)';
-                    e.currentTarget.style.backgroundColor = '#083A85';
-                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
                 >
                   {t('hero.findPhotographer')}
                 </button>
                 <button
                   onClick={() => window.location.href = '/user/auth/signup?userType=Photographer'}
                   style={{
-                    backgroundColor: 'transparent',
-                    color: '#083A85',
-                    padding: '13px 28px',
-                    borderRadius: '12px',
-                    border: '2px solid #083A85',
-                    fontSize: '15px',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-3px)';
-                    e.currentTarget.style.backgroundColor = 'rgba(8, 58, 133, 0.06)';
-                    e.currentTarget.style.boxShadow = '0 6px 20px rgba(8, 58, 133, 0.15)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                    e.currentTarget.style.boxShadow = 'none';
-                  }}
+                  backgroundColor: 'transparent',
+                  color: '#083A85',
+                  padding: '11.25px 25.5px',
+                  borderRadius: '10px',
+                  border: '2px solid #083A85',
+                  fontSize: '15px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease'
+                }}
+                  onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
                 >
                   {t('hero.joinPhotographer')}
                 </button>
@@ -781,9 +760,10 @@ export default function Home() {
             {/* Right Content - Image Section */}
             <div className="hero-right" style={{
               position: 'relative',
-              width: '52%',
-              height: '480px',
-              zIndex: 5
+              width: '55%',
+              height: '525px',
+              zIndex: 5,
+              marginRight: '-80px',
             }}>
               {/* Full Circle - Upper Left */}
               <div className="hero-circle" style={{
@@ -793,7 +773,7 @@ export default function Home() {
                 width: '70px',
                 height: '70px',
                 borderRadius: '50%',
-                background: '#083A85',
+                background: 'linear-gradient(135deg, #083A85 0%, #FF6363 100%)',
                 zIndex: 20
               }} />
 
@@ -805,7 +785,7 @@ export default function Home() {
                 width: '80px',
                 height: '80px',
                 borderRadius: '50%',
-                background: '#083A85',
+                background: 'linear-gradient(135deg, #083A85 0%, #FF6363 100%)',
                 clipPath: 'polygon(0 0, 100% 100%, 0 100%)',
                 transform: 'rotate(-90deg)',
                 zIndex: 20
@@ -817,7 +797,7 @@ export default function Home() {
                 left: '75px',
                 top: '0',
                 width: '487.5px',
-                height: '480px',
+                height: '525px',
                 zIndex: 10
               }}>
                 {/* Main Image */}
@@ -840,12 +820,12 @@ export default function Home() {
                   right: '20px',
                   width: '1370px',
                   height: '500px',
-                  background: 'conic-gradient(from 180deg at 70% 50%, rgba(8, 58, 133, 0.35) 0deg, rgba(8, 58, 133, 0.5) 359.96deg, rgba(8, 58, 133, 0.35) 360deg)',
+                  background: 'conic-gradient(from 180deg at 70% 50%, rgba(2, 14, 31, 0.6) 0deg, rgba(8, 58, 133, 0.8) 359.96deg, rgba(2, 14, 31, 0.6) 360deg)',
                   borderRadius: '120px 30px 30px 100px',
                   transform: 'perspective(630px) rotateY(-27deg) rotateX(-1deg)',
                   transformOrigin: 'right center',
                   zIndex: 3,
-                  boxShadow: '0 400px 800px rgba(8, 58, 133, 0.15)'
+                  boxShadow: '0 400px 800px rgba(2, 14, 31, 0.3)'
                 }} />
 
                 {/* Lady with Speech Bubble - Top Left */}
@@ -874,9 +854,9 @@ export default function Home() {
                     position: 'absolute',
                     left: '85px',
                     bottom: '20px',
-                    background: 'linear-gradient(-90deg, #083A85 0%, #0a5dc2 100%)',
+                    background: 'linear-gradient(-90deg, #083A85 0%, #FF6363 100%)',
                     padding: '8.25px 16.5px',
-                    borderRadius: '30px',
+                    borderRadius: '10px',
                     color: '#fff',
                     fontSize: '13px',
                     fontWeight: 600,
@@ -901,8 +881,8 @@ export default function Home() {
                   >
                     <path
                       d="M 20 8 Q 24.13 4 28 8 L 44 34 Q 46 38 44 39.64 L 4 39.64 Q 2 38 4 34 L 20 8 Z"
-                      fill="#083A85"
-                      stroke="#083A85"
+                      fill="#000000"
+                      stroke="#000000"
                       strokeWidth="6"
                       strokeLinejoin="round"
                       strokeLinecap="round"
@@ -913,13 +893,13 @@ export default function Home() {
                 {/* Call UI Card - Left Middle (under camera) */}
                 <div className="hero-floating-card" style={{
                   position: 'absolute',
-                  left: '-200px',
+                  left: '-170px',
                   top: '130px',
                   height: '40px',
                   width: '160px',
                   backgroundColor: '#fff',
                   padding: '9.75px 12px',
-                  borderRadius: '52.5px',
+                  borderRadius: '10px',
                   boxShadow: '0 6px 18px rgba(0,0,0,0.14)',
                   display: 'flex',
                   alignItems: 'center',
@@ -946,7 +926,7 @@ export default function Home() {
                       top: '12px',
                       width: '68.5px',
                       height: '4.75px',
-                      backgroundColor: '#083A85',
+                      backgroundColor: '#868686',
                       borderRadius: '3.75px'
                     }}/>
                     <div style={{
@@ -955,7 +935,7 @@ export default function Home() {
                       top: '23px',
                       width: '48.75px',
                       height: '4.75px',
-                      backgroundColor: '#a8c4e8',
+                      backgroundColor: '#D9D9D9',
                       borderRadius: '3.75px'
                     }}/>
                   </div>
@@ -987,7 +967,7 @@ export default function Home() {
                   width: '160px',
                   backgroundColor: '#fff',
                   padding: '11.25px 18px',
-                  borderRadius: '52.5px',
+                  borderRadius: '10px',
                   boxShadow: '0 6px 18px rgba(0,0,0,0.14)',
                   display: 'flex',
                   alignItems: 'center',
@@ -1015,7 +995,7 @@ export default function Home() {
                       width: '14.5px',
                       height: '14.5px',
                       borderRadius: '50%',
-                      backgroundColor: '#083A85',
+                      backgroundColor: '#00C2FF',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -1033,7 +1013,7 @@ export default function Home() {
                       right: '23px',
                       width: '90px',
                       height: '6.5px',
-                      backgroundColor: '#083A85',
+                      backgroundColor: '#9948FF',
                       borderRadius: '3.75px'
                     }} />
                     <div style={{
@@ -1042,7 +1022,7 @@ export default function Home() {
                       right: '45px',
                       width: '67.5px',
                       height: '6.5px',
-                      backgroundColor: '#5b9bff',
+                      backgroundColor: '#FF8E8C',
                       borderRadius: '3.75px'
                     }} />
                   </div>
@@ -1055,7 +1035,7 @@ export default function Home() {
                   bottom: '210px',
                   minWidth: '140px',
                   width: 'fit-content',
-                  background: 'linear-gradient(180deg, #0a4da3 0%, #083A85 100%)',
+                  background: 'linear-gradient(180deg, #8C82FF 0%, #14008E 100%)',
                   padding: '9.75px 21px',
                   borderRadius: '24px',
                   color: '#fff',
@@ -1063,7 +1043,7 @@ export default function Home() {
                   fontWeight: 600,
                   letterSpacing: '2px',
                   zIndex: 12,
-                  boxShadow: '0 3.75px 13.5px rgba(8, 58, 133, 0.35)',
+                  boxShadow: '0 3.75px 13.5px rgba(140,130,255,0.35)',
                   whiteSpace: 'nowrap'
                 }}>
                   {t('hero.smilePlease')}
@@ -1084,8 +1064,8 @@ export default function Home() {
                 >
                   <path
                     d="M 20 8 Q 24.13 4 28 8 L 44 34 Q 46 38 44 39.64 L 4 39.64 Q 2 38 4 34 L 20 8 Z"
-                    fill="#083A85"
-                    stroke="#083A85"
+                    fill="#14008E"
+                    stroke="#14008E"
                     strokeWidth="6"
                     strokeLinejoin="round"
                     strokeLinecap="round"
@@ -1102,7 +1082,7 @@ export default function Home() {
           id="how-it-works"
           style={{
             padding: '50px 0 100px 0',
-            background: 'linear-gradient(180deg, #f8fafc 0%, #ffffff 100%)',
+            backgroundColor: '#fff',
             position: 'relative',
             zIndex: 2
           }}
@@ -1117,8 +1097,8 @@ export default function Home() {
               fontSize: '50px',
               fontWeight: 1000,
               textAlign: 'center',
-              marginBottom: '60px',
-              color: '#0f172a',
+              marginBottom: '100px',
+              color: '#000',
               letterSpacing: '-0.02em'
             }}>
               {t('howItWorks.title')}
@@ -1137,10 +1117,10 @@ export default function Home() {
                 className="how-it-works-svg"
                 style={{
                   position: 'absolute',
-                  top: '-300px',
+                  top: '-360px',
                   left: '12%',
                   width: '76%',
-                  height: '850px',
+                  height: '950px',
                   zIndex: 1,
                   pointerEvents: 'none'
                 }}
@@ -1148,9 +1128,9 @@ export default function Home() {
                 preserveAspectRatio="none"
               >
                 <defs>
-                  {/* Animated gradient - flowing light in brand blue tones */}
+                  {/* Animated gradient - dots change from black to bright blue/cyan as light flows through, bounces back */}
                   <linearGradient id="flowingDotGradient">
-                    <stop offset="0%" stopColor="#083A85">
+                    <stop offset="0%" stopColor="#000000">
                       <animate
                         attributeName="offset"
                         values="-0.3;1.0;-0.3"
@@ -1160,7 +1140,17 @@ export default function Home() {
                         keySplines="0.4 0 0.6 1; 0.4 0 0.6 1"
                       />
                     </stop>
-                    <stop offset="8%" stopColor="#0a4da3">
+                    <stop offset="4%" stopColor="#1d4ed8">
+                      <animate
+                        attributeName="offset"
+                        values="-0.26;1.04;-0.26"
+                        dur="3s"
+                        repeatCount="indefinite"
+                        calcMode="spline"
+                        keySplines="0.4 0 0.6 1; 0.4 0 0.6 1"
+                      />
+                    </stop>
+                    <stop offset="8%" stopColor="#3b82f6">
                       <animate
                         attributeName="offset"
                         values="-0.22;1.08;-0.22"
@@ -1170,7 +1160,17 @@ export default function Home() {
                         keySplines="0.4 0 0.6 1; 0.4 0 0.6 1"
                       />
                     </stop>
-                    <stop offset="15%" stopColor="#00D4FF">
+                    <stop offset="12%" stopColor="#60a5fa">
+                      <animate
+                        attributeName="offset"
+                        values="-0.18;1.12;-0.18"
+                        dur="3s"
+                        repeatCount="indefinite"
+                        calcMode="spline"
+                        keySplines="0.4 0 0.6 1; 0.4 0 0.6 1"
+                      />
+                    </stop>
+                    <stop offset="15%" stopColor="#93c5fd">
                       <animate
                         attributeName="offset"
                         values="-0.15;1.15;-0.15"
@@ -1180,7 +1180,17 @@ export default function Home() {
                         keySplines="0.4 0 0.6 1; 0.4 0 0.6 1"
                       />
                     </stop>
-                    <stop offset="22%" stopColor="#0a4da3">
+                    <stop offset="18%" stopColor="#60a5fa">
+                      <animate
+                        attributeName="offset"
+                        values="-0.12;1.18;-0.12"
+                        dur="3s"
+                        repeatCount="indefinite"
+                        calcMode="spline"
+                        keySplines="0.4 0 0.6 1; 0.4 0 0.6 1"
+                      />
+                    </stop>
+                    <stop offset="22%" stopColor="#3b82f6">
                       <animate
                         attributeName="offset"
                         values="-0.08;1.22;-0.08"
@@ -1190,7 +1200,17 @@ export default function Home() {
                         keySplines="0.4 0 0.6 1; 0.4 0 0.6 1"
                       />
                     </stop>
-                    <stop offset="30%" stopColor="#083A85">
+                    <stop offset="26%" stopColor="#1d4ed8">
+                      <animate
+                        attributeName="offset"
+                        values="-0.04;1.26;-0.04"
+                        dur="3s"
+                        repeatCount="indefinite"
+                        calcMode="spline"
+                        keySplines="0.4 0 0.6 1; 0.4 0 0.6 1"
+                      />
+                    </stop>
+                    <stop offset="30%" stopColor="#000000">
                       <animate
                         attributeName="offset"
                         values="0;1.3;0"
@@ -1203,7 +1223,7 @@ export default function Home() {
                   </linearGradient>
                 </defs>
 
-                {/* Single dotted line - flowing brand blue gradient */}
+                {/* Single dotted line - dots change color as the gradient flows through them */}
                 <path
                   d="M 0 60 Q 250 20, 500 60 T 1000 60"
                   stroke="url(#flowingDotGradient)"
@@ -1214,46 +1234,59 @@ export default function Home() {
                 />
               </svg>
 
-              {/* Single vertical S-curve connector for mobile - mirrors desktop horizontal arc */}
+              {/* Vertical S-curve connector for mobile — flows through avatar centers */}
               <svg
                 className="how-it-works-mobile-line"
                 style={{
                   position: 'absolute',
                   top: '0',
-                  left: '50%',
-                  transform: 'translateX(-50%)',
+                  left: '0',
                   width: '100%',
                   height: '100%',
-                  zIndex: 1,
-                  pointerEvents: 'none'
+                  zIndex: 0,
+                  pointerEvents: 'none',
+                  overflow: 'visible',
                 }}
-                viewBox="-100 0 600 1000"
-                preserveAspectRatio="none"
+                viewBox="0 0 300 1000"
+                preserveAspectRatio="xMidYMid meet"
               >
                 <defs>
                   <linearGradient id="mobileFlowGrad" gradientUnits="userSpaceOnUse" x1="200" y1="0" x2="200" y2="1000">
-                    <stop offset="0%" stopColor="#083A85">
+                    <stop offset="0%" stopColor="#000000">
                       <animate attributeName="offset" values="-0.3;1.0;-0.3" dur="3s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.6 1; 0.4 0 0.6 1" />
                     </stop>
-                    <stop offset="8%" stopColor="#0a4da3">
+                    <stop offset="4%" stopColor="#1d4ed8">
+                      <animate attributeName="offset" values="-0.26;1.04;-0.26" dur="3s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.6 1; 0.4 0 0.6 1" />
+                    </stop>
+                    <stop offset="8%" stopColor="#3b82f6">
                       <animate attributeName="offset" values="-0.22;1.08;-0.22" dur="3s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.6 1; 0.4 0 0.6 1" />
                     </stop>
-                    <stop offset="15%" stopColor="#00D4FF">
+                    <stop offset="12%" stopColor="#60a5fa">
+                      <animate attributeName="offset" values="-0.18;1.12;-0.18" dur="3s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.6 1; 0.4 0 0.6 1" />
+                    </stop>
+                    <stop offset="15%" stopColor="#93c5fd">
                       <animate attributeName="offset" values="-0.15;1.15;-0.15" dur="3s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.6 1; 0.4 0 0.6 1" />
                     </stop>
-                    <stop offset="22%" stopColor="#0a4da3">
+                    <stop offset="18%" stopColor="#60a5fa">
+                      <animate attributeName="offset" values="-0.12;1.18;-0.12" dur="3s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.6 1; 0.4 0 0.6 1" />
+                    </stop>
+                    <stop offset="22%" stopColor="#3b82f6">
                       <animate attributeName="offset" values="-0.08;1.22;-0.08" dur="3s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.6 1; 0.4 0 0.6 1" />
                     </stop>
-                    <stop offset="30%" stopColor="#083A85">
+                    <stop offset="26%" stopColor="#1d4ed8">
+                      <animate attributeName="offset" values="-0.04;1.26;-0.04" dur="3s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.6 1; 0.4 0 0.6 1" />
+                    </stop>
+                    <stop offset="30%" stopColor="#000000">
                       <animate attributeName="offset" values="0;1.3;0" dur="3s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.6 1; 0.4 0 0.6 1" />
                     </stop>
                   </linearGradient>
                 </defs>
+                {/* Vertical S-curve — same flowing dots as desktop, rotated vertically */}
                 <path
-                  d="M 350 30 Q 500 250, 50 500 Q -100 750, 350 970"
+                  d="M 150 0 C 300 160, 0 340, 150 500 C 300 660, 0 840, 150 1000"
                   stroke="url(#mobileFlowGrad)"
-                  strokeWidth="4"
-                  strokeDasharray="12,12"
+                  strokeWidth="2"
+                  strokeDasharray="6,6"
                   fill="none"
                   strokeLinecap="round"
                 />
@@ -1274,37 +1307,24 @@ export default function Home() {
                   src="/ava1.png"
                   alt="Get Started"
                   style={{
-                    width: '280px',
-                    height: '280px',
+                    width: '340px',
+                    height: '340px',
                     objectFit: 'contain',
-                    marginBottom: '24px'
+                    marginBottom: '30px'
                   }}
                 />
-                <div style={{
-                  width: '36px',
-                  height: '36px',
-                  borderRadius: '50%',
-                  background: '#083A85',
-                  color: '#fff',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '15px',
-                  fontWeight: 700,
-                  marginBottom: '12px'
-                }}>1</div>
                 <h3 className="step-title" style={{
                   fontSize: '30px',
                   fontWeight: 700,
-                  color: '#0f172a',
-                  marginBottom: '12px'
+                  color: '#000',
+                  marginBottom: '16px'
                 }}>
                   {t('howItWorks.getStarted.title')}
                 </h3>
                 <p className="step-description" style={{
-                  fontSize: '16px',
+                  fontSize: '17px',
                   fontWeight: 400,
-                  color: '#4b5563',
+                  color: '#1f1d1d',
                   lineHeight: '1.65',
                   maxWidth: '280px'
                 }}>
@@ -1327,37 +1347,24 @@ export default function Home() {
                   src="/ava2.png"
                   alt="Photography"
                   style={{
-                    width: '280px',
-                    height: '280px',
+                    width: '340px',
+                    height: '340px',
                     objectFit: 'contain',
-                    marginBottom: '24px'
+                    marginBottom: '30px'
                   }}
                 />
-                <div style={{
-                  width: '36px',
-                  height: '36px',
-                  borderRadius: '50%',
-                  background: '#083A85',
-                  color: '#fff',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '15px',
-                  fontWeight: 700,
-                  marginBottom: '12px'
-                }}>2</div>
                 <h3 className="step-title" style={{
                   fontSize: '30px',
                   fontWeight: 700,
-                  color: '#0f172a',
-                  marginBottom: '12px'
+                  color: '#000',
+                  marginBottom: '16px'
                 }}>
                   {t('howItWorks.photography.title')}
                 </h3>
                 <p className="step-description" style={{
-                  fontSize: '16px',
+                  fontSize: '17px',
                   fontWeight: 400,
-                  color: '#4b5563',
+                  color: '#1f1d1d',
                   lineHeight: '1.65',
                   maxWidth: '280px'
                 }}>
@@ -1382,37 +1389,24 @@ export default function Home() {
                   src="/ava3.png"
                   alt="Go Live"
                   style={{
-                    width: '280px',
-                    height: '280px',
+                    width: '340px',
+                    height: '340px',
                     objectFit: 'contain',
-                    marginBottom: '24px'
+                    marginBottom: '30px'
                   }}
                 />
-                <div style={{
-                  width: '36px',
-                  height: '36px',
-                  borderRadius: '50%',
-                  background: '#083A85',
-                  color: '#fff',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '15px',
-                  fontWeight: 700,
-                  marginBottom: '12px'
-                }}>3</div>
                 <h3 className="step-title" style={{
                   fontSize: '30px',
                   fontWeight: 700,
-                  color: '#0f172a',
-                  marginBottom: '12px'
+                  color: '#000',
+                  marginBottom: '16px'
                 }}>
                   {t('howItWorks.goLive.title')}
                 </h3>
                 <p className="step-description" style={{
-                  fontSize: '16px',
+                  fontSize: '17px',
                   fontWeight: 400,
-                  color: '#4b5563',
+                  color: '#1f1d1d',
                   lineHeight: '1.65',
                   maxWidth: '280px'
                 }}>
@@ -1472,7 +1466,7 @@ export default function Home() {
                 flex: 1,
                 maxWidth: '580px',
                 maxHeight: '1000px',
-                background: 'linear-gradient(135deg, #083A85 0%, #0a4da3 50%, #083A85 100%)',
+                background: 'linear-gradient(90deg, #0104B9 0%, #0104B9 50%, #2213d1 10%, #013773 0%)',
                 borderRadius: '20px',
                 padding: '23px',
                 display: 'flex',
@@ -1511,8 +1505,8 @@ export default function Home() {
                 className="photographer-button"
                 onClick={() => window.location.href = '/user/auth/signup?userType=Photographer'}
                 style={{
-                  background: '#FFFFFF',
-                  color: '#083A85',
+                  background: 'linear-gradient(90deg, #041DC0 0%, #FF6363 0%, #7763FF 100%)',
+                  color: '#000',
                   position: 'absolute',
                   left: '150px',
                   top: '290px',
@@ -1521,7 +1515,7 @@ export default function Home() {
                   padding: '8.25px 5.5px',
                   width: '180px',
                   height: '12%',
-                  borderRadius: '50px',
+                  borderRadius: '10px',
                   border: 'none',
                   cursor: 'pointer',
                   transition: 'all 0.3s ease',
@@ -1529,14 +1523,14 @@ export default function Home() {
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.transform = 'scale(1.08) translateY(-2px)';
-                  e.currentTarget.style.background = '#083A85';
-                  e.currentTarget.style.color = '#FFFFFF';
-                  e.currentTarget.style.boxShadow = '0 8px 25px rgba(8,58,133,0.4)';
+                  e.currentTarget.style.background = 'linear-gradient(90deg, #FFFFFF 0%, #FFFFFF 100%)';
+                  e.currentTarget.style.color = '#083A85';
+                  e.currentTarget.style.boxShadow = '0 8px 25px rgba(255,255,255,0.4)';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = 'scale(1) translateY(0)';
-                  e.currentTarget.style.background = '#FFFFFF';
-                  e.currentTarget.style.color = '#083A85';
+                  e.currentTarget.style.background = 'linear-gradient(90deg, #041DC0 0%, #FF6363 0%, #7763FF 100%)';
+                  e.currentTarget.style.color = '#000';
                   e.currentTarget.style.boxShadow = '0 4px 15px rgba(0,0,0,0.2)';
                 }}
               >
@@ -1608,7 +1602,7 @@ export default function Home() {
                         fontWeight: 800,
                         lineHeight: 1.1,
                         margin: 0,
-                        background: 'linear-gradient(90deg, #083A85 0%, #4fa3d1 100%)',
+                        background: 'linear-gradient(90deg, #8B5CF6 0%, #FF6B6B 100%)',
                         WebkitBackgroundClip: 'text',
                         WebkitTextFillColor: 'transparent',
                         backgroundClip: 'text',
@@ -1645,7 +1639,7 @@ export default function Home() {
                         fontWeight: 800,
                         lineHeight: 1.1,
                         margin: 0,
-                        background: 'linear-gradient(90deg, #083A85 0%, #4fa3d1 100%)',
+                        background: 'linear-gradient(90deg, #8B5CF6 0%, #FF6B6B 100%)',
                         WebkitBackgroundClip: 'text',
                         WebkitTextFillColor: 'transparent',
                         backgroundClip: 'text',
@@ -1669,7 +1663,7 @@ export default function Home() {
                         fontWeight: 800,
                         lineHeight: 1.1,
                         margin: 0,
-                        background: 'linear-gradient(90deg, #083A85 0%, #4fa3d1 100%)',
+                        background: 'linear-gradient(90deg, #8B5CF6 0%, #FF6B6B 100%)',
                         WebkitBackgroundClip: 'text',
                         WebkitTextFillColor: 'transparent',
                         backgroundClip: 'text',
@@ -2585,14 +2579,14 @@ export default function Home() {
             backgroundColor: '#f8fafc',
             padding: '70px 0',
             position: 'relative',
-            overflow: 'visible',
+            overflow: 'hidden',
             zIndex: 3,
             marginTop: '-100vh'
           }}
         >
           {/* Background Decorative Elements */}
           {/* Top-left decorative icon */}
-          <div className="why-amoria-decorative" style={{ display: 'none',
+          <div className="why-amoria-decorative" style={{
             position: 'absolute',
             top: '15%',
             left: '3%',
@@ -2606,7 +2600,7 @@ export default function Home() {
             </svg>
           </div>
           {/* Bottom-left circle icon */}
-          <div className="why-amoria-decorative" style={{ display: 'none',
+          <div className="why-amoria-decorative" style={{
             position: 'absolute',
             bottom: '20%',
             left: '5%',
@@ -2621,7 +2615,7 @@ export default function Home() {
             </svg>
           </div>
           {/* Right side decorative icon */}
-          <div className="why-amoria-decorative" style={{ display: 'none',
+          <div className="why-amoria-decorative" style={{
             position: 'absolute',
             top: '30%',
             right: '3%',
@@ -2636,7 +2630,7 @@ export default function Home() {
             </svg>
           </div>
           {/* Bottom-right decorative */}
-          <div className="why-amoria-decorative" style={{ display: 'none',
+          <div className="why-amoria-decorative" style={{
             position: 'absolute',
             bottom: '15%',
             right: '5%',
@@ -2687,693 +2681,398 @@ export default function Home() {
             position: 'relative',
             zIndex: 1
           }}>
-            {/* 3D Flip Book */}
-            <style>{`
-              .book-scene {
-                perspective: 1800px;
-                max-width: 1000px;
-                margin: 0 auto;
-                display: flex;
-                justify-content: center;
-                padding: 0 40px;
-              }
-              .book-3d {
-                width: 380px;
-                height: 420px;
-                position: relative;
-                transform-style: preserve-3d;
-                transform: rotateY(-5deg) rotateX(2deg);
-                filter: drop-shadow(0 25px 40px rgba(0,0,0,0.2)) drop-shadow(0 10px 15px rgba(0,0,0,0.1));
-                margin-left: 380px;
-              }
-              /* Book cover */
-              .book-cover {
-                position: absolute;
-                width: 100%;
-                height: 100%;
-                transform-style: preserve-3d;
-                transform-origin: left center;
-                z-index: 10;
-              }
-              .book-cover-face {
-                position: absolute;
-                width: 100%;
-                height: 100%;
-                backface-visibility: hidden;
-                -webkit-backface-visibility: hidden;
-                border-radius: 4px 20px 20px 4px;
-                overflow: hidden;
-              }
-              .book-cover-front {
-                background: linear-gradient(160deg, #052047 0%, #083A85 40%, #0a4da3 70%, #1e5bb7 100%);
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                padding: 40px;
-                box-shadow: 4px 4px 20px rgba(0,0,0,0.3), inset -2px 0 8px rgba(0,0,0,0.2);
-              }
-              .book-cover-front::before {
-                content: '';
-                position: absolute;
-                inset: 12px;
-                border: 1.5px solid rgba(255,255,255,0.1);
-                border-radius: 3px 12px 12px 3px;
-                pointer-events: none;
-              }
-              .book-cover-front h2 {
-                font-size: 32px;
-                font-weight: 900;
-                color: #fff;
-                text-align: center;
-                line-height: 1.2;
-                margin-bottom: 14px;
-              }
-              .book-cover-front .cover-sub {
-                font-size: 14px;
-                color: rgba(255,255,255,0.55);
-                text-align: center;
-                max-width: 440px;
-                line-height: 1.6;
-                margin-bottom: 32px;
-              }
-              .book-cover-front .cover-hint {
-                display: flex;
-                align-items: center;
-                gap: 6px;
-                color: rgba(255,255,255,0.4);
-                font-size: 11px;
-                animation: hintBounce 2s ease-in-out infinite;
-              }
-              @keyframes hintBounce {
-                0%, 100% { transform: translateY(0); }
-                50% { transform: translateY(5px); }
-              }
-              .cover-flow {
-                display: flex;
-                align-items: center;
-                gap: 0;
-                margin-bottom: 20px;
-              }
-              .cf-node {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                gap: 5px;
-              }
-              .cf-icon {
-                width: 40px;
-                height: 40px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-              }
-              .cf-node:nth-child(1) .cf-icon { animation: cfPulse 3s ease-in-out 0s infinite; }
-              .cf-node:nth-child(3) .cf-icon { animation: cfPulse 3s ease-in-out 0.6s infinite; }
-              .cf-node:nth-child(5) .cf-icon { animation: cfPulse 3s ease-in-out 1.2s infinite; }
-              .cf-node:nth-child(7) .cf-icon { animation: cfPulse 3s ease-in-out 1.8s infinite; }
-              @keyframes cfPulse {
-                0%, 100% { transform: scale(1); opacity: 0.7; }
-                50% { transform: scale(1.1); opacity: 1; }
-              }
-              .cf-label {
-                font-size: 9px;
-                color: rgba(255,255,255,0.45);
-                font-weight: 600;
-                text-transform: uppercase;
-                letter-spacing: 0.5px;
-              }
-              .cf-arrow {
-                width: 20px;
-                height: 1.5px;
-                background: rgba(255,255,255,0.2);
-                margin: 0 4px 16px;
-              }
-              .book-cover-back {
-                transform: rotateY(180deg);
-                background: linear-gradient(160deg, #041a3a 0%, #062d5e 100%);
-                box-shadow: -4px 4px 20px rgba(0,0,0,0.3);
-                border-radius: 20px 4px 4px 20px;
-              }
-              /* Back cover (bottom of stack) */
-              .book-back-cover {
-                position: absolute;
-                width: 100%;
-                height: 100%;
-                border-radius: 4px 20px 20px 4px;
-                background: linear-gradient(160deg, #052047 0%, #083A85 40%, #0a4da3 100%);
-                z-index: -1;
-                box-shadow: 2px 4px 15px rgba(0,0,0,0.15);
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                padding: 40px;
-              }
-              .book-back-cover::before {
-                content: '';
-                position: absolute;
-                inset: 12px;
-                border: 1px solid rgba(255,255,255,0.08);
-                border-radius: 3px 14px 14px 3px;
-                pointer-events: none;
-              }
-              .book-back-cover .back-logo {
-                font-size: 20px;
-                font-weight: 900;
-                color: rgba(255,255,255,0.3);
-                letter-spacing: 3px;
-                text-transform: uppercase;
-              }
-              .book-back-cover .back-tagline {
-                font-size: 11px;
-                color: rgba(255,255,255,0.2);
-                margin-top: 8px;
-                font-weight: 500;
-              }
+            {/* Section Header */}
+            <div className="why-amoria-header" style={{
+              maxWidth: '780px',
+              margin: '0 auto 120px',
+              textAlign: 'center'
+            }}>
+              <h2 className="why-amoria-title" style={{
+                fontSize: '50px',
+                fontWeight: 1000,
+                marginBottom: '24px',
+                color: '#000',
+                letterSpacing: '-0.02em'
+              }}>
+                  {t('whyAmoria.title')}
+              </h2>
+              <p className="why-amoria-subtitle" style={{
+                fontSize: '18px',
+                fontWeight: 500,
+                color: '#1f1d1d',
+                lineHeight: '1.7',
+              }}>
+                {t('whyAmoria.subtitle')}
+              </p>
+            </div>
 
-              /* Pages */
-              .book-page {
-                position: absolute;
-                width: 100%;
-                height: 100%;
-                transform-style: preserve-3d;
-                transform-origin: left center;
-              }
-              /* Page curl effect during mid-flip */
-              @keyframes pageCurl {
-                0% { transform: rotateY(0deg) scale(1); }
-                50% { transform: rotateY(-90deg) scale(0.95) skewY(2deg); }
-                100% { transform: rotateY(-180deg) scale(1); }
-              }
-              .book-page-face {
-                position: absolute;
-                width: 100%;
-                height: 100%;
-                backface-visibility: hidden;
-                -webkit-backface-visibility: hidden;
-                border-radius: 4px 20px 20px 4px;
-                overflow: hidden;
-              }
-              .bp-front {
-                background: #fff;
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-                padding: 50px 45px;
-                box-shadow: 2px 2px 15px rgba(0,0,0,0.1), inset -2px 0 6px rgba(0,0,0,0.04);
-                position: relative;
-              }
-              /* Gutter shadow - simulates book crease along spine */
-              .bp-front::before {
-                content: '';
-                position: absolute;
-                left: 0;
-                top: 0;
-                bottom: 0;
-                width: 30px;
-                background: linear-gradient(to right, rgba(0,0,0,0.08), rgba(0,0,0,0.02), transparent);
-                z-index: 2;
-                pointer-events: none;
-                border-radius: 4px 0 0 4px;
-              }
-              .bp-front .bp-watermark {
-                display: none;
-              }
-              .bp-front .bp-text {
-                width: 100%;
-                position: relative;
-                z-index: 1;
-              }
-              .bp-front .bp-text .bp-num {
-                display: none;
-              }
-              .bp-front .bp-text h3 {
-                font-size: 28px;
-                font-weight: 900;
-                color: #083A85;
-                margin-bottom: 16px;
-                line-height: 1.15;
-              }
-              .bp-front .bp-text p {
-                font-size: 15px;
-                color: #64748b;
-                line-height: 1.7;
-                margin: 0;
-                max-width: 320px;
-              }
-              /* Decorative line under heading */
-              .bp-front .bp-text .bp-line {
-                width: 40px;
-                height: 3px;
-                background: #083A85;
-                border-radius: 2px;
-                margin-bottom: 16px;
-                opacity: 0.3;
-              }
-              .bp-back {
-                transform: rotateY(180deg);
-                background: linear-gradient(135deg, #062d5e 0%, #083A85 50%, #0a4da3 100%);
-                position: relative;
-                box-shadow: -2px 2px 15px rgba(0,0,0,0.15);
-                border-radius: 20px 4px 4px 20px;
-                overflow: hidden;
-              }
-              /* Huge page number — bottom right */
-              .bp-back .bp-back-num {
-                font-size: 200px;
-                font-weight: 900;
-                color: rgba(255,255,255,0.15);
-                position: absolute;
-                bottom: -20px;
-                right: 10px;
-                line-height: 1;
-                letter-spacing: -10px;
-                pointer-events: none;
-              }
-              /* Title — vertical on left side */
-              .bp-back h4 {
-                writing-mode: vertical-rl;
-                font-size: 24px;
-                font-weight: 900;
-                color: rgba(255,255,255,0.8);
-                position: absolute;
-                left: 20px;
-                top: 50%;
-                transform: rotate(180deg);
-                letter-spacing: 3px;
-                text-transform: uppercase;
-                margin: 0;
-              }
-              /* Small page label — top right */
-              .bp-back .bp-back-label {
-                font-size: 10px;
-                font-weight: 700;
-                color: rgba(255,255,255,0.4);
-                text-transform: uppercase;
-                letter-spacing: 2px;
-                position: absolute;
-                top: 20px;
-                right: 20px;
-              }
-              /* Description — top left area */
-              .bp-back p {
-                font-size: 11px;
-                color: rgba(255,255,255,0.35);
-                position: absolute;
-                top: 20px;
-                left: 55px;
-                right: 80px;
-                line-height: 1.6;
-                margin: 0;
-              }
+            {/* Overlapping Cards Layout */}
+            <div className="why-amoria-dashboard" style={{
+              position: 'relative',
+              maxWidth: '1100px',
+              margin: '0 auto',
+              height: '650px'
+            }}>
+              {/* Connection Lines SVG */}
+              <svg
+                className="why-amoria-connections"
+                style={{
+                  position: 'absolute',
+                  width: '100%',
+                  height: '100%',
+                  top: 0,
+                  left: 0,
+                  zIndex: 0,
+                  pointerEvents: 'none'
+                }}
+                viewBox="0 0 1100 650"
+                preserveAspectRatio="xMidYMid meet"
+              >
+                <defs>
+                  <linearGradient id="lineGradientAmoria" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="#083A85" stopOpacity="0.5"/>
+                    <stop offset="50%" stopColor="#083A85" stopOpacity="0.9"/>
+                    <stop offset="100%" stopColor="#083A85" stopOpacity="0.5"/>
+                  </linearGradient>
+                </defs>
+                {/* Top line - straight horizontal */}
+                <path d="M 60 20 L 1040 20"
+                  stroke="#083A85" strokeWidth="2" fill="none" strokeDasharray="10,8" strokeLinecap="round" opacity="1"/>
 
-              /* Page thickness edges */
-              .book-page-edges {
-                position: absolute;
-                right: -3px;
-                top: 8px;
-                bottom: 8px;
-                width: 6px;
-                background: repeating-linear-gradient(
-                  to bottom,
-                  #e8e8e8 0px,
-                  #f5f5f5 1px,
-                  #e8e8e8 2px
-                );
-                border-radius: 0 2px 2px 0;
-                z-index: -1;
-                pointer-events: none;
-                box-shadow: 1px 0 3px rgba(0,0,0,0.08);
-              }
+                {/* Right line - straight vertical */}
+                <path d="M 1090 60 L 1090 590"
+                  stroke="#083A85" strokeWidth="2" fill="none" strokeDasharray="10,8" strokeLinecap="round" opacity="1"/>
 
-              /* Spine */
-              .book-spine-3d {
-                position: absolute;
-                left: -6px;
-                top: 0;
-                bottom: 0;
-                width: 14px;
-                background: linear-gradient(to right, #041a3a, #052047, #062d5e);
-                border-radius: 3px 0 0 3px;
-                z-index: 11;
-                box-shadow: -2px 2px 8px rgba(0,0,0,0.2);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                overflow: hidden;
-              }
-              .book-spine-3d .spine-text {
-                writing-mode: vertical-rl;
-                text-orientation: mixed;
-                transform: rotate(180deg);
-                font-size: 7px;
-                font-weight: 800;
-                color: rgba(255,255,255,0.25);
-                letter-spacing: 2px;
-                text-transform: uppercase;
-                white-space: nowrap;
-              }
+                {/* Bottom line - straight horizontal */}
+                <path d="M 1040 630 L 60 630"
+                  stroke="#083A85" strokeWidth="2" fill="none" strokeDasharray="10,8" strokeLinecap="round" opacity="1"/>
 
-              /* Page shadow */
-              .book-page::after {
-                content: '';
-                position: absolute;
-                top: 0;
-                right: 0;
-                width: 40px;
-                height: 100%;
-                background: linear-gradient(to left, rgba(0,0,0,0.05), transparent);
-                border-radius: 0 16px 16px 0;
-                pointer-events: none;
-                opacity: 1;
-                transition: opacity 0.4s;
-              }
-              /* Hide back faces of pages — only cover back face shows on the left */
-              .bp-back {
-                visibility: hidden;
-              }
+                {/* Left line - straight vertical */}
+                <path d="M 10 590 L 10 60"
+                  stroke="#083A85" strokeWidth="2" fill="none" strokeDasharray="10,8" strokeLinecap="round" opacity="1"/>
 
-              /* Dots */
-              .book-dots {
-                display: flex;
-                justify-content: center;
-                gap: 10px;
-                margin-top: 30px;
-              }
-              .book-dot {
-                width: 10px;
-                height: 10px;
-                border-radius: 50%;
-                border: 2px solid #083A85;
-                background: transparent;
-                transition: all 0.3s ease;
-              }
-              .book-dot.active {
-                background: #083A85;
-                transform: scale(1.2);
-              }
-              .book-scroll-hint {
-                text-align: center;
-                margin-top: 14px;
-                font-size: 13px;
-                color: #94a3b8;
-                font-weight: 500;
-              }
+                {/* Corner arcs */}
+                <path d="M 1040 20 Q 1090 20 1090 60" stroke="#083A85" strokeWidth="3" fill="none" strokeDasharray="10,8" strokeLinecap="round" opacity="1"/>
+                <path d="M 1090 590 Q 1090 630 1040 630" stroke="#083A85" strokeWidth="3" fill="none" strokeDasharray="10,8" strokeLinecap="round" opacity="1"/>
+                <path d="M 60 630 Q 10 630 10 590" stroke="#083A85" strokeWidth="3" fill="none" strokeDasharray="10,8" strokeLinecap="round" opacity="1"/>
+                <path d="M 10 60 Q 10 20 60 20" stroke="#083A85" strokeWidth="3" fill="none" strokeDasharray="10,8" strokeLinecap="round" opacity="1"/>
+              </svg>
 
-              @media (max-width: 768px) {
-                .book-scene { padding: 0 20px; }
-                .book-3d {
-                  width: 100%;
-                  max-width: 500px;
-                  height: 480px;
-                  margin-left: 0 !important;
-                  transform: rotateY(0deg) rotateX(0deg) !important;
-                }
-                .bp-front .bp-text { padding: 50px 40px; }
-                .bp-front .bp-text h3 { font-size: 30px; }
-                .bp-front .bp-text p { font-size: 18px; }
-                .bp-front .bp-text .bp-line { width: 30px; height: 2px; }
-                .book-cover-front h2 { font-size: 22px; }
-                .book-cover-front .cover-sub { font-size: 11px; margin-bottom: 20px; }
-                .book-cover-front { padding: 30px 24px; }
-                /* Hide spine and page edges on mobile */
-                .book-spine-3d { display: none; }
-                .book-page-edges { display: none; }
-                /* Hide flipped pages on left — just flip in place */
-                .book-cover-back { visibility: hidden !important; }
-                .book-cover { z-index: 10 !important; }
-                /* Simpler page face styling */
-                .bp-front::before { width: 15px; }
-                .book-page-face { border-radius: 4px 12px 12px 4px; }
-                .book-cover-face { border-radius: 4px 12px 12px 4px; }
-                /* Back cover */
-                .book-back-cover { border-radius: 4px 12px 12px 4px; padding: 30px; }
-                .book-back-cover .back-logo { font-size: 16px; }
-                .book-back-cover .back-tagline { font-size: 10px; }
-                /* Cover flow smaller */
-                .cf-icon { width: 32px; height: 32px; }
-                .cf-icon svg { width: 14px; height: 14px; }
-                .cf-label { font-size: 8px; }
-                .cf-arrow { width: 14px; margin: 0 3px 14px; }
-                .cover-flow { margin-bottom: 16px; }
-              }
-              @media (max-width: 480px) {
-                .book-scene { padding: 0 12px; }
-                .book-3d {
-                  width: 100%;
-                  max-width: 340px;
-                  height: 400px;
-                }
-                .bp-front .bp-text { padding: 34px 24px; }
-                .bp-front .bp-text h3 { font-size: 24px; }
-                .bp-front .bp-text p { font-size: 15px; line-height: 1.6; }
-                .book-cover-front h2 { font-size: 19px; }
-                .book-cover-front .cover-sub { font-size: 10px; }
-                .book-cover-front { padding: 24px 18px; }
-                .cf-icon { width: 28px; height: 28px; }
-                .cf-icon svg { width: 12px; height: 12px; }
-                .cf-label { font-size: 7px; }
-                .cf-arrow { width: 10px; margin: 0 2px 12px; }
-              }
-            `}</style>
+              {/* LARGE CARD - Gallery - Center background */}
+              <div
+                className="why-amoria-card why-amoria-card-large"
+                onMouseEnter={() => setActiveCard(3)}
+                style={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  width: '820px',
+                  backgroundColor: '#fff',
+                  borderRadius: '24px',
+                  boxShadow: activeCard === 3
+                    ? '0 30px 70px rgba(8, 58, 133, 0.25)'
+                    : '0 20px 50px rgba(0,0,0,0.1)',
+                  overflow: 'hidden',
+                  cursor: 'pointer',
+                  transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                  zIndex: 1
+                }}
+              >
+                <div style={{
+                  height: '350px',
+                  overflow: 'hidden',
+                  position: 'relative'
+                }}>
+                  <img
+                    src="/gallery.png"
+                    alt="Full Event Gallery"
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover'
+                    }}
+                  />
+                </div>
+                <div style={{ padding: '44px 20px' }}>
+                </div>
+              </div>
 
-            <div className="flip-book-wrapper" ref={flipBookRef}>
-              <div className="book-scene">
-                <div className="book-3d" ref={book3dRef}>
-                  {/* Spine */}
-                  <div className="book-spine-3d">
-                    <span className="spine-text">AMORIA CONNEKYT</span>
-                  </div>
-                  {/* Page edges */}
-                  <div className="book-page-edges" />
-
-                  {/* Back cover (bottom of stack) */}
-                  <div className="book-back-cover">
-                    <div className="back-logo">Amoria Connekyt</div>
-                    <div className="back-tagline">The Smart Way to Capture Life</div>
-                  </div>
-
-                  {/* Page 8: Photographer Portfolio (bottom, z-index 1) */}
-                  <div className="book-page" ref={bookPage8Ref} style={{ zIndex: 1 }}>
-                    <div className="book-page-face bp-front">
-                      <span className="bp-watermark">08</span>
-                      <div className="bp-text">
-                        <span className="bp-num">PAGE 08</span>
-                        <h3>Photographer Portfolio</h3>
-                        <div className="bp-line" />
-                        <p>Showcase your best work with a stunning portfolio that attracts clients and builds your brand.</p>
-                      </div>
-                    </div>
-                    <div className="book-page-face bp-back">
-                      <span className="bp-back-num">08</span>
-                      <span className="bp-back-label">Page 08</span>
-                      <h4>Photographer Portfolio</h4>
-                      <p>Build your professional brand</p>
-                    </div>
-                  </div>
-
-                  {/* Page 7: Global Network (z-index 2) */}
-                  <div className="book-page" ref={bookPage7Ref} style={{ zIndex: 2 }}>
-                    <div className="book-page-face bp-front">
-                      <span className="bp-watermark">07</span>
-                      <div className="bp-text">
-                        <span className="bp-num">PAGE 07</span>
-                        <h3>Global Network</h3>
-                        <div className="bp-line" />
-                        <p>Connect with photographers and clients worldwide through our growing international community.</p>
-                      </div>
-                    </div>
-                    <div className="book-page-face bp-back">
-                      <span className="bp-back-num">07</span>
-                      <span className="bp-back-label">Page 07</span>
-                      <h4>Global Network</h4>
-                      <p>Worldwide photography community</p>
-                    </div>
-                  </div>
-
-                  {/* Page 6: Photo Gallery (z-index 3) */}
-                  <div className="book-page" ref={bookPage6Ref} style={{ zIndex: 3 }}>
-                    <div className="book-page-face bp-front">
-                      <span className="bp-watermark">06</span>
-                      <div className="bp-text">
-                        <span className="bp-num">PAGE 06</span>
-                        <h3>Photo Gallery</h3>
-                        <div className="bp-line" />
-                        <p>Beautiful curated galleries delivered directly from your event, ready to share and download.</p>
-                      </div>
-                    </div>
-                    <div className="book-page-face bp-back">
-                      <span className="bp-back-num">06</span>
-                      <span className="bp-back-label">Page 06</span>
-                      <h4>Photo Gallery</h4>
-                      <p>Curated event memories</p>
-                    </div>
-                  </div>
-
-                  {/* Page 5: Event Management (z-index 4) */}
-                  <div className="book-page" ref={bookPage5Ref} style={{ zIndex: 4 }}>
-                    <div className="book-page-face bp-front">
-                      <span className="bp-watermark">05</span>
-                      <div className="bp-text">
-                        <span className="bp-num">PAGE 05</span>
-                        <h3>Event Management</h3>
-                        <div className="bp-line" />
-                        <p>Manage your events with a powerful dashboard — track bookings, earnings, and performance in real time.</p>
-                      </div>
-                    </div>
-                    <div className="book-page-face bp-back">
-                      <span className="bp-back-num">05</span>
-                      <span className="bp-back-label">Page 05</span>
-                      <h4>Event Management</h4>
-                      <p>Powerful event dashboard</p>
-                    </div>
-                  </div>
-
-                  {/* Page 4: All in One (z-index 5) */}
-                  <div className="book-page" ref={bookPage4Ref} style={{ zIndex: 5 }}>
-                    <div className="book-page-face bp-front">
-                      <span className="bp-watermark">04</span>
-                      <div className="bp-text">
-                        <span className="bp-num">PAGE 04</span>
-                        <h3>All in One Platform</h3>
-                        <div className="bp-line" />
-                        <p>Everything you need for event photography in one place.</p>
-                      </div>
-                    </div>
-                    <div className="book-page-face bp-back">
-                      <span className="bp-back-num">04</span>
-                      <span className="bp-back-label">Page 04</span>
-                      <h4>All in One Platform</h4>
-                      <p>Your complete photography solution</p>
-                    </div>
-                  </div>
-
-                  {/* Page 3: Secure Payments (z-index 6) */}
-                  <div className="book-page" ref={bookPage3Ref} style={{ zIndex: 6 }}>
-                    <div className="book-page-face bp-front">
-                      <span className="bp-watermark">03</span>
-                      <div className="bp-text">
-                        <span className="bp-num">PAGE 03</span>
-                        <h3>{t('whyAmoria.securePayments.title')}</h3>
-                        <div className="bp-line" />
-                        <p>{t('whyAmoria.securePayments.description')}</p>
-                      </div>
-                    </div>
-                    <div className="book-page-face bp-back">
-                      <span className="bp-back-num">03</span>
-                      <span className="bp-back-label">Page 03</span>
-                      <h4>{t('whyAmoria.securePayments.title')}</h4>
-                      <p>Protected & verified transactions</p>
-                    </div>
-                  </div>
-
-                  {/* Page 2: Live Streaming (z-index 7) */}
-                  <div className="book-page" ref={bookPage2Ref} style={{ zIndex: 7 }}>
-                    <div className="book-page-face bp-front">
-                      <span className="bp-watermark">02</span>
-                      <div className="bp-text">
-                        <span className="bp-num">PAGE 02</span>
-                        <h3>{t('whyAmoria.liveStreaming.title')}</h3>
-                        <div className="bp-line" />
-                        <p>{t('whyAmoria.liveStreaming.description')}</p>
-                      </div>
-                    </div>
-                    <div className="book-page-face bp-back">
-                      <span className="bp-back-num">02</span>
-                      <span className="bp-back-label">Page 02</span>
-                      <h4>{t('whyAmoria.liveStreaming.title')}</h4>
-                      <p>Real-time event broadcasting</p>
-                    </div>
-                  </div>
-
-                  {/* Page 1: Rated Photographers (z-index 8, top) */}
-                  <div className="book-page" ref={bookPage1Ref} style={{ zIndex: 8 }}>
-                    <div className="book-page-face bp-front">
-                      <span className="bp-watermark">01</span>
-                      <div className="bp-text">
-                        <span className="bp-num">PAGE 01</span>
-                        <h3>{t('whyAmoria.ratedPhotographers.title')}</h3>
-                        <div className="bp-line" />
-                        <p>{t('whyAmoria.ratedPhotographers.description')}</p>
-                      </div>
-                    </div>
-                    <div className="book-page-face bp-back">
-                      <span className="bp-back-num">01</span>
-                      <span className="bp-back-label">Page 01</span>
-                      <h4>{t('whyAmoria.ratedPhotographers.title')}</h4>
-                      <p>Trusted & verified professionals</p>
-                    </div>
-                  </div>
-
-                  {/* Book Cover (z-index 5, very top) */}
-                  <div className="book-cover" ref={bookCoverRef}>
-                    <div className="book-cover-face book-cover-front">
-                      <h2>{t('whyAmoria.title')}</h2>
-                      <p className="cover-sub">{t('whyAmoria.subtitle')}</p>
-                      <div className="cover-flow">
-                        <div className="cf-node">
-                          <div className="cf-icon">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.5">
-                              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>
-                            </svg>
-                          </div>
-                          <span className="cf-label">Photographer</span>
-                        </div>
-                        <div className="cf-arrow" />
-                        <div className="cf-node">
-                          <div className="cf-icon">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.5">
-                              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-                            </svg>
-                          </div>
-                          <span className="cf-label">Event</span>
-                        </div>
-                        <div className="cf-arrow" />
-                        <div className="cf-node">
-                          <div className="cf-icon">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.5">
-                              <polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
-                            </svg>
-                          </div>
-                          <span className="cf-label">Stream</span>
-                        </div>
-                        <div className="cf-arrow" />
-                        <div className="cf-node">
-                          <div className="cf-icon">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.5">
-                              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
-                            </svg>
-                          </div>
-                          <span className="cf-label">Client</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="book-cover-face book-cover-back" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
-                      {/* Big page number */}
-                      <span style={{ fontSize: '180px', fontWeight: 900, color: 'rgba(255,255,255,0.1)', lineHeight: 1, letterSpacing: '-8px', marginBottom: '-20px' }}>
-                        {activeCard >= 0 && activeCard < 8 ? `0${activeCard + 1}` : ''}
-                      </span>
-                      {/* Matching heading */}
-                      <h4 style={{ fontSize: '22px', fontWeight: 900, color: 'rgba(255,255,255,0.85)', textAlign: 'center', margin: 0, padding: '0 24px', lineHeight: 1.3, textTransform: 'uppercase', letterSpacing: '2px' }}>
-                        {activeCard === 0 && t('whyAmoria.ratedPhotographers.title')}
-                        {activeCard === 1 && t('whyAmoria.liveStreaming.title')}
-                        {activeCard === 2 && t('whyAmoria.securePayments.title')}
-                        {activeCard === 3 && 'All in One Platform'}
-                        {activeCard === 4 && 'Event Management'}
-                        {activeCard === 5 && 'Photo Gallery'}
-                        {activeCard === 6 && 'Global Network'}
-                        {activeCard === 7 && 'Photographer Portfolio'}
-                        {(activeCard === 8 || activeCard === 9) && 'Amoria Connekyt'}
-                      </h4>
-                    </div>
+              {/* MEDIUM CARD - Rated Photographers - Top Left overlapping */}
+              <div
+                className="why-amoria-card why-amoria-card-medium"
+                onMouseEnter={() => setActiveCard(0)}
+                style={{
+                  position: 'absolute',
+                  top: '-20px',
+                  left: '-50px',
+                  width: '340px',
+                  backgroundColor: '#fff',
+                  borderRadius: '20px',
+                  boxShadow: activeCard === 0
+                    ? '0 24px 60px rgba(8, 58, 133, 0.3)'
+                    : '0 12px 35px rgba(0,0,0,0.12)',
+                  overflow: 'hidden',
+                  cursor: 'pointer',
+                  transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                  transform: activeCard === 0 ? 'scale(1.05)' : 'scale(1)',
+                  zIndex: activeCard === 0 ? 10 : 3
+                }}
+              >
+                <div style={{ padding: '12px 14px 14px' }}>
+                  <h3 style={{
+                    fontSize: '18px',
+                    fontWeight: 700,
+                    color: '#083A85',
+                    marginBottom: '4px'
+                  }}>
+                    {t('whyAmoria.ratedPhotographers.title')}
+                  </h3>
+                  <p style={{
+                    fontSize: '13px',
+                    color: '#000',
+                    lineHeight: '1.4',
+                    margin: 0,
+                    marginBottom: '10px'
+                  }}>
+                    {t('whyAmoria.ratedPhotographers.description')}
+                  </p>
+                  <div style={{
+                    height: '200px',
+                    borderRadius: '14px',
+                    overflow: 'hidden'
+                  }}>
+                    <img
+                      src="/rated.png"
+                      alt="Rated Photographers"
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover'
+                      }}
+                    />
                   </div>
                 </div>
               </div>
 
+              {/* BASE CARD - Secure Payments - Bottom Left overlapping */}
+              <div
+                className="why-amoria-card why-amoria-card-base"
+                onMouseEnter={() => setActiveCard(2)}
+                style={{
+                  position: 'absolute',
+                  bottom: '-60px',
+                  left: '70px',
+                  width: '320px',
+                  backgroundColor: '#fff',
+                  borderRadius: '18px',
+                  boxShadow: activeCard === 2
+                    ? '0 22px 55px rgba(8, 58, 133, 0.28)'
+                    : '0 10px 30px rgba(0,0,0,0.1)',
+                  overflow: 'hidden',
+                  cursor: 'pointer',
+                  transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                  transform: activeCard === 2 ? 'scale(1.05)' : 'scale(1)',
+                  zIndex: activeCard === 2 ? 10 : 4
+                }}
+              >
+                <div style={{ padding: '12px 14px 14px' }}>
+                  <div style={{
+                    height: '180px',
+                    borderRadius: '14px',
+                    overflow: 'hidden',
+                    position: 'relative'
+                  }}>
+                    <img
+                      src="/pay.png"
+                      alt="Secure Payments"
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover'
+                      }}
+                    />
+                    <div style={{
+                      position: 'absolute',
+                      bottom: '10px',
+                      left: '10px',
+                      backgroundColor: 'rgba(255,255,255,0.95)',
+                      color: '#16a34a',
+                      padding: '5px 10px',
+                      borderRadius: '12px',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '5px'
+                    }}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                        <path d="M9 12l2 2 4-4"/>
+                      </svg>
+                      Secured
+                    </div>
+                  </div>
+                  <h3 style={{
+                    fontSize: '16px',
+                    fontWeight: 700,
+                    color: '#083A85',
+                    marginTop: '10px',
+                    marginBottom: '4px'
+                  }}>
+                    {t('whyAmoria.securePayments.title')}
+                  </h3>
+                  <p style={{
+                    fontSize: '13px',
+                    color: '#000',
+                    lineHeight: '1.4',
+                    margin: 0
+                  }}>
+                    {t('whyAmoria.securePayments.description')}
+                  </p>
+                </div>
+              </div>
+
+              {/* SECOND LARGE CARD - Live Streaming - Top Right overlapping */}
+              <div
+                className="why-amoria-card why-amoria-card-small"
+                onMouseEnter={() => setActiveCard(1)}
+                style={{
+                  position: 'absolute',
+                  top: '-30px',
+                  right: '-60px',
+                  width: '380px',
+                  backgroundColor: '#fff',
+                  borderRadius: '20px',
+                  boxShadow: activeCard === 1
+                    ? '0 24px 60px rgba(8, 58, 133, 0.3)'
+                    : '0 12px 35px rgba(0,0,0,0.12)',
+                  overflow: 'hidden',
+                  cursor: 'pointer',
+                  transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                  transform: activeCard === 1 ? 'scale(1.05)' : 'scale(1)',
+                  zIndex: activeCard === 1 ? 10 : 5
+                }}
+              >
+                <div style={{ padding: '12px 14px 14px' }}>
+                  <div style={{
+                    height: '240px',
+                    borderRadius: '14px',
+                    overflow: 'hidden',
+                    position: 'relative'
+                  }}>
+                    <img
+                      src="/live.png"
+                      alt="Live Streaming"
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover'
+                      }}
+                    />
+                    <div style={{
+                      position: 'absolute',
+                      top: '12px',
+                      left: '12px',
+                      backgroundColor: '#dc2626',
+                      color: '#fff',
+                      padding: '5px 12px',
+                      borderRadius: '12px',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '5px'
+                    }}>
+                      <span style={{
+                        width: '7px',
+                        height: '7px',
+                        backgroundColor: '#fff',
+                        borderRadius: '50%',
+                        animation: 'pulse 1.5s infinite'
+                      }}/>
+                      LIVE
+                    </div>
+                  </div>
+                  <h3 style={{
+                    fontSize: '18px',
+                    fontWeight: 700,
+                    color: '#083A85',
+                    marginTop: '10px',
+                    marginBottom: '4px'
+                  }}>
+                    {t('whyAmoria.liveStreaming.title')}
+                  </h3>
+                  <p style={{
+                    fontSize: '13px',
+                    color: '#000',
+                    lineHeight: '1.4',
+                    margin: 0
+                  }}>
+                    {t('whyAmoria.liveStreaming.description')}
+                  </p>
+                </div>
+              </div>
+
+              {/* Extra small accent card - Bottom Right */}
+              <div
+                className="why-amoria-card-accent"
+                style={{
+                  position: 'absolute',
+                  bottom: '50px',
+                  right: '20px',
+                  width: '220px',
+                  backgroundColor: '#fff',
+                  borderRadius: '16px',
+                  boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+                  padding: '18px',
+                  zIndex: 2
+                }}
+              >
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  marginBottom: '12px'
+                }}>
+                  <div style={{
+                    width: '44px',
+                    height: '44px',
+                    background: 'linear-gradient(135deg, #083A85 0%, #1e5bb7 100%)',
+                    borderRadius: '12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2">
+                      <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                      <path d="M2 17l10 5 10-5"/>
+                      <path d="M2 12l10 5 10-5"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '15px', fontWeight: 700, color: '#083A85' }}>All in One</div>
+                    <div style={{ fontSize: '12px', color: '#64748b' }}>Platform</div>
+                  </div>
+                </div>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  color: '#083A85',
+                  fontSize: '13px',
+                  fontWeight: 600
+                }}>
+                  See more
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M6 9l6 6 6-6"/>
+                  </svg>
+                </div>
+              </div>
             </div>
           </div>
         </section>
+
         <style jsx>{`
           @keyframes pulse {
             0%, 100% {
@@ -3384,6 +3083,40 @@ export default function Home() {
             }
           }
 
+          @keyframes hero-card-twinkle {
+            0%, 100% {
+              border-color: rgba(16, 185, 129, 0.8);
+              box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.8),
+                          0 0 0 0 rgba(16, 185, 129, 0.6),
+                          0 0 12px rgba(16, 185, 129, 0.3);
+            }
+            25% {
+              box-shadow: 0 0 0 10px rgba(16, 185, 129, 0),
+                          0 0 0 20px rgba(16, 185, 129, 0),
+                          0 0 20px rgba(16, 185, 129, 0.15);
+            }
+            50% {
+              border-color: rgba(52, 211, 153, 1);
+              box-shadow: 0 0 0 18px rgba(16, 185, 129, 0),
+                          0 0 0 32px rgba(16, 185, 129, 0),
+                          0 0 28px rgba(16, 185, 129, 0.2);
+            }
+            75% {
+              box-shadow: 0 0 0 10px rgba(16, 185, 129, 0),
+                          0 0 0 20px rgba(16, 185, 129, 0),
+                          0 0 20px rgba(16, 185, 129, 0.15);
+            }
+          }
+          @keyframes hero-toss-in {
+            0% { transform: translateY(100%) rotate(15deg) scale(0.6); opacity: 0; }
+            60% { transform: translateY(-8%) rotate(-3deg) scale(1.02); opacity: 1; }
+            100% { transform: translateY(0) rotate(0deg) scale(1); opacity: 1; }
+          }
+          @keyframes hero-spin-in {
+            0% { transform: scale(0.3) rotate(-180deg); opacity: 0; }
+            60% { transform: scale(1.05) rotate(10deg); opacity: 1; }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+          }
           @keyframes find-events-border-vibrate {
             0%, 100% {
               box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7),
@@ -3471,31 +3204,31 @@ export default function Home() {
           }}>
             {/* Left Content */}
             <div className="global-network-left" style={{
-              flex: '0 0 45%',
-              maxWidth: '600px',
+              flex: '0 0 42%',
+              maxWidth: '550px',
               color: '#fff'
             }}>
               {/* Title */}
               <h2 className="global-network-title" style={{
-                fontSize: '50px',
-                fontWeight: 800,
-                lineHeight: '1.15',
+                fontSize: '55px',
+                fontWeight: 1000,
+                lineHeight: '1.1',
+                lineBreak: 'anywhere',
                 marginBottom: '24px',
                 color: '#fff',
-                letterSpacing: '-0.02em',
-                wordBreak: 'keep-all'
+                letterSpacing: '-0.02em'
               }}>
                 {t('globalNetwork.title')}
               </h2>
 
               {/* Description */}
               <p className="global-network-description" style={{
-                fontSize: '16px',
-                lineHeight: '1.7',
-                color: 'rgba(255,255,255,0.85)',
+                fontSize: '17px',
+                lineHeight: '1.65',
+                color: '#fff',
+                opacity: 0.9,
                 fontWeight: 400,
-                marginBottom: '36px',
-                maxWidth: '520px'
+                marginBottom: '32px'
               }}>
                 {t('globalNetwork.description')}
               </p>
@@ -3504,9 +3237,9 @@ export default function Home() {
                   onClick={() => window.location.href = '/user/photographers'}
                   style={{
                     backgroundColor: 'white',
-                    color: '#083A85',
+                    color: '#000000',
                     padding: '11.25px 20px',
-                    borderRadius: '37.5px',
+                    borderRadius: '10px',
                     border: '1.5px solid #FFFFFF',
                     fontSize: '15px',
                     fontWeight: 600,
@@ -3524,28 +3257,19 @@ export default function Home() {
                   className={hasLiveEvents ? 'find-events-btn' : undefined}
                   onClick={() => window.location.href = '/user/events'}
                   style={{
-                    backgroundColor: 'rgba(255,255,255,0.1)',
+                    backgroundColor: 'transparent',
                     color: '#FFFFFF',
                     padding: '11.25px 20px',
-                    borderRadius: '37.5px',
-                    border: '1.5px solid rgba(255,255,255,0.5)',
+                    borderRadius: '10px',
+                    border: '2px solid #FFFFFF',
                     fontSize: '15px',
                     fontWeight: 600,
                     cursor: 'pointer',
                     whiteSpace: 'nowrap',
-                    transition: 'all 0.3s ease',
-                    backdropFilter: 'blur(4px)'
+                    transition: 'all 0.3s ease'
                   }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.2)';
-                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.8)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)';
-                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.5)';
-                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
                 >
                   {t('globalNetwork.findEvents')}
                 </button>

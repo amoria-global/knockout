@@ -1,22 +1,9 @@
-"use client";
+'use client';
 
-import React, {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  useCallback,
-} from "react";
-import {
-  apiClient,
-  getAuthToken,
-  setAuthToken,
-  removeAuthToken,
-  removeRefreshToken,
-  isAuthenticated as checkAuth,
-} from "@/lib/api/client";
-import { API_ENDPOINTS } from "@/lib/api/config";
-import { logout as logoutFromBackend } from "@/lib/APIs/auth/logout/route";
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { apiClient, getAuthToken, setAuthToken, removeAuthToken, removeRefreshToken, isAuthenticated as checkAuth } from '@/lib/api/client';
+import { API_ENDPOINTS } from '@/lib/api/config';
+import { logout as logoutFromBackend } from '@/lib/APIs/auth/logout/route';
 
 /**
  * User data stored in auth context
@@ -43,7 +30,7 @@ interface AuthContextType {
   logout: () => void;
 }
 
-const AUTH_USER_KEY = "authUser";
+const AUTH_USER_KEY = 'authUser';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -51,7 +38,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
  * Get stored user data from localStorage
  */
 function getStoredUser(): AuthUser | null {
-  if (typeof window === "undefined") return null;
+  if (typeof window === 'undefined') return null;
   try {
     const stored = localStorage.getItem(AUTH_USER_KEY);
     if (stored) {
@@ -68,7 +55,7 @@ function getStoredUser(): AuthUser | null {
  * Store user data in localStorage
  */
 function storeUser(user: AuthUser): void {
-  if (typeof window === "undefined") return;
+  if (typeof window === 'undefined') return;
   localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
 }
 
@@ -76,25 +63,28 @@ function storeUser(user: AuthUser): void {
  * Remove user data from localStorage
  */
 function clearStoredUser(): void {
-  if (typeof window === "undefined") return;
+  if (typeof window === 'undefined') return;
   localStorage.removeItem(AUTH_USER_KEY);
 }
 
 /**
  * Validate profile picture URL — backend sometimes returns URLs like ".../null" instead of actual null
  */
-function getValidProfilePicture(
-  url: string | null | undefined,
-): string | undefined {
-  if (!url || url.includes("/null")) return undefined;
+function getValidProfilePicture(url: string | null | undefined): string | undefined {
+  if (!url || url.includes('/null')) return undefined;
   return url;
 }
 
 /**
- * Pass through image URLs as-is (no rewriting needed).
+ * Rewrite backend HTTP image URLs to go through our HTTPS proxy on deployment.
+ * e.g. https://backend.connekyt.com/uploads/photo.jpg → /api/proxy/uploads/photo.jpg
  */
 function normalizeImageUrl(url: string | undefined): string | undefined {
   if (!url) return undefined;
+  const apiBase = (process.env.NEXT_PUBLIC_API_URL || 'https://backend.connekyt.com').replace(/\/$/, '');
+  if (typeof window !== 'undefined' && url.startsWith(apiBase) && window.location.origin !== apiBase) {
+    return url.replace(apiBase, '/api/proxy');
+  }
   return url;
 }
 
@@ -118,21 +108,21 @@ interface ProfileSummaryData {
 async function fetchUserProfile(): Promise<Partial<AuthUser> | null> {
   try {
     const response = await apiClient.get<ProfileSummaryData>(
-      API_ENDPOINTS.PHOTOGRAPHER.PROFILE_SUMMARY,
+      API_ENDPOINTS.PHOTOGRAPHER.PROFILE_SUMMARY
     );
 
     if (!response.success || !response.data) return null;
 
     const data = response.data;
+    console.log('[AuthProvider] profile-summary response data:', JSON.stringify(data, null, 2));
+
     return {
-      id: data.id || "",
-      firstName: data.firstName || "",
-      lastName: data.lastName || "",
-      email: data.email || "",
-      customerType: data.customerType || "",
-      profilePicture: normalizeImageUrl(
-        getValidProfilePicture(data.profilePicture),
-      ),
+      id: data.id || '',
+      firstName: data.firstName || '',
+      lastName: data.lastName || '',
+      email: data.email || '',
+      customerType: data.customerType || '',
+      profilePicture: normalizeImageUrl(getValidProfilePicture(data.profilePicture)),
     };
   } catch {
     return null;
@@ -150,50 +140,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Initialize auth state from localStorage on mount
   useEffect(() => {
     const initializeAuth = () => {
-      // Check if dashboard sent a logout signal via query param
-      const params = new URLSearchParams(window.location.search);
-      if (params.get('logged_out') === 'true') {
-        removeAuthToken();
-        removeRefreshToken();
-        clearStoredUser();
-        setUser(null);
-        setIsLoading(false);
-        // Clean up the URL
-        const url = new URL(window.location.href);
-        url.searchParams.delete('logged_out');
-        window.history.replaceState({}, '', url.toString());
-        return;
-      }
-
       const hasToken = checkAuth();
       const storedUser = getStoredUser();
 
       if (hasToken && storedUser) {
         // Normalize any stored HTTP image URLs for current environment
         if (storedUser.profilePicture) {
-          storedUser.profilePicture = normalizeImageUrl(
-            storedUser.profilePicture,
-          );
+          storedUser.profilePicture = normalizeImageUrl(storedUser.profilePicture);
         }
         setUser(storedUser);
         // Refresh customerType and profilePicture from profile-summary API
         if (getAuthToken()) {
-          fetchUserProfile().then((profile) => {
+          fetchUserProfile().then(profile => {
             if (profile) {
               const needsUpdate =
-                (profile.customerType &&
-                  profile.customerType !== storedUser.customerType) ||
-                (profile.profilePicture &&
-                  profile.profilePicture !== storedUser.profilePicture);
+                (profile.customerType && profile.customerType !== storedUser.customerType) ||
+                (profile.profilePicture && profile.profilePicture !== storedUser.profilePicture);
               if (needsUpdate) {
                 const updated = {
                   ...storedUser,
-                  ...(profile.customerType && {
-                    customerType: profile.customerType,
-                  }),
-                  ...(profile.profilePicture && {
-                    profilePicture: profile.profilePicture,
-                  }),
+                  ...(profile.customerType && { customerType: profile.customerType }),
+                  ...(profile.profilePicture && { profilePicture: profile.profilePicture }),
                 };
                 storeUser(updated);
                 setUser(updated);
@@ -213,6 +180,54 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     initializeAuth();
   }, []);
 
+  // Handle dashboard logout redirect (?logged_out=true)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('logged_out') === 'true') {
+      // Clear landing auth state
+      removeAuthToken();
+      removeRefreshToken();
+      clearStoredUser();
+      setUser(null);
+      // Expire dashboard-set cookies
+      ['authToken', 'refreshToken', 'userRole'].forEach(name => {
+        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+      });
+      // Remove the param from URL so refresh doesn't re-trigger
+      params.delete('logged_out');
+      const cleanUrl = params.toString()
+        ? `${window.location.pathname}?${params.toString()}`
+        : window.location.pathname;
+      window.history.replaceState({}, '', cleanUrl);
+    }
+  }, []);
+
+  // Listen for logout messages from dashboard (opened via window.open)
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      // Only accept logout messages from the dashboard origin
+      const dashboardOrigin = process.env.NEXT_PUBLIC_DASHBOARD_URL?.replace(/\/$/, '') || '';
+      if (dashboardOrigin && event.origin !== dashboardOrigin) return;
+      if (event.data?.type === 'LOGOUT') {
+        removeAuthToken();
+        removeRefreshToken();
+        clearStoredUser();
+        setUser(null);
+        // Expire dashboard-set cookies
+        ['authToken', 'refreshToken', 'userRole'].forEach(name => {
+          document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+        });
+        // Redirect to the page the user was on before login, or fallback to home
+        const savedRedirect = localStorage.getItem('authRedirectUrl');
+        localStorage.removeItem('authRedirectUrl');
+        window.location.href = savedRedirect || '/';
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
 
   // Listen for storage events (cross-tab sync)
   useEffect(() => {
@@ -232,7 +247,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       // Also check for token changes
-      if (event.key === "authToken") {
+      if (event.key === 'authToken') {
         if (!event.newValue) {
           // Token removed, clear user
           clearStoredUser();
@@ -241,8 +256,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     };
 
-    window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
   /**
@@ -262,9 +277,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const updated = {
         ...userData,
         ...(profile.customerType && { customerType: profile.customerType }),
-        ...(profile.profilePicture && {
-          profilePicture: profile.profilePicture,
-        }),
+        ...(profile.profilePicture && { profilePicture: profile.profilePicture }),
       };
       storeUser(updated);
       setUser(updated);
@@ -294,7 +307,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     logout,
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
 /**
@@ -303,7 +320,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 export function useAuth(): AuthContextType {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
+    throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
 }

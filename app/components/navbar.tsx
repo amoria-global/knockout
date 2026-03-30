@@ -79,6 +79,7 @@ const AmoriaKNavbar = () => {
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
   const langMenuRef = useRef<HTMLDivElement>(null);
+  const navPillRef = useRef<HTMLDivElement>(null);
   const photographersDropdownRef = useRef<HTMLDivElement>(null);
   const eventsDropdownRef = useRef<HTMLDivElement>(null);
   const profileDropdownRef = useRef<HTMLDivElement>(null);
@@ -168,10 +169,21 @@ const AmoriaKNavbar = () => {
       try {
         const res = await getPublicEvents({ size: 100 });
         if (res.success && res.data) {
-          const events = res.data.content;
-          // First pass: record which categories have any event (regardless of live status)
+          const allEvents = res.data.content;
+          // Filter out completed/stream-ended events older than 2 days (match events page)
+          const twoDaysAgo = Date.now() - 2 * 24 * 60 * 60 * 1000;
+          const events = allEvents.filter(ev => {
+            const isEnded = (ev.eventStatus || '').toUpperCase() === 'COMPLETED' || (ev as Record<string, unknown>).streamStatus === 'ended';
+            if (!isEnded) return true;
+            const dateStr = ev.updatedAt || ev.eventDate;
+            if (!dateStr) return true;
+            const ts = new Date(dateStr).getTime();
+            if (isNaN(ts)) return true;
+            return ts > twoDaysAgo;
+          });
+          // First pass: record which categories have any visible event
           const catMap = new Map<string, boolean>(); // category → isVerifiedLive
-          const ongoingEvents = events.filter(ev => (ev.eventStatus as string)?.toLowerCase() === 'ongoing');
+          const ongoingEvents = events.filter(ev => (ev.eventStatus as string)?.toLowerCase() === 'ongoing' && (ev as Record<string, unknown>).streamStatus !== 'ended');
 
           for (const ev of events) {
             const raw = (ev.eventCategory?.name || '').toLowerCase().trim();
@@ -343,16 +355,17 @@ const AmoriaKNavbar = () => {
   };
 
   return (
+    <>
     <nav
-      className="sticky top-0 z-50 transition-all duration-300"
+      className="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
       style={{
         fontFamily: "'Pragati Narrow', sans-serif",
-        backgroundColor: isScrolled ? 'rgba(255, 255, 255, 0.85)' : '#ffffff',
+        backgroundColor: isScrolled ? 'rgba(255, 255, 255, 0.85)' : '#DBDBDB',
         backdropFilter: isScrolled ? 'blur(16px)' : 'none',
         WebkitBackdropFilter: isScrolled ? 'blur(16px)' : 'none',
         boxShadow: isScrolled
           ? '0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.04)'
-          : '0 1px 0 rgba(0, 0, 0, 0.06)',
+          : 'none',
       }}
     >
       {/* Live Animation Styles for Event Category Cards */}
@@ -428,10 +441,22 @@ const AmoriaKNavbar = () => {
 
         @keyframes nav-border-beep {
           0%, 100% {
-            border-color: rgba(16, 185, 129, 0.6);
+            border-color: rgba(16, 185, 129, 0.7);
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7),
+                        0 0 0 0 rgba(16, 185, 129, 0.5);
+          }
+          25% {
+            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0),
+                        0 0 0 8px rgba(16, 185, 129, 0);
           }
           50% {
             border-color: rgba(52, 211, 153, 1);
+            box-shadow: 0 0 0 8px rgba(16, 185, 129, 0),
+                        0 0 0 16px rgba(16, 185, 129, 0);
+          }
+          75% {
+            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0),
+                        0 0 0 8px rgba(16, 185, 129, 0);
           }
         }
 
@@ -447,8 +472,8 @@ const AmoriaKNavbar = () => {
         }
 
         .nav-live-card {
-          animation: nav-border-beep 1.5s ease-in-out infinite;
-          box-shadow: inset 0 0 0 1.5px rgba(16, 185, 129, 0.4);
+          animation: nav-border-beep 1s ease-out infinite;
+          border: 1.5px solid rgba(16, 185, 129, 0.7);
         }
 
         .nav-live-card:hover {
@@ -490,6 +515,7 @@ const AmoriaKNavbar = () => {
 
         @keyframes nav-events-border-vibrate {
           0%, 100% {
+            border-color: rgba(16, 185, 129, 0.7);
             box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7),
                         0 0 0 0 rgba(16, 185, 129, 0.5);
           }
@@ -498,6 +524,7 @@ const AmoriaKNavbar = () => {
                         0 0 0 16px rgba(16, 185, 129, 0);
           }
           50% {
+            border-color: rgba(52, 211, 153, 1);
             box-shadow: 0 0 0 16px rgba(16, 185, 129, 0),
                         0 0 0 28px rgba(16, 185, 129, 0);
           }
@@ -510,7 +537,7 @@ const AmoriaKNavbar = () => {
         .nav-events-link {
           color: #059669 !important;
           border: 1px solid rgba(16, 185, 129, 0.7);
-          border-radius: 12px;
+          border-radius: 10px;
           padding: 6px 12px !important;
           animation: nav-events-border-vibrate 1s ease-out infinite;
         }
@@ -519,13 +546,13 @@ const AmoriaKNavbar = () => {
           color: #047857 !important;
           animation: none;
           border-color: rgba(16, 185, 129, 1);
-          background-color: rgba(16, 185, 129, 0.08);
+          background-color: rgba(16, 185, 129, 0.08) !important;
         }
 
         .nav-link-hover {
           position: relative;
           padding: 7px 18px;
-          border-radius: 50px;
+          border-radius: 10px;
           transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
           color: #4b5563;
           font-size: 14px;
@@ -535,6 +562,11 @@ const AmoriaKNavbar = () => {
         .nav-link-hover:hover {
           background-color: rgba(8, 58, 133, 0.08);
           color: #083A85 !important;
+        }
+
+        .nav-link-hover.nav-events-link:hover {
+          color: #047857 !important;
+          background-color: rgba(16, 185, 129, 0.08) !important;
         }
 
         .nav-link-hover.nav-link-active {
@@ -665,19 +697,6 @@ const AmoriaKNavbar = () => {
           transition: opacity 0.3s ease, box-shadow 0.3s ease;
         }
 
-        .nav-logo-group:hover .nav-logo-icon {
-          animation: logo-hover-glow 1.2s ease-in-out infinite;
-        }
-
-        .nav-logo-group:hover .nav-logo-text {
-          animation: neon-glow-pulse 2s ease-in-out infinite;
-          letter-spacing: 1px;
-        }
-
-        .nav-logo-group:hover .nav-logo-dot {
-          opacity: 1;
-          animation: dot-blink 1.2s ease-in-out infinite;
-        }
       `}</style>
       {/* Main navbar container */}
       <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 2rem', overflow: 'visible', position: 'relative' }}>
@@ -696,17 +715,16 @@ const AmoriaKNavbar = () => {
             >
               onnekyt
             </span>
-            <span className="nav-logo-dot"></span>
           </Link>
 
           {/* Center: Navigation Links (Desktop) — glass pill, absolutely centered */}
-          <div className="hidden md:flex items-center gap-1 absolute left-1/2 -translate-x-1/2" style={{
+          <div ref={navPillRef} className="hidden md:flex items-center gap-1 absolute left-1/2 -translate-x-1/2" style={{
             overflow: 'visible',
-            background: 'rgba(8, 58, 133, 0.04)',
+            background: 'rgba(255, 255, 255, 0.85)',
             backdropFilter: 'blur(12px)',
             WebkitBackdropFilter: 'blur(12px)',
             border: '1px solid rgba(8, 58, 133, 0.08)',
-            borderRadius: '50px',
+            borderRadius: '10px',
             padding: '4px 5px',
           }}>
             {/* Photographers Dropdown */}
@@ -732,10 +750,9 @@ const AmoriaKNavbar = () => {
                     style={{
                       position: 'absolute',
                       top: 'calc(100% + 12px)',
-                      left: '50%',
-                      transform: 'translateX(-50%)',
+                      left: (() => { if (!navPillRef.current || !photographersDropdownRef.current) return '50%'; const pill = navPillRef.current.getBoundingClientRect(); const link = photographersDropdownRef.current.getBoundingClientRect(); return `${pill.left - link.left}px`; })(),
                       zIndex: 9999,
-                      width: 'min(420px, 90vw)',
+                      width: navPillRef.current ? `${navPillRef.current.offsetWidth}px` : 'min(420px, 90vw)',
                       background: '#ffffff',
                       boxShadow: '0 20px 40px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.04)',
                       borderRadius: '14px',
@@ -790,7 +807,7 @@ const AmoriaKNavbar = () => {
                             <div key={i} style={{
                               height: '30px',
                               width: '80px',
-                              borderRadius: '50px',
+                              borderRadius: '10px',
                               background: '#f3f4f6',
                               animation: 'nav-skeleton-pulse 1.5s ease-in-out infinite',
                               animationDelay: `${i * 0.08}s`
@@ -814,7 +831,7 @@ const AmoriaKNavbar = () => {
                                 fontSize: '12.5px',
                                 fontWeight: '500',
                                 color: '#374151',
-                                borderRadius: '50px',
+                                borderRadius: '10px',
                                 border: '1px solid #e5e7eb',
                                 transition: 'all 0.15s ease',
                                 display: 'inline-flex',
@@ -872,10 +889,9 @@ const AmoriaKNavbar = () => {
                     style={{
                       position: 'absolute',
                       top: 'calc(100% + 12px)',
-                      left: '50%',
-                      transform: 'translateX(-50%)',
+                      left: (() => { if (!navPillRef.current || !eventsDropdownRef.current) return '50%'; const pill = navPillRef.current.getBoundingClientRect(); const link = eventsDropdownRef.current.getBoundingClientRect(); return `${pill.left - link.left}px`; })(),
                       zIndex: 9999,
-                      width: 'min(420px, 90vw)',
+                      width: navPillRef.current ? `${navPillRef.current.offsetWidth}px` : 'min(420px, 90vw)',
                       background: '#ffffff',
                       boxShadow: '0 20px 40px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.04)',
                       borderRadius: '14px',
@@ -903,7 +919,7 @@ const AmoriaKNavbar = () => {
                         {hasLiveEvents && (
                           <span style={{
                             padding: '2px 8px',
-                            borderRadius: '9999px',
+                            borderRadius: '10px',
                             background: 'rgba(255, 255, 255, 0.2)',
                             color: '#ffffff',
                             fontSize: '10px',
@@ -956,7 +972,7 @@ const AmoriaKNavbar = () => {
                             <div key={i} style={{
                               height: '30px',
                               width: '80px',
-                              borderRadius: '50px',
+                              borderRadius: '10px',
                               background: '#f3f4f6',
                               animation: 'nav-skeleton-pulse 1.5s ease-in-out infinite',
                               animationDelay: `${i * 0.08}s`
@@ -980,7 +996,7 @@ const AmoriaKNavbar = () => {
                                 fontSize: '12.5px',
                                 fontWeight: category.isLive ? '600' : '500',
                                 color: category.isLive ? '#059669' : '#374151',
-                                borderRadius: '50px',
+                                borderRadius: '10px',
                                 border: category.isLive ? '1px solid rgba(16, 185, 129, 0.4)' : '1px solid #e5e7eb',
                                 transition: 'all 0.15s ease',
                                 display: 'inline-flex',
@@ -1054,8 +1070,9 @@ const AmoriaKNavbar = () => {
               </button>
               {isLangMenuOpen && (
                 <div
-                  className="absolute right-0 mt-2 w-44"
+                  className="absolute right-0 w-44"
                   style={{
+                    top: 'calc(100% + 12px)',
                     background: 'rgba(255, 255, 255, 0.98)',
                     backdropFilter: 'blur(12px)',
                     WebkitBackdropFilter: 'blur(12px)',
@@ -1101,12 +1118,12 @@ const AmoriaKNavbar = () => {
                         }
                       }}
                     >
-                      {lang.name}
                       <img
                         src={`https://flagcdn.com/w40/${lang.flagCode}.png`}
                         alt={lang.name}
-                        style={{ width: '20px', height: '14px', marginLeft: '8px', borderRadius: '2px', objectFit: 'cover' }}
+                        style={{ width: '20px', height: '14px', marginRight: '8px', borderRadius: '2px', objectFit: 'cover' }}
                       />
+                      {lang.name}
                     </a>
                   ))}
                 </div>
@@ -1123,7 +1140,9 @@ const AmoriaKNavbar = () => {
                     className="w-9 h-9 rounded-full bg-[#083A85] flex items-center justify-center overflow-hidden"
                     style={{ boxShadow: '0 2px 8px rgba(8, 58, 133, 0.25)' }}
                   >
-                    {user.profilePicture ? (
+                    {user.customerType?.toLowerCase() === 'viewer' ? (
+                      <i className="bi bi-person-fill" style={{ color: '#fff', fontSize: '18px' }}></i>
+                    ) : user.profilePicture ? (
                       <img src={user.profilePicture} alt={`${user.firstName} ${user.lastName}`} className="w-full h-full object-cover" />
                     ) : (
                       <span className="text-white font-semibold text-sm">
@@ -1157,36 +1176,38 @@ const AmoriaKNavbar = () => {
                       </p>
                     </div>
                     <div style={{ padding: '8px' }}>
-                      <a
-                        href={getDashboardUrl()}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="block cursor-pointer"
-                        style={{
-                          padding: '10px 12px',
-                          borderRadius: '8px',
-                          fontSize: '14px',
-                          fontWeight: '500',
-                          color: '#374151',
-                          backgroundColor: 'transparent',
-                          transition: 'all 0.2s ease',
-                          textDecoration: 'none',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '10px',
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = 'rgba(8, 58, 133, 0.05)';
-                          e.currentTarget.style.color = '#083A85';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = 'transparent';
-                          e.currentTarget.style.color = '#374151';
-                        }}
-                      >
-                        <i className="bi bi-speedometer2" style={{ fontSize: '16px' }}></i>
-                        Dashboard
-                      </a>
+                      {user.customerType?.toLowerCase() !== 'viewer' && (
+                        <a
+                          href={getDashboardUrl()}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block cursor-pointer"
+                          style={{
+                            padding: '10px 12px',
+                            borderRadius: '8px',
+                            fontSize: '14px',
+                            fontWeight: '500',
+                            color: '#374151',
+                            backgroundColor: 'transparent',
+                            transition: 'all 0.2s ease',
+                            textDecoration: 'none',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '10px',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = 'rgba(8, 58, 133, 0.05)';
+                            e.currentTarget.style.color = '#083A85';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                            e.currentTarget.style.color = '#374151';
+                          }}
+                        >
+                          <i className="bi bi-speedometer2" style={{ fontSize: '16px' }}></i>
+                          Dashboard
+                        </a>
+                      )}
                       <button
                         onClick={handleLogout}
                         className="w-full text-left cursor-pointer"
@@ -1525,12 +1546,12 @@ const AmoriaKNavbar = () => {
                               }
                             }}
                         >
-                            {lang.name}
                             <img
                               src={`https://flagcdn.com/w40/${lang.flagCode}.png`}
                               alt={lang.name}
-                              style={{ width: '20px', height: '14px', marginLeft: '8px', borderRadius: '2px', objectFit: 'cover' }}
+                              style={{ width: '20px', height: '14px', marginRight: '8px', borderRadius: '2px', objectFit: 'cover' }}
                             />
+                            {lang.name}
                         </a>
                     ))}
                 </div>
@@ -1562,7 +1583,9 @@ const AmoriaKNavbar = () => {
                         overflow: 'hidden',
                       }}
                     >
-                      {user.profilePicture ? (
+                      {user.customerType?.toLowerCase() === 'viewer' ? (
+                        <i className="bi bi-person-fill" style={{ color: '#fff', fontSize: '18px' }}></i>
+                      ) : user.profilePicture ? (
                         <img src={user.profilePicture} alt={`${user.firstName} ${user.lastName}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       ) : (
                         <span style={{ color: '#fff', fontWeight: '600', fontSize: isMobile ? '12px' : '14px' }}>
@@ -1581,26 +1604,28 @@ const AmoriaKNavbar = () => {
                   </div>
                 </div>
 
-                {/* Dashboard Link */}
-                <a
-                  href={getDashboardUrl()}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={handleLinkClick}
-                  className="block text-center rounded-md text-gray-900 hover:bg-gray-50 font-medium transition-colors cursor-pointer"
-                  style={{
-                    padding: isMobile ? '0.5rem 0.75rem' : '0.625rem 0.75rem',
-                    fontSize: isMobile ? '0.9375rem' : '1rem',
-                    textDecoration: 'none',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px',
-                  }}
-                >
-                  <i className="bi bi-speedometer2"></i>
-                  Dashboard
-                </a>
+                {/* Dashboard Link — hidden for viewers */}
+                {user.customerType?.toLowerCase() !== 'viewer' && (
+                  <a
+                    href={getDashboardUrl()}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={handleLinkClick}
+                    className="block text-center rounded-md text-gray-900 hover:bg-gray-50 font-medium transition-colors cursor-pointer"
+                    style={{
+                      padding: isMobile ? '0.5rem 0.75rem' : '0.625rem 0.75rem',
+                      fontSize: isMobile ? '0.9375rem' : '1rem',
+                      textDecoration: 'none',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                    }}
+                  >
+                    <i className="bi bi-speedometer2"></i>
+                    Dashboard
+                  </a>
+                )}
 
                 {/* Logout Button */}
                 <button
@@ -1612,7 +1637,7 @@ const AmoriaKNavbar = () => {
                     border: '1px solid #dc2626',
                     backgroundColor: 'transparent',
                     color: '#dc2626',
-                    borderRadius: '9999px',
+                    borderRadius: '10px',
                     marginTop: isMobile ? '0.25rem' : '0.5rem',
                     display: 'flex',
                     alignItems: 'center',
@@ -1627,12 +1652,14 @@ const AmoriaKNavbar = () => {
             ) : (
               <>
                 <Link href={`${getLocalePath('/user/auth/login')}?redirect=${encodeURIComponent(pathname)}`} onClick={handleLinkClick} className="block text-center rounded-md text-gray-900 hover:bg-gray-50 font-medium transition-colors cursor-pointer" style={{ padding: isMobile ? '0.5rem 0.75rem' : '0.625rem 0.75rem', fontSize: isMobile ? '0.9375rem' : '1rem' }}>{t('login')}</Link>
-                <Link href={`${getLocalePath('/user/auth/signup')}?redirect=${encodeURIComponent(pathname)}`} onClick={handleLinkClick} className="block text-center bg-[#002D72] text-white rounded-full hover:bg-[#001f4d] font-semibold transition-all duration-300 shadow-sm cursor-pointer" style={{ padding: isMobile ? '0.5rem 0.75rem' : '0.625rem 0.75rem', fontSize: isMobile ? '0.9375rem' : '1rem' }}>{t('signup')}</Link>
+                <Link href={`${getLocalePath('/user/auth/signup')}?redirect=${encodeURIComponent(pathname)}`} onClick={handleLinkClick} className="block text-center bg-[#002D72] text-white rounded-[10px] hover:bg-[#001f4d] font-semibold transition-all duration-300 shadow-sm cursor-pointer" style={{ padding: isMobile ? '0.5rem 0.75rem' : '0.625rem 0.75rem', fontSize: isMobile ? '0.9375rem' : '1rem' }}>{t('signup')}</Link>
               </>
             )}
           </div>
       </div>
     </nav>
+    <div style={{ height: '64px' }} />
+    </>
   );
 };
 

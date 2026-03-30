@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useMemo, useRef } from "react";
+import React, { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { geoOrthographic, geoPath, geoGraticule } from "d3-geo";
 import { feature } from "topojson-client";
 import type { Feature, FeatureCollection, Geometry } from "geojson";
@@ -13,6 +13,7 @@ interface RotatingGlobeProps {
   borderColor?: string;
   graticuleColor?: string;
   glowColor?: string;
+  interactive?: boolean;
 }
 
 const RotatingGlobe: React.FC<RotatingGlobeProps> = ({
@@ -23,11 +24,16 @@ const RotatingGlobe: React.FC<RotatingGlobeProps> = ({
   borderColor = "rgba(139, 92, 246, 0.5)",
   graticuleColor = "rgba(255, 255, 255, 0.07)",
   glowColor = "rgba(139, 92, 246, 0.4)",
+  interactive = false,
 }) => {
   const [geographies, setGeographies] = useState<Feature<Geometry>[]>([]);
   const [rotation, setRotation] = useState(0);
   const animationRef = useRef<number>(0);
   const lastTimeRef = useRef<number>(0);
+  const svgRef = useRef<SVGSVGElement>(null);
+  const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(null);
+  const [splashDots, setSplashDots] = useState<{ x: number; y: number; id: number }[]>([]);
+  const splashIdRef = useRef(0);
 
   const geoUrl =
     "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
@@ -71,22 +77,23 @@ const RotatingGlobe: React.FC<RotatingGlobeProps> = ({
 
   const graticule = useMemo(() => geoGraticule().step([20, 20])(), []);
 
-  // Highlight dots for key cities
+  // Generate many dots spread across the globe surface
   const cityDots = useMemo(() => {
-    const cities: [number, number][] = [
-      [-74.006, 40.7128],    // New York
-      [-0.1276, 51.5074],    // London
-      [36.8, -1.3],          // Nairobi
-      [55.2708, 25.2048],    // Dubai
-      [72.8777, 19.076],     // Mumbai
-      [139.6917, 35.6895],   // Tokyo
-      [151.2093, -33.8688],  // Sydney
-      [-43.1729, -22.9068],  // Rio
-      [28.0473, -26.2041],   // Johannesburg
-      [103.8198, 1.3521],    // Singapore
+    const dots: [number, number][] = [
+      // Key cities
+      [-74.006, 40.7128], [-0.1276, 51.5074], [36.8, -1.3],
+      [55.2708, 25.2048], [72.8777, 19.076], [139.6917, 35.6895],
+      [151.2093, -33.8688], [-43.1729, -22.9068], [28.0473, -26.2041],
+      [103.8198, 1.3521],
     ];
+    // Add grid points across the globe for denser coverage
+    for (let lat = -60; lat <= 70; lat += 20) {
+      for (let lng = -180; lng <= 180; lng += 25) {
+        dots.push([lng, lat]);
+      }
+    }
 
-    return cities
+    return dots
       .map((coords, i) => {
         const projected = projection(coords);
         if (!projected) return null;
@@ -94,6 +101,47 @@ const RotatingGlobe: React.FC<RotatingGlobeProps> = ({
       })
       .filter(Boolean) as { x: number; y: number; id: number }[];
   }, [projection]);
+
+  // Compute displaced dot positions when interactive
+  const displacedDots = useMemo(() => {
+    if (!interactive || !mousePos) return cityDots.map(d => ({ ...d, dx: 0, dy: 0, force: 0 }));
+    return cityDots.map(dot => {
+      const dx = dot.x - mousePos.x;
+      const dy = dot.y - mousePos.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const maxDist = 120;
+      if (dist < maxDist) {
+        const force = (1 - dist / maxDist) * 55;
+        const angle = Math.atan2(dy, dx);
+        return { ...dot, dx: Math.cos(angle) * force, dy: Math.sin(angle) * force, force };
+      }
+      return { ...dot, dx: 0, dy: 0, force: 0 };
+    });
+  }, [cityDots, mousePos, interactive]);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent<SVGSVGElement>) => {
+    if (!interactive || !svgRef.current) return;
+    const rect = svgRef.current.getBoundingClientRect();
+    const x = (e.clientX - rect.left) * (size / rect.width);
+    const y = (e.clientY - rect.top) * (size / rect.height);
+    setMousePos({ x, y });
+
+    // Spawn splash particles near cursor
+    const newDots: { x: number; y: number; id: number }[] = [];
+    for (let i = 0; i < 3; i++) {
+      newDots.push({
+        x: x + (Math.random() - 0.5) * 60,
+        y: y + (Math.random() - 0.5) * 60,
+        id: splashIdRef.current++,
+      });
+    }
+    setSplashDots(prev => [...prev.slice(-30), ...newDots]);
+  }, [interactive, size]);
+
+  const handleMouseLeave = useCallback(() => {
+    setMousePos(null);
+    setSplashDots([]);
+  }, []);
 
   return (
     <div
@@ -118,10 +166,13 @@ const RotatingGlobe: React.FC<RotatingGlobeProps> = ({
       />
 
       <svg
+        ref={svgRef}
         width={size}
         height={size}
         viewBox={`0 0 ${size} ${size}`}
-        style={{ position: "relative", zIndex: 1 }}
+        style={{ position: "relative", zIndex: 1, cursor: interactive ? 'crosshair' : 'default' }}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
       >
         <defs>
           {/* Globe gradient background */}
@@ -173,24 +224,58 @@ const RotatingGlobe: React.FC<RotatingGlobeProps> = ({
           />
         ))}
 
-        {/* City dots */}
-        {cityDots.map((dot) => (
-          <g key={dot.id}>
-            <circle
-              cx={dot.x}
-              cy={dot.y}
-              r={5}
-              fill="url(#dot-glow)"
-              opacity={0.5}
-            />
-            <circle
-              cx={dot.x}
-              cy={dot.y}
-              r={2}
-              fill="#FF6B6B"
-              opacity={0.9}
-            />
-          </g>
+        {/* Dots — displaced when interactive */}
+        {displacedDots.map((dot) => {
+          const isKey = dot.id < 10; // First 10 are key cities
+          const baseR = isKey ? 3 : 1.5;
+          const glowR = isKey ? 6 : 3;
+          return (
+            <g key={dot.id}>
+              <circle
+                cx={dot.x + dot.dx}
+                cy={dot.y + dot.dy}
+                r={glowR + dot.force * 0.08}
+                fill="url(#dot-glow)"
+                opacity={0.4 + dot.force * 0.01}
+                style={{ transition: 'cx 0.2s ease, cy 0.2s ease' }}
+              />
+              <circle
+                cx={dot.x + dot.dx}
+                cy={dot.y + dot.dy}
+                r={baseR + dot.force * 0.04}
+                fill={isKey ? '#FF6B6B' : 'rgba(255,255,255,0.7)'}
+                opacity={isKey ? 0.9 : 0.5}
+                style={{ transition: 'cx 0.2s ease, cy 0.2s ease' }}
+              />
+              {/* Connecting line when displaced */}
+              {dot.force > 8 && (
+                <line
+                  x1={dot.x + dot.dx}
+                  y1={dot.y + dot.dy}
+                  x2={dot.x}
+                  y2={dot.y}
+                  stroke={isKey ? 'rgba(255,107,107,0.4)' : 'rgba(255,255,255,0.2)'}
+                  strokeWidth={0.5}
+                  strokeDasharray="2,3"
+                />
+              )}
+            </g>
+          );
+        })}
+
+        {/* Splash particles on cursor move */}
+        {interactive && splashDots.map((dot) => (
+          <circle
+            key={dot.id}
+            cx={dot.x}
+            cy={dot.y}
+            r={1.5}
+            fill="#fff"
+            opacity={0.5}
+          >
+            <animate attributeName="opacity" from="0.5" to="0" dur="0.6s" fill="freeze" />
+            <animate attributeName="r" from="1.5" to="0" dur="0.6s" fill="freeze" />
+          </circle>
         ))}
 
         {/* Atmosphere overlay */}

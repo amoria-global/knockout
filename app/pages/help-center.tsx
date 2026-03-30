@@ -549,8 +549,8 @@ const HelpSupportCenter: React.FC = () => {
                 setSearchTerm('');
                 setSelectedCategory(null);
               }}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
-              style={{ transition: 'all 0.3s ease' }}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors"
+              style={{ borderRadius: '10px', transition: 'all 0.3s ease' }}
               onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
             >

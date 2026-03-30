@@ -1,2899 +1,1225 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 gsap.registerPlugin(ScrollTrigger);
 import Navbar from "../components/navbar";
 import Footer from "../components/footer";
-import MissionStatement from "../components/MissionStatement";
-import RotatingGlobe from "../components/RotatingGlobe";
-import { motion } from "framer-motion";
+import HalfEarth from "../components/HalfEarth";
 
-const About = () => {
-  const [targetMarketMousePos, setTargetMarketMousePos] = useState<{ x: number; y: number } | null>(null);
-  const [isMobile, setIsMobile] = useState(false);
-  const targetMarketRef = useRef<HTMLElement>(null);
-  const laptopMockupRef = useRef<HTMLDivElement>(null);
-  const laptopContainerRef = useRef<HTMLDivElement>(null);
-  const smartToolsSectionRef = useRef<HTMLElement>(null);
-  const missionVisionRef = useRef<HTMLElement>(null);
-  const smartToolsContentRef = useRef<HTMLDivElement>(null);
+// ── Split Hover Text: letters explode from cursor with particles & connecting lines ──
+function SplitHoverText({ lines, style }: { lines: string[]; style: React.CSSProperties }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const letterRefs = useRef<(HTMLSpanElement | null)[]>([]);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const rafRef = useRef<number>(0);
+  const positionsRef = useRef<{ x: number; y: number; ox: number; oy: number }[]>([]);
+  const mouseRef = useRef<{ x: number; y: number; active: boolean }>({ x: 0, y: 0, active: false });
 
-  useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 768);
-    check();
-    window.addEventListener('resize', check);
-    return () => window.removeEventListener('resize', check);
+  const drawParticles = useCallback(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!canvas || !ctx || !mouseRef.current.active) { if (ctx && canvas) ctx.clearRect(0, 0, canvas.width, canvas.height); return; }
+
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    canvas.width = rect.width + 100;
+    canvas.height = rect.height + 100;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const pts = positionsRef.current.filter(p => {
+      const dx = p.x - p.ox;
+      const dy = p.y - p.oy;
+      return Math.abs(dx) > 1 || Math.abs(dy) > 1;
+    });
+
+    // Draw connecting lines between displaced letters
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < pts.length; i++) {
+      for (let j = i + 1; j < pts.length; j++) {
+        const dx = pts[i].x - pts[j].x;
+        const dy = pts[i].y - pts[j].y;
+        const d = Math.sqrt(dx * dx + dy * dy);
+        if (d < 200) {
+          ctx.globalAlpha = (1 - d / 200) * 0.3;
+          ctx.beginPath();
+          ctx.moveTo(pts[i].x + 50, pts[i].y + 50);
+          ctx.lineTo(pts[j].x + 50, pts[j].y + 50);
+          ctx.stroke();
+        }
+      }
+    }
+
+    // Draw particles (dots) at displaced letter positions
+    pts.forEach(p => {
+      const dx = p.x - p.ox;
+      const dy = p.y - p.oy;
+      const force = Math.sqrt(dx * dx + dy * dy);
+      const size = Math.min(force / 8, 4);
+
+      ctx.globalAlpha = Math.min(force / 30, 0.8);
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.arc(p.x + 50, p.y + 50, size, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Scatter small dots around displaced letters
+      for (let k = 0; k < 2; k++) {
+        const sx = p.x + 50 + (Math.random() - 0.5) * force * 1.5;
+        const sy = p.y + 50 + (Math.random() - 0.5) * force * 1.5;
+        ctx.globalAlpha = Math.random() * 0.4;
+        ctx.beginPath();
+        ctx.arc(sx, sy, Math.random() * 2.5 + 0.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    });
+
+    ctx.globalAlpha = 1;
   }, []);
 
-  const handleTargetMarketMouseMove = (e: React.MouseEvent<HTMLElement>) => {
-    if (targetMarketRef.current) {
-      const rect = targetMarketRef.current.getBoundingClientRect();
-      setTargetMarketMousePos({
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top,
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    const container = containerRef.current;
+    if (!container) return;
+    mouseRef.current = { x: e.clientX, y: e.clientY, active: true };
+
+    cancelAnimationFrame(rafRef.current);
+    rafRef.current = requestAnimationFrame(() => {
+      positionsRef.current = [];
+
+      letterRefs.current.forEach(span => {
+        if (!span) return;
+        const rect = span.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        const dx = cx - e.clientX;
+        const dy = cy - e.clientY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const maxDist = 150;
+
+        const contRect = container.getBoundingClientRect();
+        const ox = cx - contRect.left;
+        const oy = cy - contRect.top;
+
+        if (dist < maxDist) {
+          const force = (1 - dist / maxDist) * 50;
+          const angle = Math.atan2(dy, dx);
+          const tx = Math.cos(angle) * force;
+          const ty = Math.sin(angle) * force;
+          span.style.transform = `translate(${tx}px, ${ty}px)`;
+          span.style.opacity = `${0.4 + 0.6 * (dist / maxDist)}`;
+          positionsRef.current.push({ x: ox + tx, y: oy + ty, ox, oy });
+        } else {
+          span.style.transform = 'translate(0, 0)';
+          span.style.opacity = '1';
+          positionsRef.current.push({ x: ox, y: oy, ox, oy });
+        }
       });
-    }
-  };
 
-  const handleTargetMarketMouseLeave = () => {
-    setTargetMarketMousePos(null);
-  };
+      drawParticles();
+    });
+  }, [drawParticles]);
 
-  // Single GSAP pin on Smart Tools (landing page pattern).
-  // Smart Tools positioned behind MV with negative margin, pinned at top.
-  // MV (inside zIndex:2 wrapper) naturally scrolls off = peel effect.
-  // Then content scrolls up (heading off, wireframe centers), then wireframe peels.
-  // zIndex wrappers around other sections prevent Smart Tools from showing above them.
+  const handleMouseLeave = useCallback(() => {
+    mouseRef.current.active = false;
+    cancelAnimationFrame(rafRef.current);
+    letterRefs.current.forEach(span => {
+      if (!span) return;
+      span.style.transform = 'translate(0, 0)';
+      span.style.opacity = '1';
+    });
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (ctx && canvas) ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }, []);
+
+  let idx = 0;
+  return (
+    <div
+      ref={containerRef}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      style={{ position: 'relative', cursor: 'default' }}
+    >
+      <canvas
+        ref={canvasRef}
+        style={{ position: 'absolute', top: -50, left: -50, pointerEvents: 'none', zIndex: 1 }}
+      />
+      <h1 style={{ ...style, position: 'relative', zIndex: 2 }}>
+        {lines.map((line, li) => (
+          <span key={li}>
+            {li > 0 && <br />}
+            {line.split('').map((char) => {
+              const i = idx++;
+              return (
+                <span
+                  key={i}
+                  ref={el => { letterRefs.current[i] = el; }}
+                  style={{ display: 'inline-block', transition: 'transform 0.25s cubic-bezier(0.2,0.8,0.2,1), opacity 0.25s ease', willChange: 'transform' }}
+                >
+                  {char === ' ' ? '\u00A0' : char}
+                </span>
+              );
+            })}
+          </span>
+        ))}
+      </h1>
+    </div>
+  );
+}
+
+const About = () => {
+  const heroRef = useRef<HTMLDivElement>(null);
+  const windowRef = useRef<HTMLDivElement>(null);
+  const heroTextRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const [activeCvCard, setActiveCvCard] = useState(-1);
+  const journeyRef = useRef<HTMLDivElement>(null);
+  const mvRef = useRef<HTMLDivElement>(null);
+  const cvFlipRef = useRef<HTMLDivElement>(null);
+  const cvBook3dRef = useRef<HTMLDivElement>(null);
+  const cvCoverRef = useRef<HTMLDivElement>(null);
+  const cvPage1Ref = useRef<HTMLDivElement>(null);
+  const cvPage2Ref = useRef<HTMLDivElement>(null);
+  const cvPage3Ref = useRef<HTMLDivElement>(null);
+  const cvPage4Ref = useRef<HTMLDivElement>(null);
+  const cvPage5Ref = useRef<HTMLDivElement>(null);
+  const laptopMockupRef = useRef<HTMLDivElement>(null);
+  const smartToolsRef = useRef<HTMLElement>(null);
+  const earthSectionRef = useRef<HTMLDivElement>(null);
+  const [earthProgress, setEarthProgress] = useState(0);
+
+  const journeyMilestones = [
+    { year: 2025, title: 'The Birth of Our Vision:', highlight: "We're Turning Ideas Into Actions", paragraphs: ["Originally, this started as an idea, but it has started to blossom into something larger than that. People were noticing the obstacles and setbacks that creators in the industry had. They didn't have the right tools and platforms to promote themselves and their work properly.", 'Amoria Connekyt started as a vision to promote creators, but it also helps serve as a bridge to new tools and opportunities.'] },
+    { year: 2026, title: 'Scaling Our Impact:', highlight: 'Building the Future Together', paragraphs: ['What began as a passion for supporting event creators, photographers, and storytellers has impacted us in numerous ways and heavily shaped the growth of our company. We listen to our customers and use their feedback to drive changes and developments.', "We've come a long way in our development, and looking to the future, we will continue to evolve with our customers. We're only just getting started and are looking to build even more with you."] },
+    { year: 2027, title: 'Expanding Horizons:', highlight: 'Going Global, Staying Personal', paragraphs: ['With a strong foundation built on trust and innovation, we are expanding into new markets and empowering creators across continents. Our platform now supports multilingual experiences and localized payment solutions.', 'We remain committed to the personal touch that defines Amoria Connekyt — every feature we build starts with the creator in mind. The future is global, but the heart stays local.'] },
+  ];
+  const currentYear = new Date().getFullYear();
+  const currentIdx = journeyMilestones.findIndex(m => m.year === currentYear);
+  const visibleCards = currentIdx >= 1 ? [journeyMilestones[currentIdx - 1], journeyMilestones[currentIdx]] : journeyMilestones.slice(-2);
+
+  const coreValues = [
+    { title: 'Innovation', icon: 'bi-lightbulb', desc: 'Pioneering creative tools and smart solutions for the photography industry.', color: '#3b82f6' },
+    { title: 'Trust', icon: 'bi-shield-check', desc: 'Building confidence through verified professionals and secure transactions.', color: '#10b981' },
+    { title: 'Excellence', icon: 'bi-award', desc: 'Setting the highest standards in creative quality and client satisfaction.', color: '#f59e0b' },
+    { title: 'Wellness', icon: 'bi-heart', desc: 'Supporting the well-being and growth of our creative community.', color: '#ec4899' },
+    { title: 'Growth', icon: 'bi-graph-up-arrow', desc: 'Empowering photographers to expand their reach and build lasting careers.', color: '#8b5cf6' },
+  ];
+
+  // GSAP reveals + smart tools peel
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
     const timer = setTimeout(() => {
       const ctx = gsap.context(() => {
-        const mvSection = missionVisionRef.current;
-        const section = smartToolsSectionRef.current;
-        const laptop = laptopContainerRef.current;
-        const mockup = laptopMockupRef.current;
-        const contentWrapper = smartToolsContentRef.current;
-        if (!mvSection || !section || !laptop || !mockup || !contentWrapper) return;
 
-        // Position Smart Tools exactly behind MV (dynamic height)
-        const mvHeight = mvSection.offsetHeight;
-        gsap.set(section, { marginTop: -mvHeight, overflow: 'hidden', clipPath: 'inset(0px 0px 0px 0px)' });
+        // ── HERO: Window starts fullscreen, shrinks on scroll revealing cabin + text ──
+        const hero = heroRef.current;
+        const win = windowRef.current;
+        if (hero && win) {
+          // Measure the window at its natural size (scale 1)
+          gsap.set(win, { scale: 1 });
+          const winRect = win.getBoundingClientRect();
+          const scaleX = window.innerWidth / winRect.width;
+          const scaleY = window.innerHeight / winRect.height;
+          const fillScale = Math.max(scaleX, scaleY) * 1.2;
 
-        // Calculate how much to shift content up to center the wireframe
-        // Account for fixed navbar so wireframe isn't hidden behind it
-        const sectionRect = section.getBoundingClientRect();
-        const laptopRect = laptop.getBoundingClientRect();
-        const laptopTopInSection = laptopRect.top - sectionRect.top;
-        const laptopHeight = laptopRect.height;
-        const navbar = document.querySelector('nav, .navbar, header');
-        const navbarHeight = navbar ? navbar.getBoundingClientRect().height : 70;
-        // Center wireframe in the usable viewport area (below navbar)
-        const usableHeight = window.innerHeight - navbarHeight;
-        const desiredLaptopTop = navbarHeight + Math.max(20, (usableHeight - laptopHeight) / 2);
-        const scrollUpAmount = Math.max(0, laptopTopInSection - desiredLaptopTop);
+          // Overlay text (ref index 4) starts visible; cabin wall texts (ref 0-3) start hidden
+          const overlayText = heroTextRefs.current[4];
+          const cabinTexts = [heroTextRefs.current[0], heroTextRefs.current[1], heroTextRefs.current[2], heroTextRefs.current[3]].filter(Boolean) as HTMLDivElement[];
 
-        // Mockup starts fully clipped (wireframe visible)
-        gsap.set(mockup, {
-          clipPath: 'polygon(0% 100%, 100% 100%, 100% 100%, 0% 100%)',
+          gsap.set(win, { scale: fillScale });
+          gsap.set(hero, { visibility: 'visible' });
+          gsap.set(cabinTexts, { opacity: 0, y: 30 });
+          if (overlayText) gsap.set(overlayText, { opacity: 1 });
+
+          const heroTl = gsap.timeline({
+            scrollTrigger: {
+              trigger: hero,
+              start: 'top top',
+              end: '+=150%',
+              scrub: 0.6,
+              pin: true,
+              pinSpacing: true,
+            },
+          });
+
+          // Overlay text fades out first as window starts shrinking
+          if (overlayText) {
+            heroTl.to(overlayText, { opacity: 0, y: -30, duration: 0.3, ease: 'power2.in' }, 0);
+          }
+
+          // Window shrinks from fullscreen to its natural size
+          heroTl.to(win, { scale: 1, duration: 1, ease: 'power3.out' }, 0);
+
+          // Cabin wall text fades in as the window shrinks
+          heroTl.to(cabinTexts, { opacity: 1, y: 0, duration: 0.5, stagger: 0.1, ease: 'power2.out' }, 0.4);
+
+          // Hold at the end so user can read
+          heroTl.to({}, { duration: 0.3 });
+        }
+
+        // ── CORE VALUES: Exact same flip book as landing page ──
+        const cvFlip = cvFlipRef.current;
+        const cvCover = cvCoverRef.current;
+        const cvP1 = cvPage1Ref.current;
+        const cvP2 = cvPage2Ref.current;
+        const cvP3 = cvPage3Ref.current;
+        const cvP4 = cvPage4Ref.current;
+        const cvP5 = cvPage5Ref.current;
+        const cvBook = cvBook3dRef.current;
+        if (cvFlip && cvCover && cvP1 && cvP2 && cvP3 && cvP4 && cvP5 && cvBook) {
+          const isMobile = window.innerWidth <= 768;
+          const allPages = [cvCover, cvP1, cvP2, cvP3, cvP4, cvP5];
+          gsap.set(allPages, { rotateY: 0, transformOrigin: 'left center' });
+          if (isMobile) {
+            gsap.set(cvBook, { marginLeft: 0 });
+          } else {
+            gsap.set(cvBook, { width: 280, height: 320 });
+          }
+
+          const cvTl = gsap.timeline({
+            scrollTrigger: {
+              trigger: cvFlip,
+              start: 'top top',
+              end: isMobile ? '+=2500' : '+=4000',
+              pin: true,
+              pinSpacing: true,
+              scrub: 0.5,
+            },
+          });
+
+          // Cover flips
+          cvTl.to(cvCover, { rotateY: -180, duration: 0.10, ease: 'power2.inOut' }, 0.02);
+          if (!isMobile) {
+            cvTl.to(cvBook, { height: 300, duration: 0.10, ease: 'power2.inOut' }, 0.02);
+          }
+
+          // Page 1
+          cvTl.to(cvP1, { rotateY: -180, duration: 0.12, ease: 'power1.inOut' }, 0.14);
+          // Page 2
+          cvTl.to(cvP2, { rotateY: -180, duration: 0.12, ease: 'power1.inOut' }, 0.27);
+          // Page 3
+          cvTl.to(cvP3, { rotateY: -180, duration: 0.12, ease: 'power1.inOut' }, 0.40);
+          // Page 4
+          cvTl.to(cvP4, { rotateY: -180, duration: 0.12, ease: 'power1.inOut' }, 0.53);
+          // Page 5
+          cvTl.to(cvP5, { rotateY: -180, duration: 0.12, ease: 'power1.inOut' }, 0.66);
+
+          // Book closes
+          if (!isMobile) {
+            cvTl.to(cvBook, { height: 320, duration: 0.10, ease: 'power2.inOut' }, 0.85);
+          }
+
+          // Track active card
+          ScrollTrigger.create({
+            trigger: cvFlip,
+            start: 'top top',
+            end: isMobile ? '+=2500' : '+=4000',
+            scrub: 0.3,
+            onUpdate: (self) => {
+              const p = self.progress;
+              if (p < 0.05) setActiveCvCard(-1);
+              else if (p < 0.16) setActiveCvCard(0);
+              else if (p < 0.29) setActiveCvCard(1);
+              else if (p < 0.42) setActiveCvCard(2);
+              else if (p < 0.55) setActiveCvCard(3);
+              else if (p < 0.68) setActiveCvCard(4);
+              else if (p < 0.85) setActiveCvCard(5);
+              else setActiveCvCard(6);
+            },
+          });
+        }
+
+        // ── JOURNEY: Scroll-driven agenda — 2025 visible, scroll reveals 2026 ──
+        const journeySection = journeyRef.current;
+        if (journeySection) {
+          const cards = journeySection.querySelectorAll<HTMLElement>('.journey-card');
+          const yearDots = journeySection.querySelectorAll<HTMLElement>('.journey-year-dot');
+
+          if (cards.length >= 2) {
+            // Card 2 starts hidden below
+            gsap.set(cards[1], { yPercent: 100, opacity: 0 });
+
+            const jTl = gsap.timeline({
+              scrollTrigger: {
+                trigger: journeySection,
+                start: 'top top',
+                end: '+=200%',
+                scrub: 0.5,
+                pin: true,
+                pinSpacing: true,
+              },
+            });
+
+            // Hold 2025 so user can read
+            jTl.to({}, { duration: 0.3 });
+
+            // 2025 slides up and fades
+            jTl.to(cards[0], { yPercent: -60, opacity: 0, duration: 0.4, ease: 'power2.in' }, 0.3);
+
+            // 2026 slides in from below
+            jTl.to(cards[1], { yPercent: 0, opacity: 1, duration: 0.4, ease: 'power2.out' }, 0.4);
+
+            // Hold 2026 so user can read
+            jTl.to({}, { duration: 0.3 });
+
+            // Update dots
+            if (yearDots.length >= 2) {
+              jTl.eventCallback('onUpdate', () => {
+                const p = jTl.progress();
+                yearDots[0].classList.toggle('active', p < 0.4);
+                yearDots[0].classList.toggle('past', p >= 0.4);
+                yearDots[1].classList.toggle('active', p >= 0.4);
+              });
+            }
+          }
+        }
+
+        gsap.utils.toArray<HTMLElement>('.reveal').forEach((el) => {
+          gsap.from(el, {
+            y: 50, opacity: 0, duration: 0.8, ease: 'power2.out',
+            scrollTrigger: { trigger: el, start: 'top 88%', toggleActions: 'play none none none' },
+          });
         });
 
-        const isMobile = window.innerWidth < 768;
+        // ── MISSION & VISION: Pinned stacking scroll ──
+        const mvSection = mvRef.current;
+        if (mvSection) {
+          const missionPanel = mvSection.querySelector<HTMLElement>('.mv-mission');
+          const visionPanel = mvSection.querySelector<HTMLElement>('.mv-vision');
+          const panels = mvSection.querySelector<HTMLElement>('.mv-panels');
+          const missionContent = mvSection.querySelectorAll<HTMLElement>('.mv-mission .mv-animate');
+          const visionContent = mvSection.querySelectorAll<HTMLElement>('.mv-vision .mv-animate');
 
-        // Single pin covers all phases: section peel → scroll to center → wireframe peel
-        const tl = gsap.timeline({
-          scrollTrigger: {
-            trigger: section,
+          if (missionPanel && visionPanel && panels) {
+            // Set panels container height to fit one card
+            const missionH = missionPanel.offsetHeight;
+            gsap.set(panels, { height: missionH });
+
+            // Vision starts below, hidden
+            gsap.set(visionPanel, { yPercent: 110, opacity: 0 });
+            gsap.set(visionContent, { y: 30, opacity: 0 });
+            gsap.set(missionContent, { y: 30, opacity: 0 });
+
+            const mvTl = gsap.timeline({
+              scrollTrigger: {
+                trigger: mvSection,
+                start: 'top top',
+                end: '+=300%',
+                scrub: 0.5,
+                pin: true,
+                pinSpacing: true,
+              },
+            });
+
+            // Phase 1: Mission content fades in
+            mvTl.to(missionContent, { y: 0, opacity: 1, duration: 0.15, stagger: 0.04, ease: 'power2.out' }, 0.02);
+
+            // Hold — let user read mission
+            mvTl.to({}, { duration: 0.2 });
+
+            // Phase 2: Mission shrinks & dims, Vision slides up from bottom
+            mvTl.to(missionPanel, { scale: 0.92, opacity: 0.5, y: -20, duration: 0.3, ease: 'power2.inOut' }, 0.4);
+            mvTl.to(visionPanel, { yPercent: 0, opacity: 1, duration: 0.35, ease: 'power3.out' }, 0.42);
+
+            // Phase 3: Vision content fades in
+            mvTl.to(visionContent, { y: 0, opacity: 1, duration: 0.15, stagger: 0.04, ease: 'power2.out' }, 0.65);
+
+            // Hold — let user read vision
+            mvTl.to({}, { duration: 0.25 });
+          }
+        }
+
+        gsap.utils.toArray<HTMLElement>('.reveal-stagger').forEach((container) => {
+          gsap.from(container.children, {
+            y: 40, opacity: 0, duration: 0.6, stagger: 0.12, ease: 'power2.out',
+            scrollTrigger: { trigger: container, start: 'top 85%', toggleActions: 'play none none none' },
+          });
+        });
+
+        // Smart Tools wireframe→mockup peel
+        const section = smartToolsRef.current;
+        const mockup = laptopMockupRef.current;
+        if (section && mockup) {
+          gsap.set(mockup, { clipPath: 'polygon(0% 100%, 100% 100%, 100% 100%, 0% 100%)' });
+          const tl = gsap.timeline({
+            scrollTrigger: { trigger: section, start: 'top top', end: '+=200%', scrub: 0.5, pin: true, pinSpacing: true },
+          });
+          tl.to({}, { duration: 0.4 });
+          tl.to(mockup, { clipPath: 'polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)', duration: 1, ease: 'none' }, 0.4);
+          tl.to({}, { duration: 0.3 });
+        }
+
+        // ── HALF EARTH: Scroll-driven globe rotation above footer ──
+        const earthSection = earthSectionRef.current;
+        if (earthSection) {
+          ScrollTrigger.create({
+            trigger: earthSection,
             start: 'top top',
             end: '+=500%',
             scrub: 0.5,
             pin: true,
             pinSpacing: true,
-          },
-        });
-
-        // Phase 1 (position 0–1): MV naturally scrolls off over pinned Smart Tools (peel)
-        // No animation needed — MV is in zIndex:2 wrapper, scrolls off naturally
-
-        // Phase 2 (position 1–1.8): Content scrolls up — heading off-screen, wireframe centers
-        // Simultaneously clip section bottom by the same amount so no dark space appears
-        // On mobile, wireframe is CSS-centered; skip scroll-up & bottom clip to prevent overlap
-        if (!isMobile) {
-          tl.to(contentWrapper, {
-            y: -scrollUpAmount,
-            duration: 0.8,
-            ease: 'power1.inOut',
-          }, 1);
-          tl.to(section, {
-            clipPath: `inset(0px 0px ${scrollUpAmount}px 0px)`,
-            duration: 0.8,
-            ease: 'power1.inOut',
-          }, 1);
-        }
-
-        // Phase 3: Pause — wireframe centered on screen
-        // Phase 4: Wireframe-to-mockup peel (bottom → top)
-        // On mobile, start peel earlier since Phase 2 is skipped
-        const peelStart = isMobile ? 0.6 : 2.5;
-        const peelEnd = isMobile ? 1.6 : 3.5;
-        tl.to(mockup, {
-          clipPath: 'polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)',
-          duration: 1,
-          ease: 'none',
-        }, peelStart);
-
-        // Phase 5: Dwell — completed mockup stays visible before unpin
-        tl.to({}, { duration: 0.3 }, peelEnd);
-
-        // Ensure pin-spacer is transparent so it doesn't extend the dark background
-        const pinSpacer = section.parentElement;
-        if (pinSpacer) {
-          pinSpacer.style.setProperty('background-color', 'transparent', 'important');
+            onUpdate: (self) => {
+              setEarthProgress(self.progress);
+            },
+          });
         }
 
         ScrollTrigger.refresh();
       });
-
       return () => ctx.revert();
-    }, 600);
-
+    }, 300);
     return () => clearTimeout(timer);
   }, []);
 
   return (
-    <div className="about-page">
+    <div style={{ background: '#000', overflow: 'hidden' }}>
       <style>{`
-        @keyframes float {
-          0%, 100% {
-            transform: translateY(0px);
-            opacity: 0.8;
-          }
-          50% {
-            transform: translateY(-8px);
-            opacity: 0.95;
-          }
-        }
-        @keyframes slowSpin {
-          0% {
-            transform: rotate(0deg);
-          }
-          100% {
-            transform: rotate(360deg);
-          }
-        }
-        @keyframes gridTwinkle {
-          0%, 100% {
-            opacity: 0.02;
-          }
-          25% {
-            opacity: 0.6;
-          }
-          50% {
-            opacity: 0.02;
-          }
-          75% {
-            opacity: 0.2;
-          }
-        }
-        @keyframes snowfall {
-          0% {
-            transform: translateY(-20px);
-            opacity: 0;
-          }
-          5% {
-            opacity: 1;
-          }
-          95% {
-            opacity: 1;
-          }
-          100% {
-            transform: translateY(2500px);
-            opacity: 0;
-          }
-        }
-        @keyframes glowPulse {
-          0%, 100% {
-            box-shadow: 0 0 5px rgba(139, 92, 246, 0.5), 0 0 10px rgba(139, 92, 246, 0.3);
-          }
-          50% {
-            box-shadow: 0 0 15px rgba(139, 92, 246, 0.8), 0 0 25px rgba(139, 92, 246, 0.5), 0 0 35px rgba(255, 107, 107, 0.3);
-          }
-        }
-        @keyframes lineGlow {
-          0% {
-            background: linear-gradient(90deg, #8B5CF6 0%, #FF6B6B 50%, #8B5CF6 100%);
-            background-size: 200% 100%;
-            background-position: 0% 50%;
-            box-shadow: 0 0 10px rgba(139, 92, 246, 0.6), 0 0 20px rgba(139, 92, 246, 0.3);
-          }
-          50% {
-            background: linear-gradient(90deg, #8B5CF6 0%, #FF6B6B 50%, #8B5CF6 100%);
-            background-size: 200% 100%;
-            background-position: 100% 50%;
-            box-shadow: 0 0 15px rgba(255, 107, 107, 0.8), 0 0 30px rgba(255, 107, 107, 0.4);
-          }
-          100% {
-            background: linear-gradient(90deg, #8B5CF6 0%, #FF6B6B 50%, #8B5CF6 100%);
-            background-size: 200% 100%;
-            background-position: 0% 50%;
-            box-shadow: 0 0 10px rgba(139, 92, 246, 0.6), 0 0 20px rgba(139, 92, 246, 0.3);
-          }
-        }
-        @keyframes flowingDots {
-          0% {
-            left: 0%;
-            opacity: 0;
-          }
-          10% {
-            opacity: 1;
-          }
-          90% {
-            opacity: 1;
-          }
-          100% {
-            left: 100%;
-            opacity: 0;
-          }
-        }
-        @keyframes pendulumSwingLeft {
-          0%, 100% {
-            transform: rotate(8deg);
-          }
-          50% {
-            transform: rotate(-8deg);
-          }
-        }
-        @keyframes pendulumSwingRight {
-          0%, 100% {
-            transform: rotate(-8deg);
-          }
-          50% {
-            transform: rotate(8deg);
-          }
-        }
-        @keyframes gentleSwing {
-          0%, 100% {
-            transform: rotate(var(--rotation)) translateY(0);
-          }
-          50% {
-            transform: rotate(calc(var(--rotation) * -1)) translateY(-3px);
-          }
-        }
-        @keyframes shimmer {
-          0% {
-            background-position: -200% center;
-          }
-          100% {
-            background-position: 200% center;
-          }
-        }
-        .hanging-tag-card {
-          transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        .hanging-tag-card:hover {
-          transform: rotate(0deg) scale(1.05) translateY(-10px) !important;
-          z-index: 10;
-        }
-        .hanging-tag-card:hover .tag-body {
-          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2), 0 0 30px rgba(139, 92, 246, 0.15);
-        }
-        .hanging-tag-card:hover .tag-icon {
-          transform: scale(1.2) rotate(10deg);
-        }
-        .hanging-tag-card:hover .tag-clip {
-          background: linear-gradient(135deg, #8B5CF6 0%, #FF6B6B 100%);
-        }
-        @keyframes floatUp {
-          0%, 100% {
-            transform: translateY(0);
-          }
-          50% {
-            transform: translateY(-12px);
-          }
-        }
-        @keyframes floatUpAlt {
-          0%, 100% {
-            transform: translateY(-8px);
-          }
-          50% {
-            transform: translateY(4px);
-          }
-        }
-        @keyframes pulseGlow {
-          0%, 100% {
-            box-shadow: 0 4px 12px var(--glow-color);
-            transform: scale(1);
-          }
-          50% {
-            box-shadow: 0 8px 25px var(--glow-color);
-            transform: scale(1.08);
-          }
-        }
-        @keyframes iconPulse {
-          0%, 100% {
-            transform: scale(1);
-            opacity: 1;
-          }
-          50% {
-            transform: scale(1.15);
-            opacity: 0.8;
-          }
-        }
-        @keyframes lineFlow {
-          0% {
-            background-position: 0% 50%;
-          }
-          100% {
-            background-position: 200% 50%;
-          }
-        }
-        @keyframes verticalLinePulse {
-          0%, 100% {
-            opacity: 0.5;
-            height: var(--line-height);
-          }
-          50% {
-            opacity: 1;
-            height: calc(var(--line-height) + 5px);
-          }
-        }
-        @keyframes dotPulse {
-          0%, 100% {
-            transform: scale(1);
-            opacity: 1;
-          }
-          50% {
-            transform: scale(1.3);
-            opacity: 0.7;
-          }
-        }
-        @keyframes shadowPulse {
-          0%, 100% {
-            box-shadow: 8px 8px 20px rgba(0, 0, 0, 0.1), -8px -8px 20px rgba(255, 255, 255, 0.9), inset 0 0 0 1px rgba(255, 255, 255, 0.5);
-          }
-          50% {
-            box-shadow: 12px 12px 30px rgba(0, 0, 0, 0.15), -12px -12px 30px rgba(255, 255, 255, 1), inset 0 0 0 2px rgba(255, 255, 255, 0.8);
-          }
-        }
-        /* Core Values - Static (no animations) */
-        .core-value-circle {
-          animation: none !important;
-        }
-        .core-value-icon {
-          animation: none !important;
-        }
-        @keyframes coreValueLineFlow {
-          0% {
-            background-position: 0% 50%;
-          }
-          100% {
-            background-position: 200% 50%;
-          }
-        }
-        .core-value-line {
-          background: linear-gradient(90deg, #F97316, #FBBF24, #34D399, #2DD4BF, #3B82F6, #8B5CF6, #F97316, #FBBF24, #34D399, #2DD4BF, #3B82F6);
-          background-size: 200% 100%;
-          width: 80%;
-          animation: coreValueLineFlow 4s linear infinite !important;
-        }
-        .core-value-number {
-          animation: none !important;
-        }
-        .core-value-vertical-line {
-          animation: none !important;
-        }
-        .colored-dot {
-          animation: none !important;
-        }
-        .core-value-card:hover .core-value-circle {
-          transform: scale(1.15);
-          box-shadow: 8px 8px 25px rgba(0, 0, 0, 0.15), -8px -8px 25px rgba(255, 255, 255, 0.9), 0 0 30px var(--hover-color);
-        }
-        .core-value-card:hover .core-value-icon {
-          transform: scale(1.2);
-        }
-        @keyframes diagonalMove {
-          0% {
-            background-position: 0 0;
-          }
-          100% {
-            background-position: 40px 40px;
-          }
-        }
-        .connector-line {
+        /* ══════════════════════════════════════════════════
+           PURE CSS 3D PARALLAX — "Looking Through a Window"
+           Based on Keith Clark's technique.
+           Container has perspective; layers use translateZ.
+           Browser compositor handles parallax at 60fps.
+           ══════════════════════════════════════════════════ */
+
+        .par-group {
           position: relative;
-          overflow: visible;
+          z-index: 1;
         }
-        .connector-line::before {
+        .par-base {
+          position: relative;
+        }
+        /* Decorative bg layer behind content */
+        .par-deep, .par-mid {
+          position: absolute;
+          inset: 0;
+          z-index: -1;
+        }
+
+        /* ── Animations ── */
+        @keyframes float {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-6px); }
+        }
+        @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+
+        .marquee-track { display: flex; gap: 24px; width: max-content; animation: marquee 30s linear infinite; }
+        .marquee-track:hover { animation-play-state: paused; }
+        .cv-card {
+          flex-shrink: 0; width: 260px; padding: 28px 22px; border-radius: 16px;
+          background: #fff; border: 1px solid #e2e8f0;
+          transition: transform 0.2s, box-shadow 0.2s; cursor: default; text-align: center;
+        }
+        .cv-card:hover { transform: translateY(-6px); box-shadow: 0 12px 30px rgba(0,0,0,0.08); }
+
+        .about-section { padding: clamp(50px, 8vw, 90px) clamp(16px, 4vw, 60px); position: relative; }
+
+        /* ── Responsive ── */
+        /* Ensure navbar stays above GSAP pinned sections */
+        .about-nav-wrapper {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          z-index: 9999;
+        }
+        .about-nav-wrapper nav {
+          position: relative !important;
+          top: auto !important;
+        }
+
+        /* ── Core Values 3D Book — EXACT copy of landing page CSS ── */
+        .cv-book-scene { perspective: 1800px; max-width: 1000px; margin: 0 auto; display: flex; justify-content: center; align-items: center; padding: 0 40px; }
+        .cv-book-3d { width: 280px; height: 320px; position: relative; transform-style: preserve-3d; transform: rotateY(-5deg) rotateX(2deg); filter: drop-shadow(0 20px 30px rgba(0,0,0,0.18)) drop-shadow(0 8px 12px rgba(0,0,0,0.08)); margin-left: 280px; }
+        .cv-book-cover { position: absolute; width: 100%; height: 100%; transform-style: preserve-3d; transform-origin: left center; z-index: 10; }
+        .cv-book-cover-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: 4px 20px 20px 4px; overflow: hidden; }
+        .cv-book-cover-front { background: linear-gradient(160deg, #052047 0%, #083A85 40%, #0a4da3 70%, #1e5bb7 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; box-shadow: 4px 4px 20px rgba(0,0,0,0.3), inset -2px 0 8px rgba(0,0,0,0.2); }
+        .cv-book-cover-front::before { content: ''; position: absolute; inset: 12px; border: 1.5px solid rgba(255,255,255,0.1); border-radius: 3px 12px 12px 3px; pointer-events: none; }
+        .cv-book-cover-back { transform: rotateY(180deg); background: linear-gradient(160deg, #041a3a 0%, #062d5e 100%); box-shadow: -4px 4px 20px rgba(0,0,0,0.3); border-radius: 20px 4px 4px 20px; }
+        .cv-book-back-cover { position: absolute; width: 100%; height: 100%; border-radius: 4px 20px 20px 4px; background: linear-gradient(160deg, #052047 0%, #083A85 40%, #0a4da3 100%); z-index: -1; box-shadow: 2px 4px 15px rgba(0,0,0,0.15); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; }
+        .cv-book-back-cover::before { content: ''; position: absolute; inset: 12px; border: 1px solid rgba(255,255,255,0.08); border-radius: 3px 14px 14px 3px; pointer-events: none; }
+        .cv-book-back-cover .back-logo { font-size: 20px; font-weight: 900; color: rgba(255,255,255,0.3); letter-spacing: 3px; text-transform: uppercase; }
+        .cv-book-back-cover .back-tagline { font-size: 11px; color: rgba(255,255,255,0.2); margin-top: 8px; font-weight: 500; }
+        .cv-book-page { position: absolute; width: 100%; height: 100%; transform-style: preserve-3d; transform-origin: left center; }
+        .cv-book-page-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: 4px 20px 20px 4px; overflow: hidden; }
+        .cv-bp-front { background: #fff; display: flex; flex-direction: column; justify-content: center; padding: 36px 32px; box-shadow: 2px 2px 15px rgba(0,0,0,0.1), inset -2px 0 6px rgba(0,0,0,0.04); position: relative; }
+        .cv-bp-front::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 30px; background: linear-gradient(to right, rgba(0,0,0,0.08), rgba(0,0,0,0.02), transparent); z-index: 2; pointer-events: none; border-radius: 4px 0 0 4px; }
+        .cv-bp-front .bp-watermark { display: none; }
+        .cv-bp-front .bp-text { width: 100%; position: relative; z-index: 1; }
+        .cv-bp-front .bp-text .bp-num { display: none; }
+        .cv-bp-front .bp-text h3 { font-size: 22px; font-weight: 900; color: #083A85; margin-bottom: 12px; line-height: 1.15; }
+        .cv-bp-front .bp-text p { font-size: 13px; color: #64748b; line-height: 1.65; margin: 0; max-width: 280px; }
+        .cv-bp-front .bp-text .bp-line { width: 40px; height: 3px; background: #083A85; border-radius: 2px; margin-bottom: 16px; opacity: 0.3; }
+        .cv-bp-back { transform: rotateY(180deg); background: linear-gradient(135deg, #062d5e 0%, #083A85 50%, #0a4da3 100%); position: relative; box-shadow: -2px 2px 15px rgba(0,0,0,0.15); border-radius: 20px 4px 4px 20px; overflow: hidden; }
+        .cv-bp-back .bp-back-num { font-size: 200px; font-weight: 900; color: rgba(255,255,255,0.15); position: absolute; bottom: -20px; right: 10px; line-height: 1; letter-spacing: -10px; pointer-events: none; }
+        .cv-bp-back h4 { writing-mode: vertical-rl; font-size: 24px; font-weight: 900; color: rgba(255,255,255,0.8); position: absolute; left: 20px; top: 50%; transform: rotate(180deg); letter-spacing: 3px; text-transform: uppercase; margin: 0; }
+        .cv-bp-back .bp-back-label { font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 2px; position: absolute; top: 20px; right: 20px; }
+        .cv-bp-back p { font-size: 11px; color: rgba(255,255,255,0.35); position: absolute; top: 20px; left: 55px; right: 80px; line-height: 1.6; margin: 0; }
+        .cv-book-page-edges { position: absolute; right: -3px; top: 8px; bottom: 8px; width: 6px; background: repeating-linear-gradient(to bottom, #e8e8e8 0px, #f5f5f5 1px, #e8e8e8 2px); border-radius: 0 2px 2px 0; z-index: -1; pointer-events: none; box-shadow: 1px 0 3px rgba(0,0,0,0.08); }
+        .cv-book-spine { position: absolute; left: -6px; top: 0; bottom: 0; width: 14px; background: linear-gradient(to right, #041a3a, #052047, #062d5e); border-radius: 3px 0 0 3px; z-index: 11; box-shadow: -2px 2px 8px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .cv-book-spine .spine-text { writing-mode: vertical-rl; text-orientation: mixed; transform: rotate(180deg); font-size: 7px; font-weight: 800; color: rgba(255,255,255,0.25); letter-spacing: 2px; text-transform: uppercase; white-space: nowrap; }
+        .cv-book-page::after { content: ''; position: absolute; top: 0; right: 0; width: 40px; height: 100%; background: linear-gradient(to left, rgba(0,0,0,0.05), transparent); border-radius: 0 16px 16px 0; pointer-events: none; opacity: 1; transition: opacity 0.4s; }
+        /* KEY: Hide back faces of pages — only cover back face shows on the left */
+        .cv-bp-back { visibility: hidden; }
+        .cv-book-scroll-hint { text-align: center; margin-top: 14px; font-size: 13px; color: #94a3b8; font-weight: 500; }
+        @media (max-width: 768px) {
+          .cv-book-scene { padding: 0 16px; perspective: none !important; }
+          .cv-book-3d { width: 85vw !important; max-width: 400px; height: 55vh; max-height: 500px; margin-left: 0 !important; transform: none !important; filter: none !important; }
+          .cv-bp-front { padding: 28px 24px !important; }
+          .cv-bp-front .bp-text h3 { font-size: 22px; }
+          .cv-bp-front .bp-text p { font-size: 14px; max-width: 100% !important; }
+          .cv-bp-front .bp-text .bp-line { width: 30px; height: 2px; }
+          .cv-book-cover-front h2 { font-size: 20px; }
+          .cv-book-cover-front .cover-sub { font-size: 10px; margin-bottom: 16px; }
+          .cv-book-cover-front { padding: 28px 24px; }
+          .cv-book-spine { display: none; }
+          .cv-book-page-edges { display: none; }
+          .cv-book-cover-back { visibility: hidden !important; }
+          .cv-book-cover { z-index: 10 !important; }
+          .cv-bp-front::before { width: 10px; }
+          .cv-book-page-face { border-radius: 4px 12px 12px 4px; }
+          .cv-book-cover-face { border-radius: 4px 12px 12px 4px; }
+          .cv-book-back-cover { border-radius: 4px 12px 12px 4px; padding: 24px; }
+          .cv-book-back-cover .back-logo { font-size: 14px; }
+          .cv-book-back-cover .back-tagline { font-size: 9px; }
+        }
+        @media (max-width: 480px) {
+          .cv-book-3d { width: 90vw !important; max-width: 320px; height: 50vh; max-height: 420px; }
+          .cv-bp-front { padding: 24px 20px !important; }
+          .cv-bp-front .bp-text h3 { font-size: 19px; }
+          .cv-bp-front .bp-text p { font-size: 13px; line-height: 1.6; }
+          .cv-book-cover-front h2 { font-size: 18px; }
+          .cv-book-cover-front .cover-sub { font-size: 9px; }
+          .cv-book-cover-front { padding: 22px 18px; }
+        }
+
+        /* ── Journey Agenda ── */
+        .journey-agenda {
+          position: relative;
+          width: 100%;
+          max-width: 800px;
+          margin: 0 auto;
+          height: 480px;
+          overflow: hidden;
+        }
+        .journey-card {
+          position: absolute;
+          inset: 0;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          padding: clamp(32px, 4vw, 48px);
+          background: #fff;
+          border-radius: 20px;
+          border: 1px solid #e2e8f0;
+          will-change: transform, opacity;
+        }
+        .journey-card::before {
           content: '';
           position: absolute;
-          width: 8px;
-          height: 8px;
-          background: #fff;
-          border-radius: 50%;
-          top: 50%;
-          transform: translateY(-50%);
-          animation: flowingDots 1.5s ease-in-out infinite;
-          box-shadow: 0 0 10px rgba(255, 255, 255, 0.8), 0 0 20px rgba(139, 92, 246, 0.6);
+          top: 0;
+          left: 32px;
+          right: 32px;
+          height: 3px;
+          border-radius: 0 0 3px 3px;
+          background: linear-gradient(90deg, #083A85, #5b9bff);
         }
-        .snowflake {
+        .journey-timeline {
+          display: flex;
+          justify-content: center;
+          gap: 32px;
+          margin-bottom: 28px;
+          position: relative;
+        }
+        .journey-timeline::before {
+          content: '';
           position: absolute;
-          top: -20px;
-          width: 10px;
-          height: 14px;
-          background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(173, 216, 230, 0.7) 50%, rgba(135, 206, 250, 0.5) 100%);
-          border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
-          animation: snowfall linear infinite;
-          pointer-events: none;
-          box-shadow: inset -1px -1px 2px rgba(255, 255, 255, 0.8), 0 2px 4px rgba(0, 100, 150, 0.2);
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          width: 200px;
+          height: 2px;
+          background: #e2e8f0;
         }
-
-        /* Default desktop font sizes - matched to homepage */
-        .about-hero-title {
-          font-size: 57px;
-          line-height: 1.05;
+        .journey-year-dot {
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          border: 2px solid #e2e8f0;
+          background: #fff;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 10px;
+          font-weight: 700;
+          color: #94a3b8;
+          position: relative;
+          z-index: 2;
+          transition: all 0.4s ease;
         }
-        .about-journey-title {
-          font-size: 50px;
-          line-height: 1.05;
+        .journey-year-dot.active {
+          border-color: #083A85;
+          color: #083A85;
+          background: #eef2ff;
+          transform: scale(1.15);
+          box-shadow: 0 0 0 4px rgba(8,58,133,0.1);
         }
-        .about-journey-card-title {
-          font-size: 38px;
-          line-height: 1.05;
+        .journey-year-dot.past {
+          border-color: #083A85;
+          background: #083A85;
+          color: #fff;
         }
-        .about-section-title {
-          font-size: 38px;
-          line-height: 1.05;
-        }
-        .about-mock-title {
-          font-size: 55px;
-          line-height: 1.0;
-        }
-        .about-cta-title {
-          font-size: 55px;
-          line-height: 1.1;
-        }
-
-        /* Tablet Responsive Styles — same desktop layout, proportionally scaled */
-        @media (max-width: 1200px) {
-          .about-hero-content {
-            padding: 80px 50px !important;
-            max-width: 500px !important;
-          }
-          .about-hero-image-container {
-            width: 55% !important;
-          }
-          .about-hero-title {
-            font-size: 48px !important;
-            line-height: 1.05 !important;
-          }
-          .about-hero-globe .rotating-globe {
-            width: 350px !important;
-            height: 350px !important;
-          }
-          .about-hero-globe .rotating-globe svg {
-            width: 350px !important;
-            height: 350px !important;
-          }
-          .about-journey-title,
-          .about-mock-title,
-          .about-cta-title {
-            font-size: 45px !important;
-            line-height: 1.1 !important;
-          }
-          .about-journey-card-title,
-          .about-section-title {
-            font-size: 36px !important;
-            line-height: 1.15 !important;
-          }
-          .about-journey-container {
-            padding: 40px 30px !important;
-          }
-        }
-
-        @media (max-width: 992px) {
-          .about-hero-content {
-            padding: 80px 40px !important;
-            max-width: 450px !important;
-          }
-          .about-hero-image-container {
-            width: 50% !important;
-          }
-          .about-hero-title {
-            font-size: 40px !important;
-            line-height: 1.1 !important;
-          }
-          .about-hero-globe .rotating-globe {
-            width: 280px !important;
-            height: 280px !important;
-          }
-          .about-hero-globe .rotating-globe svg {
-            width: 280px !important;
-            height: 280px !important;
-          }
-          .about-journey-title,
-          .about-mock-title,
-          .about-cta-title {
-            font-size: 38px !important;
-            line-height: 1.15 !important;
-          }
-          .about-journey-card-title,
-          .about-section-title {
-            font-size: 32px !important;
-            line-height: 1.15 !important;
-          }
-          .about-journey-container h2,
-          .about-journey-container h3 {
-            font-size: 30px !important;
-          }
-        }
-
-        /* Mobile Responsive Styles */
         @media (max-width: 768px) {
-          .about-hero-globe .rotating-globe {
-            width: 280px !important;
-            height: 280px !important;
-          }
-          .about-hero-globe .rotating-globe svg {
-            width: 280px !important;
-            height: 280px !important;
-          }
-          /* Journey card details */
-          .about-journey-container p {
-            font-size: 14px !important;
-          }
-          .about-journey-container li {
-            font-size: 14px !important;
-          }
-          .about-journey-card {
-            padding: 20px 15px !important;
-          }
-          .about-journey-card > div:first-child {
-            top: 15px !important;
-            left: 15px !important;
-            padding: 6px 14px !important;
-            font-size: 12px !important;
-          }
-          /* Core values cards */
-          .core-values-cards {
-            flex-direction: column !important;
-            align-items: center !important;
-            gap: 15px !important;
-          }
-          .core-values-cards > div > div {
-            width: 300px !important;
-            height: 280px !important;
-            margin: 0 !important;
-            animation: pendulumSwingLeft 2s ease-in-out infinite !important;
-          }
-          .core-values-cards > div:nth-child(even) > div {
-            animation: pendulumSwingRight 2s ease-in-out infinite !important;
-          }
-          .core-values-cards > div > div > img {
-            height: 100% !important;
-          }
-          .core-values-cards > div > div > div {
-            width: 48% !important;
-            padding-top: 15px !important;
-            top: 45% !important;
-          }
-          .core-values-cards > div > div > div h4 {
-            font-size: 16px !important;
-            margin-bottom: 10px !important;
-          }
-          .core-values-cards > div > div > div p {
-            font-size: 12px !important;
-            line-height: 1.35 !important;
-            word-wrap: break-word !important;
-            overflow-wrap: break-word !important;
-            white-space: normal !important;
-          }
-          .closing-quote p {
-            font-size: 15px !important;
-          }
+          .journey-agenda { height: 420px; }
+          .journey-card { padding: 28px 24px; }
+          .tm-row { grid-template-columns: 1fr !important; gap: 8px !important; }
+          .smart-sidebar { display: none !important; }
+          .smart-stats-grid { grid-template-columns: 1fr !important; }
         }
-
-
         @media (max-width: 480px) {
-          /* Journey card details */
-          .about-journey-container li {
-            font-size: 13px !important;
-          }
-          .about-journey-card {
-            padding: 15px 12px !important;
-            border-radius: 15px !important;
-          }
-          .about-journey-card > div:first-child {
-            top: 12px !important;
-            left: 12px !important;
-            padding: 5px 12px !important;
-            font-size: 11px !important;
-          }
-          /* Core values cards - smaller */
-          .core-values-cards > div > div {
-            width: 280px !important;
-            height: 260px !important;
-            animation: pendulumSwingLeft 2s ease-in-out infinite !important;
-          }
-          .core-values-cards > div:nth-child(even) > div {
-            animation: pendulumSwingRight 2s ease-in-out infinite !important;
-          }
-          .core-values-cards > div > div > div {
-            width: 50% !important;
-            padding-top: 12px !important;
-            top: 45% !important;
-          }
-          .core-values-cards > div > div > div h4 {
-            font-size: 14px !important;
-            margin-bottom: 8px !important;
-          }
-          .core-values-cards > div > div > div p {
-            font-size: 11px !important;
-            line-height: 1.3 !important;
-            word-wrap: break-word !important;
-            overflow-wrap: break-word !important;
-            white-space: normal !important;
-          }
-          .closing-quote p {
-            font-size: 14px !important;
-          }
+          .journey-agenda { height: 380px; }
+          .journey-card { padding: 20px 16px; }
         }
 
-        /* ===== CONSOLIDATED MOBILE RESPONSIVE STYLES ===== */
-
-        /* Tablet Breakpoint - 768px */
+        /* ── Mission & Vision Pinned Stacking ── */
+        .mv-section {
+          min-height: 100vh;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          overflow: hidden;
+          position: relative;
+          padding: clamp(20px, 4vw, 40px) clamp(16px, 3vw, 24px);
+          background: #f8fafc;
+        }
+        .mv-panels {
+          position: relative;
+          width: 100%;
+          max-width: 680px;
+        }
+        .mv-mission, .mv-vision {
+          background: #fff;
+          border-radius: 20px;
+          padding: clamp(36px, 5vw, 56px);
+          border: 1px solid #e2e8f0;
+          position: absolute;
+          width: 100%;
+          box-sizing: border-box;
+          will-change: transform, opacity;
+          box-shadow: 0 8px 30px rgba(0,0,0,0.06);
+        }
+        .mv-mission {
+          z-index: 1;
+          top: 0;
+        }
+        .mv-vision {
+          z-index: 2;
+          top: 0;
+        }
         @media (max-width: 768px) {
-          /* Hero Section — imitate landing page mobile layout */
-          .about-hero-section {
-            min-height: auto !important;
-            padding: 0 !important;
+          .mv-panels { max-width: 100%; }
+        }
+
+        /* Cabin wall text: hidden until GSAP animates them in */
+        .hero-text-item {
+          opacity: 0;
+          transform: translateY(30px);
+        }
+        /* Overlay text: visible by default on fullscreen window */
+        .hero-overlay-text {
+          opacity: 1;
+        }
+
+        /* Airplane window hero — mobile layout */
+        @media (max-width: 768px) {
+          .grid-2 { grid-template-columns: 1fr !important; }
+          .tm-row { grid-template-columns: auto 1fr !important; }
+          .tm-row p { grid-column: 1 / -1 !important; }
+          .flip-layout { flex-direction: column !important; text-align: center; }
+          .journey-grid { grid-template-columns: 1fr !important; }
+          .mv-grid { grid-template-columns: 1fr !important; }
+          .smart-sidebar { display: none !important; }
+          /* Stack text above/below the window on mobile */
+          .par-group:first-child {
             flex-direction: column !important;
+            padding: 40px 20px !important;
+            gap: 28px !important;
           }
-          .about-hero-content {
-            order: -1 !important;
+          .par-group:first-child .airplane-window {
+            order: 0;
           }
-          .about-hero-content a {
-            display: block !important;
-            width: 100% !important;
-            max-width: 280px !important;
-            margin: 0 auto !important;
-          }
-          .about-hero-content a button,
-          .about-hero-content button {
-            width: 100% !important;
-            max-width: 280px !important;
-          }
-          .about-hero-section p {
-            padding: 0 5px !important;
-          }
-          .about-hero-image-container {
+          .par-group:first-child > div[class="reveal"],
+          .par-group:first-child > div:not(.airplane-window):not([style*="position: absolute"]):not([style*="backgroundImage"]) {
             position: relative !important;
-            width: 100% !important;
-            height: 380px !important;
-            display: flex !important;
-            justify-content: center !important;
-            align-items: flex-end !important;
-            right: -70px !important;
-            bottom: 60px !important;
-            margin-bottom: -60px !important;
-            transform: scale(0.95) translateX(15%) !important;
-            transform-origin: top center !important;
-          }
-          .about-hero-image-container > div {
-            height: 100% !important;
-            display: flex !important;
-            justify-content: center !important;
-          }
-          .about-hero-image-container img {
-            height: 100% !important;
-            width: auto !important;
-            max-width: 100% !important;
-          }
-          .about-hero-title {
-            font-size: 42px !important;
-            line-height: 1.1 !important;
-          }
-          /* Target Market Section */
-          .about-target-market-section {
-            padding: 60px 15px !important;
-          }
-          .about-target-market-section > div {
-            grid-template-columns: 1fr !important;
-            gap: 30px !important;
-          }
-          .about-target-market-section h2 {
-            font-size: 32px !important;
-            text-align: center !important;
-          }
-          .about-target-market-section > div > div:first-child {
-            text-align: center !important;
-          }
-          .about-target-market-section > div > div:nth-child(2) {
-            height: 300px !important;
-            order: -1 !important;
-          }
-          .about-target-market-section > div > div:last-child {
-            text-align: center !important;
-          }
-
-          /* Journey Section */
-          .about-journey-section {
-            padding: 40px 15px !important;
-          }
-          .about-journey-container {
-            padding: 30px 15px !important;
-            gap: 30px !important;
-          }
-          .about-journey-container h2 {
-            font-size: 28px !important;
-            text-align: center !important;
-          }
-
-          /* Mission & Vision Section */
-          .about-mission-vision-section {
-            padding: 60px 15px !important;
-          }
-          .about-mission-vision-section > div {
-            grid-template-columns: 1fr !important;
-            gap: 30px !important;
-          }
-          .about-mission-vision-section > div > div {
-            width: 100% !important;
-            max-width: 100% !important;
-          }
-
-          /* Core Values Section */
-          .about-core-values-section {
-            padding: 60px 15px !important;
-          }
-          .about-core-values-section h2 {
-            font-size: 28px !important;
-            text-align: center !important;
-          }
-          .about-core-values-section > div > div:last-child {
-            flex-wrap: wrap !important;
-            justify-content: center !important;
-            gap: 20px !important;
-          }
-          .about-core-values-section > div > div:last-child > div {
-            width: calc(50% - 10px) !important;
-            min-width: 140px !important;
-          }
-
-          /* Smart Tools / Laptop Section — stretch to fill mobile screen */
-          .about-smart-tools-section {
-            padding: 110px 15px 0px !important;
-            min-height: 100vh !important;
-            display: flex !important;
-            flex-direction: column !important;
-          }
-          .smart-tools-content-wrapper {
-            flex: 1 !important;
-            display: flex !important;
-            flex-direction: column !important;
-          }
-          .smart-tools-laptop-container {
-            max-width: 100% !important;
-            width: 100% !important;
-            margin-top: auto !important;
-            margin-bottom: auto !important;
-          }
-          .smart-tools-features {
-            margin-top: auto !important;
-            padding-bottom: 30px !important;
-            gap: 24px !important;
-          }
-          .about-smart-tools-section h2 {
-            font-size: 28px !important;
-            text-align: center !important;
-          }
-          .about-smart-tools-section > div > div:first-child p {
-            font-size: 15px !important;
-          }
-          /* Hide sidebar on tablet/mobile */
-          .smart-tools-sidebar {
-            display: none !important;
-          }
-          /* Dashboard content padding — match wireframe to mockup */
-          .smart-tools-dashboard,
-          .smart-tools-dashboard-wireframe {
-            padding: 16px !important;
-            min-height: 320px !important;
-          }
-          /* Stats grid stays 3 columns but smaller */
-          .smart-tools-stats-grid {
-            gap: 10px !important;
-          }
-          .smart-tools-stats-grid > div {
-            padding: 12px !important;
-          }
-          /* Wireframe stats — scale skeleton sizes to match mockup text on mobile */
-          .wireframe-stats-card {
-            padding: 16px !important;
-            margin-bottom: 14px !important;
-          }
-          .wireframe-stats-label {
-            height: 16px !important;
-            width: 70px !important;
-            margin: 0 0 6px 0 !important;
-          }
-          .wireframe-stats-value {
-            height: 32px !important;
-            width: 120px !important;
-            margin: 0 0 4px 0 !important;
-          }
-          .wireframe-stats-change {
-            height: 14px !important;
-            width: 80px !important;
-          }
-          .wireframe-mini-grid {
-            gap: 10px !important;
-          }
-          .wireframe-mini-card {
-            padding: 12px !important;
-          }
-          .wireframe-mini-icon {
-            width: 20px !important;
-            height: 20px !important;
-          }
-          .wireframe-mini-value {
-            width: 30px !important;
-            height: 20px !important;
-            margin: 6px 0 4px 0 !important;
-          }
-          .wireframe-mini-label {
-            width: 45px !important;
-            height: 12px !important;
-          }
-          /* Mockup stats — reduce to match wireframe on mobile */
-          .mockup-stats-card {
-            padding: 16px !important;
-            margin-bottom: 14px !important;
-          }
-          .mockup-stats-label {
-            font-size: 11px !important;
-            margin: 0 0 6px 0 !important;
-          }
-          .mockup-stats-value {
-            font-size: 24px !important;
-            margin: 0 0 4px 0 !important;
-          }
-          .mockup-stats-change {
-            font-size: 10px !important;
-          }
-          .mockup-mini-card {
-            padding: 12px !important;
-          }
-          .mockup-mini-icon {
-            font-size: 16px !important;
-          }
-          .mockup-mini-value {
-            font-size: 16px !important;
-            margin: 6px 0 4px 0 !important;
-          }
-          .mockup-mini-label {
-            font-size: 9px !important;
-          }
-
-          /* Remove negative overlap on mobile */
-          .about-post-smart-tools-wrapper {
-            margin-top: 0px !important;
-          }
-
-          /* Mock CTA Section */
-          .about-mock-section {
-            margin: 0 15px !important;
-          }
-          .about-mock-container {
-            min-height: 400px !important;
-            border-radius: 20px !important;
-          }
-          .about-mock-overlay {
-            padding: 40px 24px !important;
-            min-height: 400px !important;
-          }
-          .about-mock-content {
-            max-width: 100% !important;
-          }
-          .about-mock-title {
-            font-size: 32px !important;
-          }
-          .about-mock-subtitle {
-            font-size: 15px !important;
-          }
-
-          /* Final CTA Section */
-          .about-final-cta-section {
-            padding: 60px 15px !important;
-            overflow: hidden !important;
-          }
-          .about-cta-container {
-            flex-direction: column !important;
-            gap: 30px !important;
-            padding-right: 0 !important;
-          }
-          .about-cta-image {
-            width: 100% !important;
-            min-height: 280px !important;
-            height: auto !important;
-            margin-left: 0 !important;
-            order: -1 !important;
-          }
-          .about-cta-content {
+            inset: auto !important;
             max-width: 100% !important;
             text-align: center !important;
-            padding: 0 10px !important;
-          }
-          .about-cta-title {
-            font-size: 28px !important;
-            line-height: 1.15 !important;
-          }
-          .about-cta-subtitle {
-            font-size: 14px !important;
-          }
-          .about-cta-buttons {
-            justify-content: center !important;
-            flex-direction: column !important;
-            align-items: center !important;
-            gap: 10px !important;
-          }
-          .about-cta-buttons button {
-            width: 100% !important;
-            max-width: 280px !important;
-          }
-        }
-
-        /* Small Mobile Breakpoint - 480px */
-        @media (max-width: 480px) {
-          /* Hero Section */
-          .about-hero-image-container {
-            height: 280px !important;
-          }
-
-          /* Target Market Section */
-          .about-target-market-section {
-            padding: 50px 15px !important;
-          }
-          .about-target-market-section h2 {
-            font-size: 28px !important;
-          }
-          .about-target-market-section > div > div:nth-child(2) {
-            height: 250px !important;
-          }
-
-          /* Journey Section */
-          .about-journey-section {
-            padding: 30px 15px !important;
-          }
-          .about-journey-container {
-            padding: 20px 15px !important;
-          }
-          .about-journey-container h2 {
-            font-size: 24px !important;
-          }
-          .about-journey-container p {
-            font-size: 13px !important;
-          }
-
-          /* Mission & Vision Section */
-          .about-mission-vision-section {
-            padding: 50px 15px !important;
-          }
-          .about-mission-vision-section h3 {
-            font-size: 22px !important;
-          }
-
-          /* Core Values Section */
-          .about-core-values-section {
-            padding: 50px 15px !important;
-          }
-          .about-core-values-section h2 {
-            font-size: 24px !important;
-          }
-          .about-core-values-section > div > div:last-child > div {
-            width: 100% !important;
-          }
-
-          /* Smart Tools Section — stretch to fill mobile screen */
-          .about-smart-tools-section {
-            padding: 100px 15px 0px !important;
-            min-height: 100vh !important;
-            display: flex !important;
-            flex-direction: column !important;
-          }
-          .smart-tools-content-wrapper {
-            flex: 1 !important;
-            display: flex !important;
-            flex-direction: column !important;
-          }
-          .smart-tools-laptop-container {
-            max-width: 100% !important;
-            width: 100% !important;
-            margin-top: auto !important;
-            margin-bottom: auto !important;
-          }
-          .about-smart-tools-section h2 {
-            font-size: 22px !important;
-          }
-          .about-smart-tools-section > div > div:first-child p {
-            font-size: 14px !important;
-          }
-          /* Dashboard content smaller on mobile — match wireframe to mockup */
-          .smart-tools-dashboard,
-          .smart-tools-dashboard-wireframe {
-            padding: 12px !important;
-            min-height: 280px !important;
-          }
-          /* Stats grid - smaller on mobile */
-          .smart-tools-stats-grid {
-            gap: 8px !important;
-          }
-          .smart-tools-stats-grid > div {
-            padding: 10px !important;
-          }
-          .smart-tools-stats-grid > div p {
-            font-size: 10px !important;
-          }
-          .smart-tools-stats-grid > div span {
-            font-size: 16px !important;
-          }
-          /* Feature highlights - 2x2 grid, pushed to bottom */
-          .smart-tools-features {
-            display: grid !important;
-            grid-template-columns: 1fr 1fr !important;
-            gap: 16px !important;
-            margin-top: auto !important;
-            padding-bottom: 20px !important;
-          }
-          .smart-tools-features > div {
-            justify-content: center !important;
-          }
-          .smart-tools-features span {
-            font-size: 12px !important;
-          }
-          /* Wireframe stats — smaller on small mobile */
-          .wireframe-stats-card {
-            padding: 12px !important;
-            margin-bottom: 10px !important;
-          }
-          .wireframe-stats-label {
-            height: 12px !important;
-            width: 60px !important;
-            margin: 0 0 5px 0 !important;
-          }
-          .wireframe-stats-value {
-            height: 24px !important;
-            width: 100px !important;
-          }
-          .wireframe-stats-change {
-            height: 12px !important;
-            width: 65px !important;
-          }
-          .wireframe-mini-grid {
-            gap: 8px !important;
-          }
-          .wireframe-mini-card {
-            padding: 10px !important;
-          }
-          .wireframe-mini-icon {
-            width: 18px !important;
-            height: 18px !important;
-          }
-          .wireframe-mini-value {
-            width: 25px !important;
-            height: 16px !important;
-            margin: 4px 0 3px 0 !important;
-          }
-          .wireframe-mini-label {
-            width: 40px !important;
-            height: 10px !important;
-          }
-          /* Mockup stats — smaller on small mobile */
-          .mockup-stats-card {
-            padding: 12px !important;
-            margin-bottom: 10px !important;
-          }
-          .mockup-stats-label {
-            font-size: 10px !important;
-            margin: 0 0 5px 0 !important;
-          }
-          .mockup-stats-value {
-            font-size: 20px !important;
-          }
-          .mockup-stats-change {
-            font-size: 9px !important;
-          }
-          .mockup-mini-card {
-            padding: 10px !important;
-          }
-          .mockup-mini-icon {
-            font-size: 14px !important;
-          }
-          .mockup-mini-value {
-            font-size: 14px !important;
-            margin: 4px 0 3px 0 !important;
-          }
-          .mockup-mini-label {
-            font-size: 8px !important;
-          }
-
-          /* Remove negative overlap on small mobile */
-          .about-post-smart-tools-wrapper {
-            margin-top: 0px !important;
-          }
-
-          /* Mock CTA Section */
-          .about-mock-section {
-            margin: 0 5px !important;
-          }
-          .about-mock-container {
-            min-height: 350px !important;
-            border-radius: 16px !important;
-          }
-          .about-mock-overlay {
-            padding: 30px 20px !important;
-            min-height: 350px !important;
-          }
-          .about-mock-title {
-            font-size: 24px !important;
-          }
-          .about-mock-subtitle {
-            font-size: 14px !important;
-          }
-          .about-mock-content a {
-            padding: 12px 24px !important;
-            font-size: 14px !important;
-          }
-
-          /* Final CTA Section */
-          .about-final-cta-section {
-            padding: 50px 15px !important;
-          }
-          .about-cta-container {
-            gap: 24px !important;
-          }
-          .about-cta-image {
-            min-height: 220px !important;
-          }
-          .about-cta-title {
-            font-size: 24px !important;
-          }
-          .about-cta-subtitle {
-            font-size: 13px !important;
-          }
-          .about-cta-buttons {
-            flex-direction: column !important;
-            width: 100% !important;
-            align-items: center !important;
-          }
-          .about-cta-buttons button {
-            width: 100% !important;
-            max-width: 280px !important;
           }
         }
       `}</style>
-      <Navbar />
 
-      {/* Wrapper: all sections before Smart Tools get zIndex:2 so pinned Smart Tools (zIndex:1) stays behind */}
-      <div style={{ position: 'relative', zIndex: 2 }}>
+      <div className="about-nav-wrapper">
+        <Navbar />
+      </div>
 
-      {/* Header/Hero Section - Corporate Business Style */}
-      <section
-        className="about-hero-section"
-        style={{
-          backgroundColor: '#1a1a2e',
-          position: 'relative',
-          padding: '0',
-          overflow: 'hidden',
-          minHeight: '100vh',
-          display: 'flex',
-          alignItems: 'center',
-        }}
-      >
-        {/* Background Image - Corporate Building */}
-        <div
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            backgroundImage: 'url(https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80)',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat',
-            zIndex: 1,
-            filter: 'grayscale(40%) blur(3px) brightness(0.6)',
-          }}
-        />
-        {/* Dark blur overlay for background */}
-        <div
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            background: 'rgba(0, 0, 0, 0.4)',
-            zIndex: 1,
-          }}
-        />
+      <div>
 
-        {/* Cameraman Image with Diagonal Lines Pattern Overlay */}
-        <div
-          className="about-hero-image-container"
-          style={{
-            position: 'absolute',
-            right: 0,
-            bottom: '-10px',
-            height: '100%',
-            width: '100%',
-            display: 'flex',
-            alignItems: 'flex-end',
-            justifyContent: 'flex-end',
-            zIndex: 3,
-          }}
-        >
-          <div
-            style={{
-              position: 'relative',
-              height: '120%',
-              maxWidth: '120%',
-            }}
-          >
-            <img
-              src="/caman.png"
-              alt="Professional photographer"
-              style={{
-                height: '100%',
-                width: '100%',
-                objectFit: 'contain',
-                objectPosition: 'bottom right',
-              }}
-            />
-            {/* Static Diagonal Lines - One direction */}
-            <div
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                backgroundImage: `
-                  repeating-linear-gradient(
-                    45deg,
-                    transparent,
-                    transparent 12px,
-                    rgba(255, 255, 255, 0.5) 12px,
-                    rgba(255, 255, 255, 0.5) 14px
-                  )
-                `,
-                WebkitMaskImage: 'url(/caman.png)',
-                maskImage: 'url(/caman.png)',
-                WebkitMaskSize: 'contain',
-                maskSize: 'contain',
-                WebkitMaskPosition: 'bottom right',
-                maskPosition: 'bottom right',
-                WebkitMaskRepeat: 'no-repeat',
-                maskRepeat: 'no-repeat',
+        {/* ━━━ HERO: AIRPLANE WINDOW ━━━ */}
+        <div ref={heroRef} className="par-group" style={{ height: '100vh', minHeight: 650, background: '#041e4f', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', visibility: 'hidden' }}>
+
+          {/* Cabin wall — brand blue gradient */}
+          <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 50% 40%, #0a4a8a 0%, #083A85 30%, #052a5e 70%, #031b3d 100%)' }} />
+          <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1px)', backgroundSize: '4px 4px', opacity: 0.5 }} />
+
+          {/* ── AIRPLANE WINDOW ── */}
+          <div ref={windowRef} className="airplane-window" style={{ position: 'relative', width: 'clamp(240px, 30vw, 400px)', height: 'clamp(290px, 38vw, 500px)', flexShrink: 0, willChange: 'transform' }}>
+
+            {/* Outer bezel — the thick plastic surround */}
+            <div style={{
+              position: 'absolute', inset: 0,
+              borderRadius: '45% 45% 42% 42% / 50% 50% 46% 46%',
+              background: 'linear-gradient(160deg, #e8e8ec 0%, #c8c8ce 20%, #a0a0a8 50%, #b8b8c0 80%, #d8d8de 100%)',
+              boxShadow: '0 8px 40px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3), inset 0 2px 4px rgba(255,255,255,0.3), inset 0 -2px 4px rgba(0,0,0,0.15)',
+            }} />
+
+            {/* Inner bezel ring */}
+            <div style={{
+              position: 'absolute', inset: 'clamp(14px, 2vw, 22px)',
+              borderRadius: '45% 45% 42% 42% / 50% 50% 46% 46%',
+              background: 'linear-gradient(160deg, #d0d0d6 0%, #b0b0b8 30%, #909098 60%, #b0b0b8 100%)',
+              boxShadow: 'inset 0 3px 8px rgba(0,0,0,0.25), inset 0 -1px 3px rgba(255,255,255,0.2)',
+            }} />
+
+            {/* Glass opening — the actual window you look through */}
+            <div className="window-glass" style={{
+              position: 'absolute', inset: 'clamp(28px, 4vw, 44px)',
+              borderRadius: '44% 44% 40% 40% / 48% 48% 44% 44%',
+              overflow: 'hidden',
+              boxShadow: 'inset 0 0 30px 8px rgba(0,0,0,0.3)',
+            }}>
+              {/* Scene visible through the window — video + overlay */}
+              <video autoPlay muted loop playsInline poster="/camm.png"
+                style={{ position: 'absolute', inset: '-10%', width: '120%', height: '120%', objectFit: 'cover', filter: 'brightness(0.35) saturate(1.2)' }}
+              >
+                <source src="/photographero.mp4" type="video/mp4" />
+              </video>
+              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(8,40,100,0.4) 0%, rgba(5,15,40,0.6) 100%)' }} />
+
+              {/* Glass reflection — diagonal light streak */}
+              <div style={{
+                position: 'absolute', inset: 0,
+                background: 'linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.03) 30%, transparent 50%, rgba(255,255,255,0.02) 80%, rgba(255,255,255,0.06) 100%)',
                 pointerEvents: 'none',
-              }}
-            />
-            {/* Moving Diagonal Lines - Other direction with gradient color */}
-            <div
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                backgroundImage: `
-                  repeating-linear-gradient(
-                    -45deg,
-                    transparent,
-                    transparent 12px,
-                    rgba(139, 92, 246, 0.6) 12px,
-                    rgba(139, 92, 246, 0.6) 14px
-                  )
-                `,
-                WebkitMaskImage: 'url(/caman.png)',
-                maskImage: 'url(/caman.png)',
-                WebkitMaskSize: 'contain',
-                maskSize: 'contain',
-                WebkitMaskPosition: 'bottom right',
-                maskPosition: 'bottom right',
-                WebkitMaskRepeat: 'no-repeat',
-                maskRepeat: 'no-repeat',
+              }} />
+              {/* Secondary reflection arc */}
+              <div style={{
+                position: 'absolute', top: '5%', left: '10%', width: '35%', height: '25%',
+                background: 'radial-gradient(ellipse, rgba(255,255,255,0.08) 0%, transparent 70%)',
+                transform: 'rotate(-15deg)',
                 pointerEvents: 'none',
-                animation: 'diagonalMove 4s linear infinite',
+              }} />
+            </div>
+
+            {/* Inner shade groove — the small ridge where the shade slides */}
+            <div style={{
+              position: 'absolute',
+              bottom: 'clamp(24px, 3.5vw, 38px)',
+              left: 'clamp(36px, 5vw, 56px)',
+              right: 'clamp(36px, 5vw, 56px)',
+              height: 6,
+              borderRadius: 3,
+              background: 'linear-gradient(180deg, #808088, #a0a0a8)',
+              boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.3)',
+            }} />
+          </div>
+
+          {/* ── FULLSCREEN OVERLAY TEXT — visible when window fills screen, fades as it shrinks ── */}
+          <div ref={el => { heroTextRefs.current[4] = el; }} className="hero-overlay-text" style={{
+            position: 'absolute', inset: 0, zIndex: 30,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <SplitHoverText
+              lines={['The Smart Way to Capture Life']}
+              style={{
+                fontFamily: "'Georgia', 'Times New Roman', serif",
+                fontWeight: 400,
+                fontStyle: 'italic',
+                fontSize: 'clamp(36px, 5.5vw, 72px)',
+                lineHeight: 1.15,
+                color: '#fff',
+                textAlign: 'center' as const,
+                margin: 0,
+                textShadow: '0 2px 20px rgba(0,0,0,0.4)',
               }}
             />
           </div>
-        </div>
 
-        {/* Dark Overlay for better text readability */}
-        <div
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'linear-gradient(90deg, rgba(20, 20, 35, 0.95) 0%, rgba(20, 20, 35, 0.85) 40%, rgba(20, 20, 35, 0.4) 70%, rgba(20, 20, 35, 0.2) 100%)',
-            zIndex: 2,
-          }}
-        />
+          {/* ── TEXT ON THE CABIN WALL ── */}
 
-        {/* Rotating Globe - Top Left */}
-        <div
-          className="about-hero-globe"
-          style={{
-            position: 'absolute',
-            top: isMobile ? '15%' : '30px',
-            left: isMobile ? '20%' : '10px',
-            transform: isMobile ? 'translate(-50%, -50%)' : 'none',
-            zIndex: isMobile ? 3 : 5,
-            opacity: isMobile ? 1 : 1,
-            pointerEvents: 'none',
-          }}
-        >
-          <RotatingGlobe
-            size={500}
-            rotationSpeed={0.3}
-            landColor="rgba(139, 92, 246, 0.35)"
-            oceanColor="rgba(8, 58, 133, 0.15)"
-            borderColor="rgba(139, 92, 246, 0.5)"
-            graticuleColor="rgba(255, 255, 255, 0.07)"
-            glowColor="rgba(139, 92, 246, 0.4)"
-          />
-        </div>
-
-        {/* Content - Left Side */}
-        <div
-          className="about-hero-content"
-          style={{
-            position: 'relative',
-            zIndex: 10,
-            textAlign: isMobile ? 'center' : 'left',
-            maxWidth: isMobile ? '100%' : '750px',
-            padding: isMobile ? '100px 15px 20px' : '20px 90px 120px',
-            display: 'flex',
-            flexDirection: 'column',
-            height: isMobile ? 'auto' : '100%',
-          }}
-        >
-          {/* Heading */}
-          <div className="about-hero-heading-wrapper" style={{ marginTop: isMobile ? 0 : 'auto', paddingTop: isMobile ? '20px' : '70px' }}>
-            <h1
-              className="about-hero-title"
-              style={{
-                fontWeight: 700,
-                margin: 0,
-                letterSpacing: '-0.02em',
-                color: '#ffffff',
-              }}
-            >
-              Amoria
-              <br />
-              <span
-                style={{
-                  background: 'linear-gradient(90deg, #20b2aa 0%, #48d1cc 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  backgroundClip: 'text',
-                }}
-              >
-                Connekyt
-              </span>
+          {/* Top-left: brand name */}
+          <div ref={el => { heroTextRefs.current[0] = el; }} className="hero-text-item" style={{ position: 'absolute', top: 'clamp(60px, 10vh, 120px)', left: 'clamp(24px, 5vw, 80px)', maxWidth: 'clamp(220px, 28vw, 400px)' }}>
+            <h1 style={{ fontFamily: "'Georgia', 'Times New Roman', serif", fontStyle: 'italic', fontWeight: 400, fontSize: 'clamp(30px, 4.5vw, 56px)', lineHeight: 1.1, color: '#fff', margin: 0 }}>
+              Amoria<br />Connekyt
             </h1>
           </div>
 
-          {/* Description */}
-          <div className="about-hero-description-wrapper" style={{ marginTop: isMobile ? 0 : 'auto', paddingTop: isMobile ? '20px' : '40px' }}>
-            <p
-              className="about-hero-subtitle"
-              style={{
-                fontSize: isMobile ? '15px' : '16px',
-                fontWeight: 400,
-                lineHeight: isMobile ? '1.6' : '1.65',
-                color: 'rgba(255, 255, 255, 0.85)',
-                maxWidth: isMobile ? '100%' : '400px',
-                margin: isMobile ? '0 auto' : 0,
-              }}
-            >
-              Amoria Connekyt is a digital ecosystem connecting verified photographers and creative professionals with clients worldwide.
-              We combine smart tools, secure payments, and creative visibility to transform moments into meaningful, lasting experiences.
+          {/* Top-right: label */}
+          <div ref={el => { heroTextRefs.current[1] = el; }} className="hero-text-item" style={{ position: 'absolute', top: 'clamp(60px, 10vh, 120px)', right: 'clamp(24px, 5vw, 80px)' }}>
+            <span style={{ fontSize: 'clamp(10px, 1.1vw, 14px)', fontWeight: 400, color: 'rgba(255,255,255,0.5)', letterSpacing: 1, textTransform: 'uppercase' }}>About Us</span>
+          </div>
+
+          {/* Bottom-left: description */}
+          <div ref={el => { heroTextRefs.current[2] = el; }} className="hero-text-item" style={{ position: 'absolute', bottom: 'clamp(50px, 8vh, 100px)', left: 'clamp(24px, 5vw, 80px)', maxWidth: 'clamp(200px, 22vw, 300px)' }}>
+            <p style={{ fontSize: 'clamp(11px, 1.1vw, 14px)', fontWeight: 400, lineHeight: 1.7, color: 'rgba(255,255,255,0.5)', margin: 0 }}>
+              A digital ecosystem connecting verified photographers and creative professionals with clients worldwide.
             </p>
           </div>
 
-          {/* Button */}
-          <div className="about-hero-button-wrapper" style={{ marginTop: isMobile ? 0 : 'auto', paddingTop: isMobile ? '24px' : '40px' }}>
-            <a
-              href="/user/auth/signup"
-              style={{
-                display: 'inline-block',
-                background: 'linear-gradient(90deg, #FF6B6B 0%, #C44569 50%, #8B5CF6 100%)',
-                color: '#fff',
-                fontSize: '14px',
-                fontWeight: 600,
-                padding: '14px 32px',
-                border: 'none',
-                borderRadius: '50px',
-                cursor: 'pointer',
-                textDecoration: 'none',
-                textTransform: 'uppercase',
-                letterSpacing: '1px',
-                transition: 'all 0.3s ease',
-                boxShadow: '0 4px 20px rgba(255, 107, 107, 0.4)',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-3px)';
-                e.currentTarget.style.boxShadow = '0 8px 30px rgba(255, 107, 107, 0.5)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 4px 20px rgba(255, 107, 107, 0.4)';
-              }}
-            >
-              Get Started
-            </a>
+          {/* Bottom-right: slogan */}
+          <div ref={el => { heroTextRefs.current[3] = el; }} className="hero-text-item" style={{ position: 'absolute', bottom: 'clamp(50px, 8vh, 100px)', right: 'clamp(24px, 5vw, 80px)', maxWidth: 'clamp(220px, 30vw, 420px)', textAlign: 'right' }}>
+            <SplitHoverText
+              lines={['The Smart Way to Capture Life']}
+              style={{ fontFamily: "'Georgia', 'Times New Roman', serif", fontWeight: 400, fontSize: 'clamp(24px, 3.5vw, 48px)', lineHeight: 1.15, color: '#fff', margin: 0, textAlign: 'right' as const }}
+            />
           </div>
         </div>
 
-      </section>
+        {/* ━━━ TARGET MARKET — Editorial Typography ━━━ */}
+        <div className="par-group">
+          <div className="par-base about-section" style={{ background: '#fff' }}>
+            <div style={{ maxWidth: 1000, margin: '0 auto' }}>
 
-      {/* Our Target Market Section */}
-      <section
-        ref={targetMarketRef}
-        className="about-target-market-section"
-        onMouseMove={handleTargetMarketMouseMove}
-        onMouseLeave={handleTargetMarketMouseLeave}
-        style={{
-          padding: '80px 40px',
-          backgroundColor: '#f8fafc',
-          position: 'relative',
-          overflow: 'hidden',
-        }}
-      >
-        {/* Dotted pattern background - base layer */}
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            backgroundImage: 'radial-gradient(circle, #94a3b8 1px, transparent 1px)',
-            backgroundSize: '10px 10px',
-            opacity: 0.2,
-            zIndex: 0,
-            pointerEvents: 'none',
-          }}
-        />
+              {/* Section header */}
+              <div className="reveal" style={{ marginBottom: 'clamp(40px, 6vw, 70px)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+                  <div style={{ width: 32, height: 2, background: '#083A85' }} />
+                  <span style={{ fontSize: 12, fontWeight: 600, color: '#083A85', letterSpacing: 2, textTransform: 'uppercase' }}>Who We Serve</span>
+                </div>
+                <h2 style={{ fontFamily: "'Georgia', 'Times New Roman', serif", fontSize: 'clamp(32px, 5vw, 56px)', fontWeight: 400, lineHeight: 1.1, margin: 0, background: 'linear-gradient(90deg, #8B5CF6 0%, #FF6B6B 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+                  Our Target Market
+                </h2>
+              </div>
 
-        {/* Spotlight layer - reveals brighter dots where cursor is */}
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            backgroundImage: 'radial-gradient(circle, #64748b 1.5px, transparent 0.5px)',
-            backgroundSize: '10px 10px',
-            opacity: targetMarketMousePos ? 0.7 : 0,
-            zIndex: 1,
-            pointerEvents: 'none',
-            maskImage: targetMarketMousePos
-              ? `radial-gradient(circle 70px at ${targetMarketMousePos.x}px ${targetMarketMousePos.y}px, black 0%, black 50%, transparent 80%)`
-              : 'none',
-            WebkitMaskImage: targetMarketMousePos
-              ? `radial-gradient(circle 70px at ${targetMarketMousePos.x}px ${targetMarketMousePos.y}px, black 0%, black 50%, transparent 80%)`
-              : 'none',
-            transition: 'opacity 0s ease',
-          }}
-        />
+              {/* Three editorial rows */}
+              <div className="reveal-stagger" style={{ display: 'flex', flexDirection: 'column' }}>
+                {[
+                  { num: '01', title: 'Creative Professionals', desc: 'Photographers, videographers, and visual storytellers who want to expand their reach, build their brand, and connect with clients globally.' },
+                  { num: '02', title: 'Event Organizers', desc: 'Wedding planners, corporate event managers, and celebration coordinators who need reliable, verified creative coverage for memorable occasions.' },
+                  { num: '03', title: 'Families & Individuals', desc: 'Anyone wanting to preserve precious moments through professional photography and videography services they can trust.' },
+                ].map((item, i) => (
+                  <div key={i} className="tm-row" style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'auto 1fr 1.2fr',
+                    gap: 'clamp(16px, 4vw, 48px)',
+                    alignItems: 'baseline',
+                    padding: 'clamp(24px, 3.5vw, 40px) 0',
+                    borderTop: '1px solid #e2e8f0',
+                  }}>
+                    <span style={{ fontFamily: "'Georgia', 'Times New Roman', serif", fontSize: 'clamp(36px, 5vw, 64px)', fontWeight: 300, color: '#083A85', opacity: 0.25, lineHeight: 1 }}>{item.num}</span>
+                    <h3 style={{ fontFamily: "'Georgia', 'Times New Roman', serif", fontSize: 'clamp(22px, 2.8vw, 34px)', fontWeight: 400, color: '#0f172a', margin: 0, lineHeight: 1.2 }}>{item.title}</h3>
+                    <p style={{ fontSize: 'clamp(13px, 1.2vw, 15px)', color: '#64748b', lineHeight: 1.75, margin: 0 }}>{item.desc}</p>
+                  </div>
+                ))}
+              </div>
 
-        <div
-          style={{
-            maxWidth: '1200px',
-            margin: '0 auto',
-            display: 'grid',
-            gridTemplateColumns: '1fr 1.2fr 1fr',
-            gap: '40px',
-            alignItems: 'center',
-            position: 'relative',
-            zIndex: 2,
-          }}
-        >
-          {/* Left Column - Title and Strategy */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
-            {/* Main Title */}
-            <div>
-              <h2
-                style={{
-                  fontSize: '56px',
-                  fontWeight: 700,
-                  lineHeight: 1.1,
-                  margin: 0,
-                  marginBottom: '8px',
-                  background: 'linear-gradient(90deg, #1e293b 0%, #334155 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  backgroundClip: 'text',
-                }}
-              >
-                Our Target
-              </h2>
-              <h2
-                style={{
-                  fontSize: '56px',
-                  fontWeight: 700,
-                  lineHeight: 1.1,
-                  margin: 0,
-                  background: 'linear-gradient(90deg, #FF6B6B 0%, #8B5CF6 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  backgroundClip: 'text',
-                }}
-              >
-                Market
-              </h2>
-            </div>
-
-            {/* Strategy Box */}
-            <div>
-              <h3
-                style={{
-                  fontSize: '23px',
-                  fontWeight: 700,
-                  background: 'linear-gradient(90deg, #8B5CF6 0%, #FF6B6B 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  backgroundClip: 'text',
-                  margin: 0,
-                  marginBottom: '10px',
-                }}
-              >
-                Creative Professionals Seeking Growth
-              </h3>
-              <p
-                style={{
-                  fontSize: '16px',
-                  color: '#64748b',
-                  lineHeight: 1.6,
-                  margin: 0,
-                }}
-              >
-                Photographers, videographers, and visual storytellers who want to expand their reach, build their brand, and connect with clients globally.
-              </p>
-            </div>
-          </div>
-
-          {/* Center Column - Image */}
-          <div
-            style={{
-              position: 'relative',
-              height: '380px',
-              borderRadius: '16px',
-              overflow: 'hidden',
-              boxShadow: '0 20px 50px rgba(0, 0, 0, 0.15)',
-            }}
-          >
-            {/* Dark overlay on image */}
-            <div
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                background: 'linear-gradient(135deg, rgba(0, 0, 0, 0.3) 0%, rgba(26, 26, 46, 0.4) 100%)',
-                zIndex: 1,
-                pointerEvents: 'none',
-              }}
-            />
-            <img
-              src="https://images.unsplash.com/photo-1554048612-b6a482bc67e5?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80"
-              alt="Professional photographer at work"
-              style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-                filter: 'grayscale(100%) blur(1px) brightness(0.7)',
-              }}
-            />
-          </div>
-
-          {/* Right Column - Text Blocks */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            {/* Top Text Block */}
-            <div>
-              <p
-                style={{
-                  fontSize: '16px',
-                  color: '#64748b',
-                  lineHeight: 1.6,
-                  margin: 0,
-                }}
-              >
-                Clients and businesses looking for verified creative talent to capture their special moments, corporate events, and brand stories with professionalism and creativity.
-              </p>
-            </div>
-
-            {/* Highlighted Box */}
-            <div
-              style={{
-                position: 'relative',
-                background: 'linear-gradient(135deg, #8B5CF6 0%, #FF6B6B 100%)',
-                borderRadius: '12px',
-                padding: '24px',
-                boxShadow: '0 10px 30px rgba(139, 92, 246, 0.3)',
-              }}
-            >
-              <h4
-                style={{
-                  fontSize: '35px',
-                  fontWeight: 700,
-                  color: '#ffffff',
-                  margin: 0,
-                  marginBottom: '12px',
-                }}
-              >
-                Event Organizers
-              </h4>
-              <p
-                style={{
-                  fontSize: '16px',
-                  color: 'rgba(255, 255, 255, 0.95)',
-                  lineHeight: 1.6,
-                  margin: 0,
-                }}
-              >
-                Wedding planners, corporate event managers, and celebration coordinators who need reliable creative coverage for memorable occasions.
-              </p>
-            </div>
-
-            {/* Bottom Text Block */}
-            <div>
-              <p
-                style={{
-                  fontSize: '16px',
-                  color: '#64748b',
-                  lineHeight: 1.6,
-                  margin: 0,
-                }}
-              >
-                Families and individuals wanting to preserve precious moments through professional photography and videography services.
-              </p>
             </div>
           </div>
         </div>
 
-        {/* Mobile Responsive Styles for Target Market */}
-        <style>{`
-          @media (max-width: 992px) {
-            .about-target-market-section > div:nth-child(2) {
-              grid-template-columns: 1fr !important;
-              gap: 30px !important;
-            }
-            .about-target-market-section h2 {
-              font-size: 36px !important;
-            }
-          }
-          @media (max-width: 768px) {
-            .about-target-market-section {
-              padding: 60px 20px !important;
-            }
-            .about-target-market-section h2 {
-              font-size: 32px !important;
-            }
-          }
-        `}</style>
-      </section>
-
-      {/* Our Core Values Section */}
-      <section
-        className="about-core-values-section"
-        style={{
-          padding: '5px 40px 80px',
-          backgroundColor: '#d9dadb',
-          position: 'relative',
-          overflow: 'hidden',
-        }}
-      >
-        <div
-          style={{
-            maxWidth: '1100px',
-            margin: '0 auto',
-          }}
-        >
-          {/* Section Title */}
-          <div style={{ textAlign: 'center', marginBottom: '20px', overflow: 'hidden' }}>
-            <h2
-              style={{
-                fontSize: '48px',
-                fontWeight: 700,
-                lineHeight: 1.15,
-                margin: 0,
-                color: '#1a1a2e',
-                letterSpacing: '2px',
-                display: 'flex',
-                justifyContent: 'center',
-                gap: '0px',
-              }}
-            >
-              {'CORE VALUES'.split('').map((char, i) => (
-                <motion.span
-                  key={i}
-                  initial={{ opacity: 0, y: 40, rotateX: -90 }}
-                  whileInView={{ opacity: 1, y: 0, rotateX: 0 }}
-                  transition={{
-                    duration: 0.4,
-                    delay: i * 0.05,
-                    ease: [0.22, 1, 0.36, 1],
-                  }}
-                  viewport={{ once: true, amount: 0.5 }}
-                  style={{
-                    display: 'inline-block',
-                    minWidth: char === ' ' ? '16px' : 'auto',
-                  }}
-                >
-                  {char}
-                </motion.span>
-              ))}
+        {/* ━━━ CORE VALUES — Exact copy of landing page flip book ━━━ */}
+        <div ref={cvFlipRef} className="par-group" style={{ background: '#f8fafc', position: 'relative', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 0' }}>
+          <div style={{ textAlign: 'center', marginBottom: 12 }}>
+            <span style={{ fontSize: 10, fontWeight: 600, color: '#083A85', letterSpacing: 2, textTransform: 'uppercase' }}>What Drives Us</span>
+            <h2 style={{ fontFamily: "'Georgia', 'Times New Roman', serif", fontSize: 'clamp(20px, 2.5vw, 30px)', fontWeight: 400, lineHeight: 1.15, margin: '6px 0 0', background: 'linear-gradient(90deg, #8B5CF6 0%, #FF6B6B 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+              Our Core Values
             </h2>
           </div>
 
-          {/* Description */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.15, ease: 'easeOut' }}
-            viewport={{ once: true, amount: 0.5 }}
-            style={{ textAlign: 'center', marginBottom: '30px', maxWidth: '600px', margin: '0 auto 30px' }}
-          >
-            <p
-              style={{
-                fontSize: '16px',
-                color: '#212121',
-                lineHeight: 1.7,
-                margin: 0,
-              }}
-            >
-              Our values define who we are and guide every decision we make. They represent our commitment to excellence, innovation, and the well-being of our creative community.
-            </p>
-          </motion.div>
+          <div className="cv-book-scene">
+            <div className="cv-book-3d" ref={cvBook3dRef}>
+              {/* Spine */}
+              <div className="cv-book-spine"><span className="spine-text">AMORIA CONNEKYT</span></div>
+              {/* Page edges */}
+              <div className="cv-book-page-edges" />
 
-          {/* Colored Dots */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5, delay: 0.3, ease: 'easeOut' }}
-            viewport={{ once: true, amount: 0.5 }}
-            style={{ display: 'flex', justifyContent: 'center', gap: '12px', marginBottom: '60px' }}
-          >
-            {['#F97316', '#FBBF24', '#34D399', '#2DD4BF', '#3B82F6'].map((color, i) => (
-              <motion.div
-                key={i}
-                className="colored-dot"
-                initial={{ scale: 0 }}
-                whileInView={{ scale: 1 }}
-                transition={{ duration: 0.3, delay: 0.4 + i * 0.1, type: 'spring', stiffness: 300 }}
-                viewport={{ once: true }}
-                style={{
-                  width: '14px',
-                  height: '14px',
-                  borderRadius: '50%',
-                  backgroundColor: color,
-                  boxShadow: `0 0 10px ${color}50`,
-                }}
-              />
+              {/* Back cover (bottom of stack) */}
+              <div className="cv-book-back-cover">
+                <div style={{ fontSize: 20, fontWeight: 900, color: 'rgba(255,255,255,0.3)', letterSpacing: 3, textTransform: 'uppercase' }}>Amoria Connekyt</div>
+                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', marginTop: 8, fontWeight: 500 }}>The Smart Way to Capture Life</div>
+              </div>
+
+              {/* Page 5: Growth (bottom, z-index 1) */}
+              <div className="cv-book-page" ref={cvPage5Ref} style={{ zIndex: 1 }}>
+                <div className="cv-book-page-face cv-bp-front">
+                  <span className="bp-watermark">05</span>
+                  <div className="bp-text">
+                    <h3>{coreValues[4].title}</h3>
+                    <div className="bp-line" />
+                    <p>{coreValues[4].desc}</p>
+                  </div>
+                </div>
+                <div className="cv-book-page-face cv-bp-back">
+                  <span className="bp-back-num">05</span>
+                  <span className="bp-back-label">Value 05</span>
+                  <h4>{coreValues[4].title}</h4>
+                  <p>{coreValues[4].desc}</p>
+                </div>
+              </div>
+
+              {/* Page 4: Wellness (z-index 2) */}
+              <div className="cv-book-page" ref={cvPage4Ref} style={{ zIndex: 2 }}>
+                <div className="cv-book-page-face cv-bp-front">
+                  <span className="bp-watermark">04</span>
+                  <div className="bp-text">
+                    <h3>{coreValues[3].title}</h3>
+                    <div className="bp-line" />
+                    <p>{coreValues[3].desc}</p>
+                  </div>
+                </div>
+                <div className="cv-book-page-face cv-bp-back">
+                  <span className="bp-back-num">04</span>
+                  <span className="bp-back-label">Value 04</span>
+                  <h4>{coreValues[3].title}</h4>
+                  <p>{coreValues[3].desc}</p>
+                </div>
+              </div>
+
+              {/* Page 3: Excellence (z-index 3) */}
+              <div className="cv-book-page" ref={cvPage3Ref} style={{ zIndex: 3 }}>
+                <div className="cv-book-page-face cv-bp-front">
+                  <span className="bp-watermark">03</span>
+                  <div className="bp-text">
+                    <h3>{coreValues[2].title}</h3>
+                    <div className="bp-line" />
+                    <p>{coreValues[2].desc}</p>
+                  </div>
+                </div>
+                <div className="cv-book-page-face cv-bp-back">
+                  <span className="bp-back-num">03</span>
+                  <span className="bp-back-label">Value 03</span>
+                  <h4>{coreValues[2].title}</h4>
+                  <p>{coreValues[2].desc}</p>
+                </div>
+              </div>
+
+              {/* Page 2: Trust (z-index 4) */}
+              <div className="cv-book-page" ref={cvPage2Ref} style={{ zIndex: 4 }}>
+                <div className="cv-book-page-face cv-bp-front">
+                  <span className="bp-watermark">02</span>
+                  <div className="bp-text">
+                    <h3>{coreValues[1].title}</h3>
+                    <div className="bp-line" />
+                    <p>{coreValues[1].desc}</p>
+                  </div>
+                </div>
+                <div className="cv-book-page-face cv-bp-back">
+                  <span className="bp-back-num">02</span>
+                  <span className="bp-back-label">Value 02</span>
+                  <h4>{coreValues[1].title}</h4>
+                  <p>{coreValues[1].desc}</p>
+                </div>
+              </div>
+
+              {/* Page 1: Innovation (z-index 5, top) */}
+              <div className="cv-book-page" ref={cvPage1Ref} style={{ zIndex: 5 }}>
+                <div className="cv-book-page-face cv-bp-front">
+                  <span className="bp-watermark">01</span>
+                  <div className="bp-text">
+                    <h3>{coreValues[0].title}</h3>
+                    <div className="bp-line" />
+                    <p>{coreValues[0].desc}</p>
+                  </div>
+                </div>
+                <div className="cv-book-page-face cv-bp-back">
+                  <span className="bp-back-num">01</span>
+                  <span className="bp-back-label">Value 01</span>
+                  <h4>{coreValues[0].title}</h4>
+                  <p>{coreValues[0].desc}</p>
+                </div>
+              </div>
+
+              {/* Cover (very top) */}
+              <div className="cv-book-cover" ref={cvCoverRef}>
+                <div className="cv-book-cover-face cv-book-cover-front">
+                  <h2 style={{ fontSize: 32, fontWeight: 900, color: '#fff', textAlign: 'center', lineHeight: 1.2, marginBottom: 14 }}>Our Core<br />Values</h2>
+                  <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.55)', textAlign: 'center', maxWidth: 280, lineHeight: 1.6, marginBottom: 32 }}>The principles that guide everything we build at Amoria Connekyt.</p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>
+                    <span>↓</span> Scroll to read
+                  </div>
+                </div>
+                <div className="cv-book-cover-face cv-book-cover-back" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+                  <span style={{ fontSize: 180, fontWeight: 900, color: 'rgba(255,255,255,0.1)', lineHeight: 1, letterSpacing: -8, marginBottom: -20 }}>
+                    {activeCvCard >= 0 && activeCvCard < 5 ? `0${activeCvCard + 1}` : ''}
+                  </span>
+                  <h4 style={{ fontSize: 22, fontWeight: 900, color: 'rgba(255,255,255,0.85)', textAlign: 'center', margin: 0, padding: '0 24px', lineHeight: 1.3, textTransform: 'uppercase', letterSpacing: 2 }}>
+                    {activeCvCard >= 0 && activeCvCard < 5 && coreValues[activeCvCard].title}
+                    {(activeCvCard === 5 || activeCvCard === 6) && 'Amoria Connekyt'}
+                  </h4>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ━━━ JOURNEY — Scroll Agenda ━━━ */}
+        <div ref={journeyRef} className="par-group" style={{ minHeight: '100vh', background: '#f8fafc', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px' }}>
+
+          {/* Header */}
+          <div style={{ textAlign: 'center', marginBottom: 12 }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: '#083A85', letterSpacing: 2, textTransform: 'uppercase' }}>Our Journey</span>
+            <h2 style={{ fontFamily: "'Georgia', 'Times New Roman', serif", fontSize: 'clamp(30px, 4.5vw, 48px)', fontWeight: 400, lineHeight: 1.15, margin: '8px 0 0', color: '#0f172a' }}>
+              Journey of Progress <span style={{ background: 'linear-gradient(90deg, #8B5CF6 0%, #FF6B6B 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>&amp; Possibility</span>
+            </h2>
+          </div>
+
+          {/* Year dots timeline */}
+          <div className="journey-timeline">
+            {journeyMilestones.slice(0, 2).map((m, i) => (
+              <div key={m.year} className={`journey-year-dot${i === 0 ? ' active' : ''}`}>
+                {String(m.year).slice(2)}
+              </div>
             ))}
-          </motion.div>
-
-          {/* Values Cards with Timeline */}
-          <div className="core-values-timeline" style={{ position: 'relative', paddingBottom: '80px' }}>
-            {/* Horizontal connecting line */}
-            <motion.div
-              className="core-value-line"
-              initial={{ scaleX: 0 }}
-              whileInView={{ scaleX: 1 }}
-              transition={{ duration: 1, delay: 0.5, ease: 'easeOut' }}
-              viewport={{ once: true, amount: 0.3 }}
-              style={{
-                position: 'absolute',
-                bottom: '15px',
-                left: '10%',
-                height: '3px',
-                borderRadius: '2px',
-                zIndex: 1,
-                transformOrigin: 'left center',
-              }}
-            />
-
-            {/* Cards Container */}
-            <div
-              className="core-values-cards-container"
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'flex-end',
-                gap: '20px',
-              }}
-            >
-              {[
-                {
-                  title: 'INNOVATION',
-                  icon: 'bi-lightbulb',
-                  color: '#F97316',
-                  number: 1,
-                  offset: 0,
-                },
-                {
-                  title: 'TRUST',
-                  icon: 'bi-shield-check',
-                  color: '#FBBF24',
-                  number: 2,
-                  offset: 40,
-                },
-                {
-                  title: 'EXCELLENCE',
-                  icon: 'bi-award',
-                  color: '#34D399',
-                  number: 3,
-                  offset: 0,
-                },
-                {
-                  title: 'WELLNESS',
-                  icon: 'bi-heart',
-                  color: '#2DD4BF',
-                  number: 4,
-                  offset: 40,
-                },
-                {
-                  title: 'GROWTH',
-                  icon: 'bi-graph-up-arrow',
-                  color: '#3B82F6',
-                  number: 5,
-                  offset: 0,
-                },
-              ].map((value, index) => (
-                <motion.div
-                  key={index}
-                  className="core-value-card"
-                  initial={{ opacity: 0, y: 50 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.2 + index * 0.15, ease: 'easeOut' }}
-                  viewport={{ once: true, amount: 0.2 }}
-                  whileHover={{ y: -8 }}
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    flex: 1,
-                    marginTop: `${value.offset}px`,
-                  }}
-                >
-                  {/* Circle Card */}
-                  <motion.div
-                    className="core-value-circle"
-                    initial={{ opacity: 0, scale: 0.5 }}
-                    whileInView={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.5, delay: 0.1 + index * 0.15, type: 'spring', stiffness: 200 }}
-                    viewport={{ once: true, amount: 0.2 }}
-                    whileHover={{ scale: 1.1, boxShadow: `0 10px 30px ${value.color}30` }}
-                    style={{
-                      width: '120px',
-                      height: '120px',
-                      borderRadius: '50%',
-                      backgroundColor: '#ffffff',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      marginBottom: '0',
-                      cursor: 'pointer',
-                      position: 'relative',
-                      // @ts-ignore
-                      '--hover-color': `${value.color}50`,
-                    }}
-                  >
-                    <motion.i
-                      className={`bi ${value.icon} core-value-icon`}
-                      initial={{ opacity: 0, rotate: -30 }}
-                      whileInView={{ opacity: 1, rotate: 0 }}
-                      transition={{ duration: 0.4, delay: 0.3 + index * 0.15 }}
-                      viewport={{ once: true }}
-                      style={{
-                        fontSize: '60px',
-                        color: value.color,
-                        display: 'inline-block',
-                      }}
-                    />
-                  </motion.div>
-
-                  {/* Vertical Line */}
-                  <motion.div
-                    className="core-value-vertical-line"
-                    initial={{ scaleY: 0 }}
-                    whileInView={{ scaleY: 1 }}
-                    transition={{ duration: 0.4, delay: 0.4 + index * 0.15, ease: 'easeOut' }}
-                    viewport={{ once: true }}
-                    style={{
-                      width: '2px',
-                      backgroundColor: value.color,
-                      opacity: 0.9,
-                      // @ts-ignore
-                      '--line-height': value.offset === 0 ? '60px' : '100px',
-                      height: value.offset === 0 ? '60px' : '100px',
-                      transformOrigin: 'top center',
-                    }}
-                  />
-
-                  {/* Number Circle */}
-                  <motion.div
-                    className="core-value-number"
-                    initial={{ opacity: 0, scale: 0 }}
-                    whileInView={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.3, delay: 0.6 + index * 0.15, type: 'spring', stiffness: 400 }}
-                    viewport={{ once: true }}
-                    style={{
-                      width: '32px',
-                      height: '32px',
-                      borderRadius: '50%',
-                      backgroundColor: value.color,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: '#ffffff',
-                      fontSize: '16px',
-                      fontWeight: 700,
-                      marginBottom: '12px',
-                      position: 'relative',
-                      zIndex: 2,
-                    }}
-                  >
-                    {value.number}
-                  </motion.div>
-
-                  {/* Label */}
-                  <motion.span
-                    initial={{ opacity: 0, y: 10 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: 0.7 + index * 0.15 }}
-                    viewport={{ once: true }}
-                    style={{
-                      fontSize: '14px',
-                      fontWeight: 600,
-                      color: '#4a4a4a',
-                      letterSpacing: '1px',
-                      textTransform: 'uppercase',
-                    }}
-                  >
-                    {value.title}
-                  </motion.span>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Mobile Responsive Styles for Core Values */}
-        <style>{`
-          .core-value-card {
-            transition: all 0.3s ease;
-          }
-          .core-value-circle:hover {
-            transform: scale(1.1);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-          }
-          @media (max-width: 1200px) {
-            .core-values-cards-container {
-              flex-wrap: wrap !important;
-              justify-content: center !important;
-            }
-            .core-value-card {
-              width: 30% !important;
-              margin-bottom: 40px !important;
-            }
-          }
-          @media (max-width: 768px) {
-            .about-core-values-section {
-              padding: 60px 20px 80px !important;
-            }
-            .about-core-values-section h2 {
-              font-size: 32px !important;
-            }
-            .core-values-timeline {
-              padding-bottom: 40px !important;
-            }
-            .core-value-line {
-              display: none !important;
-            }
-            .core-values-cards-container {
-              gap: 30px !important;
-            }
-            .core-value-card {
-              width: calc(50% - 15px) !important;
-              margin-top: 0 !important;
-              margin-bottom: 20px !important;
-            }
-            .core-value-circle {
-              width: 100px !important;
-              height: 100px !important;
-            }
-            .core-value-icon {
-              font-size: 32px !important;
-            }
-            .core-value-vertical-line {
-              height: 40px !important;
-            }
-            .core-value-number {
-              width: 28px !important;
-              height: 28px !important;
-              font-size: 12px !important;
-            }
-          }
-          @media (max-width: 480px) {
-            .about-core-values-section {
-              padding: 50px 16px 60px !important;
-            }
-            .about-core-values-section h2 {
-              font-size: 26px !important;
-              letter-spacing: 1px !important;
-            }
-            .about-core-values-section p {
-              font-size: 13px !important;
-            }
-            .colored-dot {
-              width: 10px !important;
-              height: 10px !important;
-            }
-            .core-values-cards-container {
-              gap: 24px !important;
-            }
-            .core-value-card {
-              width: 100% !important;
-              flex-direction: row !important;
-              align-items: center !important;
-              gap: 20px !important;
-              background: #fff !important;
-              padding: 16px 20px !important;
-              border-radius: 16px !important;
-              box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08) !important;
-            }
-            .core-value-circle {
-              width: 70px !important;
-              height: 70px !important;
-              flex-shrink: 0 !important;
-            }
-            .core-value-icon {
-              font-size: 28px !important;
-            }
-            .core-value-vertical-line {
-              display: none !important;
-            }
-            .core-value-number {
-              position: absolute !important;
-              top: -8px !important;
-              right: -8px !important;
-              width: 24px !important;
-              height: 24px !important;
-              font-size: 11px !important;
-              margin-bottom: 0 !important;
-            }
-            .core-value-card span {
-              font-size: 14px !important;
-              font-weight: 700 !important;
-            }
-          }
-        `}</style>
-      </section>
-
-      {/* Our Journey Section - Two Column Layout */}
-      <section
-        className="about-journey-section"
-        style={{
-          padding: '80px 40px',
-          backgroundColor: '#bfe0ff',
-          position: 'relative',
-          overflow: 'hidden',
-        }}
-      >
-        <div
-          style={{
-            maxWidth: '1200px',
-            margin: '0 auto',
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
-            gap: '50px',
-            alignItems: 'flex-start',
-          }}
-        >
-          {/* Left Column - Journey Intro */}
-          <div>
-            <h2
-              style={{
-                fontSize: '56px',
-                fontWeight: 700,
-                lineHeight: 1.15,
-                margin: 0,
-                marginBottom: '24px',
-              }}
-            >
-              <span
-                style={{
-                  background: 'linear-gradient(90deg, #FF6B6B 0%, #8B5CF6 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  backgroundClip: 'text',
-                }}
-              >
-                Our Journey of Progress & Possibility
-              </span>
-            </h2>
-
-            <p
-              style={{
-                fontSize: '16px',
-                color: '#4a4a4a',
-                lineHeight: 1.7,
-                margin: 0,
-                marginBottom: '16px',
-              }}
-            >
-              We have taken every step with care and purpose as innovators in our field. From the debut of our first beta, to our fully functioning and integrated creative network, we have expanded with intention.
-            </p>
-
-            <p
-              style={{
-                fontSize: '16px',
-                color: '#4a4a4a',
-                lineHeight: 1.7,
-                margin: 0,
-                marginBottom: '16px',
-              }}
-            >
-              We read, studied, and got acclimated to work with real individuals with real needs. Innovation is not all about features, it is all about impact. Every step was associated with new lessons, better relationships, and more trust.
-            </p>
-
-            <p
-              style={{
-                fontSize: '16px',
-                color: '#4a4a4a',
-                lineHeight: 1.7,
-                margin: 0,
-              }}
-            >
-              Our trip is not finished yet- with each step we open new opportunities to the creators of the whole world.
-            </p>
           </div>
 
-          {/* Right Column - 2025 Vision Card */}
-          <div
-            style={{
-              backgroundColor: '#ffffff',
-              borderRadius: '20px',
-              padding: '40px',
-              position: 'relative',
-            }}
-          >
-            {/* Year Badge */}
-            <div
-              style={{
-                display: 'inline-block',
-                backgroundColor: '#fff',
-                padding: '8px 24px',
-                borderRadius: '30px',
-                fontSize: '18px',
-                fontWeight: '600',
-                color: '#063572',
-                border: '2px solid #063572',
-                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-                marginBottom: '24px',
-              }}
-            >
-              2025
-            </div>
-
-            <h3
-              style={{
-                fontSize: '35px',
-                fontWeight: 700,
-                lineHeight: 1.2,
-                margin: 0,
-                marginBottom: '20px',
-                color: '#1a1a2e',
-              }}
-            >
-              The Birth of Our Vision:{' '}
-              <span
-                style={{
-                  background: 'linear-gradient(90deg, #FF6B6B 0%, #8B5CF6 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  backgroundClip: 'text',
-                }}
-              >
-                We're Turning Ideas Into Actions
-              </span>
-            </h3>
-
-            <p
-              style={{
-                fontSize: '16px',
-                color: '#4a4a4a',
-                lineHeight: 1.7,
-                margin: 0,
-                marginBottom: '16px',
-              }}
-            >
-              Originally, this started as an idea, but it has started to blossom into something larger than that. People were noticing the obstacles and setbacks that creators in the industry had. They didn't have the right tools and platforms to promote themselves and their work properly. Amoria Connekyt started as a vision to promote creators, but it also helps serve as a bridge to new tools and opportunities.
-            </p>
-
-            <p
-              style={{
-                fontSize: '16px',
-                color: '#4a4a4a',
-                lineHeight: 1.7,
-                margin: 0,
-              }}
-            >
-              What began as a passion for supporting event creators, photographers, and storytellers has impacted us in numerous ways and heavily shaped the growth of our company. We listen to our customers and use their feedback and ideas to drive the changes and developments within the company. We've come a long way in our development, and, looking to the future, we will continue to evolve with our customers. We're only just getting started and are looking to build even more with you.
-            </p>
-          </div>
-        </div>
-
-        {/* Mobile Responsive Styles for Journey Section */}
-        <style>{`
-          @media (max-width: 992px) {
-            .about-journey-section > div {
-              grid-template-columns: 1fr !important;
-              gap: 40px !important;
-            }
-          }
-          @media (max-width: 768px) {
-            .about-journey-section {
-              padding: 60px 20px !important;
-            }
-            .about-journey-section h2 {
-              font-size: 32px !important;
-            }
-            .about-journey-section h3 {
-              font-size: 24px !important;
-            }
-          }
-        `}</style>
-      </section>
-
-      {/* Mission & Vision Section - pinned by GSAP, clips away to reveal Smart Tools */}
-      <section
-        ref={missionVisionRef}
-        className="about-mission-vision-section"
-        style={{
-          padding: '80px 40px',
-          backgroundColor: '#ffffff',
-          position: 'relative',
-          overflow: 'hidden',
-          zIndex: 2,
-        }}
-      >
-        <div
-          style={{
-            maxWidth: '1200px',
-            margin: '0 auto',
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
-            gap: '40px',
-          }}
-        >
-          {/* Mission Card */}
-          <div
-            style={{
-              backgroundColor: '#bfe0ff',
-              borderRadius: '20px',
-              padding: '40px',
-              position: 'relative',
-            }}
-          >
-            {/* Badge */}
-            <div
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                backgroundColor: '#fff',
-                padding: '8px 20px',
-                borderRadius: '30px',
-                fontSize: '16px',
-                fontWeight: '600',
-                color: '#063572',
-                border: '2px solid #063572',
-                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-                marginBottom: '20px',
-              }}
-            >
-              <i className="bi bi-bullseye" style={{ fontSize: '16px' }} />
-              Mission
-            </div>
-
-            <h3
-              style={{
-                fontSize: '35px',
-                fontWeight: 700,
-                margin: 0,
-                marginBottom: '16px',
-                color: '#1a1a2e',
-              }}
-            >
-              Our{' '}
-              <span
-                style={{
-                  background: 'linear-gradient(90deg, #FF6B6B 0%, #8B5CF6 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  backgroundClip: 'text',
-                }}
-              >
-                Mission
-              </span>
-            </h3>
-
-            <p
-              style={{
-                fontSize: '16px',
-                color: '#4a4a4a',
-                lineHeight: 1.7,
-                margin: 0,
-                marginBottom: '24px',
-              }}
-            >
-              To empower creators and communities through technology that connects people, promotes emotional wellness, and transforms creative work into meaningful global opportunities.
-            </p>
-
-            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-              {[
-                'Simplify how clients find and hire verified photographers and videographers.',
-                'Help creators build trusted brands with fair ratings, secure payments, and smart tools.',
-                'Strengthen family and social bonds through shared memories that inspire joy and connection.',
-              ].map((item, i) => (
-                <li
-                  key={i}
-                  style={{
-                    fontSize: '16px',
-                    color: '#4a4a4a',
-                    lineHeight: 1.6,
-                    marginBottom: '12px',
-                    paddingLeft: '28px',
-                    position: 'relative',
-                  }}
-                >
-                  <i
-                    className="bi bi-check-circle-fill"
-                    style={{
-                      position: 'absolute',
-                      left: 0,
-                      color: '#8B5CF6',
-                      fontSize: '18px',
-                    }}
-                  />
-                  {item}
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Vision Card */}
-          <div
-            style={{
-              backgroundColor: '#bfe0ff',
-              borderRadius: '20px',
-              padding: '40px',
-              position: 'relative',
-            }}
-          >
-            {/* Badge */}
-            <div
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                backgroundColor: '#fff',
-                padding: '8px 20px',
-                borderRadius: '30px',
-                fontSize: '16px',
-                fontWeight: '600',
-                color: '#063572',
-                border: '2px solid #063572',
-                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-                marginBottom: '20px',
-              }}
-            >
-              <i className="bi bi-globe2" style={{ fontSize: '16px' }} />
-              Vision
-            </div>
-
-            <h3
-              style={{
-                fontSize: '35px',
-                fontWeight: 700,
-                margin: 0,
-                marginBottom: '16px',
-                color: '#1a1a2e',
-              }}
-            >
-              Our{' '}
-              <span
-                style={{
-                  background: 'linear-gradient(90deg, #FF6B6B 0%, #8B5CF6 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  backgroundClip: 'text',
-                }}
-              >
-                Vision
-              </span>
-            </h3>
-
-            <p
-              style={{
-                fontSize: '16px',
-                color: '#4a4a4a',
-                lineHeight: 1.7,
-                margin: 0,
-                marginBottom: '24px',
-              }}
-            >
-              To become Africa's leading creative connection platform; a space where every memory matters, creativity meets opportunity, and technology fosters global emotional wellbeing.
-            </p>
-
-            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-              {[
-                'Creative professionals thrive through fair digital economies.',
-                'Clients access trusted talent anywhere, anytime.',
-                'Memories become bridges that heal distance and celebrate humanity.',
-              ].map((item, i) => (
-                <li
-                  key={i}
-                  style={{
-                    fontSize: '16px',
-                    color: '#4a4a4a',
-                    lineHeight: 1.6,
-                    marginBottom: '12px',
-                    paddingLeft: '28px',
-                    position: 'relative',
-                  }}
-                >
-                  <i
-                    className="bi bi-check-circle-fill"
-                    style={{
-                      position: 'absolute',
-                      left: 0,
-                      color: '#FF6B6B',
-                      fontSize: '18px',
-                    }}
-                  />
-                  {item}
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-
-        {/* Mobile Responsive Styles for Mission & Vision */}
-        <style>{`
-          @media (max-width: 992px) {
-            .about-mission-vision-section > div {
-              grid-template-columns: 1fr !important;
-              gap: 30px !important;
-            }
-          }
-          @media (max-width: 768px) {
-            .about-mission-vision-section {
-              padding: 60px 20px !important;
-            }
-            .about-mission-vision-section h3 {
-              font-size: 26px !important;
-            }
-          }
-        `}</style>
-      </section>
-
-      </div>
-      {/* End of zIndex:2 wrapper — sections above always render over pinned Smart Tools */}
-
-      {/* Smart Tools Section - pinned when wireframe reaches center for peel effect */}
-      <style>{`
-        .about-smart-tools-section,
-        .about-smart-tools-section * {
-          animation: none !important;
-          transition: none !important;
-        }
-        .pin-spacer:has(.about-smart-tools-section) {
-          background-color: transparent !important;
-        }
-      `}</style>
-      <section
-        ref={smartToolsSectionRef}
-        className="about-smart-tools-section"
-        style={{
-          padding: '120px 20px 0px',
-          backgroundColor: '#0a0a14',
-          position: 'relative',
-          overflow: 'hidden',
-          zIndex: 1,
-        }}
-      >
-        {/* Purple Gradient Background Effects */}
-        <div
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'radial-gradient(ellipse at top left, rgba(139, 92, 246, 0.15) 0%, transparent 50%), radial-gradient(ellipse at bottom right, rgba(139, 92, 246, 0.1) 0%, transparent 50%)',
-            pointerEvents: 'none',
-          }}
-        />
-
-        <div ref={smartToolsContentRef} className="smart-tools-content-wrapper" style={{ maxWidth: '1200px', margin: '0 auto', position: 'relative', zIndex: 10 }}>
-          {/* Section Header */}
-          <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-            <h2
-              style={{
-                fontSize: '48px',
-                fontWeight: 700,
-                marginBottom: '15px',
-                lineHeight: '1.15',
-                color: '#ffffff',
-              }}
-            >
-              Smart Tools for{' '}
-              <span
-                style={{
-                  background: 'linear-gradient(90deg, #FF6B6B 0%, #8B5CF6 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  backgroundClip: 'text',
-                }}
-              >
-                Creative Professionals
-              </span>
-            </h2>
-            <p
-              style={{
-                fontSize: '17px',
-                color: 'rgba(255, 255, 255, 0.7)',
-                maxWidth: '650px',
-                margin: '0 auto',
-                lineHeight: '1.7',
-              }}
-            >
-              Digital empowerment tools to manage projects, payments, and growth from one secure platform with verified network and smart payment systems.
-            </p>
-          </div>
-
-          {/* Laptop Peel Container - Wireframe + Mockup stacked */}
-          <div
-            ref={laptopContainerRef}
-            className="smart-tools-laptop-container"
-            style={{
-              maxWidth: '1000px',
-              margin: '0 auto',
-              position: 'relative',
-            }}
-          >
-            {/* === WIREFRAME LAYER (visible first, in normal flow) === */}
-            <div className="smart-tools-wireframe-layer">
-              {/* Wireframe Laptop Screen — matches mockup structure exactly */}
-              <div
-                style={{
-                  borderRadius: '16px 16px 0 0',
-                  border: '2px solid rgba(255, 255, 255, 0.35)',
-                  borderBottom: 'none',
-                  padding: '12px 12px 0 12px',
-                  position: 'relative',
-                  background: 'transparent',
-                  boxSizing: 'border-box',
-                }}
-              >
-                {/* Wireframe Browser Top Bar */}
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    marginBottom: '12px',
-                    paddingLeft: '8px',
-                  }}
-                >
-                  <div style={{ width: '12px', height: '12px', borderRadius: '50%', boxShadow: 'inset 0 0 0 1.5px rgba(255, 255, 255, 0.55)' }} />
-                  <div style={{ width: '12px', height: '12px', borderRadius: '50%', boxShadow: 'inset 0 0 0 1.5px rgba(255, 255, 255, 0.55)' }} />
-                  <div style={{ width: '12px', height: '12px', borderRadius: '50%', boxShadow: 'inset 0 0 0 1.5px rgba(255, 255, 255, 0.55)' }} />
-                  <div
-                    style={{
-                      flex: 1,
-                      marginLeft: '20px',
-                      marginRight: '20px',
-                      boxShadow: 'inset 0 0 0 1.5px rgba(255, 255, 255, 0.32)',
-                      borderRadius: '6px',
-                      padding: '6px 12px',
-                    }}
-                  >
-                    <div style={{ width: '60%', height: '10px', borderRadius: '4px', background: 'rgba(255, 255, 255, 0.22)' }} />
-                  </div>
+          {/* Agenda cards — stacked, one visible at a time */}
+          <div className="journey-agenda">
+            {journeyMilestones.slice(0, 2).map((card, i) => (
+              <div key={card.year} className="journey-card">
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 15, fontWeight: 700, color: '#083A85', marginBottom: 20 }}>
+                  <i className="bi bi-calendar-event" style={{ fontSize: 15 }} />
+                  {card.year}
+                  {card.year === currentYear && <span style={{ fontSize: 10, fontWeight: 600, color: '#fff', background: '#10b981', padding: '3px 10px', borderRadius: 10, letterSpacing: 0.5, textTransform: 'uppercase' }}>Now</span>}
                 </div>
+                <h3 style={{ fontSize: 'clamp(26px, 3.5vw, 36px)', fontWeight: 700, lineHeight: 1.25, margin: '0 0 18px', color: '#0f172a' }}>
+                  {card.title} <span style={{ background: 'linear-gradient(90deg, #8B5CF6 0%, #FF6B6B 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>{card.highlight}</span>
+                </h3>
+                {card.paragraphs.map((p, j) => (
+                  <p key={j} style={{ fontSize: 'clamp(14px, 1.3vw, 16px)', color: '#64748b', lineHeight: 1.75, margin: j < card.paragraphs.length - 1 ? '0 0 14px' : 0 }}>{p}</p>
+                ))}
+              </div>
+            ))}
+          </div>
 
-                {/* Wireframe Dashboard Content — same layout as mockup */}
-                <div
-                  className="smart-tools-dashboard-wireframe"
-                  style={{
-                    borderRadius: '12px 12px 0 0',
-                    padding: '24px',
-                    display: 'flex',
-                    gap: '20px',
-                    minHeight: '420px',
-                    boxShadow: 'inset 0 0 0 1.5px rgba(255, 255, 255, 0.22)',
-                  }}
-                >
-                  {/* Wireframe Sidebar */}
-                  <div
-                    className="smart-tools-sidebar"
-                    style={{
-                      width: '180px',
-                      borderRadius: '12px',
-                      padding: '20px 16px',
-                      boxShadow: 'inset 0 0 0 1.5px rgba(255, 255, 255, 0.28)',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '30px' }}>
-                      <div style={{ width: '10px', height: '10px', borderRadius: '50%', boxShadow: 'inset 0 0 0 1.5px rgba(139, 92, 246, 0.8)' }} />
-                      <div style={{ width: '50px', height: '17px', borderRadius: '4px', background: 'rgba(255, 255, 255, 0.25)' }} />
-                    </div>
-                    {['Dashboard', 'Portfolio', 'Bookings', 'Earnings', 'Settings'].map((item, i) => (
-                      <div
-                        key={i}
-                        style={{
-                          padding: '10px 12px',
-                          borderRadius: '8px',
-                          marginBottom: '6px',
-                          boxShadow: i === 0 ? 'inset 0 0 0 1.5px rgba(139, 92, 246, 0.7)' : 'inset 0 0 0 1px rgba(255, 255, 255, 0.18)',
-                        }}
-                      >
-                        <div style={{ width: i === 0 ? '70%' : '60%', height: '16px', borderRadius: '4px', background: i === 0 ? 'rgba(255, 255, 255, 0.28)' : 'rgba(255, 255, 255, 0.18)' }} />
-                      </div>
-                    ))}
-                  </div>
 
-                  {/* Wireframe Main Content */}
-                  <div style={{ flex: 1 }}>
-                    {/* Wireframe Header — heights match mockup text (13px + 18px) */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                      <div>
-                        <div style={{ width: '80px', height: '16px', borderRadius: '4px', background: 'rgba(255, 255, 255, 0.22)', margin: 0 }} />
-                        <div style={{ width: '120px', height: '22px', borderRadius: '4px', background: 'rgba(255, 255, 255, 0.28)', marginTop: '4px' }} />
-                      </div>
-                      <div style={{ width: '36px', height: '36px', borderRadius: '50%', boxShadow: 'inset 0 0 0 1.5px rgba(255, 255, 255, 0.35)' }} />
-                    </div>
+        </div>
 
-                    {/* Wireframe Stats Card — heights match mockup text line-height */}
-                    <div
-                      className="wireframe-stats-card"
-                      style={{
-                        borderRadius: '16px',
-                        padding: '24px',
-                        marginBottom: '20px',
-                        border: '1px solid transparent',
-                        boxShadow: 'inset 0 0 0 1.5px rgba(255, 255, 255, 0.28)',
-                      }}
-                    >
-                      <div className="wireframe-stats-label" style={{ width: '90px', height: '24px', borderRadius: '4px', background: 'rgba(255, 255, 255, 0.22)', margin: '0 0 8px 0' }} />
-                      <div className="wireframe-stats-value" style={{ width: '160px', height: '50px', borderRadius: '6px', background: 'rgba(255, 255, 255, 0.25)', margin: '0 0 4px 0' }} />
-                      <div className="wireframe-stats-change" style={{ width: '100px', height: '22px', borderRadius: '4px', background: 'rgba(255, 255, 255, 0.18)' }} />
-                    </div>
+        {/* ━━━ MISSION & VISION — Split Panel Reveal ━━━ */}
+        <div ref={mvRef} className="mv-section">
+          <div className="mv-panels">
 
-                    {/* Wireframe Mini Cards Grid */}
-                    <div className="wireframe-mini-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
-                      {[1, 2, 3].map((_, i) => (
-                        <div
-                          key={i}
-                          className="wireframe-mini-card"
-                          style={{
-                            borderRadius: '12px',
-                            padding: '16px',
-                            border: '1px solid transparent',
-                            boxShadow: 'inset 0 0 0 1.5px rgba(255, 255, 255, 0.22)',
-                          }}
-                        >
-                          <div className="wireframe-mini-icon" style={{ width: '28px', height: '32px', borderRadius: '4px', boxShadow: 'inset 0 0 0 1.5px rgba(255, 255, 255, 0.32)' }} />
-                          <div className="wireframe-mini-value" style={{ width: '40px', height: '32px', borderRadius: '4px', background: 'rgba(255, 255, 255, 0.25)', margin: '8px 0 4px 0' }} />
-                          <div className="wireframe-mini-label" style={{ width: '55px', height: '19px', borderRadius: '3px', background: 'rgba(255, 255, 255, 0.18)' }} />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
+            {/* Mission — dark blue, appears first */}
+            <div className="mv-mission">
+              <div className="mv-animate" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
+                <i className="bi bi-bullseye" style={{ fontSize: 16, color: '#083A85' }} />
+                <span style={{ fontSize: 12, fontWeight: 600, color: '#083A85', letterSpacing: 2, textTransform: 'uppercase' }}>Mission</span>
+              </div>
+              <h3 className="mv-animate" style={{ fontFamily: "'Georgia', 'Times New Roman', serif", fontSize: 'clamp(28px, 3.5vw, 42px)', fontWeight: 400, margin: '0 0 20px', lineHeight: 1.15, background: 'linear-gradient(90deg, #8B5CF6 0%, #FF6B6B 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Our Mission</h3>
+              <p className="mv-animate" style={{ fontSize: 'clamp(14px, 1.3vw, 16px)', color: '#64748b', lineHeight: 1.75, margin: '0 0 28px' }}>
+                To empower creators and communities through technology that connects people, promotes emotional wellness, and transforms creative work into meaningful global opportunities.
+              </p>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {['Simplify how clients find and hire verified photographers and videographers.', 'Help creators build trusted brands with fair ratings, secure payments, and smart tools.', 'Strengthen family and social bonds through shared memories that inspire joy and connection.'].map((item, i) => (
+                  <li key={i} className="mv-animate" style={{ fontSize: 'clamp(13px, 1.2vw, 15px)', color: '#64748b', lineHeight: 1.65, paddingLeft: 'clamp(20px, 3vw, 28px)', position: 'relative' }}>
+                    <i className="bi bi-check-circle-fill" style={{ position: 'absolute', left: 0, color: '#083A85', fontSize: 16 }} />{item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Vision — white, slides in from right */}
+            <div className="mv-vision">
+              <div className="mv-animate" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
+                <i className="bi bi-globe2" style={{ fontSize: 16, color: '#083A85' }} />
+                <span style={{ fontSize: 12, fontWeight: 600, color: '#083A85', letterSpacing: 2, textTransform: 'uppercase' }}>Vision</span>
+              </div>
+              <h3 className="mv-animate" style={{ fontFamily: "'Georgia', 'Times New Roman', serif", fontSize: 'clamp(28px, 3.5vw, 42px)', fontWeight: 400, margin: '0 0 20px', lineHeight: 1.15, background: 'linear-gradient(90deg, #8B5CF6 0%, #FF6B6B 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Our Vision</h3>
+              <p className="mv-animate" style={{ fontSize: 'clamp(14px, 1.3vw, 16px)', color: '#64748b', lineHeight: 1.75, margin: '0 0 28px' }}>
+                To become Africa&apos;s leading creative connection platform; a space where every memory matters, creativity meets opportunity, and technology fosters global emotional wellbeing.
+              </p>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {['Creative professionals thrive through fair digital economies.', 'Clients access trusted talent anywhere, anytime.', 'Memories become bridges that heal distance and celebrate humanity.'].map((item, i) => (
+                  <li key={i} className="mv-animate" style={{ fontSize: 'clamp(13px, 1.2vw, 15px)', color: '#64748b', lineHeight: 1.65, paddingLeft: 'clamp(20px, 3vw, 28px)', position: 'relative' }}>
+                    <i className="bi bi-check-circle-fill" style={{ position: 'absolute', left: 0, color: '#083A85', fontSize: 16 }} />{item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+          </div>
+        </div>
+
+        {/* ━━━ SMART TOOLS — Dashboard Mockup (static, brand colors) ━━━ */}
+        <div className="par-group">
+          <div className="par-base about-section" style={{ background: '#f0f4fa' }}>
+            <div style={{ maxWidth: 1000, margin: '0 auto' }}>
+
+              <div className="reveal" style={{ textAlign: 'center', marginBottom: 'clamp(32px, 5vw, 50px)' }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: '#083A85', letterSpacing: 2, textTransform: 'uppercase' }}>Our Platform</span>
+                <h2 style={{ fontFamily: "'Georgia', 'Times New Roman', serif", fontSize: 'clamp(30px, 4.5vw, 48px)', fontWeight: 400, lineHeight: 1.15, margin: '10px 0 16px', background: 'linear-gradient(90deg, #8B5CF6 0%, #FF6B6B 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+                  Smart Tools for Creative Professionals
+                </h2>
+                <p style={{ fontSize: 'clamp(14px, 1.3vw, 16px)', color: '#64748b', maxWidth: 560, margin: '0 auto', lineHeight: 1.7 }}>
+                  Digital empowerment tools to manage projects, payments, and growth from one secure platform.
+                </p>
               </div>
 
-              {/* Wireframe Laptop Base/Stand */}
-              <div
-                style={{
-                  height: '20px',
-                  borderRadius: '0 0 4px 4px',
-                  position: 'relative',
-                  boxShadow: 'inset 0 0 0 1.5px rgba(255, 255, 255, 0.32)',
-                }}
-              >
-                <div
-                  style={{
-                    position: 'absolute',
-                    bottom: '-8px',
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    width: '200px',
-                    height: '8px',
-                    boxShadow: 'inset 0 0 0 1.5px rgba(255, 255, 255, 0.28)',
-                    borderRadius: '0 0 8px 8px',
-                  }}
-                />
-              </div>
-            </div>
-
-            {/* === MOCKUP LAYER (absolutely positioned on top, clip-path animated) === */}
-            <div
-              ref={laptopMockupRef}
-              className="smart-tools-mockup-layer"
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-              }}
-            >
-              {/* Laptop Screen */}
-              <div
-                style={{
-                  background: '#12121f',
-                  borderRadius: '16px 16px 0 0',
-                  border: '2px solid rgba(255, 255, 255, 0.1)',
-                  borderBottom: 'none',
-                  padding: '12px 12px 0 12px',
-                  position: 'relative',
-                }}
-              >
-                {/* Browser Top Bar */}
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    marginBottom: '12px',
-                    paddingLeft: '8px',
-                  }}
-                >
-                  <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#ff5f57' }} />
-                  <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#ffbd2e' }} />
-                  <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#28ca41' }} />
-                  <div
-                    style={{
-                      flex: 1,
-                      marginLeft: '20px',
-                      marginRight: '20px',
-                      background: 'rgba(255, 255, 255, 0.05)',
-                      borderRadius: '6px',
-                      padding: '6px 12px',
-                      fontSize: '12px',
-                      color: 'rgba(255, 255, 255, 0.5)',
-                    }}
-                  >
+              {/* Dashboard mockup — brand colors */}
+              <div className="reveal" style={{ maxWidth: 900, margin: '0 auto', borderRadius: 16, overflow: 'hidden', background: '#fff', border: '1px solid #e2e8f0', boxShadow: '0 8px 40px rgba(8,58,133,0.08)' }}>
+                {/* Browser bar */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                  <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#ff5f57' }} />
+                  <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#ffbd2e' }} />
+                  <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#28ca41' }} />
+                  <div style={{ flex: 1, marginLeft: 16, background: '#fff', borderRadius: 6, padding: '6px 14px', fontSize: 12, color: '#94a3b8', border: '1px solid #e2e8f0' }}>
                     app.amoriaconnekyt.com/dashboard
                   </div>
                 </div>
 
-                {/* Dashboard Content */}
-                <div
-                  className="smart-tools-dashboard"
-                  style={{
-                    background: '#0a0a14',
-                    borderRadius: '12px 12px 0 0',
-                    padding: '24px',
-                    display: 'flex',
-                    gap: '20px',
-                    minHeight: '420px',
-                  }}
-                >
+                {/* Dashboard content */}
+                <div style={{ display: 'flex', gap: 0, minHeight: 360 }}>
                   {/* Sidebar */}
-                  <div
-                    className="smart-tools-sidebar"
-                    style={{
-                      width: '180px',
-                      background: 'rgba(255, 255, 255, 0.02)',
-                      borderRadius: '12px',
-                      padding: '20px 16px',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '30px' }}>
-                      <div
-                        style={{
-                          width: '10px',
-                          height: '10px',
-                          borderRadius: '50%',
-                          background: '#8B5CF6',
-                        }}
-                      />
-                      <span style={{ color: '#fff', fontSize: '14px', fontWeight: 600 }}>Amoria</span>
+                  <div className="smart-sidebar" style={{ width: 180, background: '#083A85', padding: '24px 16px', flexShrink: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 28 }}>
+                      <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#5b9bff' }} />
+                      <span style={{ color: '#fff', fontSize: 14, fontWeight: 600 }}>Amoria</span>
                     </div>
                     {['Dashboard', 'Portfolio', 'Bookings', 'Earnings', 'Settings'].map((item, i) => (
-                      <div
-                        key={i}
-                        style={{
-                          padding: '10px 12px',
-                          borderRadius: '8px',
-                          marginBottom: '6px',
-                          background: i === 0 ? 'rgba(139, 92, 246, 0.2)' : 'transparent',
-                          color: i === 0 ? '#fff' : 'rgba(255, 255, 255, 0.5)',
-                          fontSize: '13px',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        {item}
-                      </div>
+                      <div key={i} style={{ padding: '10px 12px', borderRadius: 8, marginBottom: 4, background: i === 0 ? 'rgba(255,255,255,0.15)' : 'transparent', color: i === 0 ? '#fff' : 'rgba(255,255,255,0.55)', fontSize: 13, cursor: 'default' }}>{item}</div>
                     ))}
                   </div>
 
-                  {/* Main Content */}
-                  <div style={{ flex: 1 }}>
+                  {/* Main content */}
+                  <div style={{ flex: 1, padding: 24 }}>
                     {/* Header */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
                       <div>
-                        <p style={{ color: 'rgba(255, 255, 255, 0.5)', fontSize: '13px', margin: 0 }}>Welcome Back</p>
-                        <h3 style={{ color: '#fff', fontSize: '18px', fontWeight: 600, margin: '4px 0 0 0' }}>Creative Studio</h3>
+                        <p style={{ color: '#94a3b8', fontSize: 13, margin: 0 }}>Welcome Back</p>
+                        <h3 style={{ color: '#0f172a', fontSize: 18, fontWeight: 600, margin: '4px 0 0' }}>Creative Studio</h3>
                       </div>
-                      <div
-                        style={{
-                          width: '36px',
-                          height: '36px',
-                          borderRadius: '50%',
-                          background: 'linear-gradient(135deg, #FF6B6B, #8B5CF6)',
-                        }}
-                      />
+                      <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg, #083A85, #5b9bff)' }} />
                     </div>
 
-                    {/* Stats Cards */}
-                    <div
-                      className="mockup-stats-card"
-                      style={{
-                        background: 'rgba(255, 255, 255, 0.03)',
-                        borderRadius: '16px',
-                        padding: '24px',
-                        marginBottom: '20px',
-                        border: '1px solid rgba(255, 255, 255, 0.05)',
-                      }}
-                    >
-                      <p className="mockup-stats-label" style={{ color: 'rgba(255, 255, 255, 0.5)', fontSize: '13px', margin: '0 0 8px 0' }}>Total Earnings</p>
-                      <h2 className="mockup-stats-value" style={{ color: '#fff', fontSize: '32px', fontWeight: 700, margin: '0 0 4px 0' }}>$12,450.00</h2>
-                      <p className="mockup-stats-change" style={{ color: '#28ca41', fontSize: '12px', margin: 0 }}>+12.5% this month</p>
+                    {/* Stats card */}
+                    <div style={{ background: '#f8fafc', borderRadius: 14, padding: 22, marginBottom: 18, border: '1px solid #e2e8f0' }}>
+                      <p style={{ color: '#94a3b8', fontSize: 13, margin: '0 0 6px' }}>Total Earnings</p>
+                      <h2 style={{ color: '#0f172a', fontSize: 'clamp(22px, 3vw, 30px)', fontWeight: 700, margin: '0 0 4px' }}>$12,450.00</h2>
+                      <p style={{ color: '#10b981', fontSize: 12, margin: 0 }}>+12.5% this month</p>
                     </div>
 
-                    {/* Mini Cards Grid */}
-                    <div className="smart-tools-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
+                    {/* Mini cards */}
+                    <div className="smart-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
                       {[
-                        { label: 'Active Jobs', value: '8', icon: '📷' },
-                        { label: 'Completed', value: '124', icon: '✓', iconColor: '#28ca41' },
-                        { label: 'Rating', value: '4.9', icon: '⭐' },
-                      ].map((stat, i) => (
-                        <div
-                          key={i}
-                          className="mockup-mini-card"
-                          style={{
-                            background: 'rgba(255, 255, 255, 0.03)',
-                            borderRadius: '12px',
-                            padding: '16px',
-                            border: '1px solid rgba(255, 255, 255, 0.05)',
-                          }}
-                        >
-                          <span className="mockup-mini-icon" style={{ fontSize: '20px', color: stat.iconColor || 'inherit' }}>{stat.icon}</span>
-                          <p className="mockup-mini-value" style={{ color: '#fff', fontSize: '20px', fontWeight: 600, margin: '8px 0 4px 0' }}>{stat.value}</p>
-                          <p className="mockup-mini-label" style={{ color: 'rgba(255, 255, 255, 0.5)', fontSize: '11px', margin: 0 }}>{stat.label}</p>
+                        { label: 'Active Jobs', value: '8', icon: 'bi-camera' },
+                        { label: 'Completed', value: '124', icon: 'bi-check-circle' },
+                        { label: 'Rating', value: '4.9', icon: 'bi-star' },
+                      ].map((s, i) => (
+                        <div key={i} style={{ background: '#f8fafc', borderRadius: 12, padding: 16, border: '1px solid #e2e8f0', textAlign: 'center' }}>
+                          <i className={`bi ${s.icon}`} style={{ fontSize: 20, color: '#083A85' }} />
+                          <p style={{ color: '#0f172a', fontSize: 20, fontWeight: 600, margin: '8px 0 4px' }}>{s.value}</p>
+                          <p style={{ color: '#94a3b8', fontSize: 11, margin: 0 }}>{s.label}</p>
                         </div>
                       ))}
                     </div>
@@ -2901,185 +1227,133 @@ const About = () => {
                 </div>
               </div>
 
-              {/* Laptop Base/Stand */}
-              <div
-                style={{
-                  background: 'linear-gradient(180deg, #1a1a2e 0%, #12121f 100%)',
-                  height: '20px',
-                  borderRadius: '0 0 4px 4px',
-                  position: 'relative',
-                }}
-              >
-                <div
-                  style={{
-                    position: 'absolute',
-                    bottom: '-8px',
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    width: '200px',
-                    height: '8px',
-                    background: '#0a0a14',
-                    borderRadius: '0 0 8px 8px',
-                  }}
-                />
+              {/* Feature pills below */}
+              <div className="reveal" style={{ display: 'flex', justifyContent: 'center', gap: 'clamp(20px, 3vw, 40px)', marginTop: 32, flexWrap: 'wrap' }}>
+                {[
+                  { icon: 'bi-shield-lock', text: 'Secure Payments' },
+                  { icon: 'bi-patch-check', text: 'Verified Creators' },
+                  { icon: 'bi-bar-chart-line', text: 'Smart Analytics' },
+                  { icon: 'bi-globe2', text: 'Global Reach' },
+                ].map((f, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <i className={`bi ${f.icon}`} style={{ fontSize: 16, color: '#083A85' }} />
+                    <span style={{ color: '#64748b', fontSize: 14 }}>{f.text}</span>
+                  </div>
+                ))}
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        {/* ━━━ MOCK CTA GROUP ━━━ */}
+        <div className="par-group">
+          <div className="par-deep" style={{ overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', inset: 0, backgroundImage: 'url(/mock.png)', backgroundSize: 'cover', backgroundPosition: 'right center' }} />
+          </div>
+          <div className="par-base about-section" style={{ padding: 'clamp(12px, 2vw, 16px)', background: '#fff' }}>
+            <div className="reveal" style={{ position: 'relative', width: '100%', minHeight: 'clamp(350px, 50vw, 600px)', overflow: 'hidden', borderRadius: 24 }}>
+              <div style={{ position: 'absolute', inset: 0, backgroundImage: 'url(/mock.png)', backgroundSize: 'cover', backgroundPosition: 'right center' }} />
+              <div style={{ position: 'relative', zIndex: 2, maxWidth: 1100, margin: '0 auto', padding: 'clamp(40px, 6vw, 80px) clamp(24px, 5vw, 60px)', display: 'flex', alignItems: 'center', minHeight: 'clamp(350px, 50vw, 600px)' }}>
+                <div style={{ maxWidth: 520 }}>
+                  <h2 style={{ fontSize: 'clamp(26px, 4vw, 50px)', fontWeight: 700, marginBottom: 18, color: '#fff', letterSpacing: '-0.02em' }}>Empowering creators to share their vision with the world.</h2>
+                  <p style={{ fontSize: 'clamp(14px, 1.5vw, 17px)', fontWeight: 400, lineHeight: 1.7, color: 'rgba(255,255,255,0.8)', marginBottom: 28 }}>Amoria Connekyt is built for photographers and creatives ready to showcase their work and connect with clients. Create your profile today and get started.</p>
+                  <a href="/user/auth/signup" style={{ display: 'inline-block', color: '#fff', fontSize: 15, fontWeight: 600, padding: '14px 32px', border: '2px solid #f5652c', borderRadius: 40, textDecoration: 'none', transition: 'all 0.3s' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.transform = 'translateY(-3px)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.transform = 'translateY(0)'; }}
+                  >Get Started</a>
+                </div>
               </div>
             </div>
           </div>
-
-          {/* Feature Highlights Below Laptop */}
-          <div
-            className="smart-tools-features"
-            style={{
-              display: 'flex',
-              justifyContent: 'center',
-              gap: '40px',
-              marginTop: '25px',
-              flexWrap: 'wrap',
-              paddingBottom: '80px',
-            }}
-          >
-            {[
-              { icon: '🔒', text: 'Secure Payments' },
-              { icon: '✓', text: 'Verified Creators', iconColor: '#1DA1F2' },
-              { icon: '📊', text: 'Smart Analytics' },
-              { icon: '🌍', text: 'Global Reach' },
-            ].map((feature, i) => (
-              <div
-                key={i}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px',
-                }}
-              >
-                <span style={{ fontSize: '20px', color: feature.iconColor || 'inherit' }}>{feature.icon}</span>
-                <span style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '14px' }}>{feature.text}</span>
-              </div>
-            ))}
-          </div>
         </div>
-      </section>
 
-      {/* Wrapper: sections after Smart Tools also get zIndex:2 */}
-      <div className="about-post-smart-tools-wrapper" style={{ position: 'relative', zIndex: 2, marginTop: '-160px' }}>
 
-      {/* Mock Image Section */}
-      <section
-        className="about-mock-section"
-        style={{
-          padding: '0 16px 16px 16px',
-          backgroundColor: '#ffffff',
-        }}
-      >
+        {/* ── Half Earth — scroll-driven globe rotation ── */}
+        <style>{`
+          .earth-section { position: relative; width: 100%; height: 100dvh; background: linear-gradient(to bottom, #083A85 0%, #052047 60%, #052047 100%); overflow: hidden; }
+          .earth-overlay { position: absolute; top: 0; left: 0; right: 0; height: 55%; background: linear-gradient(to bottom, #083A85 0%, #083A85 50%, rgba(8,58,133,0.85) 75%, rgba(5,32,71,0) 100%); z-index: 3; pointer-events: none; }
+          .earth-text { position: absolute; top: 0; left: 0; right: 0; z-index: 5; text-align: center; padding: clamp(60px, 10vh, 120px) clamp(16px, 4vw, 24px) 0; pointer-events: none; }
+          .earth-globe-wrap { position: absolute; top: 20%; left: -25%; right: -25%; bottom: -60%; z-index: 2; }
+
+          @media (max-width: 768px) {
+            .earth-section { height: 80dvh; min-height: 500px; }
+            .earth-overlay { height: 50%; }
+            .earth-globe-wrap { top: 15%; left: -40%; right: -40%; bottom: -50%; }
+          }
+
+          @media (max-width: 480px) {
+            .earth-section { height: 70dvh; min-height: 450px; }
+            .earth-overlay { height: 45%; }
+            .earth-globe-wrap { top: 10%; left: -50%; right: -50%; bottom: -40%; }
+          }
+        `}</style>
         <div
-          className="about-mock-container"
-          style={{
-            position: 'relative',
-            width: '100%',
-            minHeight: '650px',
-            overflow: 'hidden',
-            borderRadius: '24px',
-          }}
+          ref={earthSectionRef}
+          className="earth-section"
         >
-          {/* Background Image */}
-          <div
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundImage: 'url(/mock.png)',
-              backgroundSize: 'cover',
-              backgroundPosition: 'right center',
-              backgroundRepeat: 'no-repeat',
-              borderRadius: '24px',
-            }}
-          />
+          <div className="earth-overlay" />
 
-          {/* Content Overlay */}
-          <div
-            className="about-mock-overlay"
-            style={{
-              position: 'relative',
-              zIndex: 10,
-              maxWidth: '1200px',
-              margin: '0 auto',
-              padding: '80px 60px',
-              display: 'flex',
-              alignItems: 'center',
-              minHeight: '650px',
-            }}
-          >
-            {/* Left Side Content */}
-            <div
-              className="about-mock-content"
+          {/* Text content overlaying the globe */}
+          <div className="earth-text">
+            <h2 style={{
+              fontSize: 'clamp(28px, 5vw, 64px)',
+              fontWeight: 300,
+              color: '#fff',
+              letterSpacing: '-0.02em',
+              marginBottom: 'clamp(10px, 2vw, 16px)',
+              lineHeight: 1.1,
+            }}>
+              Born in Kigali, <span style={{ fontWeight: 700 }}>built for the world</span>
+            </h2>
+            <p style={{
+              fontSize: 'clamp(13px, 1.5vw, 18px)',
+              color: 'rgba(255,255,255,0.6)',
+              maxWidth: 600,
+              margin: '0 auto clamp(20px, 3vw, 32px)',
+              lineHeight: 1.7,
+              padding: '0 clamp(8px, 2vw, 0px)',
+            }}>
+              Connecting photographers and creatives across continents. From local talent to global stages one platform, limitless reach.
+            </p>
+            <a
+              href="/user/auth/signup"
               style={{
-                maxWidth: '550px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                color: '#ffffff',
+                fontSize: 'clamp(14px, 1.2vw, 16px)',
+                fontWeight: 700,
+                padding: 'clamp(12px, 1.5vw, 16px) clamp(24px, 3vw, 32px)',
+                background: '#FF6B6B',
+                border: 'none',
+                borderRadius: 12,
+                textDecoration: 'none',
+                transition: 'all 0.3s ease',
+                pointerEvents: 'auto',
+                whiteSpace: 'nowrap',
               }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#ff5252'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = '#FF6B6B'; e.currentTarget.style.transform = 'translateY(0)'; }}
             >
-              <h2
-                className="about-mock-title"
-                style={{
-                  fontWeight: 700,
-                  marginBottom: '20px',
-                  letterSpacing: '-0.02em',
-                  color: '#ffffff',
-                }}
-              >
-                Empowering creators to share their vision with the world.
-              </h2>
+              Get Started
+            </a>
+          </div>
 
-              <p
-                className="about-mock-subtitle"
-                style={{
-                  fontSize: '18px',
-                  fontWeight: 400,
-                  lineHeight: '1.7',
-                  color: 'rgba(255, 255, 255, 0.85)',
-                  marginBottom: '32px',
-                }}
-              >
-                Amoria Connekyt is built for photographers and creatives ready to showcase their work and connect with clients. Create your profile today and get started.
-              </p>
-
-              <a
-                href="/user/auth/signup"
-                style={{
-                  display: 'inline-block',
-                  background: 'transparent',
-                  color: '#fff',
-                  fontSize: '16px',
-                  fontWeight: 600,
-                  padding: '14px 32px', 
-                  border: '2px solid  #f5652c',
-                  borderRadius: '40px',
-                  cursor: 'pointer',
-                  textDecoration: 'none',
-                  transition: 'all 0.3s ease',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-3px)';
-                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                }}
-              >
-                Get Started
-              </a>
-            </div>
+          {/* Globe */}
+          <div className="earth-globe-wrap">
+            <HalfEarth
+              height={1400}
+              scrollProgress={earthProgress}
+            />
           </div>
         </div>
-      </section>
 
-
-
+        <div style={{ background: '#083A85' }}>
+          <Footer />
+        </div>
       </div>
-      {/* End of zIndex:2 wrapper for sections after Smart Tools */}
-
-      <Footer />
     </div>
   );
 };

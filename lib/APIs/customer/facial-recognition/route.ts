@@ -19,6 +19,7 @@ export interface MatchedPhoto {
   pricePerImage?: number;
   createdAt?: string;
   alt?: string;
+  isPurchased?: boolean;  // Indicates if user has purchased this photo (for PAID albums)
 }
 
 export interface FacialRecognitionResponse {
