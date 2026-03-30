@@ -107,14 +107,25 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
     return () => window.removeEventListener('auth:session-expired', handleSessionExpired);
   }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Lock body scroll
+  // Lock body scroll while preserving scroll position
   useEffect(() => {
     if (isOpen) {
+      // Save current scroll position
+      const scrollY = window.scrollY;
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
       document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
+
+      return () => {
+        // Restore scroll position
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.width = '';
+        document.body.style.overflow = '';
+        window.scrollTo(0, scrollY);
+      };
     }
-    return () => { document.body.style.overflow = ''; };
   }, [isOpen]);
 
   // Validate payment details
