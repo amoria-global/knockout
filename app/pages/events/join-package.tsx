@@ -37,6 +37,13 @@ function JoinPackageContent(): React.JSX.Element {
   const [groupCodeExpiry, setGroupCodeExpiry] = useState<string | null>(null);
   const [groupPeopleCount, setGroupPeopleCount] = useState<number>(0);
   const [groupPaymentRef, setGroupPaymentRef] = useState<string | null>(null);
+  // Invite management
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteLoading, setInviteLoading] = useState(false);
+  const [inviteError, setInviteError] = useState('');
+  const [inviteSuccess, setInviteSuccess] = useState('');
+  const [invitedEmails, setInvitedEmails] = useState<string[]>([]);
+  const [remainingInvites, setRemainingInvites] = useState<number>(0);
 
   // Solo invite code input — auto-fill from URL if shared via group link
   const [soloInviteCode, setSoloInviteCode] = useState(searchParams.get('inviteToken') || '');
@@ -55,6 +62,13 @@ function JoinPackageContent(): React.JSX.Element {
           setGroupCodeExpiry(data.expiry);
           setGroupPeopleCount(data.people);
           setGroupPaymentRef(data.refid);
+          const remaining = data.remainingInvites ?? Math.max(0, (data.people || 0) - 1);
+          setRemainingInvites(remaining);
+          setInvitedEmails(data.invitedEmails || []);
+          // Auto-show invite modal if there are slots remaining
+          if (remaining > 0) {
+            setShowGroupCodeModal(true);
+          }
         } else {
           localStorage.removeItem(`groupCode_${eventId}`);
         }
@@ -318,6 +332,54 @@ function JoinPackageContent(): React.JSX.Element {
     return price;
   };
 
+  const handleSendInvite = async () => {
+    if (!inviteEmail.trim() || !groupShareCode || !selectedEvent?.id) return;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(inviteEmail.trim())) {
+      setInviteError('Please enter a valid email address.');
+      return;
+    }
+    setInviteLoading(true);
+    setInviteError('');
+    setInviteSuccess('');
+    try {
+      const token = localStorage.getItem('authToken');
+      const res = await fetch(`/api/proxy/api/remote/public/streams/${selectedEvent.id}/group-access/${groupShareCode}/invite`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ email: inviteEmail.trim() }),
+      });
+      const data = await res.json();
+      if (data.action === 1) {
+        const newEmails = data.data?.authorizedEmails || [...invitedEmails, inviteEmail.trim()];
+        const newRemaining = data.data?.remainingInvites ?? remainingInvites - 1;
+        setInvitedEmails(newEmails);
+        setRemainingInvites(newRemaining);
+        setInviteSuccess(`Invitation sent to ${inviteEmail.trim()}`);
+        setInviteEmail('');
+        setTimeout(() => setInviteSuccess(''), 3000);
+        // Persist to localStorage so purchaser can return later
+        if (selectedEvent?.id) {
+          const saved = localStorage.getItem(`groupCode_${selectedEvent.id}`);
+          if (saved) {
+            try {
+              const existing = JSON.parse(saved);
+              existing.invitedEmails = newEmails;
+              existing.remainingInvites = newRemaining;
+              localStorage.setItem(`groupCode_${selectedEvent.id}`, JSON.stringify(existing));
+            } catch { /* ignore */ }
+          }
+        }
+      } else {
+        setInviteError(data.message || 'Failed to send invitation.');
+      }
+    } catch {
+      setInviteError('Connection error. Please try again.');
+    } finally {
+      setInviteLoading(false);
+    }
+  };
+
   const handleProceed = () => {
     if (!selectedEvent) return;
     const price = selectedEvent.price || 0;
@@ -359,13 +421,15 @@ function JoinPackageContent(): React.JSX.Element {
           const expiry = (d.expiresAt as string) || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
           const maxViewers = (d.maxViewers as number) || people;
 
-          const codeData = { code, expiry, people: maxViewers, refid, eventId: selectedEvent.id, eventTitle: selectedEvent.title };
+          const codeData = { code, expiry, people: maxViewers, refid, eventId: selectedEvent.id, eventTitle: selectedEvent.title, remainingInvites: Math.max(0, maxViewers - 1), invitedEmails: (d.authorizedEmails as string[]) || [] };
           localStorage.setItem(`groupCode_${selectedEvent.id}`, JSON.stringify(codeData));
 
           setGroupShareCode(code);
           setGroupCodeExpiry(expiry);
           setGroupPeopleCount(maxViewers);
           setGroupPaymentRef(refid);
+          setRemainingInvites(Math.max(0, maxViewers - 1));
+          setInvitedEmails((d.authorizedEmails as string[]) || []);
           setShowGroupCodeModal(true);
         } else {
           // Fallback — use payment ref as temp code if API fails
@@ -930,61 +994,6 @@ function JoinPackageContent(): React.JSX.Element {
                     </div>
                   )}
 
-                  {/* Solo Package - Optional Invite Code (only when individual selected) */}
-                  {pkg.id === 'individual' && selectedPackage === 'individual' && (
-                    <div
-                      style={{
-                        marginTop: '12px',
-                        padding: '12px',
-                        background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.08) 0%, rgba(139, 92, 246, 0.08) 100%)',
-                        border: '1.5px solid rgba(6, 182, 212, 0.3)',
-                        borderRadius: '12px',
-                        animation: 'fadeIn 0.3s ease',
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                        <div style={{
-                          width: '28px', height: '28px', borderRadius: '8px',
-                          background: 'linear-gradient(135deg, #06b6d4, #8b5cf6)',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                        }}>
-                          <i className="bi bi-ticket-perforated-fill" style={{ color: '#fff', fontSize: '13px' }}></i>
-                        </div>
-                        <div>
-                          <div style={{ fontSize: '13px', fontWeight: '700', color: '#083A85' }}>
-                            Have a group invite code?
-                          </div>
-                          <div style={{ fontSize: '11px', color: '#6b7280' }}>
-                            Enter it here to join without paying
-                          </div>
-                        </div>
-                      </div>
-                      <input
-                        type="text"
-                        placeholder="e.g. ABC12345"
-                        value={soloInviteCode}
-                        onChange={(e) => setSoloInviteCode(e.target.value.toUpperCase())}
-                        onClick={(e) => e.stopPropagation()}
-                        style={{
-                          width: '100%',
-                          padding: '10px 14px',
-                          fontSize: '14px',
-                          fontWeight: '700',
-                          textAlign: 'center',
-                          backgroundColor: '#fff',
-                          border: '2px solid rgba(6, 182, 212, 0.4)',
-                          borderRadius: '10px',
-                          color: '#083A85',
-                          outline: 'none',
-                          boxSizing: 'border-box',
-                          letterSpacing: '3px',
-                          textTransform: 'uppercase',
-                        }}
-                        onFocus={(e) => { e.currentTarget.style.borderColor = '#06b6d4'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(6, 182, 212, 0.15)'; }}
-                        onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(6, 182, 212, 0.4)'; e.currentTarget.style.boxShadow = 'none'; }}
-                      />
-                    </div>
-                  )}
                 </div>
 
                 {/* Bottom padding area with Select indicator */}
@@ -1164,9 +1173,21 @@ function JoinPackageContent(): React.JSX.Element {
               <h2 style={{ color: '#fff', fontSize: 22, fontWeight: 700, margin: '0 0 4px' }}>
                 Group Access Code
               </h2>
-              <p style={{ color: '#9ca3af', fontSize: 13, margin: 0 }}>
-                Share this code with your group to access the stream
+              <p style={{ color: '#9ca3af', fontSize: 13, margin: '0 0 12px' }}>
+                Invite your group to access the stream
               </p>
+              {/* Skip to watch */}
+              <button
+                onClick={() => {
+                  setShowGroupCodeModal(false);
+                  router.push(`/user/events/live-stream?eventId=${selectedEvent?.id}&paid=true&inviteToken=${encodeURIComponent(groupShareCode)}`);
+                }}
+                style={{ padding: '6px 16px', borderRadius: 20, border: '1px solid rgba(255,255,255,0.15)', background: 'transparent', color: '#9ca3af', fontSize: 12, cursor: 'pointer', transition: 'all 0.2s' }}
+                onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)'; }}
+                onMouseLeave={e => { e.currentTarget.style.color = '#9ca3af'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'; }}
+              >
+                Skip — Watch Now <i className="bi bi-arrow-right" style={{ marginLeft: 4 }}></i>
+              </button>
             </div>
 
             {/* Share Code */}
@@ -1229,23 +1250,64 @@ function JoinPackageContent(): React.JSX.Element {
               </div>
             )}
 
-            {/* Email notice */}
-            <p style={{ color: '#6b7280', fontSize: 12, textAlign: 'center', margin: '0 0 20px' }}>
-              <i className="bi bi-envelope-check" style={{ marginRight: 6 }}></i>
-              This code has also been sent to your email inbox.
+            {/* Invite Viewers Section */}
+            <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 12, padding: '16px', marginBottom: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                <p style={{ color: '#d1d5db', fontSize: 13, fontWeight: 600, margin: 0 }}>
+                  <i className="bi bi-person-plus-fill" style={{ marginRight: 6, color: '#FBBF24' }}></i>
+                  Invite Viewers
+                </p>
+                <span style={{ fontSize: 11, color: remainingInvites > 0 ? '#10b981' : '#ef4444', fontWeight: 600 }}>
+                  {remainingInvites > 0 ? `${remainingInvites} slot${remainingInvites !== 1 ? 's' : ''} left` : 'No slots left'}
+                </span>
+              </div>
+
+              {/* Email input + send */}
+              {remainingInvites > 0 && (
+                <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+                  <input
+                    type="email"
+                    placeholder="Enter viewer's email"
+                    value={inviteEmail}
+                    onChange={e => { setInviteEmail(e.target.value); setInviteError(''); }}
+                    onKeyDown={e => e.key === 'Enter' && handleSendInvite()}
+                    style={{ flex: 1, padding: '10px 14px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.08)', color: '#fff', fontSize: 13, outline: 'none' }}
+                    onFocus={e => { e.currentTarget.style.borderColor = '#FBBF24'; }}
+                    onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'; }}
+                  />
+                  <button
+                    onClick={handleSendInvite}
+                    disabled={inviteLoading || !inviteEmail.trim()}
+                    style={{ padding: '10px 18px', borderRadius: 10, border: 'none', background: inviteEmail.trim() ? '#F59E0B' : 'rgba(255,255,255,0.08)', color: inviteEmail.trim() ? '#1f2937' : 'rgba(255,255,255,0.3)', fontSize: 13, fontWeight: 700, cursor: inviteEmail.trim() ? 'pointer' : 'not-allowed', whiteSpace: 'nowrap' }}
+                  >
+                    {inviteLoading ? '...' : 'Send'}
+                  </button>
+                </div>
+              )}
+
+              {inviteError && <p style={{ color: '#ef4444', fontSize: 12, margin: '0 0 8px' }}>{inviteError}</p>}
+              {inviteSuccess && <p style={{ color: '#10b981', fontSize: 12, margin: '0 0 8px' }}><i className="bi bi-check-circle-fill" style={{ marginRight: 4 }}></i>{inviteSuccess}</p>}
+
+              {/* Invited emails list */}
+              {invitedEmails.length > 0 && (
+                <div style={{ maxHeight: 120, overflowY: 'auto' }}>
+                  {invitedEmails.map((email, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', borderBottom: i < invitedEmails.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
+                      <i className="bi bi-envelope-check-fill" style={{ color: '#10b981', fontSize: 12 }}></i>
+                      <span style={{ color: '#9ca3af', fontSize: 12, flex: 1 }}>{email}</span>
+                      <span style={{ color: '#6b7280', fontSize: 10 }}>Invited</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <p style={{ color: '#6b7280', fontSize: 11, textAlign: 'center', margin: '0 0 16px' }}>
+              You can invite viewers now or come back later to add more.
             </p>
 
             {/* Action buttons */}
             <div style={{ display: 'flex', gap: 10 }}>
-              <button
-                onClick={() => {
-                  const text = `Join my live stream!\n\nEvent: ${selectedEvent?.title || 'Live Stream'}\nInvite Code: ${groupShareCode}\nValid for ${groupPeopleCount} people\nExpires: ${groupCodeExpiry ? new Date(groupCodeExpiry).toLocaleString() : '24 hours'}\n\nJoin here: ${window.location.origin}/user/events/join-package?id=${selectedEvent?.id}&inviteToken=${encodeURIComponent(groupShareCode)}`;
-                  navigator.clipboard.writeText(text);
-                }}
-                style={{ flex: 1, padding: '12px', background: 'linear-gradient(135deg, #FDE047, #F59E0B)', border: 'none', borderRadius: 10, color: '#1f2937', fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
-              >
-                <i className="bi bi-share"></i> Copy & Share
-              </button>
               <button
                 onClick={() => {
                   setShowGroupCodeModal(false);

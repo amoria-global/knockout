@@ -120,11 +120,9 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
   // Validate payment details
   const isValid = useCallback(() => {
     if (!selectedMethod) return false;
-    // Donations always require phone (even for card)
-    if (paymentType === 'donation') return phone.length >= 10;
     if (selectedMethod === 'card') return true;
     return phone.length >= 10;
-  }, [selectedMethod, phone, paymentType]);
+  }, [selectedMethod, phone]);
 
   // Start payment status polling
   const startPolling = useCallback((paymentRefid: string) => {
@@ -475,7 +473,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
             </div>
 
             {/* Phone Input - shown for mobile money, and always for donations */}
-            {selectedMethod && (selectedMethod !== 'card' || paymentType === 'donation') && (
+            {selectedMethod && selectedMethod !== 'card' && (
               <div style={{ marginBottom: '24px' }}>
                 <label style={{
                   display: 'block',

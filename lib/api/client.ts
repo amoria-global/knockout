@@ -266,9 +266,18 @@ class ApiClient {
       };
     }
 
+    // Merge root-level fields (like hasPurchasedAccess) into the data object
+    // so they're accessible alongside the unwrapped data.data
+    let result = data.data !== undefined ? data.data : (data as unknown as T);
+    if (data.data !== undefined && typeof result === 'object' && result !== null) {
+      const { action: _a, message: _m, data: _d, ...rootExtras } = data;
+      if (Object.keys(rootExtras).length > 0) {
+        result = { ...result, ...rootExtras };
+      }
+    }
     return {
       success: true,
-      data: data.data !== undefined ? data.data : (data as unknown as T),
+      data: result,
       message: data.message,
       statusCode,
       requestId,
