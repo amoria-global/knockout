@@ -7,6 +7,7 @@ function getRouteForType(customerType?: string): string {
     case 'event-coordinator':
     case 'coordinator': return '/user/event-coordinator/home';
     case 'photographer': return '/user/photographer/dashboard';
+    case 'viewer': return '';  // Viewers don't have a dashboard
     default: return '/'; // Role selection page
   }
 }

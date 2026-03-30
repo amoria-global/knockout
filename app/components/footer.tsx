@@ -304,7 +304,7 @@ export default function Footer() {
             {/* Amoria connekyt Section */}
             <div className="footer-brand" style={{ paddingRight: '1.6rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
               <Link href="/" className="footer-logo" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '1rem', marginTop: '-2rem', cursor: 'pointer', textDecoration: 'none', color: 'inherit', lineHeight: 1, width: 'fit-content' }}>
-                <img src="/logo.png" alt="Connekyt Logo" style={{ width: isMobile ? '42px' : '54px', height: isMobile ? '42px' : '54px', objectFit: 'contain' }} />
+                <img src="/log.png" alt="Connekyt Logo" style={{ width: isMobile ? '42px' : '54px', height: isMobile ? '42px' : '54px', objectFit: 'contain' }} />
                 <span style={{ fontWeight: 700, color: '#fff', fontSize: isMobile ? '1.1rem' : '1.35rem', letterSpacing: '0.5px', marginTop: '-4px' }}>Connekyt</span>
               </Link>
               <div className="social-section" style={{ marginTop: 'auto', marginBottom: isMobile ? '0' : '-3.5rem' }}>
