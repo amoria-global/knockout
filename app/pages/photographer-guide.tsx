@@ -120,6 +120,7 @@ const PhotographerGuide = () => {
                   lineHeight: '1.6',
                   letterSpacing: '-0.02em',
                   color: '#ffffff',
+                  fontFamily: "'Pragati Narrow', sans-serif",
                 }}
               >
                 Seamlessly Integrated Platform
@@ -174,7 +175,7 @@ const PhotographerGuide = () => {
         id="getting-started"
         className="pg-steps-section"
         style={{
-          backgroundColor: '#0a0a38',
+          backgroundColor: '#083A85',
           position: 'relative',
           padding: '100px 20px 80px',
           overflow: 'hidden',
@@ -231,15 +232,13 @@ const PhotographerGuide = () => {
                 lineHeight: '1.15',
                 letterSpacing: '-0.02em',
                 color: '#ffffff',
+                fontFamily: "'Pragati Narrow', sans-serif",
               }}
             >
               Your Complete Guide to{' '}
               <span
                 style={{
-                  background: 'linear-gradient(90deg, #FF6B6B 0%, #C44569 30%, #8B5CF6 70%, #6366F1 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  backgroundClip: 'text',
+                  color: 'rgba(255,255,255,0.85)',
                 }}
               >
                 Photographer Success
@@ -298,7 +297,7 @@ const PhotographerGuide = () => {
                 style={{
                   fontSize: '28px',
                   fontWeight: 700,
-                  color: '#000',
+                  color: '#083A85',
                   marginBottom: '15px',
                 }}
               >
@@ -307,7 +306,7 @@ const PhotographerGuide = () => {
               <p
                 style={{
                   fontSize: '16px',
-                  color: '#666',
+                  color: '#6b7280',
                   lineHeight: 1.7,
                   marginBottom: '15px',
                 }}
@@ -325,20 +324,20 @@ const PhotographerGuide = () => {
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#083A85" strokeWidth="2">
                     <polyline points="20 6 9 17 4 12" />
                   </svg>
-                  <span style={{ color: '#333', fontSize: '15px' }}>Quick signup with Google</span>
+                  <span style={{ color: '#374151', fontSize: '15px' }}>Quick signup with Google</span>
                 </li>
                 <li style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#083A85" strokeWidth="2">
                     <polyline points="20 6 9 17 4 12" />
                   </svg>
-                  <span style={{ color: '#333', fontSize: '15px' }}>Or create account with email</span>
+                  <span style={{ color: '#374151', fontSize: '15px' }}>Or create account with email</span>
                 </li>
               </ul>
             </div>
             <div
               style={{
                 flex: '1',
-                backgroundColor: '#d1d1d1',
+                backgroundColor: 'rgba(8,58,133,0.05)',
                 padding: '20px 10px',
                 display: 'flex',
                 alignItems: 'center',
@@ -380,7 +379,7 @@ const PhotographerGuide = () => {
               <div
                 style={{
                   display: 'inline-flex',
-                  backgroundColor: '#8B5CF6',
+                  backgroundColor: '#0a4da3',
                   color: '#fff',
                   width: '50px',
                   height: '50px',
@@ -398,7 +397,7 @@ const PhotographerGuide = () => {
                 style={{
                   fontSize: '28px',
                   fontWeight: 700,
-                  color: '#000',
+                  color: '#083A85',
                   marginBottom: '15px',
                 }}
               >
@@ -407,7 +406,7 @@ const PhotographerGuide = () => {
               <p
                 style={{
                   fontSize: '16px',
-                  color: '#666',
+                  color: '#6b7280',
                   lineHeight: 1.7,
                   marginBottom: '15px',
                 }}
@@ -422,23 +421,23 @@ const PhotographerGuide = () => {
                 }}
               >
                 <li style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" strokeWidth="2">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#083A85" strokeWidth="2">
                     <polyline points="20 6 9 17 4 12" />
                   </svg>
-                  <span style={{ color: '#333', fontSize: '15px' }}>Hired Photographer - Work directly with clients</span>
+                  <span style={{ color: '#374151', fontSize: '15px' }}>Hired Photographer - Work directly with clients</span>
                 </li>
                 <li style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" strokeWidth="2">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#083A85" strokeWidth="2">
                     <polyline points="20 6 9 17 4 12" />
                   </svg>
-                  <span style={{ color: '#333', fontSize: '15px' }}>Freelancer - Build your brand and portfolio</span>
+                  <span style={{ color: '#374151', fontSize: '15px' }}>Freelancer - Build your brand and portfolio</span>
                 </li>
               </ul>
             </div>
             <div
               style={{
                 flex: '1',
-                backgroundColor: '#d1d1d1',
+                backgroundColor: 'rgba(8,58,133,0.05)',
                 padding: '20px',
                 display: 'flex',
                 alignItems: 'center',
@@ -479,7 +478,7 @@ const PhotographerGuide = () => {
               <div
                 style={{
                   display: 'inline-flex',
-                  backgroundColor: '#FF6B6B',
+                  backgroundColor: '#062d6b',
                   color: '#fff',
                   width: '50px',
                   height: '50px',
@@ -497,7 +496,7 @@ const PhotographerGuide = () => {
                 style={{
                   fontSize: '28px',
                   fontWeight: 700,
-                  color: '#000',
+                  color: '#083A85',
                   marginBottom: '15px',
                 }}
               >
@@ -506,7 +505,7 @@ const PhotographerGuide = () => {
               <p
                 style={{
                   fontSize: '16px',
-                  color: '#666',
+                  color: '#6b7280',
                   lineHeight: 1.7,
                   marginBottom: '15px',
                 }}
@@ -521,23 +520,23 @@ const PhotographerGuide = () => {
                 }}
               >
                 <li style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FF6B6B" strokeWidth="2">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#083A85" strokeWidth="2">
                     <polyline points="20 6 9 17 4 12" />
                   </svg>
-                  <span style={{ color: '#333', fontSize: '15px' }}>Secure login with password</span>
+                  <span style={{ color: '#374151', fontSize: '15px' }}>Secure login with password</span>
                 </li>
                 <li style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FF6B6B" strokeWidth="2">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#083A85" strokeWidth="2">
                     <polyline points="20 6 9 17 4 12" />
                   </svg>
-                  <span style={{ color: '#333', fontSize: '15px' }}>Password recovery available</span>
+                  <span style={{ color: '#374151', fontSize: '15px' }}>Password recovery available</span>
                 </li>
               </ul>
             </div>
             <div
               style={{
                 flex: '1',
-                backgroundColor: '#d1d1d1',
+                backgroundColor: 'rgba(8,58,133,0.05)',
                 padding: '20px',
                 display: 'flex',
                 alignItems: 'center',
@@ -586,7 +585,7 @@ const PhotographerGuide = () => {
               <span style={{ color: '#000' }}>Explore Your</span>{' '}
               <span
                 style={{
-                  background: 'linear-gradient(90deg, #083A85 0%, #8B5CF6 100%)',
+                  background: '#083A85',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
                   backgroundClip: 'text',
@@ -598,7 +597,7 @@ const PhotographerGuide = () => {
             <p
               style={{
                 fontSize: '18px',
-                color: '#666',
+                color: '#6b7280',
                 maxWidth: '650px',
                 margin: '0 auto',
                 lineHeight: 1.7,
@@ -649,7 +648,7 @@ const PhotographerGuide = () => {
                   style={{
                     fontSize: '24px',
                     fontWeight: 700,
-                    color: '#000',
+                    color: '#083A85',
                     marginBottom: '12px',
                   }}
                 >
@@ -658,7 +657,7 @@ const PhotographerGuide = () => {
                 <p
                   style={{
                     fontSize: '15px',
-                    color: '#666',
+                    color: '#6b7280',
                     lineHeight: 1.7,
                   }}
                 >
@@ -700,7 +699,7 @@ const PhotographerGuide = () => {
                   style={{
                     fontSize: '24px',
                     fontWeight: 700,
-                    color: '#000',
+                    color: '#083A85',
                     marginBottom: '12px',
                   }}
                 >
@@ -709,7 +708,7 @@ const PhotographerGuide = () => {
                 <p
                   style={{
                     fontSize: '15px',
-                    color: '#666',
+                    color: '#6b7280',
                     lineHeight: 1.7,
                   }}
                 >
@@ -751,7 +750,7 @@ const PhotographerGuide = () => {
                   style={{
                     fontSize: '24px',
                     fontWeight: 700,
-                    color: '#000',
+                    color: '#083A85',
                     marginBottom: '12px',
                   }}
                 >
@@ -760,7 +759,7 @@ const PhotographerGuide = () => {
                 <p
                   style={{
                     fontSize: '15px',
-                    color: '#666',
+                    color: '#6b7280',
                     lineHeight: 1.7,
                   }}
                 >
@@ -802,7 +801,7 @@ const PhotographerGuide = () => {
                   style={{
                     fontSize: '24px',
                     fontWeight: 700,
-                    color: '#000',
+                    color: '#083A85',
                     marginBottom: '12px',
                   }}
                 >
@@ -811,7 +810,7 @@ const PhotographerGuide = () => {
                 <p
                   style={{
                     fontSize: '15px',
-                    color: '#666',
+                    color: '#6b7280',
                     lineHeight: 1.7,
                   }}
                 >
@@ -853,7 +852,7 @@ const PhotographerGuide = () => {
                   style={{
                     fontSize: '24px',
                     fontWeight: 700,
-                    color: '#000',
+                    color: '#083A85',
                     marginBottom: '12px',
                   }}
                 >
@@ -862,7 +861,7 @@ const PhotographerGuide = () => {
                 <p
                   style={{
                     fontSize: '15px',
-                    color: '#666',
+                    color: '#6b7280',
                     lineHeight: 1.7,
                   }}
                 >
@@ -904,7 +903,7 @@ const PhotographerGuide = () => {
                   style={{
                     fontSize: '24px',
                     fontWeight: 700,
-                    color: '#000',
+                    color: '#083A85',
                     marginBottom: '12px',
                   }}
                 >
@@ -913,7 +912,7 @@ const PhotographerGuide = () => {
                 <p
                   style={{
                     fontSize: '15px',
-                    color: '#666',
+                    color: '#6b7280',
                     lineHeight: 1.7,
                   }}
                 >
@@ -984,6 +983,7 @@ const PhotographerGuide = () => {
                   lineHeight: '1.0',
                   letterSpacing: '-0.02em',
                   color: '#ffffff',
+                  fontFamily: "'Pragati Narrow', sans-serif",
                 }}
               >
                 Ready to Elevate Your Photography Career?

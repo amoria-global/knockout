@@ -1,13 +1,10 @@
-import react from 'react';
-import SignupPage from "../../../pages/auth/signup";
+import React from "react";
+import { AuthPage } from "../../../pages/auth/login";
 
 function App() {
   return (
-    <div className="min-h-screen">
-      <SignupPage />
-    </div>
+    <AuthPage initialView="signup" />
   );
 }
 
 export default App;
-

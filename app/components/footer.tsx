@@ -80,10 +80,10 @@ export default function Footer() {
   const footerStyles = `
     .footer-container { position: relative; width: 100%; margin-top: 2.8rem; }
     .subscribe-wrapper { position: absolute; top: -1.6rem; left: 50%; transform: translateX(-50%); width: 100%; max-width: 40rem; padding: 0 1.6rem; z-index: 10; }
-    .subscribe-container { background-color: #ffffff; border-radius: 9999px; padding: 0.001rem; box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.15), 0 4px 8px -2px rgba(8, 58, 133, 0.1); }
+    .subscribe-container { background-color: #ffffff; border-radius: 10px; padding: 0.001rem; box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.15), 0 4px 8px -2px rgba(8, 58, 133, 0.1); }
     .subscribe-form { display: flex; align-items: center; width: 100%; }
     .subscribe-input { width: 100%; padding: 0.44rem 1.2rem; background: transparent; color: #000; border: none; outline: none; font-size: 0.96rem; font-weight: 500; }
-    .subscribe-button { background: #103E83; color: white; font-weight: 600; border-radius: 1.6rem; letter-spacing: 0.05em; font-size: 0.9rem; padding: 0.6rem 1.6rem; flex-shrink: 0; cursor: pointer; border: none; transition: background-color 0.2s; }
+    .subscribe-button { background: #103E83; color: white; font-weight: 600; border-radius: 10px; letter-spacing: 0.05em; font-size: 0.9rem; padding: 0.6rem 1.6rem; flex-shrink: 0; cursor: pointer; border: none; transition: background-color 0.2s; }
     .subscribe-button:hover { background-color: #0d3268; }
     .footer-body { background: linear-gradient(to right, #052047, #052047, #103E83); border-radius: 2rem 2rem 0 0; color: white; position: relative; overflow: hidden; }
     .footer-dotted-bg { position: absolute; inset: 0; background-image: radial-gradient(circle, rgba(255, 255, 255, 0.15) 1px, transparent 1px); background-size: 25px 25px; opacity: 0.4; z-index: 0; pointer-events: none; transition: opacity 0.3s ease; }
@@ -91,9 +91,9 @@ export default function Footer() {
     .footer-content { max-width: 90rem; margin: 0 auto; padding: 3.2rem 3rem 1.6rem; }
     .footer-grid { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr 1fr; gap: 4rem; margin-bottom: 4rem; }
     .footer-brand { padding-right: 1.6rem; }
-    .footer-logo { display: flex; align-items: center; margin: -1.9rem 0 1.9rem -1rem; cursor: pointer; text-decoration: none; color: inherit; }
+    .footer-logo { display: flex; flex-direction: column; align-items: center; margin: 0 0 1rem 0; cursor: pointer; text-decoration: none; color: inherit; width: fit-content; line-height: 1; }
     .footer-logo span { font-weight: 700; }
-    .footer-logo img { border-radius: 50%; }
+    .footer-logo img { border-radius: 0; }
     .footer-description { color: #D1D5DB; font-size: 0.96rem; line-height: 1.625; margin-bottom: 2rem; }
     .social-section { margin: 5.4rem 0 -2.2rem; }
     .social-title { color: #D1D5DB; font-size: 1.04rem; display: block; margin-bottom: 0.8rem; }
@@ -303,11 +303,10 @@ export default function Footer() {
           >
             {/* Amoria connekyt Section */}
             <div className="footer-brand" style={{ paddingRight: '1.6rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-              <Link href="/" className="footer-logo" style={{ display: 'flex', alignItems: 'center', marginBottom: '1rem', marginLeft: '-1rem', cursor: 'pointer', textDecoration: 'none', color: 'inherit' }}>
-                <img src="/log.png" alt="Connekyt Logo" style={{ width: isMobile ? '36px' : '50px', height: isMobile ? '36px' : '50px', objectFit: 'contain', position: 'relative', top: isMobile ? '-4px' : '-5px', left: isMobile ? '-1px' : '-14px' }} />
-                <span style={{ fontWeight: 700, color: '#fff', fontSize: isMobile ? '1.25rem' : '1.4rem', marginLeft: isMobile ? '-10px' : '-26px', marginTop: isMobile ? '-1px' : '-2px', letterSpacing: '0.5px' }}>onnekyt</span>
+              <Link href="/" className="footer-logo" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '1rem', marginTop: '-2rem', cursor: 'pointer', textDecoration: 'none', color: 'inherit', lineHeight: 1, width: 'fit-content' }}>
+                <img src="/log.png" alt="Connekyt Logo" style={{ width: isMobile ? '42px' : '54px', height: isMobile ? '42px' : '54px', objectFit: 'contain' }} />
+                <span style={{ fontWeight: 700, color: '#fff', fontSize: isMobile ? '1.1rem' : '1.35rem', letterSpacing: '0.5px', marginTop: '-4px' }}>Connekyt</span>
               </Link>
-              <p className="footer-description">{t('description')}</p>
               <div className="social-section" style={{ marginTop: 'auto', marginBottom: isMobile ? '0' : '-3.5rem' }}>
                 <span className="social-title" style={{ color: '#D1D5DB', fontSize: '1.04rem', display: 'block', marginBottom: '0.8rem', gap: '2.4rem' }}>
                   {t('followUs')}
