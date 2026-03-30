@@ -1123,8 +1123,8 @@ function JoinPackageContent(): React.JSX.Element {
         onClose={() => setShowPaymentModal(false)}
         onSuccess={handlePaymentSuccess}
         amount={getPaymentFee()}
-        currencyCode={selectedEvent?.streamFeeCurrencyAbbreviation || selectedEvent?.streamFeeCurrencySymbol || (currencies.length > 0 ? currencies[0].code : 'RWF')}
-        currencyId={currencies.length > 0 ? currencies[0].id : ''}
+        currencyCode={selectedEvent?.streamFeeCurrencyAbbreviation || selectedEvent?.streamFeeCurrencySymbol || 'RWF'}
+        currencyId={currencies.find(c => c.code === (selectedEvent?.streamFeeCurrencyAbbreviation || 'RWF'))?.id || currencies.find(c => c.code === 'RWF')?.id || '490c5ab1-a150-459e-be6b-d45131a1e13a'}
         paymentType="streaming"
         eventId={selectedEvent?.id || ''}
         title={`Stream Access — ${selectedEvent?.title || 'Event'}`}
