@@ -6,6 +6,7 @@ import Navbar from "../components/navbar";
 import Footer from "../components/footer";
 import { getCurrencies, createPublicDonation, getDonationTiers, getCurrencyRates, type Currency as APICurrency, type ExchangeRate } from '@/lib/APIs/public';
 import XentriPayModal from '../components/XentriPayModal';
+import RotatingGlobe from '../components/RotatingGlobe';
 
 // Hook for counting animation
 const useCountUp = (end: number, duration: number = 2000, startCounting: boolean = false) => {
@@ -78,66 +79,69 @@ const ImpactCounter = ({
   return (
     <div style={{
       textAlign: 'center',
-      padding: '35px 25px',
+      padding: '32px 20px',
       backgroundColor: '#fff',
       borderRadius: '20px',
-      transition: 'all 0.3s ease',
+      transition: 'all 0.35s ease',
       cursor: 'default',
       position: 'relative',
       overflow: 'hidden',
-      minHeight: '180px',
+      minHeight: '170px',
       display: 'flex',
       flexDirection: 'column',
       justifyContent: 'center',
-      boxShadow: '0 8px 30px rgba(0, 0, 0, 0.08)',
-      borderTop: `4px solid ${color}`,
-      borderBottom: `4px solid ${color}`,
+      boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
+      border: '1px solid #e2e8f0',
     }}
     className="impact-card"
+    onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-6px)'; e.currentTarget.style.boxShadow = `0 12px 30px ${color}20`; e.currentTarget.style.borderColor = `${color}40`; }}
+    onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 12px rgba(0,0,0,0.06)'; e.currentTarget.style.borderColor = '#e2e8f0'; }}
     >
-      {/* Icon circle */}
+      {/* Subtle background glow */}
+      <div style={{ position: 'absolute', top: '-30px', left: '50%', transform: 'translateX(-50%)', width: '120px', height: '120px', background: `radial-gradient(circle, ${color}10 0%, transparent 70%)`, borderRadius: '50%', pointerEvents: 'none' }} />
+
+      {/* Icon */}
       <div style={{
-        width: '56px',
-        height: '56px',
-        borderRadius: '16px',
-        backgroundColor: color,
+        width: '50px',
+        height: '50px',
+        borderRadius: '14px',
+        background: `linear-gradient(135deg, ${color} 0%, ${color}cc 100%)`,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        margin: '0 auto 16px',
+        margin: '0 auto 14px',
+        position: 'relative',
+        zIndex: 2,
+        boxShadow: `0 4px 12px ${color}30`,
+      }}>
+        <i className={icon} style={{ fontSize: '22px', color: '#fff' }} />
+      </div>
+
+      {/* Number with gradient */}
+      <div style={{
+        fontSize: '40px',
+        fontWeight: 800,
+        lineHeight: 1.1,
+        marginBottom: '6px',
+        position: 'relative',
+        zIndex: 2,
+        background: 'linear-gradient(90deg, #8B5CF6 0%, #FF6B6B 100%)',
+        WebkitBackgroundClip: 'text',
+        WebkitTextFillColor: 'transparent',
+        backgroundClip: 'text',
+      }}>
+        {formatNumber(count)}{suffix}
+      </div>
+
+      <div style={{
+        fontSize: '13px',
+        color: '#64748b',
+        fontWeight: 600,
+        letterSpacing: '0.3px',
         position: 'relative',
         zIndex: 2,
       }}>
-        <i className={icon} style={{
-          fontSize: '24px',
-          color: '#fff',
-        }} />
-      </div>
-
-      {/* Number */}
-      <div>
-        <div style={{
-          fontSize: '44px',
-          fontWeight: 800,
-          color: '#1a1a2e',
-          lineHeight: 1.1,
-          marginBottom: '8px',
-          position: 'relative',
-          zIndex: 2,
-        }}>
-          {formatNumber(count)}{suffix}
-        </div>
-
-        <div style={{
-          fontSize: '14px',
-          color: '#6b7280',
-          fontWeight: 600,
-          letterSpacing: '0.3px',
-          position: 'relative',
-          zIndex: 2,
-        }}>
-          {label}
-        </div>
+        {label}
       </div>
     </div>
   );
@@ -168,7 +172,7 @@ const DonationCard = ({
       boxShadow: isActive
         ? '0 10px 40px rgba(8, 58, 133, 0.3)'
         : '0 6px 24px rgba(0, 0, 0, 0.08)',
-      border: isActive ? '2px solid #083A85' : '2px solid #e5e7eb',
+      border: isActive ? '2px solid #083A85' : '2px solid #e2e8f0',
       transform: isActive ? 'translateY(-5px)' : 'translateY(0)',
     }}
   >
@@ -198,7 +202,7 @@ const DonationCard = ({
     <p style={{
       fontSize: '14px',
       lineHeight: 1.6,
-      color: isActive ? 'rgba(255,255,255,0.85)' : '#6b7280',
+      color: isActive ? 'rgba(255,255,255,0.85)' : '#64748b',
       margin: 0,
     }}>
       {description}
@@ -223,9 +227,9 @@ const AmountButton = ({
       fontSize: '16px',
       fontWeight: 600,
       borderRadius: '12px',
-      border: isSelected ? '2px solid #083A85' : '2px solid #e0e0e0',
+      border: isSelected ? '2px solid #083A85' : '2px solid #e2e8f0',
       backgroundColor: isSelected ? '#083A85' : '#fff',
-      color: isSelected ? '#fff' : '#1f1d1d',
+      color: isSelected ? '#fff' : '#1a1a2e',
       cursor: 'pointer',
       transition: 'all 0.3s ease',
       minWidth: '100px',
@@ -280,6 +284,7 @@ const Donations = () => {
   const heroSectionRef = useRef<HTMLElement>(null);
 
   const [showBanner, setShowBanner] = useState(true);
+  const [showDonationModal, setShowDonationModal] = useState(false);
 
   // Payment modal state
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -637,7 +642,7 @@ const Donations = () => {
           right: 0,
           zIndex: 49,
         }}
-          onClick={() => document.getElementById('donate-section')?.scrollIntoView({ behavior: 'smooth' })}
+          onClick={() => setShowDonationModal(true)}
         >
           <i className="bi bi-heart-fill" style={{ fontSize: '1rem', color: '#ffffff' }} />
           <span style={{ fontSize: '0.9rem', color: 'rgba(255, 255, 255, 0.8)' }}>
@@ -648,7 +653,7 @@ const Donations = () => {
             Transform lives with your generosity!
           </span>
           <button
-            onClick={(e) => { e.stopPropagation(); document.getElementById('donate-section')?.scrollIntoView({ behavior: 'smooth' }); }}
+            onClick={(e) => { e.stopPropagation(); setShowDonationModal(true); }}
             style={{
               background: '#fff',
               color: '#083A85',
@@ -692,6 +697,7 @@ const Donations = () => {
         style={{
           position: 'relative',
           overflow: 'hidden',
+          minHeight: '100vh',
         }}
       >
         {/* Background image with overlay — same pattern as events page */}
@@ -714,6 +720,27 @@ const Donations = () => {
             background: 'linear-gradient(135deg, #083A85 0%, #0a4da3 50%, #083A85 100%)',
             opacity: 0.78,
           }} />
+        </div>
+
+        {/* Rotating Globe — background decoration */}
+        <div style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          zIndex: 1,
+          opacity: 0.3,
+          pointerEvents: 'none',
+        }}>
+          <RotatingGlobe
+            size={500}
+            rotationSpeed={0.15}
+            landColor="rgba(255, 255, 255, 0.12)"
+            oceanColor="rgba(255, 255, 255, 0.03)"
+            borderColor="rgba(255, 255, 255, 0.2)"
+            graticuleColor="rgba(255, 255, 255, 0.08)"
+            glowColor="rgba(139, 92, 246, 0.2)"
+          />
         </div>
 
         <div className="hero-content" style={{
@@ -772,7 +799,7 @@ const Donations = () => {
           {/* Buttons */}
           <div className="hero-buttons" style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '28px' }}>
             <button
-              onClick={() => document.getElementById('donate-section')?.scrollIntoView({ behavior: 'smooth' })}
+              onClick={() => setShowDonationModal(true)}
               style={{
                 backgroundColor: '#fff',
                 color: '#083A85',
@@ -810,43 +837,6 @@ const Donations = () => {
             </button>
           </div>
 
-          {/* Stat badges - inline row */}
-          <div className="hero-stats" style={{
-            display: 'flex',
-            justifyContent: 'center',
-            gap: '20px',
-            flexWrap: 'wrap',
-          }}>
-            {[
-              { icon: 'bi bi-people-fill', number: 50, suffix: '+', label: 'Families Helped' },
-              { icon: 'bi bi-mortarboard-fill', number: 120, suffix: '+', label: 'Children Educated' },
-              { icon: 'bi bi-cash-stack', number: 2, prefix: '$', suffix: 'K+', label: 'Total Donated' },
-            ].map((stat, i) => {
-              const count = useCountUp(stat.number, 2000, heroVisible);
-              return (
-                <div key={i} className="hero-stat-item" style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px',
-                  backgroundColor: 'rgba(255,255,255,0.1)',
-                  backdropFilter: 'blur(10px)',
-                  padding: '10px 18px',
-                  borderRadius: '12px',
-                  border: '1px solid rgba(255,255,255,0.12)',
-                }}>
-                  <i className={stat.icon} style={{ fontSize: '18px', color: '#fff', opacity: 0.9 }} />
-                  <div>
-                    <div style={{ fontSize: '19px', fontWeight: 700, color: '#fff', lineHeight: 1.1 }}>
-                      {stat.prefix || ''}{formatNumber(count)}{stat.suffix}
-                    </div>
-                    <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.7)', fontWeight: 500 }}>
-                      {stat.label}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
         </div>
       </section>
 
@@ -911,12 +901,12 @@ const Donations = () => {
               marginBottom: '14px',
               lineHeight: 1.1,
             }}>
-              <span style={{ color: '#083A85' }}>Our Impact</span>{' '}
+              <span style={{ background: 'linear-gradient(90deg, #8B5CF6 0%, #FF6B6B 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Our Impact</span>{' '}
               <span style={{ color: '#1a1a2e' }}>in Numbers</span>
             </h2>
             <p className="section-subtitle" style={{
               fontSize: '17px',
-              color: '#6b7280',
+              color: '#64748b',
               maxWidth: '600px',
               margin: '0 auto',
               lineHeight: 1.7,
@@ -935,7 +925,7 @@ const Donations = () => {
               label="Children Educated"
               suffix="+"
               icon="bi bi-mortarboard-fill"
-              color="#083A85"
+              color="#8B5CF6"
               isVisible={impactVisible}
             />
             <ImpactCounter
@@ -943,7 +933,7 @@ const Donations = () => {
               label="Families Supported"
               suffix="+"
               icon="bi bi-people-fill"
-              color="#0a4da3"
+              color="#083A85"
               isVisible={impactVisible}
             />
             <ImpactCounter
@@ -951,7 +941,7 @@ const Donations = () => {
               label="Meals Provided"
               suffix="+"
               icon="bi bi-basket3-fill"
-              color="#1060b5"
+              color="#10b981"
               isVisible={impactVisible}
             />
             <ImpactCounter
@@ -959,7 +949,7 @@ const Donations = () => {
               label="Disabilities Aided"
               suffix="+"
               icon="bi bi-heart-pulse-fill"
-              color="#1873c7"
+              color="#FF6B6B"
               isVisible={impactVisible}
             />
           </div>
@@ -1003,11 +993,11 @@ const Donations = () => {
               lineHeight: 1.2,
             }}>
               Education for{' '}
-              <span style={{ color: '#083A85' }}>Every Child</span>
+              <span style={{ background: 'linear-gradient(90deg, #8B5CF6 0%, #FF6B6B 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Every Child</span>
             </h2>
             <p style={{
               fontSize: '16px',
-              color: '#374151',
+              color: '#1a1a2e',
               lineHeight: 1.8,
               marginBottom: '16px',
             }}>
@@ -1015,16 +1005,16 @@ const Donations = () => {
             </p>
             <p style={{
               fontSize: '16px',
-              color: '#374151',
+              color: '#1a1a2e',
               lineHeight: 1.8,
               marginBottom: '28px',
             }}>
               Your contribution directly impacts a child's ability to learn, grow, and dream. Together, we're building a foundation for the next generation of leaders, thinkers, and changemakers.
             </p>
             <button
-              onClick={() => document.getElementById('donate-section')?.scrollIntoView({ behavior: 'smooth' })}
+              onClick={() => setShowDonationModal(true)}
               style={{
-                backgroundColor: '#083A85',
+                background: 'linear-gradient(90deg, #083A85 0%, #0a4da3 100%)',
                 color: '#fff',
                 padding: '12px 32px',
                 borderRadius: '12px',
@@ -1035,8 +1025,8 @@ const Donations = () => {
                 transition: 'all 0.3s ease',
                 boxShadow: '0 4px 14px rgba(8, 58, 133, 0.3)',
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 20px rgba(8,58,133,0.4)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(8,58,133,0.3)'; }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'linear-gradient(90deg, #052559 0%, #083A85 100%)'; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 20px rgba(8,58,133,0.4)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'linear-gradient(90deg, #083A85 0%, #0a4da3 100%)'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(8,58,133,0.3)'; }}
             >
               Support Education
             </button>
@@ -1110,11 +1100,11 @@ const Donations = () => {
               lineHeight: 1.2,
             }}>
               Supporting Families{' '}
-              <span style={{ color: '#083A85' }}>In Times of Need</span>
+              <span style={{ background: 'linear-gradient(90deg, #8B5CF6 0%, #FF6B6B 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>In Times of Need</span>
             </h2>
             <p style={{
               fontSize: '16px',
-              color: '#374151',
+              color: '#1a1a2e',
               lineHeight: 1.8,
               marginBottom: '16px',
             }}>
@@ -1122,7 +1112,7 @@ const Donations = () => {
             </p>
             <p style={{
               fontSize: '16px',
-              color: '#374151',
+              color: '#1a1a2e',
               lineHeight: 1.8,
               marginBottom: '28px',
             }}>
@@ -1134,7 +1124,7 @@ const Donations = () => {
               {['Medical Bills Assistance', 'Health Insurance Support', 'Emergency Care Fund'].map((item, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <i className="bi bi-check-circle-fill" style={{ fontSize: '16px', color: '#083A85' }} />
-                  <span style={{ fontSize: '16px', color: '#374151', fontWeight: 500 }}>{item}</span>
+                  <span style={{ fontSize: '16px', color: '#1a1a2e', fontWeight: 500 }}>{item}</span>
                 </div>
               ))}
             </div>
@@ -1201,11 +1191,11 @@ const Donations = () => {
               lineHeight: 1.1,
             }}>
               <span style={{ color: '#1a1a2e' }}>Choose Where Your</span>{' '}
-              <span style={{ color: '#083A85' }}>Donation Goes</span>
+              <span style={{ background: 'linear-gradient(90deg, #8B5CF6 0%, #FF6B6B 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Donation Goes</span>
             </h2>
             <p className="section-subtitle" style={{
               fontSize: '17px',
-              color: '#6b7280',
+              color: '#64748b',
               maxWidth: '600px',
               margin: '0 auto',
               lineHeight: 1.6,
@@ -1226,350 +1216,144 @@ const Donations = () => {
                 title={cat.title}
                 description={cat.description}
                 isActive={activeCategory === index}
-                onClick={() => setActiveCategory(index)}
+                onClick={() => { setActiveCategory(index); setShowDonationModal(true); }}
               />
             ))}
           </div>
         </div>
       </section>
 
-      {/* Donation Form Section */}
-      <section id="donate-section" style={{
-        background: 'linear-gradient(135deg, #f8fafc 0%, #f0f4f8 100%)',
-        padding: '80px 20px',
-      }}>
+      {/* Donation Form Modal */}
+      {showDonationModal && (
         <div style={{
-          maxWidth: '1000px',
-          margin: '0 auto',
+          position: 'fixed', inset: 0, zIndex: 9999,
+          backgroundColor: 'rgba(0,0,0,0.6)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: '20px',
+        }}
+          onClick={(e) => { if (e.target === e.currentTarget) setShowDonationModal(false); }}
+        >
+        <div style={{
+          backgroundColor: '#fff',
+          borderRadius: '20px',
+          maxWidth: '520px',
+          width: '100%',
+          maxHeight: '90vh',
+          overflow: 'auto',
+          position: 'relative',
+          boxShadow: '0 25px 60px rgba(0,0,0,0.25)',
         }}>
-          <div style={{ textAlign: 'center', marginBottom: '50px' }}>
-            <h2 className="section-title" style={{
-              fontSize: 'clamp(30px, 5vw, 48px)',
-              fontWeight: 700,
-              marginBottom: '14px',
-              lineHeight: 1.1,
-            }}>
-              <span style={{ color: '#1a1a2e' }}>Make Your</span>{' '}
-              <span style={{ color: '#083A85' }}>Donation</span>
-            </h2>
-            <p className="section-subtitle" style={{
-              fontSize: '18px',
-              color: '#6b7280',
-              maxWidth: '500px',
-              margin: '0 auto',
-              lineHeight: 1.6,
-            }}>
-              Every contribution counts. Choose an amount or enter your own to start making a difference today.
-            </p>
+          {/* Modal header */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 28px 0' }}>
+            <div>
+              <h2 style={{ fontSize: '22px', fontWeight: 700, margin: 0, lineHeight: 1.2 }}>
+                <span style={{ color: '#1a1a2e' }}>Make Your </span>
+                <span style={{ background: 'linear-gradient(90deg, #8B5CF6 0%, #FF6B6B 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Donation</span>
+              </h2>
+              <p style={{ fontSize: '13px', color: '#64748b', margin: '4px 0 0' }}>
+                Contributing to <strong style={{ color: '#083A85' }}>{categories[activeCategory]?.title}</strong>
+              </p>
+            </div>
+            <button onClick={() => setShowDonationModal(false)} style={{ width: '34px', height: '34px', borderRadius: '50%', border: 'none', background: '#f3f4f6', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b', fontSize: '16px', flexShrink: 0 }}>
+              <i className="bi bi-x-lg" />
+            </button>
           </div>
 
-          <div className="donation-form-card" style={{
-            backgroundColor: '#fff',
-            borderRadius: '30px',
-            padding: '50px',
-            boxShadow: '0 20px 60px rgba(0,0,0,0.08)',
-          }}>
-            <div className="donation-form-container" style={{
-              display: 'flex',
-              gap: '50px',
-            }}>
-              {/* Left - Amount Selection */}
-              <div className="form-left" style={{ flex: 1 }}>
-                <div className="form-amount-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
-                  <h3 style={{
-                    fontSize: '20px',
-                    fontWeight: 600,
-                    color: '#000',
-                    margin: 0,
-                  }}>
-                    Select Donation Amount
-                  </h3>
+          <div style={{ padding: '18px 28px 24px' }}>
+            {/* Category selector */}
+            <div style={{ display: 'flex', gap: '6px', marginBottom: '16px' }}>
+              {categories.map((cat, i) => (
+                <button key={i} onClick={() => setActiveCategory(i)}
+                  style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', padding: '10px 6px', borderRadius: '10px', border: activeCategory === i ? '1.5px solid #083A85' : '1.5px solid #e2e8f0', backgroundColor: activeCategory === i ? 'rgba(8,58,133,0.06)' : '#fff', cursor: 'pointer', transition: 'all 0.2s' }}>
+                  <i className={cat.icon} style={{ fontSize: '16px', color: activeCategory === i ? '#083A85' : '#94a3b8' }} />
+                  <span style={{ fontSize: '11px', fontWeight: 600, color: activeCategory === i ? '#083A85' : '#64748b', textAlign: 'center', lineHeight: 1.2 }}>{cat.title}</span>
+                </button>
+              ))}
+            </div>
 
-                  {/* Currency Selector */}
-                  <div style={{
-                    display: 'flex',
-                    gap: '8px',
-                    backgroundColor: '#f3f4f6',
-                    padding: '4px',
-                    borderRadius: '10px',
-                  }}>
-                    {currencyToggleList.map((curr) => (
-                      <button
-                        key={curr}
-                        onClick={() => {
-                          setCurrency(curr);
-                          setCustomAmount('');
-                        }}
-                        style={{
-                          padding: '8px 14px',
-                          fontSize: '13px',
-                          fontWeight: 600,
-                          borderRadius: '8px',
-                          border: 'none',
-                          backgroundColor: currency === curr ? '#083A85' : 'transparent',
-                          color: currency === curr ? '#fff' : '#6b7280',
-                          cursor: 'pointer',
-                          transition: 'all 0.2s ease',
-                        }}
-                        onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
-                      >
-                        {curr}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="amounts-grid" style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(3, 1fr)',
-                  gap: '15px',
-                  marginBottom: '25px',
-                }}>
-                  {tierAmounts.map((amountRWF, index) => (
-                    <AmountButton
-                      key={amountRWF}
-                      label={formatCurrency(displayAmounts[index], currency)}
-                      isSelected={selectedAmount === amountRWF && !customAmount}
-                      onClick={() => {
-                        setSelectedAmount(amountRWF);
-                        setCustomAmount('');
-                      }}
-                    />
-                  ))}
-                </div>
-
-                <div style={{ marginBottom: '20px' }}>
-                  <label style={{
-                    display: 'block',
-                    fontSize: '14px',
-                    fontWeight: 500,
-                    color: '#6b7280',
-                    marginBottom: '10px',
-                  }}>
-                    Or enter custom amount ({getCurrencyConfig(currency).name})
-                  </label>
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    border: '2px solid #e0e0e0',
-                    borderRadius: '12px',
-                    padding: '0 15px',
-                    transition: 'all 0.3s ease',
-                  }}>
-                    <span style={{ fontSize: '18px', color: '#6b7280', fontWeight: 600, marginRight: '5px' }}>
-                      {currency === 'RWF' ? '' : getCurrencyConfig(currency).symbol}
-                    </span>
-                    <input
-                      type="number"
-                      value={customAmount}
-                      onChange={(e) => {
-                        setCustomAmount(e.target.value);
-                        setSelectedAmount(0);
-                      }}
-                      placeholder="Enter amount"
-                      style={{
-                        flex: 1,
-                        border: 'none',
-                        outline: 'none',
-                        padding: '15px 10px',
-                        fontSize: '18px',
-                        fontWeight: 500,
-                      }}
-                    />
-                    {currency === 'RWF' && (
-                      <span style={{ fontSize: '16px', color: '#6b7280', fontWeight: 600 }}>RWF</span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Donation frequency */}
-                <div style={{ display: 'flex', gap: '15px' }}>
-                  <button
-                    onClick={() => setDonationFrequency('one-time')}
-                    style={{
-                      flex: 1,
-                      padding: '12px',
-                      borderRadius: '10px',
-                      border: donationFrequency === 'one-time' ? '2px solid #083A85' : '2px solid #e0e0e0',
-                      backgroundColor: donationFrequency === 'one-time' ? '#083A85' : '#fff',
-                      color: donationFrequency === 'one-time' ? '#fff' : '#6b7280',
-                      fontSize: '14px',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease',
-                    }}
-                    onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
-                  >
-                    One-time
+            {/* Amount + Currency row */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+              <h3 style={{ fontSize: '15px', fontWeight: 600, color: '#1a1a2e', margin: 0 }}>Select Amount</h3>
+              <div style={{ display: 'flex', gap: '4px', backgroundColor: '#f3f4f6', padding: '3px', borderRadius: '8px' }}>
+                {currencyToggleList.map((curr) => (
+                  <button key={curr} onClick={() => { setCurrency(curr); setCustomAmount(''); }}
+                    style={{ padding: '5px 10px', fontSize: '12px', fontWeight: 600, borderRadius: '6px', border: 'none', backgroundColor: currency === curr ? '#083A85' : 'transparent', color: currency === curr ? '#fff' : '#64748b', cursor: 'pointer', transition: 'all 0.2s' }}>
+                    {curr}
                   </button>
-                  <button
-                    onClick={() => setDonationFrequency('monthly')}
-                    style={{
-                      flex: 1,
-                      padding: '12px',
-                      borderRadius: '10px',
-                      border: donationFrequency === 'monthly' ? '2px solid #083A85' : '2px solid #e0e0e0',
-                      backgroundColor: donationFrequency === 'monthly' ? '#083A85' : '#fff',
-                      color: donationFrequency === 'monthly' ? '#fff' : '#6b7280',
-                      fontSize: '14px',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease',
-                    }}
-                    onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
-                  >
-                    Monthly
-                  </button>
-                </div>
-              </div>
-
-              {/* Right - Donor Info */}
-              <div className="form-right" style={{ flex: 1 }}>
-                <h3 style={{
-                  fontSize: '20px',
-                  fontWeight: 600,
-                  color: '#000',
-                  marginBottom: '25px',
-                }}>
-                  Your Information
-                </h3>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                  <div className="donor-name-row" style={{ display: 'flex', gap: '15px' }}>
-                    <input
-                      type="text"
-                      placeholder={isAnonymous ? 'First Name' : 'First Name *'}
-                      value={donorFirstName}
-                      onChange={(e) => setDonorFirstName(e.target.value)}
-                      style={{
-                        flex: 1,
-                        padding: '15px',
-                        borderRadius: '12px',
-                        border: `2px solid ${!isAnonymous && !donorFirstName.trim() ? '#f0a0a0' : '#e0e0e0'}`,
-                        fontSize: '15px',
-                        outline: 'none',
-                      }}
-                    />
-                    <input
-                      type="text"
-                      placeholder={isAnonymous ? 'Last Name' : 'Last Name *'}
-                      value={donorLastName}
-                      onChange={(e) => setDonorLastName(e.target.value)}
-                      style={{
-                        flex: 1,
-                        padding: '15px',
-                        borderRadius: '12px',
-                        border: `2px solid ${!isAnonymous && !donorLastName.trim() ? '#f0a0a0' : '#e0e0e0'}`,
-                        fontSize: '15px',
-                        outline: 'none',
-                      }}
-                    />
-                  </div>
-                  <input
-                    type="email"
-                    placeholder={isAnonymous ? 'Email Address' : 'Email Address *'}
-                    value={donorEmail}
-                    onChange={(e) => setDonorEmail(e.target.value)}
-                    style={{
-                      padding: '15px',
-                      borderRadius: '12px',
-                      border: `2px solid ${!isAnonymous && !donorEmail.trim() ? '#f0a0a0' : '#e0e0e0'}`,
-                      fontSize: '15px',
-                      outline: 'none',
-                    }}
-                  />
-                  {!isAnonymous && (
-                    <p style={{ fontSize: '12px', color: '#999', margin: '-8px 0 0 0' }}>* Required fields</p>
-                  )}
-                  <textarea
-                    placeholder="Leave a message (optional)"
-                    rows={3}
-                    value={donorMessage}
-                    onChange={(e) => setDonorMessage(e.target.value)}
-                    style={{
-                      padding: '15px',
-                      borderRadius: '12px',
-                      border: '2px solid #e0e0e0',
-                      fontSize: '15px',
-                      outline: 'none',
-                      resize: 'none',
-                      fontFamily: 'inherit',
-                    }}
-                  />
-
-                  <label style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    fontSize: '14px',
-                    color: '#6b7280',
-                    cursor: 'pointer',
-                  }}>
-                    <input
-                      type="checkbox"
-                      checked={isAnonymous}
-                      onChange={(e) => setIsAnonymous(e.target.checked)}
-                      style={{ width: '18px', height: '18px' }}
-                    />
-                    Make my donation anonymous
-                  </label>
-                </div>
+                ))}
               </div>
             </div>
 
-            {/* Submit Button */}
-            <button
-              className="donate-btn"
-              onClick={() => isDonationFormValid() && setShowPaymentModal(true)}
-              disabled={!isDonationFormValid()}
-              style={{
-                width: '100%',
-                marginTop: '30px',
-                backgroundColor: isDonationFormValid() ? '#083A85' : '#b0b0b0',
-                color: '#fff',
-                padding: '18px',
-                borderRadius: '15px',
-                border: 'none',
-                fontSize: '16px',
-                fontWeight: 600,
-                cursor: isDonationFormValid() ? 'pointer' : 'not-allowed',
-                transition: 'all 0.3s ease',
-                boxShadow: isDonationFormValid() ? '0 5px 20px rgba(8, 58, 133, 0.3)' : 'none',
-                opacity: isDonationFormValid() ? 1 : 0.7,
-              }}
-            >
+            {/* Amount grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', marginBottom: '12px' }}>
+              {tierAmounts.map((amountRWF, index) => (
+                <AmountButton key={amountRWF} label={formatCurrency(displayAmounts[index], currency)}
+                  isSelected={selectedAmount === amountRWF && !customAmount}
+                  onClick={() => { setSelectedAmount(amountRWF); setCustomAmount(''); }} />
+              ))}
+            </div>
+
+            {/* Custom amount */}
+            <div style={{ display: 'flex', alignItems: 'center', border: '1.5px solid #e2e8f0', borderRadius: '10px', padding: '0 12px', marginBottom: '12px' }}>
+              <span style={{ fontSize: '15px', color: '#64748b', fontWeight: 600, marginRight: '4px' }}>
+                {currency === 'RWF' ? '' : getCurrencyConfig(currency).symbol}
+              </span>
+              <input type="number" value={customAmount} onChange={(e) => { setCustomAmount(e.target.value); setSelectedAmount(0); }}
+                placeholder="Custom amount" style={{ flex: 1, border: 'none', outline: 'none', padding: '11px 8px', fontSize: '15px', fontWeight: 500 }} />
+              {currency === 'RWF' && <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 600 }}>RWF</span>}
+            </div>
+
+            {/* Frequency */}
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+              {(['one-time', 'monthly'] as const).map((freq) => (
+                <button key={freq} onClick={() => setDonationFrequency(freq)}
+                  style={{ flex: 1, padding: '9px', borderRadius: '8px', border: donationFrequency === freq ? '1.5px solid #083A85' : '1.5px solid #e2e8f0', backgroundColor: donationFrequency === freq ? '#083A85' : '#fff', color: donationFrequency === freq ? '#fff' : '#64748b', fontSize: '13px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}>
+                  {freq === 'one-time' ? 'One-time' : 'Monthly'}
+                </button>
+              ))}
+            </div>
+
+            {/* Divider */}
+            <div style={{ borderTop: '1px solid #e2e8f0', margin: '0 0 14px' }} />
+
+            {/* Donor info */}
+            <h3 style={{ fontSize: '15px', fontWeight: 600, color: '#1a1a2e', margin: '0 0 10px' }}>Your Information</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <input type="text" placeholder={isAnonymous ? 'First Name' : 'First Name *'} value={donorFirstName} onChange={(e) => setDonorFirstName(e.target.value)}
+                  style={{ flex: 1, padding: '11px 12px', borderRadius: '10px', border: `1.5px solid ${!isAnonymous && !donorFirstName.trim() ? '#f0a0a0' : '#e2e8f0'}`, fontSize: '14px', outline: 'none' }} />
+                <input type="text" placeholder={isAnonymous ? 'Last Name' : 'Last Name *'} value={donorLastName} onChange={(e) => setDonorLastName(e.target.value)}
+                  style={{ flex: 1, padding: '11px 12px', borderRadius: '10px', border: `1.5px solid ${!isAnonymous && !donorLastName.trim() ? '#f0a0a0' : '#e2e8f0'}`, fontSize: '14px', outline: 'none' }} />
+              </div>
+              <input type="email" placeholder={isAnonymous ? 'Email Address' : 'Email Address *'} value={donorEmail} onChange={(e) => setDonorEmail(e.target.value)}
+                style={{ padding: '11px 12px', borderRadius: '10px', border: `1.5px solid ${!isAnonymous && !donorEmail.trim() ? '#f0a0a0' : '#e2e8f0'}`, fontSize: '14px', outline: 'none' }} />
+              <textarea placeholder="Message (optional)" rows={2} value={donorMessage} onChange={(e) => setDonorMessage(e.target.value)}
+                style={{ padding: '11px 12px', borderRadius: '10px', border: '1.5px solid #e2e8f0', fontSize: '14px', outline: 'none', resize: 'none', fontFamily: 'inherit' }} />
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#64748b', cursor: 'pointer' }}>
+                <input type="checkbox" checked={isAnonymous} onChange={(e) => setIsAnonymous(e.target.checked)} style={{ width: '16px', height: '16px' }} />
+                Donate anonymously
+              </label>
+            </div>
+
+            {/* Submit */}
+            <button className="donate-btn" onClick={() => { if (isDonationFormValid()) { setShowDonationModal(false); handleDonation(); } }} disabled={!isDonationFormValid()}
+              style={{ width: '100%', marginTop: '16px', background: isDonationFormValid() ? 'linear-gradient(90deg, #083A85 0%, #0a4da3 100%)' : '#b0b0b0', color: '#fff', padding: '14px', borderRadius: '12px', border: 'none', fontSize: '15px', fontWeight: 600, cursor: isDonationFormValid() ? 'pointer' : 'not-allowed', transition: 'all 0.3s', boxShadow: isDonationFormValid() ? '0 4px 14px rgba(8,58,133,0.3)' : 'none', opacity: isDonationFormValid() ? 1 : 0.7 }}
+              onMouseEnter={(e) => { if (isDonationFormValid()) { e.currentTarget.style.background = 'linear-gradient(90deg, #052559 0%, #083A85 100%)'; e.currentTarget.style.transform = 'translateY(-1px)'; } }}
+              onMouseLeave={(e) => { if (isDonationFormValid()) { e.currentTarget.style.background = 'linear-gradient(90deg, #083A85 0%, #0a4da3 100%)'; e.currentTarget.style.transform = 'translateY(0)'; } }}>
               Donate {formatCurrency(getDisplayAmount(), currency)} Now
             </button>
 
             {/* Trust badges */}
-            <div className="trust-badges" style={{
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              gap: '30px',
-              marginTop: '25px',
-              paddingTop: '25px',
-              borderTop: '1px solid #e0e0e0',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#6b7280', fontSize: '13px' }}>
-                <i className="bi bi-lock-fill" style={{ fontSize: '14px' }} />
-                Secure Payment
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#6b7280', fontSize: '13px' }}>
-                <i className="bi bi-shield-check" style={{ fontSize: '14px' }} />
-                100% Tax Deductible
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#6b7280', fontSize: '13px' }}>
-                <i className="bi bi-check-circle-fill" style={{ fontSize: '14px' }} />
-                Verified Nonprofit
-              </div>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginTop: '14px', paddingTop: '14px', borderTop: '1px solid #e2e8f0' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#64748b', fontSize: '11px' }}><i className="bi bi-lock-fill" style={{ fontSize: '12px' }} />Secure</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#64748b', fontSize: '11px' }}><i className="bi bi-shield-check" style={{ fontSize: '12px' }} />Tax Deductible</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#64748b', fontSize: '11px' }}><i className="bi bi-check-circle-fill" style={{ fontSize: '12px' }} />Verified</div>
             </div>
           </div>
         </div>
-      </section>
+        </div>
+      )}
 
       {/* Call to Action Section */}
       <section style={{
@@ -1588,16 +1372,15 @@ const Donations = () => {
             marginBottom: '18px',
             lineHeight: 1.1,
           }}>
-            <span style={{ color: '#083A85' }}>Together, We Can Create</span>
+            <span style={{ background: 'linear-gradient(90deg, #8B5CF6 0%, #FF6B6B 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Together, We Can Create</span>
             <br />
             <span style={{ color: '#1a1a2e' }}>Lasting Change</span>
           </h2>
 
           <p style={{
             fontSize: '18px',
-            color: '#374151',
+            color: '#1a1a2e',
             lineHeight: 1.7,
-            marginBottom: '35px',
             maxWidth: '600px',
             margin: '0 auto 35px',
           }}>
@@ -1611,9 +1394,9 @@ const Donations = () => {
             flexWrap: 'wrap',
           }}>
             <button
-              onClick={() => document.getElementById('donate-section')?.scrollIntoView({ behavior: 'smooth' })}
+              onClick={() => setShowDonationModal(true)}
               style={{
-                backgroundColor: '#083A85',
+                background: 'linear-gradient(90deg, #083A85 0%, #0a4da3 100%)',
                 color: '#fff',
                 padding: '12px 32px',
                 borderRadius: '12px',
@@ -1624,12 +1407,11 @@ const Donations = () => {
                 transition: 'all 0.3s ease',
                 boxShadow: '0 4px 14px rgba(8, 58, 133, 0.3)',
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 20px rgba(8,58,133,0.4)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(8,58,133,0.3)'; }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'linear-gradient(90deg, #052559 0%, #083A85 100%)'; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 20px rgba(8,58,133,0.4)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'linear-gradient(90deg, #083A85 0%, #0a4da3 100%)'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(8,58,133,0.3)'; }}
             >
               Start Donating
             </button>
-
           </div>
         </div>
       </section>
@@ -1686,7 +1468,7 @@ const Donations = () => {
                 right: 'clamp(12px, 3vw, 20px)',
                 background: '#f3f4f6',
                 border: 'none',
-                color: '#6b7280',
+                color: '#64748b',
                 cursor: 'pointer',
                 fontSize: '18px',
                 padding: '10px',
@@ -1699,7 +1481,7 @@ const Donations = () => {
                 borderRadius: '50%'
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#e5e7eb';
+                e.currentTarget.style.backgroundColor = '#e2e8f0';
                 e.currentTarget.style.transform = 'translateY(-2px)';
               }}
               onMouseLeave={(e) => {
@@ -1727,7 +1509,7 @@ const Donations = () => {
               </h2>
               <p style={{
                 fontSize: '14px',
-                color: '#6b7280',
+                color: '#64748b',
                 margin: 0,
               }}>
                 You're donating <strong style={{ color: '#083A85' }}>{formatCurrency(getDisplayAmount(), currency)}</strong> to <strong>{categories[activeCategory].title}</strong>
@@ -1757,7 +1539,7 @@ const Donations = () => {
                 width: '100%',
                 padding: '16px 24px',
                 background: (donationLoading || getDisplayAmount() <= 0)
-                  ? '#e0e0e0'
+                  ? '#e2e8f0'
                   : 'linear-gradient(135deg, #083A85 0%, #0a4da3 100%)',
                 border: 'none',
                 borderRadius: '14px',

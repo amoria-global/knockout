@@ -355,8 +355,9 @@ const AmoriaKNavbar = () => {
   };
 
   return (
+    <>
     <nav
-      className="sticky top-0 z-50 transition-all duration-300"
+      className="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
       style={{
         fontFamily: "'Pragati Narrow', sans-serif",
         backgroundColor: isScrolled ? 'rgba(255, 255, 255, 0.85)' : '#DBDBDB',
@@ -696,27 +697,24 @@ const AmoriaKNavbar = () => {
           transition: opacity 0.3s ease, box-shadow 0.3s ease;
         }
 
-        .nav-logo-group:hover .nav-logo-icon {
-          animation: logo-hover-glow 1.2s ease-in-out infinite;
-        }
-
-        .nav-logo-group:hover .nav-logo-text {
-          animation: neon-glow-pulse 2s ease-in-out infinite;
-          letter-spacing: 1px;
-        }
-
-        .nav-logo-group:hover .nav-logo-dot {
-          opacity: 1;
-          animation: dot-blink 1.2s ease-in-out infinite;
-        }
       `}</style>
       {/* Main navbar container */}
       <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 2rem', overflow: 'visible', position: 'relative' }}>
-        <div className="flex items-center justify-between" style={{ height: '80px', paddingBottom: '8px', overflow: 'visible' }}>
-          {/* Left: Logo — icon above text */}
-          <Link href="/" onClick={handleLinkClick} className="flex-shrink-0" style={{ zIndex: 1, textDecoration: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1, marginLeft: isMobile ? '0' : '-1rem' }}>
-            <img src="/logo.png" alt="Connekyt Logo" style={{ width: isMobile ? '42px' : '54px', height: isMobile ? '42px' : '54px', objectFit: 'contain' }} />
-            <span className="font-bold" style={{ color: '#083A85', fontSize: isMobile ? '1.1rem' : '1.35rem', letterSpacing: '0.5px', marginTop: '-4px' }}>Connekyt</span>
+        <div className="flex items-center justify-between" style={{ height: '64px', overflow: 'visible' }}>
+          {/* Left: Logo with neon glow + blinking dot */}
+          <Link href="/" onClick={handleLinkClick} className="nav-logo-group flex-shrink-0" style={{ zIndex: 1, textDecoration: 'none' }}>
+            <img
+              src="/logo.png"
+              alt="Connekyt Logo"
+              className="nav-logo-icon"
+              style={{ width: isMobile ? '36px' : '42px', height: isMobile ? '36px' : '42px', objectFit: 'contain', position: 'relative', top: '-6px', left: '-8px' }}
+            />
+            <span
+              className="nav-logo-text font-bold"
+              style={{ color: '#083A85', fontSize: isMobile ? '1.25rem' : '1.3rem', marginLeft: '-20px', letterSpacing: '0.3px' }}
+            >
+              onnekyt
+            </span>
           </Link>
 
           {/* Center: Navigation Links (Desktop) — glass pill, absolutely centered */}
@@ -1660,6 +1658,8 @@ const AmoriaKNavbar = () => {
           </div>
       </div>
     </nav>
+    <div style={{ height: '64px' }} />
+    </>
   );
 };
 
