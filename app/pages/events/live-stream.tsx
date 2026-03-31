@@ -125,6 +125,15 @@ const App = () => {
   const [mainEventIndex, setMainEventIndex] = useState(0);
   const mainEvent = events[mainEventIndex];
 
+  // Check if user already rated this event
+  useEffect(() => {
+    if (mainEvent?.id) {
+      const alreadyRated = localStorage.getItem(`rated_${mainEvent.id}`);
+      if (alreadyRated) setUserHasRated(true);
+      else setUserHasRated(false);
+    }
+  }, [mainEvent?.id]);
+
   // Blocked users (local only)
   const [blockedUsers, setBlockedUsers] = useState<Set<string>>(new Set());
   // Dynamic participants derived from chat messages
@@ -855,6 +864,9 @@ const App = () => {
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [ratingComment, setRatingComment] = useState("");
+  const [userHasRated, setUserHasRated] = useState(false);
+  const [ratingSubmitting, setRatingSubmitting] = useState(false);
+  const [ratingSuccess, setRatingSuccess] = useState(false);
   // Emoji reactions state
   const [activeReactions, setActiveReactions] = useState<Array<{ id: number; emoji: string; timestamp: number }>>([]);
   // Recording state
@@ -1873,13 +1885,14 @@ const App = () => {
     }
   };
 
-  // Toggle fullscreen
+  // Toggle fullscreen — iOS only supports fullscreen on <video> directly
   const toggleFullscreen = () => {
-    const videoContainer = videoRefs.current[mainEvent.id]?.parentElement;
+    const video = videoRefs.current[mainEvent.id];
+    const videoContainer = video?.parentElement;
     if (!videoContainer) return;
 
     if (!isFullscreen) {
-      // Enter fullscreen
+      // Enter fullscreen — try container first, fall back to video element (iOS)
       if (videoContainer.requestFullscreen) {
         videoContainer.requestFullscreen();
       } else if ((videoContainer as any).webkitRequestFullscreen) {
@@ -1888,6 +1901,9 @@ const App = () => {
         (videoContainer as any).mozRequestFullScreen();
       } else if ((videoContainer as any).msRequestFullscreen) {
         (videoContainer as any).msRequestFullscreen();
+      } else if (video && (video as any).webkitEnterFullscreen) {
+        // iOS Safari — only supports fullscreen on <video> element
+        (video as any).webkitEnterFullscreen();
       }
       setIsFullscreen(true);
     } else {
@@ -1900,6 +1916,8 @@ const App = () => {
         (document as any).mozCancelFullScreen();
       } else if ((document as any).msExitFullscreen) {
         (document as any).msExitFullscreen();
+      } else if (video && (video as any).webkitExitFullscreen) {
+        (video as any).webkitExitFullscreen();
       }
       setIsFullscreen(false);
     }
@@ -1933,16 +1951,32 @@ const App = () => {
       }
     };
 
+    // iOS video fullscreen events
+    const video = videoRefs.current[mainEvent?.id];
+    const handleiOSFullscreen = () => {
+      const presenting = (video as any)?.webkitDisplayingFullscreen;
+      setIsFullscreen(!!presenting);
+      setShowControls(true);
+    };
+
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
     document.addEventListener('mozfullscreenchange', handleFullscreenChange);
     document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+    if (video) {
+      video.addEventListener('webkitbeginfullscreen', handleiOSFullscreen);
+      video.addEventListener('webkitendfullscreen', handleiOSFullscreen);
+    }
 
     return () => {
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
       document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
       document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
       document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
+      if (video) {
+        video.removeEventListener('webkitbeginfullscreen', handleiOSFullscreen);
+        video.removeEventListener('webkitendfullscreen', handleiOSFullscreen);
+      }
     };
   }, []);
 
@@ -2137,12 +2171,10 @@ const App = () => {
 
   // Handle rating submission
   const handleSubmitRating = async () => {
-    if (rating === 0) {
-      return;
-    }
+    if (rating === 0 || userHasRated || ratingSubmitting) return;
 
+    setRatingSubmitting(true);
     try {
-      // Backend requires multipart/form-data for reviews
       const formData = new FormData();
       formData.append('eventId', mainEvent.id);
       formData.append('photographerId', mainEvent.photographerId);
@@ -2153,13 +2185,29 @@ const App = () => {
         API_ENDPOINTS.PUBLIC.SUBMIT_REVIEW,
         formData
       );
-    } catch {
-      // Silent fail — best effort
-    }
 
-    setShowRatingModal(false);
-    setRating(0);
-    setRatingComment('');
+      // Mark as rated in localStorage to prevent duplicate
+      localStorage.setItem(`rated_${mainEvent.id}`, 'true');
+      setUserHasRated(true);
+      setRatingSuccess(true);
+
+      // Show success briefly then close
+      setTimeout(() => {
+        setShowRatingModal(false);
+        setRating(0);
+        setRatingComment('');
+        setRatingSuccess(false);
+      }, 1500);
+    } catch {
+      // Even on error, prevent spam — mark as rated
+      localStorage.setItem(`rated_${mainEvent.id}`, 'true');
+      setUserHasRated(true);
+      setShowRatingModal(false);
+      setRating(0);
+      setRatingComment('');
+    } finally {
+      setRatingSubmitting(false);
+    }
   };
 
   // Start/Stop Recording
@@ -3636,32 +3684,32 @@ const App = () => {
                 </div>
               )}
 
-              {/* Viewer Count */}
-              <div
-                onClick={(e) => e.stopPropagation()}
-                style={{
-                  position: 'absolute',
-                  top: '16px',
-                  left: '16px',
-                  backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                  color: '#fff',
-                  padding: '6px 12px',
-                  borderRadius: '12px',
-                  fontSize: '13px',
-                  fontWeight: '600',
-                  zIndex: 10,
-                  backdropFilter: 'blur(10px)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  opacity: showControls ? 1 : 0,
-                  transform: showControls ? 'translateY(0)' : 'translateY(-20px)',
-                  transition: 'opacity 0.3s ease, transform 0.3s ease'
-                }}
-              >
-                <i className="bi bi-eye-fill"></i>
-                {mainEvent.viewers.toLocaleString()}
-              </div>
+              {/* Viewer Count — only shown when at least 1 viewer */}
+              {mainEvent.viewers > 0 && (
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  style={{
+                    position: 'absolute',
+                    top: '16px',
+                    left: '16px',
+                    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                    color: '#fff',
+                    padding: '6px 12px',
+                    borderRadius: '12px',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    zIndex: 10,
+                    backdropFilter: 'blur(10px)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    transition: 'opacity 0.3s ease'
+                  }}
+                >
+                  <i className="bi bi-eye-fill"></i>
+                  {mainEvent.viewers.toLocaleString()} watching
+                </div>
+              )}
 
               {/* Live Badge */}
               <div
@@ -4915,28 +4963,30 @@ const App = () => {
                   flexWrap: 'wrap'
                 }}>
                   <button
-                    onClick={() => setShowRatingModal(true)}
+                    onClick={() => { if (!userHasRated) setShowRatingModal(true); }}
+                    disabled={userHasRated}
                     style={{
-                      backgroundColor: '#03969c',
+                      backgroundColor: userHasRated ? '#065f10' : '#03969c',
                       color: '#fff',
                       fontWeight: '600',
                       padding: '10px 24px',
                       borderRadius: '16px',
                       fontSize: 'clamp(12px, 2.5vw, 13px)',
-                      border: 'none',
-                      cursor: 'pointer',
+                      border: userHasRated ? '1px solid #10b981' : 'none',
+                      cursor: userHasRated ? 'default' : 'pointer',
                       transition: 'all 0.2s',
                       display: 'flex',
                       alignItems: 'center',
                       gap: '6px',
                       minHeight: '40px',
-                      whiteSpace: 'nowrap'
+                      whiteSpace: 'nowrap',
+                      opacity: userHasRated ? 0.85 : 1
                     }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#027f83'}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#03969c'}
+                    onMouseEnter={(e) => { if (!userHasRated) e.currentTarget.style.backgroundColor = '#027f83'; }}
+                    onMouseLeave={(e) => { if (!userHasRated) e.currentTarget.style.backgroundColor = '#03969c'; }}
                   >
-                    <i className="bi bi-star-fill" style={{ fontSize: 'clamp(12px, 2.5vw, 14px)' }}></i>
-                    Rate this Live
+                    <i className={userHasRated ? "bi bi-check-circle-fill" : "bi bi-star-fill"} style={{ fontSize: 'clamp(12px, 2.5vw, 14px)' }}></i>
+                    {userHasRated ? 'Rated' : 'Rate this Live'}
                   </button>
 
                   {/* Add Event Button */}
@@ -5992,11 +6042,11 @@ const App = () => {
                   padding: '12px 24px',
                   borderRadius: '14px',
                   border: 'none',
-                  backgroundColor: rating === 0 ? '#4b5563' : '#03969c',
+                  backgroundColor: ratingSuccess ? '#065f10' : (rating === 0 || ratingSubmitting) ? '#4b5563' : '#03969c',
                   color: '#fff',
                   fontSize: 'clamp(13px, 3vw, 14px)',
                   fontWeight: '600',
-                  cursor: rating === 0 ? 'not-allowed' : 'pointer',
+                  cursor: (rating === 0 || ratingSubmitting || ratingSuccess) ? 'not-allowed' : 'pointer',
                   transition: 'all 0.2s',
                   display: 'flex',
                   alignItems: 'center',
@@ -6008,15 +6058,20 @@ const App = () => {
                   maxWidth: '180px'
                 }}
                 onMouseEnter={(e) => {
-                  if (rating > 0) e.currentTarget.style.backgroundColor = '#027f83';
+                  if (rating > 0 && !ratingSubmitting && !ratingSuccess) e.currentTarget.style.backgroundColor = '#027f83';
                 }}
                 onMouseLeave={(e) => {
-                  if (rating > 0) e.currentTarget.style.backgroundColor = '#03969c';
+                  if (rating > 0 && !ratingSubmitting && !ratingSuccess) e.currentTarget.style.backgroundColor = '#03969c';
                 }}
-                disabled={rating === 0}
+                disabled={rating === 0 || ratingSubmitting || ratingSuccess}
               >
-                <i className="bi bi-send-fill" style={{ fontSize: 'clamp(12px, 3vw, 14px)' }}></i>
-                Submit Rating
+                {ratingSuccess ? (
+                  <><i className="bi bi-check-circle-fill" style={{ fontSize: 'clamp(12px, 3vw, 14px)' }}></i> Thank you!</>
+                ) : ratingSubmitting ? (
+                  <><div style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'authSpin 0.8s linear infinite' }} /> Submitting...</>
+                ) : (
+                  <><i className="bi bi-send-fill" style={{ fontSize: 'clamp(12px, 3vw, 14px)' }}></i> Submit Rating</>
+                )}
               </button>
             </div>
           </div>
