@@ -20,6 +20,7 @@ export interface SignupRequest {
   phone: string;
   customerType: string; // Backend expects 'customerType', not 'userType'
   password: string;
+  invitedBy?: string; // Inviter's customer ID (photographer invite flow)
 }
 
 export interface SignupResponse {

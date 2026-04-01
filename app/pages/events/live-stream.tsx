@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useSearchParams, useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import Hls from 'hls.js';
+import { WHEPClient } from '@/lib/streaming/WHEPClient';
 import { getCurrencies, type Currency as APICurrency } from '@/lib/APIs/public';
 import { recordTip, recordStreamingPayment } from '@/lib/APIs/payments/route';
 import { initiateXentriPayStreaming, pollXentriPayStatus, type XentriPayStatusResponse } from '@/lib/APIs/payments/xentripay';
@@ -39,7 +39,7 @@ interface EventStream {
   viewers: number;
   startTime: string;
   messages: Message[];
-  hlsManifestUrl?: string;
+  whepUrl?: string;
   eventStatus?: string;
   streamType?: 'entry_fee' | 'invite_token' | null;
   streamFee?: number | null;
@@ -115,7 +115,7 @@ const App = () => {
       category: "",
       videoSrc: "",
       streamId: initialId,
-      hlsManifestUrl: undefined,
+      whepUrl: undefined,
       startTime: "",
       messages: [],
     }
@@ -206,7 +206,7 @@ const App = () => {
           customerType: d.customerType || 'Viewer',
         }, d.token!);
         setShowAuthModal(false);
-        // Reload to refetch event with auth — backend returns hlsManifestUrl + hasPurchasedAccess for paid viewers
+        // Reload to refetch event with auth — backend returns whepUrl + hasPurchasedAccess for paid viewers
         window.location.reload();
       } else {
         setAuthError(res.data?.message || res.error || 'Incorrect email or password. Please try again.');
@@ -344,7 +344,7 @@ const App = () => {
             photographerId: (ev.photographerId as string) || prev[0].photographerId,
             photographerAvatar: ((ev.photographer as Record<string, unknown>)?.profilePicture as string) || undefined,
             category: (ev.eventType as string) || (ev.category as string) || prev[0].category,
-            hlsManifestUrl: (ev.hlsManifestUrl as string) || undefined,
+            whepUrl: (ev.whepUrl as string) || undefined,
             streamId: eventId || (ev.liveInputId as string) || prev[0].streamId,
             eventStatus: (ev.eventStatus as string) || undefined,
             streamType: (ev.streamType as 'entry_fee' | 'invite_token') ?? null,
@@ -363,7 +363,7 @@ const App = () => {
 
 
   // Stream access gate — determine flow based on streamType
-  // entry_fee: backend already guards hlsManifestUrl (nulls it for unpaid viewers)
+  // entry_fee: backend already guards whepUrl (nulls it for unpaid viewers)
   // invite_token: backend fix pending — frontend must validate token
   // paid=true param: viewer came from join-package/join-event after completing flow
   useEffect(() => {
@@ -377,14 +377,14 @@ const App = () => {
     // Verify with backend to prevent spoofing
     if (paid) {
       if (isAuthenticated) {
-        // Check backend — hlsManifestUrl is only returned for paid viewers
-        if (mainEvent.hlsManifestUrl) {
+        // Check backend — whepUrl is only returned for paid viewers
+        if (mainEvent.whepUrl) {
           setStreamAccessGranted(true);
         }
-        // If hlsManifestUrl is null, the viewer hasn't actually paid — show payment gate
+        // If whepUrl is null, the viewer hasn't actually paid — show payment gate
       } else {
         // Viewer clicked email link on unlogged-in device — show login modal
-        // After login, the useEffect will re-run and check hlsManifestUrl
+        // After login, the useEffect will re-run and check whepUrl
         setAuthStep('login');
         setAuthError('');
         setShowAuthModal(true);
@@ -393,10 +393,10 @@ const App = () => {
     }
 
     if (type === 'entry_fee') {
-      // Backend guards hlsManifestUrl for entry_fee streams:
-      // authenticated + paid → hlsManifestUrl is populated
-      // unauthenticated or unpaid → hlsManifestUrl is null
-      if (isAuthenticated && mainEvent.hlsManifestUrl) {
+      // Backend guards whepUrl for entry_fee streams:
+      // authenticated + paid → whepUrl is populated
+      // unauthenticated or unpaid → whepUrl is null
+      if (isAuthenticated && mainEvent.whepUrl) {
         setStreamAccessGranted(true);
       }
       // Otherwise, "Purchase Access" overlay will show
@@ -412,12 +412,12 @@ const App = () => {
           setInviteTokenLoading(true);
           try {
             const res = await requestStreamAccess(mainEvent.id!, token, username || 'Viewer');
-            if (res.success && res.data?.hlsManifestUrl) {
+            if (res.success && res.data?.whepUrl) {
               // Persist token so viewer doesn't need to re-enter on return
               localStorage.setItem(`streamToken_${mainEvent.id}`, token);
               setEvents(prev => [{
                 ...prev[0],
-                hlsManifestUrl: res.data!.hlsManifestUrl,
+                whepUrl: res.data!.whepUrl,
               }, ...prev.slice(1)]);
               setStreamAccessGranted(true);
             } else {
@@ -446,7 +446,7 @@ const App = () => {
       setStreamAccessGranted(true);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mainEvent?.id, mainEvent?.streamType, mainEvent?.streamFee, mainEvent?.hasInviteCode, mainEvent?.title, mainEvent?.hlsManifestUrl, isAuthenticated]);
+  }, [mainEvent?.id, mainEvent?.streamType, mainEvent?.streamFee, mainEvent?.hasInviteCode, mainEvent?.title, mainEvent?.whepUrl, isAuthenticated]);
 
   // Handle invite token submission (username auto-filled from auth profile)
   const handleInviteTokenSubmit = async () => {
@@ -456,12 +456,12 @@ const App = () => {
     setInviteTokenError('');
     try {
       const res = await requestStreamAccess(mainEvent.id, inviteTokenInput.trim(), username || 'Viewer');
-      if (res.success && res.data?.hlsManifestUrl) {
+      if (res.success && res.data?.whepUrl) {
         // Persist so viewer doesn't need to re-enter on return
         localStorage.setItem(`streamToken_${mainEvent.id}`, inviteTokenInput.trim());
         setEvents(prev => [{
           ...prev[0],
-          hlsManifestUrl: res.data!.hlsManifestUrl,
+          whepUrl: res.data!.whepUrl,
         }, ...prev.slice(1)]);
         setStreamAccessGranted(true);
         setShowInviteTokenModal(false);
@@ -489,7 +489,7 @@ const App = () => {
         if (response.success && response.data) {
           const ev = response.data as Record<string, unknown>;
           const newStatus = ((ev.eventStatus as string) || '').toUpperCase();
-          const newHlsUrl = (ev.hlsManifestUrl as string) || undefined;
+          const newWhepUrl = (ev.whepUrl as string) || undefined;
 
           setEvents(prev => {
             const current = prev[0];
@@ -507,11 +507,11 @@ const App = () => {
             }
 
             // Only update if something relevant changed
-            if (current.eventStatus === (ev.eventStatus as string) && current.hlsManifestUrl === newHlsUrl) return prev;
+            if (current.eventStatus === (ev.eventStatus as string) && current.whepUrl === newWhepUrl) return prev;
             return [{
               ...current,
               eventStatus: (ev.eventStatus as string) || undefined,
-              hlsManifestUrl: newHlsUrl,
+              whepUrl: newWhepUrl,
             }, ...prev.slice(1)];
           });
         }
@@ -671,108 +671,75 @@ const App = () => {
     }
   }, [mainEvent?.messages?.length]);
 
-  // Initialize (or reinitialize) HLS player when hlsManifestUrl becomes available or changes
+  // Initialize WHEP (WebRTC) player — sub-second latency playback
   useEffect(() => {
-    const hlsUrl = mainEvent?.hlsManifestUrl;
+    const whepUrl = mainEvent?.whepUrl;
     const eventId = mainEvent?.id;
-    if (!hlsUrl || !eventId) {
+    if (!whepUrl || !eventId) {
       return;
     }
 
     let cancelled = false;
     let retryTimer: ReturnType<typeof setTimeout> | null = null;
 
-    const initHls = (attempt = 0) => {
+    const initPlayer = (attempt = 0) => {
       if (cancelled) return;
       const videoEl = videoRefs.current[eventId];
       if (!videoEl) {
-        // Video element not mounted yet — retry up to 10 times (2s total)
         if (attempt < 10) {
-          retryTimer = setTimeout(() => initHls(attempt + 1), 200);
-        } else {
+          retryTimer = setTimeout(() => initPlayer(attempt + 1), 200);
         }
         return;
       }
 
-
-      // Destroy existing HLS instance for this event
-      const existing = hlsInstancesRef.current[eventId];
+      // Destroy existing WHEP instance
+      const existing = whepInstancesRef.current[eventId];
       if (existing) {
         existing.destroy();
-        hlsInstancesRef.current[eventId] = null;
+        whepInstancesRef.current[eventId] = null;
       }
 
-      if (Hls.isSupported()) {
-        const hls = new Hls({
-          lowLatencyMode: true,
-          liveSyncDurationCount: 3,
-          liveMaxLatencyDurationCount: 6,
-          enableWorker: true,
-        });
-        hls.loadSource(hlsUrl);
-        hls.attachMedia(videoEl);
-        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+      // Set volume from saved preference
+      const savedVol = volumeRef.current[eventId] ?? getSavedVolume();
+      videoEl.volume = savedVol / 100;
+      volumeRef.current[eventId] = savedVol;
+      videoEl.muted = true;
+
+      // Connect via WHEP (WebRTC)
+      const whepClient = new WHEPClient(whepUrl, videoEl);
+      whepInstancesRef.current[eventId] = whepClient;
+
+      // Autoplay when stream attaches
+      videoEl.onloadedmetadata = () => {
+        if (cancelled) return;
+        videoEl.play().then(() => {
           if (cancelled) return;
-
-          // Set volume from saved preference
-          const savedVol = volumeRef.current[eventId] ?? getSavedVolume();
-          videoEl.volume = savedVol / 100;
-          volumeRef.current[eventId] = savedVol;
-          // Must be muted for autoplay to work (browser policy)
-          videoEl.muted = true;
-          videoEl.play().then(() => {
-            if (cancelled) return;
-            setPlaybackState(prev => ({
-              ...prev,
-              [eventId]: {
-                ...prev[eventId],
-                isPlaying: true,
-                isMuted: true,
-                volume: savedVol,
-              }
-            }));
-          }).catch(() => {});
-        });
-        hls.on(Hls.Events.ERROR, (_e, data) => {
-          if (!data.fatal) {
-            // Non-fatal: HLS.js recovers automatically (fragLoadError, bufferStalledError, etc.)
-            return;
-          }
-          console.error(`[HLS Fatal]`, data.type, data.details);
-          switch (data.type) {
-            case Hls.ErrorTypes.NETWORK_ERROR:
-              hls.startLoad();
-              break;
-            case Hls.ErrorTypes.MEDIA_ERROR:
-              hls.recoverMediaError();
-              break;
-            default:
-              console.error('[HLS Fatal] Unrecoverable error, destroying instance');
-              hls.destroy();
-              break;
-          }
-        });
-        hlsInstancesRef.current[eventId] = hls;
-      } else if (videoEl.canPlayType('application/vnd.apple.mpegurl')) {
-        // Safari — native HLS support
-        videoEl.src = hlsUrl;
-        videoEl.play().catch(() => {});
-      }
+          setPlaybackState(prev => ({
+            ...prev,
+            [eventId]: {
+              ...prev[eventId],
+              isPlaying: true,
+              isMuted: true,
+              volume: savedVol,
+            }
+          }));
+        }).catch(() => {});
+      };
     };
 
-    initHls();
+    initPlayer();
 
     return () => {
       cancelled = true;
       if (retryTimer) clearTimeout(retryTimer);
-      const instance = hlsInstancesRef.current[eventId];
-      if (instance) {
-        instance.destroy();
-        hlsInstancesRef.current[eventId] = null;
+      const whepInstance = whepInstancesRef.current[eventId];
+      if (whepInstance) {
+        whepInstance.destroy();
+        whepInstancesRef.current[eventId] = null;
       }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mainEvent?.hlsManifestUrl, mainEvent?.id]);
+  }, [mainEvent?.whepUrl, mainEvent?.id]);
 
   // Swap animation state
   const [isSwapping, setIsSwapping] = useState(false);
@@ -799,7 +766,7 @@ const App = () => {
   // Refs for the video elements - one per event
   const videoRefs = useRef<{ [key: string]: HTMLVideoElement | null }>({});
   // HLS.js instances - one per event
-  const hlsInstancesRef = useRef<{ [key: string]: Hls | null }>({});
+  const whepInstancesRef = useRef<{ [key: string]: WHEPClient | null }>({});
   // Stable ref callback for main video — only stores element, no side effects
   const mainVideoRefCallback = useCallback((el: HTMLVideoElement | null) => {
     const id = events[mainEventIndex]?.id;
@@ -2103,23 +2070,9 @@ const App = () => {
     };
   }, [playbackState, mainEvent.id, isFullscreen]);
 
-  // Toggle low-latency mode — trades latency for smoother playback
+  // Low-latency toggle — WebRTC is always sub-second, no toggle needed
   const handleLowLatencyToggle = () => {
-    const next = !lowLatencyMode;
-    setLowLatencyMode(next);
-    const hls = hlsInstancesRef.current[mainEvent.id];
-    if (!hls) return;
-    if (next) {
-      // Low latency: stay close to live edge, smaller buffer
-      hls.config.liveSyncDurationCount = 3;
-      hls.config.liveMaxLatencyDurationCount = 6;
-      hls.config.lowLatencyMode = true;
-    } else {
-      // Smooth playback: larger buffer, fewer stalls
-      hls.config.liveSyncDurationCount = 6;
-      hls.config.liveMaxLatencyDurationCount = 12;
-      hls.config.lowLatencyMode = false;
-    }
+    setLowLatencyMode(!lowLatencyMode);
   };
 
   // Handle report issue — sends via contact-us API
@@ -3415,7 +3368,7 @@ const App = () => {
                         </button>
                       </>
                     ) : isAuthenticated && mainEvent.hasPurchasedAccess ? (
-                      // Paid and logged in but hlsManifestUrl is null (stream not started yet or loading)
+                      // Paid and logged in but whepUrl is null (stream not started yet or loading)
                       <>
                         <i className="bi bi-hourglass-split" style={{ fontSize: '42px', color: '#10b981' }}></i>
                         <h3 style={{ color: '#fff', fontSize: '20px', fontWeight: '600', margin: 0 }}>
@@ -3582,11 +3535,11 @@ const App = () => {
                   };
                 }}
               >
-                {!mainEvent.hlsManifestUrl && mainEvent.videoSrc && <source src={mainEvent.videoSrc} type="video/mp4" />}
+                {!mainEvent.whepUrl && mainEvent.videoSrc && <source src={mainEvent.videoSrc} type="video/mp4" />}
               </video>
 
               {/* Stream starting overlay — ONGOING but HLS URL not yet available */}
-              {mainEvent.eventStatus === 'ONGOING' && !mainEvent.hlsManifestUrl && (
+              {mainEvent.eventStatus === 'ONGOING' && !mainEvent.whepUrl && (
                 <div style={{
                   position: 'absolute',
                   inset: 0,
@@ -3662,7 +3615,7 @@ const App = () => {
               )}
 
               {/* Scheduled overlay — stream not yet started */}
-              {streamOverlay === 'scheduled' && !mainEvent.hlsManifestUrl && (
+              {streamOverlay === 'scheduled' && !mainEvent.whepUrl && (
                 <div style={{
                   position: 'absolute',
                   inset: 0,
@@ -4716,25 +4669,19 @@ const App = () => {
                               ref={(el) => {
                                 if (el) {
                                   videoRefs.current[event.id] = el;
-                                  // Initialize HLS for mini-player if URL is available
-                                  if (event.hlsManifestUrl) {
-                                    const existing = hlsInstancesRef.current[event.id];
+                                  // Initialize WHEP for mini-player if URL is available
+                                  if (event.whepUrl) {
+                                    const existing = whepInstancesRef.current[event.id];
                                     if (existing) existing.destroy();
-                                    if (Hls.isSupported()) {
-                                      const hls = new Hls({ enableWorker: false });
-                                      hls.loadSource(event.hlsManifestUrl);
-                                      hls.attachMedia(el);
-                                      hlsInstancesRef.current[event.id] = hls;
-                                    } else if (el.canPlayType('application/vnd.apple.mpegurl')) {
-                                      el.src = event.hlsManifestUrl;
-                                    }
+                                    const whepClient = new WHEPClient(event.whepUrl, el);
+                                    whepInstancesRef.current[event.id] = whepClient;
                                   }
                                 } else {
-                                  // Clean up HLS instance and ref when element unmounts
-                                  const hls = hlsInstancesRef.current[event.id];
-                                  if (hls) {
-                                    hls.destroy();
-                                    hlsInstancesRef.current[event.id] = null;
+                                  // Clean up WHEP instance and ref when element unmounts
+                                  const whep = whepInstancesRef.current[event.id];
+                                  if (whep) {
+                                    whep.destroy();
+                                    whepInstancesRef.current[event.id] = null;
                                   }
                                   delete videoRefs.current[event.id];
                                 }
@@ -4747,7 +4694,7 @@ const App = () => {
                               muted={true}
                               loop
                             >
-                              {!event.hlsManifestUrl && <source src={event.videoSrc} type="video/mp4" />}
+                              {!event.whepUrl && <source src={event.videoSrc} type="video/mp4" />}
                             </video>
 
                             {/* Overlay */}

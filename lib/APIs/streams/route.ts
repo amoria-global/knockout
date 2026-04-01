@@ -240,7 +240,7 @@ export async function validateStreamToken(
 // --- Stream Access (invite token flow) ---
 
 export interface StreamAccessResponse {
-  hlsManifestUrl: string;
+  whepUrl: string;
   eventTitle?: string;
 }
 
