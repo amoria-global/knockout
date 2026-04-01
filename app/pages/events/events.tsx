@@ -392,7 +392,7 @@ const Events: React.FC = () => {
                 style={{
                   width: '100%',
                   padding: 'clamp(0.875rem, 2.5vw, 1rem) clamp(3rem, 8vw, 3.5rem) clamp(0.875rem, 2.5vw, 1rem) clamp(1.25rem, 3vw, 1.5rem)',
-                  borderRadius: '0.5rem',
+                  borderRadius: '10px',
                   boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
                   border: 'none',
                   fontSize: '1rem',
@@ -441,7 +441,7 @@ const Events: React.FC = () => {
                 style={{
                   width: '100%',
                   padding: 'clamp(0.5rem, 2vw, 0.625rem) clamp(0.75rem, 2.5vw, 1rem)',
-                  borderRadius: '0.5rem',
+                  borderRadius: '10px',
                   border: '2px solid rgba(255, 255, 255, 0.3)',
                   backgroundColor: 'rgba(255, 255, 255, 0.95)',
                   color: '#111827',
@@ -467,7 +467,7 @@ const Events: React.FC = () => {
                 style={{
                   width: '100%',
                   padding: 'clamp(0.5rem, 2vw, 0.625rem) clamp(0.75rem, 2.5vw, 1rem)',
-                  borderRadius: '0.5rem',
+                  borderRadius: '10px',
                   border: '2px solid rgba(255, 255, 255, 0.3)',
                   backgroundColor: 'rgba(255, 255, 255, 0.95)',
                   color: '#111827',
@@ -495,7 +495,7 @@ const Events: React.FC = () => {
                 style={{
                   width: '100%',
                   padding: 'clamp(0.5rem, 2vw, 0.625rem) clamp(0.75rem, 2.5vw, 1rem)',
-                  borderRadius: '0.5rem',
+                  borderRadius: '10px',
                   border: '2px solid rgba(255, 255, 255, 0.3)',
                   backgroundColor: 'rgba(255, 255, 255, 0.95)',
                   color: '#111827',
@@ -523,7 +523,7 @@ const Events: React.FC = () => {
                 style={{
                   width: '100%',
                   padding: 'clamp(0.5rem, 2vw, 0.625rem) clamp(0.75rem, 2.5vw, 1rem)',
-                  borderRadius: '0.5rem',
+                  borderRadius: '10px',
                   border: '2px solid rgba(255, 255, 255, 0.3)',
                   backgroundColor: 'rgba(255, 255, 255, 0.95)',
                   color: '#111827',
@@ -689,7 +689,7 @@ const Events: React.FC = () => {
               <button
                 onClick={fetchEvents}
                 style={{
-                  padding: '0.5rem 1.5rem', borderRadius: '0.5rem',
+                  padding: '0.5rem 1.5rem', borderRadius: '10px',
                   backgroundColor: '#083A85', color: '#fff', border: 'none',
                   cursor: 'pointer', fontWeight: '600'
                 }}
@@ -817,7 +817,7 @@ const Events: React.FC = () => {
                             border: `2px solid ${borderColor}`,
                             color: textColor,
                             padding: 'clamp(0.5rem, 2vw, 0.625rem) clamp(0.75rem, 2.5vw, 1rem)',
-                            borderRadius: '20px',
+                            borderRadius: '10px',
                             fontSize: '0.9rem',
                             fontWeight: '700',
                             textTransform: 'uppercase',
@@ -880,7 +880,7 @@ const Events: React.FC = () => {
                         border: `2.5px solid ${isEventLive(event) ? '#059669' : ((event.eventStatus || '').toUpperCase() === 'COMPLETED' || event.streamStatus === 'ended') ? '#4b5563' : '#083A85'}`,
                         color: '#FFFFFF',
                         padding: 'clamp(0.625rem, 2.5vw, 0.75rem) clamp(1rem, 3vw, 1.25rem)',
-                        borderRadius: '20px',
+                        borderRadius: '10px',
                         fontSize: '0.9rem',
                         fontWeight: '700',
                         textTransform: 'uppercase',
@@ -941,7 +941,7 @@ const Events: React.FC = () => {
                 disabled={currentPage === 1}
                 style={{
                   padding: 'clamp(0.4rem, 1.5vw, 0.5rem) clamp(0.75rem, 2vw, 1rem)',
-                  borderRadius: '0.5rem',
+                  borderRadius: '10px',
                   border: '1px solid #bab8b8',
                   backgroundColor: currentPage === 1 ? '#f3f4f6' : '#ffffff',
                   color: currentPage === 1 ? '#9ca3af' : '#111827',
@@ -1005,7 +1005,7 @@ const Events: React.FC = () => {
                       onClick={() => goToPage(page)}
                       style={{
                         padding: 'clamp(0.4rem, 1.5vw, 0.5rem) clamp(0.6rem, 1.5vw, 0.75rem)',
-                        borderRadius: '0.5rem',
+                        borderRadius: '10px',
                         border: currentPage === page ? '2px solid #083A85' : '1px solid #bab8b8',
                         backgroundColor: currentPage === page ? '#083A85' : '#ffffff',
                         color: currentPage === page ? '#ffffff' : '#111827',
@@ -1042,7 +1042,7 @@ const Events: React.FC = () => {
                 disabled={currentPage === totalPages}
                 style={{
                   padding: 'clamp(0.4rem, 1.5vw, 0.5rem) clamp(0.75rem, 2vw, 1rem)',
-                  borderRadius: '0.5rem',
+                  borderRadius: '10px',
                   border: '1px solid #bab8b8',
                   backgroundColor: currentPage === totalPages ? '#f3f4f6' : '#ffffff',
                   color: currentPage === totalPages ? '#9ca3af' : '#111827',
