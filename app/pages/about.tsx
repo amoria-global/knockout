@@ -455,13 +455,17 @@ const About = () => {
         // ── HALF EARTH: Scroll-driven globe rotation above footer ──
         const earthSection = earthSectionRef.current;
         if (earthSection) {
+          const isMobileView = window.innerWidth <= 480;
+          const isTabletView = window.innerWidth <= 768;
+          const pinDuration = isMobileView ? '+=100%' : isTabletView ? '+=200%' : '+=500%';
+
           ScrollTrigger.create({
             trigger: earthSection,
             start: 'top top',
-            end: '+=500%',
+            end: pinDuration,
             scrub: 0.5,
-            pin: true,
-            pinSpacing: true,
+            pin: !isMobileView,
+            pinSpacing: !isMobileView,
             onUpdate: (self) => {
               setEarthProgress(self.progress);
             },
@@ -476,7 +480,7 @@ const About = () => {
   }, []);
 
   return (
-    <div style={{ background: '#000', overflow: 'hidden' }}>
+    <div style={{ background: '#052047', overflow: 'hidden' }}>
       <style>{`
         /* ══════════════════════════════════════════════════
            PURE CSS 3D PARALLAX — "Looking Through a Window"
@@ -531,7 +535,7 @@ const About = () => {
           top: auto !important;
         }
 
-        /* ── Core Values 3D Book — EXACT copy of landing page CSS ── */
+        /* ── Core Values 3D Book ── */
         .cv-book-scene { perspective: 1800px; max-width: 1000px; margin: 0 auto; display: flex; justify-content: center; align-items: center; padding: 0 40px; }
         .cv-book-3d { width: 280px; height: 320px; position: relative; transform-style: preserve-3d; transform: rotateY(-5deg) rotateX(2deg); filter: drop-shadow(0 20px 30px rgba(0,0,0,0.18)) drop-shadow(0 8px 12px rgba(0,0,0,0.08)); margin-left: 280px; }
         .cv-book-cover { position: absolute; width: 100%; height: 100%; transform-style: preserve-3d; transform-origin: left center; z-index: 10; }
@@ -567,24 +571,29 @@ const About = () => {
         .cv-book-scroll-hint { text-align: center; margin-top: 14px; font-size: 13px; color: #94a3b8; font-weight: 500; }
         @media (max-width: 768px) {
           .cv-book-scene { padding: 0 16px; perspective: none !important; }
-          .cv-book-3d { width: 85vw !important; max-width: 400px; height: 55vh; max-height: 500px; margin-left: 0 !important; transform: none !important; filter: none !important; }
-          .cv-bp-front { padding: 28px 24px !important; }
+          .cv-book-3d { width: 85vw !important; max-width: 400px; height: 55vh; max-height: 500px; margin-left: 0 !important; transform: none !important; filter: none !important; transform-style: flat !important; }
+          /* Hide all page back faces and back cover completely */
+          .cv-bp-back { visibility: hidden !important; display: none !important; }
+          .cv-book-cover-back { visibility: hidden !important; display: none !important; }
+          .cv-book-back-cover { display: none !important; }
+          .cv-book-spine { display: none !important; }
+          .cv-book-page-edges { display: none !important; }
+          /* Ensure only front faces show — hide pages behind cover */
+          .cv-book-page { backface-visibility: hidden !important; -webkit-backface-visibility: hidden !important; overflow: hidden !important; }
+          .cv-book-page-face { backface-visibility: hidden !important; -webkit-backface-visibility: hidden !important; }
+          .cv-book-cover { z-index: 10 !important; backface-visibility: hidden !important; }
+          .cv-book-cover-face { border-radius: 4px 12px 12px 4px; backface-visibility: hidden !important; }
+          .cv-book-page-face { border-radius: 4px 12px 12px 4px; }
+          /* Front page styling */
+          .cv-bp-front { padding: 28px 24px !important; background: #fff !important; }
+          .cv-bp-front::before { width: 10px; }
           .cv-bp-front .bp-text h3 { font-size: 22px; }
           .cv-bp-front .bp-text p { font-size: 14px; max-width: 100% !important; }
           .cv-bp-front .bp-text .bp-line { width: 30px; height: 2px; }
+          /* Cover styling */
           .cv-book-cover-front h2 { font-size: 20px; }
           .cv-book-cover-front .cover-sub { font-size: 10px; margin-bottom: 16px; }
           .cv-book-cover-front { padding: 28px 24px; }
-          .cv-book-spine { display: none; }
-          .cv-book-page-edges { display: none; }
-          .cv-book-cover-back { visibility: hidden !important; }
-          .cv-book-cover { z-index: 10 !important; }
-          .cv-bp-front::before { width: 10px; }
-          .cv-book-page-face { border-radius: 4px 12px 12px 4px; }
-          .cv-book-cover-face { border-radius: 4px 12px 12px 4px; }
-          .cv-book-back-cover { border-radius: 4px 12px 12px 4px; padding: 24px; }
-          .cv-book-back-cover .back-logo { font-size: 14px; }
-          .cv-book-back-cover .back-tagline { font-size: 9px; }
         }
         @media (max-width: 480px) {
           .cv-book-3d { width: 90vw !important; max-width: 320px; height: 50vh; max-height: 420px; }
@@ -682,6 +691,8 @@ const About = () => {
         @media (max-width: 480px) {
           .journey-agenda { height: 380px; }
           .journey-card { padding: 20px 16px; }
+          .tm-row { gap: 6px !important; }
+          .smart-stats-grid { grid-template-columns: 1fr !important; gap: 8px !important; }
         }
 
         /* ── Mission & Vision Pinned Stacking ── */
@@ -742,21 +753,50 @@ const About = () => {
           .journey-grid { grid-template-columns: 1fr !important; }
           .mv-grid { grid-template-columns: 1fr !important; }
           .smart-sidebar { display: none !important; }
-          /* Stack text above/below the window on mobile */
-          .par-group:first-child {
-            flex-direction: column !important;
-            padding: 40px 20px !important;
-            gap: 28px !important;
+
+          /* Hero section — reposition text for mobile */
+          .hero-text-item {
+            max-width: 55% !important;
           }
-          .par-group:first-child .airplane-window {
-            order: 0;
+          .hero-tl {
+            top: clamp(70px, 12vh, 100px) !important;
+            left: 16px !important;
           }
-          .par-group:first-child > div[class="reveal"],
-          .par-group:first-child > div:not(.airplane-window):not([style*="position: absolute"]):not([style*="backgroundImage"]) {
-            position: relative !important;
-            inset: auto !important;
-            max-width: 100% !important;
-            text-align: center !important;
+          .hero-tr {
+            top: clamp(70px, 12vh, 100px) !important;
+            right: 16px !important;
+          }
+          .hero-bl {
+            bottom: clamp(30px, 5vh, 60px) !important;
+            left: 16px !important;
+            max-width: 50% !important;
+          }
+          .hero-br {
+            bottom: clamp(30px, 5vh, 60px) !important;
+            right: 16px !important;
+            max-width: 45% !important;
+          }
+
+          /* Hero overlay text — smaller on tablet */
+          .hero-overlay-text h1 {
+            font-size: clamp(28px, 5vw, 48px) !important;
+          }
+        }
+
+        @media (max-width: 480px) {
+          /* Hide bottom corner texts on small phones — they overlap the window */
+          .hero-bl, .hero-br {
+            display: none !important;
+          }
+          /* Tighten top text */
+          .hero-tl {
+            top: clamp(60px, 10vh, 80px) !important;
+            left: 12px !important;
+            max-width: 45% !important;
+          }
+          .hero-tr {
+            top: clamp(60px, 10vh, 80px) !important;
+            right: 12px !important;
           }
         }
       `}</style>
@@ -860,26 +900,26 @@ const About = () => {
           {/* ── TEXT ON THE CABIN WALL ── */}
 
           {/* Top-left: brand name */}
-          <div ref={el => { heroTextRefs.current[0] = el; }} className="hero-text-item" style={{ position: 'absolute', top: 'clamp(60px, 10vh, 120px)', left: 'clamp(24px, 5vw, 80px)', maxWidth: 'clamp(220px, 28vw, 400px)' }}>
+          <div ref={el => { heroTextRefs.current[0] = el; }} className="hero-text-item hero-tl" style={{ position: 'absolute', top: 'clamp(60px, 10vh, 120px)', left: 'clamp(24px, 5vw, 80px)', maxWidth: 'clamp(220px, 28vw, 400px)' }}>
             <h1 style={{ fontFamily: "'Georgia', 'Times New Roman', serif", fontStyle: 'italic', fontWeight: 400, fontSize: 'clamp(30px, 4.5vw, 56px)', lineHeight: 1.1, color: '#fff', margin: 0 }}>
               Amoria<br />Connekyt
             </h1>
           </div>
 
           {/* Top-right: label */}
-          <div ref={el => { heroTextRefs.current[1] = el; }} className="hero-text-item" style={{ position: 'absolute', top: 'clamp(60px, 10vh, 120px)', right: 'clamp(24px, 5vw, 80px)' }}>
+          <div ref={el => { heroTextRefs.current[1] = el; }} className="hero-text-item hero-tr" style={{ position: 'absolute', top: 'clamp(60px, 10vh, 120px)', right: 'clamp(24px, 5vw, 80px)' }}>
             <span style={{ fontSize: 'clamp(10px, 1.1vw, 14px)', fontWeight: 400, color: 'rgba(255,255,255,0.5)', letterSpacing: 1, textTransform: 'uppercase' }}>About Us</span>
           </div>
 
           {/* Bottom-left: description */}
-          <div ref={el => { heroTextRefs.current[2] = el; }} className="hero-text-item" style={{ position: 'absolute', bottom: 'clamp(50px, 8vh, 100px)', left: 'clamp(24px, 5vw, 80px)', maxWidth: 'clamp(200px, 22vw, 300px)' }}>
+          <div ref={el => { heroTextRefs.current[2] = el; }} className="hero-text-item hero-bl" style={{ position: 'absolute', bottom: 'clamp(50px, 8vh, 100px)', left: 'clamp(24px, 5vw, 80px)', maxWidth: 'clamp(200px, 22vw, 300px)' }}>
             <p style={{ fontSize: 'clamp(11px, 1.1vw, 14px)', fontWeight: 400, lineHeight: 1.7, color: 'rgba(255,255,255,0.5)', margin: 0 }}>
               A digital ecosystem connecting verified photographers and creative professionals with clients worldwide.
             </p>
           </div>
 
           {/* Bottom-right: slogan */}
-          <div ref={el => { heroTextRefs.current[3] = el; }} className="hero-text-item" style={{ position: 'absolute', bottom: 'clamp(50px, 8vh, 100px)', right: 'clamp(24px, 5vw, 80px)', maxWidth: 'clamp(220px, 30vw, 420px)', textAlign: 'right' }}>
+          <div ref={el => { heroTextRefs.current[3] = el; }} className="hero-text-item hero-br" style={{ position: 'absolute', bottom: 'clamp(50px, 8vh, 100px)', right: 'clamp(24px, 5vw, 80px)', maxWidth: 'clamp(220px, 30vw, 420px)', textAlign: 'right' }}>
             <SplitHoverText
               lines={['The Smart Way to Capture Life']}
               style={{ fontFamily: "'Georgia', 'Times New Roman', serif", fontWeight: 400, fontSize: 'clamp(24px, 3.5vw, 48px)', lineHeight: 1.15, color: '#fff', margin: 0, textAlign: 'right' as const }}
@@ -1044,7 +1084,7 @@ const About = () => {
               {/* Cover (very top) */}
               <div className="cv-book-cover" ref={cvCoverRef}>
                 <div className="cv-book-cover-face cv-book-cover-front">
-                  <h2 style={{ fontSize: 32, fontWeight: 900, color: '#fff', textAlign: 'center', lineHeight: 1.2, marginBottom: 14 }}>Our Core<br />Values</h2>
+                  <h2 style={{ fontSize: 'clamp(24px, 4vw, 32px)', fontWeight: 900, color: '#fff', textAlign: 'center', lineHeight: 1.2, marginBottom: 14 }}>Our Core<br />Values</h2>
                   <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.55)', textAlign: 'center', maxWidth: 280, lineHeight: 1.6, marginBottom: 32 }}>The principles that guide everything we build at Amoria Connekyt.</p>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>
                     <span>↓</span> Scroll to read
@@ -1065,7 +1105,7 @@ const About = () => {
         </div>
 
         {/* ━━━ JOURNEY — Scroll Agenda ━━━ */}
-        <div ref={journeyRef} className="par-group" style={{ minHeight: '100vh', background: '#f8fafc', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px' }}>
+        <div ref={journeyRef} className="par-group" style={{ minHeight: '100vh', background: '#f8fafc', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 'clamp(24px, 4vw, 40px) clamp(16px, 3vw, 24px)' }}>
 
           {/* Header */}
           <div style={{ textAlign: 'center', marginBottom: 12 }}>
@@ -1179,7 +1219,7 @@ const About = () => {
                 </div>
 
                 {/* Dashboard content */}
-                <div style={{ display: 'flex', gap: 0, minHeight: 360 }}>
+                <div style={{ display: 'flex', gap: 0, minHeight: 'clamp(280px, 40vw, 360px)' }}>
                   {/* Sidebar */}
                   <div className="smart-sidebar" style={{ width: 180, background: '#083A85', padding: '24px 16px', flexShrink: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 28 }}>
@@ -1192,7 +1232,7 @@ const About = () => {
                   </div>
 
                   {/* Main content */}
-                  <div style={{ flex: 1, padding: 24 }}>
+                  <div style={{ flex: 1, padding: 'clamp(12px, 2vw, 24px)' }}>
                     {/* Header */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
                       <div>
@@ -1252,13 +1292,13 @@ const About = () => {
             <div style={{ position: 'absolute', inset: 0, backgroundImage: 'url(/mock.png)', backgroundSize: 'cover', backgroundPosition: 'right center' }} />
           </div>
           <div className="par-base about-section" style={{ padding: 'clamp(12px, 2vw, 16px)', background: '#fff' }}>
-            <div className="reveal" style={{ position: 'relative', width: '100%', minHeight: 'clamp(350px, 50vw, 600px)', overflow: 'hidden', borderRadius: 24 }}>
+            <div className="reveal" style={{ position: 'relative', width: '100%', minHeight: 'clamp(300px, 50vw, 600px)', overflow: 'hidden', borderRadius: 'clamp(14px, 2vw, 24px)' }}>
               <div style={{ position: 'absolute', inset: 0, backgroundImage: 'url(/mock.png)', backgroundSize: 'cover', backgroundPosition: 'right center' }} />
-              <div style={{ position: 'relative', zIndex: 2, maxWidth: 1100, margin: '0 auto', padding: 'clamp(40px, 6vw, 80px) clamp(24px, 5vw, 60px)', display: 'flex', alignItems: 'center', minHeight: 'clamp(350px, 50vw, 600px)' }}>
+              <div style={{ position: 'relative', zIndex: 2, maxWidth: 1100, margin: '0 auto', padding: 'clamp(28px, 6vw, 80px) clamp(16px, 5vw, 60px)', display: 'flex', alignItems: 'center', minHeight: 'clamp(300px, 50vw, 600px)' }}>
                 <div style={{ maxWidth: 520 }}>
-                  <h2 style={{ fontSize: 'clamp(26px, 4vw, 50px)', fontWeight: 700, marginBottom: 18, color: '#fff', letterSpacing: '-0.02em' }}>Empowering creators to share their vision with the world.</h2>
-                  <p style={{ fontSize: 'clamp(14px, 1.5vw, 17px)', fontWeight: 400, lineHeight: 1.7, color: 'rgba(255,255,255,0.8)', marginBottom: 28 }}>Amoria Connekyt is built for photographers and creatives ready to showcase their work and connect with clients. Create your profile today and get started.</p>
-                  <a href="/user/auth/signup" style={{ display: 'inline-block', color: '#fff', fontSize: 15, fontWeight: 600, padding: '14px 32px', border: '2px solid #f5652c', borderRadius: 40, textDecoration: 'none', transition: 'all 0.3s' }}
+                  <h2 style={{ fontSize: 'clamp(22px, 4vw, 50px)', fontWeight: 700, marginBottom: 'clamp(12px, 2vw, 18px)', color: '#fff', letterSpacing: '-0.02em' }}>Empowering creators to share their vision with the world.</h2>
+                  <p style={{ fontSize: 'clamp(13px, 1.5vw, 17px)', fontWeight: 400, lineHeight: 1.7, color: 'rgba(255,255,255,0.8)', marginBottom: 'clamp(18px, 3vw, 28px)' }}>Amoria Connekyt is built for photographers and creatives ready to showcase their work and connect with clients. Create your profile today and get started.</p>
+                  <a href="/user/auth/signup" style={{ display: 'inline-block', color: '#fff', fontSize: 'clamp(13px, 1.2vw, 15px)', fontWeight: 600, padding: 'clamp(10px, 1.5vw, 14px) clamp(22px, 3vw, 32px)', border: '2px solid #f5652c', borderRadius: 40, textDecoration: 'none', transition: 'all 0.3s' }}
                     onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.transform = 'translateY(-3px)'; }}
                     onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.transform = 'translateY(0)'; }}
                   >Get Started</a>
@@ -1272,6 +1312,7 @@ const About = () => {
         {/* ── Half Earth — scroll-driven globe rotation ── */}
         <style>{`
           .earth-section { position: relative; width: 100%; height: 100dvh; background: linear-gradient(to bottom, #083A85 0%, #052047 60%, #052047 100%); overflow: hidden; }
+          .about-footer-wrap .footer-container { margin-top: 0 !important; }
           .earth-overlay { position: absolute; top: 0; left: 0; right: 0; height: 55%; background: linear-gradient(to bottom, #083A85 0%, #083A85 50%, rgba(8,58,133,0.85) 75%, rgba(5,32,71,0) 100%); z-index: 3; pointer-events: none; }
           .earth-text { position: absolute; top: 0; left: 0; right: 0; z-index: 5; text-align: center; padding: clamp(60px, 10vh, 120px) clamp(16px, 4vw, 24px) 0; pointer-events: none; }
           .earth-globe-wrap { position: absolute; top: 20%; left: -25%; right: -25%; bottom: -60%; z-index: 2; }
@@ -1312,7 +1353,7 @@ const About = () => {
               maxWidth: 600,
               margin: '0 auto clamp(20px, 3vw, 32px)',
               lineHeight: 1.7,
-              padding: '0 clamp(8px, 2vw, 0px)',
+              padding: '0 clamp(8px, 2vw, 16px)',
             }}>
               Connecting photographers and creatives across continents. From local talent to global stages one platform, limitless reach.
             </p>
@@ -1350,7 +1391,7 @@ const About = () => {
           </div>
         </div>
 
-        <div style={{ background: '#083A85' }}>
+        <div className="about-footer-wrap" style={{ background: '#052047' }}>
           <Footer />
         </div>
       </div>
