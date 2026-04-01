@@ -397,7 +397,7 @@ const Photographers: React.FC = () => {
                 style={{
                   width: '100%',
                   padding: 'clamp(0.875rem, 2.5vw, 1rem) clamp(3rem, 8vw, 3.5rem) clamp(0.875rem, 2.5vw, 1rem) clamp(1.25rem, 3vw, 1.5rem)',
-                  borderRadius: '0.5rem',
+                  borderRadius: '10px',
                   boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
                   border: 'none',
                   fontSize: '1rem',
@@ -449,7 +449,7 @@ const Photographers: React.FC = () => {
                 style={{
                   width: '100%',
                   padding: 'clamp(0.5rem, 2vw, 0.625rem) clamp(0.75rem, 2.5vw, 1rem)',
-                  borderRadius: '0.5rem',
+                  borderRadius: '10px',
                   border: '2px solid rgba(255, 255, 255, 0.3)',
                   backgroundColor: 'rgba(255, 255, 255, 0.95)',
                   color: '#111827',
@@ -480,7 +480,7 @@ const Photographers: React.FC = () => {
                 style={{
                   width: '100%',
                   padding: 'clamp(0.5rem, 2vw, 0.625rem) clamp(0.75rem, 2.5vw, 1rem)',
-                  borderRadius: '0.5rem',
+                  borderRadius: '10px',
                   border: '2px solid rgba(255, 255, 255, 0.3)',
                   backgroundColor: 'rgba(255, 255, 255, 0.95)',
                   color: '#111827',
@@ -514,7 +514,7 @@ const Photographers: React.FC = () => {
                 style={{
                   width: '100%',
                   padding: 'clamp(0.5rem, 2vw, 0.625rem) clamp(0.75rem, 2.5vw, 1rem)',
-                  borderRadius: '0.5rem',
+                  borderRadius: '10px',
                   border: '2px solid rgba(255, 255, 255, 0.3)',
                   backgroundColor: 'rgba(255, 255, 255, 0.95)',
                   color: '#111827',
@@ -541,7 +541,7 @@ const Photographers: React.FC = () => {
                 style={{
                   width: '100%',
                   padding: 'clamp(0.5rem, 2vw, 0.625rem) clamp(0.75rem, 2.5vw, 1rem)',
-                  borderRadius: '0.5rem',
+                  borderRadius: '10px',
                   border: '2px solid rgba(255, 255, 255, 0.3)',
                   backgroundColor: 'rgba(255, 255, 255, 0.95)',
                   color: '#111827',
@@ -573,7 +573,7 @@ const Photographers: React.FC = () => {
                 style={{
                   width: '100%',
                   padding: 'clamp(0.5rem, 2vw, 0.625rem) clamp(0.75rem, 2.5vw, 1rem)',
-                  borderRadius: '0.5rem',
+                  borderRadius: '10px',
                   border: '2px solid rgba(255, 255, 255, 0.3)',
                   backgroundColor: 'rgba(255, 255, 255, 0.95)',
                   color: availableOn ? '#111827' : '#6b7280',
@@ -680,7 +680,7 @@ const Photographers: React.FC = () => {
                     backgroundColor: '#083A85',
                     color: 'white',
                     border: 'none',
-                    borderRadius: '8px',
+                    borderRadius: '10px',
                     cursor: 'pointer',
                     transition: 'all 0.3s ease'
                   }}
@@ -1041,7 +1041,7 @@ const Photographers: React.FC = () => {
                         backgroundColor: '#1a1a1a',
                         color: 'white',
                         border: 'none',
-                        borderRadius: '100px',
+                        borderRadius: '10px',
                         fontWeight: '600',
                         fontSize: '0.9rem',
                         cursor: 'pointer',
@@ -1089,7 +1089,7 @@ const Photographers: React.FC = () => {
                 disabled={currentPage === 0}
                 style={{
                   padding: 'clamp(0.4rem, 1.5vw, 0.5rem) clamp(0.75rem, 2vw, 1rem)',
-                  borderRadius: '0.5rem',
+                  borderRadius: '10px',
                   border: '1px solid #bab8b8',
                   backgroundColor: currentPage === 0 ? '#f3f4f6' : '#ffffff',
                   color: currentPage === 0 ? '#9ca3af' : '#111827',
@@ -1134,7 +1134,7 @@ const Photographers: React.FC = () => {
                     onClick={() => goToPage(pageIndex)}
                     style={{
                       padding: 'clamp(0.4rem, 1.5vw, 0.5rem) clamp(0.6rem, 1.5vw, 0.75rem)',
-                      borderRadius: '0.5rem',
+                      borderRadius: '10px',
                       border: currentPage === pageIndex ? '2px solid #083A85' : '1px solid #bab8b8',
                       backgroundColor: currentPage === pageIndex ? '#083A85' : '#ffffff',
                       color: currentPage === pageIndex ? '#ffffff' : '#111827',
@@ -1170,7 +1170,7 @@ const Photographers: React.FC = () => {
                 disabled={currentPage >= totalPages - 1}
                 style={{
                   padding: 'clamp(0.4rem, 1.5vw, 0.5rem) clamp(0.75rem, 2vw, 1rem)',
-                  borderRadius: '0.5rem',
+                  borderRadius: '10px',
                   border: '1px solid #bab8b8',
                   backgroundColor: currentPage >= totalPages - 1 ? '#f3f4f6' : '#ffffff',
                   color: currentPage >= totalPages - 1 ? '#9ca3af' : '#111827',

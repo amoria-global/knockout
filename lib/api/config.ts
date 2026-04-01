@@ -115,7 +115,7 @@ export const API_ENDPOINTS = {
     FREE_ALBUM_REQUEST_ACCESS: '/api/remote/public/albums/free/request-access',
     FREE_ALBUM_VERIFY_ACCESS: '/api/remote/public/albums/free/verify-access',
     EVENT_VIEWERS: (eventId: string) => `/api/remote/public/streams/${eventId}/viewers`,
-    STREAM_VALIDATE_TOKEN: (eventId: string) => `/api/remote/public/streams/${eventId}/validate-token`,
+    STREAM_VALIDATE_TOKEN: (eventId: string) => `/api/remote/public/events/${eventId}/stream/validate-token`,
     STREAM_ACCESS: (eventId: string) => `/api/remote/public/streams/${eventId}/access`,
     STREAM_GROUP_ACCESS: (eventId: string) => `/api/remote/public/streams/${eventId}/group-access`,
     STREAM_REDEEM_GROUP_CODE: (eventId: string) => `/api/remote/public/streams/${eventId}/redeem-group-code`,
