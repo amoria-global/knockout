@@ -412,7 +412,7 @@ export default function JoinEvent() {
         style={{
           position: 'absolute',
           inset: 0,
-          backgroundImage: freeEventCover ? `url(${freeEventCover})` : 'url(/arms.png)',
+          backgroundImage: freeEventCover ? `url(${encodeURI(freeEventCover)})` : 'url(/arms.png)',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',

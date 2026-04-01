@@ -267,7 +267,7 @@ function JoinPackageContent(): React.JSX.Element {
     {
       id: 'individual',
       name: 'Individual Stream',
-      badge: 'Solo',
+      badge: 'Individual',
       badgeColor: '#22D3EE',
       badgeGradient: 'linear-gradient(135deg, #22D3EE 0%, #3B82F6 100%)',
       description: 'Stream the event alone on your personal device',
@@ -456,29 +456,35 @@ function JoinPackageContent(): React.JSX.Element {
         setShowGroupCodeModal(true);
       }
     } else {
-      // Individual — check if viewer entered a group invite code
-      const code = soloInviteCode.trim();
-      if (code && selectedEvent.id) {
-        // Redeem the group code to get stream access
-        try {
-          const userStr = localStorage.getItem('authUser');
-          const userName = userStr ? `${JSON.parse(userStr).firstName || ''} ${JSON.parse(userStr).lastName || ''}`.trim() : 'Viewer';
-          const res = await redeemGroupCode(selectedEvent.id, { inviteCode: code, viewerUsername: userName });
-          if (res.success && res.data) {
-            router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&paid=true&inviteToken=${encodeURIComponent(code)}`);
+      // Individual payment success
+      const isLive = (selectedEvent.eventStatus || '').toUpperCase() === 'ONGOING';
+      if (isLive) {
+        // Event is live — go to stream
+        const code = soloInviteCode.trim();
+        if (code && selectedEvent.id) {
+          try {
+            const userStr = localStorage.getItem('authUser');
+            const userName = userStr ? `${JSON.parse(userStr).firstName || ''} ${JSON.parse(userStr).lastName || ''}`.trim() : 'Viewer';
+            const res = await redeemGroupCode(selectedEvent.id, { inviteCode: code, viewerUsername: userName });
+            if (res.success && res.data) {
+              router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&paid=true&inviteToken=${encodeURIComponent(code)}`);
+            } else {
+              router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&paid=true`);
+            }
+          } catch {
+            router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&paid=true`);
+          }
+        } else {
+          const inviteToken = searchParams.get('inviteToken') || '';
+          if (inviteToken) {
+            router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&paid=true&inviteToken=${encodeURIComponent(inviteToken)}`);
           } else {
             router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&paid=true`);
           }
-        } catch {
-          router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&paid=true`);
         }
       } else {
-        const inviteToken = searchParams.get('inviteToken') || '';
-        if (inviteToken) {
-          router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&paid=true&inviteToken=${encodeURIComponent(inviteToken)}`);
-        } else {
-          router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&paid=true`);
-        }
+        // Event is upcoming — go back to view-event (spot reserved)
+        router.push(`/user/events/view-event?id=${selectedEvent.id}`);
       }
     }
   };
@@ -557,7 +563,7 @@ function JoinPackageContent(): React.JSX.Element {
 
       <div style={{ position: 'relative', overflow: 'hidden' }}>
         {/* Cinematic background image */}
-        <div style={{ position: 'absolute', inset: 0, backgroundImage: `url(${eventImage})`, backgroundSize: 'cover', backgroundPosition: 'center right' }} />
+        <div style={{ position: 'absolute', inset: 0, backgroundImage: `url(${encodeURI(eventImage)})`, backgroundSize: 'cover', backgroundPosition: 'center right' }} />
         {/* Top-to-bottom cinematic gradient */}
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(14,14,16,0.1) 0%, rgba(14,14,16,0.55) 32%, rgba(14,14,16,0.93) 52%, #0e0e10 72%)' }} />
 
