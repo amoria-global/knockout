@@ -137,6 +137,52 @@ export async function checkAnonymousAccessStatus(
   );
 }
 
+// --- Anonymous Viewer Interaction APIs ---
+
+export async function sendAnonymousChatMessage(
+  eventId: string,
+  viewerId: string,
+  content: string,
+  deviceFingerprint: string
+): Promise<ApiResponse<{ action: number; message: string }>> {
+  return apiClient.post(
+    API_ENDPOINTS.PUBLIC.ANONYMOUS_VIEWER_CHAT(eventId),
+    { viewerId, content, deviceFingerprint },
+    { skipAuth: true, retries: 0 }
+  );
+}
+
+export async function sendAnonymousVideoChat(
+  eventId: string,
+  viewerId: string,
+  video: File,
+  deviceFingerprint: string
+): Promise<ApiResponse<{ action: number; message: string }>> {
+  const formData = new FormData();
+  formData.append('viewerId', viewerId);
+  formData.append('deviceFingerprint', deviceFingerprint);
+  formData.append('video', video);
+  return apiClient.post(
+    API_ENDPOINTS.PUBLIC.ANONYMOUS_VIEWER_CHAT_VIDEO(eventId),
+    formData,
+    { skipAuth: true, retries: 0 }
+  );
+}
+
+export async function rateStreamAnonymous(
+  eventId: string,
+  viewerId: string,
+  rating: number,
+  comment?: string,
+  deviceFingerprint?: string
+): Promise<ApiResponse<{ action: number; message: string }>> {
+  return apiClient.post(
+    API_ENDPOINTS.PUBLIC.ANONYMOUS_VIEWER_RATE(eventId),
+    { viewerId, rating, comment, deviceFingerprint },
+    { skipAuth: true, retries: 0 }
+  );
+}
+
 export async function getAnonymousViewerCount(
   eventId: string
 ): Promise<ApiResponse<AnonymousViewerCountResponse>> {
