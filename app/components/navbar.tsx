@@ -707,13 +707,13 @@ const AmoriaKNavbar = () => {
               src="/logo.png"
               alt="Connekyt Logo"
               className="nav-logo-icon"
-              style={{ width: isMobile ? '36px' : '42px', height: isMobile ? '36px' : '42px', objectFit: 'contain', position: 'relative', top: '-6px', left: '-8px' }}
+              style={{ width: isMobile ? '39px' : '49px', height: isMobile ? '39px' : '49px', objectFit: 'contain', position: 'relative', top: '-1px', left: '-15px' }}
             />
             <span
               className="nav-logo-text font-bold"
               style={{ color: '#083A85', fontSize: isMobile ? '1.25rem' : '1.3rem', marginLeft: '-20px', letterSpacing: '0.3px' }}
             >
-              onnekyt
+              Connekyt
             </span>
           </Link>
 
