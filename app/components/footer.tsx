@@ -91,7 +91,7 @@ export default function Footer() {
     .footer-content { max-width: 90rem; margin: 0 auto; padding: 3.2rem 3rem 1.6rem; }
     .footer-grid { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr 1fr; gap: 4rem; margin-bottom: 4rem; }
     .footer-brand { padding-right: 1.6rem; }
-    .footer-logo { display: flex; flex-direction: column; align-items: center; margin: 0 0 1rem 0; cursor: pointer; text-decoration: none; color: inherit; width: fit-content; line-height: 1; }
+    .footer-logo { display: flex; align-items: center; margin: 0 0 1rem 0; cursor: pointer; text-decoration: none; color: inherit; }
     .footer-logo span { font-weight: 700; }
     .footer-logo img { border-radius: 0; }
     .footer-description { color: #D1D5DB; font-size: 0.96rem; line-height: 1.625; margin-bottom: 2rem; }
@@ -303,9 +303,9 @@ export default function Footer() {
           >
             {/* Amoria connekyt Section */}
             <div className="footer-brand" style={{ paddingRight: '1.6rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-              <Link href="/" className="footer-logo" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '1rem', marginTop: '-2rem', cursor: 'pointer', textDecoration: 'none', color: 'inherit', lineHeight: 1, width: 'fit-content' }}>
-                <img src="/log.png" alt="Connekyt Logo" style={{ width: isMobile ? '42px' : '54px', height: isMobile ? '42px' : '54px', objectFit: 'contain' }} />
-                <span style={{ fontWeight: 700, color: '#fff', fontSize: isMobile ? '1.1rem' : '1.35rem', letterSpacing: '0.5px', marginTop: '-4px' }}>Connekyt</span>
+              <Link href="/" className="footer-logo" style={{ display: 'flex', alignItems: 'center', marginBottom: '1rem', cursor: 'pointer', textDecoration: 'none', color: 'inherit' }}>
+                <img src="/log.png" alt="Connekyt Logo" style={{ width: isMobile ? '39px' : '49px', height: isMobile ? '39px' : '49px', objectFit: 'contain', position: 'relative', top: '-1px', left: '-15px' }} />
+                <span style={{ fontWeight: 700, color: '#fff', fontSize: isMobile ? '1.25rem' : '1.3rem', marginLeft: '-20px', letterSpacing: '0.3px' }}>Connekyt</span>
               </Link>
               <div className="social-section" style={{ marginTop: 'auto', marginBottom: isMobile ? '0' : '-3.5rem' }}>
                 <span className="social-title" style={{ color: '#D1D5DB', fontSize: '1.04rem', display: 'block', marginBottom: '0.8rem', gap: '2.4rem' }}>
