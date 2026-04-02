@@ -27,9 +27,9 @@ function GoogleLoginButton({ onSuccess, onError, disabled }: {
   });
   return (
     <button type="button" onClick={() => gl()} disabled={disabled || loading}
-      style={{ flex: '1', padding: '10px 20px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', borderRadius: '10px', border: '1px solid #e2e8f0', backgroundColor: '#f8fafc', cursor: (disabled || loading) ? 'not-allowed' : 'pointer', transition: 'all 0.3s', opacity: loading ? 0.7 : 1 }}
+      style={{ flex: '1', padding: '10px 20px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', borderRadius: '10px', border: '1.5px solid #6a6a6b', backgroundColor: '#f8fafc', cursor: (disabled || loading) ? 'not-allowed' : 'pointer', transition: 'all 0.3s', opacity: loading ? 0.7 : 1 }}
       onMouseEnter={(e) => { if (!disabled && !loading) { e.currentTarget.style.borderColor = '#083A85'; e.currentTarget.style.backgroundColor = '#f9fafb'; e.currentTarget.style.transform = 'translateY(-2px)'; } }}
-      onMouseLeave={(e) => { if (!disabled && !loading) { e.currentTarget.style.borderColor = '#d1d5db'; e.currentTarget.style.backgroundColor = '#ffffff'; e.currentTarget.style.transform = 'translateY(0)'; } }}
+      onMouseLeave={(e) => { if (!disabled && !loading) { e.currentTarget.style.borderColor = '#d1d5db'; e.currentTarget.style.backgroundColor = '#f8fafc'; e.currentTarget.style.transform = 'translateY(0)'; } }}
     >
       {loading ? (
         <><svg width="20" height="20" viewBox="0 0 24 24" fill="none" style={{ animation: 'spin 1s linear infinite' }}><circle cx="12" cy="12" r="10" stroke="#d1d5db" strokeWidth="3" fill="none" /><path d="M12 2a10 10 0 0 1 10 10" stroke="#083A85" strokeWidth="3" fill="none" strokeLinecap="round" /></svg><span style={{ fontSize: '14px', fontWeight: '600', color: '#374151' }}>Signing in...</span></>
@@ -54,9 +54,9 @@ function GoogleSignupButton({ onSuccess, onError, disabled, isConnected }: {
   });
   return (
     <button type="button" onClick={() => gl()} disabled={disabled || isConnected}
-      style={{ flex: '1', padding: '10px 20px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', borderRadius: '10px', border: isConnected ? '1px solid #10b981' : '1px solid #e2e8f0', backgroundColor: isConnected ? '#ecfdf5' : '#f8fafc', cursor: (disabled || isConnected) ? 'not-allowed' : 'pointer', transition: 'all 0.3s', opacity: loading ? 0.7 : 1 }}
+      style={{ flex: '1', padding: '10px 20px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', borderRadius: '10px', border: isConnected ? '1.5px solid #10b981' : '1.5px solid #6a6a6b', backgroundColor: isConnected ? '#ecfdf5' : '#f8fafc', cursor: (disabled || isConnected) ? 'not-allowed' : 'pointer', transition: 'all 0.3s', opacity: loading ? 0.7 : 1 }}
       onMouseEnter={(e) => { if (!disabled && !isConnected) { e.currentTarget.style.borderColor = '#083A85'; e.currentTarget.style.backgroundColor = '#f9fafb'; e.currentTarget.style.transform = 'translateY(-2px)'; } }}
-      onMouseLeave={(e) => { if (!disabled && !isConnected) { e.currentTarget.style.borderColor = '#d1d5db'; e.currentTarget.style.backgroundColor = '#ffffff'; e.currentTarget.style.transform = 'translateY(0)'; } }}
+      onMouseLeave={(e) => { if (!disabled && !isConnected) { e.currentTarget.style.borderColor = '#d1d5db'; e.currentTarget.style.backgroundColor = '#f8fafc'; e.currentTarget.style.transform = 'translateY(0)'; } }}
     >
       {loading ? (
         <><div style={{ width: '20px', height: '20px', border: '2px solid #d1d5db', borderTopColor: '#083A85', borderRadius: '50%', animation: 'spin 1s linear infinite' }} /><span style={{ fontSize: '14px', fontWeight: '600', color: '#374151' }}>Connecting...</span></>
@@ -224,15 +224,15 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
 
   // ── Toggle handler ──
   const toggleView = () => {
-    setIsLogin(prev => {
-      const next = !prev;
+    const next = !isLogin;
+    setIsLogin(next);
+    if (next) {
+      setSelectedUserType(null);
+    }
+    // Update URL outside of setState to avoid Router update during render
+    setTimeout(() => {
       window.history.replaceState(null, '', next ? '/user/auth/login' : '/user/auth/signup');
-      // Reset user type when going back to login so modal shows again next time
-      if (next) {
-        setSelectedUserType(null);
-      }
-      return next;
-    });
+    }, 0);
   };
 
   // Show user type modal whenever we switch to signup without a type selected
@@ -580,9 +580,9 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
         {GOOGLE_CLIENT_ID && (
           <>
             <div style={{ display: 'flex', alignItems: 'center', margin: isMobile ? '8px 0' : '12px 0' }}>
-              <hr style={{ flex: '1', border: 'none', borderTop: '1px solid #e5e7eb' }} />
-              <span style={{ padding: '0 12px', fontSize: '13px', color: '#9ca3af', fontWeight: '500' }}>{t('orContinueWith')}</span>
-              <hr style={{ flex: '1', border: 'none', borderTop: '1px solid #e5e7eb' }} />
+              <hr style={{ flex: '1', border: 'none', borderTop: '1.5px solid #d1d5db' }} />
+              <span style={{ padding: '0 12px', fontSize: '13px', color: '#6b7280', fontWeight: '600' }}>{t('orContinueWith')}</span>
+              <hr style={{ flex: '1', border: 'none', borderTop: '1.5px solid #d1d5db' }} />
             </div>
             <div style={{ display: 'flex' }}>
               <GoogleLoginButton onSuccess={handleGoogleLoginSuccess} onError={() => { showError('Google sign-in failed.'); setGoogleLoginLoading(false); }} disabled={googleLoginLoading || loginLoading} />
@@ -725,9 +725,9 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
         {GOOGLE_CLIENT_ID && (
           <>
             <div style={{ display: 'flex', alignItems: 'center', margin: isMobile ? '8px 0' : '12px 0' }}>
-              <hr style={{ flex: '1', border: 'none', borderTop: '1px solid #e5e7eb' }} />
-              <span style={{ padding: '0 12px', fontSize: '13px', color: '#9ca3af', fontWeight: '500' }}>{tSignup('orSignUpWith')}</span>
-              <hr style={{ flex: '1', border: 'none', borderTop: '1px solid #e5e7eb' }} />
+              <hr style={{ flex: '1', border: 'none', borderTop: '1.5px solid #d1d5db' }} />
+              <span style={{ padding: '0 12px', fontSize: '13px', color: '#6b7280', fontWeight: '600' }}>{tSignup('orSignUpWith')}</span>
+              <hr style={{ flex: '1', border: 'none', borderTop: '1.5px solid #d1d5db' }} />
             </div>
             <div style={{ display: 'flex' }}>
               <GoogleSignupButton onSuccess={handleGoogleSignupSuccess} onError={() => { showError('Google sign-in failed.'); setGoogleSignupLoading(false); }} disabled={googleSignupLoading} isConnected={isGooglePreFilled} />
