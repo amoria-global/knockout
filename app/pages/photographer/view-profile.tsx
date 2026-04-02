@@ -5,6 +5,9 @@ import { useTranslations } from 'next-intl';
 import AmoriaKNavbar from '../../components/navbar';
 import { getPhotographerById, type Photographer, getCities, type City, getReviewerName, getReviewText, formatTimeValue, getBookedDates, type BookedDate } from '@/lib/APIs/public';
 import { useToast } from '@/lib/notifications/ToastProvider';
+import dynamic from 'next/dynamic';
+
+const BookingWizard = dynamic(() => import('../../components/BookingWizard'), { ssr: false });
 
 // Default images for fallback
 // Helper function to get valid profile image
@@ -137,9 +140,12 @@ function ViewProfileContent(): React.JSX.Element {
       .catch(() => {});
   }, [photographerId]);
 
-  // Handle Book Now button click with success banner
+  // Booking wizard state
+  const [showWizard, setShowWizard] = useState(false);
+
+  // Handle Book Now button click — open wizard instead of navigating
   const handleBookNowClick = () => {
-    window.location.href = `/user/photographers/book-now?id=${photographerId}`;
+    setShowWizard(true);
   };
 
   // Detect screen size
@@ -2337,6 +2343,12 @@ function ViewProfileContent(): React.JSX.Element {
         overflow: hidden;
       }
     `}</style>
+
+    <BookingWizard
+      isOpen={showWizard}
+      onClose={() => setShowWizard(false)}
+      preselectedPhotographerId={photographerId || undefined}
+    />
     </>
   );
 }
