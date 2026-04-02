@@ -114,7 +114,7 @@ export const API_ENDPOINTS = {
     FREE_ALBUM_GET: (code: string) => `/api/remote/public/albums/free/${code}`,
     FREE_ALBUM_REQUEST_ACCESS: '/api/remote/public/albums/free/request-access',
     FREE_ALBUM_VERIFY_ACCESS: '/api/remote/public/albums/free/verify-access',
-    EVENT_VIEWERS: (eventId: string) => `/api/remote/public/streams/${eventId}/viewers`,
+    EVENT_VIEWERS: (eventId: string) => `/api/remote/public/events/${eventId}/viewers`,
     STREAM_VALIDATE_TOKEN: (eventId: string) => `/api/remote/public/events/${eventId}/stream/validate-token`,
     STREAM_ACCESS: (eventId: string) => `/api/remote/public/streams/${eventId}/access`,
     STREAM_GROUP_ACCESS: (eventId: string) => `/api/remote/public/streams/${eventId}/group-access`,
@@ -133,6 +133,9 @@ export const API_ENDPOINTS = {
     ANONYMOUS_VIEWER_SWITCH_DEVICE: (eventId: string) => `/api/remote/public/anonymous-viewer/${eventId}/switch-device`,
     ANONYMOUS_VIEWER_ACCESS_STATUS: (eventId: string) => `/api/remote/public/anonymous-viewer/${eventId}/access-status`,
     ANONYMOUS_VIEWER_COUNT: (eventId: string) => `/api/remote/public/anonymous-viewer/${eventId}/viewer-count`,
+    ANONYMOUS_VIEWER_CHAT: (eventId: string) => `/api/remote/public/anonymous-viewer/${eventId}/chat`,
+    ANONYMOUS_VIEWER_CHAT_VIDEO: (eventId: string) => `/api/remote/public/anonymous-viewer/${eventId}/chat/video`,
+    ANONYMOUS_VIEWER_RATE: (eventId: string) => `/api/remote/public/anonymous-viewer/${eventId}/rate`,
   },
 
   // Protected photographer endpoints
