@@ -17,7 +17,11 @@ import { useGoogleLogin } from '@react-oauth/google';
 import { getStreamChats, type StreamChatMessage } from '@/lib/APIs/streams/chat/route';
 import { sendStreamChat, sendStreamVideoChat, getStreamViewerCount, getPublicViewerCount, requestStreamAccess, checkDeviceAccess, sendHeartbeat, reportStreamIssue, rateStream, blockUserInStream } from '@/lib/APIs/streams/route';
 import { getDeviceId } from '@/lib/fingerprint';
-import { checkAnonymousAccessStatus, anonymousDeviceCheck, anonymousHeartbeat, deactivateAnonymousSession, getAnonymousViewerCount } from '@/lib/APIs/streams/anonymous-viewer';
+import { checkAnonymousAccessStatus, anonymousDeviceCheck, anonymousHeartbeat, deactivateAnonymousSession, getAnonymousViewerCount, registerAnonymousViewer, switchAnonymousDevice, sendAnonymousChatMessage, sendAnonymousVideoChat, rateStreamAnonymous } from '@/lib/APIs/streams/anonymous-viewer';
+import ViewerInfoModal from '../../components/ViewerInfoModal';
+import type { ViewerInfoData } from '../../components/ViewerInfoModal';
+import DeviceSwitchModal from '../../components/DeviceSwitchModal';
+import { initiateAnonymousStreamingPayment, checkAnonymousPaymentStatus } from '@/lib/APIs/payments/xentripay';
 import { contactUs } from '@/lib/APIs/public/contact-us/route';
 import { apiClient } from '@/lib/api/client';
 import { API_ENDPOINTS } from '@/lib/api/config';
@@ -156,6 +160,12 @@ const App = () => {
   // ── Anonymous viewer state ──
   const [anonymousViewerId, setAnonymousViewerId] = useState<string | null>(null);
   const [isAnonymousViewer, setIsAnonymousViewer] = useState(false);
+  const [anonymousViewerName, setAnonymousViewerName] = useState('');
+  const [showViewerInfoModal, setShowViewerInfoModal] = useState(false);
+  const [viewerInfoLoading, setViewerInfoLoading] = useState(false);
+  const [viewerInfoError, setViewerInfoError] = useState('');
+  const [showDeviceSwitchModal, setShowDeviceSwitchModal] = useState(false);
+  const [deviceSwitchLoading, setDeviceSwitchLoading] = useState(false);
 
   // ── Viewer auth modal state ──
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -173,6 +183,9 @@ const App = () => {
   const [otpValue, setOtpValue] = useState('');
   const [googleLoading, setGoogleLoading] = useState(false);
 
+  // Interaction capability — true when user can chat, rate, gift, etc.
+  const canInteract = isAuthenticated || (isAnonymousViewer && !!anonymousViewerId);
+
   // Open auth modal instead of redirecting
   const requireAuth = (action: () => void) => {
     if (isAuthenticated) {
@@ -181,6 +194,18 @@ const App = () => {
       setAuthStep('login');
       setAuthError('');
       setShowAuthModal(true);
+    }
+  };
+
+  // Require interaction capability — shows ViewerInfoModal for unregistered anonymous viewers
+  const requireInteraction = (action: () => void) => {
+    if (isAuthenticated) {
+      action();
+    } else if (isAnonymousViewer && anonymousViewerId) {
+      action();
+    } else {
+      setViewerInfoError('');
+      setShowViewerInfoModal(true);
     }
   };
 
@@ -195,6 +220,20 @@ const App = () => {
     window.addEventListener('auth:session-expired', handleSessionExpired);
     return () => window.removeEventListener('auth:session-expired', handleSessionExpired);
   }, []);
+
+  // Restore anonymous viewer session from localStorage on mount
+  useEffect(() => {
+    if (!isAuthenticated && mainEvent?.id && mainEvent.id !== '') {
+      const savedId = localStorage.getItem(`anonymousViewer_${mainEvent.id}`);
+      const savedName = localStorage.getItem(`anonymousViewerName_${mainEvent.id}`);
+      if (savedId && !anonymousViewerId) {
+        setAnonymousViewerId(savedId);
+        setIsAnonymousViewer(true);
+        if (savedName) setAnonymousViewerName(savedName);
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mainEvent?.id, isAuthenticated]);
 
   const handleAuthLogin = async () => {
     if (!loginEmail || !loginPassword) { setAuthError('Please fill in all fields'); return; }
@@ -334,6 +373,87 @@ const App = () => {
     setAuthError('Google sign-in was cancelled. You can try again or use email instead.');
   };
 
+  // Handle anonymous viewer registration via ViewerInfoModal
+  const handleViewerInfoSubmit = async (data: ViewerInfoData) => {
+    if (!mainEvent?.id) return;
+    setViewerInfoLoading(true);
+    setViewerInfoError('');
+    try {
+      const fingerprint = await getDeviceId();
+      const res = await registerAnonymousViewer(mainEvent.id, {
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        deviceFingerprint: fingerprint,
+      });
+      if (!res.success) {
+        const errMsg = res.error || 'Registration failed';
+        if (errMsg.toLowerCase().includes('duplicate') || errMsg.toLowerCase().includes('already exists') || errMsg.toLowerCase().includes('already registered')) {
+          setViewerInfoError('This email is already registered. Please log in or use a different email.');
+        } else {
+          setViewerInfoError(errMsg);
+        }
+        return;
+      }
+      const resData = res.data as Record<string, unknown> | undefined;
+      const status = resData?.status as string;
+      const viewerId = resData?.viewerId as string;
+      if (viewerId) {
+        setAnonymousViewerId(viewerId);
+        setIsAnonymousViewer(true);
+        setAnonymousViewerName(data.name);
+        localStorage.setItem(`anonymousViewer_${mainEvent.id}`, viewerId);
+        localStorage.setItem(`anonymousViewerName_${mainEvent.id}`, data.name);
+      }
+      if (status === 'ACCESS_GRANTED') {
+        setShowViewerInfoModal(false);
+        const whepUrl = resData?.whepUrl as string;
+        if (whepUrl) {
+          setEvents(prev => [{ ...prev[0], whepUrl }, ...prev.slice(1)]);
+          setStreamAccessGranted(true);
+        }
+      } else if (status === 'DEVICE_CONFLICT') {
+        setShowViewerInfoModal(false);
+        setShowDeviceSwitchModal(true);
+      } else if (status === 'REQUIRES_PAYMENT') {
+        setShowViewerInfoModal(false);
+        // Payment gate overlay will handle this
+      }
+    } catch {
+      setViewerInfoError('Connection error. Please try again.');
+    } finally {
+      setViewerInfoLoading(false);
+    }
+  };
+
+  // Handle device switch confirmation for anonymous viewers
+  const handleDeviceSwitchConfirm = async () => {
+    if (!mainEvent?.id || !anonymousViewerId) return;
+    setDeviceSwitchLoading(true);
+    try {
+      const fingerprint = await getDeviceId();
+      const res = await switchAnonymousDevice(mainEvent.id, anonymousViewerId, fingerprint);
+      if (res.success) {
+        setShowDeviceSwitchModal(false);
+        const whepUrl = (res.data as Record<string, unknown>)?.whepUrl as string;
+        if (whepUrl) {
+          setEvents(prev => [{ ...prev[0], whepUrl }, ...prev.slice(1)]);
+          setStreamAccessGranted(true);
+        }
+      } else {
+        setShowDeviceSwitchModal(false);
+        setViewerInfoError(res.error || 'Could not switch device.');
+        setShowViewerInfoModal(true);
+      }
+    } catch {
+      setShowDeviceSwitchModal(false);
+      setViewerInfoError('Connection error.');
+      setShowViewerInfoModal(true);
+    } finally {
+      setDeviceSwitchLoading(false);
+    }
+  };
+
   // Load real event metadata from API on mount if eventId is in URL
   useEffect(() => {
     const eventId = searchParams.get('eventId') || searchParams.get('id');
@@ -417,6 +537,12 @@ const App = () => {
                 if (whepUrl) {
                   setEvents(prev => [{ ...prev[0], whepUrl }, ...prev.slice(1)]);
                 }
+                // Persist anonymous viewer name for session restoration
+                const resName = resData?.name as string;
+                if (resName) {
+                  setAnonymousViewerName(resName);
+                  localStorage.setItem(`anonymousViewerName_${mainEvent.id}`, resName);
+                }
                 setStreamAccessGranted(true);
                 setAccessCheckLoading(false);
               } else {
@@ -430,6 +556,11 @@ const App = () => {
                       const retryWhepUrl = retryData?.whepUrl as string;
                       if (retryWhepUrl) {
                         setEvents(prev => [{ ...prev[0], whepUrl: retryWhepUrl }, ...prev.slice(1)]);
+                      }
+                      const retryName = retryData?.name as string;
+                      if (retryName) {
+                        setAnonymousViewerName(retryName);
+                        localStorage.setItem(`anonymousViewerName_${mainEvent.id}`, retryName);
                       }
                       setStreamAccessGranted(true);
                     }
@@ -473,6 +604,11 @@ const App = () => {
                 const whepUrl = resData?.whepUrl as string;
                 if (whepUrl) {
                   setEvents(prev => [{ ...prev[0], whepUrl }, ...prev.slice(1)]);
+                }
+                const resName = resData?.name as string;
+                if (resName) {
+                  setAnonymousViewerName(resName);
+                  localStorage.setItem(`anonymousViewerName_${mainEvent.id}`, resName);
                 }
                 setStreamAccessGranted(true);
               }
@@ -1171,8 +1307,8 @@ const App = () => {
 
   // Handle sending gift - call API directly, no XentriPayModal
   const handleSendGift = async () => {
-    if (!isAuthenticated) {
-      requireAuth(() => {});
+    if (!canInteract) {
+      requireInteraction(() => {});
       return;
     }
     if (!giftAmount || parseInt(giftAmount) <= 0) {
@@ -1196,24 +1332,37 @@ const App = () => {
       || (streamCurrencies.length > 0 ? streamCurrencies[0].id : '');
 
     const donAmt = parseInt(donationAmount) || 0;
+    const redirectUrl = isCard
+      ? (window.location.href.startsWith('http://') ? 'https://connekyt.com' : window.location.href)
+      : undefined;
 
     try {
-      const response = await initiateXentriPayStreaming({
-        eventId: targetEvent.id,
-        amount: parseInt(giftAmount),
-        currencyId,
-        ...(donAmt > 0 ? { donationAmount: donAmt } : {}),
-        ...(isCard ? {} : { phone: paymentPhone, telecomProvider: providerMap[selectedPaymentMethod!] }),
-        paymentMethod: paymentMethodType,
-        ...(isCard ? {
-          redirectUrl: window.location.href.startsWith('http://')
-            ? 'https://connekyt.com'
-            : window.location.href
-        } : {}),
-      });
+      let response;
 
-      if (!response.success || !response.data) {
-        throw new Error(response.error || 'Failed to initiate payment');
+      if (isAuthenticated) {
+        // Authenticated user — use standard streaming payment
+        response = await initiateXentriPayStreaming({
+          eventId: targetEvent.id,
+          amount: parseInt(giftAmount),
+          currencyId,
+          ...(donAmt > 0 ? { donationAmount: donAmt } : {}),
+          ...(isCard ? {} : { phone: paymentPhone, telecomProvider: providerMap[selectedPaymentMethod!] }),
+          paymentMethod: paymentMethodType,
+          ...(isCard ? { redirectUrl } : {}),
+        });
+      } else if (isAnonymousViewer && anonymousViewerId) {
+        // Anonymous viewer — use public anonymous payment endpoint
+        response = await initiateAnonymousStreamingPayment(targetEvent.id, {
+          viewerId: anonymousViewerId,
+          phone: isCard ? undefined : paymentPhone,
+          telecomProvider: isCard ? undefined : providerMap[selectedPaymentMethod!],
+          paymentMethod: paymentMethodType,
+          ...(isCard ? { redirectUrl } : {}),
+        });
+      }
+
+      if (!response?.success || !response?.data) {
+        throw new Error(response?.error || 'Failed to initiate payment');
       }
 
       const data = response.data;
@@ -1226,7 +1375,8 @@ const App = () => {
 
       setGiftStep('processing');
 
-      // Start polling for payment status
+      // Start polling for payment status (usePublic=true for anonymous viewers)
+      const usePublicPolling = !isAuthenticated;
       stopGiftPollingRef.current = pollXentriPayStatus(
         data.refid,
         {
@@ -1244,7 +1394,8 @@ const App = () => {
           },
         },
         5000,
-        60
+        60,
+        usePublicPolling
       );
     } catch (err) {
       const raw = err instanceof Error ? err.message : '';
@@ -1338,8 +1489,8 @@ const App = () => {
 
   // Handle sending a new message
   const handleSendMessage = async () => {
-    if (!isAuthenticated) {
-      requireAuth(() => {});
+    if (!canInteract) {
+      requireInteraction(() => {});
       return;
     }
     if (newMessage.trim()) {
@@ -1357,7 +1508,7 @@ const App = () => {
           minute: "2-digit",
         }),
         delivered: false,
-        avatar: user?.profilePicture || DEFAULT_USER_AVATAR,
+        avatar: isAuthenticated ? (user?.profilePicture || DEFAULT_USER_AVATAR) : DEFAULT_USER_AVATAR,
         replyTo: replyingTo ? { id: replyingTo.id, sender: replyingTo.sender } : undefined
       };
 
@@ -1373,10 +1524,18 @@ const App = () => {
       setNewMessage("");
       setReplyingTo(null);
 
-      // Send to API
+      // Send to API — branch on auth type
       try {
-        const response = await sendStreamChat(mainEvent.streamId, messageText);
-        if (response.success) {
+        let success = false;
+        if (isAuthenticated) {
+          const response = await sendStreamChat(mainEvent.streamId, messageText);
+          success = !!response.success;
+        } else if (isAnonymousViewer && anonymousViewerId) {
+          const fingerprint = await getDeviceId();
+          const response = await sendAnonymousChatMessage(mainEvent.id, anonymousViewerId, messageText, fingerprint);
+          success = !!response.success;
+        }
+        if (success) {
           // Mark as delivered
           setEvents(prev => {
             const updated = [...prev];
@@ -1415,7 +1574,7 @@ const App = () => {
           minute: "2-digit",
         }),
         delivered: false,
-        avatar: user?.profilePicture || DEFAULT_USER_AVATAR,
+        avatar: isAuthenticated ? (user?.profilePicture || DEFAULT_USER_AVATAR) : DEFAULT_USER_AVATAR,
         videoUrl
       },
     ];
@@ -1423,8 +1582,18 @@ const App = () => {
 
     try {
       const videoFile = new File([videoBlob], `video-message-${Date.now()}.webm`, { type: videoBlob.type || 'video/webm' });
-      const res = await sendStreamVideoChat(eventId, videoFile);
-      if (res.success) {
+      let success = false;
+
+      if (isAuthenticated) {
+        const res = await sendStreamVideoChat(eventId, videoFile);
+        success = !!res.success;
+      } else if (isAnonymousViewer && anonymousViewerId) {
+        const fingerprint = await getDeviceId();
+        const res = await sendAnonymousVideoChat(eventId, anonymousViewerId, videoFile, fingerprint);
+        success = !!res.success;
+      }
+
+      if (success) {
         // Update the optimistic message to show as delivered
         setEvents(prev => {
           const updated = [...prev];
@@ -2389,11 +2558,20 @@ const App = () => {
   // Handle rating submission
   const handleSubmitRating = async () => {
     if (rating === 0 || userHasRated || ratingSubmitting) return;
+    if (!canInteract) {
+      requireInteraction(() => {});
+      return;
+    }
 
     setRatingSubmitting(true);
     try {
-      // Submit stream-specific rating via StreamInteractionController
-      await rateStream(mainEvent.id, rating, ratingComment || undefined);
+      // Submit stream-specific rating — branch on auth type
+      if (isAuthenticated) {
+        await rateStream(mainEvent.id, rating, ratingComment || undefined);
+      } else if (isAnonymousViewer && anonymousViewerId) {
+        const fingerprint = await getDeviceId();
+        await rateStreamAnonymous(mainEvent.id, anonymousViewerId, rating, ratingComment || undefined, fingerprint);
+      }
 
       // Mark as rated in localStorage to prevent duplicate
       localStorage.setItem(`rated_${mainEvent.id}`, 'true');
@@ -3632,8 +3810,8 @@ const App = () => {
                           Please wait while we confirm your access.
                         </p>
                       </>
-                    ) : (mainEvent.hasPurchasedAccess || isAnonymousViewer) ? (
-                      // Paid viewer (auth or anonymous) — access confirmed, waiting for stream or loading
+                    ) : mainEvent.hasPurchasedAccess ? (
+                      // Paid viewer (backend confirmed) — access confirmed, waiting for stream
                       <>
                         <i className="bi bi-hourglass-split" style={{ fontSize: '42px', color: '#10b981' }}></i>
                         <h3 style={{ color: '#fff', fontSize: '20px', fontWeight: '600', margin: 0 }}>
@@ -5853,7 +6031,7 @@ const App = () => {
                 </div>
               )}
 
-              {isAuthenticated ? (
+              {canInteract ? (
                 <div style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -5901,7 +6079,7 @@ const App = () => {
                 </div>
               ) : (
                 <button
-                  onClick={() => { setAuthStep('login'); setAuthError(''); setShowAuthModal(true); }}
+                  onClick={() => { setViewerInfoError(''); setShowViewerInfoModal(true); }}
                   style={{
                     width: '100%',
                     backgroundColor: '#2f2f35',
@@ -5913,13 +6091,13 @@ const App = () => {
                     fontSize: '13px',
                   }}
                 >
-                  Log in to chat
+                  Join to chat
                 </button>
               )}
 
               {/* Send Video Message Button */}
               <button
-                onClick={() => isAuthenticated ? setShowVideoMessageRecorder(true) : requireAuth(() => {})}
+                onClick={() => canInteract ? setShowVideoMessageRecorder(true) : requireInteraction(() => {})}
                 style={{
                   width: '100%',
                   marginTop: '12px',
@@ -7219,6 +7397,23 @@ const App = () => {
           </div>
         </div>
       )}
+
+      {/* Anonymous viewer registration modal */}
+      <ViewerInfoModal
+        isOpen={showViewerInfoModal}
+        onClose={() => setShowViewerInfoModal(false)}
+        onSubmit={handleViewerInfoSubmit}
+        loading={viewerInfoLoading}
+        error={viewerInfoError}
+      />
+
+      {/* Device switch confirmation modal */}
+      <DeviceSwitchModal
+        isOpen={showDeviceSwitchModal}
+        onConfirm={handleDeviceSwitchConfirm}
+        onCancel={() => setShowDeviceSwitchModal(false)}
+        loading={deviceSwitchLoading}
+      />
     </>
   );
 };

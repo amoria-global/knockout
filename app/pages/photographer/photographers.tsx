@@ -19,6 +19,9 @@ import {
   type Currency,
 } from '@/lib/APIs/public';
 import { useToast } from '@/lib/notifications/ToastProvider';
+import dynamic from 'next/dynamic';
+
+const BookingWizard = dynamic(() => import('../../components/BookingWizard'), { ssr: false });
 
 const Photographers: React.FC = () => {
   const t = useTranslations('photographers');
@@ -47,6 +50,18 @@ const Photographers: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showBanner, setShowBanner] = useState(true);
+
+  // Booking wizard state
+  const [showWizard, setShowWizard] = useState(false);
+  const [wizardPhotographerId, setWizardPhotographerId] = useState<string | undefined>();
+
+  // Auto-popup wizard after 5 seconds (once per session)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (sessionStorage.getItem('wizardDismissed')) return;
+    const timer = setTimeout(() => setShowWizard(true), 5000);
+    return () => clearTimeout(timer);
+  }, []);
 
   const itemsPerPage = 12;
 
@@ -1050,7 +1065,10 @@ const Photographers: React.FC = () => {
                         marginTop: '0',
                         letterSpacing: '0.01em'
                     }}
-                    onClick={() => window.location.href = `/user/photographers/view-profile?id=${photographer.id}`}
+                    onClick={() => {
+                        setWizardPhotographerId(photographer.id);
+                        setShowWizard(true);
+                    }}
                     onMouseEnter={(e) => {
                         e.currentTarget.style.backgroundColor = '#2d2d2d';
                         e.currentTarget.style.transform = 'translateY(-2px)';
@@ -1206,6 +1224,16 @@ const Photographers: React.FC = () => {
         </div>
 
       </main>
+
+      <BookingWizard
+        isOpen={showWizard}
+        onClose={() => {
+          setShowWizard(false);
+          setWizardPhotographerId(undefined);
+          sessionStorage.setItem('wizardDismissed', 'true');
+        }}
+        preselectedPhotographerId={wizardPhotographerId}
+      />
     </div>
   );
 };
