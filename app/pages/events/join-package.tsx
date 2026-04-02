@@ -12,6 +12,10 @@ import { signup as apiSignup } from '@/lib/APIs/auth/signup/route';
 import { verifyOtp } from '@/lib/APIs/auth/verify-otp/route';
 import { googleAuth } from '@/lib/APIs/auth/google/route';
 import { useGoogleLogin } from '@react-oauth/google';
+import ViewerInfoModal, { type ViewerInfoData } from '../../components/ViewerInfoModal';
+import DeviceSwitchModal from '../../components/DeviceSwitchModal';
+import { registerAnonymousViewer, confirmAnonymousPayment, switchAnonymousDevice } from '@/lib/APIs/streams/anonymous-viewer';
+import { getDeviceId } from '@/lib/fingerprint';
 
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';
 
@@ -92,6 +96,14 @@ function JoinPackageContent(): React.JSX.Element {
   const [otpCustomerId, setOtpCustomerId] = useState('');
   const [otpValue, setOtpValue] = useState('');
   const [googleLoading, setGoogleLoading] = useState(false);
+
+  // Anonymous viewer modal state
+  const [showViewerInfoModal, setShowViewerInfoModal] = useState(false);
+  const [viewerInfoLoading, setViewerInfoLoading] = useState(false);
+  const [viewerInfoError, setViewerInfoError] = useState('');
+  const [showDeviceSwitchModal, setShowDeviceSwitchModal] = useState(false);
+  const [deviceSwitchLoading, setDeviceSwitchLoading] = useState(false);
+  const [pendingViewerId, setPendingViewerId] = useState<string | null>(null);
 
   const googleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
@@ -387,8 +399,14 @@ function JoinPackageContent(): React.JSX.Element {
     const tokenParam = inviteToken ? `&inviteToken=${encodeURIComponent(inviteToken)}` : '';
 
     if (price > 0) {
-      // Paid event — viewer is already authenticated from view-event page
-      setShowPaymentModal(true);
+      if (isAuthenticated) {
+        // Authenticated viewer — go directly to payment
+        setShowPaymentModal(true);
+      } else {
+        // Unauthenticated — show viewer info modal (no signup required)
+        setViewerInfoError('');
+        setShowViewerInfoModal(true);
+      }
     } else {
       // Free event — redirect to join-event for invite token input
       if (selectedPackage === 'individual') {
@@ -396,6 +414,79 @@ function JoinPackageContent(): React.JSX.Element {
       } else if (selectedPackage === 'group' && isGroupInputValid()) {
         window.location.href = `/user/events/join-event?id=${selectedEvent.id}&package=group&people=${numberOfPeople}${tokenParam}`;
       }
+    }
+  };
+
+  // Anonymous viewer registration handler
+  const handleViewerInfoSubmit = async (data: ViewerInfoData) => {
+    if (!selectedEvent) return;
+    setViewerInfoLoading(true);
+    setViewerInfoError('');
+    try {
+      const fingerprint = await getDeviceId();
+      const res = await registerAnonymousViewer(selectedEvent.id, {
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        deviceFingerprint: fingerprint,
+      });
+
+      if (!res.success) {
+        setViewerInfoError(res.error || 'Registration failed. Please try again.');
+        return;
+      }
+
+      const resData = res.data as Record<string, unknown> | undefined;
+      const status = resData?.status as string;
+      const viewerId = resData?.viewerId as string;
+
+      if (viewerId) {
+        setPendingViewerId(viewerId);
+        localStorage.setItem(`anonymousViewer_${selectedEvent.id}`, viewerId);
+      }
+
+      if (status === 'ACCESS_GRANTED') {
+        // Already paid (same fingerprint returning) — go to stream
+        setShowViewerInfoModal(false);
+        const whepUrl = resData?.whepUrl as string;
+        router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&paid=true${whepUrl ? '' : ''}`);
+      } else if (status === 'DEVICE_CONFLICT') {
+        // Active on another device — ask to switch
+        setShowViewerInfoModal(false);
+        setShowDeviceSwitchModal(true);
+      } else {
+        // REQUIRES_PAYMENT — show payment modal
+        setShowViewerInfoModal(false);
+        setShowPaymentModal(true);
+      }
+    } catch {
+      setViewerInfoError('Connection error. Please try again.');
+    } finally {
+      setViewerInfoLoading(false);
+    }
+  };
+
+  // Device switch confirmation handler
+  const handleDeviceSwitchConfirm = async () => {
+    if (!selectedEvent || !pendingViewerId) return;
+    setDeviceSwitchLoading(true);
+    try {
+      const fingerprint = await getDeviceId();
+      const res = await switchAnonymousDevice(selectedEvent.id, pendingViewerId, fingerprint);
+      if (res.success) {
+        setShowDeviceSwitchModal(false);
+        router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&paid=true`);
+      } else {
+        setShowDeviceSwitchModal(false);
+        setViewerInfoError(res.error || 'Could not switch device.');
+        setShowViewerInfoModal(true);
+      }
+    } catch {
+      setShowDeviceSwitchModal(false);
+      setViewerInfoError('Connection error. Please try again.');
+      setShowViewerInfoModal(true);
+    } finally {
+      setDeviceSwitchLoading(false);
     }
   };
 
@@ -457,6 +548,19 @@ function JoinPackageContent(): React.JSX.Element {
       }
     } else {
       // Individual payment success
+      if (!isAuthenticated && pendingViewerId) {
+        // Anonymous viewer — confirm payment with backend (retry once on failure)
+        try {
+          await confirmAnonymousPayment(selectedEvent.id, pendingViewerId, refid);
+        } catch {
+          try {
+            await confirmAnonymousPayment(selectedEvent.id, pendingViewerId, refid);
+          } catch { /* backend can reconcile via payment ref later */ }
+        }
+        router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&paid=true&viewerId=${pendingViewerId}`);
+        return;
+      }
+
       const isLive = (selectedEvent.eventStatus || '').toUpperCase() === 'ONGOING';
       if (isLive) {
         // Event is live — go to stream
@@ -1133,6 +1237,7 @@ function JoinPackageContent(): React.JSX.Element {
         currencyId={currencies.find(c => c.code === (selectedEvent?.streamFeeCurrencyAbbreviation || 'RWF'))?.id || currencies.find(c => c.code === 'RWF')?.id || '490c5ab1-a150-459e-be6b-d45131a1e13a'}
         paymentType="streaming"
         eventId={selectedEvent?.id || ''}
+        viewerId={!isAuthenticated ? (pendingViewerId || undefined) : undefined}
         title={`Stream Access — ${selectedEvent?.title || 'Event'}`}
         subtitle={`${selectedPackage === 'group' ? `Group (${typeof numberOfPeople === 'number' ? numberOfPeople : 1} people)` : 'Individual'} · ${getPaymentFee().toLocaleString()} ${selectedEvent?.streamFeeCurrencyAbbreviation || selectedEvent?.streamFeeCurrencySymbol || (currencies.length > 0 ? currencies[0].code : 'RWF')}`}
         darkMode
@@ -1445,6 +1550,23 @@ function JoinPackageContent(): React.JSX.Element {
           </div>
         </div>
       )}
+
+      {/* Anonymous Viewer Info Modal */}
+      <ViewerInfoModal
+        isOpen={showViewerInfoModal}
+        onClose={() => setShowViewerInfoModal(false)}
+        onSubmit={handleViewerInfoSubmit}
+        loading={viewerInfoLoading}
+        error={viewerInfoError}
+      />
+
+      {/* Device Switch Confirmation Modal */}
+      <DeviceSwitchModal
+        isOpen={showDeviceSwitchModal}
+        onConfirm={handleDeviceSwitchConfirm}
+        onCancel={() => setShowDeviceSwitchModal(false)}
+        loading={deviceSwitchLoading}
+      />
 
       {/* CSS Animations */}
       <style jsx>{`

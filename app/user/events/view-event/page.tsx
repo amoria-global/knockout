@@ -387,16 +387,9 @@ function ViewEventContent(): React.JSX.Element {
     finally { setGroupCodeLoading(false); }
   };
 
-  // Open auth modal or proceed directly if already authenticated
+  // Navigate to purchase page — no auth required (anonymous viewer flow handles it)
   const handlePurchaseAccess = (joinUrl: string) => {
-    if (isAuthenticated()) {
-      window.location.href = joinUrl;
-    } else {
-      setPendingJoinUrl(joinUrl);
-      setAuthStep('login');
-      setAuthError('');
-      setShowAuthModal(true);
-    }
+    window.location.href = joinUrl;
   };
 
   const handleLogin = async () => {

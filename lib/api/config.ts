@@ -121,6 +121,18 @@ export const API_ENDPOINTS = {
     STREAM_REDEEM_GROUP_CODE: (eventId: string) => `/api/remote/public/streams/${eventId}/redeem-group-code`,
     STREAM_GROUP_CODE_STATUS: (eventId: string, code: string) => `/api/remote/public/streams/${eventId}/group-code-status/${code}`,
     STREAM_PURCHASE_ACCESS: (eventId: string) => `/api/remote/public/streams/${eventId}/purchase-access`,
+    STREAM_DEVICE_CHECK: (eventId: string) => `/api/remote/public/streams/${eventId}/device-check`,
+    STREAM_HEARTBEAT: (eventId: string) => `/api/remote/public/streams/${eventId}/heartbeat`,
+
+    // Anonymous viewer endpoints
+    ANONYMOUS_VIEWER_REGISTER: (eventId: string) => `/api/remote/public/anonymous-viewer/${eventId}/register`,
+    ANONYMOUS_VIEWER_CONFIRM_PAYMENT: (eventId: string) => `/api/remote/public/anonymous-viewer/${eventId}/confirm-payment`,
+    ANONYMOUS_VIEWER_DEVICE_CHECK: (eventId: string) => `/api/remote/public/anonymous-viewer/${eventId}/device-check`,
+    ANONYMOUS_VIEWER_HEARTBEAT: (eventId: string) => `/api/remote/public/anonymous-viewer/${eventId}/heartbeat`,
+    ANONYMOUS_VIEWER_DEACTIVATE: (eventId: string) => `/api/remote/public/anonymous-viewer/${eventId}/deactivate`,
+    ANONYMOUS_VIEWER_SWITCH_DEVICE: (eventId: string) => `/api/remote/public/anonymous-viewer/${eventId}/switch-device`,
+    ANONYMOUS_VIEWER_ACCESS_STATUS: (eventId: string) => `/api/remote/public/anonymous-viewer/${eventId}/access-status`,
+    ANONYMOUS_VIEWER_COUNT: (eventId: string) => `/api/remote/public/anonymous-viewer/${eventId}/viewer-count`,
   },
 
   // Protected photographer endpoints
@@ -181,9 +193,9 @@ export const API_ENDPOINTS = {
     VIEWERS: (streamId: string) => `/api/remote/coordinator/streams/${streamId}/viewers`,
     PARTICIPANTS: (streamId: string) => `/api/remote/coordinator/streams/${streamId}/participants`,
     URL: (streamId: string) => `/api/remote/coordinator/streams/${streamId}/url`,
-    REPORTS: (streamId: string) => `/api/remote/coordinator/streams/${streamId}/reports`,
-    RATINGS: (streamId: string) => `/api/remote/coordinator/streams/${streamId}/ratings`,
-    BLOCK: (streamId: string) => `/api/remote/coordinator/streams/${streamId}/block`,
+    REPORTS: (streamId: string) => `/api/remote/streams/${streamId}/reports`,
+    RATINGS: (streamId: string) => `/api/remote/streams/${streamId}/ratings`,
+    BLOCK: (streamId: string) => `/api/remote/streams/${streamId}/block`,
     VIDEO: (eventId: string) => `/api/remote/coordinator/streams/${eventId}/video`,
   },
 

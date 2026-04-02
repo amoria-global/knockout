@@ -267,6 +267,24 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
   const loginIsDisabled = !loginEmail || !loginPassword;
   const returnTo = redirectUrl || '/user/photographers';
 
+  // Helper: redirect to dashboard with booking params (for book-now flows)
+  const redirectToBookingDashboard = (customerType?: string) => {
+    const returnToUrl = new URL(returnTo, window.location.origin);
+    const photographerId = returnToUrl.searchParams.get('id');
+    const packageId = returnToUrl.searchParams.get('packageId');
+    const token = getAuthToken();
+    const rawType = (customerType || loggedInUserType || 'client').toLowerCase();
+    const userType = rawType === 'coordinator' ? 'event-coordinator' : rawType;
+    const dashUrl = process.env.NEXT_PUBLIC_DASHBOARD_URL || 'https://dashboard.connekyt.com';
+    const dest = new URL(`${dashUrl}/user/${userType}/events`);
+    if (photographerId) dest.searchParams.set('photographerId', photographerId);
+    if (packageId) dest.searchParams.set('packageId', packageId);
+    if (token) dest.searchParams.set('token', token);
+    window.location.href = dest.toString();
+  };
+
+  const isBookingRedirect = returnTo.includes('book-now');
+
   const handleKeepExploring = () => {
     setShowPostLoginModal(false);
     if (returnTo.startsWith('http')) { const token = getAuthToken(); const sep = returnTo.includes('?') ? '&' : '?'; window.location.href = token ? `${returnTo}${sep}token=${encodeURIComponent(token)}` : returnTo; }
@@ -280,16 +298,8 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
       const returnToUrl = new URL(returnTo, window.location.origin);
       const photographerId = returnToUrl.searchParams.get('id');
       const packageId = returnToUrl.searchParams.get('packageId');
-      if (returnToUrl.pathname.includes('book-now') && photographerId && packageId) {
-        const token = getAuthToken();
-        const rawType = loggedInUserType?.toLowerCase() || 'client';
-        const userType = rawType === 'coordinator' ? 'event-coordinator' : rawType;
-        const dashUrl = process.env.NEXT_PUBLIC_DASHBOARD_URL || 'https://dashboard.connekyt.com';
-        const dest = new URL(`${dashUrl}/user/${userType}/events`);
-        dest.searchParams.set('photographerId', photographerId);
-        dest.searchParams.set('packageId', packageId);
-        if (token) dest.searchParams.set('token', token);
-        window.location.href = dest.toString();
+      if (returnToUrl.pathname.includes('book-now') && photographerId) {
+        redirectToBookingDashboard();
       } else {
         const token = getAuthToken();
         const refreshTokenValue = getRefreshToken();
@@ -314,7 +324,10 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
         if (customerType === 'Viewer') { setLoginError('Viewer accounts can only sign in from event pages.'); showError('Viewer accounts can only sign in from event pages.'); return; }
         const userData = { id: data.id || data.customerId || '', firstName: data.firstName || userInfo.given_name, lastName: data.lastName || userInfo.family_name, email: data.email || userInfo.email, phone: data.phone || '', customerId: data.customerId || '', customerType };
         loginUser(userData, data.token);
-        setLoggedInUserName(userData.firstName || 'User'); setLoggedInUserType(customerType); showSuccess('Welcome back!'); setShowPostLoginModal(true);
+        setLoggedInUserName(userData.firstName || 'User'); setLoggedInUserType(customerType); showSuccess('Welcome back!');
+        // Auto-redirect for booking flows — skip the PostLoginModal
+        if (isBookingRedirect) { setTimeout(() => redirectToBookingDashboard(customerType), 300); }
+        else { setShowPostLoginModal(true); }
       } else { const msg = response.error || data?.message || 'Google login failed.'; setLoginError(msg); showError(msg); }
     } catch (err) { const msg = err instanceof Error ? err.message : 'An error occurred during Google login.'; setLoginError(msg); showError(msg); }
     finally { setGoogleLoginLoading(false); }
@@ -335,7 +348,10 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
           if (customerType === 'Viewer') { setLoginError('Viewer accounts can only sign in from event pages.'); showError('Viewer accounts can only sign in from event pages.'); setLoginLoading(false); return; }
           const userData = { id: data.id || data.user?.id || '', firstName: data.firstName || data.user?.firstName || '', lastName: data.lastName || data.user?.lastName || '', email: data.email || data.user?.email || loginEmail, phone: data.phone || '', customerId: data.customerId || '', customerType };
           loginUser(userData, data.token || '');
-          setLoggedInUserName(userData.firstName || 'User'); setLoggedInUserType(customerType); showSuccess('Welcome back!'); setShowPostLoginModal(true);
+          setLoggedInUserName(userData.firstName || 'User'); setLoggedInUserType(customerType); showSuccess('Welcome back!');
+          // Auto-redirect for booking flows — skip the PostLoginModal
+          if (isBookingRedirect) { setTimeout(() => redirectToBookingDashboard(customerType), 300); }
+          else { setShowPostLoginModal(true); }
         } else { const msg = response.error || data?.message || 'Login failed.'; setLoginError(msg); showError(msg); }
       } catch (err) { const msg = err instanceof Error ? err.message : 'An error occurred.'; setLoginError(msg); showError(msg); }
       finally { setLoginLoading(false); }
@@ -379,7 +395,7 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
       const userInfo = await response.json();
       try {
         const br = await googleAuth({ email: userInfo.email, firstName: userInfo.given_name || '', lastName: userInfo.family_name || '', customerType: signupUserType });
-        if (br.success && br.data?.token) { setAuthToken(br.data.token); showSuccess('Welcome back! Redirecting...'); router.push(redirectUrl || '/user'); return; }
+        if (br.success && br.data?.token) { setAuthToken(br.data.token); showSuccess('Welcome back! Redirecting...'); if (isBookingRedirect) { setTimeout(() => redirectToBookingDashboard(br.data?.customerType), 300); } else { router.push(redirectUrl || '/user'); } return; }
       } catch { /* continue with form pre-fill */ }
       if (userInfo.given_name) setFirstName(userInfo.given_name);
       if (userInfo.family_name) setLastName(userInfo.family_name);

@@ -15,7 +15,9 @@ import { verifyOtp } from '@/lib/APIs/auth/verify-otp/route';
 import { googleAuth } from '@/lib/APIs/auth/google/route';
 import { useGoogleLogin } from '@react-oauth/google';
 import { getStreamChats, type StreamChatMessage } from '@/lib/APIs/streams/chat/route';
-import { sendStreamChat, sendStreamVideoChat, getStreamViewerCount, getPublicViewerCount, requestStreamAccess } from '@/lib/APIs/streams/route';
+import { sendStreamChat, sendStreamVideoChat, getStreamViewerCount, getPublicViewerCount, requestStreamAccess, checkDeviceAccess, sendHeartbeat, reportStreamIssue, rateStream, blockUserInStream } from '@/lib/APIs/streams/route';
+import { getDeviceId } from '@/lib/fingerprint';
+import { checkAnonymousAccessStatus, anonymousDeviceCheck, anonymousHeartbeat, deactivateAnonymousSession, getAnonymousViewerCount } from '@/lib/APIs/streams/anonymous-viewer';
 import { contactUs } from '@/lib/APIs/public/contact-us/route';
 import { apiClient } from '@/lib/api/client';
 import { API_ENDPOINTS } from '@/lib/api/config';
@@ -52,6 +54,7 @@ interface EventStream {
 interface Message {
   id: number | string;
   sender: string;
+  senderId?: string; // backend customer UUID for blocking
   text: string;
   time: string;
   delivered: boolean;
@@ -143,11 +146,16 @@ const App = () => {
   // entry_fee streams: require payment before watching
   // invite_token streams: require invite token before watching
   const [streamAccessGranted, setStreamAccessGranted] = useState(false);
+  const [accessCheckLoading, setAccessCheckLoading] = useState(false);
   const [showInviteTokenModal, setShowInviteTokenModal] = useState(false);
   const [inviteTokenInput, setInviteTokenInput] = useState('');
   const [inviteTokenError, setInviteTokenError] = useState('');
   const [inviteTokenLoading, setInviteTokenLoading] = useState(false);
   const [viewerUsername, setViewerUsername] = useState('');
+
+  // ── Anonymous viewer state ──
+  const [anonymousViewerId, setAnonymousViewerId] = useState<string | null>(null);
+  const [isAnonymousViewer, setIsAnonymousViewer] = useState(false);
 
   // ── Viewer auth modal state ──
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -333,7 +341,12 @@ const App = () => {
 
     const loadEventDetails = async () => {
       try {
-        const response = await getPublicEventById(eventId);
+        // Pass fingerprint for anonymous viewer access check when not authenticated
+        let fingerprint: string | undefined;
+        if (!isAuthenticated) {
+          try { fingerprint = await getDeviceId(); } catch { /* ignore */ }
+        }
+        const response = await getPublicEventById(eventId, fingerprint);
         if (response.success && response.data) {
           const ev = response.data as Record<string, unknown>;
           setEvents(prev => [{
@@ -352,6 +365,7 @@ const App = () => {
             streamFeeCurrencySymbol: (ev.streamFeeCurrencySymbol as string) ?? null,
             streamFeeCurrencyAbbreviation: (ev.streamFeeCurrencyAbbreviation as string) ?? null,
             hasInviteCode: (ev.hasInviteCode as boolean) ?? null,
+            hasPurchasedAccess: (ev.hasPurchasedAccess as boolean) ?? undefined,
           }, ...prev.slice(1)]);
         }
       } catch {
@@ -359,7 +373,7 @@ const App = () => {
       }
     };
     loadEventDetails();
-  }, [searchParams]);
+  }, [searchParams, isAuthenticated]);
 
 
   // Stream access gate — determine flow based on streamType
@@ -383,11 +397,56 @@ const App = () => {
         }
         // If whepUrl is null, the viewer hasn't actually paid — show payment gate
       } else {
-        // Viewer clicked email link on unlogged-in device — show login modal
-        // After login, the useEffect will re-run and check whepUrl
-        setAuthStep('login');
-        setAuthError('');
-        setShowAuthModal(true);
+        // Check if this is an anonymous viewer (came from join-package with viewerId)
+        const urlViewerId = searchParams.get('viewerId');
+        const savedViewerId = localStorage.getItem(`anonymousViewer_${mainEvent.id}`);
+        const viewerId = urlViewerId || savedViewerId;
+
+        if (viewerId) {
+          // Anonymous viewer with viewerId — check access via fingerprint
+          setAnonymousViewerId(viewerId);
+          setIsAnonymousViewer(true);
+          setAccessCheckLoading(true);
+          (async () => {
+            try {
+              const fingerprint = await getDeviceId();
+              const res = await checkAnonymousAccessStatus(mainEvent.id, fingerprint);
+              const resData = res.data as Record<string, unknown> | undefined;
+              if (res.success && resData?.hasAccess) {
+                const whepUrl = resData?.whepUrl as string;
+                if (whepUrl) {
+                  setEvents(prev => [{ ...prev[0], whepUrl }, ...prev.slice(1)]);
+                }
+                setStreamAccessGranted(true);
+                setAccessCheckLoading(false);
+              } else {
+                // confirm-payment may still be processing — retry after 2s
+                setTimeout(async () => {
+                  try {
+                    const fp = await getDeviceId();
+                    const retryRes = await checkAnonymousAccessStatus(mainEvent.id, fp);
+                    const retryData = retryRes.data as Record<string, unknown> | undefined;
+                    if (retryRes.success && retryData?.hasAccess) {
+                      const retryWhepUrl = retryData?.whepUrl as string;
+                      if (retryWhepUrl) {
+                        setEvents(prev => [{ ...prev[0], whepUrl: retryWhepUrl }, ...prev.slice(1)]);
+                      }
+                      setStreamAccessGranted(true);
+                    }
+                  } catch { /* silent */ }
+                  setAccessCheckLoading(false);
+                }, 2000);
+              }
+            } catch {
+              setAccessCheckLoading(false);
+            }
+          })();
+        } else {
+          // No viewerId — show login modal as fallback
+          setAuthStep('login');
+          setAuthError('');
+          setShowAuthModal(true);
+        }
       }
       return;
     }
@@ -398,6 +457,29 @@ const App = () => {
       // unauthenticated or unpaid → whepUrl is null
       if (isAuthenticated && mainEvent.whepUrl) {
         setStreamAccessGranted(true);
+      } else if (!isAuthenticated) {
+        // Check if anonymous viewer has access via fingerprint
+        const savedViewerId = localStorage.getItem(`anonymousViewer_${mainEvent.id}`);
+        if (savedViewerId) {
+          setAnonymousViewerId(savedViewerId);
+          setIsAnonymousViewer(true);
+          setAccessCheckLoading(true);
+          (async () => {
+            try {
+              const fingerprint = await getDeviceId();
+              const res = await checkAnonymousAccessStatus(mainEvent.id, fingerprint);
+              const resData = res.data as Record<string, unknown> | undefined;
+              if (res.success && resData?.hasAccess) {
+                const whepUrl = resData?.whepUrl as string;
+                if (whepUrl) {
+                  setEvents(prev => [{ ...prev[0], whepUrl }, ...prev.slice(1)]);
+                }
+                setStreamAccessGranted(true);
+              }
+            } catch { /* silent */ }
+            setAccessCheckLoading(false);
+          })();
+        }
       }
       // Otherwise, "Purchase Access" overlay will show
     } else if (type === 'invite_token') {
@@ -552,101 +634,219 @@ const App = () => {
     };
 
     pollViewerCount();
-    const interval = setInterval(pollViewerCount, 15000);
+    const interval = setInterval(pollViewerCount, 500);
     return () => clearInterval(interval);
   }, [searchParams, mainEvent?.eventStatus]);
 
-  // Poll stream chat messages every 5 seconds (requires auth — coordinator endpoint)
-  // Fetches full history so all viewers see a persistent, scrollable chat
+  // Device access check + heartbeat every 30 seconds
   useEffect(() => {
-    if (!mainEvent?.streamId || !isAuthenticated) return;
+    const eventId = searchParams.get('eventId') || searchParams.get('id');
+    if (!eventId || !isAuthenticated) return;
+    const currentStatus = (mainEvent?.eventStatus || '').toUpperCase();
+    if (currentStatus !== 'ONGOING') return;
+
+    let heartbeatInterval: ReturnType<typeof setInterval>;
+    let cancelled = false;
+
+    const initDeviceSession = async () => {
+      try {
+        const deviceId = await getDeviceId();
+        const res = await checkDeviceAccess(eventId, deviceId);
+        if (cancelled) return;
+        const resData = res.data as Record<string, unknown> | undefined;
+        if (!res.success || resData?.action === 0) {
+          const msg = (resData?.message as string) || res.error || 'Access denied from this device';
+          setDeviceError(msg);
+          return;
+        }
+        setDeviceError(null);
+        // Start heartbeat every 30 seconds
+        heartbeatInterval = setInterval(async () => {
+          if (cancelled) return;
+          try {
+            const hbRes = await sendHeartbeat(eventId, deviceId);
+            const hbData = hbRes.data as Record<string, unknown> | undefined;
+            if (!hbRes.success || hbData?.action === 0) {
+              setDeviceError((hbData?.message as string) || 'Session expired');
+              clearInterval(heartbeatInterval);
+            }
+          } catch { /* silent */ }
+        }, 30000);
+      } catch {
+        // Silent fail — don't block viewing on fingerprint errors
+      }
+    };
+
+    initDeviceSession();
+    return () => {
+      cancelled = true;
+      if (heartbeatInterval) clearInterval(heartbeatInterval);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, isAuthenticated, mainEvent?.eventStatus]);
+
+  // Anonymous viewer: device check + heartbeat every 30s + deactivate on page unload
+  useEffect(() => {
+    const eventId = searchParams.get('eventId') || searchParams.get('id');
+    if (!eventId || isAuthenticated || !isAnonymousViewer || !anonymousViewerId) return;
+    const currentStatus = (mainEvent?.eventStatus || '').toUpperCase();
+    if (currentStatus !== 'ONGOING') return;
+
+    let heartbeatInterval: ReturnType<typeof setInterval>;
+    let cancelled = false;
+    let deviceFingerprint = '';
+
+    const initAnonSession = async () => {
+      try {
+        deviceFingerprint = await getDeviceId();
+        const res = await anonymousDeviceCheck(eventId, anonymousViewerId, deviceFingerprint);
+        if (cancelled) return;
+        const resData = res.data as Record<string, unknown> | undefined;
+        if (!res.success || resData?.action === 0) {
+          const msg = (resData?.message as string) || res.error || 'Access denied from this device';
+          setDeviceError(msg);
+          return;
+        }
+        setDeviceError(null);
+        // Heartbeat every 30 seconds
+        heartbeatInterval = setInterval(async () => {
+          if (cancelled) return;
+          try {
+            const hbRes = await anonymousHeartbeat(eventId, anonymousViewerId, deviceFingerprint);
+            const hbData = hbRes.data as Record<string, unknown> | undefined;
+            if (!hbRes.success || hbData?.action === 0) {
+              setDeviceError((hbData?.message as string) || 'Session expired');
+              clearInterval(heartbeatInterval);
+            }
+          } catch { /* silent */ }
+        }, 30000);
+      } catch { /* silent */ }
+    };
+
+    // Deactivate session on page unload
+    const handleBeforeUnload = () => {
+      if (deviceFingerprint && eventId) {
+        const url = `${window.location.origin}/api/proxy/api/remote/public/anonymous-viewer/${eventId}/deactivate`;
+        const body = JSON.stringify({ deviceFingerprint });
+        navigator.sendBeacon(url, new Blob([body], { type: 'application/json' }));
+      }
+    };
+
+    initAnonSession();
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      cancelled = true;
+      if (heartbeatInterval) clearInterval(heartbeatInterval);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, isAuthenticated, isAnonymousViewer, anonymousViewerId, mainEvent?.eventStatus]);
+
+  // Poll stream chat messages every 2 seconds
+  // Authenticated users use coordinator endpoint; anonymous viewers use public endpoint
+  useEffect(() => {
+    if (!mainEvent?.streamId) return;
+    // Need either authentication or anonymous viewer status to poll chat
+    if (!isAuthenticated && !isAnonymousViewer) return;
 
     const pollChat = async () => {
       try {
-        // Fetch large page to get full chat history
-        const response = await getStreamChats(mainEvent.streamId, 0, 500);
-        if (response.success && response.data) {
-          // Backend returns a flat array directly in response.data
-          // Each item: { id, viewerUsername, message, timestamp, time, avatar? }
-          const rawData = response.data as unknown;
-          const chatMessages: Array<Record<string, unknown>> = Array.isArray(rawData)
-            ? rawData
-            : (rawData as Record<string, unknown>)?.data
-              ? ((rawData as Record<string, unknown>).data as Array<Record<string, unknown>>)
-              : [];
+        let chatMessages: Array<Record<string, unknown>> = [];
 
-          if (chatMessages.length > 0) {
-            // Filter out already-seen API messages and blocked users
-            const newApiMessages = chatMessages.filter(m => {
-              const id = String(m.id);
-              const sender = (m.viewerUsername || m.sender || '') as string;
-              return !seenApiMessageIds.current.has(id) && !blockedUsers.has(sender);
-            });
-
-            if (newApiMessages.length > 0) {
-              // Mark these API IDs as seen
-              newApiMessages.forEach(m => seenApiMessageIds.current.add(String(m.id)));
-
-              setEvents(prev => {
-                const updated = [...prev];
-                const currentMessages = [...updated[mainEventIndex].messages];
-
-                const convertedMessages: Message[] = newApiMessages.map(m => {
-                  const sender = (m.viewerUsername || m.sender || 'Unknown') as string;
-                  const msgText = (m.message || m.content || '') as string;
-                  // Use backend's pre-formatted time, fall back to parsing timestamp
-                  const timeStr = m.time
-                    ? String(m.time)
-                    : m.timestamp
-                      ? new Date(String(m.timestamp)).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                      : '';
-
-                  return {
-                    id: String(m.id),
-                    apiMessageId: String(m.id),
-                    sender,
-                    text: msgText,
-                    time: timeStr,
-                    delivered: true,
-                    avatar: (m.viewerAvatar || m.avatar || '') as string || DEFAULT_USER_AVATAR,
-                    videoUrl: (m.videoUrl as string) || undefined,
-                  };
-                });
-
-                // Remove optimistic "You" messages that now have a matching API message
-                const apiTexts = new Set(newApiMessages.map(m => String(m.message || m.content || '')));
-                const merged = currentMessages.filter(m => {
-                  if (m.sender === 'You' && !m.delivered && apiTexts.has(m.text)) {
-                    return false; // remove optimistic duplicate
-                  }
-                  return true;
-                });
-
-                updated[mainEventIndex] = {
-                  ...updated[mainEventIndex],
-                  messages: [...merged, ...convertedMessages],
-                };
-                return updated;
-              });
-            }
-
-            // Update participants from all senders
-            const senderMap = new Map<string, string>();
-            chatMessages.forEach(m => {
-              const sender = (m.viewerUsername || m.sender || 'Unknown') as string;
-              if (!senderMap.has(sender)) {
-                senderMap.set(sender, ((m.viewerAvatar || m.avatar || '') as string) || DEFAULT_USER_AVATAR);
-              }
-            });
-            setParticipants(
-              Array.from(senderMap.entries()).map(([name, avatar], idx) => ({
-                id: idx + 1,
-                name,
-                status: 'active',
-                avatar,
-              }))
-            );
+        if (isAuthenticated) {
+          // Authenticated: use coordinator endpoint via apiClient
+          const response = await getStreamChats(mainEvent.streamId, 0, 500);
+          if (response.success && response.data) {
+            const rawData = response.data as unknown;
+            chatMessages = Array.isArray(rawData)
+              ? rawData
+              : (rawData as Record<string, unknown>)?.data
+                ? ((rawData as Record<string, unknown>).data as Array<Record<string, unknown>>)
+                : [];
           }
+        } else {
+          // Anonymous viewer: use public endpoint directly (no auth needed)
+          const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://backend.connekyt.com';
+          const res = await fetch(`${baseUrl}/api/remote/public/events/${mainEvent.id}/chats?page=0&size=500`);
+          if (res.ok) {
+            const json = await res.json();
+            chatMessages = Array.isArray(json?.data) ? json.data : [];
+          }
+        }
+
+        if (chatMessages.length > 0) {
+          // Filter out already-seen API messages and blocked users
+          const newApiMessages = chatMessages.filter(m => {
+            const id = String(m.id);
+            const sender = (m.viewerUsername || m.sender || '') as string;
+            return !seenApiMessageIds.current.has(id) && !blockedUsers.has(sender);
+          });
+
+          if (newApiMessages.length > 0) {
+            // Mark these API IDs as seen
+            newApiMessages.forEach(m => seenApiMessageIds.current.add(String(m.id)));
+
+            setEvents(prev => {
+              const updated = [...prev];
+              const currentMessages = [...updated[mainEventIndex].messages];
+
+              const convertedMessages: Message[] = newApiMessages.map(m => {
+                const sender = (m.viewerUsername || m.sender || 'Unknown') as string;
+                const msgText = (m.message || m.content || '') as string;
+                // Use backend's pre-formatted time, fall back to parsing timestamp
+                const timeStr = m.time
+                  ? String(m.time)
+                  : m.timestamp
+                    ? new Date(String(m.timestamp)).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                    : '';
+
+                return {
+                  id: String(m.id),
+                  apiMessageId: String(m.id),
+                  sender,
+                  senderId: m.senderId ? String(m.senderId) : undefined,
+                  text: msgText,
+                  time: timeStr,
+                  delivered: true,
+                  avatar: (m.viewerAvatar || m.avatar || '') as string || DEFAULT_USER_AVATAR,
+                  videoUrl: (m.videoUrl as string) || undefined,
+                };
+              });
+
+              // Remove optimistic "You" messages that now have a matching API message
+              const apiTexts = new Set(newApiMessages.map(m => String(m.message || m.content || '')));
+              const merged = currentMessages.filter(m => {
+                if (m.sender === 'You' && !m.delivered && apiTexts.has(m.text)) {
+                  return false; // remove optimistic duplicate
+                }
+                return true;
+              });
+
+              updated[mainEventIndex] = {
+                ...updated[mainEventIndex],
+                messages: [...merged, ...convertedMessages],
+              };
+              return updated;
+            });
+          }
+
+          // Update participants from all senders
+          const senderMap = new Map<string, string>();
+          chatMessages.forEach(m => {
+            const sender = (m.viewerUsername || m.sender || 'Unknown') as string;
+            if (!senderMap.has(sender)) {
+              senderMap.set(sender, ((m.viewerAvatar || m.avatar || '') as string) || DEFAULT_USER_AVATAR);
+            }
+          });
+          setParticipants(
+            Array.from(senderMap.entries()).map(([name, avatar], idx) => ({
+              id: idx + 1,
+              name,
+              status: 'active',
+              avatar,
+            }))
+          );
         }
       } catch {
         // Silent fail for polling
@@ -655,10 +855,10 @@ const App = () => {
 
     // Initial fetch
     pollChat();
-    const interval = setInterval(pollChat, 5000);
+    const interval = setInterval(pollChat, 2000);
     return () => clearInterval(interval);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mainEvent?.streamId, mainEventIndex, blockedUsers, isAuthenticated]);
+  }, [mainEvent?.streamId, mainEvent?.id, mainEventIndex, blockedUsers, isAuthenticated, isAnonymousViewer]);
 
   // Auto-scroll chat to bottom when new messages arrive
   useEffect(() => {
@@ -826,6 +1026,10 @@ const App = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [showReportIssues, setShowReportIssues] = useState(false);
   const [lowLatencyMode, setLowLatencyMode] = useState(true);
+  // Device access state
+  const [deviceError, setDeviceError] = useState<string | null>(null);
+  // Live edge tracking
+  const [isBehindLive, setIsBehindLive] = useState(false);
   // Rating state
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [rating, setRating] = useState(0);
@@ -1284,7 +1488,7 @@ const App = () => {
   };
 
   // Handle block user
-  const handleBlockUser = (sender: string) => {
+  const handleBlockUser = (sender: string, senderId?: string) => {
     // Block user locally and filter their messages from the chat
     setBlockedUsers(prev => new Set(prev).add(sender));
     setEvents(prev => {
@@ -1296,6 +1500,11 @@ const App = () => {
       return updated;
     });
     setOpenMessageMenu(null);
+
+    // Also block on the backend if authenticated and we have a user ID
+    if (isAuthenticated && senderId && mainEvent?.id) {
+      blockUserInStream(mainEvent.id, senderId).catch(() => { /* local block still applies */ });
+    }
   };
 
   // Handle reply to message
@@ -1415,8 +1624,67 @@ const App = () => {
         ...prev,
         [eventId]: { ...prev[eventId], progress }
       }));
+      // Track if viewer is behind the live edge (main player only)
+      if (eventId === mainEvent?.id) {
+        if (video.duration && isFinite(video.duration)) {
+          // HLS/buffered source — compare currentTime to duration
+          setIsBehindLive(video.duration - video.currentTime > 5);
+        }
+        // For WebRTC (duration=Infinity), isBehindLive is managed by stall detection below
+      }
     }
   };
+
+  // Jump to live edge — reconnect WHEP for WebRTC, seek for HLS
+  const jumpToLive = () => {
+    const video = videoRefs.current[mainEvent.id];
+    if (!video) return;
+
+    const isWebRTC = video.srcObject instanceof MediaStream;
+    if (isWebRTC && mainEvent.whepUrl) {
+      // Reconnect WHEP client for a fresh live connection
+      const existing = whepInstancesRef.current[mainEvent.id];
+      if (existing) {
+        existing.destroy();
+        whepInstancesRef.current[mainEvent.id] = null;
+      }
+      const whepClient = new WHEPClient(mainEvent.whepUrl, video);
+      whepInstancesRef.current[mainEvent.id] = whepClient;
+      video.onloadedmetadata = () => {
+        video.play().catch(() => {});
+      };
+    } else if (video.duration && isFinite(video.duration)) {
+      video.currentTime = video.duration;
+    }
+    setIsBehindLive(false);
+  };
+
+  // WebRTC stall detection — detect when viewer falls behind live edge
+  // For WebRTC, video.duration is Infinity so we track frame progress instead
+  const lastFrameTimeRef = useRef<number>(0);
+  useEffect(() => {
+    const video = videoRefs.current[mainEvent?.id];
+    if (!video || !mainEvent?.whepUrl) return;
+    const isWebRTC = video.srcObject instanceof MediaStream;
+    if (!isWebRTC) return;
+
+    const checkStall = setInterval(() => {
+      if (video.paused) {
+        setIsBehindLive(true);
+        return;
+      }
+      // If currentTime hasn't advanced in 3s, stream is stalled
+      if (video.currentTime === lastFrameTimeRef.current && lastFrameTimeRef.current > 0) {
+        setIsBehindLive(true);
+      } else {
+        setIsBehindLive(false);
+      }
+      lastFrameTimeRef.current = video.currentTime;
+    }, 3000);
+
+    return () => clearInterval(checkStall);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mainEvent?.id, mainEvent?.whepUrl]);
 
   // Effect to add listeners for main video
   useEffect(() => {
@@ -2075,19 +2343,15 @@ const App = () => {
     setLowLatencyMode(!lowLatencyMode);
   };
 
-  // Handle report issue — sends via contact-us API
+  // Handle report issue — sends via stream interaction API
   const handleReportIssue = async (issueType: string) => {
     setShowSettings(false);
     setShowReportIssues(false);
 
     try {
-      await contactUs({
-        fullName: 'Stream Viewer',
-        email: 'stream-report@amoria.com',
-        phone: '',
-        subject: `Stream Report: ${issueType}`,
-        message: `Issue reported on stream "${mainEvent.title}" (ID: ${mainEvent.streamId}): ${issueType}`,
-      });
+      if (isAuthenticated && mainEvent.id) {
+        await reportStreamIssue(mainEvent.id, issueType);
+      }
     } catch {
       // Silent fail — best-effort report
     }
@@ -2128,16 +2392,8 @@ const App = () => {
 
     setRatingSubmitting(true);
     try {
-      const formData = new FormData();
-      formData.append('eventId', mainEvent.id);
-      formData.append('photographerId', mainEvent.photographerId);
-      formData.append('rating', rating.toString());
-      formData.append('comment', ratingComment);
-
-      await apiClient.post(
-        API_ENDPOINTS.PUBLIC.SUBMIT_REVIEW,
-        formData
-      );
+      // Submit stream-specific rating via StreamInteractionController
+      await rateStream(mainEvent.id, rating, ratingComment || undefined);
 
       // Mark as rated in localStorage to prevent duplicate
       localStorage.setItem(`rated_${mainEvent.id}`, 'true');
@@ -2291,6 +2547,11 @@ const App = () => {
         @keyframes spin {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
+        }
+
+        @keyframes livePulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.4; }
         }
         @keyframes blink {
           0%, 100% { opacity: 1; }
@@ -2807,6 +3068,27 @@ const App = () => {
             max-width: 300px !important;
             left: 50% !important;
             transform: translate(-50%, -50%) !important;
+          }
+
+          /* Hide secondary controls on mobile to prevent overflow */
+          .mobile-hidden-control {
+            display: none !important;
+          }
+
+          /* Prevent volume slider from expanding on mobile */
+          .volume-slider-wrapper {
+            display: none !important;
+          }
+
+          /* Ensure controls bar doesn't overflow */
+          .controls-bar {
+            overflow: hidden !important;
+            flex-wrap: nowrap !important;
+          }
+
+          /* Fullscreen always visible */
+          .fullscreen-btn {
+            flex-shrink: 0 !important;
           }
         }
 
@@ -3339,36 +3621,19 @@ const App = () => {
                 }}>
                   {/* ── Entry Fee — check if already paid or need purchase ── */}
                   {isEntryFeeStream(mainEvent) ? (
-                    mainEvent.hasPurchasedAccess && !isAuthenticated ? (
-                      // Paid viewer but not logged in — show login prompt
+                    accessCheckLoading ? (
+                      // Verifying access — show spinner while checking
                       <>
-                        <i className="bi bi-check-circle-fill" style={{ fontSize: '42px', color: '#10b981' }}></i>
+                        <div style={{ width: 42, height: 42, border: '3px solid rgba(255,255,255,0.2)', borderTopColor: '#10b981', borderRadius: '50%', animation: 'authSpin 0.8s linear infinite' }} />
                         <h3 style={{ color: '#fff', fontSize: '20px', fontWeight: '600', margin: 0 }}>
-                          Access Purchased
+                          Verifying Access...
                         </h3>
                         <p style={{ color: '#adadb8', fontSize: '14px', margin: 0, maxWidth: '320px' }}>
-                          Log in to start watching.
+                          Please wait while we confirm your access.
                         </p>
-                        <button
-                          onClick={() => { setAuthStep('login'); setAuthError(''); setShowAuthModal(true); }}
-                          style={{
-                            padding: '14px 32px',
-                            background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
-                            border: 'none',
-                            borderRadius: '12px',
-                            color: '#fff',
-                            fontSize: '15px',
-                            fontWeight: '600',
-                            cursor: 'pointer',
-                            transition: 'all 0.3s ease',
-                          }}
-                        >
-                          <i className="bi bi-box-arrow-in-right" style={{ marginRight: '8px' }}></i>
-                          Log In to Watch
-                        </button>
                       </>
-                    ) : isAuthenticated && mainEvent.hasPurchasedAccess ? (
-                      // Paid and logged in but whepUrl is null (stream not started yet or loading)
+                    ) : (mainEvent.hasPurchasedAccess || isAnonymousViewer) ? (
+                      // Paid viewer (auth or anonymous) — access confirmed, waiting for stream or loading
                       <>
                         <i className="bi bi-hourglass-split" style={{ fontSize: '42px', color: '#10b981' }}></i>
                         <h3 style={{ color: '#fff', fontSize: '20px', fontWeight: '600', margin: 0 }}>
@@ -3379,17 +3644,17 @@ const App = () => {
                         </p>
                       </>
                     ) : !isAuthenticated ? (
-                      // Not logged in, not paid — show login first
+                      // Not logged in and not a registered anonymous viewer — show purchase
                       <>
                         <i className="bi bi-lock-fill" style={{ fontSize: '42px', color: '#03969c' }}></i>
                         <h3 style={{ color: '#fff', fontSize: '20px', fontWeight: '600', margin: 0 }}>
                           Paid Stream
                         </h3>
                         <p style={{ color: '#adadb8', fontSize: '14px', margin: 0, maxWidth: '320px' }}>
-                          Purchase access or sign in if you already paid.
+                          Purchase access to watch this stream.
                         </p>
                         <button
-                          onClick={() => { setAuthStep('login'); setAuthError(''); setShowAuthModal(true); }}
+                          onClick={() => window.location.href = `/user/events/join-package?id=${mainEvent.id}`}
                           style={{
                             padding: '14px 32px',
                             background: 'linear-gradient(135deg, #03969c 0%, #026d72 100%)',
@@ -3403,7 +3668,7 @@ const App = () => {
                           }}
                         >
                           <i className="bi bi-ticket-perforated-fill" style={{ marginRight: '8px' }}></i>
-                          Purchase Access or Sign In if Paid
+                          Purchase Access
                         </button>
                       </>
                     ) : (
@@ -3498,6 +3763,53 @@ const App = () => {
                       Loading stream...
                     </div>
                   )}
+                </div>
+              )}
+
+              {/* Device Access Error Overlay */}
+              {deviceError && (
+                <div style={{
+                  position: 'absolute',
+                  inset: 0,
+                  zIndex: 60,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: 'rgba(0, 0, 0, 0.95)',
+                  backdropFilter: 'blur(12px)',
+                  borderRadius: '16px',
+                  padding: '32px',
+                  textAlign: 'center',
+                  gap: '16px',
+                }}>
+                  <i className="bi bi-display" style={{ fontSize: '48px', color: '#f59e0b' }}></i>
+                  <h3 style={{ color: '#fff', fontSize: '20px', fontWeight: '600', margin: 0 }}>
+                    Device Access Restricted
+                  </h3>
+                  <p style={{ color: '#adadb8', fontSize: '14px', margin: 0, maxWidth: '360px', lineHeight: '1.6' }}>
+                    {deviceError}
+                  </p>
+                  <p style={{ color: '#71717a', fontSize: '12px', margin: 0, maxWidth: '320px' }}>
+                    Close the other session or wait 60 seconds for it to expire, then refresh this page.
+                  </p>
+                  <button
+                    onClick={() => { setDeviceError(null); window.location.reload(); }}
+                    style={{
+                      marginTop: '8px',
+                      padding: '12px 28px',
+                      background: 'linear-gradient(135deg, #03969c 0%, #026d72 100%)',
+                      border: 'none',
+                      borderRadius: '12px',
+                      color: '#fff',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <i className="bi bi-arrow-clockwise" style={{ marginRight: '8px' }}></i>
+                    Try Again
+                  </button>
                 </div>
               )}
 
@@ -3851,7 +4163,7 @@ const App = () => {
                 </div>
 
                 {/* Control Buttons */}
-                <div style={{
+                <div className="controls-bar" style={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: '8px',
@@ -3872,6 +4184,40 @@ const App = () => {
                   }} onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
                      onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}>
                     <i className={mainState.isPlaying ? "bi bi-pause-fill" : "bi bi-play-fill"}></i>
+                  </button>
+
+                  {/* Jump to Live button */}
+                  <button
+                    onClick={jumpToLive}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      padding: '4px 10px',
+                      border: 'none',
+                      borderRadius: '4px',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      letterSpacing: '0.5px',
+                      cursor: isBehindLive ? 'pointer' : 'default',
+                      transition: 'all 0.3s',
+                      background: isBehindLive ? 'rgba(255,255,255,0.15)' : '#e11d48',
+                      color: isBehindLive ? '#aaa' : '#fff',
+                      opacity: isBehindLive ? 0.8 : 1,
+                      flexShrink: 0,
+                    }}
+                    onMouseEnter={(e) => { if (isBehindLive) e.currentTarget.style.background = 'rgba(255,255,255,0.25)'; }}
+                    onMouseLeave={(e) => { if (isBehindLive) e.currentTarget.style.background = 'rgba(255,255,255,0.15)'; }}
+                  >
+                    <span style={{
+                      width: '8px',
+                      height: '8px',
+                      borderRadius: '50%',
+                      background: isBehindLive ? '#666' : '#fff',
+                      animation: isBehindLive ? 'none' : 'livePulse 2s infinite',
+                      flexShrink: 0,
+                    }} />
+                    {isBehindLive ? 'GO LIVE' : 'LIVE'}
                   </button>
 
                   <div
@@ -3904,7 +4250,7 @@ const App = () => {
                     </button>
 
                     {/* Modern Volume Slider */}
-                    <div style={{
+                    <div className="volume-slider-wrapper" style={{
                       display: 'flex',
                       alignItems: 'center',
                       gap: '10px',
@@ -3982,7 +4328,7 @@ const App = () => {
 
                   <button
                     onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                    className="control-btn"
+                    className="control-btn mobile-hidden-control"
                     style={{
                       background: 'transparent',
                       border: 'none',
@@ -4004,7 +4350,7 @@ const App = () => {
 
                   <button
                     onClick={toggleRecording}
-                    className="control-btn"
+                    className="control-btn mobile-hidden-control"
                     style={{
                       background: isRecording ? 'rgba(239, 68, 68, 0.2)' : 'transparent',
                       border: 'none',
@@ -4027,7 +4373,7 @@ const App = () => {
 
                   <button
                     onClick={() => setShowParticipants(!showParticipants)}
-                    className="control-btn"
+                    className="control-btn mobile-hidden-control"
                     style={{
                       background: 'transparent',
                       border: 'none',
@@ -4282,7 +4628,7 @@ const App = () => {
 
                   <button
                     onClick={toggleFullscreen}
-                    className="control-btn"
+                    className="control-btn fullscreen-btn"
                     style={{
                       background: 'transparent',
                       border: 'none',
@@ -5408,7 +5754,7 @@ const App = () => {
                               Reply
                             </button>
                             <button
-                              onClick={() => handleBlockUser(message.sender)}
+                              onClick={() => handleBlockUser(message.sender, message.senderId)}
                               style={{
                                 width: '100%',
                                 padding: '10px 12px',

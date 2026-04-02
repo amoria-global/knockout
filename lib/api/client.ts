@@ -17,6 +17,7 @@ import { logger } from './logger';
 import { createTimeoutController, combineAbortSignals, isTimeoutError, isAbortError } from './utils/timeout';
 import { withRetry } from './utils/retry';
 import { getRateLimiterForEndpoint, isRateLimitError } from './utils/rate-limiter';
+import { setAuthCookies, clearAuthCookies } from '../utils/cookies';
 
 /**
  * Generate unique request ID for tracing
@@ -45,6 +46,7 @@ function getAuthToken(): string | null {
 function setAuthToken(token: string): void {
   if (typeof window === 'undefined') return;
   localStorage.setItem(AUTH_TOKEN_KEY, token);
+  setAuthCookies(token);
 }
 
 /**
@@ -53,6 +55,7 @@ function setAuthToken(token: string): void {
 function removeAuthToken(): void {
   if (typeof window === 'undefined') return;
   localStorage.removeItem(AUTH_TOKEN_KEY);
+  clearAuthCookies();
 }
 
 /**
@@ -69,6 +72,7 @@ function getRefreshToken(): string | null {
 function setRefreshToken(token: string): void {
   if (typeof window === 'undefined') return;
   localStorage.setItem(REFRESH_TOKEN_KEY, token);
+  setAuthCookies(undefined, token);
 }
 
 /**
@@ -77,6 +81,7 @@ function setRefreshToken(token: string): void {
 function removeRefreshToken(): void {
   if (typeof window === 'undefined') return;
   localStorage.removeItem(REFRESH_TOKEN_KEY);
+  clearAuthCookies();
 }
 
 /**

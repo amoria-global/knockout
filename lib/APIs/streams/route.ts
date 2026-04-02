@@ -325,6 +325,36 @@ export async function getGroupCodeStatus(
   );
 }
 
+// --- Device Access Control ---
+
+export async function checkDeviceAccess(
+  eventId: string,
+  deviceId: string
+): Promise<ApiResponse<{ action: number; message: string }>> {
+  if (!isAuthenticated()) {
+    return { success: false, error: 'Authentication required' };
+  }
+  return apiClient.post(
+    API_ENDPOINTS.PUBLIC.STREAM_DEVICE_CHECK(eventId),
+    { deviceId },
+    { retries: 1 }
+  );
+}
+
+export async function sendHeartbeat(
+  eventId: string,
+  deviceId: string
+): Promise<ApiResponse<{ action: number; message: string }>> {
+  if (!isAuthenticated()) {
+    return { success: false, error: 'Authentication required' };
+  }
+  return apiClient.post(
+    API_ENDPOINTS.PUBLIC.STREAM_HEARTBEAT(eventId),
+    { deviceId },
+    { retries: 0 }
+  );
+}
+
 export async function purchaseStreamAccess(
   eventId: string,
   data: {

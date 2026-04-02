@@ -135,11 +135,16 @@ export interface GetPublicEventsRequest {
 
 /**
  * Fetch a single public event by ID
+ * @param fingerprint - Optional device fingerprint for anonymous viewer access check
  */
 export async function getPublicEventById(
-  id: string
+  id: string,
+  fingerprint?: string
 ): Promise<ApiResponse<PublicEvent>> {
-  const endpoint = API_ENDPOINTS.PUBLIC.EVENT_BY_ID(id);
+  let endpoint = API_ENDPOINTS.PUBLIC.EVENT_BY_ID(id);
+  if (fingerprint) {
+    endpoint += `?fingerprint=${encodeURIComponent(fingerprint)}`;
+  }
   return apiClient.get<PublicEvent>(endpoint, { skipAuth: !isAuthenticated(), retries: 2 });
 }
 
