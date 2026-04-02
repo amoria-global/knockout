@@ -153,6 +153,17 @@ function BookNowContent(): React.JSX.Element {
     }
   }, [preselectedPackageId, apiPackagesLoaded, apiPackages, selectedPackage]);
 
+  // Auto-trigger booking when a package is selected (brief delay for visual feedback)
+  useEffect(() => {
+    if (selectedPackage && photographerId) {
+      const timer = setTimeout(() => {
+        handleBooking();
+      }, 600);
+      return () => clearTimeout(timer);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPackage]);
+
   // Helper to resolve currency symbol from currencyId
   const getCurrencySymbol = (currencyId: string): string => {
     const c = currencyMap.get(currencyId);

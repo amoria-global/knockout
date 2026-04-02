@@ -1,9 +1,10 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { apiClient, getAuthToken, setAuthToken, removeAuthToken, removeRefreshToken, isAuthenticated as checkAuth } from '@/lib/api/client';
+import { apiClient, getAuthToken, getRefreshToken, setAuthToken, removeAuthToken, removeRefreshToken, isAuthenticated as checkAuth } from '@/lib/api/client';
 import { API_ENDPOINTS } from '@/lib/api/config';
 import { logout as logoutFromBackend } from '@/lib/APIs/auth/logout/route';
+import { setAuthCookies, clearAuthCookies } from '@/lib/utils/cookies';
 
 /**
  * User data stored in auth context
@@ -144,6 +145,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const storedUser = getStoredUser();
 
       if (hasToken && storedUser) {
+        // Bootstrap: ensure cookies are set for middleware (migrates existing sessions)
+        const token = getAuthToken();
+        if (token) {
+          setAuthCookies(token, getRefreshToken() || undefined, storedUser.customerType);
+        }
         // Normalize any stored HTTP image URLs for current environment
         if (storedUser.profilePicture) {
           storedUser.profilePicture = normalizeImageUrl(storedUser.profilePicture);
@@ -190,10 +196,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       removeRefreshToken();
       clearStoredUser();
       setUser(null);
-      // Expire dashboard-set cookies
-      ['authToken', 'refreshToken', 'userRole'].forEach(name => {
-        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
-      });
+      clearAuthCookies();
       // Remove the param from URL so refresh doesn't re-trigger
       params.delete('logged_out');
       const cleanUrl = params.toString()
@@ -214,10 +217,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         removeRefreshToken();
         clearStoredUser();
         setUser(null);
-        // Expire dashboard-set cookies
-        ['authToken', 'refreshToken', 'userRole'].forEach(name => {
-          document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
-        });
+        clearAuthCookies();
         // Redirect to the page the user was on before login, or fallback to home
         const savedRedirect = localStorage.getItem('authRedirectUrl');
         localStorage.removeItem('authRedirectUrl');
@@ -265,8 +265,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
    * Also fetches profile-summary in background to get real customerType
    */
   const login = useCallback(async (userData: AuthUser, token: string) => {
-    // Store token first
+    // Store token first (also sets authToken cookie via client.ts)
     setAuthToken(token);
+    // Set userRole cookie for middleware role detection
+    if (userData.customerType) {
+      setAuthCookies(undefined, undefined, userData.customerType);
+    }
     // Store user data
     storeUser(userData);
     // Update state
@@ -290,9 +294,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(() => {
     // Call backend to invalidate the token (fire-and-forget)
     logoutFromBackend().catch(() => {});
-    // Clear tokens
+    // Clear tokens (also clears cookies via client.ts)
     removeAuthToken();
     removeRefreshToken();
+    clearAuthCookies();
     // Clear user data
     clearStoredUser();
     // Update state

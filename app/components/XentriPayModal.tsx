@@ -7,6 +7,8 @@ import {
   initiateXentriPayment,
   initiateXentriPayDonation,
   initiateXentriPayPhotoPurchase,
+  initiateAnonymousStreamingPayment,
+  checkAnonymousPaymentStatus,
   pollXentriPayStatus,
   type XentriPayResponse,
   type XentriPayStatusResponse,
@@ -35,6 +37,8 @@ export interface XentriPayModalProps {
   donationId?: string;
   // For streaming payments — optional donation amount added on top of gift
   donationAmount?: number;
+  // Anonymous viewer ID — triggers public payment flow (no auth required)
+  viewerId?: string;
   // Dark theme to match viewer auth modal
   darkMode?: boolean;
 }
@@ -65,6 +69,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
   declarationId,
   eventId,
   donationId,
+  viewerId,
   donationAmount = 0,
   darkMode = false,
 }) => {
@@ -107,14 +112,25 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
     return () => window.removeEventListener('auth:session-expired', handleSessionExpired);
   }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Lock body scroll
+  // Lock body scroll while preserving scroll position
   useEffect(() => {
     if (isOpen) {
+      // Save current scroll position
+      const scrollY = window.scrollY;
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
       document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
+
+      return () => {
+        // Restore scroll position
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.width = '';
+        document.body.style.overflow = '';
+        window.scrollTo(0, scrollY);
+      };
     }
-    return () => { document.body.style.overflow = ''; };
   }, [isOpen]);
 
   // Validate payment details
@@ -128,6 +144,33 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
   const startPolling = useCallback((paymentRefid: string) => {
     if (stopPollingRef.current) {
       stopPollingRef.current();
+    }
+
+    // Anonymous viewer: use public payment-status endpoint
+    if (viewerId && eventId) {
+      let attempts = 0;
+      let stopped = false;
+      const poll = async () => {
+        if (stopped) return;
+        attempts++;
+        try {
+          const res = await checkAnonymousPaymentStatus(eventId, { viewerId, refid: paymentRefid });
+          if (stopped) return;
+          if (res.success && res.data) {
+            if (res.data.status === 'SUCCESS') { setStep('success'); setTimeout(() => onSuccess(paymentRefid), 2000); return; }
+            if (res.data.status === 'FAILED') { setStep('failed'); setError('Payment was declined or timed out. Please check your balance and try again.'); return; }
+          }
+          if (attempts >= 60) { setError('Payment is taking longer than expected. Please check your payment history.'); setStep('failed'); return; }
+          setTimeout(poll, 5000);
+        } catch {
+          if (stopped) return;
+          if (attempts >= 60) { setError('Unable to check payment status. Please try again later.'); setStep('failed'); return; }
+          setTimeout(poll, 5000);
+        }
+      };
+      setTimeout(poll, 5000);
+      stopPollingRef.current = () => { stopped = true; };
+      return;
     }
 
     const usePublicStatus = paymentType === 'donation';
@@ -153,7 +196,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
       60,
       usePublicStatus
     );
-  }, [onSuccess, paymentType]);
+  }, [onSuccess, paymentType, viewerId, eventId]);
 
   // Handle payment initiation
   const handlePay = async () => {
@@ -194,15 +237,25 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
           redirectUrl,
         });
       } else if (paymentType === 'streaming' && eventId) {
-        response = await initiateXentriPayStreaming({
-          eventId,
-          amount,
-          currencyId,
-          ...(hasDonation ? { donationAmount } : {}),
-          ...(isCard ? {} : { phone, telecomProvider: method.provider }),
-          paymentMethod: paymentMethodType,
-          redirectUrl,
-        });
+        if (viewerId) {
+          // Anonymous viewer — use public endpoint (no auth)
+          response = await initiateAnonymousStreamingPayment(eventId, {
+            viewerId,
+            ...(isCard ? {} : { phone, telecomProvider: method.provider }),
+            paymentMethod: paymentMethodType,
+            redirectUrl,
+          });
+        } else {
+          response = await initiateXentriPayStreaming({
+            eventId,
+            amount,
+            currencyId,
+            ...(hasDonation ? { donationAmount } : {}),
+            ...(isCard ? {} : { phone, telecomProvider: method.provider }),
+            paymentMethod: paymentMethodType,
+            redirectUrl,
+          });
+        }
       } else if (paymentType === 'donation' && donationId) {
         response = await initiateXentriPayDonation({
           donationId,

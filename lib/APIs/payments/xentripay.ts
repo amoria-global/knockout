@@ -153,6 +153,40 @@ export async function initiateXentriPayPhotoPurchase(
 }
 
 /**
+ * Initiate streaming payment for anonymous viewers (public, no auth required)
+ */
+export async function initiateAnonymousStreamingPayment(
+  eventId: string,
+  data: {
+    viewerId: string;
+    phone?: string;
+    telecomProvider?: string;
+    paymentMethod: string;
+    redirectUrl?: string;
+  }
+): Promise<ApiResponse<XentriPayResponse>> {
+  return apiClient.post<XentriPayResponse>(
+    `/api/remote/public/anonymous-viewer/${eventId}/initiate-payment`,
+    data,
+    { skipAuth: true, retries: 1 }
+  );
+}
+
+/**
+ * Check anonymous viewer payment status (public, no auth required)
+ */
+export async function checkAnonymousPaymentStatus(
+  eventId: string,
+  body: { viewerId: string; refid: string }
+): Promise<ApiResponse<XentriPayStatusResponse>> {
+  return apiClient.post<XentriPayStatusResponse>(
+    `/api/remote/public/anonymous-viewer/${eventId}/payment-status`,
+    body,
+    { skipAuth: true, retries: 1 }
+  );
+}
+
+/**
  * Check payment status by reference ID
  */
 export async function checkXentriPayStatus(
