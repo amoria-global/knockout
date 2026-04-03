@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useReducer, useCallback, useRef } from 'react';
-import { useRouter } from 'next/navigation';
 import { useAuth } from '../providers/AuthProvider';
+import { getAuthToken, getRefreshToken } from '@/lib/api/client';
 import { useGoogleLogin } from '@react-oauth/google';
 import {
   getPhotographers,
@@ -71,6 +71,7 @@ interface WizardState {
   showAuthInline: boolean;
   showPhotographerPreview: string | null;
   bookingSuccess: boolean;
+  createdEventId: string | null;
 }
 
 type WizardAction =
@@ -83,7 +84,7 @@ type WizardAction =
   | { type: 'SET_SUBMITTING'; value: boolean }
   | { type: 'SHOW_AUTH'; value: boolean }
   | { type: 'SHOW_PREVIEW'; id: string | null }
-  | { type: 'SET_SUCCESS' }
+  | { type: 'SET_SUCCESS'; eventId?: string }
   | { type: 'RESTORE_DRAFT'; draft: BookingDraft }
   | { type: 'RESET' };
 
@@ -98,6 +99,7 @@ const initialState: WizardState = {
   showAuthInline: false,
   showPhotographerPreview: null,
   bookingSuccess: false,
+  createdEventId: null,
 };
 
 function wizardReducer(state: WizardState, action: WizardAction): WizardState {
@@ -111,7 +113,7 @@ function wizardReducer(state: WizardState, action: WizardAction): WizardState {
     case 'SET_SUBMITTING': return { ...state, isSubmitting: action.value };
     case 'SHOW_AUTH': return { ...state, showAuthInline: action.value };
     case 'SHOW_PREVIEW': return { ...state, showPhotographerPreview: action.id };
-    case 'SET_SUCCESS': return { ...state, bookingSuccess: true, isSubmitting: false };
+    case 'SET_SUCCESS': return { ...state, bookingSuccess: true, isSubmitting: false, createdEventId: action.eventId || null };
     case 'RESTORE_DRAFT': return {
       ...state,
       currentSlide: action.draft.currentSlide,
@@ -166,7 +168,6 @@ const INCLUSIVITY_OPTIONS = [
 const BookingWizard: React.FC<BookingWizardProps> = ({
   isOpen, onClose, preselectedPhotographerId, preselectedPackageId,
 }) => {
-  const router = useRouter();
   const { isAuthenticated, login: authLogin, user } = useAuth();
   const [state, dispatch] = useReducer(wizardReducer, initialState);
   const draftSavedRef = useRef(false);
@@ -500,7 +501,10 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
       const res = await createEvent(payload as Parameters<typeof createEvent>[0]);
       if (res.success) {
         await clearDraft();
-        dispatch({ type: 'SET_SUCCESS' });
+        const eventId = (res.data as unknown as Record<string, unknown>)?.data
+          ? ((res.data as unknown as Record<string, unknown>).data as Record<string, unknown>)?.id as string
+          : (res.data as unknown as Record<string, unknown>)?.id as string;
+        dispatch({ type: 'SET_SUCCESS', eventId: eventId || undefined });
       } else {
         setSubmitError(res.error || 'Failed to create booking. Please try again.');
         dispatch({ type: 'SET_SUBMITTING', value: false });
@@ -664,8 +668,14 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                 <p style={{ color: '#40444d', fontSize: 14, margin: '0 0 24px' }}>
                   Your event has been created and the photographer has been notified. You can manage your booking from the dashboard.
                 </p>
-                <button onClick={() => { dispatch({ type: 'RESET' }); onClose(); }} style={btnPrimary}>
-                  Done
+                <button onClick={() => {
+                  if (state.createdEventId) {
+                    window.location.href = `/user/events/view-event?id=${state.createdEventId}`;
+                  } else {
+                    onClose();
+                  }
+                }} style={btnPrimary}>
+                  View Event <i className="bi bi-arrow-right"></i>
                 </button>
               </div>
 
