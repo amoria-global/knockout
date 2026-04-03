@@ -146,7 +146,8 @@ const Photographers: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [currentPage, selectedCategory, selectedLocation, searchTerm, availableOn, toast]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage, selectedCategory, selectedLocation, searchTerm, availableOn]);
 
   // Fetch photographers when filters change
   useEffect(() => {
