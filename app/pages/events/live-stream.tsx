@@ -27,6 +27,7 @@ import { apiClient } from '@/lib/api/client';
 import { StreamAdManager, type StreamAd } from '@/app/components/StreamAdBanners';
 import { getStreamAds, pollAdTrigger, recordAdClick } from '@/lib/APIs/public/get-stream-ads/route';
 import { API_ENDPOINTS } from '@/lib/api/config';
+import Hls from 'hls.js';
 
 // Dynamically import VideoMessageRecorder to avoid SSR issues
 const VideoMessageRecorder = dynamic(() => import('../../components/VideoMessageRecorder'), { ssr: false });
