@@ -48,6 +48,7 @@ interface EventStream {
   startTime: string;
   messages: Message[];
   whepUrl?: string;
+  hlsManifestUrl?: string;
   eventStatus?: string;
   streamType?: 'entry_fee' | 'invite_token' | null;
   streamFee?: number | null;
@@ -480,6 +481,7 @@ const App = () => {
             photographerAvatar: ((ev.photographer as Record<string, unknown>)?.profilePicture as string) || undefined,
             category: (ev.eventType as string) || (ev.category as string) || prev[0].category,
             whepUrl: (ev.whepUrl as string) || undefined,
+            hlsManifestUrl: (ev.hlsManifestUrl as string) || undefined,
             streamId: eventId || (ev.liveInputId as string) || prev[0].streamId,
             eventStatus: (ev.eventStatus as string) || undefined,
             streamType: (ev.streamType as 'entry_fee' | 'invite_token') ?? null,
@@ -710,6 +712,7 @@ const App = () => {
           const ev = response.data as Record<string, unknown>;
           const newStatus = ((ev.eventStatus as string) || '').toUpperCase();
           const newWhepUrl = (ev.whepUrl as string) || undefined;
+          const newHlsUrl = (ev.hlsManifestUrl as string) || undefined;
 
           setEvents(prev => {
             const current = prev[0];
@@ -732,6 +735,7 @@ const App = () => {
               ...current,
               eventStatus: (ev.eventStatus as string) || undefined,
               whepUrl: newWhepUrl,
+              hlsManifestUrl: newHlsUrl,
             }, ...prev.slice(1)];
           });
         }
@@ -1052,16 +1056,18 @@ const App = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mainEvent?.id, streamAccessGranted]);
 
-  // Initialize WHEP (WebRTC) player — sub-second latency playback
+  // Initialize WHEP (WebRTC) player — sub-second latency playback, with HLS fallback
   useEffect(() => {
     const whepUrl = mainEvent?.whepUrl;
+    const hlsUrl = mainEvent?.hlsManifestUrl;
     const eventId = mainEvent?.id;
-    if (!whepUrl || !eventId) {
+    if (!eventId || (!whepUrl && !hlsUrl)) {
       return;
     }
 
     let cancelled = false;
     let retryTimer: ReturnType<typeof setTimeout> | null = null;
+    let hlsInstance: Hls | null = null;
 
     const initPlayer = (attempt = 0) => {
       if (cancelled) return;
@@ -1086,9 +1092,24 @@ const App = () => {
       volumeRef.current[eventId] = savedVol;
       videoEl.muted = true;
 
-      // Connect via WHEP (WebRTC)
-      const whepClient = new WHEPClient(whepUrl, videoEl);
-      whepInstancesRef.current[eventId] = whepClient;
+      if (whepUrl) {
+        // Primary: Connect via WHEP (WebRTC) for sub-second latency
+        const whepClient = new WHEPClient(whepUrl, videoEl);
+        whepInstancesRef.current[eventId] = whepClient;
+      } else if (hlsUrl && Hls.isSupported()) {
+        // Fallback: HLS playback (~10s latency)
+        console.log('[StreamPlayer] WHEP unavailable, falling back to HLS:', hlsUrl);
+        hlsInstance = new Hls({ liveSyncDurationCount: 3, liveMaxLatencyDurationCount: 5 });
+        hlsInstance.loadSource(hlsUrl);
+        hlsInstance.attachMedia(videoEl);
+        hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
+          videoEl.play().catch(() => {});
+        });
+      } else if (hlsUrl && videoEl.canPlayType('application/vnd.apple.mpegurl')) {
+        // Native HLS (Safari)
+        videoEl.src = hlsUrl;
+        videoEl.play().catch(() => {});
+      }
 
       // Autoplay when stream attaches
       videoEl.onloadedmetadata = () => {
@@ -1113,6 +1134,10 @@ const App = () => {
     return () => {
       cancelled = true;
       if (retryTimer) clearTimeout(retryTimer);
+      if (hlsInstance) {
+        hlsInstance.destroy();
+        hlsInstance = null;
+      }
       const whepInstance = whepInstancesRef.current[eventId];
       if (whepInstance) {
         whepInstance.destroy();
@@ -1120,7 +1145,7 @@ const App = () => {
       }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mainEvent?.whepUrl, mainEvent?.id]);
+  }, [mainEvent?.whepUrl, mainEvent?.hlsManifestUrl, mainEvent?.id]);
 
   // Swap animation state
   const [isSwapping, setIsSwapping] = useState(false);
