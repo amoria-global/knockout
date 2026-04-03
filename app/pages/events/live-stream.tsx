@@ -24,6 +24,8 @@ import DeviceSwitchModal from '../../components/DeviceSwitchModal';
 import { initiateAnonymousStreamingPayment, checkAnonymousPaymentStatus } from '@/lib/APIs/payments/xentripay';
 import { contactUs } from '@/lib/APIs/public/contact-us/route';
 import { apiClient } from '@/lib/api/client';
+import { StreamAdManager, type StreamAd } from '@/app/components/StreamAdBanners';
+import { getStreamAds, pollAdTrigger, recordAdClick } from '@/lib/APIs/public/get-stream-ads/route';
 import { API_ENDPOINTS } from '@/lib/api/config';
 
 // Dynamically import VideoMessageRecorder to avoid SSR issues
@@ -1007,6 +1009,49 @@ const App = () => {
     }
   }, [mainEvent?.messages?.length]);
 
+  // ── Fetch stream ads + poll for manual triggers ──
+  useEffect(() => {
+    if (!mainEvent?.id || !streamAccessGranted) return;
+    let cancelled = false;
+
+    // Fetch ads for this event
+    getStreamAds(mainEvent.id).then(res => {
+      if (cancelled || !res.success || !res.data) return;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const d = res.data as any;
+      const ads = d.ads || d.data?.ads || [];
+      const schedule = d.schedule || d.data?.schedule || {};
+      if (ads.length > 0) {
+        setStreamAds(ads);
+        setAdScheduleInterval(schedule.intervalSeconds || 300);
+        setAdsEnabled(schedule.enabled !== false);
+      }
+    }).catch(() => {});
+
+    // Poll for manual triggers every 5s
+    const pollInterval = setInterval(async () => {
+      if (cancelled) return;
+      try {
+        const res = await pollAdTrigger(mainEvent.id);
+        if (res.success && res.data) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const d = res.data as any;
+          const trigger = d.trigger || d.data?.trigger;
+          if (trigger?.adId) {
+            const ad = streamAds.find(a => a.id === trigger.adId);
+            if (ad) {
+              // Force show this ad by temporarily prepending it
+              setStreamAds(prev => [ad, ...prev.filter(a => a.id !== ad.id)]);
+            }
+          }
+        }
+      } catch { /* silent */ }
+    }, 5000);
+
+    return () => { cancelled = true; clearInterval(pollInterval); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mainEvent?.id, streamAccessGranted]);
+
   // Initialize WHEP (WebRTC) player — sub-second latency playback
   useEffect(() => {
     const whepUrl = mainEvent?.whepUrl;
@@ -1160,6 +1205,11 @@ const App = () => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   // Settings state
   const [showSettings, setShowSettings] = useState(false);
+
+  // ── Ad system state ──
+  const [streamAds, setStreamAds] = useState<StreamAd[]>([]);
+  const [adScheduleInterval, setAdScheduleInterval] = useState(300);
+  const [adsEnabled, setAdsEnabled] = useState(false);
   const [showReportIssues, setShowReportIssues] = useState(false);
   const [lowLatencyMode, setLowLatencyMode] = useState(true);
   // Device access state
@@ -4027,6 +4077,20 @@ const App = () => {
               >
                 {!mainEvent.whepUrl && mainEvent.videoSrc && <source src={mainEvent.videoSrc} type="video/mp4" />}
               </video>
+
+              {/* ── Live Stream Ad Banners ── */}
+              {streamAds.length > 0 && streamAccessGranted && (
+                <StreamAdManager
+                  ads={streamAds}
+                  intervalSeconds={adScheduleInterval}
+                  enabled={adsEnabled}
+                  isMobile={typeof window !== 'undefined' && window.innerWidth < 768}
+                  onAdClick={(ad) => {
+                    if (ad.ctaUrl) window.open(ad.ctaUrl, '_blank', 'noopener,noreferrer');
+                    recordAdClick(mainEvent.id, ad.id, user?.customerId).catch(() => {});
+                  }}
+                />
+              )}
 
               {/* Stream starting overlay — ONGOING but HLS URL not yet available */}
               {mainEvent.eventStatus === 'ONGOING' && !mainEvent.whepUrl && (
