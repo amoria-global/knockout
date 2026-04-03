@@ -49,8 +49,8 @@ function JoinPackageContent(): React.JSX.Element {
   const [invitedEmails, setInvitedEmails] = useState<string[]>([]);
   const [remainingInvites, setRemainingInvites] = useState<number>(0);
 
-  // Solo invite code input — auto-fill from URL if shared via group link
-  const [soloInviteCode, setSoloInviteCode] = useState(searchParams.get('inviteToken') || '');
+  // Invite code input — auto-fill from URL if shared via group link
+  const [inviteCode, setInviteCode] = useState(searchParams.get('inviteToken') || '');
   const [groupRedeemError, setGroupRedeemError] = useState<string | null>(null);
 
   // Load saved group code from localStorage on mount
@@ -104,6 +104,8 @@ function JoinPackageContent(): React.JSX.Element {
   const [showDeviceSwitchModal, setShowDeviceSwitchModal] = useState(false);
   const [deviceSwitchLoading, setDeviceSwitchLoading] = useState(false);
   const [pendingViewerId, setPendingViewerId] = useState<string | null>(null);
+  const [pendingViewerEmail, setPendingViewerEmail] = useState('');
+  const [pendingViewerName, setPendingViewerName] = useState('');
 
   const googleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
@@ -115,12 +117,13 @@ function JoinPackageContent(): React.JSX.Element {
         });
         if (!userInfoRes.ok) throw new Error('Failed to fetch Google user info');
         const userInfo = await userInfoRes.json();
-        const res = await googleAuth({ email: userInfo.email, firstName: userInfo.given_name || '', lastName: userInfo.family_name || '', customerType: 'Viewer' });
+        const res = await googleAuth({ email: userInfo.email, firstName: userInfo.given_name || '', lastName: userInfo.family_name || '', customerType: 'Client' });
         if (res.success && res.data?.token) {
           const d = res.data as unknown as Record<string, string>;
           await authLogin({ id: d.id || d.customerId || '', firstName: d.firstName || userInfo.given_name || '', lastName: d.lastName || userInfo.family_name || '', email: d.email || userInfo.email, phone: d.phone || '', customerId: d.customerId || '', customerType: d.customerType || 'Viewer' }, d.token);
           setShowAuthModal(false);
-          if ((selectedEvent?.price || 0) > 0) setShowPaymentModal(true);
+          // Resume flow after auth
+          if ((selectedEvent?.price || 0) > 0) { setShowPaymentModal(true); } else { handleProceed(); }
         } else {
           setAuthError((res.data as unknown as Record<string, string>)?.message || res.error || 'Could not sign in with Google. Please try another method.');
         }
@@ -138,7 +141,7 @@ function JoinPackageContent(): React.JSX.Element {
         const d = res.data as unknown as Record<string, string>;
         await authLogin({ id: d.id || d.customerId || '', firstName: d.firstName || '', lastName: d.lastName || '', email: d.email || loginEmail, phone: d.phone || '', customerId: d.customerId || '', customerType: d.customerType || 'Viewer' }, d.token);
         setShowAuthModal(false);
-        if ((selectedEvent?.price || 0) > 0) setShowPaymentModal(true);
+        if ((selectedEvent?.price || 0) > 0) { setShowPaymentModal(true); } else { handleProceed(); }
       } else { setAuthError((res.data as unknown as Record<string, string>)?.message || res.error || 'Incorrect email or password. Please try again.'); }
     } catch { setAuthError('Unable to connect. Please check your internet connection and try again.'); } finally { setAuthLoading(false); }
   };
@@ -147,7 +150,7 @@ function JoinPackageContent(): React.JSX.Element {
     if (!signupFirstName || !signupLastName || !signupEmail || !signupPassword) { setAuthError('Please fill in all required fields.'); return; }
     setAuthLoading(true); setAuthError('');
     try {
-      const res = await apiSignup({ firstName: signupFirstName, lastName: signupLastName, email: signupEmail, phone: signupPhone, password: signupPassword, customerType: 'Viewer' });
+      const res = await apiSignup({ firstName: signupFirstName, lastName: signupLastName, email: signupEmail, phone: signupPhone, password: signupPassword, customerType: 'Client' });
       if (res.success && res.data) {
         const d = res.data as unknown as Record<string, string>;
         if (d.customerId) {
@@ -167,7 +170,7 @@ function JoinPackageContent(): React.JSX.Element {
         const d = res.data as unknown as Record<string, string>;
         await authLogin({ id: d.id || d.customerId || otpCustomerId, firstName: d.firstName || signupFirstName, lastName: d.lastName || signupLastName, email: d.email || signupEmail, phone: d.phone || signupPhone, customerId: d.customerId || otpCustomerId, customerType: d.customerType || 'Viewer' }, d.token);
         setShowAuthModal(false);
-        if ((selectedEvent?.price || 0) > 0) setShowPaymentModal(true);
+        if ((selectedEvent?.price || 0) > 0) { setShowPaymentModal(true); } else { handleProceed(); }
       } else { setAuthError((res.data as unknown as Record<string, string>)?.message || res.error || 'The verification code is incorrect or has expired.'); }
     } catch { setAuthError('Unable to verify. Please check your internet connection and try again.'); } finally { setAuthLoading(false); }
   };
@@ -296,8 +299,8 @@ function JoinPackageContent(): React.JSX.Element {
     },
     {
       id: 'group',
-      name: 'Group Stream',
-      badge: 'Group',
+      name: `Group Stream (${discountPercentage}% off)`,
+      badge: `Group ${discountPercentage}% off`,
       badgeColor: '#FBBF24',
       badgeGradient: 'linear-gradient(135deg, #FDE047 0%, #FBBF24 50%, #F59E0B 100%)',
       description: `Buy stream access for multiple people and save ${discountPercentage}%`,
@@ -394,21 +397,24 @@ function JoinPackageContent(): React.JSX.Element {
 
   const handleProceed = () => {
     if (!selectedEvent) return;
+
+    // Require authenticated account to reserve a spot
+    if (!isAuthenticated) {
+      setAuthStep('login');
+      setAuthError('');
+      setShowAuthModal(true);
+      return;
+    }
+
     const price = selectedEvent.price || 0;
     const inviteToken = searchParams.get('inviteToken') || '';
     const tokenParam = inviteToken ? `&inviteToken=${encodeURIComponent(inviteToken)}` : '';
 
     if (price > 0) {
-      if (isAuthenticated) {
-        // Authenticated viewer — go directly to payment
-        setShowPaymentModal(true);
-      } else {
-        // Unauthenticated — show viewer info modal (no signup required)
-        setViewerInfoError('');
-        setShowViewerInfoModal(true);
-      }
+      // Authenticated — go directly to payment
+      setShowPaymentModal(true);
     } else {
-      // Free event — redirect to join-event for invite token input
+      // Free event — redirect to join-event
       if (selectedPackage === 'individual') {
         window.location.href = `/user/events/join-event?id=${selectedEvent.id}&package=individual${tokenParam}`;
       } else if (selectedPackage === 'group' && isGroupInputValid()) {
@@ -422,6 +428,9 @@ function JoinPackageContent(): React.JSX.Element {
     if (!selectedEvent) return;
     setViewerInfoLoading(true);
     setViewerInfoError('');
+    // Store viewer details for use in payment success (email for receipts, group access, etc.)
+    setPendingViewerEmail(data.email);
+    setPendingViewerName(data.name);
     try {
       const fingerprint = await getDeviceId();
       const res = await registerAnonymousViewer(selectedEvent.id, {
@@ -432,7 +441,12 @@ function JoinPackageContent(): React.JSX.Element {
       });
 
       if (!res.success) {
-        setViewerInfoError(res.error || 'Registration failed. Please try again.');
+        const errMsg = res.error || 'Registration failed. Please try again.';
+        if (errMsg.toLowerCase().includes('duplicate') || errMsg.toLowerCase().includes('already exists') || errMsg.toLowerCase().includes('already registered')) {
+          setViewerInfoError('This email is already registered for this event. You can proceed to payment or use a different email.');
+        } else {
+          setViewerInfoError(errMsg);
+        }
         return;
       }
 
@@ -443,6 +457,7 @@ function JoinPackageContent(): React.JSX.Element {
       if (viewerId) {
         setPendingViewerId(viewerId);
         localStorage.setItem(`anonymousViewer_${selectedEvent.id}`, viewerId);
+        localStorage.setItem(`anonymousViewerName_${selectedEvent.id}`, data.name);
       }
 
       if (status === 'ACCESS_GRANTED') {
@@ -564,7 +579,7 @@ function JoinPackageContent(): React.JSX.Element {
       const isLive = (selectedEvent.eventStatus || '').toUpperCase() === 'ONGOING';
       if (isLive) {
         // Event is live — go to stream
-        const code = soloInviteCode.trim();
+        const code = inviteCode.trim();
         if (code && selectedEvent.id) {
           try {
             const userStr = localStorage.getItem('authUser');
@@ -1121,7 +1136,7 @@ function JoinPackageContent(): React.JSX.Element {
                       }}
                     >
                       <i className="bi bi-check-circle-fill" style={{ fontSize: '14px' }}></i>
-                      Selected — Click &quot;Proceed&quot;
+                      Selected — Click &quot;Reserve Your Spot&quot;
                     </div>
                   ) : (
                     <div
@@ -1220,7 +1235,7 @@ function JoinPackageContent(): React.JSX.Element {
                 }
               }}
             >
-              Proceed
+              Reserve Your Spot
               <i className="bi bi-arrow-right"></i>
             </button>
           </div>       
