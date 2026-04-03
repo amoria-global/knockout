@@ -12,6 +12,9 @@ import { useToast } from '@/lib/notifications/ToastProvider';
 import { useAuth } from '@/app/providers/AuthProvider';
 import PostLoginModal from '@/app/components/PostLoginModal';
 import UserTypeModal from '@/app/components/UserTypeModal';
+import dynamic from 'next/dynamic';
+
+const PhotographerOnboarding = dynamic(() => import('@/app/components/PhotographerOnboarding'), { ssr: false });
 import { getDashboardUrlWithToken } from '@/lib/utils/dashboard-url';
 
 // ─── Google Login Button ────────────────────────────────────────────
@@ -377,6 +380,9 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
   const [googleSignupLoading, setGoogleSignupLoading] = useState(false);
   const [isGooglePreFilled, setIsGooglePreFilled] = useState(false);
   const [signupErrors, setSignupErrors] = useState<{ [key: string]: string }>({});
+  // Photographer onboarding state — shown after signup, before OTP
+  const [showPhotographerOnboarding, setShowPhotographerOnboarding] = useState(false);
+  const [pendingOtpRedirectUrl, setPendingOtpRedirectUrl] = useState('');
 
   const filteredCountries = countries.filter(c => c.name.toLowerCase().includes(countrySearch.toLowerCase()) || c.code.includes(countrySearch));
   const signupIsDisabled = !firstName || !lastName || !signupEmail || phoneNumber.length < 7 || !signupPassword || !confirmPassword;
@@ -426,8 +432,17 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
         if (response.success && response.data) {
           const customerId = response.data.customerId;
           if (!customerId) { setSignupErrors({ email: 'Missing customer ID.' }); showError('Missing customer ID.'); setSignupLoading(false); return; }
-          showSuccess('Account created!'); showInfo('Check your phone for the SMS code.');
-          router.push(`/user/auth/verify-otp?applicantId=${encodeURIComponent(String(customerId))}&email=${encodeURIComponent(signupEmail)}${redirectUrl ? `&redirect=${encodeURIComponent(redirectUrl)}` : ''}`);
+          showSuccess('Account created!');
+          // Build OTP redirect URL
+          const otpUrl = `/user/auth/verify-otp?applicantId=${encodeURIComponent(String(customerId))}&email=${encodeURIComponent(signupEmail)}&customerType=${encodeURIComponent(signupUserType)}&firstName=${encodeURIComponent(firstName)}&lastName=${encodeURIComponent(lastName)}&phone=${encodeURIComponent(`${countryCode}${phoneNumber}`)}${redirectUrl ? `&redirect=${encodeURIComponent(redirectUrl)}` : ''}`;
+          // Photographer: show onboarding wizard first, then OTP
+          if (signupUserType.toLowerCase() === 'photographer') {
+            setPendingOtpRedirectUrl(otpUrl);
+            setShowPhotographerOnboarding(true);
+          } else {
+            showInfo('Check your phone for the SMS code.');
+            router.push(otpUrl);
+          }
         } else { const msg = response.error || 'Signup failed.'; setSignupErrors({ email: msg }); showError(msg); }
       } catch (err) { const msg = err instanceof Error ? err.message : 'An error occurred.'; setSignupErrors({ email: msg }); showError(msg); }
       finally { setSignupLoading(false); }
@@ -533,6 +548,22 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
       )}
 
       <PostLoginModal isOpen={showPostLoginModal} userName={loggedInUserName} customerType={loggedInUserType} onKeepExploring={handleKeepExploring} onGoToDashboard={handleGoToDashboard} />
+
+      {/* Photographer onboarding wizard — after signup, before OTP */}
+      <PhotographerOnboarding
+        isOpen={showPhotographerOnboarding}
+        onClose={() => {
+          setShowPhotographerOnboarding(false);
+          if (pendingOtpRedirectUrl) router.push(pendingOtpRedirectUrl);
+        }}
+        onComplete={() => {
+          setShowPhotographerOnboarding(false);
+          if (pendingOtpRedirectUrl) router.push(pendingOtpRedirectUrl);
+        }}
+        firstName={firstName}
+        lastName={lastName}
+        phone={`${countryCode}${phoneNumber}`}
+      />
     </>
   );
 
