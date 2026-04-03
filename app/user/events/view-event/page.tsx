@@ -604,7 +604,7 @@ function ViewEventContent(): React.JSX.Element {
               </div>
             ) : null}
             <div style={{ fontSize: 26, fontWeight: 800, color: isCompleted ? 'rgba(246,173,85,0.5)' : hasPurchasedAccess ? 'rgba(16,185,129,0.9)' : '#f5652c', lineHeight: 1 }}>{(selectedEvent.price || 0).toLocaleString()} RWF</div>
-            <div style={{ fontSize: 12, color: isCompleted ? 'rgba(160,174,192,0.5)' : hasPurchasedAccess ? '#10b981' : '#a0aec0', marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{isCompleted ? 'Event ended' : hasPurchasedAccess ? 'Spot reserved' : 'Entry fee'}</div>
+            <div style={{ fontSize: 12, color: isCompleted ? 'rgba(160,174,192,0.5)' : hasPurchasedAccess ? '#10b981' : '#a0aec0', marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{isCompleted ? 'Event ended' : hasPurchasedAccess ? 'Spot reserved' : 'Stream Access Fee'}</div>
           </div>
         )}
 
@@ -696,10 +696,8 @@ function ViewEventContent(): React.JSX.Element {
             </div>
           )}
 
-        </div>
-
-        {/* ── CTA — bottom center of full page ── */}
-        <div className="ve-cta-bar" style={{ position: 'absolute', bottom: 'clamp(24px, 4vh, 36px)', left: 'clamp(16px, 3vw, 48px)', zIndex: 30, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 8 }}>
+          {/* ── CTA ── */}
+          <div className="ve-cta-bar" style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
           {isLive ? (
             isPaid && hasPurchasedAccess ? (
               // Paid event, already purchased — go straight to watch
@@ -776,7 +774,7 @@ function ViewEventContent(): React.JSX.Element {
               // Upcoming paid event, not purchased — allow pre-purchase
               <button
                 onClick={() => handlePurchaseAccess(`/user/events/join-package?id=${selectedEvent.id}`)}
-                style={{ padding: 'clamp(12px, 1.5vw, 15px) clamp(28px, 4vw, 48px)', backgroundColor: '#083A85', color: '#fff', border: '2px solid #103E83', borderRadius: 10, fontSize: 'clamp(13px, 1.2vw, 15px)', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, transition: 'background 0.2s', textTransform: 'uppercase' }}
+                style={{ padding: '15px 48px', backgroundColor: '#083A85', color: '#fff', border: '2px solid #3b82f6', borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, transition: 'background 0.2s', textTransform: 'uppercase' }}
                 onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#062d6b'; }}
                 onMouseLeave={e => { e.currentTarget.style.backgroundColor = '#083A85'; }}
               >
@@ -785,6 +783,7 @@ function ViewEventContent(): React.JSX.Element {
               </button>
             )
           ) : null}
+          </div>
         </div>
       </div>
 
@@ -937,6 +936,16 @@ function ViewEventContent(): React.JSX.Element {
         @keyframes authSpin {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
+        }
+
+        /* Desktop: center CTA across full viewport by breaking out of left panel */
+        @media (min-width: 769px) {
+          .ve-cta-bar {
+            position: relative;
+            left: calc((100vw * 0.5) - 50%);
+            transform: translateX(-50%);
+            margin-left: 50%;
+          }
         }
 
         @media (max-width: 768px) {
