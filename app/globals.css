@@ -14,7 +14,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Why Amoria Section - Responsive Styles */
+/*Why Amoria Section - Responsive Styles */
 @media (max-width: 1024px) {
   .why-amoria-dashboard {
     height: 580px !important;
