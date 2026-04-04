@@ -1010,23 +1010,30 @@ const App = () => {
   }, [mainEvent?.messages?.length]);
 
   // ── Fetch stream ads + poll for manual triggers ──
+  // Ads load independently — viewer is already on the stream page
   useEffect(() => {
-    if (!mainEvent?.id || !streamAccessGranted) return;
+    if (!mainEvent?.id || mainEvent.title === 'Loading...') return;
     let cancelled = false;
 
     // Fetch ads for this event
     getStreamAds(mainEvent.id).then(res => {
-      if (cancelled || !res.success || !res.data) return;
+      console.log('[ADS] Fetch response:', JSON.stringify({ success: res.success, hasData: !!res.data }));
+      if (cancelled || !res.success || !res.data) {
+        console.log('[ADS] Skipped - cancelled:', cancelled, 'success:', res.success, 'data:', !!res.data);
+        return;
+      }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const d = res.data as any;
       const ads = d.ads || d.data?.ads || [];
       const schedule = d.schedule || d.data?.schedule || {};
+      console.log('[ADS] Parsed:', ads.length, 'ads, enabled:', schedule.enabled, 'interval:', schedule.intervalSeconds);
       if (ads.length > 0) {
         setStreamAds(ads);
         setAdScheduleInterval(schedule.intervalSeconds || 300);
         setAdsEnabled(schedule.enabled !== false);
+        console.log('[ADS] State set - ads:', ads.length, 'interval:', schedule.intervalSeconds, 'enabled:', schedule.enabled);
       }
-    }).catch(() => {});
+    }).catch(err => { console.log('[ADS] Fetch error:', err); });
 
     // Poll for manual triggers every 5s
     const pollInterval = setInterval(async () => {
@@ -4079,7 +4086,7 @@ const App = () => {
               </video>
 
               {/* ── Live Stream Ad Banners ── */}
-              {streamAds.length > 0 && streamAccessGranted && (
+              {streamAds.length > 0 && (
                 <StreamAdManager
                   ads={streamAds}
                   intervalSeconds={adScheduleInterval}
