@@ -391,12 +391,9 @@ const App = () => {
         deviceFingerprint: fingerprint,
       });
       if (!res.success) {
-        const errMsg = res.error || 'Registration failed';
-        if (errMsg.toLowerCase().includes('duplicate') || errMsg.toLowerCase().includes('already exists') || errMsg.toLowerCase().includes('already registered')) {
-          setViewerInfoError('This email is already registered. Please log in or use a different email.');
-        } else {
-          setViewerInfoError(errMsg);
-        }
+        // Backend handles existing-email cases via ACCESS_GRANTED / DEVICE_CONFLICT / REQUIRES_PAYMENT
+        // status branches below — any !success here is a real error (network, server, validation).
+        setViewerInfoError(res.error || 'Registration failed');
         return;
       }
       const resData = res.data as Record<string, unknown> | undefined;
@@ -535,7 +532,7 @@ const App = () => {
           (async () => {
             try {
               const fingerprint = await getDeviceId();
-              const res = await checkAnonymousAccessStatus(mainEvent.id, fingerprint);
+              const res = await checkAnonymousAccessStatus(mainEvent.id, fingerprint, viewerId);
               const resData = res.data as Record<string, unknown> | undefined;
               if (res.success && resData?.hasAccess) {
                 const whepUrl = resData?.whepUrl as string;
@@ -555,7 +552,7 @@ const App = () => {
                 setTimeout(async () => {
                   try {
                     const fp = await getDeviceId();
-                    const retryRes = await checkAnonymousAccessStatus(mainEvent.id, fp);
+                    const retryRes = await checkAnonymousAccessStatus(mainEvent.id, fp, viewerId);
                     const retryData = retryRes.data as Record<string, unknown> | undefined;
                     if (retryRes.success && retryData?.hasAccess) {
                       const retryWhepUrl = retryData?.whepUrl as string;
@@ -578,10 +575,11 @@ const App = () => {
             }
           })();
         } else {
-          // No viewerId — show login modal as fallback
-          setAuthStep('login');
-          setAuthError('');
-          setShowAuthModal(true);
+          // No viewerId stored (e.g. user opened the stream URL in a fresh browser/incognito).
+          // Show the simple name/email/phone modal so the backend can recognize them as a
+          // returning paid viewer without forcing a full login.
+          setViewerInfoError('');
+          setShowViewerInfoModal(true);
         }
       }
       return;
@@ -603,7 +601,7 @@ const App = () => {
           (async () => {
             try {
               const fingerprint = await getDeviceId();
-              const res = await checkAnonymousAccessStatus(mainEvent.id, fingerprint);
+              const res = await checkAnonymousAccessStatus(mainEvent.id, fingerprint, savedViewerId);
               const resData = res.data as Record<string, unknown> | undefined;
               if (res.success && resData?.hasAccess) {
                 const whepUrl = resData?.whepUrl as string;

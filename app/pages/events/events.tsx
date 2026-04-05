@@ -79,8 +79,8 @@ const Events: React.FC = () => {
       const response = await getPublicEvents({
         page: currentPage - 1,
         size: itemsPerPage,
-        sortColumn: 'createdAt',
-        sortDirection: 'desc',
+        sortColumn: 'eventDate',
+        sortDirection: 'asc',
         category:  selectedCategory  !== 'all' ? selectedCategory  : undefined,
         location:  selectedLocation  !== 'all' ? selectedLocation  : undefined,
         status:    selectedStatus    !== 'all' ? selectedStatus : undefined,
