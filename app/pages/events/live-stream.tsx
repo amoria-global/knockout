@@ -385,9 +385,9 @@ const App = () => {
     try {
       const fingerprint = await getDeviceId();
       const res = await registerAnonymousViewer(mainEvent.id, {
-        name: data.name,
-        email: data.email,
-        phone: data.phone,
+        name: data.name.trim(),
+        email: data.email.trim(),
+        phone: data.phone.trim(),
         deviceFingerprint: fingerprint,
       });
       if (!res.success) {
@@ -413,7 +413,7 @@ const App = () => {
           setEvents(prev => [{ ...prev[0], whepUrl }, ...prev.slice(1)]);
           setStreamAccessGranted(true);
         }
-      } else if (status === 'DEVICE_CONFLICT') {
+      } else if (status === 'DEVICE_CONFLICT' || status === 'DEVICE_MISMATCH') {
         setShowViewerInfoModal(false);
         setShowDeviceSwitchModal(true);
       } else if (status === 'REQUIRES_PAYMENT') {
@@ -547,6 +547,15 @@ const App = () => {
                 }
                 setStreamAccessGranted(true);
                 setAccessCheckLoading(false);
+              } else if (resData?.reason === 'DEVICE_MISMATCH') {
+                // Paid viewer on a new device — switch, don't re-pay
+                const resName = resData?.name as string;
+                if (resName) {
+                  setAnonymousViewerName(resName);
+                  localStorage.setItem(`anonymousViewerName_${mainEvent.id}`, resName);
+                }
+                setShowDeviceSwitchModal(true);
+                setAccessCheckLoading(false);
               } else {
                 // confirm-payment may still be processing — retry after 2s
                 setTimeout(async () => {
@@ -565,6 +574,13 @@ const App = () => {
                         localStorage.setItem(`anonymousViewerName_${mainEvent.id}`, retryName);
                       }
                       setStreamAccessGranted(true);
+                    } else if (retryData?.reason === 'DEVICE_MISMATCH') {
+                      const retryName = retryData?.name as string;
+                      if (retryName) {
+                        setAnonymousViewerName(retryName);
+                        localStorage.setItem(`anonymousViewerName_${mainEvent.id}`, retryName);
+                      }
+                      setShowDeviceSwitchModal(true);
                     }
                   } catch { /* silent */ }
                   setAccessCheckLoading(false);
@@ -614,6 +630,14 @@ const App = () => {
                   localStorage.setItem(`anonymousViewerName_${mainEvent.id}`, resName);
                 }
                 setStreamAccessGranted(true);
+              } else if (resData?.reason === 'DEVICE_MISMATCH') {
+                // Paid viewer on a new device — switch, don't re-pay
+                const resName = resData?.name as string;
+                if (resName) {
+                  setAnonymousViewerName(resName);
+                  localStorage.setItem(`anonymousViewerName_${mainEvent.id}`, resName);
+                }
+                setShowDeviceSwitchModal(true);
               }
             } catch { /* silent */ }
             setAccessCheckLoading(false);

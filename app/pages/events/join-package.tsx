@@ -475,9 +475,9 @@ function JoinPackageContent(): React.JSX.Element {
     try {
       const fingerprint = await getDeviceId();
       const res = await registerAnonymousViewer(selectedEvent.id, {
-        name: data.name,
-        email: data.email,
-        phone: data.phone,
+        name: data.name.trim(),
+        email: data.email.trim(),
+        phone: data.phone.trim(),
         deviceFingerprint: fingerprint,
       });
 
