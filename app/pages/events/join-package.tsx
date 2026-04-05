@@ -815,7 +815,7 @@ function JoinPackageContent(): React.JSX.Element {
                     value={bannerPhone}
                     onChange={e => { setBannerPhone(e.target.value); setBannerError(''); }}
                     onKeyDown={e => e.key === 'Enter' && handleBannerSubmit()}
-                    placeholder="Phone (078...)"
+                    placeholder="Phone"
                     disabled={bannerLoading}
                     style={{ padding: '11px 14px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 9, color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box', width: '100%' }}
                   />
