@@ -33,7 +33,7 @@ export interface StreamAdTriggerResponse {
  */
 export async function getStreamAds(eventId: string): Promise<ApiResponse<StreamAdsResponse>> {
   return apiClient.get<StreamAdsResponse>(
-    `/api/remote/public/events/${eventId}/ads`,
+    `/api/remote/public/events/${eventId}/banners`,
     { skipAuth: true, retries: 1 }
   );
 }
@@ -43,7 +43,7 @@ export async function getStreamAds(eventId: string): Promise<ApiResponse<StreamA
  */
 export async function pollAdTrigger(eventId: string): Promise<ApiResponse<StreamAdTriggerResponse>> {
   return apiClient.get<StreamAdTriggerResponse>(
-    `/api/remote/public/events/${eventId}/ads/trigger`,
+    `/api/remote/public/events/${eventId}/banners/trigger`,
     { skipAuth: true, retries: 0 }
   );
 }
@@ -53,7 +53,7 @@ export async function pollAdTrigger(eventId: string): Promise<ApiResponse<Stream
  */
 export async function recordAdClick(eventId: string, adId: string, viewerId?: string): Promise<ApiResponse<void>> {
   return apiClient.post<void>(
-    `/api/remote/public/events/${eventId}/ads/${adId}/click`,
+    `/api/remote/public/events/${eventId}/banners/${adId}/click`,
     { viewerId: viewerId || null },
     { skipAuth: true, retries: 0 }
   );
