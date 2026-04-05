@@ -36,6 +36,24 @@ export interface XentriPayPhotoPurchaseRequest {
   redirectUrl?: string;
 }
 
+export interface XentriPayAlbumPurchaseRequest {
+  albumId: string;
+  buyerId: string;
+  photoIds: string[];
+  amount: number;
+  currencyId: string;
+  phone?: string;
+  telecomProvider?: string;
+  paymentMethod?: string;
+  redirectUrl?: string;
+}
+
+// Backend returns 409 with this shape when some photoIds are already owned
+export interface AlreadyPurchasedError {
+  alreadyPurchased: string[];
+  message?: string;
+}
+
 export interface XentriPayTipRequest {
   eventId: string;
   amount: number;
@@ -148,6 +166,35 @@ export async function initiateXentriPayPhotoPurchase(
   return apiClient.post<XentriPayResponse>(
     API_ENDPOINTS.PAYMENTS.XENTRIPAY_INITIATE_PHOTO_PURCHASE,
     data,
+    { skipAuth: true, retries: 1 }
+  );
+}
+
+/**
+ * Initiate album (paid photo) purchase via XentriPay (public, no auth required)
+ */
+export async function initiateXentriPayAlbumPurchase(
+  data: XentriPayAlbumPurchaseRequest
+): Promise<ApiResponse<XentriPayResponse>> {
+  return apiClient.post<XentriPayResponse>(
+    API_ENDPOINTS.PAYMENTS.XENTRIPAY_INITIATE_ALBUM_PURCHASE,
+    data,
+    { skipAuth: true, retries: 1 }
+  );
+}
+
+/**
+ * Record a successful album purchase (public, no auth required)
+ * Triggers photographer earnings, receipt email, and marks photos as purchased.
+ * Pass buyerId to late-bind the purchase to a persistent buyer identity.
+ */
+export async function recordAlbumPurchase(
+  refid: string,
+  buyerId?: string
+): Promise<ApiResponse<{ message: string }>> {
+  return apiClient.post<{ message: string }>(
+    API_ENDPOINTS.PAYMENTS.RECORD_ALBUM_PURCHASE,
+    buyerId ? { refid, buyerId } : { refid },
     { skipAuth: true, retries: 1 }
   );
 }
