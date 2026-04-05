@@ -4119,7 +4119,10 @@ const App = () => {
                   enabled={adsEnabled}
                   isMobile={typeof window !== 'undefined' && window.innerWidth < 768}
                   onAdClick={(ad) => {
-                    if (ad.ctaUrl) window.open(ad.ctaUrl, '_blank', 'noopener,noreferrer');
+                    if (ad.ctaUrl) {
+                      const url = /^https?:\/\//i.test(ad.ctaUrl) ? ad.ctaUrl : `https://${ad.ctaUrl}`;
+                      window.open(url, '_blank', 'noopener,noreferrer');
+                    }
                     recordAdClick(mainEvent.id, ad.id, user?.customerId).catch(() => {});
                   }}
                 />
