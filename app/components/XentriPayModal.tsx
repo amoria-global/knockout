@@ -701,23 +701,6 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
             <p style={{ fontSize: '13px', color: '#ef4444', marginTop: '12px', lineHeight: 1.5 }}>
               {"Didn't receive the SMS? Check that your mobile money balance covers the payment amount."}
             </p>
-
-            {/* Cancel button */}
-            <button
-              onClick={handleClose}
-              style={{
-                marginTop: '20px',
-                padding: '10px 24px',
-                backgroundColor: darkMode ? 'rgba(255,255,255,0.07)' : 'transparent',
-                border: darkMode ? '1px solid rgba(255,255,255,0.15)' : '1px solid #ccc',
-                borderRadius: '10px',
-                color: darkMode ? '#9ca3af' : '#666',
-                fontSize: '14px',
-                cursor: 'pointer',
-              }}
-            >
-              Cancel
-            </button>
           </div>
         )}
 

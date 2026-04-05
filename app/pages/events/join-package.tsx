@@ -14,7 +14,7 @@ import { googleAuth } from '@/lib/APIs/auth/google/route';
 import { useGoogleLogin } from '@react-oauth/google';
 import ViewerInfoModal, { type ViewerInfoData } from '../../components/ViewerInfoModal';
 import DeviceSwitchModal from '../../components/DeviceSwitchModal';
-import { registerAnonymousViewer, confirmAnonymousPayment, switchAnonymousDevice } from '@/lib/APIs/streams/anonymous-viewer';
+import { registerAnonymousViewer, confirmAnonymousPayment, switchAnonymousDevice, checkAnonymousAccessStatus } from '@/lib/APIs/streams/anonymous-viewer';
 import { getDeviceId } from '@/lib/fingerprint';
 
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';
@@ -106,6 +106,14 @@ function JoinPackageContent(): React.JSX.Element {
   const [pendingViewerId, setPendingViewerId] = useState<string | null>(null);
   const [pendingViewerEmail, setPendingViewerEmail] = useState('');
   const [pendingViewerName, setPendingViewerName] = useState('');
+
+  // Inline identity banner state (top of page, shown to unauthenticated users)
+  const [bannerName, setBannerName] = useState('');
+  const [bannerEmail, setBannerEmail] = useState('');
+  const [bannerPhone, setBannerPhone] = useState('');
+  const [bannerLoading, setBannerLoading] = useState(false);
+  const [bannerError, setBannerError] = useState('');
+  const [identityConfirmed, setIdentityConfirmed] = useState(false);
 
   const googleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
@@ -270,6 +278,30 @@ function JoinPackageContent(): React.JSX.Element {
     }).catch(() => {});
   }, []);
 
+  // Anonymous-viewer access precheck: identity + device must both match.
+  // Only run if we already have a stored viewerId (proof of prior identity verification).
+  // Fingerprint alone can never grant access — users without a stored viewerId must
+  // identify themselves via the banner / ViewerInfoModal.
+  useEffect(() => {
+    if (!selectedEvent || isLoading || isAuthenticated) return;
+    const savedViewerId = localStorage.getItem(`anonymousViewer_${selectedEvent.id}`);
+    if (!savedViewerId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const fingerprint = await getDeviceId();
+        const res = await checkAnonymousAccessStatus(selectedEvent.id, fingerprint, savedViewerId);
+        if (cancelled) return;
+        if (res.success && res.data?.hasAccess) {
+          router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&paid=true`);
+        }
+      } catch {
+        // Silent — fall through to normal purchase flow
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [selectedEvent, isLoading, isAuthenticated, router]);
+
   // Calculate group discount from API (dynamic)
   const discountPercentage = selectedEvent?.groupDiscountPercentage || 0;
   const individualFee = selectedEvent?.price || 0;
@@ -398,11 +430,16 @@ function JoinPackageContent(): React.JSX.Element {
   const handleProceed = () => {
     if (!selectedEvent) return;
 
-    // Require authenticated account to reserve a spot
+    // Anonymous viewer: identity must be known before payment.
     if (!isAuthenticated) {
-      setAuthStep('login');
-      setAuthError('');
-      setShowAuthModal(true);
+      if (identityConfirmed && pendingViewerId) {
+        // Banner already captured identity → skip modal, go straight to payment
+        setShowPaymentModal(true);
+        return;
+      }
+      // Fallback — user skipped the banner; open modal to collect name/email/phone
+      setViewerInfoError('');
+      setShowViewerInfoModal(true);
       return;
     }
 
@@ -423,11 +460,15 @@ function JoinPackageContent(): React.JSX.Element {
     }
   };
 
-  // Anonymous viewer registration handler
-  const handleViewerInfoSubmit = async (data: ViewerInfoData) => {
+  // Shared identity-submit logic used by both the top banner and the fallback modal.
+  // source='banner' keeps the user on the page after REQUIRES_PAYMENT so they can pick a
+  // package before paying. source='modal' goes straight to XentriPay (package already chosen).
+  const submitViewerIdentity = async (data: ViewerInfoData, source: 'banner' | 'modal'): Promise<void> => {
     if (!selectedEvent) return;
-    setViewerInfoLoading(true);
-    setViewerInfoError('');
+    const setLoading = source === 'banner' ? setBannerLoading : setViewerInfoLoading;
+    const setError = source === 'banner' ? setBannerError : setViewerInfoError;
+    setLoading(true);
+    setError('');
     // Store viewer details for use in payment success (email for receipts, group access, etc.)
     setPendingViewerEmail(data.email);
     setPendingViewerName(data.name);
@@ -441,12 +482,9 @@ function JoinPackageContent(): React.JSX.Element {
       });
 
       if (!res.success) {
-        const errMsg = res.error || 'Registration failed. Please try again.';
-        if (errMsg.toLowerCase().includes('duplicate') || errMsg.toLowerCase().includes('already exists') || errMsg.toLowerCase().includes('already registered')) {
-          setViewerInfoError('This email is already registered for this event. You can proceed to payment or use a different email.');
-        } else {
-          setViewerInfoError(errMsg);
-        }
+        // Backend handles existing-email cases via ACCESS_GRANTED / DEVICE_CONFLICT / REQUIRES_PAYMENT
+        // status branches below — any !success here is a real error (network, server, validation).
+        setError(res.error || 'Registration failed. Please try again.');
         return;
       }
 
@@ -461,24 +499,43 @@ function JoinPackageContent(): React.JSX.Element {
       }
 
       if (status === 'ACCESS_GRANTED') {
-        // Already paid (same fingerprint returning) — go to stream
+        // Already paid — go to stream (skip packages entirely)
         setShowViewerInfoModal(false);
-        const whepUrl = resData?.whepUrl as string;
-        router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&paid=true${whepUrl ? '' : ''}`);
+        router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&paid=true`);
       } else if (status === 'DEVICE_CONFLICT') {
         // Active on another device — ask to switch
         setShowViewerInfoModal(false);
         setShowDeviceSwitchModal(true);
       } else {
-        // REQUIRES_PAYMENT — show payment modal
-        setShowViewerInfoModal(false);
-        setShowPaymentModal(true);
+        // REQUIRES_PAYMENT
+        if (source === 'banner') {
+          // Identity captured — collapse banner; user now picks package & clicks Reserve
+          setIdentityConfirmed(true);
+        } else {
+          // Modal path — user already picked package, go straight to payment
+          setShowViewerInfoModal(false);
+          setShowPaymentModal(true);
+        }
       }
     } catch {
-      setViewerInfoError('Connection error. Please try again.');
+      setError('Connection error. Please try again.');
     } finally {
-      setViewerInfoLoading(false);
+      setLoading(false);
     }
+  };
+
+  // Modal wrapper (existing callback signature)
+  const handleViewerInfoSubmit = (data: ViewerInfoData) => submitViewerIdentity(data, 'modal');
+
+  // Banner submit handler — validates then delegates
+  const handleBannerSubmit = () => {
+    const name = bannerName.trim();
+    const email = bannerEmail.trim();
+    const phone = bannerPhone.trim();
+    if (!name) { setBannerError('Name is required'); return; }
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setBannerError('Please enter a valid email address'); return; }
+    if (!phone) { setBannerError('Phone number is required'); return; }
+    submitViewerIdentity({ name, email, phone }, 'banner');
   };
 
   // Device switch confirmation handler
@@ -696,6 +753,100 @@ function JoinPackageContent(): React.JSX.Element {
             padding: isMobile ? '4px 16px 16px' : '6px 24px 16px',
           }}
         >
+          {/* Identity banner — unauthenticated users identify themselves first so returning
+              paid viewers skip packages/payment entirely. Collapses after identity confirmed. */}
+          {!isAuthenticated && !isLoading && selectedEvent && (
+            identityConfirmed ? (
+              <div style={{
+                maxWidth: 720, margin: '0 auto 20px', padding: '14px 20px',
+                background: 'rgba(3,150,156,0.12)', border: '1px solid rgba(3,150,156,0.4)',
+                borderRadius: 12, display: 'flex', alignItems: 'center', gap: 12,
+                color: '#d1d5db', fontSize: 14,
+              }}>
+                <i className="bi bi-check-circle-fill" style={{ color: '#03969c', fontSize: 18, flexShrink: 0 }}></i>
+                <span>
+                  Welcome, <strong style={{ color: '#fff' }}>{pendingViewerName || bannerName}</strong>. Choose a package below and continue to payment.
+                </span>
+              </div>
+            ) : (
+              <div style={{
+                maxWidth: 720, margin: '0 auto 24px', padding: isMobile ? '18px 16px' : '22px 24px',
+                background: 'linear-gradient(145deg, #141418 0%, #1a1a24 100%)',
+                border: '1px solid rgba(3,150,156,0.25)', borderRadius: 14,
+                boxShadow: '0 8px 24px rgba(0,0,0,0.35)',
+              }}>
+                <h3 style={{ color: '#fff', fontSize: 17, fontWeight: 700, margin: '0 0 4px' }}>
+                  Get Access to This Event
+                </h3>
+                <p style={{ color: '#9ca3af', fontSize: 13, margin: '0 0 14px' }}>
+                  Enter your details to continue. If you&apos;ve already purchased, you&apos;ll be taken straight to the stream.
+                </p>
+                {bannerError && (
+                  <div style={{
+                    background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.35)',
+                    borderRadius: 8, padding: '9px 12px', marginBottom: 12,
+                    color: '#fca5a5', fontSize: 13,
+                  }}>
+                    <i className="bi bi-exclamation-triangle-fill" style={{ marginRight: 6 }}></i>
+                    {bannerError}
+                  </div>
+                )}
+                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr', gap: 10, marginBottom: 12 }}>
+                  <input
+                    type="text"
+                    value={bannerName}
+                    onChange={e => { setBannerName(e.target.value); setBannerError(''); }}
+                    onKeyDown={e => e.key === 'Enter' && handleBannerSubmit()}
+                    placeholder="Full name"
+                    disabled={bannerLoading}
+                    style={{ padding: '11px 14px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 9, color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box', width: '100%' }}
+                  />
+                  <input
+                    type="email"
+                    value={bannerEmail}
+                    onChange={e => { setBannerEmail(e.target.value); setBannerError(''); }}
+                    onKeyDown={e => e.key === 'Enter' && handleBannerSubmit()}
+                    placeholder="Email"
+                    disabled={bannerLoading}
+                    style={{ padding: '11px 14px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 9, color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box', width: '100%' }}
+                  />
+                  <input
+                    type="tel"
+                    value={bannerPhone}
+                    onChange={e => { setBannerPhone(e.target.value); setBannerError(''); }}
+                    onKeyDown={e => e.key === 'Enter' && handleBannerSubmit()}
+                    placeholder="Phone (078...)"
+                    disabled={bannerLoading}
+                    style={{ padding: '11px 14px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 9, color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box', width: '100%' }}
+                  />
+                </div>
+                <button
+                  onClick={handleBannerSubmit}
+                  disabled={bannerLoading}
+                  style={{
+                    width: '100%', padding: '12px', borderRadius: 10, border: 'none',
+                    background: bannerLoading ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, #03969c, #027a7f)',
+                    color: '#fff', fontSize: 14, fontWeight: 700,
+                    cursor: bannerLoading ? 'not-allowed' : 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  }}
+                >
+                  {bannerLoading ? (
+                    <>
+                      <div style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                      Checking...
+                    </>
+                  ) : (
+                    <>
+                      <i className="bi bi-arrow-right-circle-fill"></i>
+                      Continue
+                    </>
+                  )}
+                </button>
+              </div>
+            )
+          )}
+
           {/* Page Header */}
           <div style={{ marginBottom: isMobile ? '16px' : '20px', textAlign: 'center' }}>
             <h1
