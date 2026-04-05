@@ -129,10 +129,12 @@ export async function switchAnonymousDevice(
 
 export async function checkAnonymousAccessStatus(
   eventId: string,
-  fingerprint: string
+  fingerprint: string,
+  viewerId?: string
 ): Promise<ApiResponse<AccessStatusResponse>> {
+  const viewerParam = viewerId ? `&viewerId=${encodeURIComponent(viewerId)}` : '';
   return apiClient.get<AccessStatusResponse>(
-    `${API_ENDPOINTS.PUBLIC.ANONYMOUS_VIEWER_ACCESS_STATUS(eventId)}?fingerprint=${encodeURIComponent(fingerprint)}`,
+    `${API_ENDPOINTS.PUBLIC.ANONYMOUS_VIEWER_ACCESS_STATUS(eventId)}?fingerprint=${encodeURIComponent(fingerprint)}${viewerParam}`,
     { skipAuth: true, retries: 1 }
   );
 }
