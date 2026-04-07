@@ -8,6 +8,7 @@
     "start": "next start"
   },
   "dependencies": {
+    "@videojs/react": "10.0.0-beta.15",
     "@fingerprintjs/fingerprintjs": "^5.1.0",
     "@mediapipe/camera_utils": "^0.3.1675466862",
     "@mediapipe/drawing_utils": "^0.3.1675466124",
