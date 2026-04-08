@@ -475,9 +475,9 @@ function JoinPackageContent(): React.JSX.Element {
     try {
       const fingerprint = await getDeviceId();
       const res = await registerAnonymousViewer(selectedEvent.id, {
-        name: data.name,
-        email: data.email,
-        phone: data.phone,
+        name: data.name.trim(),
+        email: data.email.trim(),
+        phone: data.phone.trim(),
         deviceFingerprint: fingerprint,
       });
 
@@ -753,99 +753,8 @@ function JoinPackageContent(): React.JSX.Element {
             padding: isMobile ? '4px 16px 16px' : '6px 24px 16px',
           }}
         >
-          {/* Identity banner — unauthenticated users identify themselves first so returning
-              paid viewers skip packages/payment entirely. Collapses after identity confirmed. */}
-          {!isAuthenticated && !isLoading && selectedEvent && (
-            identityConfirmed ? (
-              <div style={{
-                maxWidth: 720, margin: '0 auto 20px', padding: '14px 20px',
-                background: 'rgba(3,150,156,0.12)', border: '1px solid rgba(3,150,156,0.4)',
-                borderRadius: 12, display: 'flex', alignItems: 'center', gap: 12,
-                color: '#d1d5db', fontSize: 14,
-              }}>
-                <i className="bi bi-check-circle-fill" style={{ color: '#03969c', fontSize: 18, flexShrink: 0 }}></i>
-                <span>
-                  Welcome, <strong style={{ color: '#fff' }}>{pendingViewerName || bannerName}</strong>. Choose a package below and continue to payment.
-                </span>
-              </div>
-            ) : (
-              <div style={{
-                maxWidth: 720, margin: '0 auto 24px', padding: isMobile ? '18px 16px' : '22px 24px',
-                background: 'linear-gradient(145deg, #141418 0%, #1a1a24 100%)',
-                border: '1px solid rgba(3,150,156,0.25)', borderRadius: 14,
-                boxShadow: '0 8px 24px rgba(0,0,0,0.35)',
-              }}>
-                <h3 style={{ color: '#fff', fontSize: 17, fontWeight: 700, margin: '0 0 4px' }}>
-                  Get Access to This Event
-                </h3>
-                <p style={{ color: '#9ca3af', fontSize: 13, margin: '0 0 14px' }}>
-                  Enter your details to continue. If you&apos;ve already purchased, you&apos;ll be taken straight to the stream.
-                </p>
-                {bannerError && (
-                  <div style={{
-                    background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.35)',
-                    borderRadius: 8, padding: '9px 12px', marginBottom: 12,
-                    color: '#fca5a5', fontSize: 13,
-                  }}>
-                    <i className="bi bi-exclamation-triangle-fill" style={{ marginRight: 6 }}></i>
-                    {bannerError}
-                  </div>
-                )}
-                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr', gap: 10, marginBottom: 12 }}>
-                  <input
-                    type="text"
-                    value={bannerName}
-                    onChange={e => { setBannerName(e.target.value); setBannerError(''); }}
-                    onKeyDown={e => e.key === 'Enter' && handleBannerSubmit()}
-                    placeholder="Full name"
-                    disabled={bannerLoading}
-                    style={{ padding: '11px 14px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 9, color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box', width: '100%' }}
-                  />
-                  <input
-                    type="email"
-                    value={bannerEmail}
-                    onChange={e => { setBannerEmail(e.target.value); setBannerError(''); }}
-                    onKeyDown={e => e.key === 'Enter' && handleBannerSubmit()}
-                    placeholder="Email"
-                    disabled={bannerLoading}
-                    style={{ padding: '11px 14px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 9, color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box', width: '100%' }}
-                  />
-                  <input
-                    type="tel"
-                    value={bannerPhone}
-                    onChange={e => { setBannerPhone(e.target.value); setBannerError(''); }}
-                    onKeyDown={e => e.key === 'Enter' && handleBannerSubmit()}
-                    placeholder="Phone"
-                    disabled={bannerLoading}
-                    style={{ padding: '11px 14px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 9, color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box', width: '100%' }}
-                  />
-                </div>
-                <button
-                  onClick={handleBannerSubmit}
-                  disabled={bannerLoading}
-                  style={{
-                    width: '100%', padding: '12px', borderRadius: 10, border: 'none',
-                    background: bannerLoading ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, #03969c, #027a7f)',
-                    color: '#fff', fontSize: 14, fontWeight: 700,
-                    cursor: bannerLoading ? 'not-allowed' : 'pointer',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                  }}
-                >
-                  {bannerLoading ? (
-                    <>
-                      <div style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-                      Checking...
-                    </>
-                  ) : (
-                    <>
-                      <i className="bi bi-arrow-right-circle-fill"></i>
-                      Continue
-                    </>
-                  )}
-                </button>
-              </div>
-            )
-          )}
+          {/* Viewer auth for returning paid viewers has moved to the view-event page.
+              join-package now only shows package cards and payment flow. */}
 
           {/* Page Header */}
           <div style={{ marginBottom: isMobile ? '16px' : '20px', textAlign: 'center' }}>

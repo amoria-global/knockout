@@ -3,13 +3,39 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Navbar from '../components/navbar';
+import XentriPayModal from '../components/XentriPayModal';
 import { getAlbumByCode, type AlbumPhoto } from '@/lib/APIs/public/get-album/route';
 import { uploadSelfieForRecognition, type MatchedPhoto } from '@/lib/APIs/customer/facial-recognition/route';
 import { getCurrencies, type Currency } from '@/lib/APIs/public';
 import { recordStreamingPayment } from '@/lib/APIs/payments/route';
+import { recordAlbumPurchase } from '@/lib/APIs/payments/xentripay';
+import { identifyAlbumBuyer } from '@/lib/APIs/public/identify-buyer/route';
+import { getDeviceId } from '@/lib/fingerprint';
 import { requestFreeAlbumAccess } from '@/lib/APIs/public/request-free-access/route';
 import { verifyFreeAlbumAccess } from '@/lib/APIs/public/verify-free-access/route';
 import { getFreeAlbum, type FreeAlbumPhoto } from '@/lib/APIs/public/get-free-album/route';
+import { API_ENDPOINTS } from '@/lib/api/config';
+import { API_CONFIG } from '@/lib/api/config';
+
+// Photo shape used throughout the page, augmented with album-purchase fields
+type PhotoItem = {
+  id: string;
+  url: string;
+  alt: string;
+  price?: number;
+  albumId?: string;
+  albumType?: string;
+  currencyAbbreviation?: string;
+  currencyId?: string;
+  isPurchased?: boolean;
+};
+
+// Build a full URL from an API endpoint path (respects proxy in production)
+function apiUrl(path: string): string {
+  const base = API_CONFIG.baseUrl.replace(/\/$/, '');
+  const p = path.startsWith('/') ? path : `/${path}`;
+  return `${base}${p}`;
+}
 
 const FindMyPhotos = () => {
   const searchParams = useSearchParams();
@@ -32,9 +58,35 @@ const FindMyPhotos = () => {
   const [gridMousePos, setGridMousePos] = useState<{ x: number; y: number } | null>(null);
 
   // Photo grid
-  const [allPhotos, setAllPhotos] = useState<{ id: string; url: string; alt: string; price?: number }[]>([]);
-  const [displayedPhotos, setDisplayedPhotos] = useState<{ id: string; url: string; alt: string; price?: number }[]>([]);
+  const [allPhotos, setAllPhotos] = useState<PhotoItem[]>([]);
+  const [displayedPhotos, setDisplayedPhotos] = useState<PhotoItem[]>([]);
   const [isFiltered, setIsFiltered] = useState(false);
+
+  // Multi-select album purchase state
+  const [selectedPhotoIds, setSelectedPhotoIds] = useState<Set<string>>(new Set());
+  const [purchaseRefid, setPurchaseRefid] = useState<string | null>(null);
+  const [xentriModalOpen, setXentriModalOpen] = useState(false);
+  const [pendingPurchase, setPendingPurchase] = useState<{
+    albumId: string;
+    photoIds: string[];
+    amount: number;
+    currencyId: string;
+    currencyCode: string;
+  } | null>(null);
+  const [purchaseNotice, setPurchaseNotice] = useState<string | null>(null);
+
+  // Persistent buyer identity (one per album) — mirrors anonymous-viewer pattern
+  const [buyerId, setBuyerId] = useState<string | null>(null);
+  const [buyerAlbumId, setBuyerAlbumId] = useState<string | null>(null);
+  // "Your Details" modal
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [detailsName, setDetailsName] = useState('');
+  const [detailsEmail, setDetailsEmail] = useState('');
+  const [detailsPhone, setDetailsPhone] = useState('');
+  const [detailsLoading, setDetailsLoading] = useState(false);
+  const [detailsError, setDetailsError] = useState<string | null>(null);
+  // Pending photos to buy, held while details modal is open
+  const pendingBuyRef = useRef<PhotoItem[] | null>(null);
 
   // Scan modal
   const [isScanModalOpen, setIsScanModalOpen] = useState(false);
@@ -51,7 +103,7 @@ const FindMyPhotos = () => {
   const streamRef = useRef<MediaStream | null>(null);
 
   // Image viewer modal
-  const [selectedPhoto, setSelectedPhoto] = useState<{ id: string; url: string; alt: string; price?: number } | null>(null);
+  const [selectedPhoto, setSelectedPhoto] = useState<PhotoItem | null>(null);
 
   // Album metadata for payment
   const [albumEventId, setAlbumEventId] = useState('');
@@ -59,9 +111,9 @@ const FindMyPhotos = () => {
   const [albumCurrencySymbol, setAlbumCurrencySymbol] = useState('');
   const [currencies, setCurrencies] = useState<Currency[]>([]);
 
-  // Download payment modal
+  // Download payment modal (legacy single-photo path kept for non-album flows)
   const [showDownloadModal, setShowDownloadModal] = useState(false);
-  const [downloadTarget, setDownloadTarget] = useState<{ id: string; url: string; alt: string; price?: number } | null>(null);
+  const [downloadTarget, setDownloadTarget] = useState<PhotoItem | null>(null);
   const [dlPaymentMethod, setDlPaymentMethod] = useState<string | null>(null);
   const [dlPhone, setDlPhone] = useState('');
   const [dlCardNumber, setDlCardNumber] = useState('');
@@ -133,11 +185,18 @@ const FindMyPhotos = () => {
           if (response.data.pricing?.currencyId) setAlbumCurrencyId(response.data.pricing.currencyId);
           if (response.data.pricing?.currencySymbol) setAlbumCurrencySymbol(response.data.pricing.currencySymbol);
           const perPhotoPrice = response.data.pricing?.pricePerImage ?? response.data.pricePerPhoto;
+          const albumCurAbbr = response.data.pricing?.currencyAbbreviation;
+          const albumCurId = response.data.pricing?.currencyId;
+          const resolvedAlbumId = response.data.albumId;
           const photos = (response.data.photos ?? []).map((p: AlbumPhoto) => ({
             id: p.id,
             url: p.url || p.thumbnailUrl || '',
             alt: p.alt || p.eventTitle || 'Event photo',
             price: p.price ?? perPhotoPrice,
+            albumId: resolvedAlbumId,
+            albumType: response.data?.albumType,
+            currencyAbbreviation: albumCurAbbr,
+            currencyId: albumCurId,
           }));
           setAllPhotos(photos);
           setDisplayedPhotos(photos);
@@ -160,6 +219,52 @@ const FindMyPhotos = () => {
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  // Pick up prior purchase refid/buyerId from the URL so purchases persist
+  useEffect(() => {
+    const refidFromUrl = searchParams.get('refid');
+    if (refidFromUrl && !purchaseRefid) {
+      setPurchaseRefid(refidFromUrl);
+    }
+    const buyerFromUrl = searchParams.get('buyerId');
+    const albumFromUrl = searchParams.get('albumId');
+    if (buyerFromUrl && !buyerId) {
+      setBuyerId(buyerFromUrl);
+      if (albumFromUrl) setBuyerAlbumId(albumFromUrl);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  // When we know the album (either from invite-code or after a scan), load any
+  // saved buyerId for that album from localStorage so returning visitors are recognized.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    // Derive a candidate albumId from displayed photos if not already set
+    let albumIdCandidate = buyerAlbumId;
+    if (!albumIdCandidate) {
+      const first = displayedPhotos.find(p => p.albumId);
+      if (first?.albumId) albumIdCandidate = first.albumId;
+    }
+    if (!albumIdCandidate || (buyerId && buyerAlbumId === albumIdCandidate)) return;
+    try {
+      const stored = localStorage.getItem(`album_buyer_id:${albumIdCandidate}`);
+      if (stored) {
+        setBuyerId(stored);
+        setBuyerAlbumId(albumIdCandidate);
+      }
+    } catch {}
+    // Auto-fill saved buyer details for the modal
+    try {
+      const details = localStorage.getItem('album_buyer_details');
+      if (details) {
+        const parsed = JSON.parse(details) as { name?: string; email?: string; phone?: string };
+        if (parsed.name && !detailsName) setDetailsName(parsed.name);
+        if (parsed.email && !detailsEmail) setDetailsEmail(parsed.email);
+        if (parsed.phone && !detailsPhone) setDetailsPhone(parsed.phone);
+      }
+    } catch {}
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [displayedPhotos, buyerAlbumId]);
 
   // Mouse handlers for dot pattern spotlight effect
   const handleMouseMove = (
@@ -230,7 +335,10 @@ const FindMyPhotos = () => {
     setIsScanning(true);
     setScanError(null);
     try {
-      const response = await uploadSelfieForRecognition(inviteCode.trim(), uploadedFile);
+      const response = await uploadSelfieForRecognition(inviteCode.trim(), uploadedFile, {
+        buyerId: buyerId || undefined,
+        refid: purchaseRefid || undefined,
+      });
       if (response.success && response.data) {
         const rawData = response.data as unknown as Record<string, unknown>;
         const photos: MatchedPhoto[] = rawData?.data
@@ -240,14 +348,21 @@ const FindMyPhotos = () => {
             : [];
 
         {
-          const mapped = photos.map((p: MatchedPhoto) => ({
+          const mapped: PhotoItem[] = photos.map((p: MatchedPhoto) => ({
             id: p.id,
             url: p.url || p.thumbnailUrl || '',
             alt: p.alt || p.eventTitle || 'Event photo',
+            price: p.pricePerImage,
+            albumId: p.albumId,
+            albumType: p.albumType,
+            currencyAbbreviation: p.currencyAbbreviation,
+            currencyId: p.currencyId,
+            isPurchased: p.isPurchased,
           }));
           setDisplayedPhotos(mapped);
           setIsFiltered(true);
           setIsCodeSubmitted(true);
+          setSelectedPhotoIds(new Set());
           resetScanModal();
         }
       } else {
@@ -471,13 +586,243 @@ const FindMyPhotos = () => {
     }
   };
 
-  const handleDownloadClick = (photo: { id: string; url: string; alt: string; price?: number }) => {
+  // Download an already-purchased photo via the backend download endpoint.
+  // Prefers persistent buyerId over per-transaction refid.
+  const downloadPurchasedPhoto = async (
+    albumId: string,
+    photoId: string,
+    token: { refid?: string; buyerId?: string }
+  ) => {
+    const url = apiUrl(API_ENDPOINTS.PAYMENTS.ALBUM_PHOTO_DOWNLOAD(albumId, photoId, token));
+    await triggerPhotoDownload(url, `photo-${photoId}.jpg`);
+  };
+
+  const togglePhotoSelected = (photoId: string) => {
+    setSelectedPhotoIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(photoId)) next.delete(photoId); else next.add(photoId);
+      return next;
+    });
+  };
+
+  // Find shared album/currency context from selected paid photos (assumes one album per search)
+  const getPurchaseContext = (photos: PhotoItem[]): { albumId: string; currencyId: string; currencyCode: string } | null => {
+    const first = photos.find(p => p.albumId && p.currencyId);
+    if (!first || !first.albumId || !first.currencyId) return null;
+    return {
+      albumId: first.albumId,
+      currencyId: first.currencyId,
+      currencyCode: first.currencyAbbreviation || albumCurrencySymbol || 'RF',
+    };
+  };
+
+  const proceedToPayment = (photos: PhotoItem[]) => {
+    const ctx = getPurchaseContext(photos);
+    if (!ctx) {
+      setPurchaseNotice('Missing album info — please rescan your photos.');
+      setTimeout(() => setPurchaseNotice(null), 4000);
+      return;
+    }
+    const payable = photos.filter(p => !p.isPurchased);
+    if (payable.length === 0) {
+      setPurchaseNotice('You already own these photos.');
+      setTimeout(() => setPurchaseNotice(null), 3000);
+      return;
+    }
+    const amount = payable.reduce((sum, p) => sum + (p.price ?? 0), 0);
+    setPendingPurchase({
+      albumId: ctx.albumId,
+      photoIds: payable.map(p => p.id),
+      amount,
+      currencyId: ctx.currencyId,
+      currencyCode: ctx.currencyCode,
+    });
+    setXentriModalOpen(true);
+  };
+
+  const openPurchaseModal = (photos: PhotoItem[]) => {
+    const ctx = getPurchaseContext(photos);
+    if (!ctx) {
+      setPurchaseNotice('Missing album info — please rescan your photos.');
+      setTimeout(() => setPurchaseNotice(null), 4000);
+      return;
+    }
+    // If we don't yet have a buyerId for this album, collect buyer details first
+    if (!buyerId || buyerAlbumId !== ctx.albumId) {
+      pendingBuyRef.current = photos;
+      setDetailsError(null);
+      setDetailsOpen(true);
+      return;
+    }
+    proceedToPayment(photos);
+  };
+
+  const handleBulkBuy = () => {
+    const chosen = displayedPhotos.filter(p => selectedPhotoIds.has(p.id) && (p.price ?? 0) > 0 && !p.isPurchased);
+    if (chosen.length === 0) return;
+    openPurchaseModal(chosen);
+  };
+
+  const handleSingleBuy = (photo: PhotoItem) => {
+    openPurchaseModal([photo]);
+  };
+
+  const handlePurchaseSuccess = async (refid: string) => {
+    if (!pendingPurchase) return;
+    setPurchaseRefid(refid);
+    setPurchaseNotice('Payment confirmed! Recording purchase…');
+
+    // Record the purchase (credits photographer, sends receipt, marks photos purchased)
+    try {
+      await recordAlbumPurchase(refid, buyerId || undefined);
+    } catch {
+      // non-fatal — downloads below still work with buyerId/refid
+    }
+
+    // Mark photos as purchased in local state
+    const boughtIds = new Set(pendingPurchase.photoIds);
+    setDisplayedPhotos(prev => prev.map(p => boughtIds.has(p.id) ? { ...p, isPurchased: true } : p));
+    setAllPhotos(prev => prev.map(p => boughtIds.has(p.id) ? { ...p, isPurchased: true } : p));
+    setSelectedPhotoIds(new Set());
+
+    // Trigger downloads — prefer persistent buyerId over per-transaction refid
+    setPurchaseNotice('Downloading photos…');
+    for (const photoId of pendingPurchase.photoIds) {
+      // eslint-disable-next-line no-await-in-loop
+      await downloadPurchasedPhoto(pendingPurchase.albumId, photoId, { refid, buyerId: buyerId || undefined });
+    }
+
+    setPurchaseNotice('Done!');
+    setXentriModalOpen(false);
+    setPendingPurchase(null);
+    setTimeout(() => setPurchaseNotice(null), 3000);
+  };
+
+  const handleAlreadyPurchased = (alreadyIds: string[]) => {
+    const alreadySet = new Set(alreadyIds);
+    // Update local state to reflect ownership
+    setDisplayedPhotos(prev => prev.map(p => alreadySet.has(p.id) ? { ...p, isPurchased: true } : p));
+    setAllPhotos(prev => prev.map(p => alreadySet.has(p.id) ? { ...p, isPurchased: true } : p));
+
+    if (!pendingPurchase) {
+      setXentriModalOpen(false);
+      return;
+    }
+    const remaining = pendingPurchase.photoIds.filter(id => !alreadySet.has(id));
+    setXentriModalOpen(false);
+
+    if (remaining.length === 0) {
+      // All selected photos were already owned — just download them
+      setPurchaseNotice('You already own these. Downloading…');
+      (async () => {
+        for (const photoId of alreadyIds) {
+          // eslint-disable-next-line no-await-in-loop
+          await downloadPurchasedPhoto(pendingPurchase.albumId, photoId, { buyerId: buyerId || undefined });
+        }
+        setPendingPurchase(null);
+        setTimeout(() => setPurchaseNotice(null), 3000);
+      })();
+      return;
+    }
+
+    // Retry initiate with only the remaining photoIds
+    setPurchaseNotice(`${alreadyIds.length} already owned — retrying payment for ${remaining.length} remaining…`);
+    const remainingPhotos = displayedPhotos.filter(p => remaining.includes(p.id));
+    const amount = remainingPhotos.reduce((s, p) => s + (p.price ?? 0), 0);
+    setPendingPurchase({
+      ...pendingPurchase,
+      photoIds: remaining,
+      amount,
+    });
+    setTimeout(() => { setXentriModalOpen(true); setPurchaseNotice(null); }, 600);
+  };
+
+  const handleDetailsSubmit = async () => {
+    setDetailsError(null);
+    const name = detailsName.trim();
+    const email = detailsEmail.trim();
+    const phone = detailsPhone.trim();
+    if (!name) { setDetailsError('Please enter your name.'); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setDetailsError('Please enter a valid email.'); return; }
+    if (!phone || phone.length < 9) { setDetailsError('Please enter a valid phone number.'); return; }
+
+    const photos = pendingBuyRef.current || [];
+    const ctx = getPurchaseContext(photos);
+    if (!ctx) { setDetailsError('Missing album info — please rescan.'); return; }
+
+    setDetailsLoading(true);
+    try {
+      const fp = await getDeviceId();
+      const res = await identifyAlbumBuyer(ctx.albumId, { name, email, phone, deviceFingerprint: fp });
+      if (!res.success || !res.data) {
+        throw new Error(res.error || 'Could not verify your details.');
+      }
+      const { buyerId: newBuyerId, purchasedPhotoIds } = res.data;
+      setBuyerId(newBuyerId);
+      setBuyerAlbumId(ctx.albumId);
+
+      // Persist
+      try {
+        localStorage.setItem(`album_buyer_id:${ctx.albumId}`, newBuyerId);
+        localStorage.setItem('album_buyer_details', JSON.stringify({ name, email, phone }));
+        const urlObj = new URL(window.location.href);
+        urlObj.searchParams.set('buyerId', newBuyerId);
+        urlObj.searchParams.set('albumId', ctx.albumId);
+        window.history.replaceState(null, '', urlObj.toString());
+      } catch {}
+
+      // Mark any previously-purchased photos in local state
+      if (purchasedPhotoIds?.length) {
+        const owned = new Set(purchasedPhotoIds);
+        setDisplayedPhotos(prev => prev.map(p => owned.has(p.id) ? { ...p, isPurchased: true } : p));
+        setAllPhotos(prev => prev.map(p => owned.has(p.id) ? { ...p, isPurchased: true } : p));
+      }
+
+      setDetailsOpen(false);
+      setDetailsLoading(false);
+
+      // Resume the buy flow — filter out photos the buyer already owns
+      const owned = new Set(purchasedPhotoIds || []);
+      const freshPhotos = photos.map(p => owned.has(p.id) ? { ...p, isPurchased: true } : p);
+      const toPay = freshPhotos.filter(p => !p.isPurchased);
+      if (toPay.length === 0) {
+        setPurchaseNotice('You already own these photos. Downloading…');
+        (async () => {
+          for (const photo of freshPhotos) {
+            // eslint-disable-next-line no-await-in-loop
+            await downloadPurchasedPhoto(ctx.albumId, photo.id, { buyerId: newBuyerId });
+          }
+          setTimeout(() => setPurchaseNotice(null), 3000);
+        })();
+      } else {
+        proceedToPayment(toPay);
+      }
+      pendingBuyRef.current = null;
+    } catch (err) {
+      setDetailsError(err instanceof Error ? err.message : 'Could not verify your details. Try again.');
+      setDetailsLoading(false);
+    }
+  };
+
+  const handleDownloadClick = (photo: PhotoItem) => {
+    // Already purchased → download via backend (buyerId persistent, refid fallback)
+    if (photo.isPurchased && photo.albumId && (buyerId || purchaseRefid)) {
+      downloadPurchasedPhoto(photo.albumId, photo.id, { buyerId: buyerId || undefined, refid: purchaseRefid || undefined });
+      return;
+    }
+    // Paid photo with album info → new XentriPayModal album purchase flow
+    if ((photo.price ?? 0) > 0 && photo.albumId && photo.currencyId) {
+      handleSingleBuy(photo);
+      return;
+    }
+    // Legacy paid photo (invite-code album without albumId/currencyId) → old inline modal
     if ((photo.price ?? 0) > 0) {
       setDownloadTarget(photo);
       setShowDownloadModal(true);
-    } else {
-      triggerPhotoDownload(photo.url, `photo-${photo.id}.jpg`);
+      return;
     }
+    // Free photo → direct download
+    triggerPhotoDownload(photo.url, `photo-${photo.id}.jpg`);
   };
 
   const startCamera = async () => {
@@ -1509,7 +1854,18 @@ const FindMyPhotos = () => {
               gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',
               gap: isMobile ? '12px' : '20px',
             }}>
-              {displayedPhotos.map((photo) => (
+              {displayedPhotos.map((photo) => {
+                const isPaid = (photo.price ?? 0) > 0;
+                const isPurchased = !!photo.isPurchased;
+                const isSelectable = isPaid && !isPurchased && !!photo.albumId;
+                const isSelected = selectedPhotoIds.has(photo.id);
+                const currencyLabel = photo.currencyAbbreviation || albumCurrencySymbol || 'RF';
+                const btnLabel = isPurchased
+                  ? 'Download'
+                  : isPaid
+                    ? `Buy (${currencyLabel} ${photo.price?.toLocaleString()})`
+                    : 'Download';
+                return (
                 <div
                   key={photo.id}
                   className="photo-card"
@@ -1517,7 +1873,7 @@ const FindMyPhotos = () => {
                     borderRadius: '20px',
                     overflow: 'hidden',
                     cursor: 'pointer',
-                    boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                    boxShadow: isSelected ? '0 0 0 3px #03969c, 0 4px 20px rgba(0,0,0,0.08)' : '0 4px 20px rgba(0,0,0,0.08)',
                     transition: 'all 0.3s ease',
                     background: '#ffffff',
                     position: 'relative',
@@ -1539,7 +1895,55 @@ const FindMyPhotos = () => {
                       loading="lazy"
                     />
                   </div>
-                  {/* Download button */}
+                  {/* Selection checkbox (only for purchasable paid photos) */}
+                  {isSelectable && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); togglePhotoSelected(photo.id); }}
+                      aria-label={isSelected ? 'Deselect photo' : 'Select photo'}
+                      style={{
+                        position: 'absolute',
+                        top: '10px',
+                        left: '10px',
+                        width: '26px',
+                        height: '26px',
+                        borderRadius: '6px',
+                        background: isSelected ? '#03969c' : 'rgba(255,255,255,0.9)',
+                        border: isSelected ? '2px solid #03969c' : '2px solid rgba(0,0,0,0.2)',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 3,
+                        padding: 0,
+                      }}
+                    >
+                      {isSelected && (
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                      )}
+                    </button>
+                  )}
+                  {/* Price / Purchased badge */}
+                  {isPaid && (
+                    <div style={{
+                      position: 'absolute',
+                      top: '10px',
+                      right: '10px',
+                      padding: '5px 10px',
+                      borderRadius: '50px',
+                      background: isPurchased ? '#16a34a' : 'rgba(0,0,0,0.75)',
+                      color: '#fff',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      zIndex: 2,
+                      backdropFilter: 'blur(4px)',
+                      border: '1px solid rgba(255,255,255,0.15)',
+                    }}>
+                      {isPurchased ? '✓ PURCHASED' : `${currencyLabel} ${photo.price?.toLocaleString()}`}
+                    </div>
+                  )}
+                  {/* Download / Buy button */}
                   <button
                     className="photo-download-btn"
                     onClick={(e) => { e.stopPropagation(); handleDownloadClick(photo); }}
@@ -1570,10 +1974,11 @@ const FindMyPhotos = () => {
                       <polyline points="7 10 12 15 17 10"/>
                       <line x1="12" y1="15" x2="12" y2="3"/>
                     </svg>
-                    {(photo.price ?? 0) > 0 ? `Buy (${albumCurrencySymbol || 'RF'} ${photo.price?.toLocaleString()})` : 'Download'}
+                    {btnLabel}
                   </button>
                 </div>
-              ))}
+                );
+              })}
             </div>
 
             {displayedPhotos.length === 0 && (
@@ -1648,7 +2053,11 @@ const FindMyPhotos = () => {
                 <polyline points="7 10 12 15 17 10"/>
                 <line x1="12" y1="15" x2="12" y2="3"/>
               </svg>
-              {(selectedPhoto.price ?? 0) > 0 ? `Buy (${albumCurrencySymbol || 'RF'} ${selectedPhoto.price?.toLocaleString()})` : 'Download'}
+              {selectedPhoto.isPurchased
+                ? 'Download'
+                : (selectedPhoto.price ?? 0) > 0
+                  ? `Buy (${selectedPhoto.currencyAbbreviation || albumCurrencySymbol || 'RF'} ${selectedPhoto.price?.toLocaleString()})`
+                  : 'Download'}
             </button>
             <button
               onClick={(e) => { e.stopPropagation(); setSelectedPhoto(null); }}
@@ -1672,18 +2081,70 @@ const FindMyPhotos = () => {
               &times;
             </button>
           </div>
-          <img
-            src={selectedPhoto.url.replace('w=600&h=400', 'w=1200&h=800')}
-            alt={selectedPhoto.alt}
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              maxWidth: '90vw',
-              maxHeight: '85vh',
-              borderRadius: '12px',
-              objectFit: 'contain',
-              boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
-            }}
-          />
+          {(() => {
+            const isLocked = (selectedPhoto.price ?? 0) > 0 && !selectedPhoto.isPurchased;
+            return (
+              <div
+                onClick={(e) => e.stopPropagation()}
+                onContextMenu={isLocked ? (e) => e.preventDefault() : undefined}
+                style={{ position: 'relative', maxWidth: '90vw', maxHeight: '85vh', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}
+              >
+                <img
+                  src={selectedPhoto.url.replace('w=600&h=400', 'w=1200&h=800')}
+                  alt={selectedPhoto.alt}
+                  draggable={!isLocked}
+                  style={{
+                    display: 'block',
+                    maxWidth: '90vw',
+                    maxHeight: '85vh',
+                    objectFit: 'contain',
+                    userSelect: isLocked ? 'none' : 'auto',
+                    pointerEvents: isLocked ? 'none' : 'auto',
+                  }}
+                />
+                {isLocked && (
+                  <>
+                    {/* Four 45° blurred diagonal bands — real image shows between them */}
+                    {[0, 1, 2, 3].map((i) => (
+                      <div
+                        key={i}
+                        aria-hidden
+                        style={{
+                          position: 'absolute',
+                          top: `${-5 + i * 32}%`,
+                          left: '-50%',
+                          width: '200%',
+                          height: '60px',
+                          transform: 'rotate(-45deg)',
+                          transformOrigin: 'center',
+                          backdropFilter: 'blur(16px)',
+                          WebkitBackdropFilter: 'blur(16px)',
+                          background: 'rgba(255,255,255,0.18)',
+                          borderTop: '1px solid rgba(255,255,255,0.35)',
+                          borderBottom: '1px solid rgba(255,255,255,0.35)',
+                          pointerEvents: 'none',
+                        }}
+                      />
+                    ))}
+                    {/* Corner lock label */}
+                    <div
+                      aria-hidden
+                      style={{
+                        position: 'absolute', bottom: '12px', left: '12px',
+                        padding: '6px 12px', borderRadius: '50px',
+                        background: 'rgba(0,0,0,0.7)', color: '#fff',
+                        fontSize: '11px', fontWeight: 700, letterSpacing: '0.5px',
+                        border: '1px solid rgba(255,255,255,0.2)', backdropFilter: 'blur(6px)',
+                        pointerEvents: 'none',
+                      }}
+                    >
+                      🔒 PREVIEW — BUY TO UNLOCK
+                    </div>
+                  </>
+                )}
+              </div>
+            );
+          })()}
         </div>
       )}
 
@@ -2349,6 +2810,202 @@ const FindMyPhotos = () => {
           box-shadow: 0 8px 24px rgba(255,107,107,0.35);
         }
       `}</style>
+
+      {/* ── Multi-select Purchase Action Bar ── */}
+      {(() => {
+        const selectedCount = selectedPhotoIds.size;
+        if (selectedCount === 0 && !purchaseNotice) return null;
+        const selectedItems = displayedPhotos.filter(p => selectedPhotoIds.has(p.id));
+        const total = selectedItems.reduce((s, p) => s + (p.price ?? 0), 0);
+        const curLabel = selectedItems[0]?.currencyAbbreviation || albumCurrencySymbol || 'RF';
+        return (
+          <div style={{
+            position: 'fixed',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            background: 'rgba(20,20,24,0.97)',
+            backdropFilter: 'blur(12px)',
+            borderTop: '1px solid rgba(255,255,255,0.1)',
+            padding: isMobile ? '12px 16px' : '16px 24px',
+            zIndex: 1500,
+            boxShadow: '0 -8px 24px rgba(0,0,0,0.3)',
+          }}>
+            <div style={{
+              maxWidth: '1200px',
+              margin: '0 auto',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '10px',
+            }}>
+              {purchaseNotice && (
+                <div style={{ color: '#fff', fontSize: '13px', fontWeight: 500 }}>
+                  {purchaseNotice}
+                </div>
+              )}
+              {selectedCount > 0 && (
+              <div style={{
+                display: 'flex',
+                flexDirection: isMobile ? 'column' : 'row',
+                alignItems: isMobile ? 'stretch' : 'center',
+                gap: '12px',
+              }}>
+                  <div style={{ color: '#fff', fontSize: '14px', flex: isMobile ? 'initial' : 1 }}>
+                    <strong>{selectedCount}</strong> photo{selectedCount > 1 ? 's' : ''} selected · Total: <strong>{curLabel} {total.toLocaleString()}</strong>
+                  </div>
+                  <button
+                    onClick={() => setSelectedPhotoIds(new Set())}
+                    style={{
+                      padding: '10px 16px',
+                      borderRadius: '10px',
+                      background: 'transparent',
+                      border: '1px solid rgba(255,255,255,0.2)',
+                      color: '#adadb8',
+                      fontSize: '14px',
+                      fontWeight: 500,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Clear
+                  </button>
+                  <button
+                    onClick={handleBulkBuy}
+                    style={{
+                      padding: '10px 20px',
+                      borderRadius: '10px',
+                      background: 'linear-gradient(135deg, #03969c, #027a7f)',
+                      border: 'none',
+                      color: '#fff',
+                      fontSize: '14px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Buy {selectedCount} photo{selectedCount > 1 ? 's' : ''} ({curLabel} {total.toLocaleString()})
+                  </button>
+              </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ── XentriPay Modal for album purchase ── */}
+      {pendingPurchase && (
+        <XentriPayModal
+          isOpen={xentriModalOpen}
+          onClose={() => { setXentriModalOpen(false); setPendingPurchase(null); }}
+          onSuccess={handlePurchaseSuccess}
+          onError={(e) => setPurchaseNotice(e)}
+          amount={pendingPurchase.amount}
+          currencyCode={pendingPurchase.currencyCode}
+          currencyId={pendingPurchase.currencyId}
+          paymentType="album_purchase"
+          albumId={pendingPurchase.albumId}
+          photoIds={pendingPurchase.photoIds}
+          buyerId={buyerId || undefined}
+          onAlreadyPurchased={handleAlreadyPurchased}
+          title={`Buy ${pendingPurchase.photoIds.length} photo${pendingPurchase.photoIds.length > 1 ? 's' : ''}`}
+          darkMode
+        />
+      )}
+
+      {/* ── Your Details Modal (buyer identity) ── */}
+      {detailsOpen && (
+        <div
+          style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0,0,0,0.82)', backdropFilter: 'blur(6px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: 2500, padding: '16px',
+          }}
+          onMouseDown={(e) => { if (e.target === e.currentTarget && !detailsLoading) setDetailsOpen(false); }}
+        >
+          <div
+            onMouseDown={(e) => e.stopPropagation()}
+            style={{
+              background: 'linear-gradient(145deg, #141418 0%, #1a1a24 100%)',
+              borderRadius: '20px',
+              padding: 'clamp(24px, 5vw, 36px)',
+              maxWidth: '460px', width: '100%',
+              border: '1px solid rgba(255,255,255,0.1)',
+              boxShadow: '0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(3,150,156,0.15)',
+              position: 'relative',
+            }}
+          >
+            <h2 style={{ fontSize: '22px', fontWeight: 700, color: '#fff', margin: '0 0 6px' }}>Your Details</h2>
+            <p style={{ fontSize: '13px', color: '#9ca3af', margin: '0 0 20px' }}>
+              We use these to send your receipt and to recognize you next time so you never pay twice for the same photo.
+            </p>
+
+            {(['name', 'email', 'phone'] as const).map((field) => {
+              const labels = { name: 'Full Name', email: 'Email', phone: 'Phone Number' };
+              const placeholders = { name: 'Jane Doe', email: 'jane@example.com', phone: '0791234567' };
+              const value = field === 'name' ? detailsName : field === 'email' ? detailsEmail : detailsPhone;
+              const setter = field === 'name' ? setDetailsName : field === 'email' ? setDetailsEmail : setDetailsPhone;
+              return (
+                <div key={field} style={{ marginBottom: '14px' }}>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#d1d5db', marginBottom: '6px' }}>
+                    {labels[field]}
+                  </label>
+                  <input
+                    type={field === 'email' ? 'email' : field === 'phone' ? 'tel' : 'text'}
+                    value={value}
+                    onChange={(e) => setter(field === 'phone' ? e.target.value.replace(/\D/g, '').slice(0, 12) : e.target.value)}
+                    placeholder={placeholders[field]}
+                    disabled={detailsLoading}
+                    style={{
+                      width: '100%', padding: '12px 14px',
+                      background: 'rgba(255,255,255,0.06)',
+                      border: '1px solid rgba(255,255,255,0.12)',
+                      borderRadius: '10px', color: '#fff', fontSize: '14px',
+                      outline: 'none', boxSizing: 'border-box',
+                    }}
+                    onFocus={(e) => { e.currentTarget.style.borderColor = '#03969c'; }}
+                    onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }}
+                  />
+                </div>
+              );
+            })}
+
+            {detailsError && (
+              <div style={{
+                padding: '10px 12px', marginBottom: '14px',
+                background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.35)',
+                borderRadius: '10px', color: '#ef4444', fontSize: '13px',
+              }}>
+                {detailsError}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
+              <button
+                onClick={() => { if (!detailsLoading) { setDetailsOpen(false); pendingBuyRef.current = null; } }}
+                disabled={detailsLoading}
+                style={{
+                  flex: 1, padding: '12px', borderRadius: '12px',
+                  background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)',
+                  color: '#9ca3af', fontSize: '14px', fontWeight: 500, cursor: detailsLoading ? 'not-allowed' : 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDetailsSubmit}
+                disabled={detailsLoading}
+                style={{
+                  flex: 2, padding: '12px', borderRadius: '12px',
+                  background: detailsLoading ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, #03969c, #027a7f)',
+                  border: 'none', color: '#fff', fontSize: '14px', fontWeight: 600,
+                  cursor: detailsLoading ? 'not-allowed' : 'pointer',
+                }}
+              >
+                {detailsLoading ? 'Verifying…' : 'Continue'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

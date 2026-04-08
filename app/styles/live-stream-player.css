@@ -1,0 +1,650 @@
+/* ==========================================================================
+   Live Stream Player — video.js-inspired skin
+   ========================================================================== */
+
+/* Root container */
+.vjs-live-player {
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+  height: 100%;
+  border-radius: 1rem;
+  overflow: hidden;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+  background: #000;
+}
+
+.vjs-live-player video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* Surface — shared glass effect */
+.vjs-surface {
+  background-color: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(16px) saturate(120%);
+  -webkit-backdrop-filter: blur(16px) saturate(120%);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* ==========================================================================
+   Controls Bar
+   ========================================================================== */
+
+.vjs-controls {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  padding: 32px 14px 12px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.82) 0%, rgba(0, 0, 0, 0.4) 60%, transparent 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.35s ease, transform 0.35s ease;
+  pointer-events: none;
+}
+
+.vjs-controls--visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+/* Progress bar row */
+.vjs-progress-row {
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 100px;
+  cursor: pointer;
+  position: relative;
+  transition: height 0.2s ease;
+}
+
+.vjs-progress-row:hover {
+  height: 6px;
+}
+
+.vjs-progress-fill {
+  height: 100%;
+  background: #03969c;
+  border-radius: 100px;
+  position: relative;
+  pointer-events: none;
+  transition: width 0.1s linear;
+}
+
+.vjs-progress-thumb {
+  position: absolute;
+  right: -5px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 10px;
+  height: 10px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.vjs-progress-row:hover .vjs-progress-thumb {
+  opacity: 1;
+}
+
+/* Buttons row */
+.vjs-buttons-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  color: #fff;
+}
+
+.vjs-buttons-row--right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* ==========================================================================
+   Buttons
+   ========================================================================== */
+
+.vjs-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.vjs-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+.vjs-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  transform: scale(1.08);
+}
+
+.vjs-btn:active {
+  transform: scale(0.95);
+}
+
+.vjs-btn--play svg {
+  width: 24px;
+  height: 24px;
+}
+
+.vjs-btn--recording {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.15);
+}
+
+.vjs-btn--recording:hover {
+  background: rgba(239, 68, 68, 0.25);
+}
+
+/* Play overlay (center of screen) */
+.vjs-play-overlay {
+  position: absolute;
+  z-index: 10;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.vjs-play-overlay svg {
+  width: 32px;
+  height: 32px;
+  margin-left: 3px; /* optical centering for play triangle */
+}
+
+.vjs-play-overlay:hover {
+  background: rgba(255, 255, 255, 0.18);
+  transform: scale(1.08);
+}
+
+/* ==========================================================================
+   LIVE Badge
+   ========================================================================== */
+
+.vjs-live-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  transition: all 0.3s;
+  flex-shrink: 0;
+  border: none;
+  cursor: default;
+}
+
+.vjs-live-badge--live {
+  background: #e11d48;
+  color: #fff;
+}
+
+.vjs-live-badge--behind {
+  background: rgba(255, 255, 255, 0.12);
+  color: #aaa;
+  cursor: pointer;
+}
+
+.vjs-live-badge--behind:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.vjs-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.vjs-live-dot--on {
+  background: #fff;
+  animation: vjsLivePulse 2s infinite;
+}
+
+.vjs-live-dot--off {
+  background: #666;
+}
+
+@keyframes vjsLivePulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* ==========================================================================
+   Volume Popover
+   ========================================================================== */
+
+.vjs-volume-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.vjs-volume-popover {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  background: rgba(0, 0, 0, 0.82);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 14px 12px 10px;
+  /* Extra bottom padding bridges the gap to the mute button so hover persists */
+  padding-bottom: 18px;
+  margin-bottom: -8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s, transform 0.2s;
+  z-index: 50;
+  max-height: calc(100vh - 120px);
+}
+
+.vjs-volume-group:hover .vjs-volume-popover,
+.vjs-volume-popover--visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* On short viewports, switch to a horizontal inline slider to avoid clipping */
+@media (max-height: 400px) {
+  .vjs-volume-popover {
+    position: relative;
+    bottom: auto;
+    left: auto;
+    transform: none;
+    flex-direction: row;
+    padding: 6px 10px;
+    border-radius: 8px;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .vjs-volume-group:hover .vjs-volume-popover,
+  .vjs-volume-popover--visible {
+    transform: none;
+  }
+  .vjs-volume-slider-vertical {
+    width: 80px;
+    height: 4px;
+    writing-mode: horizontal-tb;
+  }
+  .vjs-volume-slider-fill {
+    bottom: auto;
+    left: 0;
+    height: 100%;
+    width: var(--vol, 100%);
+  }
+  .vjs-volume-slider-input {
+    writing-mode: horizontal-tb;
+    direction: ltr;
+  }
+}
+
+.vjs-volume-slider-vertical {
+  width: 6px;
+  height: 80px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 100px;
+  position: relative;
+  cursor: pointer;
+  /* Allow the wider invisible input to extend beyond the track */
+  overflow: visible;
+}
+
+.vjs-volume-slider-fill {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  border-radius: 100px;
+  background: #03969c;
+  transition: height 0.1s;
+  pointer-events: none;
+}
+
+.vjs-volume-slider-thumb {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, 50%);
+  width: 14px;
+  height: 14px;
+  background: #fff;
+  border: 2px solid #03969c;
+  border-radius: 50%;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+  transition: bottom 0.1s;
+}
+
+.vjs-volume-slider-input {
+  position: absolute;
+  /* Wider hit area than the visual track */
+  top: 0;
+  left: -10px;
+  width: 26px;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  -webkit-appearance: slider-vertical;
+  appearance: slider-vertical;
+  writing-mode: vertical-lr;
+  direction: rtl;
+  margin: 0;
+}
+
+.vjs-volume-label {
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ==========================================================================
+   Recording Indicator (floating)
+   ========================================================================== */
+
+.vjs-recording-indicator {
+  position: absolute;
+  bottom: 76px;
+  left: 16px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(239, 68, 68, 0.9);
+  backdrop-filter: blur(10px);
+  padding: 8px 16px;
+  border-radius: 20px;
+  transition: opacity 0.3s;
+}
+
+.vjs-recording-indicator .vjs-recording-dot {
+  width: 10px;
+  height: 10px;
+  background: #fff;
+  border-radius: 50%;
+  animation: vjsBlink 1s infinite;
+}
+
+.vjs-recording-indicator span {
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+@keyframes vjsBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* ==========================================================================
+   LIVE label (top-left floating)
+   ========================================================================== */
+
+.vjs-live-label {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(225, 29, 72, 0.9);
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: 0.5px;
+  backdrop-filter: blur(8px);
+  transition: opacity 0.3s, transform 0.3s;
+}
+
+/* ==========================================================================
+   Settings Menu
+   ========================================================================== */
+
+.vjs-settings-menu {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: 0;
+  background: #18181b;
+  border-radius: 16px;
+  padding: 6px;
+  min-width: 220px;
+  max-width: 280px;
+  max-height: min(60vh, 400px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  z-index: 100;
+  overflow-y: auto;
+}
+
+.vjs-settings-section {
+  padding: 8px;
+}
+
+.vjs-settings-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #adadb8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.vjs-settings-item {
+  width: 100%;
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  border-radius: 12px;
+  color: #efeff1;
+  font-size: 14px;
+  cursor: pointer;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: background 0.2s;
+}
+
+.vjs-settings-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.vjs-settings-item__desc {
+  font-size: 11px;
+  color: #71717a;
+  margin-top: 2px;
+}
+
+/* Toggle switch */
+.vjs-toggle {
+  width: 36px;
+  height: 20px;
+  border-radius: 10px;
+  position: relative;
+  transition: background 0.3s;
+  flex-shrink: 0;
+}
+
+.vjs-toggle--on {
+  background: #016a6e;
+}
+
+.vjs-toggle--off {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.vjs-toggle__thumb {
+  position: absolute;
+  top: 2px;
+  width: 16px;
+  height: 16px;
+  background: #fff;
+  border-radius: 50%;
+  transition: left 0.3s;
+}
+
+.vjs-toggle--on .vjs-toggle__thumb {
+  left: 18px;
+}
+
+.vjs-toggle--off .vjs-toggle__thumb {
+  left: 2px;
+}
+
+/* ==========================================================================
+   Buffering / Overlay
+   ========================================================================== */
+
+.vjs-buffering-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 8;
+  pointer-events: none;
+}
+
+.vjs-buffering-overlay svg {
+  width: 48px;
+  height: 48px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
+
+@media (max-width: 640px) {
+  .vjs-btn {
+    width: 44px;
+    height: 44px;
+  }
+
+  .vjs-btn svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .vjs-btn--play svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .vjs-controls {
+    padding: 20px 8px 8px;
+    gap: 4px;
+  }
+
+  .vjs-buttons-row {
+    gap: 0;
+  }
+
+  .vjs-play-overlay {
+    width: 60px;
+    height: 60px;
+  }
+
+  .vjs-play-overlay svg {
+    width: 26px;
+    height: 26px;
+  }
+
+  .vjs-live-label {
+    top: 10px;
+    left: 10px;
+    font-size: 11px;
+    padding: 4px 10px;
+  }
+
+  .vjs-live-badge {
+    padding: 4px 8px;
+    font-size: 10px;
+  }
+
+  /* On mobile, volume popover appears inline to avoid clipping */
+  .vjs-volume-popover {
+    position: relative;
+    bottom: auto;
+    left: auto;
+    transform: none !important;
+    flex-direction: row;
+    padding: 4px 8px;
+    border-radius: 8px;
+    gap: 6px;
+  }
+
+  .vjs-volume-slider-vertical {
+    width: 60px;
+    height: 4px;
+  }
+
+  .vjs-volume-slider-fill {
+    bottom: auto;
+    left: 0;
+    height: 100%;
+  }
+
+  .vjs-volume-slider-input {
+    writing-mode: horizontal-tb;
+    direction: ltr;
+  }
+
+  .vjs-mobile-hidden {
+    display: none !important;
+  }
+
+  /* Settings menu takes more width on mobile */
+  .vjs-settings-menu {
+    min-width: 200px;
+    max-width: min(90vw, 260px);
+  }
+}
