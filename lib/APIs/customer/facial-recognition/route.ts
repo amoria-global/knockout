@@ -20,6 +20,10 @@ export interface MatchedPhoto {
   createdAt?: string;
   alt?: string;
   isPurchased?: boolean;  // Indicates if user has purchased this photo (for PAID albums)
+  albumId?: string;
+  albumType?: 'paid' | 'free';
+  currencyAbbreviation?: string;
+  currencyId?: string;
 }
 
 export interface FacialRecognitionResponse {
@@ -33,7 +37,8 @@ export interface FacialRecognitionResponse {
  */
 export async function uploadSelfieForRecognition(
   inviteCode: string,
-  selfieFile: File
+  selfieFile: File,
+  options?: { refid?: string; buyerId?: string }
 ): Promise<ApiResponse<FacialRecognitionResponse>> {
   const formData = new FormData();
   if (inviteCode.trim()) {
@@ -41,8 +46,14 @@ export async function uploadSelfieForRecognition(
   }
   formData.append('selfie', selfieFile);
 
+  const params = new URLSearchParams();
+  if (options?.buyerId) params.set('buyerId', options.buyerId);
+  if (options?.refid) params.set('refid', options.refid);
+  const qs = params.toString();
+  const url = qs ? `${API_ENDPOINTS.PUBLIC.FACE_SEARCH}?${qs}` : API_ENDPOINTS.PUBLIC.FACE_SEARCH;
+
   return apiClient.post<FacialRecognitionResponse>(
-    API_ENDPOINTS.PUBLIC.FACE_SEARCH,
+    url,
     formData,
     { retries: 1, timeout: 60000, skipAuth: true }
   );

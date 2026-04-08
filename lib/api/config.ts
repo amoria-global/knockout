@@ -111,6 +111,7 @@ export const API_ENDPOINTS = {
     CURRENCY_RATES: '/api/remote/public/currencies/rates',
     EVENT_BY_ID: (id: string) => `/api/remote/public/events/${id}`,
     FACE_SEARCH: '/api/remote/public/face-search',
+    IDENTIFY_BUYER: (albumId: string) => `/api/remote/public/albums/${albumId}/identify-buyer`,
     FREE_ALBUM_GET: (code: string) => `/api/remote/public/albums/free/${code}`,
     FREE_ALBUM_REQUEST_ACCESS: '/api/remote/public/albums/free/request-access',
     FREE_ALBUM_VERIFY_ACCESS: '/api/remote/public/albums/free/verify-access',
@@ -176,8 +177,16 @@ export const API_ENDPOINTS = {
     XENTRIPAY_INITIATE_STREAMING: '/api/remote/payments/xentripay/initiate-streaming',
     XENTRIPAY_INITIATE_DONATION: '/api/remote/public/payments/xentripay/initiate-donation',
     XENTRIPAY_INITIATE_PHOTO_PURCHASE: '/api/remote/payments/xentripay/initiate-photo-purchase',
+    XENTRIPAY_INITIATE_ALBUM_PURCHASE: '/api/remote/public/payments/xentripay/initiate-album-purchase',
+    RECORD_ALBUM_PURCHASE: '/api/remote/public/payments/record-album-purchase',
     XENTRIPAY_STATUS: (refid: string) => `/api/remote/payments/xentripay/status/${refid}`,
     XENTRIPAY_PUBLIC_STATUS: (refid: string) => `/api/remote/public/payments/xentripay/status/${refid}`,
+    ALBUM_PHOTO_DOWNLOAD: (albumId: string, photoId: string, token: { refid?: string; buyerId?: string }) => {
+      const qs = token.buyerId
+        ? `buyerId=${encodeURIComponent(token.buyerId)}`
+        : `refid=${encodeURIComponent(token.refid || '')}`;
+      return `/api/remote/public/albums/${albumId}/photo/${photoId}/download?${qs}`;
+    },
   },
 
   // Customer endpoints

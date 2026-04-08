@@ -7,6 +7,8 @@ import { useTranslations } from 'next-intl';
 import { useGoogleLogin } from '@react-oauth/google';
 import { getPublicEventById, type PublicEvent } from '@/lib/APIs/public';
 import { isAuthenticated } from '@/lib/api/client';
+import { registerAnonymousViewer } from '@/lib/APIs/streams/anonymous-viewer';
+import { getDeviceId } from '@/lib/fingerprint';
 import { login } from '@/lib/APIs/auth/login/route';
 import { signup } from '@/lib/APIs/auth/signup/route';
 import { verifyOtp } from '@/lib/APIs/auth/verify-otp/route';
@@ -187,6 +189,56 @@ function ViewEventContent(): React.JSX.Element {
   const [groupCodeError, setGroupCodeError] = useState('');
   const [groupCodeLoading, setGroupCodeLoading] = useState(false);
   const [pendingGroupCode, setPendingGroupCode] = useState('');
+
+  // "Already paid?" viewer re-auth modal
+  const [showViewerAuth, setShowViewerAuth] = useState(false);
+  const [vaName, setVaName] = useState('');
+  const [vaEmail, setVaEmail] = useState('');
+  const [vaPhone, setVaPhone] = useState('');
+  const [vaLoading, setVaLoading] = useState(false);
+  const [vaError, setVaError] = useState<string | null>(null);
+
+  const handleViewerAuth = async () => {
+    const name = vaName.trim();
+    const email = vaEmail.trim();
+    const phone = vaPhone.trim();
+    if (!name) { setVaError('Please enter your name.'); return; }
+    if (!email && !phone) { setVaError('Please enter the email or phone you used to purchase.'); return; }
+    setVaLoading(true);
+    setVaError(null);
+    try {
+      const fp = await getDeviceId();
+      const res = await registerAnonymousViewer(selectedEvent!.id, {
+        name,
+        email: email || `placeholder-${Date.now()}@noemail.local`,
+        phone: phone || '0000000000',
+        deviceFingerprint: fp,
+      });
+      if (!res.success) {
+        setVaError(res.error || 'Could not verify. Please try again.');
+        return;
+      }
+      const resData = res.data as Record<string, unknown> | undefined;
+      const status = resData?.status as string;
+      const viewerId = resData?.viewerId as string;
+
+      if (status === 'ACCESS_GRANTED' || status === 'DEVICE_CONFLICT' || status === 'DEVICE_MISMATCH') {
+        // Viewer recognized — store viewerId and go to live-stream
+        if (viewerId) {
+          localStorage.setItem(`anonymousViewer_${selectedEvent!.id}`, viewerId);
+          localStorage.setItem(`anonymousViewerName_${selectedEvent!.id}`, name);
+        }
+        window.location.href = `/user/events/live-stream?eventId=${selectedEvent!.id}&paid=true${viewerId ? `&viewerId=${viewerId}` : ''}`;
+      } else {
+        // REQUIRES_PAYMENT — not found as a paid viewer
+        setVaError('No payment found for this email or phone. Please double-check the details you used when purchasing, or purchase the new access.');
+      }
+    } catch {
+      setVaError('Connection error. Please try again.');
+    } finally {
+      setVaLoading(false);
+    }
+  };
 
   // Listen for session expiry — show login modal instead of redirecting
   useEffect(() => {
@@ -647,21 +699,23 @@ function ViewEventContent(): React.JSX.Element {
         )}
 
         {/* ── LEFT CONTENT PANEL ── */}
-        <div className="ve-left-panel" style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: '68%', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: 'clamp(80px, 10vh, 110px) clamp(20px, 4vw, 48px) clamp(80px, 9vh, 100px)', zIndex: 10 }}>
+        <div className="ve-left-panel" style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: '68%', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: 'clamp(60px, 8vh, 90px) clamp(20px, 4vw, 48px) clamp(40px, 5vh, 60px)', zIndex: 10 }}>
 
-          {/* Back button */}
-          <button
-            onClick={() => window.history.back()}
-            aria-label="Go back"
-            style={{ position: 'absolute', top: 'clamp(16px, 3vh, 24px)', left: 'clamp(16px, 3vw, 28px)', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 44, height: 44, padding: 0, backgroundColor: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.16)', borderRadius: 25, color: '#fff', fontSize: 18, cursor: 'pointer', transition: 'all 0.2s', WebkitTapHighlightColor: 'transparent', zIndex: 5 }}
-            onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.2)'; }}
-            onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)'; }}
-          >
-            <i className="bi bi-chevron-left"></i>
-          </button>
+          {/* Back button — in flow, not overlapping */}
+          <div style={{ marginBottom: 12 }}>
+            <button
+              onClick={() => window.history.back()}
+              aria-label="Go back"
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 44, height: 44, padding: 0, backgroundColor: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.16)', borderRadius: 25, color: '#fff', fontSize: 18, cursor: 'pointer', transition: 'all 0.2s', WebkitTapHighlightColor: 'transparent' }}
+              onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.2)'; }}
+              onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)'; }}
+            >
+              <i className="bi bi-chevron-left"></i>
+            </button>
+          </div>
 
           {/* Category + meta top row */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14, flexWrap: 'wrap' }}>
             <span style={{ padding: '6px 16px', backgroundColor: 'rgba(8,58,133,0.2)', color: '#5b9bff', borderRadius: 20, fontSize: 13, fontWeight: 700, border: '1px solid rgba(8,58,133,0.4)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
               {getCategoryName(selectedEvent)}
             </span>
@@ -690,19 +744,19 @@ function ViewEventContent(): React.JSX.Element {
           )}
 
           {/* Title */}
-          <h1 style={{ fontSize: 'clamp(28px, 5vw, 58px)', fontWeight: 800, color: '#fff', margin: '0 0 20px', lineHeight: 1.08, letterSpacing: '-0.03em', textShadow: '0 2px 20px rgba(0,0,0,0.5)' }}>
+          <h1 style={{ fontSize: 'clamp(28px, 5vw, 58px)', fontWeight: 800, color: '#fff', margin: '0 0 14px', lineHeight: 1.08, letterSpacing: '-0.03em', textShadow: '0 2px 20px rgba(0,0,0,0.5)' }}>
             {selectedEvent.title}
           </h1>
 
           {/* Description — clamped to 3 lines */}
           {selectedEvent.description && (
-            <p style={{ fontSize: 'clamp(14px, 1.4vw, 17px)', color: '#a1a1aa', lineHeight: 1.75, margin: '0 0 24px', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden', maxWidth: '90%' }}>
+            <p style={{ fontSize: 'clamp(14px, 1.4vw, 17px)', color: '#a1a1aa', lineHeight: 1.75, margin: '0 0 16px', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden', maxWidth: '90%' }}>
               {selectedEvent.description}
             </p>
           )}
 
           {/* Info row: location · time · attendees */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20, flexWrap: 'wrap', color: '#9ca3af', fontSize: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14, flexWrap: 'wrap', color: '#9ca3af', fontSize: 16 }}>
             <i className="bi bi-geo-alt-fill" style={{ color: '#f97316', fontSize: 16 }}></i>
             <span>{selectedEvent.location || 'TBD'}</span>
             <span style={{ color: '#4b5563' }}>•</span>
@@ -714,7 +768,7 @@ function ViewEventContent(): React.JSX.Element {
           </div>
 
           {/* Organizer row */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: photographerName ? 14 : 28, color: '#9ca3af', fontSize: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: photographerName ? 10 : 20, color: '#9ca3af', fontSize: 16 }}>
             <i className="bi bi-person-badge-fill" style={{ color: '#06b6d4', fontSize: 17 }}></i>
             <span>{t('organizedBy')}</span>
             <span style={{ color: '#efeff1', fontWeight: 700 }}>{selectedEvent.eventOrganizer || 'TBD'}</span>
@@ -722,7 +776,7 @@ function ViewEventContent(): React.JSX.Element {
 
           {/* Photographer row */}
           {photographerName && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 28, color: '#9ca3af', fontSize: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, color: '#9ca3af', fontSize: 16 }}>
               <div style={{ width: 48, height: 48, borderRadius: '50%', backgroundColor: 'rgba(8,58,133,0.15)', border: '2px solid rgba(8,58,133,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
                 {selectedEvent.photographer?.profilePicture
                   ? <img src={selectedEvent.photographer.profilePicture} alt={photographerName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -751,14 +805,14 @@ function ViewEventContent(): React.JSX.Element {
           )}
 
           {/* ── CTA ── */}
-          <div className="ve-cta-bar" style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+          <div className="ve-cta-bar" style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: 10, maxWidth: '420px' }}>
           {isLive ? (
             isPaid && hasPurchasedAccess ? (
               // Paid event, already purchased — go straight to watch
               <button
                 className="live-stream-button"
                 onClick={() => { window.location.href = `/user/events/live-stream?eventId=${selectedEvent.id}&paid=true`; }}
-                style={{ padding: 'clamp(12px, 1.5vw, 15px) clamp(28px, 4vw, 48px)', backgroundColor: '#039130', color: '#fff', border: '2px solid #10b981', borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, transition: 'background 0.2s', textTransform: 'uppercase' }}
+                style={{ padding: 'clamp(10px, 1.2vw, 13px) clamp(28px, 4vw, 48px)', backgroundColor: '#039130', color: '#fff', border: '2px solid #10b981', borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, transition: 'background 0.2s', textTransform: 'uppercase' }}
                 onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#027a28'; }}
                 onMouseLeave={e => { e.currentTarget.style.backgroundColor = '#039130'; }}
               >
@@ -767,25 +821,33 @@ function ViewEventContent(): React.JSX.Element {
               </button>
             ) : isPaid ? (
               <>
-                {/* Paid event — purchase or sign in if already paid */}
-                <button
-                  className="live-stream-button"
-                  onClick={() => handlePurchaseAccess(`/user/events/join-package?id=${selectedEvent.id}`)}
-                  style={{ padding: 'clamp(12px, 1.5vw, 15px) clamp(28px, 4vw, 48px)', backgroundColor: '#039130', color: '#fff', border: '2px solid #10b981', borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, transition: 'background 0.2s', textTransform: 'uppercase' }}
-                  onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#027a28'; }}
-                  onMouseLeave={e => { e.currentTarget.style.backgroundColor = '#039130'; }}
-                >
-                  <i className="bi bi-ticket-perforated-fill live-badge-icon" style={{ fontSize: 16 }}></i>
-                  Purchase Access
-                </button>
-                {/* Group invite code input */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
+                {/* 2x2 grid: Purchase | Already paid?  /  Input | Redeem */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, width: '100%' }}>
+                  <button
+                    className="live-stream-button"
+                    onClick={() => handlePurchaseAccess(`/user/events/join-package?id=${selectedEvent.id}`)}
+                    style={{ padding: '11px 16px', backgroundColor: '#039130', color: '#fff', border: '2px solid #10b981', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, transition: 'background 0.2s', textTransform: 'uppercase', whiteSpace: 'nowrap' }}
+                    onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#027a28'; }}
+                    onMouseLeave={e => { e.currentTarget.style.backgroundColor = '#039130'; }}
+                  >
+                    <i className="bi bi-ticket-perforated-fill live-badge-icon" style={{ fontSize: 15 }}></i>
+                    Purchase Access
+                  </button>
+                  <button
+                    onClick={() => { setVaError(null); setShowViewerAuth(true); }}
+                    style={{ padding: '11px 16px', background: 'transparent', border: '2.5px solid rgba(255,255,255,0.35)', borderRadius: 10, color: '#d1d5db', fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, transition: 'all 0.2s', whiteSpace: 'nowrap' }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = '#03969c'; e.currentTarget.style.color = '#fff'; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.35)'; e.currentTarget.style.color = '#d1d5db'; }}
+                  >
+                    <i className="bi bi-person-check-fill" style={{ fontSize: 14 }}></i>
+                    Already paid?
+                  </button>
                   <input
                     type="text"
                     placeholder="Have a group invite code?"
                     value={groupCode}
                     onChange={e => { setGroupCode(e.target.value); setGroupCodeError(''); }}
-                    style={{ width: 'clamp(200px, 30vw, 280px)', padding: '12px 16px', borderRadius: 10, border: groupCodeError ? '1.5px solid #ef4444' : '1.5px solid rgba(255,255,255,0.3)', background: 'rgba(255,255,255,0.85)', color: '#1a1a1a', fontSize: 14, outline: 'none', letterSpacing: '0.5px' }}
+                    style={{ padding: '10px 14px', borderRadius: 10, border: groupCodeError ? '1.5px solid #ef4444' : '1.5px solid rgba(255,255,255,0.3)', background: 'rgba(255,255,255,0.85)', color: '#1a1a1a', fontSize: 14, outline: 'none', letterSpacing: '0.5px' }}
                     onFocus={e => { e.currentTarget.style.borderColor = '#10b981'; }}
                     onBlur={e => { e.currentTarget.style.borderColor = groupCodeError ? '#ef4444' : 'rgba(255,255,255,0.3)'; }}
                   />
@@ -793,13 +855,13 @@ function ViewEventContent(): React.JSX.Element {
                     onClick={handleGroupCodeSubmit}
                     disabled={groupCodeLoading || !groupCode.trim()}
                     className={groupCode.trim() ? 'live-stream-button' : ''}
-                    style={{ padding: '12px 22px', borderRadius: 10, border: groupCode.trim() ? '2px solid #10b981' : '1.5px solid rgba(255,255,255,0.3)', background: groupCode.trim() ? '#039130' : 'rgba(255,255,255,0.85)', color: groupCode.trim() ? '#fff' : 'rgba(0,0,0,0.3)', fontSize: 14, fontWeight: 600, cursor: groupCode.trim() ? 'pointer' : 'not-allowed', transition: 'all 0.2s', whiteSpace: 'nowrap' }}
+                    style={{ padding: '10px 16px', borderRadius: 10, border: groupCode.trim() ? '2px solid #10b981' : '1.5px solid rgba(255,255,255,0.3)', background: groupCode.trim() ? '#039130' : 'rgba(255,255,255,0.85)', color: groupCode.trim() ? '#fff' : 'rgba(0,0,0,0.3)', fontSize: 14, fontWeight: 600, cursor: groupCode.trim() ? 'pointer' : 'not-allowed', transition: 'all 0.2s', whiteSpace: 'nowrap' }}
                   >
                     {groupCodeLoading ? '...' : 'Redeem'}
                   </button>
                 </div>
                 {groupCodeError && (
-                  <p style={{ color: '#ef4444', fontSize: 12, margin: '4px 0 0', textAlign: 'center' }}>{groupCodeError}</p>
+                  <p style={{ color: '#ef4444', fontSize: 12, margin: '0', textAlign: 'left' }}>{groupCodeError}</p>
                 )}
               </>
             ) : (
@@ -826,6 +888,7 @@ function ViewEventContent(): React.JSX.Element {
               </div>
             ) : (
               // Upcoming paid event, not purchased — allow pre-purchase
+              <>
               <button
                 onClick={() => handlePurchaseAccess(`/user/events/join-package?id=${selectedEvent.id}`)}
                 style={{ padding: '15px 48px', backgroundColor: '#083A85', color: '#fff', border: '2px solid #3b82f6', borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, transition: 'background 0.2s', textTransform: 'uppercase' }}
@@ -835,6 +898,16 @@ function ViewEventContent(): React.JSX.Element {
                 <i className="bi bi-ticket-perforated-fill" style={{ fontSize: 16 }}></i>
                 Reserve Your Spot
               </button>
+              <button
+                onClick={() => { setVaError(null); setShowViewerAuth(true); }}
+                style={{ padding: '10px 22px', background: 'transparent', border: '2.5px solid rgba(255,255,255,0.35)', borderRadius: 10, color: '#d1d5db', fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, transition: 'all 0.2s' }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = '#03969c'; e.currentTarget.style.color = '#fff'; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)'; e.currentTarget.style.color = '#d1d5db'; }}
+              >
+                <i className="bi bi-person-check-fill" style={{ fontSize: 13 }}></i>
+                Already paid? Verify here
+              </button>
+              </>
             )
           ) : null}
           </div>
@@ -842,6 +915,124 @@ function ViewEventContent(): React.JSX.Element {
       </div>
 
       {/* ── VIEWER AUTH MODAL ── */}
+      {/* ── Already Paid? Viewer Re-Auth Modal ── */}
+      {showViewerAuth && (
+        <div
+          style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0,0,0,0.82)', backdropFilter: 'blur(6px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: 1100, padding: 16,
+          }}
+          onMouseDown={(e) => { if (e.target === e.currentTarget && !vaLoading) setShowViewerAuth(false); }}
+        >
+          <div
+            onMouseDown={(e) => e.stopPropagation()}
+            style={{
+              background: 'linear-gradient(145deg, #141418 0%, #1a1a24 100%)',
+              borderRadius: 20, padding: 'clamp(24px, 5vw, 36px)',
+              maxWidth: 460, width: '100%',
+              border: '1px solid rgba(255,255,255,0.1)',
+              boxShadow: '0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(3,150,156,0.15)',
+              position: 'relative',
+            }}
+          >
+            {/* Close */}
+            <button
+              onClick={() => { if (!vaLoading) setShowViewerAuth(false); }}
+              style={{ position: 'absolute', top: 16, right: 16, background: 'rgba(255,255,255,0.07)', border: 'none', color: '#9ca3af', cursor: 'pointer', width: 36, height: 36, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}
+            >
+              <i className="bi bi-x-lg"></i>
+            </button>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+              <i className="bi bi-person-check-fill" style={{ fontSize: 22, color: '#03969c' }}></i>
+              <h2 style={{ fontSize: 20, fontWeight: 700, color: '#fff', margin: 0 }}>Verify Your Purchase</h2>
+            </div>
+            <p style={{ fontSize: 13, color: '#9ca3af', margin: '0 0 20px' }}>
+              Enter the name and email or phone you used when purchasing. We&apos;ll verify your payment and take you straight to the stream.
+            </p>
+
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#d1d5db', marginBottom: 6 }}>Full Name</label>
+              <input
+                type="text"
+                value={vaName}
+                onChange={(e) => setVaName(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleViewerAuth()}
+                placeholder="Your name"
+                disabled={vaLoading}
+                style={{ width: '100%', padding: '12px 14px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10, color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = '#03969c'; }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }}
+              />
+            </div>
+
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#d1d5db', marginBottom: 6 }}>Email</label>
+              <input
+                type="email"
+                value={vaEmail}
+                onChange={(e) => setVaEmail(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleViewerAuth()}
+                placeholder="Email used when purchasing"
+                disabled={vaLoading}
+                style={{ width: '100%', padding: '12px 14px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10, color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = '#03969c'; }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }}
+              />
+            </div>
+
+            <div style={{ marginBottom: 14 }}>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#d1d5db', marginBottom: 6 }}>Phone Number</label>
+              <input
+                type="tel"
+                value={vaPhone}
+                onChange={(e) => setVaPhone(e.target.value.replace(/\D/g, '').slice(0, 12))}
+                onKeyDown={(e) => e.key === 'Enter' && handleViewerAuth()}
+                placeholder="Phone used when purchasing"
+                disabled={vaLoading}
+                style={{ width: '100%', padding: '12px 14px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10, color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = '#03969c'; }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }}
+              />
+              <p style={{ fontSize: 11, color: '#6b7280', margin: '4px 0 0' }}>Enter email, phone, or both — we match on either</p>
+            </div>
+
+            {vaError && (
+              <div style={{ padding: '10px 12px', marginBottom: 14, background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.35)', borderRadius: 10, color: '#fca5a5', fontSize: 13 }}>
+                <i className="bi bi-exclamation-triangle-fill" style={{ marginRight: 6 }}></i>
+                {vaError}
+              </div>
+            )}
+
+            <button
+              onClick={handleViewerAuth}
+              disabled={vaLoading}
+              style={{
+                width: '100%', padding: '13px', borderRadius: 12,
+                background: vaLoading ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, #03969c, #027a7f)',
+                border: 'none', color: '#fff', fontSize: 15, fontWeight: 600,
+                cursor: vaLoading ? 'not-allowed' : 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              }}
+            >
+              {vaLoading ? (
+                <>
+                  <div style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'authSpin 0.8s linear infinite' }} />
+                  Verifying…
+                </>
+              ) : (
+                <>
+                  <i className="bi bi-shield-check" style={{ fontSize: 16 }}></i>
+                  Verify &amp; Watch
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
+
       {showAuthModal && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'clamp(16px, 3vw, 32px) clamp(12px, 2vw, 16px)', background: 'rgba(0,0,0,0.82)', backdropFilter: 'blur(8px)', overflowY: 'auto' }}>
           <div style={{ width: '100%', maxWidth: 'min(600px, 95vw)', background: 'linear-gradient(145deg, #141418 0%, #1a1a24 100%)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'clamp(14px, 2vw, 20px)', padding: 'clamp(20px, 3vw, 28px) clamp(18px, 3vw, 32px)', boxShadow: '0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(8,58,133,0.15)', position: 'relative', margin: 'auto', maxHeight: '90vh', overflowY: 'auto' }}>

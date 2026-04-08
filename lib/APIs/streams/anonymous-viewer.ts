@@ -45,6 +45,8 @@ export interface HeartbeatResponse {
 export interface AccessStatusResponse {
   action: number;
   hasAccess: boolean;
+  // When hasAccess=false, reason distinguishes unpaid from paid-wrong-device
+  reason?: 'DEVICE_MISMATCH' | 'NOT_PAID' | string;
   viewerId?: string;
   name?: string;
   whepUrl?: string;

@@ -7,6 +7,7 @@ import {
   initiateXentriPayment,
   initiateXentriPayDonation,
   initiateXentriPayPhotoPurchase,
+  initiateXentriPayAlbumPurchase,
   initiateAnonymousStreamingPayment,
   checkAnonymousPaymentStatus,
   pollXentriPayStatus,
@@ -16,13 +17,15 @@ import {
 
 // ==================== Types ====================
 
-export type PaymentType = 'booking' | 'tip' | 'streaming' | 'donation' | 'photo_purchase';
+export type PaymentType = 'booking' | 'tip' | 'streaming' | 'donation' | 'photo_purchase' | 'album_purchase';
 
 export interface XentriPayModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: (refid: string) => void;
   onError?: (error: string) => void;
+  // Fires when initiate-album-purchase returns 409 for photos the buyer already owns
+  onAlreadyPurchased?: (photoIds: string[]) => void;
   amount: number;
   currencyCode: string;
   currencyId: string;
@@ -39,6 +42,10 @@ export interface XentriPayModalProps {
   donationAmount?: number;
   // Anonymous viewer ID — triggers public payment flow (no auth required)
   viewerId?: string;
+  // For album_purchase — paid face-search photos
+  albumId?: string;
+  photoIds?: string[];
+  buyerId?: string;
   // Dark theme to match viewer auth modal
   darkMode?: boolean;
 }
@@ -60,6 +67,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
   onClose,
   onSuccess,
   onError,
+  onAlreadyPurchased,
   amount,
   currencyCode,
   currencyId,
@@ -70,6 +78,9 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
   eventId,
   donationId,
   viewerId,
+  albumId,
+  photoIds,
+  buyerId,
   donationAmount = 0,
   darkMode = false,
 }) => {
@@ -173,7 +184,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
       return;
     }
 
-    const usePublicStatus = paymentType === 'donation';
+    const usePublicStatus = paymentType === 'donation' || paymentType === 'album_purchase';
     stopPollingRef.current = pollXentriPayStatus(
       paymentRefid,
       {
@@ -273,15 +284,32 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
           paymentMethod: paymentMethodType,
           redirectUrl,
         });
+      } else if (paymentType === 'album_purchase' && albumId && photoIds && photoIds.length > 0 && buyerId) {
+        response = await initiateXentriPayAlbumPurchase({
+          albumId,
+          buyerId,
+          photoIds,
+          amount,
+          currencyId,
+          ...(isCard ? {} : { phone, telecomProvider: method.provider }),
+          paymentMethod: paymentMethodType,
+          redirectUrl,
+        });
       } else {
         throw new Error('Invalid payment configuration');
       }
 
       if (!response.success || !response.data) {
+        // 409: backend says some photos are already owned by this buyer
+        const raw = response.data as unknown as { alreadyPurchased?: string[] } | undefined;
+        if (paymentType === 'album_purchase' && raw?.alreadyPurchased?.length) {
+          onAlreadyPurchased?.(raw.alreadyPurchased);
+          return;
+        }
         throw new Error(response.error || 'Failed to initiate payment');
       }
 
-      const data = response.data;
+      const data = response.data as XentriPayResponse;
       setRefid(data.refid);
 
       // For card payments, open payment URL
@@ -337,6 +365,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
     : paymentType === 'tip' ? 'Send Tip'
     : paymentType === 'streaming' ? 'Send Gift'
     : paymentType === 'booking' ? 'Complete Payment'
+    : paymentType === 'album_purchase' ? 'Buy Photos'
     : 'Make Payment';
 
   const formatAmount = (val: number) => {

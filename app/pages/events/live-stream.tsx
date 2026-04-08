@@ -28,6 +28,8 @@ import { StreamAdManager, type StreamAd } from '@/app/components/StreamAdBanners
 import { getStreamAds, pollAdTrigger, recordAdClick } from '@/lib/APIs/public/get-stream-ads/route';
 import { API_ENDPOINTS } from '@/lib/api/config';
 import Hls from 'hls.js';
+import '@/app/styles/live-stream-player.css';
+import { PlayIcon, PauseIcon, VolumeHighIcon, VolumeLowIcon, VolumeOffIcon, FullscreenEnterIcon, FullscreenExitIcon, PipEnterIcon, SpinnerIcon, EmojiIcon, PeopleIcon, GearIcon } from '@/app/components/player-icons';
 
 // Dynamically import VideoMessageRecorder to avoid SSR issues
 const VideoMessageRecorder = dynamic(() => import('../../components/VideoMessageRecorder'), { ssr: false });
@@ -270,7 +272,9 @@ const App = () => {
     return () => window.removeEventListener('auth:session-expired', handleSessionExpired);
   }, []);
 
-  // Restore anonymous viewer session from localStorage on mount
+  // Restore anonymous viewer session from localStorage on mount.
+  // Also pre-set accessCheckLoading so the "Stream is starting" overlay doesn't flash
+  // while the access-status check (in the gate effect) is pending.
   useEffect(() => {
     if (!isAuthenticated && mainEvent?.id && mainEvent.id !== '') {
       const savedId = localStorage.getItem(`anonymousViewer_${mainEvent.id}`);
@@ -278,6 +282,7 @@ const App = () => {
       if (savedId && !anonymousViewerId) {
         setAnonymousViewerId(savedId);
         setIsAnonymousViewer(true);
+        setAccessCheckLoading(true); // Will be cleared by the gate effect
         if (savedName) setAnonymousViewerName(savedName);
       }
     }
@@ -430,9 +435,9 @@ const App = () => {
     try {
       const fingerprint = await getDeviceId();
       const res = await registerAnonymousViewer(mainEvent.id, {
-        name: data.name,
-        email: data.email,
-        phone: data.phone,
+        name: data.name.trim(),
+        email: data.email.trim(),
+        phone: data.phone.trim(),
         deviceFingerprint: fingerprint,
       });
       if (!res.success) {
@@ -458,7 +463,7 @@ const App = () => {
           setEvents(prev => [{ ...prev[0], whepUrl }, ...prev.slice(1)]);
           setStreamAccessGranted(true);
         }
-      } else if (status === 'DEVICE_CONFLICT') {
+      } else if (status === 'DEVICE_CONFLICT' || status === 'DEVICE_MISMATCH') {
         setShowViewerInfoModal(false);
         setShowDeviceSwitchModal(true);
       } else if (status === 'REQUIRES_PAYMENT') {
@@ -523,8 +528,9 @@ const App = () => {
             photographerId: (ev.photographerId as string) || prev[0].photographerId,
             photographerAvatar: ((ev.photographer as Record<string, unknown>)?.profilePicture as string) || undefined,
             category: (ev.eventType as string) || (ev.category as string) || prev[0].category,
-            whepUrl: (ev.whepUrl as string) || undefined,
-            hlsManifestUrl: (ev.hlsManifestUrl as string) || undefined,
+            // Preserve existing whepUrl if backend returns null (entry_fee gate)
+            whepUrl: (ev.whepUrl as string) || prev[0].whepUrl || undefined,
+            hlsManifestUrl: (ev.hlsManifestUrl as string) || prev[0].hlsManifestUrl || undefined,
             streamId: eventId || (ev.liveInputId as string) || prev[0].streamId,
             eventStatus: (ev.eventStatus as string) || undefined,
             streamType: (ev.streamType as 'entry_fee' | 'invite_token') ?? null,
@@ -563,8 +569,24 @@ const App = () => {
         // Check backend — whepUrl is only returned for paid viewers
         if (mainEvent.whepUrl) {
           setStreamAccessGranted(true);
+        } else {
+          // whepUrl may not yet be in state (race with loadEventDetails).
+          // Retry once after 2s — if still null, the viewer hasn't paid.
+          setAccessCheckLoading(true);
+          setTimeout(async () => {
+            try {
+              const retryRes = await getPublicEventById(mainEvent.id);
+              if (retryRes.success && retryRes.data) {
+                const retryWhep = (retryRes.data as Record<string, unknown>)?.whepUrl as string;
+                if (retryWhep) {
+                  setEvents(prev => [{ ...prev[0], whepUrl: retryWhep }, ...prev.slice(1)]);
+                  setStreamAccessGranted(true);
+                }
+              }
+            } catch { /* silent */ }
+            setAccessCheckLoading(false);
+          }, 2000);
         }
-        // If whepUrl is null, the viewer hasn't actually paid — show payment gate
       } else {
         // Check if this is an anonymous viewer (came from join-package with viewerId)
         const urlViewerId = searchParams.get('viewerId');
@@ -594,6 +616,15 @@ const App = () => {
                 }
                 setStreamAccessGranted(true);
                 setAccessCheckLoading(false);
+              } else if (resData?.reason === 'DEVICE_MISMATCH') {
+                // Paid viewer on a new device — switch, don't re-pay
+                const resName = resData?.name as string;
+                if (resName) {
+                  setAnonymousViewerName(resName);
+                  localStorage.setItem(`anonymousViewerName_${mainEvent.id}`, resName);
+                }
+                setShowDeviceSwitchModal(true);
+                setAccessCheckLoading(false);
               } else {
                 // confirm-payment may still be processing — retry after 2s
                 setTimeout(async () => {
@@ -612,6 +643,13 @@ const App = () => {
                         localStorage.setItem(`anonymousViewerName_${mainEvent.id}`, retryName);
                       }
                       setStreamAccessGranted(true);
+                    } else if (retryData?.reason === 'DEVICE_MISMATCH') {
+                      const retryName = retryData?.name as string;
+                      if (retryName) {
+                        setAnonymousViewerName(retryName);
+                        localStorage.setItem(`anonymousViewerName_${mainEvent.id}`, retryName);
+                      }
+                      setShowDeviceSwitchModal(true);
                     }
                   } catch { /* silent */ }
                   setAccessCheckLoading(false);
@@ -661,6 +699,14 @@ const App = () => {
                   localStorage.setItem(`anonymousViewerName_${mainEvent.id}`, resName);
                 }
                 setStreamAccessGranted(true);
+              } else if (resData?.reason === 'DEVICE_MISMATCH') {
+                // Paid viewer on a new device — switch, don't re-pay
+                const resName = resData?.name as string;
+                if (resName) {
+                  setAnonymousViewerName(resName);
+                  localStorage.setItem(`anonymousViewerName_${mainEvent.id}`, resName);
+                }
+                setShowDeviceSwitchModal(true);
               }
             } catch { /* silent */ }
             setAccessCheckLoading(false);
@@ -753,7 +799,12 @@ const App = () => {
 
     const pollEventStatus = async () => {
       try {
-        const response = await getPublicEventById(eventId);
+        // Pass fingerprint for anonymous viewer identification
+        let fingerprint: string | undefined;
+        if (!isAuthenticated) {
+          try { fingerprint = await getDeviceId(); } catch { /* ignore */ }
+        }
+        const response = await getPublicEventById(eventId, fingerprint);
         if (response.success && response.data) {
           const ev = response.data as Record<string, unknown>;
           const newStatus = ((ev.eventStatus as string) || '').toUpperCase();
@@ -775,13 +826,20 @@ const App = () => {
               setStreamOverlay('scheduled');
             }
 
+            // CRITICAL: Never overwrite a valid whepUrl with null.
+            // The public endpoint nulls whepUrl for entry_fee events when the
+            // viewer isn't identified. If we already have a whepUrl (from
+            // /access-status or /register), keep it.
+            const resolvedWhepUrl = newWhepUrl || current.whepUrl;
+            const resolvedHlsUrl = newHlsUrl || current.hlsManifestUrl;
+
             // Only update if something relevant changed
-            if (current.eventStatus === (ev.eventStatus as string) && current.whepUrl === newWhepUrl) return prev;
+            if (current.eventStatus === (ev.eventStatus as string) && current.whepUrl === resolvedWhepUrl) return prev;
             return [{
               ...current,
               eventStatus: (ev.eventStatus as string) || undefined,
-              whepUrl: newWhepUrl,
-              hlsManifestUrl: newHlsUrl,
+              whepUrl: resolvedWhepUrl,
+              hlsManifestUrl: resolvedHlsUrl,
             }, ...prev.slice(1)];
           });
         }
@@ -955,8 +1013,9 @@ const App = () => {
           }
         } else {
           // Anonymous viewer: use public endpoint directly (no auth needed)
-          const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://backend.connekyt.com';
-          const res = await fetch(`${baseUrl}/api/remote/public/events/${mainEvent.id}/chats?page=0&size=500`);
+          const chatBase = typeof window !== 'undefined' && process.env.NODE_ENV === 'production'
+            ? '/api/proxy' : (process.env.NEXT_PUBLIC_API_URL || 'https://backend.connekyt.com');
+          const res = await fetch(`${chatBase}/api/remote/public/events/${mainEvent.id}/chats?page=0&size=500`);
           if (res.ok) {
             const json = await res.json();
             chatMessages = Array.isArray(json?.data) ? json.data : [];
@@ -1005,7 +1064,7 @@ const App = () => {
               // Remove optimistic "You" messages that now have a matching API message
               const apiTexts = new Set(newApiMessages.map(m => String(m.message || m.content || '')));
               const merged = currentMessages.filter(m => {
-                if (m.sender === 'You' && !m.delivered && apiTexts.has(m.text)) {
+                if (!m.delivered && apiTexts.has(m.text)) {
                   return false; // remove optimistic duplicate
                 }
                 return true;
@@ -1143,6 +1202,7 @@ const App = () => {
       const savedVol = volumeRef.current[eventId] ?? getSavedVolume();
       videoEl.volume = savedVol / 100;
       volumeRef.current[eventId] = savedVol;
+      // Start muted for autoplay policy — will unmute immediately after play succeeds
       videoEl.muted = true;
 
       if (whepUrl) {
@@ -1164,21 +1224,34 @@ const App = () => {
         videoEl.play().catch(() => {});
       }
 
-      // Autoplay when stream attaches
+      // Autoplay when stream attaches — start muted, then unmute immediately
       videoEl.onloadedmetadata = () => {
         if (cancelled) return;
         videoEl.play().then(() => {
           if (cancelled) return;
+          // Unmute now that play succeeded — the user navigated here intentionally
+          videoEl.muted = false;
           setPlaybackState(prev => ({
             ...prev,
             [eventId]: {
               ...prev[eventId],
               isPlaying: true,
+              isMuted: false,
+              volume: savedVol,
+            }
+          }));
+        }).catch(() => {
+          // Autoplay with sound blocked — stay muted, let user unmute manually
+          setPlaybackState(prev => ({
+            ...prev,
+            [eventId]: {
+              ...prev[eventId],
+              isPlaying: false,
               isMuted: true,
               volume: savedVol,
             }
           }));
-        }).catch(() => {});
+        });
       };
     };
 
@@ -1627,9 +1700,13 @@ const App = () => {
         : newMessage;
 
       const tempId = Date.now();
+      // Use viewer's real name for display — anonymousViewerName for paid viewers, user profile for JWT-authenticated
+      const senderName = anonymousViewerName
+        || (user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : '')
+        || 'You';
       const newMsg: Message = {
         id: tempId,
-        sender: "You",
+        sender: senderName,
         text: messageText,
         time: new Date().toLocaleTimeString([], {
           hour: "2-digit",
@@ -1653,14 +1730,29 @@ const App = () => {
       setReplyingTo(null);
 
       // Send to API — branch on auth type
+      // Paid entry_fee viewers (have viewerId) use public endpoint; others use coordinator endpoint
       try {
         let success = false;
-        if (isAuthenticated) {
-          const response = await sendStreamChat(mainEvent.streamId, messageText);
-          success = !!response.success;
-        } else if (isAnonymousViewer && anonymousViewerId) {
+        if (anonymousViewerId) {
+          // Paid viewer — use public chat endpoint (no JWT needed)
           const fingerprint = await getDeviceId();
-          const response = await sendAnonymousChatMessage(mainEvent.id, anonymousViewerId, messageText, fingerprint);
+          const chatBase = typeof window !== 'undefined' && process.env.NODE_ENV === 'production'
+            ? '/api/proxy' : (process.env.NEXT_PUBLIC_API_URL || 'https://backend.connekyt.com');
+          const res = await fetch(
+            `${chatBase}/api/remote/public/events/${mainEvent.id}/chats`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ viewerId: anonymousViewerId, message: messageText, deviceFingerprint: fingerprint }),
+            }
+          );
+          if (res.ok) {
+            const json = await res.json();
+            success = json.action === 1;
+          }
+        } else if (isAuthenticated) {
+          // JWT-authenticated viewer (free/invite_token events)
+          const response = await sendStreamChat(mainEvent.streamId, messageText);
           success = !!response.success;
         }
         if (success) {
@@ -1827,7 +1919,21 @@ const App = () => {
       const currentState = playbackState[eventId];
       const willBePlaying = !currentState?.isPlaying;
 
-      // Update state — only isPlaying, never touch isMuted or volume
+      // If video is still muted from autoplay fallback, unmute on user-initiated play
+      if (willBePlaying && video.muted) {
+        video.muted = false;
+        setPlaybackState(prev => ({
+          ...prev,
+          [eventId]: { ...prev[eventId], isPlaying: true, isMuted: false }
+        }));
+        playbackStateRef.current = {
+          ...playbackStateRef.current,
+          [eventId]: { ...playbackStateRef.current[eventId], isPlaying: true, isMuted: false }
+        };
+        video.play().catch(() => {});
+        return;
+      }
+
       setPlaybackState(prev => ({
         ...prev,
         [eventId]: { ...prev[eventId], isPlaying: willBePlaying }
@@ -1837,13 +1943,11 @@ const App = () => {
         [eventId]: { ...playbackStateRef.current[eventId], isPlaying: willBePlaying }
       };
 
-      // Only play or pause — do not touch muted or volume
       if (willBePlaying) {
         video.play().catch(() => {});
       } else {
         video.pause();
       }
-
     }
   };
 
@@ -3892,7 +3996,7 @@ const App = () => {
               onMouseLeave={handleMouseLeave}
               onTouchStart={handleTouch}
               onTouchMove={handleTouch}
-              className={`video-player-container ${!showControls ? 'hide-cursor' : ''} ${isSwapping && swappingFromIndex === mainEventIndex ? 'swapping-main-to-mini' : ''}`}
+              className={`video-player-container vjs-live-player ${!showControls ? 'hide-cursor' : ''} ${isSwapping && swappingFromIndex === mainEventIndex ? 'swapping-main-to-mini' : ''}`}
               style={{
                 height: events.length > 1 ? 'calc(100vh - 450px)' : 'calc(100vh - 200px)',
                 minHeight: '400px',
@@ -4124,12 +4228,7 @@ const App = () => {
                 ref={mainVideoRefCallback}
                 playsInline
                 muted
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'contain',
-                  pointerEvents: 'none'
-                }}
+                style={{ pointerEvents: 'none' }}
                 onPlay={() => {
                   const vid = videoRefs.current[mainEvent.id];
                   const actualMuted = vid ? vid.muted : true;
@@ -4173,8 +4272,9 @@ const App = () => {
                 />
               )}
 
-              {/* Stream starting overlay — ONGOING but HLS URL not yet available */}
-              {mainEvent.eventStatus === 'ONGOING' && !mainEvent.whepUrl && (
+              {/* Stream starting overlay — ONGOING but WHEP URL not yet available
+                  Hide while access-status is still being checked (race condition guard) */}
+              {mainEvent.eventStatus === 'ONGOING' && !mainEvent.whepUrl && !accessCheckLoading && (
                 <div style={{
                   position: 'absolute',
                   inset: 0,
@@ -4285,10 +4385,10 @@ const App = () => {
                 </div>
               )}
 
-              {/* Viewer Count — only shown when at least 1 viewer */}
+              {/* Viewer Count — clickable to open participants panel */}
               {mainEvent.viewers > 0 && (
                 <div
-                  onClick={(e) => e.stopPropagation()}
+                  onClick={(e) => { e.stopPropagation(); setShowParticipants(true); }}
                   style={{
                     position: 'absolute',
                     top: '16px',
@@ -4304,8 +4404,11 @@ const App = () => {
                     display: 'flex',
                     alignItems: 'center',
                     gap: '6px',
-                    transition: 'opacity 0.3s ease'
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease'
                   }}
+                  onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(3,150,156,0.5)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.7)'; }}
                 >
                   <i className="bi bi-eye-fill"></i>
                   {mainEvent.viewers.toLocaleString()} watching
@@ -4314,102 +4417,29 @@ const App = () => {
 
               {/* Live Badge */}
               <div
+                className="vjs-live-label"
                 onClick={(e) => e.stopPropagation()}
                 style={{
-                  position: 'absolute',
-                  top: '16px',
+                  left: 'auto',
                   right: '16px',
-                  backgroundColor: '#eb0400',
-                  color: '#fff',
-                  padding: '4px 12px',
-                  borderRadius: '12px',
-                  fontSize: '12px',
-                  fontWeight: '700',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px',
-                  zIndex: 10,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
                   opacity: showControls ? 1 : 0,
                   transform: showControls ? 'translateY(0)' : 'translateY(-20px)',
-                  transition: 'opacity 0.3s ease, transform 0.3s ease'
                 }}
               >
-                <div style={{
-                  width: '8px',
-                  height: '8px',
-                  backgroundColor: '#fff',
-                  borderRadius: '50%',
-                  animation: 'pulse 2s infinite'
-                }}></div>
+                <span className="vjs-live-dot vjs-live-dot--on" />
                 LIVE
               </div>
 
               {/* Play Button Overlay */}
               {!mainState.isPlaying && (
-                <button onClick={() => togglePlay(mainEvent.id)} style={{
-                  position: 'absolute',
-                  zIndex: 10,
-                  color: '#fff',
-                  background: 'rgba(0, 0, 0, 0.7)',
-                  border: 'none',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  fontSize: '50px',
-                  width: '80px',
-                  height: '80px',
-                  borderRadius: '50%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  backdropFilter: 'blur(10px)'
-                }} onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
-                  e.currentTarget.style.transform = 'scale(1.1)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'rgba(0, 0, 0, 0.7)';
-                  e.currentTarget.style.transform = 'scale(1)';
-                }}>
-                  <i className="bi bi-play-fill"></i>
+                <button
+                  className="vjs-play-overlay"
+                  onClick={() => togglePlay(mainEvent.id)}
+                >
+                  <PlayIcon />
                 </button>
               )}
 
-              {/* Recording Indicator */}
-              {isRecording && (
-                <div
-                  onClick={(e) => e.stopPropagation()}
-                  style={{
-                    position: 'absolute',
-                    bottom: '80px',
-                    left: '16px',
-                    zIndex: 10,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    backgroundColor: 'rgba(239, 68, 68, 0.9)',
-                    padding: '8px 16px',
-                    borderRadius: '20px',
-                    backdropFilter: 'blur(10px)',
-                    opacity: showControls ? 1 : 0,
-                    transition: 'opacity 0.3s ease'
-                  }}
-                >
-                  <div style={{
-                    width: '10px',
-                    height: '10px',
-                    backgroundColor: '#fff',
-                    borderRadius: '50%',
-                    animation: 'blink 1s infinite'
-                  }}></div>
-                  <span style={{
-                    color: '#fff',
-                    fontSize: '13px',
-                    fontWeight: '700'
-                  }}>REC {formatRecordingTime(recordingTime)}</span>
-                </div>
-              )}
 
               {/* Floating Emoji Reactions */}
               {activeReactions.map((reaction) => (
@@ -4429,335 +4459,95 @@ const App = () => {
                 </div>
               ))}
 
-              {/* Modern Video Controls */}
+              {/* ── video.js-styled Controls ── */}
               <div
+                className={`vjs-controls ${showControls ? 'vjs-controls--visible' : ''}`}
                 onClick={(e) => e.stopPropagation()}
                 onMouseEnter={() => {
                   setShowControls(true);
-                  // Clear auto-hide timeout when hovering over controls
-                  if (controlsTimeoutRef.current) {
-                    clearTimeout(controlsTimeoutRef.current);
-                  }
-                }}
-                style={{
-                  position: 'absolute',
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  background: 'linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, transparent 100%)',
-                  padding: '40px 16px 16px',
-                  zIndex: 20,
-                  opacity: showControls ? 1 : 0,
-                  transform: showControls ? 'translateY(0)' : 'translateY(20px)',
-                  transition: 'opacity 0.3s ease, transform 0.3s ease',
-                  pointerEvents: showControls ? 'auto' : 'none'
+                  if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
                 }}
               >
                 {/* Progress Bar */}
-                <div
-                  onClick={handleProgressChange}
-                  className="progress-bar-container"
-                  style={{
-                    width: '100%',
-                    height: 'clamp(4px, 0.5vw, 6px)',
-                    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-                    borderRadius: '6px',
-                    cursor: 'pointer',
-                    marginBottom: 'clamp(8px, 1vw, 12px)',
-                    position: 'relative',
-                    transition: 'height 0.2s'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.height = 'clamp(6px, 0.7vw, 8px)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.height = 'clamp(4px, 0.5vw, 6px)';
-                  }}
-                >
-                  <div style={{
-                    height: '100%',
-                    backgroundColor: '#03969c',
-                    borderRadius: '6px',
-                    width: `${mainState.progress}%`,
-                    position: 'relative',
-                    pointerEvents: 'none'
-                  }}>
-                    <div style={{
-                      position: 'absolute',
-                      right: '-6px',
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      width: '12px',
-                      height: '12px',
-                      backgroundColor: '#03969c',
-                      borderRadius: '50%',
-                      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.3)',
-                      opacity: 0,
-                      transition: 'opacity 0.2s'
-                    }} className="progress-thumb"></div>
+                <div className="vjs-progress-row" onClick={handleProgressChange}>
+                  <div className="vjs-progress-fill" style={{ width: `${mainState.progress}%` }}>
+                    <div className="vjs-progress-thumb" />
                   </div>
                 </div>
 
-                {/* Control Buttons */}
-                <div className="controls-bar" style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  color: '#fff'
-                }}>
-                  <button onClick={() => togglePlay(mainEvent.id)} className="control-btn" style={{
-                    background: 'transparent',
-                    border: 'none',
-                    color: '#fff',
-                    cursor: 'pointer',
-                    padding: 'clamp(8px, 1vw, 12px)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    fontSize: 'clamp(20px, 2vw, 28px)',
-                    transition: 'transform 0.2s',
-                    minWidth: 'clamp(40px, 4vw, 56px)',
-                    minHeight: 'clamp(40px, 4vw, 56px)'
-                  }} onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
-                     onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}>
-                    <i className={mainState.isPlaying ? "bi bi-pause-fill" : "bi bi-play-fill"}></i>
+                {/* Buttons */}
+                <div className="vjs-buttons-row">
+                  {/* Play / Pause */}
+                  <button className="vjs-btn vjs-btn--play" onClick={() => togglePlay(mainEvent.id)} title={mainState.isPlaying ? 'Pause' : 'Play'}>
+                    {mainState.isPlaying ? <PauseIcon /> : <PlayIcon />}
                   </button>
 
-                  {/* Jump to Live button */}
+                  {/* LIVE badge */}
                   <button
-                    onClick={jumpToLive}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '5px',
-                      padding: '4px 10px',
-                      border: 'none',
-                      borderRadius: '4px',
-                      fontSize: '11px',
-                      fontWeight: 700,
-                      letterSpacing: '0.5px',
-                      cursor: isBehindLive ? 'pointer' : 'default',
-                      transition: 'all 0.3s',
-                      background: isBehindLive ? 'rgba(255,255,255,0.15)' : '#e11d48',
-                      color: isBehindLive ? '#aaa' : '#fff',
-                      opacity: isBehindLive ? 0.8 : 1,
-                      flexShrink: 0,
-                    }}
-                    onMouseEnter={(e) => { if (isBehindLive) e.currentTarget.style.background = 'rgba(255,255,255,0.25)'; }}
-                    onMouseLeave={(e) => { if (isBehindLive) e.currentTarget.style.background = 'rgba(255,255,255,0.15)'; }}
+                    className={`vjs-live-badge ${isBehindLive ? 'vjs-live-badge--behind' : 'vjs-live-badge--live'}`}
+                    onClick={isBehindLive ? jumpToLive : undefined}
                   >
-                    <span style={{
-                      width: '8px',
-                      height: '8px',
-                      borderRadius: '50%',
-                      background: isBehindLive ? '#666' : '#fff',
-                      animation: isBehindLive ? 'none' : 'livePulse 2s infinite',
-                      flexShrink: 0,
-                    }} />
+                    <span className={`vjs-live-dot ${isBehindLive ? 'vjs-live-dot--off' : 'vjs-live-dot--on'}`} />
                     {isBehindLive ? 'GO LIVE' : 'LIVE'}
                   </button>
 
+                  {/* Volume (popover on hover) */}
                   <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      position: 'relative'
-                    }}
+                    className="vjs-volume-group"
                     onMouseEnter={() => setShowVolumeSlider(true)}
                     onMouseLeave={() => setShowVolumeSlider(false)}
                   >
-                    <button onClick={() => toggleMute(mainEvent.id)} className="control-btn" style={{
-                      background: 'transparent',
-                      border: 'none',
-                      color: '#fff',
-                      cursor: 'pointer',
-                      padding: 'clamp(8px, 1vw, 12px)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      fontSize: 'clamp(20px, 2vw, 28px)',
-                      transition: 'transform 0.2s',
-                      position: 'relative',
-                      zIndex: 1,
-                      minWidth: 'clamp(40px, 4vw, 56px)',
-                      minHeight: 'clamp(40px, 4vw, 56px)'
-                    }} onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
-                       onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}>
-                      <i className={mainState.isMuted || mainState.volume === 0 ? "bi bi-volume-mute-fill" : mainState.volume < 50 ? "bi bi-volume-down-fill" : "bi bi-volume-up-fill"}></i>
+                    <button className="vjs-btn" onClick={() => toggleMute(mainEvent.id)} title={mainState.isMuted ? 'Unmute' : 'Mute'}>
+                      {mainState.isMuted || mainState.volume === 0
+                        ? <VolumeOffIcon />
+                        : mainState.volume < 50
+                          ? <VolumeLowIcon />
+                          : <VolumeHighIcon />}
                     </button>
-
-                    {/* Modern Volume Slider */}
-                    <div className="volume-slider-wrapper" style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '10px',
-                      opacity: showVolumeSlider ? 1 : 0,
-                      width: showVolumeSlider ? 'auto' : '0',
-                      overflow: 'hidden',
-                      transition: 'all 0.3s ease',
-                      pointerEvents: showVolumeSlider ? 'auto' : 'none'
-                    }}>
-                      <div style={{
-                        position: 'relative',
-                        width: '100px',
-                        height: '4px',
-                        backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                        borderRadius: '6px',
-                        cursor: 'pointer'
-                      }}>
-                        <div style={{
-                          position: 'absolute',
-                          top: 0,
-                          left: 0,
-                          height: '100%',
-                          width: `${mainState.volume ?? 100}%`,
-                          backgroundColor: '#03969c',
-                          borderRadius: '6px',
-                          transition: 'width 0.1s ease'
-                        }}></div>
-
+                    <div className={`vjs-volume-popover ${showVolumeSlider ? 'vjs-volume-popover--visible' : ''}`}>
+                      <div className="vjs-volume-slider-vertical">
+                        <div className="vjs-volume-slider-fill" style={{ height: `${mainState.volume ?? 100}%` }} />
+                        <div className="vjs-volume-slider-thumb" style={{ bottom: `${mainState.volume ?? 100}%` }} />
                         <input
                           type="range"
-                          className="volume-slider"
+                          className="vjs-volume-slider-input"
                           min="0"
                           max="100"
                           value={mainState.volume ?? 100}
                           onChange={(e) => handleVolumeChange(mainEvent.id, Number(e.target.value))}
-                          style={{
-                            position: 'absolute',
-                            top: '50%',
-                            left: 0,
-                            transform: 'translateY(-50%)',
-                            width: '100%',
-                            height: '20px',
-                            opacity: 0,
-                            cursor: 'pointer',
-                            margin: 0
-                          }}
                         />
-
-                        <div style={{
-                          position: 'absolute',
-                          top: '50%',
-                          left: `${mainState.volume}%`,
-                          transform: 'translate(-50%, -50%)',
-                          width: '12px',
-                          height: '12px',
-                          backgroundColor: '#fff',
-                          borderRadius: '50%',
-                          border: '2px solid #03969c',
-                          boxShadow: '0 2px 6px rgba(0, 0, 0, 0.3)',
-                          pointerEvents: 'none',
-                          transition: 'all 0.1s ease'
-                        }}></div>
                       </div>
-
-                      <span style={{
-                        color: '#fff',
-                        fontSize: '13px',
-                        fontWeight: '600',
-                        minWidth: '38px',
-                        textAlign: 'right',
-                        fontVariantNumeric: 'tabular-nums'
-                      }}>{Math.round(mainState.volume)}%</span>
+                      <span className="vjs-volume-label">{Math.round(mainState.volume)}%</span>
                     </div>
                   </div>
 
-                  <button
-                    onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                    className="control-btn mobile-hidden-control"
-                    style={{
-                      background: 'transparent',
-                      border: 'none',
-                      color: '#fff',
-                      cursor: 'pointer',
-                      padding: 'clamp(8px, 1vw, 12px)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      fontSize: 'clamp(20px, 2vw, 28px)',
-                      transition: 'transform 0.2s',
-                      minWidth: 'clamp(40px, 4vw, 56px)',
-                      minHeight: 'clamp(40px, 4vw, 56px)'
-                    }} onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
-                       onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                    title="Emoji reactions"
-                  >
-                    <i className="bi bi-emoji-smile"></i>
+                  {/* Emoji */}
+                  <button className="vjs-btn vjs-mobile-hidden" onClick={() => setShowEmojiPicker(!showEmojiPicker)} title="Emoji reactions">
+                    <EmojiIcon />
                   </button>
 
-                  <button
-                    onClick={toggleRecording}
-                    className="control-btn mobile-hidden-control"
-                    style={{
-                      background: isRecording ? 'rgba(239, 68, 68, 0.2)' : 'transparent',
-                      border: 'none',
-                      color: isRecording ? '#ef4444' : '#fff',
-                      cursor: 'pointer',
-                      padding: 'clamp(8px, 1vw, 12px)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      fontSize: 'clamp(20px, 2vw, 28px)',
-                      borderRadius: '12px',
-                      transition: 'all 0.2s',
-                      minWidth: 'clamp(40px, 4vw, 56px)',
-                      minHeight: 'clamp(40px, 4vw, 56px)'
-                    }} onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
-                       onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                    title={isRecording ? "Stop recording" : "Start recording"}
-                  >
-                    <i className={isRecording ? "bi bi-stop-circle-fill" : "bi bi-record-circle"}></i>
+                  {/* Participants */}
+                  <button className="vjs-btn vjs-mobile-hidden" onClick={() => setShowParticipants(!showParticipants)} title="View participants">
+                    <PeopleIcon />
                   </button>
 
-                  <button
-                    onClick={() => setShowParticipants(!showParticipants)}
-                    className="control-btn mobile-hidden-control"
-                    style={{
-                      background: 'transparent',
-                      border: 'none',
-                      color: '#fff',
-                      cursor: 'pointer',
-                      padding: 'clamp(8px, 1vw, 12px)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      fontSize: 'clamp(20px, 2vw, 28px)',
-                      transition: 'transform 0.2s',
-                      minWidth: 'clamp(40px, 4vw, 56px)',
-                      minHeight: 'clamp(40px, 4vw, 56px)'
-                    }} onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
-                       onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                    title="View participants"
-                  >
-                    <i className="bi bi-people-fill"></i>
-                  </button>
-
-                  <div style={{ position: 'relative', marginLeft: 'auto' }}>
-                    <button
-                      onClick={() => setShowSettings(!showSettings)}
-                      className="control-btn settings-button"
-                      style={{
-                        background: showSettings ? 'rgba(3, 150, 156, 0.2)' : 'transparent',
-                        border: 'none',
-                        color: '#fff',
-                        cursor: 'pointer',
-                        padding: 'clamp(8px, 1vw, 12px)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        fontSize: 'clamp(20px, 2vw, 28px)',
-                        borderRadius: '12px',
-                        transition: 'all 0.2s',
-                        minWidth: 'clamp(40px, 4vw, 56px)',
-                        minHeight: 'clamp(40px, 4vw, 56px)'
-                      }} onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
-                         onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                      title="Settings"
-                    >
-                      <i className="bi bi-gear-fill"></i>
-                    </button>
+                  {/* Right group: Settings + Fullscreen */}
+                  <div className="vjs-buttons-row--right">
+                    <div style={{ position: 'relative' }}>
+                      <button
+                        className="vjs-btn settings-button"
+                        onClick={() => setShowSettings(!showSettings)}
+                        title="Settings"
+                        style={{ background: showSettings ? 'rgba(3,150,156,0.2)' : undefined }}
+                      >
+                        <i className="bi bi-gear-fill" style={{ fontSize: 20 }}></i>
+                      </button>
 
                     {/* Settings Dropdown */}
                     {showSettings && !showReportIssues && (
                       <div className="settings-menu" style={{
                         position: 'absolute',
-                        bottom: 'clamp(50px, 12vw, 60px)',
+                        bottom: 'calc(100% + 8px)',
                         right: '0',
                         backgroundColor: '#18181b',
                         borderRadius: '16px',
@@ -4871,7 +4661,7 @@ const App = () => {
                     {showReportIssues && (
                       <div className="settings-menu" style={{
                         position: 'absolute',
-                        bottom: '50px',
+                        bottom: 'calc(100% + 8px)',
                         right: '0',
                         backgroundColor: '#18181b',
                         borderRadius: '16px',
@@ -4962,26 +4752,11 @@ const App = () => {
                     )}
                   </div>
 
-                  <button
-                    onClick={toggleFullscreen}
-                    className="control-btn fullscreen-btn"
-                    style={{
-                      background: 'transparent',
-                      border: 'none',
-                      color: '#fff',
-                      cursor: 'pointer',
-                      padding: 'clamp(8px, 1vw, 12px)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      fontSize: 'clamp(20px, 2vw, 28px)',
-                      transition: 'transform 0.2s',
-                      minWidth: 'clamp(40px, 4vw, 56px)',
-                      minHeight: 'clamp(40px, 4vw, 56px)'
-                    }} onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
-                       onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                  >
-                    <i className={isFullscreen ? "bi bi-fullscreen-exit" : "bi bi-fullscreen"}></i>
-                  </button>
+                    {/* Fullscreen */}
+                    <button className="vjs-btn" onClick={toggleFullscreen} title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}>
+                      {isFullscreen ? <FullscreenExitIcon /> : <FullscreenEnterIcon />}
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -4992,7 +4767,7 @@ const App = () => {
                   className="emoji-picker-bar"
                   style={{
                     position: 'absolute',
-                    bottom: '90px',
+                    bottom: '80px',
                     left: '50%',
                     transform: 'translateX(-50%)',
                     backgroundColor: 'rgba(24, 24, 27, 0.95)',
@@ -5132,7 +4907,7 @@ const App = () => {
                       gap: 'clamp(6px, 2vw, 8px)'
                     }}>
                       <i className="bi bi-people-fill" style={{ color: '#03969c', fontSize: 'clamp(14px, 3.5vw, 16px)' }}></i>
-                      Viewers ({participants.length})
+                      {mainEvent.viewers > 0 ? `${mainEvent.viewers.toLocaleString()} Watching` : `Viewers (${participants.length})`}
                     </h3>
                     <button
                       onClick={() => setShowParticipants(false)}
@@ -5530,21 +5305,22 @@ const App = () => {
                 </div>
               )}
 
-              {/* Photographer Info and Buttons */}
+              {/* Streaming Photographer + Buttons */}
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 'clamp(8px, 2.5vw, 12px)',
+                gap: 'clamp(8px, 2vw, 10px)',
                 marginBottom: '12px',
                 flexWrap: 'wrap'
               }}>
+                <span style={{ fontSize: 12, color: '#71717a', fontWeight: 600, flexShrink: 0 }}>Streaming Photographer</span>
                 {mainEvent.photographerAvatar ? (
                   <img
                     src={mainEvent.photographerAvatar}
                     alt="Photographer"
                     style={{
-                      width: 'clamp(40px, 10vw, 48px)',
-                      height: 'clamp(40px, 10vw, 48px)',
+                      width: 28,
+                      height: 28,
                       borderRadius: '50%',
                       objectFit: 'cover',
                       border: '2px solid #03969c',
@@ -5553,8 +5329,8 @@ const App = () => {
                   />
                 ) : (
                   <div style={{
-                    width: 'clamp(40px, 10vw, 48px)',
-                    height: 'clamp(40px, 10vw, 48px)',
+                    width: 28,
+                    height: 28,
                     borderRadius: '50%',
                     border: '2px solid #03969c',
                     flexShrink: 0,
@@ -5563,32 +5339,19 @@ const App = () => {
                     alignItems: 'center',
                     justifyContent: 'center',
                     color: '#adadb8',
-                    fontSize: 'clamp(18px, 5vw, 22px)',
+                    fontSize: 13,
                   }}>
                     <i className="bi bi-person-fill" />
                   </div>
                 )}
-                <div style={{ flex: 1, minWidth: '150px' }}>
-                  <h3 className="photographer-name" style={{
-                    fontSize: 'clamp(13px, 3.5vw, 15px)',
-                    fontWeight: '600',
-                    color: '#efeff1',
-                    margin: 0,
-                    marginBottom: '4px',
-                    lineHeight: '1.3'
-                  }}>{mainEvent.photographer}</h3>
-                  <p style={{
-                    fontSize: 'clamp(11px, 3vw, 13px)',
-                    color: '#adadb8',
-                    margin: 0
-                  }}>{mainEvent.category}</p>
-                </div>
+                <span className="photographer-name" style={{ fontSize: 'clamp(12px, 3vw, 14px)', fontWeight: 600, color: '#efeff1' }}>{mainEvent.photographer}</span>
 
-                {/* Buttons Container */}
+                {/* Action Buttons — pushed right */}
                 <div style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 'clamp(8px, 2.5vw, 12px)',
+                  gap: 'clamp(6px, 2vw, 10px)',
+                  marginLeft: 'auto',
                   flexWrap: 'wrap'
                 }}>
                   <button
