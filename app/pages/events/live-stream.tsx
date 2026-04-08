@@ -59,6 +59,8 @@ interface EventStream {
   streamFeeCurrencyAbbreviation?: string | null;
   hasInviteCode?: boolean | null;
   hasPurchasedAccess?: boolean;
+  eventDate?: string;
+  eventStartTime?: string;
 }
 
 interface Message {
@@ -101,6 +103,30 @@ function GoogleAuthButton({ onSuccess, onError, loading, label }: {
   );
 }
 
+/**
+ * Combine eventDate ("YYYY-MM-DD") + startTime ("HH:MM") into a local Date,
+ * or return null if inputs are missing/invalid.
+ */
+function getEventStartDate(dateStr?: string, timeStr?: string): Date | null {
+  if (!dateStr || !timeStr) return null;
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const [hh, mm] = timeStr.split(':').map(Number);
+  if (!y || !m || !d || Number.isNaN(hh) || Number.isNaN(mm)) return null;
+  return new Date(y, m - 1, d, hh, mm, 0, 0);
+}
+
+/**
+ * Format a ms-duration as "HHh MMm SSs" padded.
+ */
+function formatCountdown(ms: number): string {
+  const totalSec = Math.max(0, Math.floor(ms / 1000));
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${pad(h)}h ${pad(m)}m ${pad(s)}s`;
+}
+
 // Helper to read eventId from URL (runs at module level for initial state)
 function getInitialEventId(): string {
   if (typeof window !== 'undefined') {
@@ -137,6 +163,25 @@ const App = () => {
   // Main focused event (index in events array)
   const [mainEventIndex, setMainEventIndex] = useState(0);
   const mainEvent = events[mainEventIndex];
+
+  // Live countdown for "coming soon" overlay — ticks only while event is ≤6h away
+  const [msUntilStart, setMsUntilStart] = useState<number | null>(null);
+  useEffect(() => {
+    const start = getEventStartDate(mainEvent?.eventDate, mainEvent?.eventStartTime);
+    if (!start) { setMsUntilStart(null); return; }
+    const tick = () => setMsUntilStart(start.getTime() - Date.now());
+    tick();
+    const id = window.setInterval(tick, 1000);
+    return () => window.clearInterval(id);
+  }, [mainEvent?.eventDate, mainEvent?.eventStartTime]);
+  const SIX_HOURS_MS = 6 * 60 * 60 * 1000;
+  const evStatusUpper = (mainEvent?.eventStatus || '').toUpperCase();
+  const showCountdown =
+    msUntilStart !== null &&
+    msUntilStart > 0 &&
+    msUntilStart <= SIX_HOURS_MS &&
+    evStatusUpper !== 'ONGOING' &&
+    evStatusUpper !== 'COMPLETED';
 
   // Check if user already rated this event
   useEffect(() => {
@@ -494,6 +539,8 @@ const App = () => {
             streamFeeCurrencyAbbreviation: (ev.streamFeeCurrencyAbbreviation as string) ?? null,
             hasInviteCode: (ev.hasInviteCode as boolean) ?? null,
             hasPurchasedAccess: (ev.hasPurchasedAccess as boolean) ?? undefined,
+            eventDate: (ev.eventDate as string) ?? undefined,
+            eventStartTime: (ev.startTime as string) ?? undefined,
           }, ...prev.slice(1)]);
         }
       } catch {
@@ -4319,6 +4366,19 @@ const App = () => {
                   <p style={{ color: '#fff', fontSize: '16px', fontWeight: '600', margin: 0 }}>
                     Live stream coming soon
                   </p>
+                  {showCountdown && msUntilStart !== null && (
+                    <div style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 10,
+                      padding: '10px 18px', marginTop: 4,
+                      background: 'linear-gradient(135deg, rgba(245,101,44,0.2), rgba(245,101,44,0.08))',
+                      border: '1px solid rgba(245,101,44,0.5)',
+                      borderRadius: 999, color: '#fdba74',
+                      fontSize: 14, fontWeight: 700, letterSpacing: '0.02em',
+                    }}>
+                      <i className="bi bi-hourglass-split" style={{ color: '#f5652c' }}></i>
+                      <span>Starts in {formatCountdown(msUntilStart)}</span>
+                    </div>
+                  )}
                   <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '13px', margin: 0 }}>
                     The stream will start automatically — stay on this page
                   </p>

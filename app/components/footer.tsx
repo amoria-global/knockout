@@ -199,10 +199,10 @@ export default function Footer() {
   ];
 
   const socialLinks = [
-    { icon: FaFacebookF, href: 'https://facebook.com', label: 'Facebook' },
-    { icon: FaLinkedinIn, href: 'https://linkedin.com', label: 'LinkedIn' },
-    { icon: FaXTwitter, href: 'https://x.com', label: 'X (Twitter)' },
-    { icon: FaInstagram, href: 'https://instagram.com', label: 'Instagram' },
+    { icon: FaFacebookF, href: 'https://www.facebook.com/search/top?q=amoria%20connekyt', label: 'Facebook' },
+    { icon: FaLinkedinIn, href: 'https://www.linkedin.com/in/amoria-connekyt-b73b013b9/', label: 'LinkedIn' },
+    { icon: FaXTwitter, href: 'https://x.com/connekyt', label: 'X (Twitter)' },
+    { icon: FaInstagram, href: 'https://www.instagram.com/connekyt/', label: 'Instagram' },
   ];
 
   return (
@@ -303,10 +303,11 @@ export default function Footer() {
           >
             {/* Amoria connekyt Section */}
             <div className="footer-brand" style={{ paddingRight: '1.6rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-              <Link href="/" className="footer-logo" style={{ display: 'flex', alignItems: 'center', marginBottom: '1rem', cursor: 'pointer', textDecoration: 'none', color: 'inherit' }}>
+              <Link href="/" className="footer-logo" style={{ display: 'flex', alignItems: 'center', marginBottom: '0.25rem', cursor: 'pointer', textDecoration: 'none', color: 'inherit' }}>
                 <img src="/log.png" alt="Connekyt Logo" style={{ width: isMobile ? '39px' : '49px', height: isMobile ? '39px' : '49px', objectFit: 'contain', position: 'relative', top: '-1px', left: '-15px' }} />
                 <span style={{ fontWeight: 700, color: '#fff', fontSize: isMobile ? '1.25rem' : '1.3rem', marginLeft: '-20px', letterSpacing: '0.3px' }}>Connekyt</span>
               </Link>
+              <p style={{ fontSize: isMobile ? '0.8rem' : '0.85rem', color: 'rgba(255,255,255,0.45)', margin: '0 0 1rem', lineHeight: 1.5, fontWeight: 700, fontFamily: "'Pragati Narrow', sans-serif" }}>The Smart Way to Capture Life</p>
               <div className="social-section" style={{ marginTop: 'auto', marginBottom: isMobile ? '0' : '-3.5rem' }}>
                 <span className="social-title" style={{ color: '#D1D5DB', fontSize: '1.04rem', display: 'block', marginBottom: '0.8rem', gap: '2.4rem' }}>
                   {t('followUs')}

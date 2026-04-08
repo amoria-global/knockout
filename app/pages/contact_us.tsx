@@ -151,437 +151,143 @@ export default function ContactUsPage(): React.JSX.Element {
     }
   };
 
+  const inputStyle = {
+    width: '100%',
+    padding: '10px 0',
+    border: 'none',
+    borderBottom: '1.5px solid rgba(8,58,133,0.15)',
+    fontSize: '0.85rem',
+    background: 'transparent',
+    color: '#1e293b',
+    outline: 'none',
+    transition: 'border-color 0.2s',
+  };
+
   return (
     <>
-      <style jsx>{`
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
+      <style>{`
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .ct-in:focus { border-color: #083A85 !important; }
+        .ct-in::placeholder { color: #94a3b8; }
+        @media (max-width: 768px) {
+          .ct-main { flex-direction: column !important; padding: 1rem !important; gap: 1.5rem !important; }
+          .ct-form-panel { width: 100% !important; padding: 1.5rem !important; }
+          .ct-info-panel { width: 100% !important; }
+          .ct-info-grid { grid-template-columns: 1fr !important; }
+          .ct-row { flex-direction: column !important; }
         }
       `}</style>
       <Navbar />
-      {/* --- MODIFIED: Changed main background color to better match the image --- */}
-      <div style={{
-        minHeight: '100vh',
-        backgroundColor: '#f8fafc',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: isMobile ? '70px 1rem 1.5rem' : '72px 2rem 2rem'
-      }}>
-        {/* --- MODIFIED: Removed marginLeft to allow for true centering --- */}
-        <div style={{width: '100%', maxWidth: isMobile ? '100%' : '1100px'}}>
+      <div style={{ minHeight: '100vh', background: '#f0f4fa', paddingTop: isMobile ? '70px' : '80px' }}>
 
-        {/* Main Container */}
-        <div style={{
-          display: 'flex',
-          flexDirection: isMobile ? 'column' : 'row',
-          alignItems: isMobile ? 'stretch' : 'center',
-          width: '100%',
-          minHeight: isMobile ? 'auto' : 'auto',
-          position: 'relative',
-          gap: isMobile ? '1rem' : '0'
-        }}>
+        {/* Main Content — Two Columns */}
+        <div className="ct-main" style={{ display: 'flex', maxWidth: '1000px', margin: '0 auto', padding: 'clamp(1rem, 2vw, 1.5rem)', gap: '1.25rem' }}>
 
-          {/* LEFT PANEL */}
-          <div style={{
-            width: isMobile ? '100%' : '40%',
-            position: 'relative',
-            background: 'linear-gradient(135deg, #083A85 0%, #0a4da3 50%, #083A85 100%)',
-            borderRadius: isMobile ? '1rem' : '1.25rem',
-            overflow: 'hidden',
-            display: 'flex',
-            flexDirection: 'column',
-            boxShadow: '0 4px 20px rgba(8, 58, 133, 0.1)',
-            zIndex: isMobile ? 1 : 2,
-            // --- MODIFIED: Adjusted the negative margin for a better overlap ---
-            marginRight: isMobile ? '0' : '-10rem'
-          }}>
-            {/* Subtle overlay for depth */}
-            <div style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: 'linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(0,0,0,0.1) 100%)',
-              pointerEvents: 'none'
-            }}></div>
+          {/* LEFT — Form Panel */}
+          <div className="ct-form-panel" style={{ width: '55%', background: '#fff', borderRadius: '16px', padding: 'clamp(1.25rem, 2.5vw, 1.75rem)', boxShadow: '0 2px 16px rgba(8,58,133,0.05)' }}>
+            <p style={{ fontSize: '0.7rem', color: '#083A85', fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase', margin: '0 0 2px' }}>Contact Us</p>
+            <h2 style={{ fontSize: 'clamp(1.2rem, 2vw, 1.5rem)', fontWeight: 800, color: '#0f172a', margin: '0 0 1rem', fontFamily: "'Pragati Narrow', sans-serif" }}>Get In Touch</h2>
 
-            {/* Content Container */}
-            <div style={{
-              position: 'relative',
-              zIndex: 1,
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'center',
-              padding: isMobile ? '1.25rem 1rem' : '1.25rem 1.25rem',
-              height: '100%',
-              gap: '0.5rem'
-            }}>
-              {/* Top Section */}
-              <div style={{
-                width: '100%',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.5rem'
-              }}>
-                <h2 style={{
-                  fontSize: isMobile ? '1.25rem' : '1.4rem',
-                  fontWeight: '700',
-                  color: '#ffffff',
-                  marginBottom: '0.3rem',
-                  textAlign: 'center',
-                  fontFamily: "'Pragati Narrow', sans-serif",
-                }}>
-                  Contact Information
-                </h2>
-
-                {/* Phone Number */}
-                <div style={{display: 'flex', alignItems: 'center', gap: '0.6rem'}}>
-                  <i className="bi bi-telephone" style={{fontSize: '0.9rem', color: 'rgba(255,255,255,0.85)'}}></i>
-                  <div style={{fontSize: '0.85rem', fontWeight: '600', color: '#ffffff'}}>
-                    +250 788 437 347
-                  </div>
-                </div>
-
-                {/* Email */}
-                <div style={{display: 'flex', alignItems: 'center', gap: '0.6rem'}}>
-                  <i className="bi bi-envelope" style={{fontSize: '0.9rem', color: 'rgba(255,255,255,0.85)'}}></i>
-                  <div style={{fontSize: '0.85rem', fontWeight: '600', color: '#ffffff'}}>
-                    info@amoriaconnekyt.com
-                  </div>
-                </div>
-
-                {/* Address */}
-                <div style={{display: 'flex', alignItems: 'flex-start', gap: '0.6rem'}}>
-                  <i className="bi bi-geo-alt" style={{fontSize: '0.9rem', color: 'rgba(255,255,255,0.85)', flexShrink: 0}}></i>
-                  <div style={{fontSize: '0.85rem', fontWeight: '600', color: '#ffffff', lineHeight: '1.4'}}>
-                    KK 84B St, EVA PLAZA, Kanombe 3rd Floor, Left Wing, Kicukiro, Kigali
-                  </div>
-                </div>
-
-                {/* Business Hours */}
-                <div style={{display: 'flex', alignItems: 'flex-start', gap: '0.6rem'}}>
-                  <i className="bi bi-clock" style={{fontSize: '0.9rem', color: 'rgba(255,255,255,0.85)', flexShrink: 0}}></i>
-                  <div style={{fontSize: '0.85rem', fontWeight: '600', color: '#ffffff', lineHeight: '1.4'}}>
-                    <div>Monday - Sunday</div>
-                    <div>9:00 AM - 6:00 PM EAT</div>
-                  </div>
-                </div>
+            {submitStatus === 'success' && (
+              <div style={{ padding: '12px 16px', borderRadius: '10px', background: '#ecfdf5', border: '1px solid #a7f3d0', marginBottom: '1rem', fontSize: '0.85rem', color: '#065f46', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <i className="bi bi-check-circle-fill"></i> Message sent successfully!
               </div>
-
-              {/* Bottom Section - Image */}
-              <div style={{
-                width: '100%',
-                display: isMobile ? 'none' : 'flex',
-                justifyContent: 'center',
-                marginTop: '0.5rem',
-              }}>
-                <img
-                  src="/contakt.png"
-                  alt="Contact Us Illustration"
-                  style={{width: '75px', height: 'auto'}}
-                />
+            )}
+            {submitStatus === 'error' && errorMessage && (
+              <div style={{ padding: '12px 16px', borderRadius: '10px', background: '#fef2f2', border: '1px solid #fecaca', marginBottom: '1rem', fontSize: '0.85rem', color: '#991b1b', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <i className="bi bi-exclamation-circle-fill"></i> {errorMessage}
               </div>
-            </div>
+            )}
+
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#64748b', marginBottom: '4px', letterSpacing: '0.5px' }}>Name <span style={{ color: '#e53e3e' }}>*</span></label>
+                <input name="fullName" type="text" value={formData.fullName} onChange={handleInputChange} placeholder="Your Name" required className="ct-in" style={inputStyle} />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#64748b', marginBottom: '4px', letterSpacing: '0.5px' }}>Email <span style={{ color: '#e53e3e' }}>*</span></label>
+                <input name="email" type="email" value={formData.email} onChange={handleInputChange} placeholder="example@email.com" required className="ct-in" style={inputStyle} />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#64748b', marginBottom: '4px', letterSpacing: '0.5px' }}>Subject <span style={{ color: '#e53e3e' }}>*</span></label>
+                <input name="subject" type="text" value={formData.subject} onChange={handleInputChange} placeholder="Title..." required className="ct-in" style={inputStyle} />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#64748b', marginBottom: '4px', letterSpacing: '0.5px' }}>Message <span style={{ color: '#e53e3e' }}>*</span></label>
+                <textarea name="message" rows={3} value={formData.message} onChange={handleInputChange} placeholder="Type here..." required className="ct-in" style={{ ...inputStyle, resize: 'vertical' }} />
+              </div>
+              {/* Hidden phone field — auto-filled or optional */}
+              <input name="phone" type="hidden" value={formData.phone || '-'} onChange={handleInputChange} />
+
+              <button type="submit" disabled={isSubmitting || !isFormComplete()}
+                style={{
+                  width: isMobile ? '100%' : '160px',
+                  padding: '12px 24px',
+                  borderRadius: '10px',
+                  border: 'none',
+                  background: isFormComplete() ? 'linear-gradient(135deg, #083A85, #0a4da3)' : '#d1d5db',
+                  color: isFormComplete() ? '#fff' : '#9ca3af',
+                  fontWeight: 700,
+                  fontSize: '0.9rem',
+                  cursor: isFormComplete() && !isSubmitting ? 'pointer' : 'not-allowed',
+                  transition: 'all 0.3s',
+                  opacity: isSubmitting ? 0.7 : 1,
+                  marginTop: '0.5rem',
+                }}
+              >
+                {isSubmitting ? (
+                  <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                    <span style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', display: 'inline-block', animation: 'spin 0.8s linear infinite' }}></span>
+                    Sending...
+                  </span>
+                ) : 'Send Now'}
+              </button>
+            </form>
           </div>
 
-          {/* RIGHT PANEL */}
-          <div style={{
-            width: isMobile ? '100%' : '60%',
-            // --- MODIFIED: Background color changed from white to light grey ---
-            backgroundColor: '#ffffff',
-            borderRadius: isMobile ? '1rem' : '1.25rem',
-            display: 'flex',
-            flexDirection: 'row',
-            boxShadow: '0 4px 20px rgba(8, 58, 133, 0.1)',
-            minHeight: isMobile ? 'auto' : 'auto',
-            zIndex: 1,
-            overflow: 'hidden'
-          }}>
-            {/* Form Content Section */}
-            <div style={{
-              flex: '1',
-              display: 'flex',
-              flexDirection: 'column',
-              // --- MODIFIED: Adjusted padding to account for the overlapping left panel ---
-              padding: isMobile
-                ? '1rem 1rem'
-                : '1rem 1.5rem 1rem 11rem',
-              justifyContent: 'center'
-            }}>
-              {/* Heading Section */}
-              <div style={{marginBottom: '0.3rem', textAlign: 'left'}}>
-                <h1 style={{
-                  fontSize: isMobile ? '1.25rem' : '1.4rem',
-                  fontWeight: '700',
-                  color: '#083A85',
-                  marginBottom: '0.25rem',
-                  fontFamily: "'Pragati Narrow', sans-serif",
-                }}>
-                  Send us a message
-                </h1>
-                <p style={{
-                  fontSize: '0.8rem',
-                  color: '#6b7280'
-                }}>
-                  Feel free to ask any question below!
-                </p>
-              </div>
+          {/* RIGHT — Info Panel */}
+          <div className="ct-info-panel" style={{ width: '45%', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
 
-              {/* Form Area */}
-              <form onSubmit={handleSubmit} style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.5rem',
-                width: '100%'
-              }}>
-                {/* Success/Error Message */}
-                {submitStatus === 'success' && (
-                  <div style={{
-                    padding: '0.5rem',
-                    borderRadius: '0.5rem',
-                    backgroundColor: '#10b981',
-                    color: '#ffffff',
-                    fontSize: '0.85rem',
-                    textAlign: 'center',
-                    fontWeight: '500'
-                  }}>
-                    ✓ Message sent successfully! We'll get back to you soon.
-                  </div>
-                )}
-                {submitStatus === 'error' && errorMessage && (
-                  <div style={{
-                    padding: '0.5rem',
-                    borderRadius: '0.5rem',
-                    backgroundColor: '#ef4444',
-                    color: '#ffffff',
-                    fontSize: '0.8rem',
-                    textAlign: 'center',
-                    fontWeight: '500'
-                  }}>
-                    ✕ {errorMessage}
-                  </div>
-                )}
+            {/* Description */}
+            <p style={{ fontSize: '0.82rem', color: '#64748b', lineHeight: 1.6, margin: 0 }}>
+              Have a question or need assistance? Reach out to us through the form or contact details below.
+            </p>
 
-                <div>
-                  <label htmlFor="fullName" style={{
-                    display: 'block',
-                    fontSize: '0.8rem',
-                    fontWeight: '600',
-                    color: '#000000',
-                    marginBottom: '0.2rem'
-                  }}>
-                    Full Name
-                  </label>
-                  <input
-                    type="text"
-                    id="fullName"
-                    name="fullName"
-                    value={formData.fullName}
-                    onChange={handleInputChange}
-                    placeholder="Moise Caicedo"
-                    disabled={isSubmitting}
-                    style={{
-                      width: '100%',
-                      padding: '0.5rem',
-                      fontSize: '0.8rem',
-                      border: '1px solid rgba(8, 58, 133, 0.15)',
-                      borderRadius: '0.6rem',
-                      outline: 'none',
-                      backgroundColor: isSubmitting ? '#f3f4f6' : '#FFFFFF',
-                      boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-                      color: '#000000',
-                      cursor: isSubmitting ? 'not-allowed' : 'text'
-                    }}
-                  />
+            {/* Contact Info Cards */}
+            <div className="ct-info-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+              {[
+                { icon: 'bi-telephone', label: 'Phone Number', value: '+250 788 437 347' },
+                { icon: 'bi-envelope', label: 'Email Address', value: 'info@amoriaconnekyt.com' },
+                { icon: 'bi-whatsapp', label: 'Whatsapp', value: '+250 788 437 347' },
+                { icon: 'bi-geo-alt', label: 'Location', value: 'EVA PLAZA, KK 84B St,Kicukiro, Kigali' },
+              ].map((item) => (
+                <div key={item.icon} style={{ background: '#fff', borderRadius: '12px', padding: '1rem', boxShadow: '0 2px 10px rgba(8,58,133,0.05)', textAlign: 'center' }}>
+                  <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(8,58,133,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 8px' }}>
+                    <i className={`bi ${item.icon}`} style={{ fontSize: '0.9rem', color: '#083A85' }}></i>
+                  </div>
+                  <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#0f172a', marginBottom: '3px' }}>{item.label}</div>
+                  <div style={{ fontSize: '0.78rem', color: '#64748b', lineHeight: 1.4 }}>{item.value}</div>
                 </div>
-                <div>
-                  <label htmlFor="email" style={{
-                    display: 'block',
-                    fontSize: '0.8rem',
-                    fontWeight: '600',
-                    color: '#000000',
-                    marginBottom: '0.2rem'
-                  }}>
-                    Email Address
-                  </label>
-                  <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    placeholder="moisecaicedo25@gmail.com"
-                    disabled={isSubmitting}
-                    style={{
-                      width: '100%',
-                      padding: '0.5rem',
-                      fontSize: '0.8rem',
-                      border: '1px solid rgba(8, 58, 133, 0.15)',
-                      borderRadius: '0.6rem',
-                      outline: 'none',
-                      backgroundColor: isSubmitting ? '#f3f4f6' : '#FFFFFF',
-                      boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-                      color: '#000',
-                      cursor: isSubmitting ? 'not-allowed' : 'text'
-                    }}
-                  />
-                </div>
-                <div>
-                  <label htmlFor="phone" style={{
-                    display: 'block',
-                    fontSize: '0.8rem',
-                    fontWeight: '600',
-                    color: '#000000',
-                    marginBottom: '0.2rem'
-                  }}>
-                    Phone Number
-                  </label>
-                  <input
-                    type="tel"
-                    id="phone"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleInputChange}
-                    placeholder="+250 XXX XXX XXX"
-                    disabled={isSubmitting}
-                    style={{
-                      width: '100%',
-                      padding: '0.5rem',
-                      fontSize: '0.8rem',
-                      border: '1px solid rgba(8, 58, 133, 0.15)',
-                      borderRadius: '0.6rem',
-                      outline: 'none',
-                      backgroundColor: isSubmitting ? '#f3f4f6' : '#FFFFFF',
-                      boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-                      color: '#000',
-                      cursor: isSubmitting ? 'not-allowed' : 'text'
-                    }}
-                  />
-                </div>
-                <div>
-                  <label htmlFor="subject" style={{
-                    display: 'block',
-                    fontSize: '0.8rem',
-                    fontWeight: '600',
-                    color: '#000000',
-                    marginBottom: '0.2rem'
-                  }}>
-                    Subject
-                  </label>
-                  <input
-                    type="text"
-                    id="subject"
-                    name="subject"
-                    value={formData.subject}
-                    onChange={handleInputChange}
-                    placeholder="How can we help you?"
-                    disabled={isSubmitting}
-                    style={{
-                      width: '100%',
-                      padding: '0.5rem',
-                      fontSize: '0.8rem',
-                      border: '1px solid rgba(8, 58, 133, 0.15)',
-                      borderRadius: '0.6rem',
-                      outline: 'none',
-                      backgroundColor: isSubmitting ? '#f3f4f6' : '#FFFFFF',
-                      boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-                      color: '#000000',
-                      cursor: isSubmitting ? 'not-allowed' : 'text'
-                    }}
-                  />
-                </div>
-                <div>
-                  <label htmlFor="message" style={{
-                    display: 'block',
-                    fontSize: '0.8rem',
-                    fontWeight: '600',
-                    color: '#000000',
-                    marginBottom: '0.2rem'
-                  }}>
-                    Message
-                  </label>
-                  <textarea
-                    id="message"
-                    name="message"
-                    value={formData.message}
-                    onChange={handleInputChange}
-                    placeholder="Tell us how we can help you..."
-                    rows={2}
-                    disabled={isSubmitting}
-                    style={{
-                      width: '100%',
-                      padding: '0.5rem',
-                      fontSize: '0.8rem',
-                      border: '1px solid rgba(8, 58, 133, 0.15)',
-                      borderRadius: '0.6rem',
-                      outline: 'none',
-                      backgroundColor: isSubmitting ? '#f3f4f6' : '#FFFFFF',
-                      boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-                      resize: 'none',
-                      fontFamily: 'inherit',
-                      color: '#000',
-                      cursor: isSubmitting ? 'not-allowed' : 'text'
-                    }}
-                  />
-                </div>
-                <button
-                  type="submit"
-                  disabled={isSubmitting || !isFormComplete()}
-                  style={{
-                    width: '100%',
-                    padding: '0.5rem',
-                    fontSize: '0.8rem',
-                    fontWeight: '600',
-                    borderRadius: '0.5rem',
-                    backgroundColor: isSubmitting || !isFormComplete() ? '#6b7280' : '#083A85',
-                    color: '#ffffff',
-                    border: 'none',
-                    cursor: isSubmitting || !isFormComplete() ? 'not-allowed' : 'pointer',
-                    marginTop: '0.15rem',
-                    transition: 'all 0.3s',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '0.4rem',
-                    opacity: isSubmitting || !isFormComplete() ? 0.6 : 1
-                  }}
-                  onMouseEnter={(e) => { if (!(isSubmitting || !isFormComplete())) e.currentTarget.style.transform = 'translateY(-2px)'; }}
-                  onMouseLeave={(e) => { if (!(isSubmitting || !isFormComplete())) e.currentTarget.style.transform = 'translateY(0)'; }}
-                >
-                  {isSubmitting ? (
-                    <>
-                      <span style={{
-                        width: '14px',
-                        height: '14px',
-                        border: '2px solid #ffffff',
-                        borderTopColor: 'transparent',
-                        borderRadius: '50%',
-                        animation: 'spin 0.8s linear infinite'
-                      }}></span>
-                      Sending...
-                    </>
-                  ) : (
-                    'Send Message'
-                  )}
-                </button>
-              </form>
+              ))}
             </div>
 
-            {/* Right Decorative Section */}
-            <div style={{
-              width: isMobile ? '0%' : '5%',
-              display: isMobile ? 'none' : 'block',
-              background: 'linear-gradient(to left, #083A85, rgba(8, 58, 133, 0))',
-            }}>
+            {/* Map — dark theme */}
+            <div style={{ borderRadius: '10px', overflow: 'hidden', height: '140px', boxShadow: '0 1px 6px rgba(8,58,133,0.04)', position: 'relative' }}>
+              <iframe
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3987.5!2d30.1687772!3d-1.975773!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x19db59c4b2591e71%3A0xb0b493858167cb1c!2sEVA+PLAZA!5e0!3m2!1sen!2srw!4v1"
+                width="100%"
+                height="100%"
+                style={{ border: 0 }}
+                allowFullScreen
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              ></iframe>
             </div>
           </div>
         </div>
+
       </div>
-    </div>
-    <Footer />
+      <Footer />
     </>
   );
 }

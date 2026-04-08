@@ -1,1065 +1,322 @@
 "use client";
 
+import { useState, useRef, useEffect } from "react";
 import Navbar from "../components/navbar";
 import Footer from "../components/footer";
 
+const steps = [
+  {
+    num: 1,
+    title: "Create Your Account",
+    desc: "Sign up on Amoria Connekyt with your email or Google account. It only takes a minute. You'll receive a confirmation email to verify your address.",
+    icon: "bi-person-plus",
+    color: "#083A85",
+  },
+  {
+    num: 2,
+    title: "Verify Your Identity",
+    desc: "Complete the KYC verification process by uploading your government-issued ID. This ensures trust and safety for you and your future clients.",
+    icon: "bi-patch-check",
+    color: "#0a4da3",
+  },
+  {
+    num: 3,
+    title: "Set Up Your Profile",
+    desc: "Add your bio, location, specialties (wedding, portrait, commercial, etc.), and set your availability. A complete profile attracts more clients.",
+    icon: "bi-person-gear",
+    color: "#083A85",
+  },
+  {
+    num: 4,
+    title: "Upload Your Portfolio",
+    desc: "Showcase your best work by uploading high-quality photos and videos. Your portfolio is the first thing clients see — make it count.",
+    icon: "bi-images",
+    color: "#0a4da3",
+  },
+  {
+    num: 5,
+    title: "Set Your Pricing",
+    desc: "Define your packages, hourly rates, and service pricing. Be transparent — clients appreciate clear pricing with no hidden fees.",
+    icon: "bi-tag",
+    color: "#083A85",
+  },
+  {
+    num: 6,
+    title: "Start Accepting Bookings",
+    desc: "You're live! Clients can now discover you, view your portfolio, and book your services. Manage everything from your dashboard.",
+    icon: "bi-rocket-takeoff",
+    color: "#0a4da3",
+  },
+];
+
+const features = [
+  { icon: "bi-speedometer2", title: "Dashboard Overview", desc: "Track bookings, earnings, and performance at a glance" },
+  { icon: "bi-wallet2", title: "Manage Earnings", desc: "Withdraw funds via mobile money, bank transfer, or card" },
+  { icon: "bi-collection", title: "Portfolio & Gallery", desc: "Organize and showcase your work with beautiful galleries" },
+  { icon: "bi-send-check", title: "Photo Delivery", desc: "Deliver photos securely to clients through the platform" },
+  { icon: "bi-chat-dots", title: "Client Communication", desc: "Message clients directly with our built-in chat system" },
+  { icon: "bi-star", title: "Reviews & Ratings", desc: "Build your reputation with verified client reviews" },
+];
+
 const PhotographerGuide = () => {
+  const [visibleSteps, setVisibleSteps] = useState<Set<number>>(new Set());
+  const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const vh = window.innerHeight;
+      const newVisible = new Set<number>();
+      stepRefs.current.forEach((ref, i) => {
+        if (ref) {
+          const rect = ref.getBoundingClientRect();
+          if (rect.top < vh * 0.75) newVisible.add(i);
+        }
+      });
+      setVisibleSteps(newVisible);
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   return (
-    <div className="photographer-guide-page">
+    <div style={{ minHeight: "100vh", background: "#f8fafc" }}>
       <style>{`
-        @keyframes float {
-          0%, 100% {
-            transform: translateY(0px);
-            opacity: 0.8;
-          }
-          50% {
-            transform: translateY(-8px);
-            opacity: 0.95;
-          }
+        @keyframes pgWave1 {
+          0%, 100% { d: path("M0,60 C240,120 480,0 720,60 C960,120 1200,0 1440,60 L1440,120 L0,120 Z"); }
+          50% { d: path("M0,80 C240,20 480,100 720,40 C960,0 1200,100 1440,80 L1440,120 L0,120 Z"); }
+        }
+        @keyframes pgWave2 {
+          0%, 100% { d: path("M0,80 C300,20 600,100 900,50 C1200,0 1350,80 1440,60 L1440,120 L0,120 Z"); }
+          50% { d: path("M0,50 C300,100 600,20 900,70 C1200,120 1350,30 1440,80 L1440,120 L0,120 Z"); }
+        }
+        @keyframes pgDrift {
+          0% { transform: translate(0, 0); }
+          50% { transform: translate(-10px, -10px); }
+          100% { transform: translate(0, 0); }
+        }
+        @keyframes pgFloat1 {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-20px); }
+        }
+        @keyframes pgFloat2 {
+          0%, 100% { transform: translateY(0) translateX(0); }
+          50% { transform: translateY(-15px) translateX(10px); }
+        }
+        @keyframes pgIconFloat {
+          0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.06; }
+          50% { transform: translateY(-18px) rotate(8deg); opacity: 0.1; }
+        }
+        @keyframes pgPulse {
+          0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.5; }
+          50% { transform: translate(-50%, -50%) scale(1.05); opacity: 1; }
+        }
+        @keyframes pgScrollDot {
+          0%, 100% { transform: translateY(0); opacity: 0.3; }
+          50% { transform: translateY(8px); opacity: 0.8; }
         }
 
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
+        .pg-step-card {
+          opacity: 0;
+          transform: translateX(-40px);
+          transition: opacity 0.7s ease, transform 0.7s ease;
+        }
+        .pg-step-card.right {
+          transform: translateX(40px);
+        }
+        .pg-step-card.visible {
+          opacity: 1;
+          transform: translateX(0);
+        }
+        .pg-feature:hover {
+          transform: translateY(-6px);
+          box-shadow: 0 16px 40px rgba(8, 58, 133, 0.12);
+        }
+        @media (max-width: 768px) {
+          .pg-timeline-row {
+            flex-direction: column !important;
+            gap: 0 !important;
+          }
+          .pg-timeline-left, .pg-timeline-right {
+            width: 100% !important;
+            text-align: left !important;
+          }
+          .pg-timeline-center {
+            display: none !important;
+          }
+          .pg-step-card, .pg-step-card.right {
             transform: translateY(30px);
           }
-          to {
-            opacity: 1;
+          .pg-step-card.visible {
             transform: translateY(0);
           }
-        }
-
-        .guide-card {
-          transition: all 0.3s ease;
-        }
-
-        .guide-card:hover {
-          transform: translateY(-8px);
-          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
-        }
-
-        @media (max-width: 768px) {
-          .hero-title {
-            font-size: 36px !important;
-          }
-          .section-title {
-            font-size: 32px !important;
-          }
-          .grid-container {
+          .pg-features-grid {
             grid-template-columns: 1fr !important;
-          }
-          .two-column-layout {
-            flex-direction: column !important;
           }
         }
       `}</style>
 
       <Navbar />
 
-      {/* Hero Section - Seamlessly Integrated Platform */}
-      <section
-        className="pg-hero-section"
-        style={{
-          padding: '16px',
-          backgroundColor: '#ffffff',
-        }}
-      >
-        <div
-          className="pg-hero-container"
-          style={{
-            position: 'relative',
-            width: '100%',
-            minHeight: '650px',
-            overflow: 'hidden',
-            borderRadius: '24px',
-          }}
-        >
-          {/* Background Image */}
-          <div
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundImage: 'url(/sect.png)',
-              backgroundSize: 'cover',
-              backgroundPosition: 'center center',
-              backgroundRepeat: 'no-repeat',
-              borderRadius: '24px',
-            }}
-          />
+      {/* ===== ANIMATED HERO (half) ===== */}
+      <div style={{
+        position: "relative",
+        paddingTop: "clamp(6rem, 10vw, 8rem)",
+        paddingBottom: "clamp(2rem, 3vw, 3rem)",
+        overflow: "hidden",
+        background: "linear-gradient(160deg, #052047 0%, #083A85 40%, #0a4da3 70%, #103E83 100%)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        textAlign: "center",
+      }}>
+        {/* Animated dot grid */}
+        <div style={{ position: "absolute", inset: "-80px", backgroundImage: "radial-gradient(rgba(255,255,255,0.05) 1.5px, transparent 1.5px)", backgroundSize: "32px 32px", pointerEvents: "none", animation: "pgDrift 20s linear infinite" }} />
 
-          {/* Content Overlay */}
-          <div
-            className="pg-hero-overlay"
-            style={{
-              position: 'relative',
-              zIndex: 10,
-              maxWidth: '1200px',
-              margin: '0 auto',
-              padding: '80px 60px',
-              display: 'flex',
-              alignItems: 'center',
-              minHeight: '650px',
-            }}
-          >
-            {/* Left Side Content */}
-            <div
-              className="pg-hero-content"
-              style={{
-                maxWidth: '700px',
-              }}
-            >
-              <h2
-                className="pg-hero-title"
-                style={{
-                  fontSize: '60px',
-                  fontWeight: 700,
-                  marginBottom: '20px',
-                  lineHeight: '1.6',
-                  letterSpacing: '-0.02em',
-                  color: '#ffffff',
-                  fontFamily: "'Pragati Narrow', sans-serif",
-                }}
-              >
-                Seamlessly Integrated Platform
-              </h2>
+        {/* Floating gradient orbs */}
+        <div style={{ position: "absolute", width: "400px", height: "400px", borderRadius: "50%", background: "radial-gradient(circle, rgba(100,180,255,0.1) 0%, transparent 70%)", top: "10%", left: "-5%", filter: "blur(40px)", animation: "pgFloat1 8s ease-in-out infinite", pointerEvents: "none" }} />
+        <div style={{ position: "absolute", width: "300px", height: "300px", borderRadius: "50%", background: "radial-gradient(circle, rgba(80,140,255,0.08) 0%, transparent 70%)", bottom: "5%", right: "-3%", filter: "blur(40px)", animation: "pgFloat2 10s ease-in-out infinite", pointerEvents: "none" }} />
 
-              <p
-                className="pg-hero-subtitle"
-                style={{
-                  fontSize: '18px',
-                  fontWeight: 400,
-                  lineHeight: '1.7',
-                  color: 'rgba(255, 255, 255, 0.85)',
-                  marginBottom: '32px',
-                }}
-              >
-                Amoria Connekyt brings together everything you need in one place: from live streaming your events to secure payment processing with Stripe, and community features powered by Nu. Join a thriving ecosystem designed for photographers.
-              </p>
+        {/* Floating camera icons */}
+        {[
+          { icon: "bi-camera", top: "15%", left: "10%", size: 22, delay: "0s", dur: "6s" },
+          { icon: "bi-aperture", top: "25%", right: "12%", size: 18, delay: "1s", dur: "7s" },
+          { icon: "bi-camera-reels", bottom: "20%", left: "15%", size: 20, delay: "2s", dur: "8s" },
+          { icon: "bi-image", bottom: "30%", right: "10%", size: 16, delay: "0.5s", dur: "6.5s" },
+          { icon: "bi-camera-video", top: "60%", left: "5%", size: 14, delay: "3s", dur: "9s" },
+          { icon: "bi-camera2", top: "10%", right: "25%", size: 12, delay: "1.5s", dur: "7.5s" },
+          { icon: "bi-camera", bottom: "15%", right: "30%", size: 16, delay: "4s", dur: "8s" },
+          { icon: "bi-aperture", top: "45%", left: "25%", size: 13, delay: "2.5s", dur: "6s" },
+        ].map((item, i) => (
+          <i key={i} className={`bi ${item.icon}`} style={{
+            position: "absolute",
+            top: item.top,
+            left: (item as Record<string, unknown>).left as string | undefined,
+            right: (item as Record<string, unknown>).right as string | undefined,
+            bottom: (item as Record<string, unknown>).bottom as string | undefined,
+            fontSize: item.size,
+            color: "rgba(255,255,255,0.06)",
+            animation: `pgIconFloat ${item.dur} ease-in-out ${item.delay} infinite`,
+            pointerEvents: "none",
+          }} />
+        ))}
 
-              <a
-                href="#getting-started"
-                style={{
-                  display: 'inline-block',
-                  background: 'transparent',
-                  color: '#fff',
-                  fontSize: '16px',
-                  fontWeight: 600,
-                  padding: '14px 32px',
-                  border: '2px solid #fff',
-                  borderRadius: '40px',
-                  cursor: 'pointer',
-                  textDecoration: 'none',
-                  transition: 'all 0.3s ease',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-3px)';
-                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                }}
-              >
-                Learn How to Start
-              </a>
-            </div>
-          </div>
+        {/* Lens flare ring */}
+        <div style={{ position: "absolute", width: "clamp(500px, 60vw, 900px)", height: "clamp(500px, 60vw, 900px)", borderRadius: "50%", border: "1px solid rgba(255,255,255,0.03)", top: "50%", left: "50%", transform: "translate(-50%, -50%)", animation: "pgPulse 4s ease-in-out infinite", pointerEvents: "none" }} />
+        <div style={{ position: "absolute", width: "clamp(300px, 35vw, 500px)", height: "clamp(300px, 35vw, 500px)", borderRadius: "50%", border: "1px solid rgba(255,255,255,0.04)", top: "50%", left: "50%", transform: "translate(-50%, -50%)", animation: "pgPulse 4s ease-in-out 2s infinite", pointerEvents: "none" }} />
+
+        {/* Animated wave at bottom */}
+        <div style={{ position: "absolute", bottom: -1, left: 0, right: 0, zIndex: 3, lineHeight: 0 }}>
+          <svg viewBox="0 0 1440 120" preserveAspectRatio="none" style={{ width: "100%", height: "clamp(35px, 5vw, 60px)", display: "block" }}>
+            <path d="M0,60 C240,120 480,0 720,60 C960,120 1200,0 1440,60 L1440,120 L0,120 Z" fill="#f8fafc" style={{ animation: "pgWave1 8s ease-in-out infinite" }} />
+            <path d="M0,80 C300,20 600,100 900,50 C1200,0 1350,80 1440,60 L1440,120 L0,120 Z" fill="#f8fafc" opacity="0.5" style={{ animation: "pgWave2 6s ease-in-out infinite" }} />
+          </svg>
         </div>
-      </section>
 
-      {/* Getting Started Steps Section */}
-      <section
-        id="getting-started"
-        className="pg-steps-section"
-        style={{
-          backgroundColor: '#083A85',
-          position: 'relative',
-          padding: '100px 20px 80px',
-          overflow: 'hidden',
-        }}
-      >
-        {/* Kite Grid Pattern Background */}
-        <div
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundImage: `
-              linear-gradient(45deg, rgba(255, 255, 255, 0.1) 2px, transparent 2px),
-              linear-gradient(-45deg, rgba(255, 255, 255, 0.1) 2px, transparent 2px)
-            `,
-            backgroundSize: '10px 10px',
-            backgroundPosition: '0 0, 30px 30px',
-            zIndex: 1,
-            maskImage: 'linear-gradient(to bottom, black 0%, black 65%, transparent 85%)',
-            WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 65%, transparent 85%)',
-          }}
-        />
-
-        {/* Subtle gradient overlay */}
-        <div
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'radial-gradient(ellipse at center, transparent 0%, rgba(6, 53, 114, 0.3) 100%)',
-            zIndex: 2,
-          }}
-        />
-        <div
-          className="pg-steps-container"
-          style={{
-            maxWidth: '1200px',
-            margin: '0 auto',
-            position: 'relative',
-            zIndex: 10,
-          }}
-        >
-          <div className="pg-steps-header" style={{ textAlign: 'center', marginBottom: '60px' }}>
-            <h1
-              className="pg-steps-title"
-              style={{
-                fontSize: '60px',
-                fontWeight: 700,
-                marginBottom: '24px',
-                lineHeight: '1.15',
-                letterSpacing: '-0.02em',
-                color: '#ffffff',
-                fontFamily: "'Pragati Narrow', sans-serif",
-              }}
-            >
-              Your Complete Guide to{' '}
-              <span
-                style={{
-                  color: 'rgba(255,255,255,0.85)',
-                }}
-              >
-                Photographer Success
-              </span>
-            </h1>
-            <p
-              className="pg-steps-subtitle"
-              style={{
-                fontSize: '18px',
-                fontWeight: 400,
-                lineHeight: '1.7',
-                color: 'rgba(255, 255, 255, 0.75)',
-                maxWidth: '700px',
-                margin: '0 auto 32px',
-              }}
-            >
-              Follow these simple steps to create your photographer account and start connecting with clients on Amoria Connekyt.
-            </p>
-          </div>
-
-          {/* Step 1: Create Account */}
-          <div
-            className="guide-card pg-step-card"
-            style={{
-              backgroundColor: 'rgba(255, 255, 255, 0.95)',
-              borderRadius: '20px',
-              padding: '0',
-              marginBottom: '30px',
-              display: 'flex',
-              gap: '20px',
-              alignItems: 'stretch',
-              boxShadow: '0 10px 40px rgba(0, 0, 0, 0.2)',
-              overflow: 'hidden',
-              minHeight: '450px',
-            }}
-          >
-            <div style={{ flex: '1', padding: '30px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-              <div
-                style={{
-                  display: 'flex',
-                  backgroundColor: '#083A85',
-                  color: '#fff',
-                  width: '50px',
-                  height: '50px',
-                  borderRadius: '50%',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '24px',
-                  fontWeight: 700,
-                  marginBottom: '20px',
-                }}
-              >
-                1
-              </div>
-              <h3
-                style={{
-                  fontSize: '28px',
-                  fontWeight: 700,
-                  color: '#083A85',
-                  marginBottom: '15px',
-                }}
-              >
-                Create Your Account
-              </h3>
-              <p
-                style={{
-                  fontSize: '16px',
-                  color: '#6b7280',
-                  lineHeight: 1.7,
-                  marginBottom: '15px',
-                }}
-              >
-                Sign up with your email or use Google authentication for quick access. Fill in your basic information including first name, last name, and email address to get started.
-              </p>
-              <ul
-                style={{
-                  listStyle: 'none',
-                  padding: 0,
-                  margin: 0,
-                }}
-              >
-                <li style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#083A85" strokeWidth="2">
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                  <span style={{ color: '#374151', fontSize: '15px' }}>Quick signup with Google</span>
-                </li>
-                <li style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#083A85" strokeWidth="2">
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                  <span style={{ color: '#374151', fontSize: '15px' }}>Or create account with email</span>
-                </li>
-              </ul>
-            </div>
-            <div
-              style={{
-                flex: '1',
-                backgroundColor: 'rgba(8,58,133,0.05)',
-                padding: '20px 10px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <img
-                src="/land2.png"
-                alt="Create your account"
-                style={{
-                  width: '100%',
-                  height: 'auto',
-                  objectFit: 'contain',
-                  borderRadius: '12px',
-                  boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
-                }}
-              />
-            </div>
-          </div>
-
-          {/* Step 2: Choose Photographer Type */}
-          <div
-            className="guide-card pg-step-card pg-step-card-reverse"
-            style={{
-              backgroundColor: 'rgba(255, 255, 255, 0.95)',
-              borderRadius: '20px',
-              padding: '0',
-              marginBottom: '30px',
-              display: 'flex',
-              gap: '20px',
-              alignItems: 'stretch',
-              flexDirection: 'row-reverse',
-              boxShadow: '0 10px 40px rgba(0, 0, 0, 0.2)',
-              overflow: 'hidden',
-              minHeight: '450px',
-            }}
-          >
-            <div style={{ flex: '1', padding: '30px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-              <div
-                style={{
-                  display: 'inline-flex',
-                  backgroundColor: '#0a4da3',
-                  color: '#fff',
-                  width: '50px',
-                  height: '50px',
-                  borderRadius: '50%',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '24px',
-                  fontWeight: 700,
-                  marginBottom: '20px',
-                }}
-              >
-                2
-              </div>
-              <h3
-                style={{
-                  fontSize: '28px',
-                  fontWeight: 700,
-                  color: '#083A85',
-                  marginBottom: '15px',
-                }}
-              >
-                Choose Your Photographer Type
-              </h3>
-              <p
-                style={{
-                  fontSize: '16px',
-                  color: '#6b7280',
-                  lineHeight: 1.7,
-                  marginBottom: '15px',
-                }}
-              >
-                Select whether you're a hired photographer working with clients through the platform, or a freelancer/self-employed photographer showcasing your portfolio and connecting with potential clients.
-              </p>
-              <ul
-                style={{
-                  listStyle: 'none',
-                  padding: 0,
-                  margin: 0,
-                }}
-              >
-                <li style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#083A85" strokeWidth="2">
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                  <span style={{ color: '#374151', fontSize: '15px' }}>Hired Photographer - Work directly with clients</span>
-                </li>
-                <li style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#083A85" strokeWidth="2">
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                  <span style={{ color: '#374151', fontSize: '15px' }}>Freelancer - Build your brand and portfolio</span>
-                </li>
-              </ul>
-            </div>
-            <div
-              style={{
-                flex: '1',
-                backgroundColor: 'rgba(8,58,133,0.05)',
-                padding: '20px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <img
-                src="/land1.png"
-                alt="Choose photographer type"
-                style={{
-                  width: '100%',
-                  height: 'auto',
-                  objectFit: 'contain',
-                  borderRadius: '12px',
-                  boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
-                }}
-              />
-            </div>
-          </div>
-
-          {/* Step 3: Login */}
-          <div
-            className="guide-card pg-step-card"
-            style={{
-              backgroundColor: 'rgba(255, 255, 255, 0.95)',
-              borderRadius: '20px',
-              padding: '0',
-              marginBottom: '30px',
-              display: 'flex',
-              gap: '20px',
-              alignItems: 'stretch',
-              boxShadow: '0 10px 40px rgba(0, 0, 0, 0.2)',
-              overflow: 'hidden',
-              minHeight: '450px',
-            }}
-          >
-            <div style={{ flex: '1', padding: '30px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-              <div
-                style={{
-                  display: 'inline-flex',
-                  backgroundColor: '#062d6b',
-                  color: '#fff',
-                  width: '50px',
-                  height: '50px',
-                  borderRadius: '50%',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '24px',
-                  fontWeight: 700,
-                  marginBottom: '20px',
-                }}
-              >
-                3
-              </div>
-              <h3
-                style={{
-                  fontSize: '28px',
-                  fontWeight: 700,
-                  color: '#083A85',
-                  marginBottom: '15px',
-                }}
-              >
-                Login to Your Dashboard
-              </h3>
-              <p
-                style={{
-                  fontSize: '16px',
-                  color: '#6b7280',
-                  lineHeight: 1.7,
-                  marginBottom: '15px',
-                }}
-              >
-                After selecting your photographer type, log in to access your personalized dashboard. Use your email and password, or continue with Google for seamless access.
-              </p>
-              <ul
-                style={{
-                  listStyle: 'none',
-                  padding: 0,
-                  margin: 0,
-                }}
-              >
-                <li style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#083A85" strokeWidth="2">
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                  <span style={{ color: '#374151', fontSize: '15px' }}>Secure login with password</span>
-                </li>
-                <li style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#083A85" strokeWidth="2">
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                  <span style={{ color: '#374151', fontSize: '15px' }}>Password recovery available</span>
-                </li>
-              </ul>
-            </div>
-            <div
-              style={{
-                flex: '1',
-                backgroundColor: 'rgba(8,58,133,0.05)',
-                padding: '20px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <img
-                src="/land3.png"
-                alt="Login to your dashboard"
-                style={{
-                  width: '100%',
-                  height: 'auto',
-                  objectFit: 'contain',
-                  borderRadius: '12px',
-                  boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
-                }}
-              />
-            </div>
-          </div>
+        {/* Content */}
+        <div style={{ position: "relative", zIndex: 4, maxWidth: "700px", margin: "0 auto", padding: "0 1.5rem 0" }}>
+          <p style={{ fontSize: "0.7rem", fontWeight: 700, letterSpacing: "4px", textTransform: "uppercase", color: "rgba(255,255,255,0.3)", marginBottom: "10px" }}>Amoria Connekyt</p>
+          <h1 style={{ fontSize: "clamp(1.8rem, 5vw, 2.8rem)", fontWeight: 800, color: "#fff", margin: "0 0 12px", fontFamily: "'Pragati Narrow', sans-serif", letterSpacing: "-0.02em", lineHeight: 1.15 }}>
+            Turn Your Passion Into Income
+          </h1>
+          <p style={{ fontSize: "clamp(14px, 1.3vw, 16px)", color: "rgba(255,255,255,0.45)", margin: "0 0 24px", lineHeight: 1.6, maxWidth: "500px", marginLeft: "auto", marginRight: "auto" }}>
+            Set up your profile, showcase your work, and start earning — all in 6 simple steps.
+          </p>
         </div>
-      </section>
 
-      {/* Dashboard Features Section */}
-      <section
-        style={{
-          padding: '80px 20px',
-          background: 'linear-gradient(180deg, #fff 0%, #f0f4f8 100%)',
-        }}
-      >
-        <div
-          style={{
-            maxWidth: '1200px',
-            margin: '0 auto',
-          }}
-        >
-          <div style={{ textAlign: 'center', marginBottom: '60px' }}>
-            <h2
-              className="section-title"
-              style={{
-                fontSize: '50px',
-                fontWeight: 700,
-                marginBottom: '18px',
-                lineHeight: 1.1,
-              }}
-            >
-              <span style={{ color: '#000' }}>Explore Your</span>{' '}
-              <span
-                style={{
-                  background: '#083A85',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  backgroundClip: 'text',
-                }}
+      </div>
+
+      {/* ===== TIMELINE ===== */}
+      <div id="timeline" style={{ maxWidth: "900px", margin: "0 auto", padding: "clamp(0.5rem, 1.5vw, 1rem) 1.5rem clamp(2rem, 4vw, 3rem)" }}>
+        <div style={{ textAlign: "center", marginBottom: "clamp(1.5rem, 3vw, 2rem)" }}>
+          <p style={{ fontSize: "0.75rem", fontWeight: 700, letterSpacing: "3px", textTransform: "uppercase", color: "#083A85", marginBottom: "6px" }}>How It Works</p>
+          <h2 style={{ fontSize: "clamp(1.5rem, 3.5vw, 2.2rem)", fontWeight: 800, color: "#0f172a", margin: 0, fontFamily: "'Pragati Narrow', sans-serif" }}>
+            6 Simple Steps to Get Started
+          </h2>
+        </div>
+
+        {/* Timeline */}
+        <div style={{ position: "relative" }}>
+          {/* Vertical line */}
+          <div style={{ position: "absolute", left: "50%", top: 0, bottom: 0, width: "2px", background: "linear-gradient(180deg, #083A85, rgba(8,58,133,0.1))", transform: "translateX(-50%)", display: "var(--timeline-line, block)" }} className="pg-timeline-center" />
+
+          {steps.map((step, i) => {
+            const isLeft = i % 2 === 0;
+            const isVisible = visibleSteps.has(i);
+
+            return (
+              <div
+                key={step.num}
+                ref={(el) => { stepRefs.current[i] = el; }}
+                className="pg-timeline-row"
+                style={{ display: "flex", alignItems: "center", marginBottom: i < steps.length - 1 ? "2.5rem" : 0, position: "relative" }}
               >
-                Dashboard Features
-              </span>
+                {/* Left side */}
+                <div className="pg-timeline-left" style={{ width: "47%", textAlign: isLeft ? "right" : "left" }}>
+                  {isLeft && (
+                    <div className={`pg-step-card ${isVisible ? "visible" : ""}`} style={{ display: "inline-block", textAlign: "left", background: "#fff", borderRadius: "16px", padding: "clamp(1.25rem, 2.5vw, 1.75rem)", boxShadow: "0 4px 20px rgba(8,58,133,0.06)", border: "1px solid rgba(8,58,133,0.06)", maxWidth: "380px", width: "100%", transition: "opacity 0.7s ease, transform 0.7s ease", transitionDelay: `${i * 0.1}s` }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "10px" }}>
+                        <div style={{ width: 40, height: 40, borderRadius: "12px", background: step.color, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          <i className={`bi ${step.icon}`} style={{ fontSize: "1.1rem", color: "#fff" }}></i>
+                        </div>
+                        <h3 style={{ fontSize: "1.05rem", fontWeight: 700, color: "#0f172a", margin: 0, fontFamily: "'Pragati Narrow', sans-serif" }}>{step.title}</h3>
+                      </div>
+                      <p style={{ fontSize: "0.85rem", color: "#64748b", lineHeight: 1.6, margin: 0 }}>{step.desc}</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Center — step number */}
+                <div className="pg-timeline-center" style={{ width: "6%", display: "flex", justifyContent: "center", position: "relative", zIndex: 2 }}>
+                  <div style={{ width: 36, height: 36, borderRadius: "50%", background: isVisible ? step.color : "#e2e8f0", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, fontSize: "0.85rem", fontFamily: "'Pragati Narrow', sans-serif", transition: "background 0.5s ease", boxShadow: isVisible ? `0 4px 12px ${step.color}40` : "none" }}>
+                    {step.num}
+                  </div>
+                </div>
+
+                {/* Right side */}
+                <div className="pg-timeline-right" style={{ width: "47%", textAlign: isLeft ? "left" : "right" }}>
+                  {!isLeft && (
+                    <div className={`pg-step-card right ${isVisible ? "visible" : ""}`} style={{ display: "inline-block", textAlign: "left", background: "#fff", borderRadius: "16px", padding: "clamp(1.25rem, 2.5vw, 1.75rem)", boxShadow: "0 4px 20px rgba(8,58,133,0.06)", border: "1px solid rgba(8,58,133,0.06)", maxWidth: "380px", width: "100%", transition: "opacity 0.7s ease, transform 0.7s ease", transitionDelay: `${i * 0.1}s` }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "10px" }}>
+                        <div style={{ width: 40, height: 40, borderRadius: "12px", background: step.color, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          <i className={`bi ${step.icon}`} style={{ fontSize: "1.1rem", color: "#fff" }}></i>
+                        </div>
+                        <h3 style={{ fontSize: "1.05rem", fontWeight: 700, color: "#0f172a", margin: 0, fontFamily: "'Pragati Narrow', sans-serif" }}>{step.title}</h3>
+                      </div>
+                      <p style={{ fontSize: "0.85rem", color: "#64748b", lineHeight: 1.6, margin: 0 }}>{step.desc}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ===== DASHBOARD FEATURES ===== */}
+      <div style={{ background: "linear-gradient(180deg, #f0f4fa 0%, #f8fafc 100%)", padding: "clamp(3rem, 6vw, 5rem) 1.5rem" }}>
+        <div style={{ maxWidth: "900px", margin: "0 auto" }}>
+          <div style={{ textAlign: "center", marginBottom: "clamp(2rem, 4vw, 3rem)" }}>
+            <p style={{ fontSize: "0.75rem", fontWeight: 700, letterSpacing: "3px", textTransform: "uppercase", color: "#083A85", marginBottom: "6px" }}>Your Dashboard</p>
+            <h2 style={{ fontSize: "clamp(1.5rem, 3.5vw, 2.2rem)", fontWeight: 800, color: "#0f172a", margin: 0, fontFamily: "'Pragati Narrow', sans-serif" }}>
+              Everything You Need to Succeed
             </h2>
-            <p
-              style={{
-                fontSize: '18px',
-                color: '#6b7280',
-                maxWidth: '650px',
-                margin: '0 auto',
-                lineHeight: 1.7,
-              }}
-            >
-              Your photographer dashboard is packed with powerful tools to help you manage your business efficiently.
-            </p>
           </div>
 
-          <div
-            className="grid-container"
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(2, 1fr)',
-              gap: '30px',
-            }}
-          >
-            {/* Dashboard Home */}
-            <div
-              className="guide-card"
-              style={{
-                backgroundColor: '#fff',
-                borderRadius: '20px',
-                padding: '0',
-                boxShadow: '0 8px 30px rgba(0, 0, 0, 0.12)',
-                overflow: 'hidden',
-              }}
-            >
-              <div
-                style={{
-                  backgroundColor: '#f8f9fa',
-                  padding: '20px',
-                  borderBottom: '1px solid #e9ecef',
-                }}
-              >
-                <img
-                  src="/dash1.png"
-                  alt="Dashboard Overview"
-                  style={{
-                    width: '100%',
-                    borderRadius: '12px',
-                    boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)',
-                  }}
-                />
+          <div className="pg-features-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1.25rem" }}>
+            {features.map((f) => (
+              <div key={f.title} className="pg-feature" style={{ background: "#fff", borderRadius: "14px", padding: "1.5rem", boxShadow: "0 2px 12px rgba(8,58,133,0.05)", border: "1px solid rgba(8,58,133,0.05)", transition: "all 0.3s ease", cursor: "default" }}>
+                <div style={{ width: 42, height: 42, borderRadius: "12px", background: "rgba(8,58,133,0.08)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "12px" }}>
+                  <i className={`bi ${f.icon}`} style={{ fontSize: "1.1rem", color: "#083A85" }}></i>
+                </div>
+                <h3 style={{ fontSize: "0.95rem", fontWeight: 700, color: "#0f172a", margin: "0 0 6px", fontFamily: "'Pragati Narrow', sans-serif" }}>{f.title}</h3>
+                <p style={{ fontSize: "0.82rem", color: "#64748b", lineHeight: 1.5, margin: 0 }}>{f.desc}</p>
               </div>
-              <div style={{ padding: '30px' }}>
-                <h3
-                  style={{
-                    fontSize: '24px',
-                    fontWeight: 700,
-                    color: '#083A85',
-                    marginBottom: '12px',
-                  }}
-                >
-                  Dashboard Overview
-                </h3>
-                <p
-                  style={{
-                    fontSize: '15px',
-                    color: '#6b7280',
-                    lineHeight: 1.7,
-                  }}
-                >
-                  Track your earnings, clients, accuracy ratings, and bonuses at a glance. View performance charts and recent activities to stay on top of your photography business.
-                </p>
-              </div>
-            </div>
-
-            {/* Transactions & Withdrawals */}
-            <div
-              className="guide-card"
-              style={{
-                backgroundColor: '#fff',
-                borderRadius: '20px',
-                padding: '0',
-                boxShadow: '0 8px 30px rgba(0, 0, 0, 0.12)',
-                overflow: 'hidden',
-              }}
-            >
-              <div
-                style={{
-                  backgroundColor: '#f8f9fa',
-                  padding: '20px',
-                  borderBottom: '1px solid #e9ecef',
-                }}
-              >
-                <img
-                  src="/dash2.png"
-                  alt="Withdraw Funds"
-                  style={{
-                    width: '100%',
-                    borderRadius: '12px',
-                    boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)',
-                  }}
-                />
-              </div>
-              <div style={{ padding: '30px' }}>
-                <h3
-                  style={{
-                    fontSize: '24px',
-                    fontWeight: 700,
-                    color: '#083A85',
-                    marginBottom: '12px',
-                  }}
-                >
-                  Manage Earnings & Withdrawals
-                </h3>
-                <p
-                  style={{
-                    fontSize: '15px',
-                    color: '#6b7280',
-                    lineHeight: 1.7,
-                  }}
-                >
-                  Easily withdraw your earnings to MTN Mobile Money or other payment methods. Track your transactions, view tips from clients, and manage your available balance.
-                </p>
-              </div>
-            </div>
-
-            {/* Gallery Management */}
-            <div
-              className="guide-card"
-              style={{
-                backgroundColor: '#fff',
-                borderRadius: '20px',
-                padding: '0',
-                boxShadow: '0 8px 30px rgba(0, 0, 0, 0.12)',
-                overflow: 'hidden',
-              }}
-            >
-              <div
-                style={{
-                  backgroundColor: '#f8f9fa',
-                  padding: '20px',
-                  borderBottom: '1px solid #e9ecef',
-                }}
-              >
-                <img
-                  src="/dash3.png"
-                  alt="Gallery Management"
-                  style={{
-                    width: '100%',
-                    borderRadius: '12px',
-                    boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)',
-                  }}
-                />
-              </div>
-              <div style={{ padding: '30px' }}>
-                <h3
-                  style={{
-                    fontSize: '24px',
-                    fontWeight: 700,
-                    color: '#083A85',
-                    marginBottom: '12px',
-                  }}
-                >
-                  Portfolio & Gallery
-                </h3>
-                <p
-                  style={{
-                    fontSize: '15px',
-                    color: '#6b7280',
-                    lineHeight: 1.7,
-                  }}
-                >
-                  Create beautiful albums, upload your best work, and organize photos by category and client. Showcase your photography portfolio to attract more clients.
-                </p>
-              </div>
-            </div>
-
-            {/* Photo Selection */}
-            <div
-              className="guide-card"
-              style={{
-                backgroundColor: '#fff',
-                borderRadius: '20px',
-                padding: '0',
-                boxShadow: '0 8px 30px rgba(0, 0, 0, 0.12)',
-                overflow: 'hidden',
-              }}
-            >
-              <div
-                style={{
-                  backgroundColor: '#f8f9fa',
-                  padding: '20px',
-                  borderBottom: '1px solid #e9ecef',
-                }}
-              >
-                <img
-                  src="/dash4.png"
-                  alt="Photo Selection Mode"
-                  style={{
-                    width: '100%',
-                    borderRadius: '12px',
-                    boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)',
-                  }}
-                />
-              </div>
-              <div style={{ padding: '30px' }}>
-                <h3
-                  style={{
-                    fontSize: '24px',
-                    fontWeight: 700,
-                    color: '#083A85',
-                    marginBottom: '12px',
-                  }}
-                >
-                  Photo Selection & Delivery
-                </h3>
-                <p
-                  style={{
-                    fontSize: '15px',
-                    color: '#6b7280',
-                    lineHeight: 1.7,
-                  }}
-                >
-                  Share selected photos with clients for review and approval. Use selection mode to help clients choose their favorite shots from your product photography sessions.
-                </p>
-              </div>
-            </div>
-
-            {/* Client Communication */}
-            <div
-              className="guide-card"
-              style={{
-                backgroundColor: '#fff',
-                borderRadius: '20px',
-                padding: '0',
-                boxShadow: '0 8px 30px rgba(0, 0, 0, 0.12)',
-                overflow: 'hidden',
-              }}
-            >
-              <div
-                style={{
-                  backgroundColor: '#f8f9fa',
-                  padding: '20px',
-                  borderBottom: '1px solid #e9ecef',
-                }}
-              >
-                <img
-                  src="/dash5.png"
-                  alt="Client Messages"
-                  style={{
-                    width: '100%',
-                    borderRadius: '12px',
-                    boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)',
-                  }}
-                />
-              </div>
-              <div style={{ padding: '30px' }}>
-                <h3
-                  style={{
-                    fontSize: '24px',
-                    fontWeight: 700,
-                    color: '#083A85',
-                    marginBottom: '12px',
-                  }}
-                >
-                  Client Communication
-                </h3>
-                <p
-                  style={{
-                    fontSize: '15px',
-                    color: '#6b7280',
-                    lineHeight: 1.7,
-                  }}
-                >
-                  Stay connected with your clients through built-in messaging. Discuss wedding packages, schedule portrait sessions, and receive booking confirmations all in one place.
-                </p>
-              </div>
-            </div>
-
-            {/* Tips & Reviews */}
-            <div
-              className="guide-card"
-              style={{
-                backgroundColor: '#fff',
-                borderRadius: '20px',
-                padding: '0',
-                boxShadow: '0 8px 30px rgba(0, 0, 0, 0.12)',
-                overflow: 'hidden',
-              }}
-            >
-              <div
-                style={{
-                  backgroundColor: '#f8f9fa',
-                  padding: '20px',
-                  borderBottom: '1px solid #e9ecef',
-                }}
-              >
-                <img
-                  src="/dash6.png"
-                  alt="Tips and Reviews"
-                  style={{
-                    width: '100%',
-                    borderRadius: '12px',
-                    boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)',
-                  }}
-                />
-              </div>
-              <div style={{ padding: '30px' }}>
-                <h3
-                  style={{
-                    fontSize: '24px',
-                    fontWeight: 700,
-                    color: '#083A85',
-                    marginBottom: '12px',
-                  }}
-                >
-                  Receive Tips & Reviews
-                </h3>
-                <p
-                  style={{
-                    fontSize: '15px',
-                    color: '#6b7280',
-                    lineHeight: 1.7,
-                  }}
-                >
-                  Build your reputation with client reviews and receive tips for exceptional work. Your ratings help you attract more clients and grow your photography business.
-                </p>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
-      </section>
-
-      {/* Call to Action with Tech Image */}
-      <section
-        style={{
-          padding: '16px',
-          backgroundColor: '#ffffff',
-        }}
-      >
-        <div
-          style={{
-            position: 'relative',
-            width: '100%',
-            minHeight: '650px',
-            overflow: 'hidden',
-            borderRadius: '24px',
-          }}
-        >
-          {/* Background Image */}
-          <div
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundImage: 'url(/camm.png)',
-              backgroundSize: 'cover',
-              backgroundPosition: 'center center',
-              backgroundRepeat: 'no-repeat',
-              borderRadius: '24px',
-            }}
-          />
-
-          {/* Content Overlay */}
-          <div
-            style={{
-              position: 'relative',
-              zIndex: 10,
-              maxWidth: '1200px',
-              margin: '0 auto',
-              padding: '80px 60px',
-              display: 'flex',
-              alignItems: 'center',
-              minHeight: '650px',
-            }}
-          >
-            {/* Left Side Content */}
-            <div
-              style={{
-                maxWidth: '550px',
-              }}
-            >
-              <h2
-                style={{
-                  fontSize: '60px',
-                  fontWeight: 700,
-                  marginBottom: '20px',
-                  lineHeight: '1.0',
-                  letterSpacing: '-0.02em',
-                  color: '#ffffff',
-                  fontFamily: "'Pragati Narrow', sans-serif",
-                }}
-              >
-                Ready to Elevate Your Photography Career?
-              </h2>
-
-              <p
-                style={{
-                  fontSize: '18px',
-                  fontWeight: 400,
-                  lineHeight: '1.7',
-                  color: 'rgba(255, 255, 255, 0.85)',
-                  marginBottom: '32px',
-                }}
-              >
-                Join thousands of photographers who trust Amoria Connekyt to manage their bookings, showcase their work, and grow their business. Start your journey today.
-              </p>
-
-              <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
-                <a
-                  href="/user/auth/signup?userType=Photographer"
-                  style={{
-                    display: 'inline-block',
-                    background: '#fff',
-                    color: '#083A85',
-                    fontSize: '16px',
-                    fontWeight: 600,
-                    padding: '14px 32px',
-                    border: 'none',
-                    borderRadius: '40px',
-                    cursor: 'pointer',
-                    textDecoration: 'none',
-                    transition: 'all 0.3s ease',
-                    boxShadow: '0 4px 20px rgba(255, 255, 255, 0.3)',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-3px)';
-                    e.currentTarget.style.boxShadow = '0 8px 30px rgba(255, 255, 255, 0.4)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 4px 20px rgba(255, 255, 255, 0.3)';
-                  }}
-                >
-                  Get Started Now
-                </a>
-                <a
-                  href="/user/contact_us"
-                  style={{
-                    display: 'inline-block',
-                    background: 'transparent',
-                    color: '#fff',
-                    fontSize: '16px',
-                    fontWeight: 600,
-                    padding: '14px 32px',
-                    border: '2px solid rgba(255,255,255,0.4)',
-                    borderRadius: '40px',
-                    cursor: 'pointer',
-                    textDecoration: 'none',
-                    transition: 'all 0.3s ease',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-3px)';
-                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                  }}
-                >
-                  Contact Support
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      </div>
 
       <Footer />
     </div>

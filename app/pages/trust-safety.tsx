@@ -1,16 +1,61 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Navbar from '../components/navbar';
 import Footer from '../components/footer';
 
 const TrustSafetyPage = () => {
-  const [selectedSection, setSelectedSection] = useState('privacy-policy');
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const sectionRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
-  const contentRef = useRef<HTMLDivElement>(null);
+  const [scrollY, setScrollY] = useState(0);
+  const [mousePos, setMousePos] = useState({ x: 0.5, y: 0.5 });
+  const containerRef = useRef<HTMLDivElement>(null);
+  const sectionRefs = useRef<(HTMLDivElement | null)[]>([]);
 
-  
+  // Scroll tracking
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    let rafId: number;
+    const handleScroll = () => {
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => setScrollY(container.scrollTop));
+    };
+    container.addEventListener('scroll', handleScroll, { passive: true });
+    return () => { container.removeEventListener('scroll', handleScroll); cancelAnimationFrame(rafId); };
+  }, []);
+
+  // Mouse tracking
+  useEffect(() => {
+    const handleMove = (e: MouseEvent) => {
+      setMousePos({ x: e.clientX / window.innerWidth, y: e.clientY / window.innerHeight });
+    };
+    window.addEventListener('mousemove', handleMove, { passive: true });
+    return () => window.removeEventListener('mousemove', handleMove);
+  }, []);
+
+  const getSectionOffset = (index: number) => {
+    const ref = sectionRefs.current[index];
+    if (!ref || !containerRef.current) return 0;
+    return scrollY - ref.offsetTop;
+  };
+
+  const getSectionVisibility = (index: number) => {
+    const ref = sectionRefs.current[index];
+    if (!ref || !containerRef.current) return 0;
+    const vh = window.innerHeight;
+    const progress = (scrollY + vh - ref.offsetTop) / (vh * 1.4);
+    return Math.max(0, Math.min(1, progress));
+  };
+
+  const getTiltStyle = (index: number) => {
+    const vis = getSectionVisibility(index);
+    if (vis < 0.4 || vis > 1.2) return {};
+    const tiltX = (mousePos.y - 0.5) * -8;
+    const tiltY = (mousePos.x - 0.5) * 8;
+    return {
+      transform: `perspective(1000px) rotateX(${tiltX}deg) rotateY(${tiltY}deg)`,
+    };
+  };
+
   const sections = [
     // Privacy Policy Sections
     {
@@ -2081,437 +2126,226 @@ Trust and safety work is never finished. As long as Amoria Connekyt serves users
     }
   ];
 
-  const currentSection = sections.find(section => section.id === selectedSection) || sections[0];
 
-  // Auto-scroll selected section into view (desktop) and scroll content to top (mobile)
-  useEffect(() => {
-    if (selectedSection && sectionRefs.current[selectedSection]) {
-      sectionRefs.current[selectedSection]?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'nearest',
-      });
-    }
-    // Scroll content to top on section change
-    if (contentRef.current) {
-      contentRef.current.scrollTop = 0;
-    }
-  }, [selectedSection]);
+  // Palettes cycle — every 4th section gets the dark theme
+  const palettes = [
+    { bg: 'linear-gradient(180deg, #ffffff 0%, #f0f4fa 100%)' },
+    { bg: 'linear-gradient(180deg, #f0f4fa 0%, #e8edf6 100%)' },
+    { bg: 'linear-gradient(180deg, #083A85 0%, #052047 100%)' },
+    { bg: 'linear-gradient(180deg, #f8fafc 0%, #f0f4fa 100%)' },
+  ];
 
   return (
     <>
-    <div style={{ width: '100%', minHeight: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-      <style>
-        {`
-          .left-nav-scrollbar::-webkit-scrollbar {
-            width: 12px;
-          }
-          .left-nav-scrollbar::-webkit-scrollbar-track {
-            background: #062d6b;
-          }
-          .left-nav-scrollbar::-webkit-scrollbar-thumb {
-            background: rgba(255,255,255,0.3);
-            border-radius: 6px;
-          }
-          .left-nav-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: rgba(255,255,255,0.5);
-          }
-          .left-nav-scrollbar {
-            scrollbar-width: thin;
-            scrollbar-color: rgba(255,255,255,0.3) #062d6b;
-            scroll-behavior: smooth;
-          }
+      <style>{`
+        .ts-plx { height: 100vh; overflow-y: auto; overflow-x: hidden; scroll-behavior: smooth; scrollbar-width: thin; scrollbar-color: rgba(8,58,133,0.2) transparent; }
+        .ts-plx::-webkit-scrollbar { width: 6px; }
+        .ts-plx::-webkit-scrollbar-track { background: transparent; }
+        .ts-plx::-webkit-scrollbar-thumb { background: rgba(8,58,133,0.2); border-radius: 3px; }
 
-          /* Mobile Menu Toggle Button */
-          .mobile-menu-toggle {
-            display: none;
-            position: fixed;
-            top: 80px;
-            left: 1rem;
-            z-index: 1000;
-            background-color: #083A85;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            padding: 0.75rem;
-            cursor: pointer;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-            transition: background-color 0.2s ease;
-          }
+        .ts-plx-hero { position: relative; height: 100vh; display: flex; align-items: center; justify-content: center; text-align: center; background: linear-gradient(160deg, #052047 0%, #083A85 40%, #0a4da3 70%, #103E83 100%); color: #fff; overflow: hidden; }
+        .ts-plx-hero-dots { position: absolute; inset: -120px; background-image: radial-gradient(rgba(255,255,255,0.05) 1.5px, transparent 1.5px); background-size: 32px 32px; will-change: transform; }
+        .ts-plx-hero-glow { position: absolute; inset: -150px; background: radial-gradient(ellipse at 20% 15%, rgba(100,180,255,0.08) 0%, transparent 50%), radial-gradient(ellipse at 80% 85%, rgba(100,140,255,0.06) 0%, transparent 50%); will-change: transform; }
+        .ts-plx-hero-ring { position: absolute; width: clamp(450px, 55vw, 800px); height: clamp(450px, 55vw, 800px); border-radius: 50%; border: 1.5px solid rgba(255,255,255,0.04); top: 50%; left: 50%; will-change: transform; }
+        .ts-plx-hero-ring2 { position: absolute; width: clamp(250px, 30vw, 450px); height: clamp(250px, 30vw, 450px); border-radius: 50%; border: 1px solid rgba(255,255,255,0.03); top: 50%; left: 50%; will-change: transform; }
+        .ts-plx-hero-content { position: relative; z-index: 3; will-change: transform, opacity; }
 
-          .mobile-menu-toggle:hover {
-            background-color: #062d6b;
-          }
+        .ts-plx-section { position: relative; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: clamp(60px, 8vh, 100px) clamp(16px, 4vw, 48px); overflow: hidden; }
+        .ts-plx-bg-num { position: absolute; font-size: clamp(300px, 38vw, 550px); font-weight: 900; font-family: 'Pragati Narrow', sans-serif; line-height: 0.85; pointer-events: none; user-select: none; will-change: transform; z-index: 0; }
+        .ts-plx-bg-num.left { left: clamp(-50px, -4vw, -100px); top: 50%; }
+        .ts-plx-bg-num.right { right: clamp(-50px, -4vw, -100px); top: 50%; }
 
-          .mobile-menu-toggle:active {
-            transform: scale(0.95);
-          }
+        .ts-plx-orb { position: absolute; border-radius: 50%; filter: blur(60px); pointer-events: none; will-change: transform; z-index: 0; }
+        .ts-plx-accent-line { position: absolute; width: clamp(100px, 14vw, 200px); height: 3px; border-radius: 2px; will-change: transform; z-index: 1; }
+        .ts-plx-floating-label { position: absolute; font-size: clamp(12px, 1.1vw, 14px); font-weight: 700; letter-spacing: 4px; text-transform: uppercase; will-change: transform, opacity; z-index: 1; pointer-events: none; }
 
-          /* Hamburger Icon */
-          .hamburger {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            width: 24px;
-          }
+        .ts-plx-cross { position: absolute; width: 24px; height: 24px; will-change: transform; z-index: 1; pointer-events: none; opacity: 0.08; }
 
-          .hamburger span {
-            display: block;
-            width: 100%;
-            height: 3px;
-            background-color: white;
-            border-radius: 2px;
-            transition: all 0.3s ease;
-          }
+        .ts-plx-card { position: relative; max-width: 780px; width: 100%; padding: clamp(32px, 4.5vw, 56px); border-radius: 24px; will-change: transform, opacity; z-index: 2; transition: box-shadow 0.4s ease, transform 0.15s ease; }
+        .ts-plx-card:hover { box-shadow: 0 24px 70px rgba(8,58,133,0.18), 0 8px 20px rgba(0,0,0,0.06) !important; }
 
-          .hamburger.active span:nth-child(1) {
-            transform: rotate(45deg) translate(7px, 7px);
-          }
+        .ts-plx-card-badge { display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 14px; font-size: 18px; font-weight: 800; font-family: 'Pragati Narrow', sans-serif; margin-bottom: 16px; opacity: 0; transform: translateY(20px); transition: opacity 0.5s ease 0.1s, transform 0.5s ease 0.1s; }
+        .ts-plx-card.revealed .ts-plx-card-badge { opacity: 1; transform: translateY(0); }
 
-          .hamburger.active span:nth-child(2) {
-            opacity: 0;
-          }
+        .ts-plx-card-label { font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px; opacity: 0; transform: translateY(16px); transition: opacity 0.5s ease 0.2s, transform 0.5s ease 0.2s; }
+        .ts-plx-card.revealed .ts-plx-card-label { opacity: 1; transform: translateY(0); }
 
-          .hamburger.active span:nth-child(3) {
-            transform: rotate(-45deg) translate(7px, -7px);
-          }
+        .ts-plx-card-title { font-size: clamp(1.6rem, 3.5vw, 2.2rem); font-weight: 700; font-family: 'Pragati Narrow', sans-serif; margin: 0 0 16px; line-height: 1.2; opacity: 0; transform: translateY(20px); transition: opacity 0.6s ease 0.25s, transform 0.6s ease 0.25s; }
+        .ts-plx-card.revealed .ts-plx-card-title { opacity: 1; transform: translateY(0); }
 
-          /* Mobile Responsive Styles */
-          @media (max-width: 768px) {
-            * {
-              -webkit-tap-highlight-color: transparent;
-              -webkit-touch-callout: none;
-            }
+        .ts-plx-card-divider { width: 60px; height: 3px; border-radius: 2px; margin-bottom: 24px; opacity: 0; transform: scaleX(0); transform-origin: left; transition: opacity 0.4s ease 0.35s, transform 0.6s ease 0.35s; }
+        .ts-plx-card.revealed .ts-plx-card-divider { opacity: 1; transform: scaleX(1); }
 
-            .mobile-menu-toggle {
-              display: block !important;
-            }
+        .ts-plx-card-text { font-size: clamp(14px, 1.1vw, 15.5px); line-height: 1.85; opacity: 0; transform: translateY(24px); transition: opacity 0.7s ease 0.4s, transform 0.7s ease 0.4s; }
+        .ts-plx-card.revealed .ts-plx-card-text { opacity: 1; transform: translateY(0); }
 
-            .main-content-container {
-              flex-direction: column !important;
-              margin-left: 0 !important;
-              margin-right: 0 !important;
-              width: 100% !important;
-            }
+        .ts-plx-nav { position: fixed; left: clamp(14px, 2vw, 26px); top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 3px; z-index: 200; }
+        .ts-plx-pip { width: 5px; height: 5px; border-radius: 50%; border: none; padding: 0; cursor: pointer; transition: all 0.3s ease; }
+        .ts-plx-pip:hover { transform: scale(1.4); }
+        .ts-plx-pip.active { height: 14px; border-radius: 3px; }
 
-            .left-sidebar {
-              position: fixed !important;
-              top: 80px !important;
-              left: 0 !important;
-              width: 80% !important;
-              max-width: 300px !important;
-              height: calc(100vh - 80px) !important;
-              z-index: 999 !important;
-              transform: translateX(-100%) !important;
-              transition: transform 0.3s ease !important;
-              box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1) !important;
-              pointer-events: none !important;
-              touch-action: pan-y !important;
-            }
+        @media (max-width: 768px) {
+          .ts-plx-section { min-height: auto; padding: clamp(40px, 6vh, 70px) 16px; }
+          .ts-plx-bg-num { font-size: clamp(160px, 24vw, 260px); }
+          .ts-plx-orb { filter: blur(40px); }
+          .ts-plx-accent-line, .ts-plx-floating-label, .ts-plx-cross { display: none; }
+          .ts-plx-card { padding: clamp(22px, 3.5vw, 36px); border-radius: 16px; }
+          .ts-plx-card-title { font-size: 1.4rem !important; }
+          .ts-plx-card-text { font-size: 0.92rem !important; line-height: 1.7 !important; }
+          .ts-plx-nav { left: 6px; }
+          .ts-plx-pip { width: 4px; height: 4px; }
+          .ts-plx-pip.active { height: 10px; }
+        }
 
-            .left-sidebar.open {
-              transform: translateX(0) !important;
-              pointer-events: auto !important;
-            }
+        @media (max-width: 480px) {
+          .ts-plx-bg-num, .ts-plx-nav { display: none; }
+          .ts-plx-card { padding: 18px; border-radius: 14px; }
+        }
+      `}</style>
 
-            .right-content {
-              width: 100% !important;
-              padding: 1.5rem 1rem !important;
-              margin-top: 60px !important;
-            }
+      <div ref={containerRef} className="ts-plx">
+        <Navbar />
 
-            .trust-header {
-              padding: 1rem 0 !important;
-            }
-
-            .trust-header h1 {
-              font-size: 1.5rem !important;
-            }
-
-            .content-header h2 {
-              font-size: 1.4rem !important;
-            }
-
-            .content-header p {
-              font-size: 14px !important;
-            }
-
-            .content-text {
-              font-size: 0.95rem !important;
-              line-height: 1.6 !important;
-            }
-
-            /* Mobile Overlay */
-            .mobile-overlay {
-              display: none;
-              position: fixed;
-              top: 0;
-              left: 0;
-              right: 0;
-              bottom: 0;
-              background-color: rgba(0, 0, 0, 0.5);
-              z-index: 998;
-            }
-
-            .mobile-overlay.active {
-              display: block;
-            }
-          }
-
-          /* Tablet Responsive Styles */
-          @media (max-width: 1024px) and (min-width: 769px) {
-            .main-content-container {
-              margin-left: 0.5rem !important;
-              margin-right: 0.5rem !important;
-            }
-
-            .left-sidebar {
-              width: 35% !important;
-            }
-
-            .right-content {
-              width: 65% !important;
-              padding: 2rem 1.5rem !important;
-            }
-
-            .content-header h2 {
-              font-size: 1.5rem !important;
-            }
-
-            .content-text {
-              font-size: 1rem !important;
-            }
-          }
-
-          /* Small Mobile Devices */
-          @media (max-width: 480px) {
-            .left-sidebar {
-              width: 90% !important;
-            }
-
-            .right-content {
-              padding: 1rem 0.75rem !important;
-            }
-
-            .content-header h2 {
-              font-size: 1.25rem !important;
-            }
-
-            .content-text {
-              font-size: 0.9rem !important;
-            }
-
-            .mobile-menu-toggle {
-              top: 70px;
-              left: 0.5rem;
-              padding: 0.6rem;
-            }
-          }
-        `}
-      </style>
-      <Navbar />
-
-      {/* Mobile Menu Toggle Button */}
-      <button
-        className="mobile-menu-toggle"
-        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-        aria-label="Toggle navigation menu"
-        style={{ transition: 'all 0.3s ease' }}
-        onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
-        onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
-      >
-        <div className={`hamburger ${isMobileMenuOpen ? 'active' : ''}`}>
-          <span></span>
-          <span></span>
-          <span></span>
+        {/* ===== HERO ===== */}
+        <div className="ts-plx-hero">
+          <div className="ts-plx-hero-dots" style={{ transform: `translate(${(mousePos.x - 0.5) * -8}px, ${scrollY * 0.15 + (mousePos.y - 0.5) * -8}px)` }} />
+          <div className="ts-plx-hero-glow" style={{ transform: `translate(${(mousePos.x - 0.5) * -20}px, ${scrollY * 0.35 + (mousePos.y - 0.5) * -20}px)` }} />
+          <div className="ts-plx-hero-ring" style={{ transform: `translate(calc(-50% + ${(mousePos.x - 0.5) * 12}px), calc(-50% + ${scrollY * 0.22 + (mousePos.y - 0.5) * 12}px)) scale(${1 + scrollY * 0.0004})` }} />
+          <div className="ts-plx-hero-ring2" style={{ transform: `translate(calc(-50% + ${(mousePos.x - 0.5) * -15}px), calc(-50% + ${scrollY * 0.12 + (mousePos.y - 0.5) * -15}px)) scale(${1 + scrollY * 0.0002})` }} />
+          <div
+            className="ts-plx-hero-content"
+            style={{
+              transform: `translateY(${scrollY * 0.5}px)`,
+              opacity: Math.max(0, 1 - scrollY / 450),
+            }}
+          >
+            <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 28px', border: '2px solid rgba(255,255,255,0.1)' }}>
+              <i className="bi bi-shield-lock" style={{ fontSize: 32, color: '#fff' }}></i>
+            </div>
+            <h1 style={{ fontSize: 'clamp(36px, 7vw, 62px)', fontWeight: 800, margin: '0 0 14px', letterSpacing: '-0.02em', fontFamily: "'Pragati Narrow', sans-serif" }}>
+              Trust & Safety
+            </h1>
+            <p style={{ fontSize: 'clamp(15px, 1.5vw, 18px)', color: 'rgba(255,255,255,0.45)', margin: '0 0 8px' }}>Amoria Connekyt</p>
+            <div style={{ width: 50, height: 2, background: 'rgba(255,255,255,0.1)', margin: '0 auto 12px', borderRadius: 1 }} />
+            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.25)' }}>Privacy Policy & Platform Safety Guidelines</p>
+          </div>
         </div>
-      </button>
 
-      {/* Mobile Overlay */}
-      <div
-        className={`mobile-overlay ${isMobileMenuOpen ? 'active' : ''}`}
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          setIsMobileMenuOpen(false);
-        }}
-        onTouchEnd={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          setIsMobileMenuOpen(false);
-        }}
-      />
+        {/* ===== SECTIONS ===== */}
+        {sections.map((section, index) => {
+          const palette = palettes[index % palettes.length];
+          const isDark = index % palettes.length === 2;
+          const offset = getSectionOffset(index);
+          const vis = getSectionVisibility(index);
+          const numSide = index % 2 === 0 ? 'left' : 'right';
+          const isRevealed = vis > 0.35;
+          const tilt = getTiltStyle(index);
 
-      {/* Header */}
-      <div
-        className="trust-header"
-        style={{
-        width: '100%',
-        backgroundColor: 'white',
-        borderBottom: '1px solid rgba(8, 58, 133, 0.1)',
-        padding: '1.5rem 0',
-        textAlign: 'center'
-      }}>
-        <h1 style={{
-          fontSize: '1.875rem',
-          fontWeight: 700,
-          color: '#083A85',
-          fontFamily: "'Pragati Narrow', sans-serif",
-          margin: 0
-        }}>
-          Privacy Policy & Trust Safety
-        </h1>
+          const orbColor = isDark ? 'rgba(100,160,255,0.12)' : 'rgba(8,58,133,0.06)';
+          const orbColor2 = isDark ? 'rgba(80,120,220,0.08)' : 'rgba(8,58,133,0.04)';
+
+          return (
+            <div
+              key={section.id}
+              ref={el => { sectionRefs.current[index] = el; }}
+              className="ts-plx-section"
+              style={{ background: palette.bg }}
+            >
+              <div
+                className={`ts-plx-bg-num ${numSide}`}
+                style={{
+                  color: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(8,58,133,0.035)',
+                  transform: `translateY(calc(-50% + ${offset * 0.12}px))`,
+                }}
+              >
+                {String(index + 1).padStart(2, '0')}
+              </div>
+
+              <div className="ts-plx-orb" style={{ background: orbColor, width: 'clamp(200px, 25vw, 400px)', height: 'clamp(200px, 25vw, 400px)', top: '20%', left: index % 2 === 0 ? '5%' : 'auto', right: index % 2 === 0 ? 'auto' : '5%', transform: `translate(${(mousePos.x - 0.5) * 30}px, ${offset * 0.25 + (mousePos.y - 0.5) * 30}px)` }} />
+              <div className="ts-plx-orb" style={{ background: orbColor2, width: 'clamp(150px, 18vw, 280px)', height: 'clamp(150px, 18vw, 280px)', bottom: '10%', right: index % 2 === 0 ? '10%' : 'auto', left: index % 2 === 0 ? 'auto' : '10%', transform: `translate(${(mousePos.x - 0.5) * -20}px, ${offset * 0.18 + (mousePos.y - 0.5) * -20}px)` }} />
+
+              <div className="ts-plx-accent-line" style={{ background: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(8,58,133,0.1)', top: index % 2 === 0 ? '18%' : 'auto', bottom: index % 2 === 0 ? 'auto' : '20%', left: index % 2 === 0 ? '6%' : 'auto', right: index % 2 === 0 ? 'auto' : '6%', transform: `translateY(${offset * 0.3}px) rotate(${index % 2 === 0 ? -15 : 15}deg)` }} />
+
+              <div className="ts-plx-floating-label" style={{ color: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(8,58,133,0.05)', top: '10%', right: index % 2 === 0 ? '8%' : 'auto', left: index % 2 === 0 ? 'auto' : '8%', transform: `translateY(${offset * 0.4}px)`, opacity: Math.min(0.6, vis * 1.5) }}>
+                {section.title}
+              </div>
+
+              <div className="ts-plx-cross" style={{ top: '30%', left: index % 2 === 0 ? '15%' : 'auto', right: index % 2 === 0 ? 'auto' : '15%', transform: `translateY(${offset * 0.22}px) rotate(45deg)` }}>
+                <div style={{ position: 'absolute', width: '100%', height: '2px', top: '50%', left: 0, transform: 'translateY(-50%)', background: isDark ? '#fff' : '#083A85', borderRadius: 1 }} />
+                <div style={{ position: 'absolute', width: '2px', height: '100%', left: '50%', top: 0, transform: 'translateX(-50%)', background: isDark ? '#fff' : '#083A85', borderRadius: 1 }} />
+              </div>
+
+              <div className="ts-plx-cross" style={{ bottom: '25%', right: index % 2 === 0 ? '12%' : 'auto', left: index % 2 === 0 ? 'auto' : '12%', transform: `translateY(${offset * 0.28}px) rotate(15deg)`, width: 18, height: 18 }}>
+                <div style={{ position: 'absolute', width: '100%', height: '2px', top: '50%', left: 0, transform: 'translateY(-50%)', background: isDark ? '#fff' : '#083A85', borderRadius: 1 }} />
+                <div style={{ position: 'absolute', width: '2px', height: '100%', left: '50%', top: 0, transform: 'translateX(-50%)', background: isDark ? '#fff' : '#083A85', borderRadius: 1 }} />
+              </div>
+
+              <div
+                className={`ts-plx-card ${isRevealed ? 'revealed' : ''}`}
+                style={{
+                  background: isDark ? 'rgba(255,255,255,0.06)' : '#ffffff',
+                  boxShadow: isDark ? '0 12px 40px rgba(0,0,0,0.25)' : '0 10px 40px rgba(8,58,133,0.08), 0 2px 8px rgba(0,0,0,0.03)',
+                  backdropFilter: isDark ? 'blur(16px)' : 'none',
+                  border: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(8,58,133,0.04)',
+                  opacity: Math.min(1, vis * 2),
+                  ...tilt,
+                }}
+              >
+                <div className="ts-plx-card-badge" style={{ background: isDark ? 'rgba(255,255,255,0.1)' : '#083A85', color: '#fff' }}>
+                  {index + 1}
+                </div>
+                <div className="ts-plx-card-label" style={{ color: isDark ? 'rgba(255,255,255,0.35)' : '#94a3b8' }}>
+                  Section {index + 1} of {sections.length}
+                </div>
+                <h2 className="ts-plx-card-title" style={{ color: isDark ? '#fff' : '#083A85' }}>
+                  {section.title}
+                </h2>
+                <div className="ts-plx-card-divider" style={{ background: isDark ? 'rgba(255,255,255,0.15)' : 'linear-gradient(90deg, #083A85, #0a4da3)' }} />
+                <div className="ts-plx-card-text" style={{ color: isDark ? 'rgba(255,255,255,0.75)' : '#374151', whiteSpace: 'pre-wrap' as const }}>
+                  {section.content}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+
+        <Footer />
       </div>
 
-      {/* Main Content Container */}
-      <div className="main-content-container" style={{ display: 'flex', width: 'calc(100% - 2rem)', minHeight: 'calc(100vh - 120px)', overflow: 'hidden', marginLeft: '1rem', marginRight: '1rem', marginBottom: '0' }}>
+      {/* ===== PROGRESS NAV ===== */}
+      {(() => {
+        let currentIdx = -1;
+        for (let i = 0; i < sections.length; i++) {
+          const vis = getSectionVisibility(i);
+          if (vis > 0.4 && vis < 1.2) currentIdx = i;
+        }
+        const onDark = currentIdx === -1 || currentIdx % palettes.length === 2;
 
-        {/* Left Sidebar Navigation */}
-        <div
-          className={`left-nav-scrollbar left-sidebar ${isMobileMenuOpen ? 'open' : ''}`}
-          style={{
-            width: '30%',
-            backgroundColor: '#083A85',
-            overflowY: 'auto',
-            overflowX: 'hidden',
-            minHeight: '100%',
-            maxHeight: '100%',
-            direction: 'rtl'
-          }}>
-          <nav style={{ padding: '1rem 0', margin: 0, direction: 'ltr', minHeight: '100%' }}>
-            {sections.map((section, index) => {
-              // Handle divider
-              if (section.isDivider) {
-                return (
-                  <div
-                    key={`divider-${index}`}
-                    style={{
-                      borderTop: '2px solid rgba(255,255,255,0.2)',
-                      margin: '1rem 1.5rem',
-                      opacity: 0.5
-                    }}
-                  />
-                );
-              }
-
-              // Type guard: ensure section has id
-              if (!section.id) return null;
-
+        return (
+          <div className="ts-plx-nav" style={{ transition: 'all 0.3s ease' }}>
+            {sections.map((section, i) => {
+              const vis = getSectionVisibility(i);
+              const isActive = vis > 0.3 && vis < 1.3;
               return (
-                <div
+                <button
                   key={section.id}
-                  ref={(el) => {
-                    if (section.id) {
-                      sectionRefs.current[section.id] = el;
-                    }
-                  }}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setSelectedSection(section.id);
-                    setIsMobileMenuOpen(false);
-                  }}
-                  onTouchEnd={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setSelectedSection(section.id);
-                    setIsMobileMenuOpen(false);
-                  }}
+                  className={`ts-plx-pip ${isActive ? 'active' : ''}`}
                   style={{
-                    cursor: 'pointer',
-                    padding: '0.75rem 1rem',
-                    fontSize: '16px',
-                    lineHeight: '1.4',
-                    color: '#ffffff',
-                    fontWeight: '600',
-                    backgroundColor: selectedSection === section.id ? 'rgba(255,255,255,0.15)' : 'transparent',
-                    transition: 'all 0.2s ease',
-                    WebkitTapHighlightColor: 'rgba(0, 0, 0, 0)',
-                    userSelect: 'none'
+                    background: isActive
+                      ? (onDark ? '#ffffff' : '#083A85')
+                      : (onDark ? 'rgba(255,255,255,0.25)' : 'rgba(8,58,133,0.15)'),
+                    transition: 'all 0.3s ease',
                   }}
-                  onMouseEnter={(e) => {
-                    if (window.innerWidth > 768) {
-                      e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.15)';
-                    }
+                  onClick={() => {
+                    sectionRefs.current[i]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                   }}
-                  onMouseLeave={(e) => {
-                    if (window.innerWidth > 768) {
-                      if (selectedSection === section.id) {
-                        e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.15)';
-                      } else {
-                        e.currentTarget.style.backgroundColor = 'transparent';
-                      }
-                    }
-                  }}
-                >
-                  {section.title}
-                </div>
+                  title={section.title}
+                />
               );
             })}
-          </nav>
-        </div>
-
-        {/* Right Content Area */}
-        <div
-          ref={contentRef}
-          className="right-content"
-          key={selectedSection}
-          style={{
-            width: '70%',
-            backgroundColor: '#ffffff',
-            padding: '2.5rem',
-            overflowY: 'auto',
-            minHeight: '100%',
-            maxHeight: '100%'
-          }}>
-          {/* Static Header */}
-          <div className="content-header" style={{ marginBottom: '2rem' }}>
-            <h2 style={{
-              fontSize: '1.7rem',
-              fontWeight: 700,
-              color: '#083A85',
-              fontFamily: "'Pragati Narrow', sans-serif",
-              marginBottom: '0.5rem',
-              marginTop: 0
-            }}>
-              {currentSection.title} - Amoria connekyt
-            </h2>
-
-            {/* Effective Date */}
-            <p style={{
-              fontSize: '14px',
-              fontWeight: 600,
-              color: '#6b7280',
-              marginBottom: '1.5rem',
-              marginTop: 0
-            }}>
-              {currentSection.id?.includes('trust') || currentSection.id?.includes('safety') ?
-                'Last Updated: 01 February 2026' :
-                'Last Updated: 01 March 2026'}
-            </p>
-
-            {/* Divider */}
-            <hr style={{
-              border: 'none',
-              borderTop: '1px solid rgba(8, 58, 133, 0.15)',
-              marginBottom: '1.5rem',
-              marginTop: 0
-            }} />
           </div>
-
-          {/* Content */}
-          <div className="content-text" style={{
-            fontSize: '1.06rem',
-            color: '#374151',
-            lineHeight: '1.625',
-            whiteSpace: 'pre-wrap',
-            paddingBottom: '2rem'
-          }}>
-            {currentSection.content}
-          </div>
-        </div>
-      </div>
-    </div>
-    <Footer />
+        );
+      })()}
     </>
   );
 };
