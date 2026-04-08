@@ -77,7 +77,8 @@ const HelpSupportCenter: React.FC = () => {
   // States
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [openFAQ, setOpenFAQ] = useState<string | null>(null);
+  const [openFAQs, setOpenFAQs] = useState<Set<string>>(new Set());
+  const [votedFAQs, setVotedFAQs] = useState<Record<string, 'yes' | 'no'>>({});
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -163,15 +164,22 @@ const HelpSupportCenter: React.FC = () => {
   };
 
   const handleFAQClick = (faqId: string) => {
-    setOpenFAQ(openFAQ === faqId ? null : faqId);
+    setOpenFAQs(prev => {
+      const next = new Set(prev);
+      if (next.has(faqId)) next.delete(faqId);
+      else next.add(faqId);
+      return next;
+    });
   };
 
-  const handleFAQHelpful = (faqId: string) => {
-    setFAQS(prev => prev.map(faq =>
-      faq.id === faqId
-        ? { ...faq, helpful: faq.helpful + 1 }
-        : faq
-    ));
+  const handleFAQVote = (faqId: string, vote: 'yes' | 'no') => {
+    if (votedFAQs[faqId]) return; // already voted
+    setVotedFAQs(prev => ({ ...prev, [faqId]: vote }));
+    if (vote === 'yes') {
+      setFAQS(prev => prev.map(faq =>
+        faq.id === faqId ? { ...faq, helpful: faq.helpful + 1 } : faq
+      ));
+    }
   };
 
   const handleContactSubmit = async (e: React.FormEvent) => {
@@ -239,29 +247,43 @@ const HelpSupportCenter: React.FC = () => {
         onMouseLeave={() => setHeroMousePos(null)}
         style={{
           position: 'relative',
-          paddingTop: isMobile ? 'clamp(2rem, 5vw, 3rem)' : '3rem',
+          paddingTop: isMobile ? 'clamp(5rem, 12vw, 7rem)' : '7rem',
           paddingBottom: isMobile ? 'clamp(3rem, 6vw, 4rem)' : '4rem',
           paddingLeft: isMobile ? 'clamp(1rem, 4vw, 1.5rem)' : '1rem',
           paddingRight: isMobile ? 'clamp(1rem, 4vw, 1.5rem)' : '1rem',
           overflow: 'hidden',
-          marginLeft: '0',
-          marginRight: '0',
-          marginTop: '0rem'
+          background: 'linear-gradient(160deg, #052047 0%, #083A85 40%, #0a4da3 70%, #103E83 100%)',
         }}
       >
-        {/* Background Image with Blur Overlay */}
+        {/* Parallax dot pattern */}
         <div style={{
           position: 'absolute',
-          inset: 0
-        }}>
-          <img src="/camm.png" alt="Help Center Background" style={{width: '100%', height: '100%', objectFit: 'cover'}}/>
-          <div style={{
-            position: 'absolute',
-            inset: 0,
-            background: 'linear-gradient(135deg, #083A85 0%, #0a4da3 50%, #083A85 100%)',
-            opacity: 0.78
-          }}></div>
-        </div>
+          inset: '-80px',
+          backgroundImage: 'radial-gradient(rgba(255,255,255,0.05) 1.5px, transparent 1.5px)',
+          backgroundSize: '32px 32px',
+          pointerEvents: 'none',
+        }} />
+
+        {/* Parallax glow */}
+        <div style={{
+          position: 'absolute',
+          inset: '-100px',
+          background: 'radial-gradient(ellipse at 20% 15%, rgba(100,180,255,0.08) 0%, transparent 50%), radial-gradient(ellipse at 80% 85%, rgba(100,140,255,0.06) 0%, transparent 50%)',
+          pointerEvents: 'none',
+        }} />
+
+        {/* Ring decoration */}
+        <div style={{
+          position: 'absolute',
+          width: 'clamp(350px, 45vw, 600px)',
+          height: 'clamp(350px, 45vw, 600px)',
+          borderRadius: '50%',
+          border: '1.5px solid rgba(255,255,255,0.04)',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          pointerEvents: 'none',
+        }} />
 
         {/* Mouse spotlight effect */}
         {heroMousePos && !isMobile && (
@@ -272,10 +294,9 @@ const HelpSupportCenter: React.FC = () => {
             width: '300px',
             height: '300px',
             borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(255,255,255,0.12) 0%, transparent 70%)',
+            background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)',
             pointerEvents: 'none',
             zIndex: 1,
-            transition: 'opacity 0.15s ease',
           }} />
         )}
 
@@ -287,15 +308,23 @@ const HelpSupportCenter: React.FC = () => {
           textAlign: 'center',
           zIndex: 2,
         }}>
+          <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', border: '2px solid rgba(255,255,255,0.1)' }}>
+            <i className="bi bi-question-circle" style={{ fontSize: 26, color: '#fff' }}></i>
+          </div>
           <h1 style={{
-            fontSize: isMobile ? 'clamp(1.5rem, 7vw, 2.5rem)' : 'clamp(1.875rem, 5vw, 3rem)',
-            fontWeight: 'bold',
+            fontSize: isMobile ? 'clamp(1.5rem, 7vw, 2.5rem)' : 'clamp(2rem, 5vw, 3.2rem)',
+            fontWeight: 800,
             color: 'white',
-            marginBottom: isMobile ? 'clamp(1.25rem, 5vw, 2rem)' : '2rem',
-            lineHeight: '1.2'
+            marginBottom: '8px',
+            lineHeight: '1.1',
+            fontFamily: "'Pragati Narrow', sans-serif",
+            letterSpacing: '-0.02em',
           }}>
             How can we help you?
           </h1>
+          <p style={{ fontSize: 'clamp(13px, 1.3vw, 16px)', color: 'rgba(255,255,255,0.4)', marginBottom: isMobile ? 'clamp(1.25rem, 5vw, 2rem)' : '2rem' }}>
+            Amoria Connekyt Help Center
+          </p>
 
           {/* Search Bar */}
           <form onSubmit={handleSearch} style={{ maxWidth: '42rem', margin: '0 auto', width: '100%' }}>
@@ -360,7 +389,7 @@ const HelpSupportCenter: React.FC = () => {
                     <div
                       key={faq.id}
                       onClick={() => {
-                        setOpenFAQ(faq.id);
+                        setOpenFAQs(prev => new Set(prev).add(faq.id));
                         setSearchTerm('');
                         document.getElementById('faq-section')?.scrollIntoView({ behavior: 'smooth' });
                       }}
@@ -642,10 +671,10 @@ const HelpSupportCenter: React.FC = () => {
                     backdropFilter: 'blur(12px)',
                     WebkitBackdropFilter: 'blur(12px)',
                     borderRadius: '16px',
-                    boxShadow: openFAQ === faq.id
+                    boxShadow: openFAQs.has(faq.id)
                       ? '0 12px 40px rgba(8, 58, 133, 0.15), 0 4px 12px rgba(0, 0, 0, 0.1)'
                       : '0 4px 16px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.06)',
-                    border: openFAQ === faq.id
+                    border: openFAQs.has(faq.id)
                       ? '2px solid rgba(8, 58, 133, 0.3)'
                       : '1px solid rgba(8, 58, 133, 0.1)',
                     overflow: 'hidden',
@@ -674,12 +703,12 @@ const HelpSupportCenter: React.FC = () => {
                           alignItems: 'center',
                           justifyContent: 'center',
                           transition: 'all 0.3s ease',
-                          backgroundColor: openFAQ === faq.id ? '#083A85' : 'rgba(8, 58, 133, 0.1)',
-                          color: openFAQ === faq.id ? '#ffffff' : '#083A85',
-                          boxShadow: openFAQ === faq.id ? '0 4px 12px rgba(8, 58, 133, 0.3)' : 'none'
+                          backgroundColor: openFAQs.has(faq.id) ? '#083A85' : 'rgba(8, 58, 133, 0.1)',
+                          color: openFAQs.has(faq.id) ? '#ffffff' : '#083A85',
+                          boxShadow: openFAQs.has(faq.id) ? '0 4px 12px rgba(8, 58, 133, 0.3)' : 'none'
                         }}
                       >
-                        <i className={`bi bi-chevron-${openFAQ === faq.id ? 'down' : 'right'}`} style={{ fontSize: isMobile ? '0.875rem' : '1rem' }}></i>
+                        <i className={`bi bi-chevron-${openFAQs.has(faq.id) ? 'down' : 'right'}`} style={{ fontSize: isMobile ? '0.875rem' : '1rem' }}></i>
                       </div>
                       <span className="text-gray-900 font-semibold" style={{ fontSize: isMobile ? '0.9375rem' : '1.125rem', lineHeight: '1.5' }}>{faq.question}</span>
                     </div>
@@ -700,7 +729,7 @@ const HelpSupportCenter: React.FC = () => {
                     </span>
                   </button>
 
-                  {openFAQ === faq.id && (
+                  {openFAQs.has(faq.id) && (
                     <div
                       style={{
                         padding: isMobile ? '0 1rem 1.25rem 1rem' : '0 1.75rem 1.5rem 1.75rem',
@@ -742,72 +771,47 @@ const HelpSupportCenter: React.FC = () => {
                           }}
                         >
                           <span className="text-gray-700 font-semibold" style={{ fontSize: isMobile ? '0.8125rem' : '0.875rem' }}>Was this helpful?</span>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleFAQHelpful(faq.id);
-                            }}
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: isMobile ? '6px' : '8px',
-                              padding: isMobile ? '8px 14px' : '10px 18px',
-                              color: '#083A85',
-                              backgroundColor: 'rgba(8, 58, 133, 0.08)',
-                              border: '1px solid rgba(8, 58, 133, 0.2)',
-                              borderRadius: '10px',
-                              transition: 'all 0.2s ease',
-                              fontWeight: '600',
-                              fontSize: isMobile ? '0.8125rem' : '0.875rem',
-                              cursor: 'pointer'
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.backgroundColor = '#083A85';
-                              e.currentTarget.style.color = '#ffffff';
-                              e.currentTarget.style.borderColor = '#083A85';
-                              e.currentTarget.style.transform = 'translateY(-2px)';
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.backgroundColor = 'rgba(8, 58, 133, 0.08)';
-                              e.currentTarget.style.color = '#083A85';
-                              e.currentTarget.style.borderColor = 'rgba(8, 58, 133, 0.2)';
-                              e.currentTarget.style.transform = 'translateY(0)';
-                            }}
-                          >
-                            <i className="bi bi-hand-thumbs-up"></i>
-                            <span>Yes ({faq.helpful})</span>
-                          </button>
-                          <button
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: isMobile ? '6px' : '8px',
-                              padding: isMobile ? '8px 14px' : '10px 18px',
-                              color: '#6B7280',
-                              backgroundColor: 'rgba(107, 114, 128, 0.08)',
-                              border: '1px solid rgba(107, 114, 128, 0.2)',
-                              borderRadius: '10px',
-                              transition: 'all 0.2s ease',
-                              fontWeight: '600',
-                              fontSize: isMobile ? '0.8125rem' : '0.875rem',
-                              cursor: 'pointer'
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.backgroundColor = 'rgba(107, 114, 128, 0.15)';
-                              e.currentTarget.style.color = '#374151';
-                              e.currentTarget.style.borderColor = 'rgba(107, 114, 128, 0.3)';
-                              e.currentTarget.style.transform = 'translateY(-2px)';
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.backgroundColor = 'rgba(107, 114, 128, 0.08)';
-                              e.currentTarget.style.color = '#6B7280';
-                              e.currentTarget.style.borderColor = 'rgba(107, 114, 128, 0.2)';
-                              e.currentTarget.style.transform = 'translateY(0)';
-                            }}
-                          >
-                            <i className="bi bi-hand-thumbs-down"></i>
-                            <span>No</span>
-                          </button>
+                          {votedFAQs[faq.id] ? (
+                            <span style={{ fontSize: isMobile ? '0.8125rem' : '0.875rem', color: votedFAQs[faq.id] === 'yes' ? '#083A85' : '#6B7280', fontWeight: 600 }}>
+                              <i className={`bi ${votedFAQs[faq.id] === 'yes' ? 'bi-hand-thumbs-up-fill' : 'bi-hand-thumbs-down-fill'}`} style={{ marginRight: 6 }}></i>
+                              {votedFAQs[faq.id] === 'yes' ? 'Thanks for your feedback!' : 'Sorry to hear that. We\'ll improve this.'}
+                            </span>
+                          ) : (
+                            <>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleFAQVote(faq.id, 'yes'); }}
+                                style={{
+                                  display: 'flex', alignItems: 'center', gap: isMobile ? '6px' : '8px',
+                                  padding: isMobile ? '8px 14px' : '10px 18px',
+                                  color: '#083A85', backgroundColor: 'rgba(8, 58, 133, 0.08)',
+                                  border: '1px solid rgba(8, 58, 133, 0.2)', borderRadius: '10px',
+                                  transition: 'all 0.2s ease', fontWeight: '600',
+                                  fontSize: isMobile ? '0.8125rem' : '0.875rem', cursor: 'pointer'
+                                }}
+                                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#083A85'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = '#083A85'; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'rgba(8, 58, 133, 0.08)'; e.currentTarget.style.color = '#083A85'; e.currentTarget.style.borderColor = 'rgba(8, 58, 133, 0.2)'; }}
+                              >
+                                <i className="bi bi-hand-thumbs-up"></i>
+                                <span>Yes ({faq.helpful})</span>
+                              </button>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleFAQVote(faq.id, 'no'); }}
+                                style={{
+                                  display: 'flex', alignItems: 'center', gap: isMobile ? '6px' : '8px',
+                                  padding: isMobile ? '8px 14px' : '10px 18px',
+                                  color: '#6B7280', backgroundColor: 'rgba(107, 114, 128, 0.08)',
+                                  border: '1px solid rgba(107, 114, 128, 0.2)', borderRadius: '10px',
+                                  transition: 'all 0.2s ease', fontWeight: '600',
+                                  fontSize: isMobile ? '0.8125rem' : '0.875rem', cursor: 'pointer'
+                                }}
+                                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(107, 114, 128, 0.15)'; e.currentTarget.style.color = '#374151'; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'rgba(107, 114, 128, 0.08)'; e.currentTarget.style.color = '#6B7280'; }}
+                              >
+                                <i className="bi bi-hand-thumbs-down"></i>
+                                <span>No</span>
+                              </button>
+                            </>
+                          )}
                         </div>
                       </div>
                     </div>
