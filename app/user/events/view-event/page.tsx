@@ -84,6 +84,30 @@ function formatTimeRange(startTime?: string, endTime?: string): string {
 }
 
 /**
+ * Combine eventDate ("YYYY-MM-DD") + startTime ("HH:MM") into a local Date,
+ * or return null if inputs are missing/invalid.
+ */
+function getEventStartDate(dateStr?: string, timeStr?: string): Date | null {
+  if (!dateStr || !timeStr) return null;
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const [hh, mm] = timeStr.split(':').map(Number);
+  if (!y || !m || !d || Number.isNaN(hh) || Number.isNaN(mm)) return null;
+  return new Date(y, m - 1, d, hh, mm, 0, 0);
+}
+
+/**
+ * Format a ms-duration as "HHh MMm SSs" padded.
+ */
+function formatCountdown(ms: number): string {
+  const totalSec = Math.max(0, Math.floor(ms / 1000));
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${pad(h)}h ${pad(m)}m ${pad(s)}s`;
+}
+
+/**
  * Format price for display
  */
 function formatPrice(price?: number): string {
@@ -125,6 +149,20 @@ function ViewEventContent(): React.JSX.Element {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedEvent, setSelectedEvent] = useState<PublicEvent | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [msUntilStart, setMsUntilStart] = useState<number | null>(null);
+
+  // Tick every second to drive the 6h-window countdown badge
+  useEffect(() => {
+    const start = getEventStartDate(selectedEvent?.eventDate, selectedEvent?.startTime);
+    if (!start) { setMsUntilStart(null); return; }
+    const tick = () => setMsUntilStart(start.getTime() - Date.now());
+    tick();
+    const id = window.setInterval(tick, 1000);
+    return () => window.clearInterval(id);
+  }, [selectedEvent?.eventDate, selectedEvent?.startTime]);
+
+  const SIX_HOURS_MS = 6 * 60 * 60 * 1000;
+  const showCountdown = msUntilStart !== null && msUntilStart > 0 && msUntilStart <= SIX_HOURS_MS;
 
   // Viewer auth modal state
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -688,6 +726,22 @@ function ViewEventContent(): React.JSX.Element {
               <span style={{ color: '#f5652c', fontSize: 16, fontWeight: 700 }}>{formatPrice(selectedEvent.price)}</span>
             </>}
           </div>
+
+          {/* Countdown badge — only when event starts within 6 hours */}
+          {showCountdown && msUntilStart !== null && (
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: 10,
+              padding: '10px 18px', marginBottom: 16,
+              background: 'linear-gradient(135deg, rgba(245,101,44,0.15), rgba(245,101,44,0.05))',
+              border: '1px solid rgba(245,101,44,0.45)',
+              borderRadius: 999, color: '#fdba74',
+              fontSize: 14, fontWeight: 700, letterSpacing: '0.02em',
+              alignSelf: 'flex-start',
+            }}>
+              <i className="bi bi-hourglass-split" style={{ color: '#f5652c' }}></i>
+              <span>Starts in {formatCountdown(msUntilStart)}</span>
+            </div>
+          )}
 
           {/* Title */}
           <h1 style={{ fontSize: 'clamp(28px, 5vw, 58px)', fontWeight: 800, color: '#fff', margin: '0 0 14px', lineHeight: 1.08, letterSpacing: '-0.03em', textShadow: '0 2px 20px rgba(0,0,0,0.5)' }}>

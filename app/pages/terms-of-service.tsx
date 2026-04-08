@@ -1,17 +1,75 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Navbar from '../components/navbar';
 import Footer from '../components/footer';
 
 const TermsAndConditionsPage = () => {
-  const [currentPage, setCurrentPage] = useState(0); // 0 = cover, 1 = TOC, 2+ = sections
   const [isAgreed, setIsAgreed] = useState(false);
-  const [viewedSections, setViewedSections] = useState<Set<number>>(new Set());
-  const [showWarning, setShowWarning] = useState(false);
-  const [isFlipping, setIsFlipping] = useState(false);
-  const [flipDirection, setFlipDirection] = useState<'next' | 'prev'>('next');
-  const contentRef = useRef<HTMLDivElement>(null);
+  const [scrollY, setScrollY] = useState(0);
+  const [mousePos, setMousePos] = useState({ x: 0.5, y: 0.5 }); // normalized 0–1
+  const containerRef = useRef<HTMLDivElement>(null);
+  const sectionRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  // Scroll tracking with requestAnimationFrame
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    let rafId: number;
+
+    const handleScroll = () => {
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        setScrollY(container.scrollTop);
+      });
+    };
+
+    container.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      container.removeEventListener('scroll', handleScroll);
+      cancelAnimationFrame(rafId);
+    };
+  }, []);
+
+  // Mouse tracking for 3D tilt
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      setMousePos({
+        x: e.clientX / window.innerWidth,
+        y: e.clientY / window.innerHeight,
+      });
+    };
+    window.addEventListener('mousemove', handleMouseMove, { passive: true });
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
+
+  // Per-section parallax offset (distance from section top to current scroll)
+  const getSectionOffset = (index: number) => {
+    const ref = sectionRefs.current[index];
+    if (!ref || !containerRef.current) return 0;
+    return scrollY - ref.offsetTop;
+  };
+
+  // Visibility ratio: 0 = below viewport, 0.5 = entering, 1 = fully in view
+  const getSectionVisibility = (index: number) => {
+    const ref = sectionRefs.current[index];
+    if (!ref || !containerRef.current) return 0;
+    const vh = window.innerHeight;
+    const progress = (scrollY + vh - ref.offsetTop) / (vh * 1.4);
+    return Math.max(0, Math.min(1, progress));
+  };
+
+  // 3D tilt transform for cards based on mouse position
+  const getTiltStyle = (index: number) => {
+    const vis = getSectionVisibility(index);
+    if (vis < 0.4 || vis > 1.2) return {};
+    const tiltX = (mousePos.y - 0.5) * -8; // max ±4deg
+    const tiltY = (mousePos.x - 0.5) * 8;
+    return {
+      transform: `perspective(1000px) rotateX(${tiltX}deg) rotateY(${tiltY}deg)`,
+    };
+  };
 
   const sections = [
     {
@@ -376,529 +434,632 @@ Amoria Connekyt is owned and operated by Amoria Global Tech Ltd., registered in 
     }
   ];
 
-  const totalPages = sections.length + 2; // cover + TOC + sections
-  const allSectionsViewed = viewedSections.size === sections.length;
-  const bookRef = useRef<HTMLDivElement>(null);
-  const scrollCooldown = useRef(false);
-
-  // Track viewed sections
-  useEffect(() => {
-    if (currentPage >= 2) {
-      setViewedSections(prev => new Set(prev).add(currentPage - 2));
-    }
-  }, [currentPage]);
-
-  // Scroll content to top on page change
-  useEffect(() => {
-    if (contentRef.current) {
-      contentRef.current.scrollTop = 0;
-    }
-  }, [currentPage]);
-
-  const goToPage = (page: number) => {
-    if (isFlipping || page < 0 || page >= totalPages) return;
-    setFlipDirection(page > currentPage ? 'next' : 'prev');
-    setIsFlipping(true);
-    setTimeout(() => {
-      setCurrentPage(page);
-    }, 300);
-    setTimeout(() => {
-      setIsFlipping(false);
-    }, 600);
-  };
-
-  const nextPage = () => goToPage(currentPage + 1);
-  const prevPage = () => goToPage(currentPage - 1);
-
-  // Scroll-driven page flipping
-  useEffect(() => {
-    const handleWheel = (e: WheelEvent) => {
-      // If content area is scrollable, let it scroll first
-      const content = contentRef.current;
-      if (content) {
-        const isAtTop = content.scrollTop <= 0;
-        const isAtBottom = content.scrollTop + content.clientHeight >= content.scrollHeight - 2;
-
-        // Scrolling down but content has more to scroll — let it scroll
-        if (e.deltaY > 0 && !isAtBottom) return;
-        // Scrolling up but content has more to scroll — let it scroll
-        if (e.deltaY < 0 && !isAtTop) return;
-      }
-
-      // Content is at boundary or no scrollable content — flip page
-      e.preventDefault();
-      if (scrollCooldown.current || isFlipping) return;
-
-      scrollCooldown.current = true;
-      if (e.deltaY > 0) {
-        nextPage();
-      } else if (e.deltaY < 0) {
-        prevPage();
-      }
-
-      setTimeout(() => {
-        scrollCooldown.current = false;
-      }, 800);
-    };
-
-    const book = bookRef.current;
-    if (book) {
-      book.addEventListener('wheel', handleWheel, { passive: false });
-    }
-    return () => {
-      if (book) {
-        book.removeEventListener('wheel', handleWheel);
-      }
-    };
-  });
-
-  // Touch swipe for mobile
-  const touchStart = useRef<{ x: number; y: number } | null>(null);
-
-  useEffect(() => {
-    const book = bookRef.current;
-    if (!book) return;
-
-    const handleTouchStart = (e: TouchEvent) => {
-      touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-    };
-
-    const handleTouchEnd = (e: TouchEvent) => {
-      if (!touchStart.current || isFlipping) return;
-      const dx = e.changedTouches[0].clientX - touchStart.current.x;
-      const dy = e.changedTouches[0].clientY - touchStart.current.y;
-      touchStart.current = null;
-
-      // Only trigger if horizontal swipe is dominant and significant
-      if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) {
-        if (dx < 0) nextPage(); // swipe left = next
-        else prevPage(); // swipe right = prev
-      }
-    };
-
-    book.addEventListener('touchstart', handleTouchStart, { passive: true });
-    book.addEventListener('touchend', handleTouchEnd, { passive: true });
-    return () => {
-      book.removeEventListener('touchstart', handleTouchStart);
-      book.removeEventListener('touchend', handleTouchEnd);
-    };
-  });
-
-  // Keyboard navigation
-  useEffect(() => {
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') nextPage();
-      if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') prevPage();
-    };
-    window.addEventListener('keydown', handleKey);
-    return () => window.removeEventListener('keydown', handleKey);
-  });
+  // Palettes cycle — every 4th section gets the dark theme
+  const palettes = [
+    { bg: 'linear-gradient(180deg, #ffffff 0%, #f0f4fa 100%)' },
+    { bg: 'linear-gradient(180deg, #f0f4fa 0%, #e8edf6 100%)' },
+    { bg: 'linear-gradient(180deg, #083A85 0%, #052047 100%)' },
+    { bg: 'linear-gradient(180deg, #f8fafc 0%, #f0f4fa 100%)' },
+  ];
 
   return (
     <>
       <style>{`
-        .tos-book-container {
-          min-height: 100vh;
-          background: linear-gradient(135deg, #f8fafc 0%, #eef2f7 100%);
-          display: flex;
-          flex-direction: column;
-        }
-
-        .tos-book-wrapper {
-          flex: 1;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: clamp(16px, 3vw, 40px);
-          padding-top: clamp(80px, 10vh, 100px);
-        }
-
-        .tos-book {
-          width: 100%;
-          max-width: 720px;
-          min-height: clamp(500px, 70vh, 700px);
-          background: #fff;
-          border-radius: 4px 16px 16px 4px;
-          box-shadow:
-            0 20px 60px rgba(8,58,133,0.12),
-            0 4px 16px rgba(0,0,0,0.06),
-            -4px 0 12px rgba(0,0,0,0.04);
-          position: relative;
-          display: flex;
-          flex-direction: column;
-          overflow: hidden;
-          perspective: 1500px;
-        }
-
-        /* Book spine effect */
-        .tos-book::before {
-          content: '';
-          position: absolute;
-          left: 0;
-          top: 0;
-          bottom: 0;
-          width: 8px;
-          background: linear-gradient(to right, #052047, #083A85, #052047);
-          z-index: 2;
-          border-radius: 4px 0 0 4px;
-        }
-
-        /* Page edge lines */
-        .tos-book::after {
-          content: '';
-          position: absolute;
-          right: -3px;
-          top: 10px;
-          bottom: 10px;
-          width: 5px;
-          background: repeating-linear-gradient(to bottom, #e8e8e8 0px, #f5f5f5 1px, #e8e8e8 2px);
-          border-radius: 0 2px 2px 0;
-          z-index: 0;
-        }
-
-        .tos-page {
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-          padding: clamp(24px, 4vw, 40px);
-          padding-left: clamp(32px, 5vw, 52px);
-          position: relative;
-          transform-origin: left center;
-          transform-style: preserve-3d;
-          backface-visibility: hidden;
-          animation: none;
-        }
-
-        .tos-page.flipping-next {
-          animation: flipOutNext 0.6s ease-in-out forwards;
-        }
-
-        .tos-page.flipping-prev {
-          animation: flipOutPrev 0.6s ease-in-out forwards;
-        }
-
-        @keyframes flipOutNext {
-          0% { transform: rotateY(0deg); opacity: 1; }
-          40% { transform: rotateY(-90deg); opacity: 0.6; }
-          50% { transform: rotateY(-90deg); opacity: 0; }
-          51% { transform: rotateY(90deg); opacity: 0; }
-          60% { transform: rotateY(90deg); opacity: 0.6; }
-          100% { transform: rotateY(0deg); opacity: 1; }
-        }
-
-        @keyframes flipOutPrev {
-          0% { transform: rotateY(0deg); opacity: 1; }
-          40% { transform: rotateY(90deg); opacity: 0.6; }
-          50% { transform: rotateY(90deg); opacity: 0; }
-          51% { transform: rotateY(-90deg); opacity: 0; }
-          60% { transform: rotateY(-90deg); opacity: 0.6; }
-          100% { transform: rotateY(0deg); opacity: 1; }
-        }
-
-        .tos-page-content {
-          flex: 1;
+        /* === CONTAINER === */
+        .tos-plx {
+          height: 100vh;
           overflow-y: auto;
-          padding-right: 8px;
+          overflow-x: hidden;
+          scroll-behavior: smooth;
           scrollbar-width: thin;
           scrollbar-color: rgba(8,58,133,0.2) transparent;
         }
+        .tos-plx::-webkit-scrollbar { width: 6px; }
+        .tos-plx::-webkit-scrollbar-track { background: transparent; }
+        .tos-plx::-webkit-scrollbar-thumb { background: rgba(8,58,133,0.2); border-radius: 3px; }
 
-        .tos-page-content::-webkit-scrollbar { width: 6px; }
-        .tos-page-content::-webkit-scrollbar-track { background: transparent; }
-        .tos-page-content::-webkit-scrollbar-thumb { background: rgba(8,58,133,0.2); border-radius: 3px; }
-        .tos-page-content::-webkit-scrollbar-thumb:hover { background: rgba(8,58,133,0.35); }
-
-        /* Navigation bar at bottom of book */
-        .tos-nav {
+        /* === HERO === */
+        .tos-plx-hero {
+          position: relative;
+          height: 100vh;
           display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: clamp(12px, 2vw, 16px) clamp(24px, 4vw, 40px);
-          padding-left: clamp(32px, 5vw, 52px);
-          border-top: 1px solid rgba(8,58,133,0.08);
-          background: #fafbfc;
-          border-radius: 0 0 16px 0;
-        }
-
-        .tos-nav-btn {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          padding: 8px 18px;
-          border-radius: 8px;
-          border: 1px solid rgba(8,58,133,0.15);
-          background: #fff;
-          color: #083A85;
-          font-size: 14px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-
-        .tos-nav-btn:hover:not(:disabled) {
-          background: #083A85;
-          color: #fff;
-          border-color: #083A85;
-        }
-
-        .tos-nav-btn:disabled {
-          opacity: 0.3;
-          cursor: not-allowed;
-        }
-
-        /* Progress dots */
-        .tos-progress {
-          display: flex;
-          gap: 4px;
-          align-items: center;
-          flex-wrap: wrap;
-          justify-content: center;
-          max-width: 50%;
-        }
-
-        .tos-dot {
-          width: 8px;
-          height: 8px;
-          border-radius: 50%;
-          background: rgba(8,58,133,0.15);
-          cursor: pointer;
-          transition: all 0.2s;
-          border: none;
-          padding: 0;
-        }
-
-        .tos-dot.active {
-          background: #083A85;
-          width: 20px;
-          border-radius: 4px;
-        }
-
-        .tos-dot.viewed {
-          background: rgba(8,58,133,0.4);
-        }
-
-        /* Cover page */
-        .tos-cover {
-          flex: 1;
-          display: flex;
-          flex-direction: column;
           align-items: center;
           justify-content: center;
           text-align: center;
-          padding: clamp(32px, 5vw, 60px);
           background: linear-gradient(160deg, #052047 0%, #083A85 40%, #0a4da3 70%, #103E83 100%);
           color: #fff;
-          border-radius: 0 16px 16px 0;
-          position: relative;
           overflow: hidden;
-          transform-origin: left center;
-          transform-style: preserve-3d;
-          backface-visibility: hidden;
-          animation: none;
         }
 
-        .tos-cover.flipping-next {
-          animation: flipOutNext 0.6s ease-in-out forwards;
-        }
-
-        .tos-cover.flipping-prev {
-          animation: flipOutPrev 0.6s ease-in-out forwards;
-        }
-
-        .tos-cover::before {
-          content: '';
+        .tos-plx-hero-dots {
           position: absolute;
-          inset: clamp(12px, 2vw, 20px);
-          border: 1.5px solid rgba(255,255,255,0.1);
-          border-radius: 3px 12px 12px 3px;
-          pointer-events: none;
+          inset: -120px;
+          background-image: radial-gradient(rgba(255,255,255,0.05) 1.5px, transparent 1.5px);
+          background-size: 32px 32px;
+          will-change: transform;
         }
 
-        /* TOC */
-        .tos-toc-item {
+        .tos-plx-hero-glow {
+          position: absolute;
+          inset: -150px;
+          background:
+            radial-gradient(ellipse at 20% 15%, rgba(100,180,255,0.08) 0%, transparent 50%),
+            radial-gradient(ellipse at 80% 85%, rgba(100,140,255,0.06) 0%, transparent 50%);
+          will-change: transform;
+        }
+
+        .tos-plx-hero-ring {
+          position: absolute;
+          width: clamp(450px, 55vw, 800px);
+          height: clamp(450px, 55vw, 800px);
+          border-radius: 50%;
+          border: 1.5px solid rgba(255,255,255,0.04);
+          top: 50%;
+          left: 50%;
+          will-change: transform;
+        }
+
+        .tos-plx-hero-ring2 {
+          position: absolute;
+          width: clamp(250px, 30vw, 450px);
+          height: clamp(250px, 30vw, 450px);
+          border-radius: 50%;
+          border: 1px solid rgba(255,255,255,0.03);
+          top: 50%;
+          left: 50%;
+          will-change: transform;
+        }
+
+        .tos-plx-hero-content {
+          position: relative;
+          z-index: 3;
+          will-change: transform, opacity;
+        }
+
+        @keyframes plxFloat {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-12px); }
+        }
+
+
+        /* === SECTION === */
+        .tos-plx-section {
+          position: relative;
+          min-height: 100vh;
           display: flex;
           align-items: center;
-          gap: 12px;
-          padding: 12px 16px;
-          border-radius: 10px;
-          cursor: pointer;
-          transition: all 0.2s;
-          border: 1px solid transparent;
+          justify-content: center;
+          padding: clamp(60px, 8vh, 100px) clamp(16px, 4vw, 48px);
+          overflow: hidden;
         }
 
-        .tos-toc-item:hover {
-          background: rgba(8,58,133,0.04);
-          border-color: rgba(8,58,133,0.1);
+        /* --- Giant BG number (Layer 1 - slowest) --- */
+        .tos-plx-bg-num {
+          position: absolute;
+          font-size: clamp(300px, 38vw, 550px);
+          font-weight: 900;
+          font-family: 'Pragati Narrow', sans-serif;
+          line-height: 0.85;
+          pointer-events: none;
+          user-select: none;
+          will-change: transform;
+          z-index: 0;
+        }
+        .tos-plx-bg-num.left { left: clamp(-50px, -4vw, -100px); top: 50%; }
+        .tos-plx-bg-num.right { right: clamp(-50px, -4vw, -100px); top: 50%; }
+
+        /* --- Floating gradient orb (Layer 2) --- */
+        .tos-plx-orb {
+          position: absolute;
+          border-radius: 50%;
+          filter: blur(60px);
+          pointer-events: none;
+          will-change: transform;
+          z-index: 0;
         }
 
-        /* Flip shadow overlay — darkens during mid-flip */
-        .tos-book.is-flipping::after {
+        /* --- Accent line (Layer 3) --- */
+        .tos-plx-accent-line {
+          position: absolute;
+          width: clamp(100px, 14vw, 200px);
+          height: 3px;
+          border-radius: 2px;
+          will-change: transform;
+          z-index: 1;
+        }
+
+        /* --- Floating section label (Layer 4) --- */
+        .tos-plx-floating-label {
+          position: absolute;
+          font-size: clamp(12px, 1.1vw, 14px);
+          font-weight: 700;
+          letter-spacing: 4px;
+          text-transform: uppercase;
+          will-change: transform, opacity;
+          z-index: 1;
+          pointer-events: none;
+        }
+
+        /* --- Decorative cross mark (Layer 5) --- */
+        .tos-plx-cross {
+          position: absolute;
+          width: 24px;
+          height: 24px;
+          will-change: transform;
+          z-index: 1;
+          pointer-events: none;
+          opacity: 0.08;
+        }
+        .tos-plx-cross::before,
+        .tos-plx-cross::after {
           content: '';
           position: absolute;
-          inset: 0;
-          background: rgba(0,0,0,0.04);
-          z-index: 10;
-          pointer-events: none;
-          animation: flipShadow 0.6s ease-in-out forwards;
+          border-radius: 1px;
+        }
+        .tos-plx-cross::before {
+          width: 100%;
+          height: 2px;
+          top: 50%;
+          left: 0;
+          transform: translateY(-50%);
+        }
+        .tos-plx-cross::after {
+          width: 2px;
+          height: 100%;
+          left: 50%;
+          top: 0;
+          transform: translateX(-50%);
         }
 
-        @keyframes flipShadow {
-          0% { opacity: 0; }
-          40% { opacity: 1; }
-          60% { opacity: 1; }
-          100% { opacity: 0; }
+        /* --- Content card (Layer 6 - foreground) --- */
+        .tos-plx-card {
+          position: relative;
+          max-width: 780px;
+          width: 100%;
+          padding: clamp(32px, 4.5vw, 56px);
+          border-radius: 24px;
+          will-change: transform, opacity;
+          z-index: 2;
+          transition: box-shadow 0.4s ease, transform 0.15s ease;
         }
 
+        .tos-plx-card:hover {
+          box-shadow: 0 24px 70px rgba(8,58,133,0.18), 0 8px 20px rgba(0,0,0,0.06) !important;
+        }
+
+        .tos-plx-card-badge {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 48px;
+          height: 48px;
+          border-radius: 14px;
+          font-size: 18px;
+          font-weight: 800;
+          font-family: 'Pragati Narrow', sans-serif;
+          margin-bottom: 16px;
+          opacity: 0;
+          transform: translateY(20px);
+          transition: opacity 0.5s ease 0.1s, transform 0.5s ease 0.1s;
+        }
+
+        .tos-plx-card.revealed .tos-plx-card-badge {
+          opacity: 1;
+          transform: translateY(0);
+        }
+
+        .tos-plx-card-label {
+          font-size: 12px;
+          font-weight: 700;
+          letter-spacing: 2px;
+          text-transform: uppercase;
+          margin-bottom: 8px;
+          opacity: 0;
+          transform: translateY(16px);
+          transition: opacity 0.5s ease 0.2s, transform 0.5s ease 0.2s;
+        }
+
+        .tos-plx-card.revealed .tos-plx-card-label {
+          opacity: 1;
+          transform: translateY(0);
+        }
+
+        .tos-plx-card-title {
+          font-size: clamp(1.6rem, 3.5vw, 2.2rem);
+          font-weight: 700;
+          font-family: 'Pragati Narrow', sans-serif;
+          margin: 0 0 16px;
+          line-height: 1.2;
+          opacity: 0;
+          transform: translateY(20px);
+          transition: opacity 0.6s ease 0.25s, transform 0.6s ease 0.25s;
+        }
+
+        .tos-plx-card.revealed .tos-plx-card-title {
+          opacity: 1;
+          transform: translateY(0);
+        }
+
+        .tos-plx-card-divider {
+          width: 60px;
+          height: 3px;
+          border-radius: 2px;
+          margin-bottom: 24px;
+          opacity: 0;
+          transform: scaleX(0);
+          transform-origin: left;
+          transition: opacity 0.4s ease 0.35s, transform 0.6s ease 0.35s;
+        }
+
+        .tos-plx-card.revealed .tos-plx-card-divider {
+          opacity: 1;
+          transform: scaleX(1);
+        }
+
+        .tos-plx-card-text {
+          font-size: clamp(14px, 1.1vw, 15.5px);
+          line-height: 1.85;
+          white-space: pre-wrap;
+          opacity: 0;
+          transform: translateY(24px);
+          transition: opacity 0.7s ease 0.4s, transform 0.7s ease 0.4s;
+        }
+
+        .tos-plx-card.revealed .tos-plx-card-text {
+          opacity: 1;
+          transform: translateY(0);
+        }
+
+        /* === PROGRESS NAV === */
+        .tos-plx-nav {
+          position: fixed;
+          left: clamp(14px, 2vw, 26px);
+          top: 50%;
+          transform: translateY(-50%);
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+          z-index: 200;
+        }
+
+        .tos-plx-pip {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          border: none;
+          padding: 0;
+          cursor: pointer;
+          transition: all 0.3s ease;
+        }
+
+        .tos-plx-pip:hover { transform: scale(1.4); }
+
+        .tos-plx-pip.active {
+          height: 16px;
+          border-radius: 3px;
+        }
+
+        /* === AGREEMENT === */
+        .tos-plx-agree {
+          min-height: 70vh;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          text-align: center;
+          padding: clamp(40px, 6vw, 80px) clamp(16px, 3vw, 32px);
+          background: linear-gradient(180deg, #f0f4fa 0%, #ffffff 100%);
+        }
+
+        .tos-plx-agree-card {
+          background: #fff;
+          padding: clamp(32px, 4vw, 52px);
+          border-radius: 24px;
+          box-shadow: 0 8px 40px rgba(8,58,133,0.08);
+          max-width: 520px;
+          width: 100%;
+          transition: box-shadow 0.3s ease, transform 0.3s ease;
+        }
+
+        .tos-plx-agree-card:hover {
+          box-shadow: 0 20px 60px rgba(8,58,133,0.15);
+          transform: translateY(-6px);
+        }
+
+        .tos-plx-checkbox {
+          display: flex;
+          align-items: center;
+          cursor: pointer;
+          font-size: 15px;
+          color: #374151;
+          user-select: none;
+          padding: 16px 20px;
+          border-radius: 12px;
+          border: 2px solid rgba(8,58,133,0.1);
+          transition: all 0.25s ease;
+          background: #f8fafc;
+          text-align: left;
+        }
+
+        .tos-plx-checkbox:hover {
+          border-color: rgba(8,58,133,0.3);
+          background: #f0f4fa;
+        }
+
+        .tos-plx-checkbox.checked {
+          border-color: #083A85;
+          background: rgba(8,58,133,0.04);
+        }
+
+        /* === RESPONSIVE === */
         @media (max-width: 768px) {
-          .tos-book-wrapper {
-            padding: 12px;
-            padding-top: 72px;
+          .tos-plx-section {
+            min-height: auto;
+            padding: clamp(40px, 6vh, 70px) 16px;
           }
-          .tos-book {
-            min-height: calc(100dvh - 100px);
-            border-radius: 2px 10px 10px 2px;
+
+          .tos-plx-bg-num { font-size: clamp(160px, 24vw, 260px); }
+
+          .tos-plx-orb { filter: blur(40px); }
+
+          .tos-plx-accent-line,
+          .tos-plx-floating-label,
+          .tos-plx-cross { display: none; }
+
+          .tos-plx-card {
+            padding: clamp(22px, 3.5vw, 36px);
+            border-radius: 16px;
           }
-          .tos-book::before { width: 5px; }
-          .tos-book::after { display: none; }
-          .tos-progress { max-width: 40%; }
-          .tos-dot { width: 6px; height: 6px; }
-          .tos-dot.active { width: 14px; }
-          .tos-nav-btn { padding: 8px 12px; font-size: 13px; }
+
+          .tos-plx-card-title { font-size: 1.4rem !important; }
+          .tos-plx-card-text { font-size: 0.92rem !important; line-height: 1.7 !important; }
+
+          .tos-plx-nav { left: 6px; gap: 4px; }
+          .tos-plx-pip { width: 5px; height: 5px; }
+          .tos-plx-pip.active { height: 12px; }
         }
 
         @media (max-width: 480px) {
-          .tos-book-wrapper { padding: 8px; padding-top: 68px; }
-          .tos-book { min-height: calc(100dvh - 84px); }
-          .tos-nav-btn span { display: none; }
+          .tos-plx-bg-num, .tos-plx-nav { display: none; }
+          .tos-plx-card { padding: 18px; border-radius: 14px; }
         }
       `}</style>
 
-      <div className="tos-book-container">
+      <div ref={containerRef} className="tos-plx">
         <Navbar />
 
-        <div className="tos-book-wrapper">
-          <div ref={bookRef} className={`tos-book ${isFlipping ? 'is-flipping' : ''}`}>
-
-            {/* === COVER PAGE === */}
-            {currentPage === 0 && (
-              <div className={`tos-cover ${isFlipping ? `flipping-${flipDirection}` : ''}`}>
-                <div style={{ position: 'relative', zIndex: 1 }}>
-                  <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px', border: '2px solid rgba(255,255,255,0.2)' }}>
-                    <i className="bi bi-shield-check" style={{ fontSize: 28, color: '#fff' }}></i>
-                  </div>
-                  <h1 style={{ fontSize: 'clamp(28px, 5vw, 42px)', fontWeight: 800, margin: '0 0 12px', letterSpacing: '-0.02em' }}>Terms of Service</h1>
-                  <p style={{ fontSize: 'clamp(14px, 1.5vw, 17px)', color: 'rgba(255,255,255,0.6)', margin: '0 0 32px', lineHeight: 1.6 }}>Amoria Connekyt</p>
-                  <div style={{ width: 50, height: 2, background: 'rgba(255,255,255,0.2)', margin: '0 auto 32px', borderRadius: 1 }} />
-                  <p style={{ fontSize: 'clamp(11px, 1vw, 13px)', color: 'rgba(255,255,255,0.4)', margin: '0 0 40px' }}>Last Updated: 01 February 2026</p>
-                  <button
-                    onClick={nextPage}
-                    style={{ padding: '14px 36px', background: 'rgba(255,255,255,0.15)', border: '1.5px solid rgba(255,255,255,0.25)', borderRadius: 10, color: '#fff', fontSize: 15, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s', backdropFilter: 'blur(8px)' }}
-                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.25)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.15)'; }}
-                  >
-                    Begin Reading <i className="bi bi-arrow-right" style={{ marginLeft: 8 }}></i>
-                  </button>
-                  <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', marginTop: 24 }}>
-                    <i className="bi bi-mouse" style={{ marginRight: 6 }}></i>
-                    Scroll or swipe to flip pages
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* === TABLE OF CONTENTS === */}
-            {currentPage === 1 && (
-              <div className={`tos-page ${isFlipping ? `flipping-${flipDirection}` : ''}`}>
-                <h2 style={{ fontSize: 'clamp(20px, 3vw, 26px)', fontWeight: 700, color: '#083A85', margin: '0 0 8px' }}>Table of Contents</h2>
-                <p style={{ fontSize: 13, color: '#94a3b8', margin: '0 0 20px' }}>{sections.length} sections — tap to jump to any section</p>
-                <div ref={contentRef} className="tos-page-content" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  {sections.map((section, i) => (
-                    <div
-                      key={section.id}
-                      className="tos-toc-item"
-                      onClick={() => goToPage(i + 2)}
-                    >
-                      <span style={{ width: 28, height: 28, borderRadius: 8, background: viewedSections.has(i) ? '#083A85' : '#f1f5f9', color: viewedSections.has(i) ? '#fff' : '#94a3b8', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, flexShrink: 0 }}>
-                        {viewedSections.has(i) ? <i className="bi bi-check" style={{ fontSize: 14 }}></i> : i + 1}
-                      </span>
-                      <span style={{ fontSize: 'clamp(14px, 1.3vw, 15px)', fontWeight: 600, color: '#1e293b' }}>{section.title}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* === SECTION PAGES === */}
-            {currentPage >= 2 && currentPage < totalPages && (
-              <div className={`tos-page ${isFlipping ? `flipping-${flipDirection}` : ''}`}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: '#083A85', letterSpacing: 2, textTransform: 'uppercase' }}>Section {currentPage - 1}</span>
-                  <span style={{ fontSize: 11, color: '#94a3b8' }}>of {sections.length}</span>
-                </div>
-                <h2 style={{ fontSize: 'clamp(20px, 3vw, 26px)', fontWeight: 700, color: '#083A85', margin: '0 0 4px' }}>
-                  {sections[currentPage - 2].title}
-                </h2>
-                <hr style={{ border: 'none', borderTop: '1px solid rgba(8,58,133,0.1)', margin: '12px 0 16px' }} />
-                <div ref={contentRef} className="tos-page-content">
-                  <div style={{ fontSize: 'clamp(14px, 1.2vw, 16px)', color: '#374151', lineHeight: 1.75, whiteSpace: 'pre-wrap' }}>
-                    {sections[currentPage - 2].content}
-                  </div>
-
-                  {/* Agree section on last page */}
-                  {currentPage === totalPages - 1 && (
-                    <div style={{ marginTop: 32, padding: '20px 0', borderTop: '1px solid rgba(8,58,133,0.1)' }}>
-                      {showWarning && !allSectionsViewed && (
-                        <div style={{ background: '#FEF3C7', border: '1px solid #F59E0B', borderRadius: 8, padding: '12px 16px', marginBottom: 16, fontSize: 13, color: '#92400E', textAlign: 'center' }}>
-                          Please read all {sections.length} sections before agreeing. You have viewed {viewedSections.size} of {sections.length}.
-                        </div>
-                      )}
-                      <label
-                        style={{ display: 'flex', alignItems: 'center', cursor: allSectionsViewed ? 'pointer' : 'not-allowed', fontSize: 'clamp(13px, 1.2vw, 15px)', color: allSectionsViewed ? '#374151' : '#9CA3AF', userSelect: 'none', opacity: allSectionsViewed ? 1 : 0.6 }}
-                        onClick={() => { if (!allSectionsViewed) setShowWarning(true); }}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={isAgreed}
-                          onChange={e => setIsAgreed(e.target.checked)}
-                          disabled={!allSectionsViewed}
-                          style={{ width: 20, height: 20, marginRight: 12, accentColor: '#083A85', cursor: allSectionsViewed ? 'pointer' : 'not-allowed' }}
-                        />
-                        By clicking the checkbox I confirm that I have read the Amoria Connekyt Terms of Use
-                      </label>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* === NAVIGATION BAR === */}
-            {currentPage > 0 && (
-              <div className="tos-nav">
-                <button className="tos-nav-btn" onClick={prevPage} disabled={currentPage === 0 || isFlipping}>
-                  <i className="bi bi-chevron-left"></i> <span>Previous</span>
-                </button>
-
-                <div className="tos-progress">
-                  {Array.from({ length: totalPages }).map((_, i) => (
-                    <button
-                      key={i}
-                      className={`tos-dot ${i === currentPage ? 'active' : ''} ${i >= 2 && viewedSections.has(i - 2) ? 'viewed' : ''}`}
-                      onClick={() => goToPage(i)}
-                      title={i === 0 ? 'Cover' : i === 1 ? 'Contents' : sections[i - 2]?.title}
-                    />
-                  ))}
-                </div>
-
-                <button className="tos-nav-btn" onClick={nextPage} disabled={currentPage === totalPages - 1 || isFlipping}>
-                  <span>Next</span> <i className="bi bi-chevron-right"></i>
-                </button>
-              </div>
-            )}
-
+        {/* ===================== HERO ===================== */}
+        <div className="tos-plx-hero">
+          <div className="tos-plx-hero-dots" style={{ transform: `translate(${(mousePos.x - 0.5) * -8}px, ${scrollY * 0.15 + (mousePos.y - 0.5) * -8}px)` }} />
+          <div className="tos-plx-hero-glow" style={{ transform: `translate(${(mousePos.x - 0.5) * -20}px, ${scrollY * 0.35 + (mousePos.y - 0.5) * -20}px)` }} />
+          <div className="tos-plx-hero-ring" style={{ transform: `translate(calc(-50% + ${(mousePos.x - 0.5) * 12}px), calc(-50% + ${scrollY * 0.22 + (mousePos.y - 0.5) * 12}px)) scale(${1 + scrollY * 0.0004})` }} />
+          <div className="tos-plx-hero-ring2" style={{ transform: `translate(calc(-50% + ${(mousePos.x - 0.5) * -15}px), calc(-50% + ${scrollY * 0.12 + (mousePos.y - 0.5) * -15}px)) scale(${1 + scrollY * 0.0002})` }} />
+          <div
+            className="tos-plx-hero-content"
+            style={{
+              transform: `translateY(${scrollY * 0.5}px)`,
+              opacity: Math.max(0, 1 - scrollY / 450),
+            }}
+          >
+            <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 28px', border: '2px solid rgba(255,255,255,0.1)' }}>
+              <i className="bi bi-shield-check" style={{ fontSize: 32, color: '#fff' }}></i>
+            </div>
+            <h1 style={{ fontSize: 'clamp(36px, 7vw, 62px)', fontWeight: 800, margin: '0 0 14px', letterSpacing: '-0.02em', fontFamily: "'Pragati Narrow', sans-serif" }}>
+              Terms of Service
+            </h1>
+            <p style={{ fontSize: 'clamp(15px, 1.5vw, 18px)', color: 'rgba(255,255,255,0.45)', margin: '0 0 8px' }}>Amoria Connekyt</p>
+            <div style={{ width: 50, height: 2, background: 'rgba(255,255,255,0.1)', margin: '0 auto 12px', borderRadius: 1 }} />
+            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.25)' }}>Last Updated: 01 February 2026</p>
           </div>
         </div>
+
+        {/* ===================== SECTIONS ===================== */}
+        {sections.map((section, index) => {
+          const palette = palettes[index % palettes.length];
+          const isDark = index % palettes.length === 2;
+          const offset = getSectionOffset(index);
+          const vis = getSectionVisibility(index);
+          const numSide = index % 2 === 0 ? 'left' : 'right';
+          const isRevealed = vis > 0.35;
+          const tilt = getTiltStyle(index);
+
+          // Orb colors per section
+          const orbColor = isDark ? 'rgba(100,160,255,0.12)' : 'rgba(8,58,133,0.06)';
+          const orbColor2 = isDark ? 'rgba(80,120,220,0.08)' : 'rgba(8,58,133,0.04)';
+
+          return (
+            <div
+              key={section.id}
+              ref={el => { sectionRefs.current[index] = el; }}
+              className="tos-plx-section"
+              style={{ background: palette.bg }}
+            >
+              {/* L1: Giant number (0.12x — dramatic slow drift) */}
+              <div
+                className={`tos-plx-bg-num ${numSide}`}
+                style={{
+                  color: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(8,58,133,0.035)',
+                  transform: `translateY(calc(-50% + ${offset * 0.12}px))`,
+                }}
+              >
+                {String(index + 1).padStart(2, '0')}
+              </div>
+
+              {/* L2: Floating gradient orb A (0.25x + mouse drift) */}
+              <div
+                className="tos-plx-orb"
+                style={{
+                  background: orbColor,
+                  width: 'clamp(200px, 25vw, 400px)',
+                  height: 'clamp(200px, 25vw, 400px)',
+                  top: '20%',
+                  left: index % 2 === 0 ? '5%' : 'auto',
+                  right: index % 2 === 0 ? 'auto' : '5%',
+                  transform: `translate(${(mousePos.x - 0.5) * 30}px, ${offset * 0.25 + (mousePos.y - 0.5) * 30}px)`,
+                }}
+              />
+
+              {/* L2b: Orb B — opposite corner (0.18x) */}
+              <div
+                className="tos-plx-orb"
+                style={{
+                  background: orbColor2,
+                  width: 'clamp(150px, 18vw, 280px)',
+                  height: 'clamp(150px, 18vw, 280px)',
+                  bottom: '10%',
+                  right: index % 2 === 0 ? '10%' : 'auto',
+                  left: index % 2 === 0 ? 'auto' : '10%',
+                  transform: `translate(${(mousePos.x - 0.5) * -20}px, ${offset * 0.18 + (mousePos.y - 0.5) * -20}px)`,
+                }}
+              />
+
+              {/* L3: Accent line (0.3x) */}
+              <div
+                className="tos-plx-accent-line"
+                style={{
+                  background: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(8,58,133,0.1)',
+                  top: index % 2 === 0 ? '18%' : 'auto',
+                  bottom: index % 2 === 0 ? 'auto' : '20%',
+                  left: index % 2 === 0 ? '6%' : 'auto',
+                  right: index % 2 === 0 ? 'auto' : '6%',
+                  transform: `translateY(${offset * 0.3}px) rotate(${index % 2 === 0 ? -15 : 15}deg)`,
+                }}
+              />
+
+              {/* L4: Floating label ghost (0.4x) */}
+              <div
+                className="tos-plx-floating-label"
+                style={{
+                  color: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(8,58,133,0.05)',
+                  top: '10%',
+                  right: index % 2 === 0 ? '8%' : 'auto',
+                  left: index % 2 === 0 ? 'auto' : '8%',
+                  transform: `translateY(${offset * 0.4}px)`,
+                  opacity: Math.min(0.6, vis * 1.5),
+                }}
+              >
+                {section.title}
+              </div>
+
+              {/* L5: Decorative cross marks (0.22x) */}
+              <div
+                className="tos-plx-cross"
+                style={{
+                  top: '30%',
+                  left: index % 2 === 0 ? '15%' : 'auto',
+                  right: index % 2 === 0 ? 'auto' : '15%',
+                  transform: `translateY(${offset * 0.22}px) rotate(45deg)`,
+                }}
+              >
+                <div style={{ position: 'absolute', width: '100%', height: '2px', top: '50%', left: 0, transform: 'translateY(-50%)', background: isDark ? '#fff' : '#083A85', borderRadius: 1 }} />
+                <div style={{ position: 'absolute', width: '2px', height: '100%', left: '50%', top: 0, transform: 'translateX(-50%)', background: isDark ? '#fff' : '#083A85', borderRadius: 1 }} />
+              </div>
+
+              <div
+                className="tos-plx-cross"
+                style={{
+                  bottom: '25%',
+                  right: index % 2 === 0 ? '12%' : 'auto',
+                  left: index % 2 === 0 ? 'auto' : '12%',
+                  transform: `translateY(${offset * 0.28}px) rotate(15deg)`,
+                  width: 18,
+                  height: 18,
+                }}
+              >
+                <div style={{ position: 'absolute', width: '100%', height: '2px', top: '50%', left: 0, transform: 'translateY(-50%)', background: isDark ? '#fff' : '#083A85', borderRadius: 1 }} />
+                <div style={{ position: 'absolute', width: '2px', height: '100%', left: '50%', top: 0, transform: 'translateX(-50%)', background: isDark ? '#fff' : '#083A85', borderRadius: 1 }} />
+              </div>
+
+              {/* L6: Content card (foreground — 3D tilt + reveal) */}
+              <div
+                ref={el => { cardRefs.current[index] = el; }}
+                className={`tos-plx-card ${isRevealed ? 'revealed' : ''}`}
+                style={{
+                  background: isDark ? 'rgba(255,255,255,0.06)' : '#ffffff',
+                  boxShadow: isDark
+                    ? '0 12px 40px rgba(0,0,0,0.25)'
+                    : '0 10px 40px rgba(8,58,133,0.08), 0 2px 8px rgba(0,0,0,0.03)',
+                  backdropFilter: isDark ? 'blur(16px)' : 'none',
+                  border: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(8,58,133,0.04)',
+                  opacity: Math.min(1, vis * 2),
+                  ...tilt,
+                }}
+              >
+                <div
+                  className="tos-plx-card-badge"
+                  style={{
+                    background: isDark ? 'rgba(255,255,255,0.1)' : '#083A85',
+                    color: '#fff',
+                  }}
+                >
+                  {index + 1}
+                </div>
+                <div className="tos-plx-card-label" style={{ color: isDark ? 'rgba(255,255,255,0.35)' : '#94a3b8' }}>
+                  Section {index + 1} of {sections.length}
+                </div>
+                <h2 className="tos-plx-card-title" style={{ color: isDark ? '#fff' : '#083A85' }}>
+                  {section.title}
+                </h2>
+                <div className="tos-plx-card-divider" style={{ background: isDark ? 'rgba(255,255,255,0.15)' : 'linear-gradient(90deg, #083A85, #0a4da3)' }} />
+                <div className="tos-plx-card-text" style={{ color: isDark ? 'rgba(255,255,255,0.75)' : '#374151' }}>
+                  {section.content}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+
+        {/* ===================== AGREEMENT ===================== */}
+        <div style={{ padding: 'clamp(24px, 4vw, 40px) clamp(16px, 4vw, 48px)', maxWidth: 780, margin: '0 auto', width: '100%' }}>
+          <label className={`tos-plx-checkbox ${isAgreed ? 'checked' : ''}`}>
+            <input
+              type="checkbox"
+              checked={isAgreed}
+              onChange={e => setIsAgreed(e.target.checked)}
+              style={{ width: 20, height: 20, marginRight: 12, accentColor: '#083A85', cursor: 'pointer', flexShrink: 0 }}
+            />
+            I confirm that I have read the Amoria Connekyt Terms of Use
+          </label>
+        </div>
+
+        <Footer />
       </div>
-      <Footer />
+
+      {/* ===================== PROGRESS NAV ===================== */}
+      {(() => {
+        // Find which section is currently most visible
+        let currentIdx = -1; // -1 = hero
+        for (let i = 0; i < sections.length; i++) {
+          const vis = getSectionVisibility(i);
+          if (vis > 0.4 && vis < 1.2) currentIdx = i;
+        }
+        // Hero or dark palette section = dark background
+        const onDark = currentIdx === -1 || currentIdx % palettes.length === 2;
+
+        return (
+          <div className="tos-plx-nav" style={{ transition: 'all 0.3s ease' }}>
+            {sections.map((section, i) => {
+              const vis = getSectionVisibility(i);
+              const isActive = vis > 0.3 && vis < 1.3;
+              return (
+                <button
+                  key={section.id}
+                  className={`tos-plx-pip ${isActive ? 'active' : ''}`}
+                  style={{
+                    background: isActive
+                      ? (onDark ? '#ffffff' : '#083A85')
+                      : (onDark ? 'rgba(255,255,255,0.25)' : 'rgba(8,58,133,0.15)'),
+                    transition: 'all 0.3s ease',
+                  }}
+                  onClick={() => {
+                    sectionRefs.current[i]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  }}
+                  title={section.title}
+                />
+              );
+            })}
+          </div>
+        );
+      })()}
     </>
   );
 };
