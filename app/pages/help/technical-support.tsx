@@ -1,186 +1,51 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Navbar from '../../components/navbar';
 import Footer from '../../components/footer';
 import Link from 'next/link';
 
 const TechnicalSupportHelp: React.FC = () => {
+  const [openSection, setOpenSection] = useState<string | null>(null);
+  const toggleSection = (id: string) => setOpenSection(prev => prev === id ? null : id);
+
   return (
     <div className="min-h-screen" style={{ background: 'linear-gradient(to bottom, #f9fafb 0%, #f3f4f6 50%, #e5e7eb 100%)' }}>
       <Navbar />
 
-      {/* Hero Section */}
+                  {/* Hero Section */}
       <div style={{
         position: 'relative',
-        paddingTop: '8rem',
-        paddingBottom: '6rem',
-        overflow: 'hidden'
-      }} className="!pt-24 md:!pt-32">
-        <div style={{
-          position: 'absolute',
-          inset: 0
-        }}>
-          <img
-            src="https://i.pinimg.com/736x/9c/df/a9/9cdfa9455775771fb2bc020c10329698.jpg"
-            alt="Technical Support Help"
-            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-          />
-          <div style={{
-            position: 'absolute',
-            inset: 0,
-            backgroundColor: 'rgba(8, 58, 133, 0.92)',
-            backdropFilter: 'blur(2px)'
-          }}></div>
-        </div>
+        paddingTop: 'clamp(5rem, 8vw, 6rem)',
+        paddingBottom: 'clamp(1.5rem, 3vw, 2.5rem)',
+        overflow: 'hidden',
+        background: 'linear-gradient(160deg, #052047 0%, #083A85 40%, #0a4da3 70%, #103E83 100%)',
+      }}>
+        <div style={{ position: 'absolute', inset: '-80px', backgroundImage: 'radial-gradient(rgba(255,255,255,0.05) 1.5px, transparent 1.5px)', backgroundSize: '32px 32px', pointerEvents: 'none' }} />
 
-        <div style={{
-          position: 'relative',
-          maxWidth: '1200px',
-          margin: '0 auto',
-          padding: '0 2rem',
-          textAlign: 'center'
-        }} className="!px-4 md:!px-8">
-          <div style={{
-            display: 'inline-block',
-            marginBottom: '2rem'
-          }}>
-            <div style={{
-              width: '90px',
-              height: '90px',
-              background: 'rgba(255, 255, 255, 0.15)',
-              backdropFilter: 'blur(10px)',
-              borderRadius: '22px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              margin: '0 auto',
-              boxShadow: '0 10px 40px rgba(0, 0, 0, 0.3)'
-            }}>
-              <i className="bi bi-gear" style={{ fontSize: '3.5rem', color: 'white' }}></i>
+        <div style={{ position: 'relative', maxWidth: '1200px', margin: '0 auto', padding: '0 2rem', zIndex: 2 }} className="!px-4 md:!px-8">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '8px' }}>
+            <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid rgba(255,255,255,0.1)', flexShrink: 0 }}>
+              <i className="bi-gear" style={{ fontSize: 18, color: '#fff' }}></i>
             </div>
+            <h1 style={{ fontSize: 'clamp(1.4rem, 3vw, 2rem)', fontWeight: 800, color: 'white', margin: 0, letterSpacing: '-0.02em', fontFamily: "'Pragati Narrow', sans-serif" }}>
+              Technical Support
+            </h1>
           </div>
-
-          <h1 style={{
-            fontSize: 'clamp(2.5rem, 5vw, 3.5rem)',
-            fontWeight: '800',
-            color: 'white',
-            marginBottom: '1.5rem',
-            letterSpacing: '-0.02em'
-          }}>
-            Technical Support Documentation
-          </h1>
-
-          <p style={{
-            fontSize: 'clamp(1.125rem, 2.5vw, 1.375rem)',
-            color: 'rgba(255, 255, 255, 0.95)',
-            maxWidth: '700px',
-            margin: '0 auto 2.5rem',
-            lineHeight: '1.8',
-            fontWeight: '400'
-          }}>
+          <p style={{ fontSize: 'clamp(13px, 1.1vw, 15px)', color: 'rgba(255,255,255,0.4)', margin: '0 0 12px', lineHeight: 1.5 }}>
             Troubleshoot technical issues and get your account running smoothly
           </p>
-
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '10px',
-            fontSize: '15px',
-            color: 'rgba(255, 255, 255, 0.85)',
-            fontWeight: '500'
-          }}>
-            <Link href="/user/help-center" style={{ color: 'rgba(255, 255, 255, 0.85)', textDecoration: 'none', transition: 'color 0.2s' }} className="hover:text-white">
-              Help Center
-            </Link>
-            <i className="bi bi-chevron-right" style={{ fontSize: '12px' }}></i>
-            <span style={{ color: 'white' }}>Technical Support</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'rgba(255,255,255,0.4)' }}>
+            <Link href="/user/help-center" style={{ color: 'rgba(255,255,255,0.4)', textDecoration: 'none' }}>Help Center</Link>
+            <i className="bi bi-chevron-right" style={{ fontSize: '11px' }}></i>
+            <span style={{ color: 'rgba(255,255,255,0.8)' }}>Technical Support</span>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
       <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 2rem' }} className="!px-4 md:!px-8">
-        <div style={{ paddingTop: '4rem', paddingBottom: '6rem' }} className="!pt-8 !pb-12 md:!pt-16 md:!pb-24">
-
-          {/* Quick Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-8" style={{ marginBottom: '3rem' }}>
-            <div style={{
-              background: 'white',
-              borderRadius: '20px',
-              padding: '2.5rem 2rem',
-              textAlign: 'center',
-              boxShadow: '0 4px 20px rgba(8, 58, 133, 0.08)',
-              border: '1px solid rgba(8, 58, 133, 0.08)'
-            }} className="!p-6 md:!p-10">
-              <div style={{
-                width: '64px',
-                height: '64px',
-                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                borderRadius: '16px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                margin: '0 auto 1.5rem',
-                boxShadow: '0 8px 20px rgba(16, 185, 129, 0.25)'
-              }}>
-                <i className="bi bi-clock text-white" style={{ fontSize: '1.75rem' }}></i>
-              </div>
-              <h3 style={{ fontSize: '2.25rem', fontWeight: '700', color: '#111827', marginBottom: '0.5rem' }}>24 Hours</h3>
-              <p style={{ color: '#6B7280', fontSize: '0.95rem', fontWeight: '500' }}>Response</p>
-            </div>
-
-            <div style={{
-              background: 'white',
-              borderRadius: '20px',
-              padding: '2.5rem 2rem',
-              textAlign: 'center',
-              boxShadow: '0 4px 20px rgba(8, 58, 133, 0.08)',
-              border: '1px solid rgba(8, 58, 133, 0.08)'
-            }} className="!p-6 md:!p-10">
-              <div style={{
-                width: '64px',
-                height: '64px',
-                background: 'linear-gradient(135deg, #083A85 0%, #0a4aa3 100%)',
-                borderRadius: '16px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                margin: '0 auto 1.5rem',
-                boxShadow: '0 8px 20px rgba(8, 58, 133, 0.25)'
-              }}>
-                <i className="bi bi-check-circle text-white" style={{ fontSize: '1.75rem' }}></i>
-              </div>
-              <h3 style={{ fontSize: '2.25rem', fontWeight: '700', color: '#111827', marginBottom: '0.5rem' }}>95%</h3>
-              <p style={{ color: '#6B7280', fontSize: '0.95rem', fontWeight: '500' }}>Resolution</p>
-            </div>
-
-            <div style={{
-              background: 'white',
-              borderRadius: '20px',
-              padding: '2.5rem 2rem',
-              textAlign: 'center',
-              boxShadow: '0 4px 20px rgba(8, 58, 133, 0.08)',
-              border: '1px solid rgba(8, 58, 133, 0.08)'
-            }} className="!p-6 md:!p-10">
-              <div style={{
-                width: '64px',
-                height: '64px',
-                background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                borderRadius: '16px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                margin: '0 auto 1.5rem',
-                boxShadow: '0 8px 20px rgba(245, 158, 11, 0.25)'
-              }}>
-                <i className="bi bi-headset text-white" style={{ fontSize: '1.75rem' }}></i>
-              </div>
-              <h3 style={{ fontSize: '2.25rem', fontWeight: '700', color: '#111827', marginBottom: '0.5rem' }}>24/7</h3>
-              <p style={{ color: '#6B7280', fontSize: '0.95rem', fontWeight: '500' }}>Support</p>
-            </div>
-          </div>
+        <div style={{ paddingTop: '2rem', paddingBottom: '3rem' }} className="!pt-4 !pb-8 md:!pt-8 md:!pb-12">
 
           {/* Documentation Content */}
           <div style={{
@@ -191,80 +56,55 @@ const TechnicalSupportHelp: React.FC = () => {
             overflow: 'hidden'
           }}>
 
-            {/* Table of Contents */}
-            <div style={{
-              padding: '3rem',
-              borderBottom: '1px solid #E5E7EB'
-            }} className="!p-6 md:!p-12">
-              <h2 style={{
-                fontSize: 'clamp(1.75rem, 3vw, 2.25rem)',
-                fontWeight: '700',
-                color: '#111827',
-                marginBottom: '1.5rem',
-                letterSpacing: '-0.01em'
-              }}>
-                Table of Contents
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {[
-                  { icon: 'bi-exclamation-triangle', title: 'Common Issues', id: 'issues' },
-                  { icon: 'bi-browser-chrome', title: 'Browser Compatibility', id: 'browser' },
-                  { icon: 'bi-credit-card-2-back', title: 'Payment Technical', id: 'payment' },
-                  { icon: 'bi-images', title: 'Photo Gallery', id: 'gallery' },
-                  { icon: 'bi-phone', title: 'Mobile App', id: 'mobile' },
-                  { icon: 'bi-envelope', title: 'Contact Support', id: 'contact' }
-                ].map((item, idx) => (
-                  <a
-                    key={idx}
-                    href={`#${item.id}`}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '12px',
-                      padding: '1rem 1.25rem',
-                      background: 'rgba(8, 58, 133, 0.04)',
-                      border: '1px solid rgba(8, 58, 133, 0.1)',
-                      borderRadius: '12px',
-                      textDecoration: 'none',
-                      color: '#083A85',
-                      fontWeight: '600',
-                      fontSize: '0.95rem',
-                      transition: 'all 0.2s ease'
-                    }}
-                    className="hover:bg-blue-50 hover:border-blue-300 hover:shadow-md"
-                  >
-                    <i className={item.icon} style={{ fontSize: '1.25rem' }}></i>
-                    {item.title}
-                  </a>
-                ))}
-              </div>
+                        {/* Section Guide */}
+            <div style={{ padding: '2rem 3rem 1rem', borderBottom: '1px solid #E5E7EB' }} className="!px-6 !py-4 md:!px-12 md:!pt-8 md:!pb-4">
+              <p style={{ fontSize: '0.95rem', color: '#6B7280', margin: 0 }}>
+                <i className="bi bi-info-circle" style={{ marginRight: 8, color: '#083A85' }}></i>
+                Click on any topic below to expand and read the details
+              </p>
             </div>
 
-            {/* Section 1: Common Technical Issues */}
-            <section id="issues" style={{ padding: '4rem 3rem', borderBottom: '1px solid #E5E7EB' }} className="!p-6 md:!p-12">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '2rem' }}>
+{/* Section 1: Common Technical Issues */}
+            <section id="issues" style={{ borderBottom: '1px solid #E5E7EB' }}>
+              <button
+                onClick={() => toggleSection('issues')}
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '16px',
+                  padding: '1.5rem 3rem',
+                  background: openSection === 'issues' ? 'rgba(8, 58, 133, 0.03)' : 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  textAlign: 'left',
+                }}
+                className="!px-6 md:!px-12 !py-4 md:!py-6 hover:bg-gray-50"
+              >
                 <div style={{
-                  width: '56px',
-                  height: '56px',
+                  width: '44px',
+                  height: '44px',
                   background: 'linear-gradient(135deg, #083A85 0%, #0a4aa3 100%)',
-                  borderRadius: '14px',
+                  borderRadius: '12px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  boxShadow: '0 6px 16px rgba(8, 58, 133, 0.25)'
+                  flexShrink: 0,
                 }}>
-                  <i className="bi bi-exclamation-triangle text-white" style={{ fontSize: '1.5rem' }}></i>
+                  <i className="bi bi-exclamation-triangle text-white" style={{ fontSize: '1.2rem' }}></i>
                 </div>
-                <h2 style={{
-                  fontSize: 'clamp(1.75rem, 3vw, 2.25rem)',
-                  fontWeight: '700',
-                  color: '#111827',
-                  margin: 0,
-                  letterSpacing: '-0.01em'
-                }}>
-                  Common Technical Issues
-                </h2>
-              </div>
+                <span style={{ flex: 1, fontSize: 'clamp(1rem, 2vw, 1.25rem)', fontWeight: '700', color: '#111827' }}>
+                  Common Issues
+                </span>
+                <i className={`bi ${openSection === 'issues' ? 'bi-chevron-up' : 'bi-chevron-down'}`} style={{ fontSize: '1.1rem', color: '#6B7280', transition: 'transform 0.2s' }}></i>
+              </button>
+              <div style={{
+                maxHeight: openSection === 'issues' ? '5000px' : '0',
+                overflow: 'hidden',
+                transition: 'max-height 0.4s ease',
+                padding: openSection === 'issues' ? '0 3rem 3rem' : '0 3rem',
+              }} className={openSection === 'issues' ? '!px-6 md:!px-12 !pb-6 md:!pb-12' : '!px-6 md:!px-12'}>
 
               <p style={{ fontSize: '1.05rem', lineHeight: '1.8', color: '#4B5563', marginBottom: '2rem' }}>
                 Most technical issues can be resolved quickly with these troubleshooting steps. If problems persist after trying these solutions, please contact our technical support team for personalized assistance.
@@ -445,62 +285,20 @@ const TechnicalSupportHelp: React.FC = () => {
                   ))}
                 </div>
               </div>
+            </div>
             </section>
 
           </div>
 
-          {/* Back to Help Center CTA */}
-          <div style={{
-            background: 'linear-gradient(135deg, #083A85 0%, #0a4aa3 100%)',
-            borderRadius: '24px',
-            padding: '3rem',
-            textAlign: 'center',
-            boxShadow: '0 10px 40px rgba(8, 58, 133, 0.25)',
-            marginTop: '4rem'
-          }} className="!p-6 md:!p-12 !mt-8 md:!mt-16">
-            <div style={{
-              width: '72px',
-              height: '72px',
-              background: 'rgba(255, 255, 255, 0.2)',
-              backdropFilter: 'blur(10px)',
-              borderRadius: '18px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              margin: '0 auto 1.5rem',
-              boxShadow: '0 8px 20px rgba(0, 0, 0, 0.2)'
-            }}>
-              <i className="bi bi-headset" style={{ fontSize: '2.25rem', color: 'white' }}></i>
-            </div>
-            <h3 style={{ fontSize: '1.75rem', fontWeight: '700', color: 'white', marginBottom: '1rem' }}>Still Having Issues?</h3>
-            <p style={{ color: 'rgba(255, 255, 255, 0.95)', marginBottom: '2rem', fontSize: '1.05rem', lineHeight: '1.7', maxWidth: '600px', margin: '0 auto 2rem' }}>
-              Our technical support team is standing by to help resolve any platform issues you encounter.
-            </p>
-            <Link
-              href="/user/help-center"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '10px',
-                padding: '16px 36px',
-                backgroundColor: 'white',
-                color: '#083A85',
-                fontWeight: '600',
-                fontSize: '1.05rem',
-                borderRadius: '12px',
-                textDecoration: 'none',
-                boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2)',
-                transition: 'all 0.3s ease'
-              }}
-              className="hover:scale-105 hover:shadow-xl"
-            >
+                                        {/* Back to Help Center */}
+          <div style={{ textAlign: 'center', marginTop: '2rem', paddingBottom: '1rem' }}>
+            <Link href="/user/help-center" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: '#083A85', fontWeight: '600', fontSize: '0.95rem', textDecoration: 'none' }} className="hover:opacity-70">
               <i className="bi bi-arrow-left"></i>
               Back to Help Center
             </Link>
           </div>
         </div>
       </div>
-
       <Footer />
     </div>
   );

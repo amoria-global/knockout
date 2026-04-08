@@ -1,101 +1,47 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Navbar from '../../components/navbar';
 import Footer from '../../components/footer';
 import Link from 'next/link';
 
 const MyAccountHelp: React.FC = () => {
+  const [openSection, setOpenSection] = useState<string | null>(null);
+
+  const toggleSection = (id: string) => {
+    setOpenSection(prev => prev === id ? null : id);
+  };
+
   return (
     <div className="min-h-screen" style={{ background: 'linear-gradient(to bottom, #f9fafb 0%, #f3f4f6 50%, #e5e7eb 100%)' }}>
       <Navbar />
 
-      {/* Hero Section */}
+      {/* Hero Section — compact */}
       <div style={{
         position: 'relative',
-        paddingTop: '8rem',
-        paddingBottom: '6rem',
-        overflow: 'hidden'
-      }} className="!pt-24 md:!pt-32">
-        <div style={{
-          position: 'absolute',
-          inset: 0
-        }}>
-          <img
-            src="https://i.pinimg.com/736x/9c/df/a9/9cdfa9455775771fb2bc020c10329698.jpg"
-            alt="My Account Help"
-            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-          />
-          <div style={{
-            position: 'absolute',
-            inset: 0,
-            backgroundColor: 'rgba(8, 58, 133, 0.92)',
-            backdropFilter: 'blur(2px)'
-          }}></div>
-        </div>
+        paddingTop: 'clamp(5rem, 8vw, 6rem)',
+        paddingBottom: 'clamp(1.5rem, 3vw, 2.5rem)',
+        overflow: 'hidden',
+        background: 'linear-gradient(160deg, #052047 0%, #083A85 40%, #0a4da3 70%, #103E83 100%)',
+      }}>
+        <div style={{ position: 'absolute', inset: '-80px', backgroundImage: 'radial-gradient(rgba(255,255,255,0.05) 1.5px, transparent 1.5px)', backgroundSize: '32px 32px', pointerEvents: 'none' }} />
 
-        <div style={{
-          position: 'relative',
-          maxWidth: '1200px',
-          margin: '0 auto',
-          padding: '0 2rem',
-          textAlign: 'center'
-        }} className="!px-4 md:!px-8">
-          <div style={{
-            display: 'inline-block',
-            marginBottom: '2rem'
-          }}>
-            <div style={{
-              width: '90px',
-              height: '90px',
-              background: 'rgba(255, 255, 255, 0.15)',
-              backdropFilter: 'blur(10px)',
-              borderRadius: '22px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              margin: '0 auto',
-              boxShadow: '0 10px 40px rgba(0, 0, 0, 0.3)'
-            }}>
-              <i className="bi bi-person-circle" style={{ fontSize: '3.5rem', color: 'white' }}></i>
+        <div style={{ position: 'relative', maxWidth: '1200px', margin: '0 auto', padding: '0 2rem', zIndex: 2 }} className="!px-4 md:!px-8">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '8px' }}>
+            <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid rgba(255,255,255,0.1)', flexShrink: 0 }}>
+              <i className="bi bi-person-circle" style={{ fontSize: 18, color: '#fff' }}></i>
             </div>
+            <h1 style={{ fontSize: 'clamp(1.4rem, 3vw, 2rem)', fontWeight: 800, color: 'white', margin: 0, letterSpacing: '-0.02em', fontFamily: "'Pragati Narrow', sans-serif" }}>
+              My Account
+            </h1>
           </div>
-
-          <h1 style={{
-            fontSize: 'clamp(2.5rem, 5vw, 3.5rem)',
-            fontWeight: '800',
-            color: 'white',
-            marginBottom: '1.5rem',
-            letterSpacing: '-0.02em'
-          }}>
-            My Account Documentation
-          </h1>
-
-          <p style={{
-            fontSize: 'clamp(1.125rem, 2.5vw, 1.375rem)',
-            color: 'rgba(255, 255, 255, 0.95)',
-            maxWidth: '700px',
-            margin: '0 auto 2.5rem',
-            lineHeight: '1.8',
-            fontWeight: '400'
-          }}>
-            Complete guide to creating, managing, and optimizing your Amoria connekyt account
+          <p style={{ fontSize: 'clamp(13px, 1.1vw, 15px)', color: 'rgba(255,255,255,0.4)', margin: '0 0 12px', lineHeight: 1.5 }}>
+            Complete guide to creating, managing, and optimizing your Amoria Connekyt account
           </p>
-
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '10px',
-            fontSize: '15px',
-            color: 'rgba(255, 255, 255, 0.85)',
-            fontWeight: '500'
-          }}>
-            <Link href="/user/help-center" style={{ color: 'rgba(255, 255, 255, 0.85)', textDecoration: 'none', transition: 'color 0.2s' }} className="hover:text-white">
-              Help Center
-            </Link>
-            <i className="bi bi-chevron-right" style={{ fontSize: '12px' }}></i>
-            <span style={{ color: 'white' }}>My Account</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'rgba(255,255,255,0.4)' }}>
+            <Link href="/user/help-center" style={{ color: 'rgba(255,255,255,0.4)', textDecoration: 'none' }}>Help Center</Link>
+            <i className="bi bi-chevron-right" style={{ fontSize: '11px' }}></i>
+            <span style={{ color: 'rgba(255,255,255,0.8)' }}>My Account</span>
           </div>
         </div>
       </div>
@@ -103,84 +49,6 @@ const MyAccountHelp: React.FC = () => {
       {/* Main Content */}
       <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 2rem' }} className="!px-4 md:!px-8">
         <div style={{ paddingTop: '4rem', paddingBottom: '6rem' }} className="!pt-8 !pb-12 md:!pt-16 md:!pb-24">
-
-          {/* Quick Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-8" style={{ marginBottom: '3rem' }}>
-            <div style={{
-              background: 'white',
-              borderRadius: '20px',
-              padding: '2.5rem 2rem',
-              textAlign: 'center',
-              boxShadow: '0 4px 20px rgba(8, 58, 133, 0.08)',
-              border: '1px solid rgba(8, 58, 133, 0.08)'
-            }} className="!p-6 md:!p-10">
-              <div style={{
-                width: '64px',
-                height: '64px',
-                background: 'linear-gradient(135deg, #083A85 0%, #0a4aa3 100%)',
-                borderRadius: '16px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                margin: '0 auto 1.5rem',
-                boxShadow: '0 8px 20px rgba(8, 58, 133, 0.25)'
-              }}>
-                <i className="bi bi-people-fill text-white" style={{ fontSize: '1.75rem' }}></i>
-              </div>
-              <h3 style={{ fontSize: '2.25rem', fontWeight: '700', color: '#111827', marginBottom: '0.5rem' }}>12,500+</h3>
-              <p style={{ color: '#6B7280', fontSize: '0.95rem', fontWeight: '500' }}>Active Users</p>
-            </div>
-
-            <div style={{
-              background: 'white',
-              borderRadius: '20px',
-              padding: '2.5rem 2rem',
-              textAlign: 'center',
-              boxShadow: '0 4px 20px rgba(8, 58, 133, 0.08)',
-              border: '1px solid rgba(8, 58, 133, 0.08)'
-            }} className="!p-6 md:!p-10">
-              <div style={{
-                width: '64px',
-                height: '64px',
-                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                borderRadius: '16px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                margin: '0 auto 1.5rem',
-                boxShadow: '0 8px 20px rgba(16, 185, 129, 0.25)'
-              }}>
-                <i className="bi bi-patch-check-fill text-white" style={{ fontSize: '1.75rem' }}></i>
-              </div>
-              <h3 style={{ fontSize: '2.25rem', fontWeight: '700', color: '#111827', marginBottom: '0.5rem' }}>3,200+</h3>
-              <p style={{ color: '#6B7280', fontSize: '0.95rem', fontWeight: '500' }}>Verified Photographers</p>
-            </div>
-
-            <div style={{
-              background: 'white',
-              borderRadius: '20px',
-              padding: '2.5rem 2rem',
-              textAlign: 'center',
-              boxShadow: '0 4px 20px rgba(8, 58, 133, 0.08)',
-              border: '1px solid rgba(8, 58, 133, 0.08)'
-            }} className="!p-6 md:!p-10">
-              <div style={{
-                width: '64px',
-                height: '64px',
-                background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                borderRadius: '16px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                margin: '0 auto 1.5rem',
-                boxShadow: '0 8px 20px rgba(245, 158, 11, 0.25)'
-              }}>
-                <i className="bi bi-clock-history text-white" style={{ fontSize: '1.75rem' }}></i>
-              </div>
-              <h3 style={{ fontSize: '2.25rem', fontWeight: '700', color: '#111827', marginBottom: '0.5rem' }}>3-5 Days</h3>
-              <p style={{ color: '#6B7280', fontSize: '0.95rem', fontWeight: '500' }}>Avg. Verification Time</p>
-            </div>
-          </div>
 
           {/* Documentation Content */}
           <div style={{
@@ -191,80 +59,55 @@ const MyAccountHelp: React.FC = () => {
             overflow: 'hidden'
           }}>
 
-            {/* Table of Contents */}
-            <div style={{
-              padding: '3rem',
-              borderBottom: '1px solid #E5E7EB'
-            }} className="!p-6 md:!p-12">
-              <h2 style={{
-                fontSize: 'clamp(1.75rem, 3vw, 2.25rem)',
-                fontWeight: '700',
-                color: '#111827',
-                marginBottom: '1.5rem',
-                letterSpacing: '-0.01em'
-              }}>
-                Table of Contents
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {[
-                  { icon: 'bi-person-plus-fill', title: 'Creating Your Account', id: 'create' },
-                  { icon: 'bi-person-gear', title: 'Managing Your Profile', id: 'manage' },
-                  { icon: 'bi-patch-check-fill', title: 'Account Verification', id: 'verify' },
-                  { icon: 'bi-bell-fill', title: 'Notification Preferences', id: 'notifications' },
-                  { icon: 'bi-shield-lock-fill', title: 'Account Settings & Privacy', id: 'settings' },
-                  { icon: 'bi-tools', title: 'Common Account Issues', id: 'issues' }
-                ].map((item, idx) => (
-                  <a
-                    key={idx}
-                    href={`#${item.id}`}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '12px',
-                      padding: '1rem 1.25rem',
-                      background: 'rgba(8, 58, 133, 0.04)',
-                      border: '1px solid rgba(8, 58, 133, 0.1)',
-                      borderRadius: '12px',
-                      textDecoration: 'none',
-                      color: '#083A85',
-                      fontWeight: '600',
-                      fontSize: '0.95rem',
-                      transition: 'all 0.2s ease'
-                    }}
-                    className="hover:bg-blue-50 hover:border-blue-300 hover:shadow-md"
-                  >
-                    <i className={item.icon} style={{ fontSize: '1.25rem' }}></i>
-                    {item.title}
-                  </a>
-                ))}
-              </div>
+            {/* Section Guide */}
+            <div style={{ padding: '2rem 3rem 1rem', borderBottom: '1px solid #E5E7EB' }} className="!px-6 !py-4 md:!px-12 md:!pt-8 md:!pb-4">
+              <p style={{ fontSize: '0.95rem', color: '#6B7280', margin: 0 }}>
+                <i className="bi bi-info-circle" style={{ marginRight: 8, color: '#083A85' }}></i>
+                Click on any topic below to expand and read the details
+              </p>
             </div>
 
             {/* Section 1: Creating Your Account */}
-            <section id="create" style={{ padding: '4rem 3rem', borderBottom: '1px solid #E5E7EB' }} className="!p-6 md:!p-12">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '2rem' }}>
+            <section id="create" style={{ borderBottom: '1px solid #E5E7EB' }}>
+              <button
+                onClick={() => toggleSection('create')}
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '16px',
+                  padding: '1.5rem 3rem',
+                  background: openSection === 'create' ? 'rgba(8, 58, 133, 0.03)' : 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  textAlign: 'left',
+                }}
+                className="!px-6 md:!px-12 !py-4 md:!py-6 hover:bg-gray-50"
+              >
                 <div style={{
-                  width: '56px',
-                  height: '56px',
+                  width: '44px',
+                  height: '44px',
                   background: 'linear-gradient(135deg, #083A85 0%, #0a4aa3 100%)',
-                  borderRadius: '14px',
+                  borderRadius: '12px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  boxShadow: '0 6px 16px rgba(8, 58, 133, 0.25)'
+                  flexShrink: 0,
                 }}>
-                  <i className="bi bi-person-plus-fill text-white" style={{ fontSize: '1.5rem' }}></i>
+                  <i className="bi bi-person-plus-fill text-white" style={{ fontSize: '1.2rem' }}></i>
                 </div>
-                <h2 style={{
-                  fontSize: 'clamp(1.75rem, 3vw, 2.25rem)',
-                  fontWeight: '700',
-                  color: '#111827',
-                  margin: 0,
-                  letterSpacing: '-0.01em'
-                }}>
+                <span style={{ flex: 1, fontSize: 'clamp(1rem, 2vw, 1.25rem)', fontWeight: '700', color: '#111827' }}>
                   Creating Your Account
-                </h2>
-              </div>
+                </span>
+                <i className={`bi ${openSection === 'create' ? 'bi-chevron-up' : 'bi-chevron-down'}`} style={{ fontSize: '1.1rem', color: '#6B7280', transition: 'transform 0.2s' }}></i>
+              </button>
+              <div style={{
+                maxHeight: openSection === 'create' ? '5000px' : '0',
+                overflow: 'hidden',
+                transition: 'max-height 0.4s ease',
+                padding: openSection === 'create' ? '0 3rem 3rem' : '0 3rem',
+              }} className={openSection === 'create' ? '!px-6 md:!px-12 !pb-6 md:!pb-12' : '!px-6 md:!px-12'}>
 
               <div style={{ marginBottom: '3rem' }}>
                 <h3 style={{ fontSize: '1.35rem', fontWeight: '600', color: '#111827', marginBottom: '1rem' }}>
@@ -356,33 +199,50 @@ const MyAccountHelp: React.FC = () => {
                   </div>
                 </div>
               </div>
+            </div>
             </section>
 
             {/* Section 2: Managing Your Profile */}
-            <section id="manage" style={{ padding: '4rem 3rem', borderBottom: '1px solid #E5E7EB' }} className="!p-6 md:!p-12">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '2rem' }}>
+            <section id="manage" style={{ borderBottom: '1px solid #E5E7EB' }}>
+              <button
+                onClick={() => toggleSection('manage')}
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '16px',
+                  padding: '1.5rem 3rem',
+                  background: openSection === 'manage' ? 'rgba(8, 58, 133, 0.03)' : 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  textAlign: 'left',
+                }}
+                className="!px-6 md:!px-12 !py-4 md:!py-6 hover:bg-gray-50"
+              >
                 <div style={{
-                  width: '56px',
-                  height: '56px',
-                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                  borderRadius: '14px',
+                  width: '44px',
+                  height: '44px',
+                  background: 'linear-gradient(135deg, #083A85 0%, #0a4aa3 100%)',
+                  borderRadius: '12px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  boxShadow: '0 6px 16px rgba(16, 185, 129, 0.25)'
+                  flexShrink: 0,
                 }}>
-                  <i className="bi bi-person-gear text-white" style={{ fontSize: '1.5rem' }}></i>
+                  <i className="bi bi-person-gear text-white" style={{ fontSize: '1.2rem' }}></i>
                 </div>
-                <h2 style={{
-                  fontSize: 'clamp(1.75rem, 3vw, 2.25rem)',
-                  fontWeight: '700',
-                  color: '#111827',
-                  margin: 0,
-                  letterSpacing: '-0.01em'
-                }}>
+                <span style={{ flex: 1, fontSize: 'clamp(1rem, 2vw, 1.25rem)', fontWeight: '700', color: '#111827' }}>
                   Managing Your Profile
-                </h2>
-              </div>
+                </span>
+                <i className={`bi ${openSection === 'manage' ? 'bi-chevron-up' : 'bi-chevron-down'}`} style={{ fontSize: '1.1rem', color: '#6B7280', transition: 'transform 0.2s' }}></i>
+              </button>
+              <div style={{
+                maxHeight: openSection === 'manage' ? '5000px' : '0',
+                overflow: 'hidden',
+                transition: 'max-height 0.4s ease',
+                padding: openSection === 'manage' ? '0 3rem 3rem' : '0 3rem',
+              }} className={openSection === 'manage' ? '!px-6 md:!px-12 !pb-6 md:!pb-12' : '!px-6 md:!px-12'}>
 
               <div style={{ marginBottom: '3rem' }}>
                 <h3 style={{ fontSize: '1.35rem', fontWeight: '600', color: '#111827', marginBottom: '1rem' }}>
@@ -461,33 +321,50 @@ const MyAccountHelp: React.FC = () => {
                   To manage your portfolio, go to "My Portfolio" in your photographer dashboard. Upload high-resolution images (minimum 2000px width), organize them into categories (Weddings, Corporate Events, Portraits, Landscapes, etc.), and add detailed descriptions including camera settings, location, and context. Feature your top 5-10 photos on your profile homepage to immediately capture visitor attention.
                 </p>
               </div>
+            </div>
             </section>
 
             {/* Section 3: Account Verification */}
-            <section id="verify" style={{ padding: '4rem 3rem', borderBottom: '1px solid #E5E7EB' }} className="!p-6 md:!p-12">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '2rem' }}>
+            <section id="verify" style={{ borderBottom: '1px solid #E5E7EB' }}>
+              <button
+                onClick={() => toggleSection('verify')}
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '16px',
+                  padding: '1.5rem 3rem',
+                  background: openSection === 'verify' ? 'rgba(8, 58, 133, 0.03)' : 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  textAlign: 'left',
+                }}
+                className="!px-6 md:!px-12 !py-4 md:!py-6 hover:bg-gray-50"
+              >
                 <div style={{
-                  width: '56px',
-                  height: '56px',
-                  background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)',
-                  borderRadius: '14px',
+                  width: '44px',
+                  height: '44px',
+                  background: 'linear-gradient(135deg, #083A85 0%, #0a4aa3 100%)',
+                  borderRadius: '12px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  boxShadow: '0 6px 16px rgba(59, 130, 246, 0.25)'
+                  flexShrink: 0,
                 }}>
-                  <i className="bi bi-patch-check-fill text-white" style={{ fontSize: '1.5rem' }}></i>
+                  <i className="bi bi-patch-check-fill text-white" style={{ fontSize: '1.2rem' }}></i>
                 </div>
-                <h2 style={{
-                  fontSize: 'clamp(1.75rem, 3vw, 2.25rem)',
-                  fontWeight: '700',
-                  color: '#111827',
-                  margin: 0,
-                  letterSpacing: '-0.01em'
-                }}>
+                <span style={{ flex: 1, fontSize: 'clamp(1rem, 2vw, 1.25rem)', fontWeight: '700', color: '#111827' }}>
                   Account Verification
-                </h2>
-              </div>
+                </span>
+                <i className={`bi ${openSection === 'verify' ? 'bi-chevron-up' : 'bi-chevron-down'}`} style={{ fontSize: '1.1rem', color: '#6B7280', transition: 'transform 0.2s' }}></i>
+              </button>
+              <div style={{
+                maxHeight: openSection === 'verify' ? '5000px' : '0',
+                overflow: 'hidden',
+                transition: 'max-height 0.4s ease',
+                padding: openSection === 'verify' ? '0 3rem 3rem' : '0 3rem',
+              }} className={openSection === 'verify' ? '!px-6 md:!px-12 !pb-6 md:!pb-12' : '!px-6 md:!px-12'}>
 
               <p style={{ fontSize: '1.05rem', lineHeight: '1.8', color: '#4B5563', marginBottom: '2rem' }}>
                 Becoming a verified photographer on Amoria connekyt significantly increases your credibility, visibility, and booking rates. Verified accounts are prioritized in search results and receive exclusive benefits. Our verification process ensures clients can trust they're booking legitimate, professional photographers.
@@ -651,33 +528,50 @@ const MyAccountHelp: React.FC = () => {
                   </div>
                 ))}
               </div>
+            </div>
             </section>
 
             {/* Section 4: Notification Preferences */}
-            <section id="notifications" style={{ padding: '4rem 3rem', borderBottom: '1px solid #E5E7EB' }} className="!p-6 md:!p-12">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '2rem' }}>
+            <section id="notifications" style={{ borderBottom: '1px solid #E5E7EB' }}>
+              <button
+                onClick={() => toggleSection('notifications')}
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '16px',
+                  padding: '1.5rem 3rem',
+                  background: openSection === 'notifications' ? 'rgba(8, 58, 133, 0.03)' : 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  textAlign: 'left',
+                }}
+                className="!px-6 md:!px-12 !py-4 md:!py-6 hover:bg-gray-50"
+              >
                 <div style={{
-                  width: '56px',
-                  height: '56px',
-                  background: 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)',
-                  borderRadius: '14px',
+                  width: '44px',
+                  height: '44px',
+                  background: 'linear-gradient(135deg, #083A85 0%, #0a4aa3 100%)',
+                  borderRadius: '12px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  boxShadow: '0 6px 16px rgba(139, 92, 246, 0.25)'
+                  flexShrink: 0,
                 }}>
-                  <i className="bi bi-bell-fill text-white" style={{ fontSize: '1.5rem' }}></i>
+                  <i className="bi bi-bell-fill text-white" style={{ fontSize: '1.2rem' }}></i>
                 </div>
-                <h2 style={{
-                  fontSize: 'clamp(1.75rem, 3vw, 2.25rem)',
-                  fontWeight: '700',
-                  color: '#111827',
-                  margin: 0,
-                  letterSpacing: '-0.01em'
-                }}>
+                <span style={{ flex: 1, fontSize: 'clamp(1rem, 2vw, 1.25rem)', fontWeight: '700', color: '#111827' }}>
                   Notification Preferences
-                </h2>
-              </div>
+                </span>
+                <i className={`bi ${openSection === 'notifications' ? 'bi-chevron-up' : 'bi-chevron-down'}`} style={{ fontSize: '1.1rem', color: '#6B7280', transition: 'transform 0.2s' }}></i>
+              </button>
+              <div style={{
+                maxHeight: openSection === 'notifications' ? '5000px' : '0',
+                overflow: 'hidden',
+                transition: 'max-height 0.4s ease',
+                padding: openSection === 'notifications' ? '0 3rem 3rem' : '0 3rem',
+              }} className={openSection === 'notifications' ? '!px-6 md:!px-12 !pb-6 md:!pb-12' : '!px-6 md:!px-12'}>
 
               <p style={{ fontSize: '1.05rem', lineHeight: '1.8', color: '#4B5563', marginBottom: '2rem' }}>
                 Customize how and when you receive notifications to stay informed about bookings, messages, and important account updates without being overwhelmed. Our flexible notification system lets you control every aspect of your communication preferences.
@@ -767,33 +661,50 @@ const MyAccountHelp: React.FC = () => {
                   </ol>
                 </div>
               </div>
+            </div>
             </section>
 
             {/* Section 5: Account Settings & Privacy */}
-            <section id="settings" style={{ padding: '4rem 3rem', borderBottom: '1px solid #E5E7EB' }} className="!p-6 md:!p-12">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '2rem' }}>
+            <section id="settings" style={{ borderBottom: '1px solid #E5E7EB' }}>
+              <button
+                onClick={() => toggleSection('settings')}
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '16px',
+                  padding: '1.5rem 3rem',
+                  background: openSection === 'settings' ? 'rgba(8, 58, 133, 0.03)' : 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  textAlign: 'left',
+                }}
+                className="!px-6 md:!px-12 !py-4 md:!py-6 hover:bg-gray-50"
+              >
                 <div style={{
-                  width: '56px',
-                  height: '56px',
-                  background: 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)',
-                  borderRadius: '14px',
+                  width: '44px',
+                  height: '44px',
+                  background: 'linear-gradient(135deg, #083A85 0%, #0a4aa3 100%)',
+                  borderRadius: '12px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  boxShadow: '0 6px 16px rgba(239, 68, 68, 0.25)'
+                  flexShrink: 0,
                 }}>
-                  <i className="bi bi-shield-lock-fill text-white" style={{ fontSize: '1.5rem' }}></i>
+                  <i className="bi bi-shield-lock-fill text-white" style={{ fontSize: '1.2rem' }}></i>
                 </div>
-                <h2 style={{
-                  fontSize: 'clamp(1.75rem, 3vw, 2.25rem)',
-                  fontWeight: '700',
-                  color: '#111827',
-                  margin: 0,
-                  letterSpacing: '-0.01em'
-                }}>
+                <span style={{ flex: 1, fontSize: 'clamp(1rem, 2vw, 1.25rem)', fontWeight: '700', color: '#111827' }}>
                   Account Settings & Privacy
-                </h2>
-              </div>
+                </span>
+                <i className={`bi ${openSection === 'settings' ? 'bi-chevron-up' : 'bi-chevron-down'}`} style={{ fontSize: '1.1rem', color: '#6B7280', transition: 'transform 0.2s' }}></i>
+              </button>
+              <div style={{
+                maxHeight: openSection === 'settings' ? '5000px' : '0',
+                overflow: 'hidden',
+                transition: 'max-height 0.4s ease',
+                padding: openSection === 'settings' ? '0 3rem 3rem' : '0 3rem',
+              }} className={openSection === 'settings' ? '!px-6 md:!px-12 !pb-6 md:!pb-12' : '!px-6 md:!px-12'}>
 
               <p style={{ fontSize: '1.05rem', lineHeight: '1.8', color: '#4B5563', marginBottom: '2rem' }}>
                 Take full control of your account security, privacy settings, and data preferences. Understanding and managing these settings ensures your personal information remains protected and your account operates according to your preferences.
@@ -890,33 +801,50 @@ const MyAccountHelp: React.FC = () => {
                   ))}
                 </div>
               </div>
+            </div>
             </section>
 
             {/* Section 6: Common Account Issues */}
-            <section id="issues" style={{ padding: '4rem 3rem', borderBottom: '1px solid #E5E7EB' }} className="!p-6 md:!p-12">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '2rem' }}>
+            <section id="issues" style={{ borderBottom: '1px solid #E5E7EB' }}>
+              <button
+                onClick={() => toggleSection('issues')}
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '16px',
+                  padding: '1.5rem 3rem',
+                  background: openSection === 'issues' ? 'rgba(8, 58, 133, 0.03)' : 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  textAlign: 'left',
+                }}
+                className="!px-6 md:!px-12 !py-4 md:!py-6 hover:bg-gray-50"
+              >
                 <div style={{
-                  width: '56px',
-                  height: '56px',
-                  background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
-                  borderRadius: '14px',
+                  width: '44px',
+                  height: '44px',
+                  background: 'linear-gradient(135deg, #083A85 0%, #0a4aa3 100%)',
+                  borderRadius: '12px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  boxShadow: '0 6px 16px rgba(245, 158, 11, 0.25)'
+                  flexShrink: 0,
                 }}>
-                  <i className="bi bi-tools text-white" style={{ fontSize: '1.5rem' }}></i>
+                  <i className="bi bi-tools text-white" style={{ fontSize: '1.2rem' }}></i>
                 </div>
-                <h2 style={{
-                  fontSize: 'clamp(1.75rem, 3vw, 2.25rem)',
-                  fontWeight: '700',
-                  color: '#111827',
-                  margin: 0,
-                  letterSpacing: '-0.01em'
-                }}>
+                <span style={{ flex: 1, fontSize: 'clamp(1rem, 2vw, 1.25rem)', fontWeight: '700', color: '#111827' }}>
                   Common Account Issues
-                </h2>
-              </div>
+                </span>
+                <i className={`bi ${openSection === 'issues' ? 'bi-chevron-up' : 'bi-chevron-down'}`} style={{ fontSize: '1.1rem', color: '#6B7280', transition: 'transform 0.2s' }}></i>
+              </button>
+              <div style={{
+                maxHeight: openSection === 'issues' ? '5000px' : '0',
+                overflow: 'hidden',
+                transition: 'max-height 0.4s ease',
+                padding: openSection === 'issues' ? '0 3rem 3rem' : '0 3rem',
+              }} className={openSection === 'issues' ? '!px-6 md:!px-12 !pb-6 md:!pb-12' : '!px-6 md:!px-12'}>
 
               <p style={{ fontSize: '1.05rem', lineHeight: '1.8', color: '#4B5563', marginBottom: '2rem' }}>
                 Troubleshoot common account problems quickly with these solutions. Most issues can be resolved in minutes without contacting support. If you continue experiencing problems after trying these fixes, our support team is ready to assist.
@@ -1052,54 +980,26 @@ const MyAccountHelp: React.FC = () => {
                   </div>
                 </div>
               </div>
+            </div>
             </section>
 
           </div>
 
-          {/* Back to Help Center CTA */}
-          <div style={{
-            background: 'linear-gradient(135deg, #083A85 0%, #0a4aa3 100%)',
-            borderRadius: '24px',
-            padding: '3rem',
-            textAlign: 'center',
-            boxShadow: '0 10px 40px rgba(8, 58, 133, 0.25)',
-            marginTop: '4rem'
-          }} className="!p-6 md:!p-12 !mt-8 md:!mt-16">
-            <div style={{
-              width: '72px',
-              height: '72px',
-              background: 'rgba(255, 255, 255, 0.2)',
-              backdropFilter: 'blur(10px)',
-              borderRadius: '18px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              margin: '0 auto 1.5rem',
-              boxShadow: '0 8px 20px rgba(0, 0, 0, 0.2)'
-            }}>
-              <i className="bi bi-headset" style={{ fontSize: '2.25rem', color: 'white' }}></i>
-            </div>
-            <h3 style={{ fontSize: '1.75rem', fontWeight: '700', color: 'white', marginBottom: '1rem' }}>Still Need Help?</h3>
-            <p style={{ color: 'rgba(255, 255, 255, 0.95)', marginBottom: '2rem', fontSize: '1.05rem', lineHeight: '1.7', maxWidth: '600px', margin: '0 auto 2rem' }}>
-              Our support team is available 24/7 to assist you with any account-related questions or issues.
-            </p>
+          {/* Back to Help Center */}
+          <div style={{ textAlign: 'center', marginTop: '2rem', paddingBottom: '1rem' }}>
             <Link
               href="/user/help-center"
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '10px',
-                padding: '16px 36px',
-                backgroundColor: 'white',
+                gap: '8px',
                 color: '#083A85',
                 fontWeight: '600',
-                fontSize: '1.05rem',
-                borderRadius: '12px',
+                fontSize: '0.95rem',
                 textDecoration: 'none',
-                boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2)',
-                transition: 'all 0.3s ease'
+                transition: 'opacity 0.2s',
               }}
-              className="hover:scale-105 hover:shadow-xl"
+              className="hover:opacity-70"
             >
               <i className="bi bi-arrow-left"></i>
               Back to Help Center
