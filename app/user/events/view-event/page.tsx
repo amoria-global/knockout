@@ -160,6 +160,33 @@ function ViewEventContent(): React.JSX.Element {
   const [vaLoading, setVaLoading] = useState(false);
   const [vaError, setVaError] = useState<string | null>(null);
 
+  // Group invite code — lightweight identity modal (same pattern as paid viewer)
+  const [showGroupAuth, setShowGroupAuth] = useState(false);
+  const [gaName, setGaName] = useState('');
+  const [gaEmail, setGaEmail] = useState('');
+  const [gaPhone, setGaPhone] = useState('');
+  const [gaLoading, setGaLoading] = useState(false);
+  const [gaError, setGaError] = useState<string | null>(null);
+  const [pendingInviteCode, setPendingInviteCode] = useState('');
+  const [gaEmailRestricted, setGaEmailRestricted] = useState(false);
+
+  // Buyer's group code (fetched from backend)
+  const [savedGroupCode, setSavedGroupCode] = useState<{
+    code: string;
+    viewerCount?: number;
+    usedSlots?: number;
+    remainingSlots?: number;
+    expiresAt?: string;
+    emailRestricted?: boolean;
+    invitedViewers?: Array<{ email: string; name?: string | null; status: string }>;
+  } | null>(null);
+  const [showGroupCodeView, setShowGroupCodeView] = useState(false);
+  const [groupCodeCopied, setGroupCodeCopied] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteLoading, setInviteLoading] = useState(false);
+  const [inviteError, setInviteError] = useState<string | null>(null);
+  const [inviteSuccess, setInviteSuccess] = useState<string | null>(null);
+
   const handleViewerAuth = async () => {
     const name = vaName.trim();
     const email = vaEmail.trim();
@@ -201,6 +228,41 @@ function ViewEventContent(): React.JSX.Element {
       setVaLoading(false);
     }
   };
+
+  // Fetch buyer's group code from backend (persistent, works across devices)
+  const fetchGroupCode = async () => {
+    if (!selectedEvent?.id) return;
+    // Need a viewerId — check localStorage (set during payment or viewer auth)
+    const viewerId = localStorage.getItem(`anonymousViewer_${selectedEvent.id}`);
+    if (!viewerId) return;
+    try {
+      const fp = await getDeviceId();
+      const base = typeof window !== 'undefined' && process.env.NODE_ENV === 'production'
+        ? '/api/proxy' : (process.env.NEXT_PUBLIC_API_URL || 'https://backend.connekyt.com');
+      const res = await fetch(`${base}/api/remote/public/streams/${selectedEvent.id}/group-access/my-code?viewerId=${encodeURIComponent(viewerId)}&deviceFingerprint=${encodeURIComponent(fp)}`);
+      if (res.ok) {
+        const json = await res.json();
+        if (json.action === 1 && json.data?.code) {
+          setSavedGroupCode({
+            code: json.data.code,
+            viewerCount: json.data.viewerCount,
+            usedSlots: json.data.usedSlots,
+            remainingSlots: json.data.remainingSlots,
+            expiresAt: json.data.expiresAt,
+            emailRestricted: json.data.emailRestricted,
+            invitedViewers: json.data.invitedViewers,
+          });
+        }
+      }
+    } catch { /* silent */ }
+  };
+
+  useEffect(() => {
+    if (selectedEvent?.id && selectedEvent?.hasPurchasedAccess) {
+      fetchGroupCode();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedEvent?.id, selectedEvent?.hasPurchasedAccess]);
 
   // Listen for session expiry — show login modal instead of redirecting
   useEffect(() => {
@@ -371,21 +433,18 @@ function ViewEventContent(): React.JSX.Element {
     );
   }
 
-  // Handle group code submission
+  // Handle group code submission — validate then open lightweight identity modal
   const handleGroupCodeSubmit = async () => {
     if (!groupCode.trim()) { setGroupCodeError('Please enter a group invite code'); return; }
     setGroupCodeError('');
     setGroupCodeLoading(true);
     try {
-      // Validate code first (no slot consumed, no auth required)
-      // Pass email if authenticated to check email restrictions
-      const user = isAuthenticated() ? JSON.parse(localStorage.getItem('authUser') || '{}') : {};
-      const validateBody: Record<string, string> = { inviteCode: groupCode.trim() };
-      if (user.email) validateBody.email = user.email;
-      const validateRes = await fetch(`/api/proxy/api/remote/public/streams/${selectedEvent?.id}/validate-group-code`, {
+      const chatBase = typeof window !== 'undefined' && process.env.NODE_ENV === 'production'
+        ? '/api/proxy' : (process.env.NEXT_PUBLIC_API_URL || 'https://backend.connekyt.com');
+      const validateRes = await fetch(`${chatBase}/api/remote/public/streams/${selectedEvent?.id}/validate-group-code`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(validateBody),
+        body: JSON.stringify({ inviteCode: groupCode.trim() }),
       });
       const validateData = await validateRes.json();
       if (validateData.action !== 1) {
@@ -398,48 +457,104 @@ function ViewEventContent(): React.JSX.Element {
         setGroupCodeLoading(false);
         return;
       }
-      // Code is valid — now redeem or prompt login
-      const isEmailRestricted = validateData.data?.emailRestricted === true;
-      if (isAuthenticated()) {
-        const user = JSON.parse(localStorage.getItem('authUser') || '{}');
-        const res = await fetch(`/api/proxy/api/remote/public/streams/${selectedEvent?.id}/redeem-group-code`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', ...(localStorage.getItem('authToken') ? { Authorization: `Bearer ${localStorage.getItem('authToken')}` } : {}) },
-          body: JSON.stringify({ inviteCode: groupCode.trim(), viewerUsername: user.email || '' }),
-        });
-        const data = await res.json();
-        if (data.action === 1 || data.message?.toLowerCase().includes('access granted')) {
-          window.location.href = `/user/events/live-stream?eventId=${selectedEvent?.id}&paid=true&inviteToken=${encodeURIComponent(groupCode.trim())}`;
-        } else {
-          setGroupCodeError(data.message || 'Failed to redeem code.');
-        }
-      } else {
-        // Valid code, not logged in — save code, show appropriate auth form
-        setPendingGroupCode(groupCode.trim());
-        const authorizedEmail = validateData.data?.authorizedEmail || '';
-        const accountExists = validateData.data?.accountExists;
-        if (authorizedEmail) {
-          // Pre-fill the email from the invited address
-          if (accountExists === false) {
-            // No account — show signup with email pre-filled
-            setSignupEmail(authorizedEmail);
-            setAuthStep('signup');
-          } else {
-            // Has account or unknown — show login with email pre-filled
-            setLoginEmail(authorizedEmail);
-            setAuthStep('login');
-          }
-        } else {
-          setAuthStep('login');
-        }
-        setAuthError(isEmailRestricted ? 'This code is restricted to invited emails only. Please sign in with the email this code was sent to.' : '');
-        setShowAuthModal(true);
-      }
+      // Code valid — open lightweight identity modal (same as paid viewer flow)
+      const restricted = validateData.data?.emailRestricted === true;
+      const authorizedEmail = validateData.data?.authorizedEmail || '';
+      setPendingInviteCode(groupCode.trim());
+      setGaEmailRestricted(restricted);
+      setGaEmail(authorizedEmail); // Pre-fill if backend provides the invited email
+      setGaError(null);
+      setShowGroupAuth(true);
     } catch { setGroupCodeError('Connection error. Please try again.'); }
     finally { setGroupCodeLoading(false); }
   };
 
+  // Handle group viewer identity submission
+  const handleGroupViewerAuth = async () => {
+    const name = gaName.trim();
+    const email = gaEmail.trim();
+    const phone = gaPhone.trim();
+    if (!name) { setGaError('Please enter your name.'); return; }
+    if (!email) { setGaError(gaEmailRestricted ? 'Please enter the email you were invited on.' : 'Please enter your email.'); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setGaError('Please enter a valid email address.'); return; }
+    setGaLoading(true);
+    setGaError(null);
+    try {
+      const fp = await getDeviceId();
+      const chatBase = typeof window !== 'undefined' && process.env.NODE_ENV === 'production'
+        ? '/api/proxy' : (process.env.NEXT_PUBLIC_API_URL || 'https://backend.connekyt.com');
+      const res = await fetch(`${chatBase}/api/remote/public/streams/${selectedEvent!.id}/identify-group-viewer`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ inviteCode: pendingInviteCode, name, email, phone, deviceFingerprint: fp }),
+      });
+      const data = await res.json();
+      if (data.action === 1 && data.status === 'ACCESS_GRANTED') {
+        const viewerId = data.viewerId as string;
+        if (viewerId) {
+          localStorage.setItem(`anonymousViewer_${selectedEvent!.id}`, viewerId);
+          localStorage.setItem(`anonymousViewerName_${selectedEvent!.id}`, name);
+        }
+        setShowGroupAuth(false);
+        window.location.href = `/user/events/live-stream?eventId=${selectedEvent!.id}&paid=true${viewerId ? `&viewerId=${viewerId}` : ''}`;
+      } else {
+        const msg = data.message || '';
+        if (msg.includes('different email')) {
+          setGaError('This code was shared with a different email address. Please enter the email you were invited on.');
+        } else if (msg.includes('viewer limit')) {
+          setGaError('This group code has reached its viewer limit.');
+        } else if (msg.includes('expired') || msg.includes('Invalid')) {
+          setGaError('This group code is invalid or expired.');
+        } else {
+          setGaError(msg || 'Could not verify your access. Please try again.');
+        }
+      }
+    } catch {
+      setGaError('Connection error. Please try again.');
+    } finally {
+      setGaLoading(false);
+    }
+  };
+
   // Navigate to purchase page — no auth required (anonymous viewer flow handles it)
+  // Send group invite email
+  const handleInviteEmail = async () => {
+    const email = inviteEmail.trim();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setInviteError('Please enter a valid email address.');
+      return;
+    }
+    if (!selectedEvent?.id) return;
+    const viewerId = localStorage.getItem(`anonymousViewer_${selectedEvent.id}`);
+    if (!viewerId) { setInviteError('Session not found. Please reload.'); return; }
+    setInviteLoading(true);
+    setInviteError(null);
+    setInviteSuccess(null);
+    try {
+      const fp = await getDeviceId();
+      const base = typeof window !== 'undefined' && process.env.NODE_ENV === 'production'
+        ? '/api/proxy' : (process.env.NEXT_PUBLIC_API_URL || 'https://backend.connekyt.com');
+      const res = await fetch(`${base}/api/remote/public/streams/${selectedEvent.id}/group-access/invite`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ viewerId, deviceFingerprint: fp, email }),
+      });
+      const data = await res.json();
+      if (data.action === 1) {
+        setInviteSuccess(`Invitation sent to ${email}`);
+        setInviteEmail('');
+        // Refresh group code data to update slots/invitedViewers
+        fetchGroupCode();
+      } else {
+        setInviteError(data.message || 'Failed to send invitation.');
+      }
+    } catch {
+      setInviteError('Connection error. Please try again.');
+    } finally {
+      setInviteLoading(false);
+    }
+  };
+
   const handlePurchaseAccess = (joinUrl: string) => {
     window.location.href = joinUrl;
   };
@@ -754,17 +869,30 @@ function ViewEventContent(): React.JSX.Element {
           <div className="ve-cta-bar" style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: 10, maxWidth: '420px' }}>
           {isLive ? (
             isPaid && hasPurchasedAccess ? (
-              // Paid event, already purchased — go straight to watch
-              <button
-                className="live-stream-button"
-                onClick={() => { window.location.href = `/user/events/live-stream?eventId=${selectedEvent.id}&paid=true`; }}
-                style={{ padding: 'clamp(10px, 1.2vw, 13px) clamp(28px, 4vw, 48px)', backgroundColor: '#039130', color: '#fff', border: '2px solid #10b981', borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, transition: 'background 0.2s', textTransform: 'uppercase' }}
-                onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#027a28'; }}
-                onMouseLeave={e => { e.currentTarget.style.backgroundColor = '#039130'; }}
-              >
-                <i className="bi bi-play-circle-fill live-badge-icon" style={{ fontSize: 16 }}></i>
-                Start Watching
-              </button>
+              // Paid event, already purchased — watch + optionally share group code
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <button
+                  className="live-stream-button"
+                  onClick={() => { window.location.href = `/user/events/live-stream?eventId=${selectedEvent.id}&paid=true`; }}
+                  style={{ padding: 'clamp(10px, 1.2vw, 13px) clamp(28px, 4vw, 48px)', backgroundColor: '#039130', color: '#fff', border: '2px solid #10b981', borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 10, transition: 'background 0.2s', textTransform: 'uppercase', whiteSpace: 'nowrap' }}
+                  onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#027a28'; }}
+                  onMouseLeave={e => { e.currentTarget.style.backgroundColor = '#039130'; }}
+                >
+                  <i className="bi bi-play-circle-fill live-badge-icon" style={{ fontSize: 16 }}></i>
+                  Start Watching
+                </button>
+                {savedGroupCode && (
+                  <button
+                    onClick={() => { setGroupCodeCopied(false); setShowGroupCodeView(true); }}
+                    style={{ padding: '11px 20px', background: 'transparent', border: '2.5px solid rgba(245,158,11,0.5)', borderRadius: 10, color: '#f59e0b', fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8, transition: 'all 0.2s', whiteSpace: 'nowrap' }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = '#f59e0b'; e.currentTarget.style.background = 'rgba(245,158,11,0.1)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(245,158,11,0.5)'; e.currentTarget.style.background = 'transparent'; }}
+                  >
+                    <i className="bi bi-people-fill" style={{ fontSize: 15 }}></i>
+                    Share Group Code
+                  </button>
+                )}
+              </div>
             ) : isPaid ? (
               <>
                 {/* 2x2 grid: Purchase | Already paid?  /  Input | Redeem */}
@@ -826,11 +954,22 @@ function ViewEventContent(): React.JSX.Element {
           ) : isUpcoming && isPaid ? (
             hasPurchasedAccess ? (
               // Upcoming paid event, already pre-purchased
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ padding: '12px 36px', backgroundColor: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: '2px solid rgba(16, 185, 129, 0.4)', borderRadius: 10, fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 10, backdropFilter: 'blur(8px)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <div style={{ padding: '12px 36px', backgroundColor: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: '2px solid rgba(16, 185, 129, 0.4)', borderRadius: 10, fontSize: 14, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 10, backdropFilter: 'blur(8px)' }}>
                   <i className="bi bi-check-circle-fill" style={{ fontSize: 16 }}></i>
-                  Access Reserved — We&apos;ll notify you when it&apos;s live
+                  Access Reserved
                 </div>
+                {savedGroupCode && (
+                  <button
+                    onClick={() => { setGroupCodeCopied(false); setShowGroupCodeView(true); }}
+                    style={{ padding: '11px 20px', background: 'transparent', border: '2.5px solid rgba(245,158,11,0.5)', borderRadius: 10, color: '#f59e0b', fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8, transition: 'all 0.2s', whiteSpace: 'nowrap' }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = '#f59e0b'; e.currentTarget.style.background = 'rgba(245,158,11,0.1)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(245,158,11,0.5)'; e.currentTarget.style.background = 'transparent'; }}
+                  >
+                    <i className="bi bi-people-fill" style={{ fontSize: 15 }}></i>
+                    Share Group Code
+                  </button>
+                )}
               </div>
             ) : (
               // Upcoming paid event, not purchased — allow pre-purchase
@@ -975,6 +1114,253 @@ function ViewEventContent(): React.JSX.Element {
                 </>
               )}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Group Code View Modal (for buyers) ── */}
+      {showGroupCodeView && savedGroupCode && (
+        <div
+          style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0,0,0,0.82)', backdropFilter: 'blur(6px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: 1100, padding: 16,
+          }}
+          onMouseDown={(e) => { if (e.target === e.currentTarget) setShowGroupCodeView(false); }}
+        >
+          <div
+            onMouseDown={(e) => e.stopPropagation()}
+            style={{
+              background: 'linear-gradient(145deg, #141418 0%, #1a1a24 100%)',
+              borderRadius: 20, padding: 'clamp(24px, 5vw, 36px)',
+              maxWidth: 460, width: '100%', maxHeight: '90vh', overflowY: 'auto',
+              border: '1px solid rgba(245,158,11,0.2)',
+              boxShadow: '0 32px 80px rgba(0,0,0,0.6)',
+              position: 'relative', textAlign: 'center',
+            }}
+          >
+            <button
+              onClick={() => { setShowGroupCodeView(false); setInviteError(null); setInviteSuccess(null); }}
+              style={{ position: 'absolute', top: 16, right: 16, background: 'rgba(255,255,255,0.07)', border: 'none', color: '#9ca3af', cursor: 'pointer', width: 36, height: 36, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}
+            >
+              <i className="bi bi-x-lg"></i>
+            </button>
+
+            <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(245,158,11,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
+              <i className="bi bi-people-fill" style={{ fontSize: 22, color: '#f59e0b' }}></i>
+            </div>
+
+            <h2 style={{ fontSize: 18, fontWeight: 700, color: '#fff', margin: '0 0 4px' }}>Your Group Access Code</h2>
+            <p style={{ fontSize: 12, color: '#9ca3af', margin: '0 0 16px' }}>Share this code or invite viewers by email below.</p>
+
+            {/* Code display */}
+            <div style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: 12, padding: '14px 18px', marginBottom: 14 }}>
+              <div style={{ fontSize: 10, color: '#f59e0b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Your Invite Code</div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+                <span style={{ fontSize: 26, fontWeight: 900, letterSpacing: 5, color: '#fff', fontFamily: 'monospace' }}>{savedGroupCode.code}</span>
+                <button
+                  onClick={() => { navigator.clipboard.writeText(savedGroupCode.code); setGroupCodeCopied(true); setTimeout(() => setGroupCodeCopied(false), 2000); }}
+                  style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: 8, padding: '6px 8px', cursor: 'pointer', color: groupCodeCopied ? '#10b981' : '#9ca3af', fontSize: 15, display: 'flex', alignItems: 'center', transition: 'color 0.2s' }}
+                  title="Copy code"
+                >
+                  <i className={groupCodeCopied ? 'bi bi-clipboard-check-fill' : 'bi bi-clipboard'}></i>
+                </button>
+              </div>
+            </div>
+
+            {/* Stats row */}
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: 14 }}>
+              {savedGroupCode.viewerCount != null && (
+                <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: 10, padding: '8px 14px', textAlign: 'center', flex: 1 }}>
+                  <div style={{ fontSize: 10, color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>Allowed</div>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: '#fff' }}>{savedGroupCode.viewerCount}</div>
+                </div>
+              )}
+              {savedGroupCode.remainingSlots != null && (
+                <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: 10, padding: '8px 14px', textAlign: 'center', flex: 1 }}>
+                  <div style={{ fontSize: 10, color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>Remaining</div>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: (savedGroupCode.remainingSlots) > 0 ? '#10b981' : '#ef4444' }}>{savedGroupCode.remainingSlots}</div>
+                </div>
+              )}
+              {savedGroupCode.expiresAt && (
+                <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: 10, padding: '8px 14px', textAlign: 'center', flex: 1 }}>
+                  <div style={{ fontSize: 10, color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>Expires</div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: '#f59e0b' }}>{new Date(savedGroupCode.expiresAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
+                </div>
+              )}
+            </div>
+
+            {/* Invite by email — only if slots remaining */}
+            {(savedGroupCode.remainingSlots == null || savedGroupCode.remainingSlots > 0) && (
+              <div style={{ textAlign: 'left', marginBottom: 14 }}>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#d1d5db', marginBottom: 6 }}>Invite a viewer by email</label>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <input
+                    type="email"
+                    value={inviteEmail}
+                    onChange={(e) => { setInviteEmail(e.target.value); setInviteError(null); setInviteSuccess(null); }}
+                    onKeyDown={(e) => e.key === 'Enter' && handleInviteEmail()}
+                    placeholder="Enter their email"
+                    disabled={inviteLoading}
+                    style={{ flex: 1, padding: '10px 12px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10, color: '#fff', fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
+                    onFocus={(e) => { e.currentTarget.style.borderColor = '#03969c'; }}
+                    onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }}
+                  />
+                  <button
+                    onClick={handleInviteEmail}
+                    disabled={inviteLoading || !inviteEmail.trim()}
+                    style={{
+                      padding: '10px 16px', borderRadius: 10, border: 'none',
+                      background: inviteLoading ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, #03969c, #027a7f)',
+                      color: '#fff', fontSize: 13, fontWeight: 600,
+                      cursor: inviteLoading || !inviteEmail.trim() ? 'not-allowed' : 'pointer',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {inviteLoading ? '...' : 'Send'}
+                  </button>
+                </div>
+                {inviteError && <p style={{ color: '#fca5a5', fontSize: 12, margin: '6px 0 0' }}>{inviteError}</p>}
+                {inviteSuccess && <p style={{ color: '#10b981', fontSize: 12, margin: '6px 0 0' }}>{inviteSuccess}</p>}
+              </div>
+            )}
+
+            {/* Invited viewers list */}
+            {savedGroupCode.invitedViewers && savedGroupCode.invitedViewers.length > 0 && (
+              <div style={{ textAlign: 'left', marginBottom: 14 }}>
+                <div style={{ fontSize: 11, color: '#71717a', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>Invited Viewers</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {savedGroupCode.invitedViewers.map((v, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: 'rgba(255,255,255,0.04)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.06)' }}>
+                      <i className={v.status === 'JOINED' ? 'bi bi-check-circle-fill' : 'bi bi-hourglass-split'} style={{ color: v.status === 'JOINED' ? '#10b981' : '#f59e0b', fontSize: 14, flexShrink: 0 }}></i>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, color: '#efeff1', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.name || v.email}</div>
+                        {v.name && <div style={{ fontSize: 11, color: '#71717a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.email}</div>}
+                      </div>
+                      <span style={{ fontSize: 11, color: v.status === 'JOINED' ? '#10b981' : '#f59e0b', fontWeight: 600, flexShrink: 0 }}>{v.status === 'JOINED' ? 'Joined' : 'Invited'}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {(savedGroupCode.remainingSlots != null && savedGroupCode.remainingSlots === 0) && (
+              <p style={{ fontSize: 12, color: '#ef4444', margin: '0 0 14px' }}>All invite slots have been used.</p>
+            )}
+
+            <button
+              onClick={() => { setShowGroupCodeView(false); setInviteError(null); setInviteSuccess(null); }}
+              style={{ padding: '11px 28px', borderRadius: 12, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', color: '#9ca3af', fontSize: 14, fontWeight: 500, cursor: 'pointer' }}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Group Invite — Viewer Identity Modal ── */}
+      {showGroupAuth && (
+        <div
+          style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0,0,0,0.82)', backdropFilter: 'blur(6px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: 1100, padding: 16,
+          }}
+          onMouseDown={(e) => { if (e.target === e.currentTarget && !gaLoading) setShowGroupAuth(false); }}
+        >
+          <div
+            onMouseDown={(e) => e.stopPropagation()}
+            style={{
+              background: 'linear-gradient(145deg, #141418 0%, #1a1a24 100%)',
+              borderRadius: 20, padding: 'clamp(24px, 5vw, 36px)',
+              maxWidth: 460, width: '100%',
+              border: '1px solid rgba(255,255,255,0.1)',
+              boxShadow: '0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(3,150,156,0.15)',
+              position: 'relative',
+            }}
+          >
+            <button
+              onClick={() => { if (!gaLoading) setShowGroupAuth(false); }}
+              style={{ position: 'absolute', top: 16, right: 16, background: 'rgba(255,255,255,0.07)', border: 'none', color: '#9ca3af', cursor: 'pointer', width: 36, height: 36, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}
+            >
+              <i className="bi bi-x-lg"></i>
+            </button>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+              <i className="bi bi-people-fill" style={{ fontSize: 22, color: '#03969c' }}></i>
+              <h2 style={{ fontSize: 20, fontWeight: 700, color: '#fff', margin: 0 }}>Group Invite Access</h2>
+            </div>
+            <p style={{ fontSize: 13, color: '#9ca3af', margin: '0 0 20px' }}>
+              {gaEmailRestricted
+                ? 'Enter your name and the email this invite was sent to. We\u2019ll verify your access and take you to the stream.'
+                : 'Enter your details to join with your group invite code.'}
+            </p>
+
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#d1d5db', marginBottom: 6 }}>Full Name</label>
+              <input
+                type="text" value={gaName} onChange={(e) => setGaName(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleGroupViewerAuth()}
+                placeholder="Your name" disabled={gaLoading}
+                style={{ width: '100%', padding: '12px 14px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10, color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = '#03969c'; }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }}
+              />
+            </div>
+
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: gaEmailRestricted ? '#f59e0b' : '#d1d5db', marginBottom: 6 }}>
+                {gaEmailRestricted ? 'Email (must match your invite)' : 'Email'}
+              </label>
+              <input
+                type="email" value={gaEmail} onChange={(e) => setGaEmail(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleGroupViewerAuth()}
+                placeholder={gaEmailRestricted ? 'Enter the email you were invited on' : 'Your email'}
+                disabled={gaLoading}
+                style={{ width: '100%', padding: '12px 14px', background: 'rgba(255,255,255,0.06)', border: `1px solid ${gaEmailRestricted ? 'rgba(245,158,11,0.3)' : 'rgba(255,255,255,0.12)'}`, borderRadius: 10, color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = '#03969c'; }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = gaEmailRestricted ? 'rgba(245,158,11,0.3)' : 'rgba(255,255,255,0.12)'; }}
+              />
+            </div>
+
+            <div style={{ marginBottom: 14 }}>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#d1d5db', marginBottom: 6 }}>Phone Number <span style={{ color: '#6b7280', fontWeight: 400 }}>(optional)</span></label>
+              <input
+                type="tel" value={gaPhone}
+                onChange={(e) => setGaPhone(e.target.value.replace(/\D/g, '').slice(0, 12))}
+                onKeyDown={(e) => e.key === 'Enter' && handleGroupViewerAuth()}
+                placeholder="Your phone number" disabled={gaLoading}
+                style={{ width: '100%', padding: '12px 14px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10, color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = '#03969c'; }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }}
+              />
+            </div>
+
+            {gaError && (
+              <div style={{ padding: '10px 12px', marginBottom: 14, background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.35)', borderRadius: 10, color: '#fca5a5', fontSize: 13 }}>
+                <i className="bi bi-exclamation-triangle-fill" style={{ marginRight: 6 }}></i>
+                {gaError}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+              <button
+                onClick={() => { if (!gaLoading) setShowGroupAuth(false); }}
+                disabled={gaLoading}
+                style={{ flex: 1, padding: '12px', borderRadius: 12, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', color: '#9ca3af', fontSize: 14, fontWeight: 500, cursor: gaLoading ? 'not-allowed' : 'pointer' }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleGroupViewerAuth}
+                disabled={gaLoading}
+                style={{ flex: 2, padding: '12px', borderRadius: 12, background: gaLoading ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, #03969c, #027a7f)', border: 'none', color: '#fff', fontSize: 14, fontWeight: 600, cursor: gaLoading ? 'not-allowed' : 'pointer' }}
+              >
+                {gaLoading ? 'Verifying…' : 'Join Stream'}
+              </button>
+            </div>
           </div>
         </div>
       )}
