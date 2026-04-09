@@ -5737,25 +5737,20 @@ const App = () => {
                     ) : (
                       <>
                         {message.videoUrl ? (
-                          <div style={{ marginTop: '4px' }}>
-                            <video
-                              src={message.videoUrl}
-                              controls
-                              style={{
-                                width: '100%',
-                                maxWidth: '250px',
-                                borderRadius: '8px',
-                                backgroundColor: '#000'
-                              }}
-                            />
-                            <p style={{
-                              fontSize: '12px',
-                              color: '#03969c',
-                              marginTop: '4px',
-                              fontStyle: 'italic'
-                            }}>
-                              Video Message
-                            </p>
+                          <div style={{
+                            marginTop: '4px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            padding: '8px 12px',
+                            background: 'rgba(3,150,156,0.1)',
+                            border: '1px solid rgba(3,150,156,0.25)',
+                            borderRadius: '10px',
+                          }}>
+                            <i className="bi bi-camera-video-fill" style={{ color: '#03969c', fontSize: '16px', flexShrink: 0 }}></i>
+                            <span style={{ fontSize: '12px', color: '#9ca3af', fontStyle: 'italic' }}>
+                              Video message sent to event organizer
+                            </span>
                           </div>
                         ) : (
                           <p style={{
@@ -6018,8 +6013,7 @@ const App = () => {
                         <button
                           key={item.name}
                           onClick={() => {
-                            handleEmojiReaction(item.emoji);
-                            setShowChatEmoji(false);
+                            setNewMessage(prev => prev + item.emoji);
                           }}
                           title={item.name}
                           style={{
