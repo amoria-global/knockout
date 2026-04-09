@@ -677,24 +677,15 @@ const AmoriaKNavbar = () => {
         }
 
         .nav-logo-icon {
-          animation: logo-power-on 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-          transition: filter 0.3s ease;
+          animation: none;
         }
 
         .nav-logo-text {
-          animation: text-neon-on 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
-          transition: text-shadow 0.3s ease, letter-spacing 0.3s ease, color 0.3s ease;
+          animation: none;
         }
 
         .nav-logo-dot {
-          width: 5px;
-          height: 5px;
-          border-radius: 50%;
-          background-color: #083A85;
-          margin-left: 3px;
-          margin-bottom: -2px;
-          opacity: 0;
-          transition: opacity 0.3s ease, box-shadow 0.3s ease;
+          display: none;
         }
 
       `}</style>
