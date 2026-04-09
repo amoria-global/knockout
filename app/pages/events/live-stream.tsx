@@ -34,6 +34,10 @@ import { PlayIcon, PauseIcon, VolumeHighIcon, VolumeLowIcon, VolumeOffIcon, Full
 // Dynamically import VideoMessageRecorder to avoid SSR issues
 const VideoMessageRecorder = dynamic(() => import('../../components/VideoMessageRecorder'), { ssr: false });
 
+// Check if a string contains only emoji characters (no text)
+const EMOJI_ONLY_RE = /^(?:\p{Emoji_Presentation}|\p{Emoji}\uFE0F|\p{Emoji_Modifier_Base}\p{Emoji_Modifier}?)+$/u;
+const isEmojiOnly = (text: string) => EMOJI_ONLY_RE.test(text.trim());
+
 // Default user avatar SVG (grey silhouette on light background)
 const DEFAULT_USER_AVATAR = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 150 150'%3E%3Crect width='150' height='150' fill='%234a4a4a'/%3E%3Ccircle cx='75' cy='56' r='30' fill='%23888'/%3E%3Cellipse cx='75' cy='138' rx='48' ry='42' fill='%23888'/%3E%3C/svg%3E";
 
@@ -987,49 +991,82 @@ const App = () => {
             // Mark these API IDs as seen
             newApiMessages.forEach(m => seenApiMessageIds.current.add(String(m.id)));
 
-            setEvents(prev => {
-              const updated = [...prev];
-              const currentMessages = [...updated[mainEventIndex].messages];
-
-              const convertedMessages: Message[] = newApiMessages.map(m => {
-                const sender = (m.viewerUsername || m.sender || 'Unknown') as string;
-                const msgText = (m.message || m.content || '') as string;
-                // Use backend's pre-formatted time, fall back to parsing timestamp
-                const timeStr = m.time
-                  ? String(m.time)
-                  : m.timestamp
-                    ? new Date(String(m.timestamp)).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                    : '';
-
-                return {
-                  id: String(m.id),
-                  apiMessageId: String(m.id),
-                  sender,
-                  senderId: m.senderId ? String(m.senderId) : undefined,
-                  text: msgText,
-                  time: timeStr,
-                  delivered: true,
-                  avatar: (m.viewerAvatar || m.avatar || '') as string || DEFAULT_USER_AVATAR,
-                  videoUrl: (m.videoUrl as string) || undefined,
-                };
-              });
-
-              // Remove optimistic "You" messages that now have a matching API message
-              const apiTexts = new Set(newApiMessages.map(m => String(m.message || m.content || '')));
-              const merged = currentMessages.filter(m => {
-                if (!m.delivered && apiTexts.has(m.text)) {
-                  return false; // remove optimistic duplicate
-                }
-                return true;
-              });
-
-              updated[mainEventIndex] = {
-                ...updated[mainEventIndex],
-                messages: [...merged, ...convertedMessages],
-              };
-              return updated;
+            // Separate emoji-only messages — show as floating reactions, not in chat
+            const myName = anonymousViewerName
+              || (user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : '');
+            const emojiMessages: Array<Record<string, unknown>> = [];
+            const textMessages: Array<Record<string, unknown>> = [];
+            newApiMessages.forEach(m => {
+              const msgText = String(m.message || m.content || '').trim();
+              if (isEmojiOnly(msgText)) {
+                emojiMessages.push(m);
+              } else {
+                textMessages.push(m);
+              }
             });
-          }
+            // Emoji messages never go to chat — not even the sender's own
+
+            // Float emoji reactions on the video player
+            emojiMessages.forEach(m => {
+              const msgText = String(m.message || m.content || '');
+              const sender = String(m.viewerUsername || m.sender || '');
+              const isFromMe = sender === myName;
+              // Skip own emojis — sender already sees them from handleEmojiReaction
+              if (isFromMe) return;
+              const reactionId = Date.now() + Math.random();
+              setActiveReactions(prev => [...prev, { id: reactionId, emoji: msgText, timestamp: Date.now(), fromOther: true }]);
+              setTimeout(() => {
+                setActiveReactions(prev => prev.filter(r => r.id !== reactionId));
+              }, 3000);
+            });
+
+            // Only add text (non-emoji) messages to the chat panel
+            if (textMessages.length > 0) {
+              setEvents(prev => {
+                const updated = [...prev];
+                const currentMessages = [...updated[mainEventIndex].messages];
+
+                const convertedMessages: Message[] = textMessages.map(m => {
+                  const rawSender = (m.viewerUsername || m.sender || 'Unknown') as string;
+                  // Show "You" for the sender's own messages
+                  const sender = rawSender === myName ? 'You' : rawSender;
+                  const msgText = (m.message || m.content || '') as string;
+                  const timeStr = m.time
+                    ? String(m.time)
+                    : m.timestamp
+                      ? new Date(String(m.timestamp)).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                      : '';
+
+                  return {
+                    id: String(m.id),
+                    apiMessageId: String(m.id),
+                    sender,
+                    senderId: m.senderId ? String(m.senderId) : undefined,
+                    text: msgText,
+                    time: timeStr,
+                    delivered: true,
+                    avatar: (m.viewerAvatar || m.avatar || '') as string || DEFAULT_USER_AVATAR,
+                    videoUrl: (m.videoUrl as string) || undefined,
+                  };
+                });
+
+                // Remove optimistic duplicates + any emoji-only messages that slipped into chat
+                const apiTexts = new Set(textMessages.map(m => String(m.message || m.content || '')));
+                const merged = currentMessages.filter(m => {
+                  // Remove optimistic duplicates
+                  if (!m.apiMessageId && apiTexts.has(m.text)) return false;
+                  // Remove any emoji-only messages that were added before the filter was in place
+                  if (isEmojiOnly(m.text.trim())) return false;
+                  return true;
+                });
+
+                updated[mainEventIndex] = {
+                  ...updated[mainEventIndex],
+                  messages: [...merged, ...convertedMessages],
+                };
+                return updated;
+              });
+            }
 
           // Update participants from all senders
           const senderMap = new Map<string, string>();
@@ -1047,6 +1084,7 @@ const App = () => {
               avatar,
             }))
           );
+          }
         }
       } catch {
         // Silent fail for polling
@@ -1233,6 +1271,21 @@ const App = () => {
 
   // State for the new message input
   const [newMessage, setNewMessage] = useState("");
+  const [showChatEmoji, setShowChatEmoji] = useState(false);
+  const chatEmojiRef = useRef<HTMLDivElement>(null);
+
+  // Close chat emoji picker when clicking outside
+  useEffect(() => {
+    if (!showChatEmoji) return;
+    const handleClick = (e: MouseEvent) => {
+      if (chatEmojiRef.current && !chatEmojiRef.current.contains(e.target as Node)) {
+        setShowChatEmoji(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [showChatEmoji]);
+
   // Load saved volume from localStorage or default to 100
   const getSavedVolume = () => {
     if (typeof window !== 'undefined') {
@@ -1329,7 +1382,7 @@ const App = () => {
   const [ratingSubmitting, setRatingSubmitting] = useState(false);
   const [ratingSuccess, setRatingSuccess] = useState(false);
   // Emoji reactions state
-  const [activeReactions, setActiveReactions] = useState<Array<{ id: number; emoji: string; timestamp: number }>>([]);
+  const [activeReactions, setActiveReactions] = useState<Array<{ id: number; emoji: string; timestamp: number; fromOther?: boolean }>>([]);
   // Recording state
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
@@ -1653,13 +1706,9 @@ const App = () => {
         : newMessage;
 
       const tempId = Date.now();
-      // Use viewer's real name for display — anonymousViewerName for paid viewers, user profile for JWT-authenticated
-      const senderName = anonymousViewerName
-        || (user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : '')
-        || 'You';
       const newMsg: Message = {
         id: tempId,
-        sender: senderName,
+        sender: 'You',
         text: messageText,
         time: new Date().toLocaleTimeString([], {
           hour: "2-digit",
@@ -1757,12 +1806,26 @@ const App = () => {
       const videoFile = new File([videoBlob], `video-message-${Date.now()}.webm`, { type: videoBlob.type || 'video/webm' });
       let success = false;
 
-      if (isAuthenticated) {
-        const res = await sendStreamVideoChat(eventId, videoFile);
-        success = !!res.success;
-      } else if (isAnonymousViewer && anonymousViewerId) {
+      if (anonymousViewerId) {
+        // Paid viewer — use public video chat endpoint
         const fingerprint = await getDeviceId();
-        const res = await sendAnonymousVideoChat(eventId, anonymousViewerId, videoFile, fingerprint);
+        const chatBase = typeof window !== 'undefined' && process.env.NODE_ENV === 'production'
+          ? '/api/proxy' : (process.env.NEXT_PUBLIC_API_URL || 'https://backend.connekyt.com');
+        const formData = new FormData();
+        formData.append('video', videoFile);
+        formData.append('viewerId', anonymousViewerId);
+        formData.append('deviceFingerprint', fingerprint);
+        const res = await fetch(`${chatBase}/api/remote/public/events/${eventId}/chats/video`, {
+          method: 'POST',
+          body: formData,
+        });
+        if (res.ok) {
+          const json = await res.json();
+          success = json.action === 1;
+        }
+      } else if (isAuthenticated) {
+        // JWT-authenticated viewer (free/invite_token events)
+        const res = await sendStreamVideoChat(eventId, videoFile);
         success = !!res.success;
       }
 
@@ -2422,23 +2485,37 @@ const App = () => {
     };
   }, []);
 
-  // Handle emoji reaction
-  const handleEmojiReaction = (emoji: string) => {
+  // Handle emoji reaction — show locally (large for sender) + send to backend as chat message
+  const handleEmojiReaction = async (emoji: string) => {
+    // Local: large floating emoji for the sender
     const newReaction = {
       id: Date.now() + Math.random(),
-      emoji: emoji,
+      emoji,
       timestamp: Date.now()
     };
-
     setActiveReactions(prev => [...prev, newReaction]);
-
-    // Remove reaction after animation (3 seconds)
     setTimeout(() => {
       setActiveReactions(prev => prev.filter(r => r.id !== newReaction.id));
     }, 3000);
+
+    // Send as a chat message so other viewers receive it
+    try {
+      if (anonymousViewerId) {
+        const fingerprint = await getDeviceId();
+        const chatBase = typeof window !== 'undefined' && process.env.NODE_ENV === 'production'
+          ? '/api/proxy' : (process.env.NEXT_PUBLIC_API_URL || 'https://backend.connekyt.com');
+        await fetch(`${chatBase}/api/remote/public/events/${mainEvent.id}/chats`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ viewerId: anonymousViewerId, message: emoji, deviceFingerprint: fingerprint }),
+        });
+      } else if (isAuthenticated) {
+        await sendStreamChat(mainEvent.streamId, emoji);
+      }
+    } catch { /* silent — local reaction still shows */ }
   };
 
-  // Emoji list
+  // Emoji list — video player picker uses first 8, chat picker uses all
   const emojiList = [
     { emoji: "🔥", name: "fire" },
     { emoji: "😂", name: "laughing" },
@@ -2448,6 +2525,30 @@ const App = () => {
     { emoji: "😍", name: "love" },
     { emoji: "🎉", name: "party" },
     { emoji: "😮", name: "wow" },
+    { emoji: "😢", name: "cry" },
+    { emoji: "😡", name: "angry" },
+    { emoji: "🤣", name: "rofl" },
+    { emoji: "🥰", name: "adore" },
+    { emoji: "🤩", name: "starstruck" },
+    { emoji: "😭", name: "sobbing" },
+    { emoji: "🙌", name: "raise hands" },
+    { emoji: "💪", name: "strong" },
+    { emoji: "🙏", name: "pray" },
+    { emoji: "💯", name: "hundred" },
+    { emoji: "✨", name: "sparkles" },
+    { emoji: "🫶", name: "heart hands" },
+    { emoji: "👀", name: "eyes" },
+    { emoji: "💀", name: "skull" },
+    { emoji: "🤯", name: "mind blown" },
+    { emoji: "😎", name: "cool" },
+    { emoji: "🥳", name: "party face" },
+    { emoji: "😱", name: "scream" },
+    { emoji: "💜", name: "purple heart" },
+    { emoji: "🤝", name: "handshake" },
+    { emoji: "🎵", name: "music" },
+    { emoji: "🎶", name: "notes" },
+    { emoji: "📸", name: "camera" },
+    { emoji: "🌟", name: "star" },
   ];
 
   // Participants are now populated from stream chat messages (see polling useEffect above)
@@ -4381,15 +4482,15 @@ const App = () => {
               )}
 
 
-              {/* Floating Emoji Reactions */}
+              {/* Floating Emoji Reactions — sender: large, others: small bottom-right */}
               {activeReactions.map((reaction) => (
                 <div
                   key={reaction.id}
                   style={{
                     position: 'absolute',
-                    right: `${Math.random() * 30 + 10}%`,
-                    bottom: '60px',
-                    fontSize: '48px',
+                    ...(reaction.fromOther
+                      ? { right: `${Math.random() * 15 + 2}%`, bottom: '70px', fontSize: '24px' }
+                      : { right: `${Math.random() * 30 + 10}%`, bottom: '60px', fontSize: '48px' }),
                     animation: 'floatUp 3s ease-out forwards',
                     zIndex: 15,
                     pointerEvents: 'none'
@@ -4721,7 +4822,7 @@ const App = () => {
                     border: '1px solid rgba(255, 255, 255, 0.1)',
                     backdropFilter: 'blur(10px)'
                   }}>
-                  {emojiList.map((item, index) => (
+                  {emojiList.slice(0, 8).map((item, index) => (
                     <button
                       key={index}
                       onClick={() => handleEmojiReaction(item.emoji)}
@@ -5893,50 +5994,117 @@ const App = () => {
               )}
 
               {canInteract ? (
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  backgroundColor: '#2f2f35',
-                  borderRadius: '16px',
-                  padding: '8px 12px',
-                  gap: '8px'
-                }}>
-                  <input
-                    type="text"
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-                    placeholder={replyingTo ? `Reply to @${replyingTo.sender}...` : "Send a message..."}
-                    style={{
-                      flex: 1,
-                      backgroundColor: 'transparent',
-                      border: 'none',
-                      outline: 'none',
-                      fontSize: '13px',
-                      color: '#efeff1'
-                    }}
-                  />
-                  <button
-                    onClick={handleSendMessage}
-                    style={{
-                      color: newMessage.trim() ? '#03969c' : '#adadb8',
-                      background: 'transparent',
-                      border: 'none',
-                      cursor: newMessage.trim() ? 'pointer' : 'default',
-                      padding: '4px',
+                <div ref={chatEmojiRef} style={{ position: 'relative' }}>
+                  {/* Emoji picker dropdown */}
+                  {showChatEmoji && (
+                    <div style={{
+                      position: 'absolute',
+                      bottom: '100%',
+                      left: 0,
+                      right: 0,
+                      marginBottom: '6px',
+                      background: '#2f2f35',
+                      borderRadius: '12px',
+                      padding: '8px',
                       display: 'flex',
-                      alignItems: 'center',
-                      fontSize: '18px',
-                      transition: 'all 0.2s'
-                    }}
-                    onMouseEnter={(e) => {
-                      if (newMessage.trim()) e.currentTarget.style.transform = 'scale(1.1)';
-                    }}
-                    onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                    disabled={!newMessage.trim()}
-                  >
-                    <i className="bi bi-send-fill"></i>
-                  </button>
+                      flexWrap: 'wrap',
+                      gap: '4px',
+                      justifyContent: 'center',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      boxShadow: '0 -4px 16px rgba(0,0,0,0.3)',
+                      zIndex: 10,
+                    }}>
+                      {emojiList.map((item) => (
+                        <button
+                          key={item.name}
+                          onClick={() => {
+                            handleEmojiReaction(item.emoji);
+                            setShowChatEmoji(false);
+                          }}
+                          title={item.name}
+                          style={{
+                            background: 'transparent',
+                            border: 'none',
+                            fontSize: '20px',
+                            cursor: 'pointer',
+                            padding: '4px 6px',
+                            borderRadius: '8px',
+                            transition: 'background 0.15s',
+                            lineHeight: 1,
+                          }}
+                          onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                        >
+                          {item.emoji}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    backgroundColor: '#2f2f35',
+                    borderRadius: '16px',
+                    padding: '8px 12px',
+                    gap: '8px'
+                  }}>
+                    <input
+                      type="text"
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
+                      onFocus={() => setShowChatEmoji(false)}
+                      placeholder={replyingTo ? `Reply to @${replyingTo.sender}...` : "Send a message..."}
+                      style={{
+                        flex: 1,
+                        backgroundColor: 'transparent',
+                        border: 'none',
+                        outline: 'none',
+                        fontSize: '13px',
+                        color: '#efeff1'
+                      }}
+                    />
+                    {/* Emoji toggle */}
+                    <button
+                      onClick={() => setShowChatEmoji(prev => !prev)}
+                      style={{
+                        color: showChatEmoji ? '#03969c' : '#adadb8',
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
+                        padding: '4px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        fontSize: '17px',
+                        transition: 'color 0.2s',
+                      }}
+                      title="Emoji"
+                    >
+                      <i className="bi bi-emoji-smile"></i>
+                    </button>
+                    {/* Send */}
+                    <button
+                      onClick={handleSendMessage}
+                      style={{
+                        color: newMessage.trim() ? '#03969c' : '#adadb8',
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: newMessage.trim() ? 'pointer' : 'default',
+                        padding: '4px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        fontSize: '18px',
+                        transition: 'all 0.2s'
+                      }}
+                      onMouseEnter={(e) => {
+                        if (newMessage.trim()) e.currentTarget.style.transform = 'scale(1.1)';
+                      }}
+                      onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                      disabled={!newMessage.trim()}
+                    >
+                      <i className="bi bi-send-fill"></i>
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <button
