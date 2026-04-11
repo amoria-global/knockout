@@ -23,6 +23,7 @@ function JoinPackageContent(): React.JSX.Element {
   const searchParams = useSearchParams();
   const eventId = searchParams.get('id');
   const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
+  const [expandedPkg, setExpandedPkg] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [numberOfPeople, setNumberOfPeople] = useState<number | ''>('');
   const [showPeopleInput, setShowPeopleInput] = useState(false);
@@ -315,8 +316,8 @@ function JoinPackageContent(): React.JSX.Element {
       id: 'individual',
       name: 'Individual Stream',
       badge: 'Individual',
-      badgeColor: '#22D3EE',
-      badgeGradient: 'linear-gradient(135deg, #22D3EE 0%, #3B82F6 100%)',
+      badgeColor: '#083A85',
+      badgeGradient: '#083A85',
       description: 'Stream the event alone on your personal device',
       price: `${individualFee.toLocaleString()} RWF`,
       priceNote: 'One-time access fee',
@@ -333,8 +334,8 @@ function JoinPackageContent(): React.JSX.Element {
       id: 'group',
       name: `Group Stream (${discountPercentage}% off)`,
       badge: `Group ${discountPercentage}% off`,
-      badgeColor: '#FBBF24',
-      badgeGradient: 'linear-gradient(135deg, #FDE047 0%, #FBBF24 50%, #F59E0B 100%)',
+      badgeColor: '#16a34a',
+      badgeGradient: '#16a34a',
       description: `Buy stream access for multiple people and save ${discountPercentage}%`,
       price: `Save up to ${discountPercentage}% from discount`,
       priceNote: 'Enter number of people below',
@@ -693,7 +694,7 @@ function JoinPackageContent(): React.JSX.Element {
     return (
       <>
         <AmoriaKNavbar />
-        <div className="min-h-screen" style={{ backgroundColor: '#0e0e10', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div className="min-h-screen" style={{ backgroundColor: '#052047', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.7)' }}>
             <div style={{ fontSize: '48px', marginBottom: '16px' }}><i className="bi bi-hourglass-split"></i></div>
             <p style={{ fontSize: '18px', fontWeight: '600' }}>Loading event...</p>
@@ -707,7 +708,7 @@ function JoinPackageContent(): React.JSX.Element {
     return (
       <>
         <AmoriaKNavbar />
-        <div className="min-h-screen" style={{ backgroundColor: '#0e0e10', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div className="min-h-screen" style={{ backgroundColor: '#052047', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ textAlign: 'center', color: '#ef4444' }}>
             <div style={{ fontSize: '48px', marginBottom: '16px' }}><i className="bi bi-exclamation-circle"></i></div>
             <p style={{ fontSize: '18px', fontWeight: '600' }}>Event not found</p>
@@ -721,7 +722,7 @@ function JoinPackageContent(): React.JSX.Element {
   const eventImage = selectedEvent?.eventPhoto || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=1200&q=80';
 
   return (
-    <div style={{ backgroundColor: '#0e0e10', minHeight: '100vh' }}>
+    <div style={{ backgroundColor: '#052047', minHeight: '100vh' }}>
       <AmoriaKNavbar />
 
       {/* Group code redeem error banner */}
@@ -741,7 +742,7 @@ function JoinPackageContent(): React.JSX.Element {
         {/* Cinematic background image */}
         <div style={{ position: 'absolute', inset: 0, backgroundImage: `url(${encodeURI(eventImage)})`, backgroundSize: 'cover', backgroundPosition: 'center right' }} />
         {/* Top-to-bottom cinematic gradient */}
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(14,14,16,0.1) 0%, rgba(14,14,16,0.55) 32%, rgba(14,14,16,0.93) 52%, #0e0e10 72%)' }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(5,32,71,0.1) 0%, rgba(5,32,71,0.55) 32%, rgba(5,32,71,0.93) 52%, #052047 72%)' }} />
 
         {/* Main Content Container */}
         <div
@@ -757,18 +758,19 @@ function JoinPackageContent(): React.JSX.Element {
               join-package now only shows package cards and payment flow. */}
 
           {/* Page Header */}
-          <div style={{ marginBottom: isMobile ? '16px' : '20px', textAlign: 'center' }}>
+          <div style={{ marginBottom: isMobile ? '10px' : '20px', textAlign: 'center' }}>
             <h1
               style={{
-                fontSize: isMobile ? '32px' : '52px',
-                fontWeight: '900',
+                fontSize: isMobile ? '24px' : '36px',
+                fontWeight: '800',
                 color: '#ffffff',
-                marginBottom: '8px',
+                marginBottom: '6px',
+                fontFamily: "'Pragati Narrow', sans-serif",
               }}
             >
               Choose Your Stream Package
             </h1>
-            <p style={{ fontSize: isMobile ? '14px' : '18px', color: 'rgba(255,255,255,0.7)', maxWidth: '600px', margin: '0 auto' }}>
+            <p style={{ fontSize: isMobile ? '13px' : '15px', color: 'rgba(255,255,255,0.5)', maxWidth: '500px', margin: '0 auto' }}>
               Select how you want to watch this live event
             </p>
           </div>
@@ -780,7 +782,7 @@ function JoinPackageContent(): React.JSX.Element {
                 onClick={() => setShowGroupCodeModal(true)}
                 style={{
                   padding: '10px 24px',
-                  background: 'linear-gradient(135deg, #FDE047 0%, #FBBF24 50%, #F59E0B 100%)',
+                  background: 'linear-gradient(135deg, #60a5fa 0%, #93c5fd 50%, #083A85 100%)',
                   border: 'none',
                   borderRadius: '10px',
                   color: '#1f2937',
@@ -803,11 +805,11 @@ function JoinPackageContent(): React.JSX.Element {
           <div style={{
             display: 'grid',
             gridTemplateColumns: isMobile ? '1fr' : (discountPercentage ? 'repeat(2, 1fr)' : '1fr'),
-            maxWidth: !discountPercentage && !isMobile ? '480px' : undefined,
+            maxWidth: !discountPercentage && !isMobile ? '380px' : undefined,
             marginLeft: !discountPercentage ? 'auto' : undefined,
             marginRight: !discountPercentage ? 'auto' : undefined,
-            gap: '16px',
-            marginBottom: '32px',
+            gap: isMobile ? '10px' : '16px',
+            marginBottom: isMobile ? '16px' : '32px',
             alignItems: 'start',
           }}>
             {packages.filter(pkg => pkg.id !== 'group' || discountPercentage > 0).map((pkg) => (
@@ -817,13 +819,13 @@ function JoinPackageContent(): React.JSX.Element {
                 style={{
                   position: 'relative',
                   backgroundColor: selectedPackage === pkg.id ? '#0a2540' : '#1e3a5f',
-                  borderRadius: '16px',
+                  borderRadius: '14px',
                   overflow: 'hidden',
                   cursor: 'pointer',
-                  border: selectedPackage === pkg.id ? '3px solid #00BFFF' : '3px solid transparent',
+                  border: selectedPackage === pkg.id ? '2px solid #0a4da3' : '2px solid transparent',
                   transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
                   boxShadow: selectedPackage === pkg.id
-                    ? '0 25px 50px rgba(0, 191, 255, 0.35), 0 0 0 1px rgba(0, 191, 255, 0.1)'
+                    ? '0 25px 50px rgba(8, 58, 133, 0.35), 0 0 0 1px rgba(8, 58, 133, 0.1)'
                     : '0 10px 30px rgba(0, 0, 0, 0.2)',
                   transform: selectedPackage === pkg.id ? 'translateY(-3px) scale(1.005)' : 'translateY(0) scale(1)',
                 }}
@@ -840,46 +842,23 @@ function JoinPackageContent(): React.JSX.Element {
                   }
                 }}
               >
-                {/* Selected Indicator Ribbon */}
-                {selectedPackage === pkg.id && (
-                  <div
-                    style={{
-                      position: 'absolute',
-                      zIndex: 5,
-                      top: '12px',
-                      right: '-30px',
-                      backgroundColor: '#10b981',
-                      color: '#fff',
-                      padding: '4px 40px',
-                      fontSize: '11px',
-                      fontWeight: '700',
-                      textTransform: 'uppercase',
-                      letterSpacing: '1px',
-                      transform: 'rotate(45deg)',
-                      boxShadow: '0 2px 8px rgba(16, 185, 129, 0.4)',
-                    }}
-                  >
-                    Selected
-                  </div>
-                )}
 
-                {/* Badge */}
+                {/* Badge — compact pill at top */}
                 <div style={{
                   display: 'flex',
                   justifyContent: 'center',
-                  paddingTop: '14px',
-                  marginBottom: '-20px',
+                  paddingTop: isMobile ? '6px' : '10px',
+                  marginBottom: isMobile ? '-12px' : '-16px',
                   position: 'relative',
                   zIndex: 2,
-                  transition: 'all 0.3s ease',
                 }}>
                   <div
                     style={{
                       background: pkg.badgeGradient,
-                      color: pkg.id === 'group' ? '#1f2937' : '#fff',
-                      padding: '7px 30px',
+                      color: '#fff',
+                      padding: '4px 16px',
                       borderRadius: '50px',
-                      fontSize: '13px',
+                      fontSize: '11px',
                       fontWeight: '700',
                       letterSpacing: '0.5px',
                       boxShadow: selectedPackage === pkg.id
@@ -898,43 +877,24 @@ function JoinPackageContent(): React.JSX.Element {
                 <div
                   style={{
                     backgroundColor: selectedPackage === pkg.id ? '#f0f9ff' : '#fff',
-                    margin: '0 10px 10px 10px',
-                    borderRadius: '12px',
-                    padding: '28px 16px 16px 16px',
+                    margin: isMobile ? '0 4px 4px 4px' : '0 8px 8px 8px',
+                    borderRadius: isMobile ? '10px' : '12px',
+                    padding: isMobile ? '10px 8px 8px 8px' : '20px 14px 14px 14px',
                     textAlign: 'center',
                     position: 'relative',
                     zIndex: 1,
                     transition: 'all 0.3s ease',
-                    border: selectedPackage === pkg.id ? '2px solid rgba(0, 191, 255, 0.2)' : '2px solid transparent',
+                    border: selectedPackage === pkg.id ? '2px solid rgba(8, 58, 133, 0.2)' : '2px solid transparent',
                   }}
                 >
-                  {/* Package Icon */}
-                  <div
-                    style={{
-                      width: '44px',
-                      height: '44px',
-                      borderRadius: '50%',
-                      background: pkg.badgeGradient,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      margin: '0 auto 10px',
-                    }}
-                  >
-                    <i
-                      className={pkg.id === 'individual' ? 'bi bi-person-fill' : 'bi bi-people-fill'}
-                      style={{ color: '#fff', fontSize: '20px' }}
-                    ></i>
-                  </div>
-
                   {/* Package Name */}
                   <h3
                     style={{
-                      fontSize: '24px',
+                      fontSize: isMobile ? '13px' : '16px',
                       fontWeight: '800',
                       color: selectedPackage === pkg.id ? '#083A85' : '#1f2937',
-                      marginBottom: '4px',
-                      transition: 'all 0.3s ease',
+                      marginBottom: '2px',
+                      fontFamily: "'Pragati Narrow', sans-serif",
                     }}
                   >
                     {pkg.name}
@@ -943,9 +903,9 @@ function JoinPackageContent(): React.JSX.Element {
                   {/* Description */}
                   <p
                     style={{
-                      fontSize: '13px',
+                      fontSize: '12px',
                       color: '#6b7280',
-                      marginBottom: '10px',
+                      marginBottom: '6px',
                     }}
                   >
                     {pkg.description}
@@ -956,11 +916,11 @@ function JoinPackageContent(): React.JSX.Element {
                     className={pkg.id === 'group' ? 'discount-bounce' : ''}
                     style={{
                       fontSize: pkg.id === 'group'
-                        ? '18px'
-                        : (isMobile ? '28px' : '32px'),
+                        ? (isMobile ? '13px' : '16px')
+                        : (isMobile ? '18px' : '26px'),
                       fontWeight: '900',
                       background: pkg.id === 'group'
-                        ? 'linear-gradient(135deg, #059669 0%, #10b981 50%, #34d399 100%)'
+                        ? 'linear-gradient(135deg, #083A85 0%, #0a4da3 50%, #0a4da3 100%)'
                         : 'none',
                       WebkitBackgroundClip: pkg.id === 'group' ? 'text' : 'unset',
                       WebkitTextFillColor: pkg.id === 'group' ? 'transparent' : 'unset',
@@ -976,67 +936,44 @@ function JoinPackageContent(): React.JSX.Element {
                   </div>
                   <div
                     style={{
-                      fontSize: '13px',
+                      fontSize: '12px',
                       color: '#6b7280',
-                      marginBottom: '10px',
+                      marginBottom: '6px',
                     }}
                   >
                     {pkg.priceNote}
                   </div>
 
-                  {/* Divider */}
-                  <div
-                    style={{
-                      height: selectedPackage === pkg.id ? '2px' : '1px',
-                      backgroundColor: selectedPackage === pkg.id ? '#00BFFF' : '#e5e7eb',
-                      margin: '12px 0',
-                      transition: 'all 0.3s ease',
-                    }}
-                  ></div>
+                  {/* Expand toggle on mobile */}
+                  {isMobile && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setExpandedPkg(expandedPkg === pkg.id ? null : pkg.id); }}
+                      style={{ background: 'none', border: 'none', color: '#083A85', fontSize: '11px', fontWeight: 600, cursor: 'pointer', padding: '4px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', width: '100%' }}
+                    >
+                      {expandedPkg === pkg.id ? 'Hide details' : 'View details'}
+                      <i className={`bi bi-chevron-${expandedPkg === pkg.id ? 'up' : 'down'}`} style={{ fontSize: '10px' }}></i>
+                    </button>
+                  )}
 
-                  {/* Features List */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', transition: 'all 0.3s ease' }}>
-                    {pkg.features.map((feature, index) => (
+                  {/* Features — always on desktop, collapsible on mobile */}
+                  <div style={{ overflow: 'hidden', maxHeight: isMobile ? (expandedPkg === pkg.id ? '500px' : '0') : 'none', transition: 'max-height 0.3s ease' }}>
+                  <div style={{ height: '1px', backgroundColor: '#e5e7eb', margin: isMobile ? '5px 0' : '8px 0' }}></div>
+
+                  {/* Features List — only show available, aligned left from center */}
+                  <div style={{ display: 'inline-flex', flexDirection: 'column', gap: isMobile ? '2px' : '4px', margin: '0 auto', textAlign: 'left' }}>
+                    {pkg.features.filter(f => f.available).map((feature, index) => (
                       <div
                         key={index}
                         style={{
                           display: 'flex',
                           alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '10px',
+                          gap: isMobile ? '4px' : '8px',
+                          fontSize: isMobile ? '11px' : '13px',
+                          color: '#374151',
                         }}
                       >
-                        {feature.available ? (
-                          <i
-                            className="bi bi-check-circle-fill"
-                            style={{
-                              color: selectedPackage === pkg.id ? '#059669' : '#10b981',
-                              fontSize: '17px',
-                              transition: 'all 0.3s ease',
-                            }}
-                          ></i>
-                        ) : (
-                          <i
-                            className="bi bi-x-circle"
-                            style={{
-                              color: '#d1d5db',
-                              fontSize: '17px',
-                              transition: 'all 0.3s ease',
-                            }}
-                          ></i>
-                        )}
-                        <span
-                          style={{
-                            fontSize: '15px',
-                            color: feature.available
-                              ? (selectedPackage === pkg.id ? '#1f2937' : '#374151')
-                              : '#9ca3af',
-                            fontWeight: selectedPackage === pkg.id && feature.available ? '600' : '500',
-                            transition: 'all 0.3s ease',
-                          }}
-                        >
-                          {feature.text}
-                        </span>
+                        <i className="bi bi-check" style={{ color: '#083A85', fontSize: isMobile ? '12px' : '14px', fontWeight: 700, flexShrink: 0 }}></i>
+                        {feature.text}
                       </div>
                     ))}
                   </div>
@@ -1047,7 +984,7 @@ function JoinPackageContent(): React.JSX.Element {
                       style={{
                         marginTop: '10px',
                         paddingTop: '10px',
-                        borderTop: '1px dashed #00BFFF',
+                        borderTop: '1px dashed #0a4da3',
                         animation: 'fadeIn 0.3s ease',
                       }}
                     >
@@ -1085,15 +1022,15 @@ function JoinPackageContent(): React.JSX.Element {
                             fontSize: '13px',
                             fontWeight: '800',
                             textAlign: 'center',
-                            backgroundColor: peopleInputError ? '#fef2f2' : '#f0fdf4',
-                            border: peopleInputError ? '2px solid #ef4444' : '2px solid #10b981',
+                            backgroundColor: peopleInputError ? '#fef2f2' : '#f0f4fa',
+                            border: peopleInputError ? '2px solid #ef4444' : '2px solid #0a4da3',
                             borderRadius: '10px',
                             color: '#083A85',
                             outline: 'none',
                             boxSizing: 'border-box',
                             boxShadow: peopleInputError
                               ? '0 0 0 2px rgba(239, 68, 68, 0.1)'
-                              : '0 0 0 2px rgba(16, 185, 129, 0.1)',
+                              : '0 0 0 2px rgba(8, 58, 133, 0.1)',
                             transition: 'all 0.3s ease',
                           }}
                         />
@@ -1107,7 +1044,7 @@ function JoinPackageContent(): React.JSX.Element {
                               width: '22px',
                               height: '22px',
                               borderRadius: '50%',
-                              backgroundColor: '#10b981',
+                              backgroundColor: '#0a4da3',
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
@@ -1131,7 +1068,7 @@ function JoinPackageContent(): React.JSX.Element {
                           {peopleInputError}
                         </p>
                       ) : (
-                        <p style={{ fontSize: '11px', color: '#10b981', marginTop: '4px', fontWeight: '500' }}>
+                        <p style={{ fontSize: '11px', color: '#0a4da3', marginTop: '4px', fontWeight: '500' }}>
                           <i className="bi bi-info-circle" style={{ marginRight: '4px' }}></i>
                           Enter how many people will access the stream, including you
                         </p>
@@ -1145,7 +1082,7 @@ function JoinPackageContent(): React.JSX.Element {
                             padding: '10px',
                             backgroundColor: '#ecfdf5',
                             borderRadius: '8px',
-                            border: '1px solid #10b981',
+                            border: '1px solid #0a4da3',
                             animation: 'fadeIn 0.3s ease',
                           }}
                         >
@@ -1156,21 +1093,21 @@ function JoinPackageContent(): React.JSX.Element {
                             </span>
                           </div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                            <span style={{ fontSize: '12px', color: '#10b981', fontWeight: '600' }}>{discountPercentage}% Group Discount</span>
-                            <span style={{ fontSize: '12px', color: '#10b981', fontWeight: '600' }}>
+                            <span style={{ fontSize: '12px', color: '#0a4da3', fontWeight: '600' }}>{discountPercentage}% Group Discount</span>
+                            <span style={{ fontSize: '12px', color: '#0a4da3', fontWeight: '600' }}>
                               -{totalSavings.toLocaleString()} RWF
                             </span>
                           </div>
                           <div
                             style={{
                               height: '1px',
-                              backgroundColor: '#10b981',
+                              backgroundColor: '#0a4da3',
                               margin: '4px 0',
                             }}
                           ></div>
                           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <span style={{ fontSize: '13px', color: '#047857', fontWeight: '700' }}>Total to Pay</span>
-                            <span style={{ fontSize: '14px', color: '#047857', fontWeight: '800' }}>
+                            <span style={{ fontSize: '13px', color: '#083A85', fontWeight: '700' }}>Total to Pay</span>
+                            <span style={{ fontSize: '14px', color: '#083A85', fontWeight: '800' }}>
                               {totalGroupFee.toLocaleString()} RWF
                             </span>
                           </div>
@@ -1180,23 +1117,14 @@ function JoinPackageContent(): React.JSX.Element {
                   )}
 
                 </div>
+                </div>
 
-                {/* Bottom padding area with Select indicator */}
-                <div style={{ padding: '8px 12px', transition: 'all 0.3s ease' }}>
+                {/* Select indicator */}
+                <div style={{ padding: isMobile ? '4px 8px' : '6px 10px' }}>
                   {selectedPackage === pkg.id ? (
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '6px',
-                        color: '#10b981',
-                        fontSize: '13px',
-                        fontWeight: '600',
-                      }}
-                    >
-                      <i className="bi bi-check-circle-fill" style={{ fontSize: '14px' }}></i>
-                      Selected — Click &quot;Reserve Your Spot&quot;
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', color: '#083A85', fontSize: '12px', fontWeight: '700' }}>
+                      <i className="bi bi-check-circle-fill" style={{ fontSize: '13px' }}></i>
+                      Selected
                     </div>
                   ) : (
                     <div
@@ -1205,7 +1133,7 @@ function JoinPackageContent(): React.JSX.Element {
                         alignItems: 'center',
                         justifyContent: 'center',
                         gap: '6px',
-                        color: 'rgba(255, 255, 255, 0.6)',
+                        color: 'rgba(255, 255, 255, 0.5)',
                         fontSize: '13px',
                         fontWeight: '500',
                       }}
@@ -1223,25 +1151,26 @@ function JoinPackageContent(): React.JSX.Element {
           <div
             style={{
               display: 'flex',
-              flexDirection: isMobile ? 'column' : 'row',
+              flexDirection: 'row',
               justifyContent: 'center',
-              gap: '12px',
+              gap: isMobile ? '8px' : '12px',
               paddingTop: '4px',
             }}
           >
             <button
               onClick={handleCancel}
               style={{
-                padding: '10px 32px',
+                padding: isMobile ? '10px 20px' : '10px 32px',
                 backgroundColor: 'rgba(255,255,255,0.1)',
                 color: '#ffffff',
                 border: '2px solid rgba(255,255,255,0.2)',
-                borderRadius: '12px',
-                fontSize: '15px',
+                borderRadius: '10px',
+                fontSize: isMobile ? '13px' : '15px',
                 fontWeight: '700',
                 cursor: 'pointer',
                 transition: 'all 0.3s ease',
-                minWidth: isMobile ? '100%' : '160px',
+                minWidth: isMobile ? 'auto' : '160px',
+                flex: isMobile ? 1 : 'unset',
                 backdropFilter: 'blur(8px)',
               }}
               onMouseEnter={(e) => {
@@ -1259,24 +1188,24 @@ function JoinPackageContent(): React.JSX.Element {
               onClick={handleProceed}
               disabled={!selectedPackage || (selectedPackage === 'group' && !isGroupInputValid())}
               style={{
-                padding: '10px 32px',
-                background: (() => {
-                  const isEnabled = selectedPackage === 'individual' || (selectedPackage === 'group' && isGroupInputValid());
-                  if (!isEnabled) return '#d1d5db';
-                  const pkg = packages.find(p => p.id === selectedPackage);
-                  return pkg?.badgeGradient || '#083A85';
-                })(),
-                color: selectedPackage === 'group' ? '#1f2937' : '#fff',
-                border: 'none',
+                padding: isMobile ? '10px 20px' : '12px 32px',
+                background: (selectedPackage === 'individual' || (selectedPackage === 'group' && isGroupInputValid()))
+                  ? '#16a34a'
+                  : '#374151',
+                color: '#fff',
+                border: (selectedPackage === 'individual' || (selectedPackage === 'group' && isGroupInputValid()))
+                  ? '2px solid #22c55e'
+                  : 'none',
                 borderRadius: '12px',
                 fontSize: '15px',
                 fontWeight: '700',
                 cursor: (selectedPackage === 'individual' || (selectedPackage === 'group' && isGroupInputValid())) ? 'pointer' : 'not-allowed',
                 transition: 'all 0.3s ease',
                 boxShadow: (selectedPackage === 'individual' || (selectedPackage === 'group' && isGroupInputValid()))
-                  ? `0 8px 20px ${selectedPackage === 'group' ? 'rgba(245, 158, 11, 0.35)' : 'rgba(34, 211, 238, 0.35)'}`
+                  ? '0 8px 20px rgba(22, 163, 74, 0.35)'
                   : 'none',
-                minWidth: isMobile ? '100%' : '200px',
+                minWidth: isMobile ? 'auto' : '200px',
+                flex: isMobile ? 1 : 'unset',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -1285,17 +1214,19 @@ function JoinPackageContent(): React.JSX.Element {
               onMouseEnter={(e) => {
                 if (selectedPackage === 'individual' || (selectedPackage === 'group' && isGroupInputValid())) {
                   e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = `0 12px 28px ${selectedPackage === 'group' ? 'rgba(245, 158, 11, 0.45)' : 'rgba(34, 211, 238, 0.45)'}`;
+                  e.currentTarget.style.boxShadow = '0 12px 28px rgba(22, 163, 74, 0.45)';
+                  e.currentTarget.style.backgroundColor = '#15803d';
                 }
               }}
               onMouseLeave={(e) => {
                 if (selectedPackage === 'individual' || (selectedPackage === 'group' && isGroupInputValid())) {
                   e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = `0 8px 20px ${selectedPackage === 'group' ? 'rgba(245, 158, 11, 0.35)' : 'rgba(34, 211, 238, 0.35)'}`;
+                  e.currentTarget.style.boxShadow = '0 8px 20px rgba(22, 163, 74, 0.35)';
+                  e.currentTarget.style.backgroundColor = '#16a34a';
                 }
               }}
             >
-              Reserve Your Spot
+              Continue
               <i className="bi bi-arrow-right"></i>
             </button>
           </div>       
@@ -1327,7 +1258,7 @@ function JoinPackageContent(): React.JSX.Element {
             top: '18%',
             right: 'calc(50% - 220px)',
             zIndex: 2001,
-            background: 'linear-gradient(135deg, #FDE047 0%, #FBBF24 50%, #F59E0B 100%)',
+            background: 'linear-gradient(135deg, #60a5fa 0%, #93c5fd 50%, #083A85 100%)',
             color: '#1f2937',
             padding: '8px 20px',
             borderRadius: '8px',
@@ -1345,7 +1276,7 @@ function JoinPackageContent(): React.JSX.Element {
       {/* Group Share Code Modal */}
       {showGroupCodeModal && groupShareCode && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '32px 16px', background: 'rgba(0,0,0,0.82)', backdropFilter: 'blur(6px)', overflowY: 'auto' }}>
-          <div style={{ width: '100%', maxWidth: 480, background: 'linear-gradient(145deg, #141418 0%, #1a1a24 100%)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 20, padding: '32px 28px', boxShadow: '0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(245,158,11,0.15)', position: 'relative', margin: 'auto' }}>
+          <div style={{ width: '100%', maxWidth: 480, background: 'linear-gradient(145deg, #052047 0%, #083A85 100%)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 20, padding: '32px 28px', boxShadow: '0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(8,58,133,0.15)', position: 'relative', margin: 'auto' }}>
             {/* Close button */}
             <button onClick={() => setShowGroupCodeModal(false)} style={{ position: 'absolute', top: 14, right: 14, width: 32, height: 32, borderRadius: '50%', background: 'rgba(255,255,255,0.07)', border: 'none', color: '#9ca3af', fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <i className="bi bi-x-lg"></i>
@@ -1353,7 +1284,7 @@ function JoinPackageContent(): React.JSX.Element {
 
             {/* Header */}
             <div style={{ textAlign: 'center', marginBottom: 24 }}>
-              <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'linear-gradient(135deg, #FDE047, #F59E0B)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>
+              <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'linear-gradient(135deg, #60a5fa, #083A85)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>
                 <i className="bi bi-people-fill" style={{ fontSize: 26, color: '#1f2937' }}></i>
               </div>
               <h2 style={{ color: '#fff', fontSize: 22, fontWeight: 700, margin: '0 0 4px' }}>
@@ -1377,13 +1308,13 @@ function JoinPackageContent(): React.JSX.Element {
             </div>
 
             {/* Share Code */}
-            <div style={{ background: 'rgba(245,158,11,0.1)', border: '2px solid rgba(245,158,11,0.3)', borderRadius: 14, padding: '20px', textAlign: 'center', marginBottom: 20 }}>
-              <p style={{ color: '#FBBF24', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 2, margin: '0 0 8px' }}>Your Invite Code</p>
+            <div style={{ background: 'rgba(8,58,133,0.1)', border: '2px solid rgba(8,58,133,0.3)', borderRadius: 14, padding: '20px', textAlign: 'center', marginBottom: 20 }}>
+              <p style={{ color: '#93c5fd', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 2, margin: '0 0 8px' }}>Your Invite Code</p>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
                 <span style={{ fontSize: 32, fontWeight: 900, letterSpacing: 6, color: '#fff', fontFamily: 'monospace' }}>{groupShareCode}</span>
                 <button
                   onClick={() => { navigator.clipboard.writeText(groupShareCode); }}
-                  style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 8, padding: '8px 10px', cursor: 'pointer', color: '#FBBF24', fontSize: 16 }}
+                  style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 8, padding: '8px 10px', cursor: 'pointer', color: '#93c5fd', fontSize: 16 }}
                   title="Copy code"
                 >
                   <i className="bi bi-clipboard"></i>
@@ -1399,7 +1330,7 @@ function JoinPackageContent(): React.JSX.Element {
               </div>
               <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: '14px 16px' }}>
                 <p style={{ color: '#6b7280', fontSize: 11, margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: 1 }}>Expires In</p>
-                <p style={{ color: '#FBBF24', fontSize: 20, fontWeight: 800, margin: 0 }}>24 <span style={{ fontSize: 13, color: '#9ca3af', fontWeight: 500 }}>hours</span></p>
+                <p style={{ color: '#93c5fd', fontSize: 20, fontWeight: 800, margin: 0 }}>24 <span style={{ fontSize: 13, color: '#9ca3af', fontWeight: 500 }}>hours</span></p>
               </div>
             </div>
 
@@ -1412,11 +1343,11 @@ function JoinPackageContent(): React.JSX.Element {
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                 <span style={{ color: '#9ca3af', fontSize: 13 }}>Package</span>
-                <span style={{ color: '#FBBF24', fontSize: 13, fontWeight: 600 }}>Group ({groupPeopleCount} people)</span>
+                <span style={{ color: '#93c5fd', fontSize: 13, fontWeight: 600 }}>Group ({groupPeopleCount} people)</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                 <span style={{ color: '#9ca3af', fontSize: 13 }}>Total Paid</span>
-                <span style={{ color: '#10b981', fontSize: 13, fontWeight: 700 }}>{getPaymentFee().toLocaleString()} {selectedEvent?.streamFeeCurrencyAbbreviation || 'RWF'}</span>
+                <span style={{ color: '#0a4da3', fontSize: 13, fontWeight: 700 }}>{getPaymentFee().toLocaleString()} {selectedEvent?.streamFeeCurrencyAbbreviation || 'RWF'}</span>
               </div>
               {groupPaymentRef && (
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -1440,10 +1371,10 @@ function JoinPackageContent(): React.JSX.Element {
             <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 12, padding: '16px', marginBottom: 16 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                 <p style={{ color: '#d1d5db', fontSize: 13, fontWeight: 600, margin: 0 }}>
-                  <i className="bi bi-person-plus-fill" style={{ marginRight: 6, color: '#FBBF24' }}></i>
+                  <i className="bi bi-person-plus-fill" style={{ marginRight: 6, color: '#93c5fd' }}></i>
                   Invite Viewers
                 </p>
-                <span style={{ fontSize: 11, color: remainingInvites > 0 ? '#10b981' : '#ef4444', fontWeight: 600 }}>
+                <span style={{ fontSize: 11, color: remainingInvites > 0 ? '#0a4da3' : '#ef4444', fontWeight: 600 }}>
                   {remainingInvites > 0 ? `${remainingInvites} slot${remainingInvites !== 1 ? 's' : ''} left` : 'No slots left'}
                 </span>
               </div>
@@ -1458,13 +1389,13 @@ function JoinPackageContent(): React.JSX.Element {
                     onChange={e => { setInviteEmail(e.target.value); setInviteError(''); }}
                     onKeyDown={e => e.key === 'Enter' && handleSendInvite()}
                     style={{ flex: 1, padding: '10px 14px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.08)', color: '#fff', fontSize: 13, outline: 'none' }}
-                    onFocus={e => { e.currentTarget.style.borderColor = '#FBBF24'; }}
+                    onFocus={e => { e.currentTarget.style.borderColor = '#93c5fd'; }}
                     onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'; }}
                   />
                   <button
                     onClick={handleSendInvite}
                     disabled={inviteLoading || !inviteEmail.trim()}
-                    style={{ padding: '10px 18px', borderRadius: 10, border: 'none', background: inviteEmail.trim() ? '#F59E0B' : 'rgba(255,255,255,0.08)', color: inviteEmail.trim() ? '#1f2937' : 'rgba(255,255,255,0.3)', fontSize: 13, fontWeight: 700, cursor: inviteEmail.trim() ? 'pointer' : 'not-allowed', whiteSpace: 'nowrap' }}
+                    style={{ padding: '10px 18px', borderRadius: 10, border: 'none', background: inviteEmail.trim() ? '#083A85' : 'rgba(255,255,255,0.08)', color: inviteEmail.trim() ? '#1f2937' : 'rgba(255,255,255,0.3)', fontSize: 13, fontWeight: 700, cursor: inviteEmail.trim() ? 'pointer' : 'not-allowed', whiteSpace: 'nowrap' }}
                   >
                     {inviteLoading ? '...' : 'Send'}
                   </button>
@@ -1472,14 +1403,14 @@ function JoinPackageContent(): React.JSX.Element {
               )}
 
               {inviteError && <p style={{ color: '#ef4444', fontSize: 12, margin: '0 0 8px' }}>{inviteError}</p>}
-              {inviteSuccess && <p style={{ color: '#10b981', fontSize: 12, margin: '0 0 8px' }}><i className="bi bi-check-circle-fill" style={{ marginRight: 4 }}></i>{inviteSuccess}</p>}
+              {inviteSuccess && <p style={{ color: '#0a4da3', fontSize: 12, margin: '0 0 8px' }}><i className="bi bi-check-circle-fill" style={{ marginRight: 4 }}></i>{inviteSuccess}</p>}
 
               {/* Invited emails list */}
               {invitedEmails.length > 0 && (
                 <div style={{ maxHeight: 120, overflowY: 'auto' }}>
                   {invitedEmails.map((email, i) => (
                     <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', borderBottom: i < invitedEmails.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
-                      <i className="bi bi-envelope-check-fill" style={{ color: '#10b981', fontSize: 12 }}></i>
+                      <i className="bi bi-envelope-check-fill" style={{ color: '#0a4da3', fontSize: 12 }}></i>
                       <span style={{ color: '#9ca3af', fontSize: 12, flex: 1 }}>{email}</span>
                       <span style={{ color: '#6b7280', fontSize: 10 }}>Invited</span>
                     </div>
@@ -1499,7 +1430,7 @@ function JoinPackageContent(): React.JSX.Element {
                   setShowGroupCodeModal(false);
                   router.push(`/user/events/live-stream?eventId=${selectedEvent?.id}&paid=true&inviteToken=${encodeURIComponent(groupShareCode)}`);
                 }}
-                style={{ flex: 1, padding: '12px', background: 'linear-gradient(135deg, #03969c, #027a7f)', border: 'none', borderRadius: 10, color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+                style={{ flex: 1, padding: '12px', background: 'linear-gradient(135deg, #083A85, #0a4da3)', border: 'none', borderRadius: 10, color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
               >
                 <i className="bi bi-play-circle"></i> Watch Now
               </button>
@@ -1511,12 +1442,12 @@ function JoinPackageContent(): React.JSX.Element {
       {/* Viewer Auth Modal */}
       {showAuthModal && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '32px 16px', background: 'rgba(0,0,0,0.82)', backdropFilter: 'blur(6px)', overflowY: 'auto' }}>
-          <div style={{ width: '100%', maxWidth: 520, background: 'linear-gradient(145deg, #141418 0%, #1a1a24 100%)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 20, padding: '32px 28px', boxShadow: '0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(3,150,156,0.15)', position: 'relative', margin: 'auto' }}>
+          <div style={{ width: '100%', maxWidth: 520, background: 'linear-gradient(145deg, #052047 0%, #083A85 100%)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 20, padding: '32px 28px', boxShadow: '0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(8,58,133,0.15)', position: 'relative', margin: 'auto' }}>
             <button onClick={() => setShowAuthModal(false)} style={{ position: 'absolute', top: 14, right: 14, width: 32, height: 32, borderRadius: '50%', background: 'rgba(255,255,255,0.07)', border: 'none', color: '#9ca3af', fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <i className="bi bi-x-lg"></i>
             </button>
             <div style={{ textAlign: 'center', marginBottom: 24 }}>
-              <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'linear-gradient(135deg, #03969c, #027a7f)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
+              <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'linear-gradient(135deg, #083A85, #0a4da3)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
                 <i className={authStep === 'otp' ? 'bi bi-shield-check' : 'bi bi-cart-check-fill'} style={{ fontSize: 22, color: '#fff' }}></i>
               </div>
               <h2 style={{ color: '#fff', fontSize: 20, fontWeight: 700, margin: '0 0 4px' }}>
@@ -1529,7 +1460,7 @@ function JoinPackageContent(): React.JSX.Element {
             {authStep !== 'otp' && (
               <div style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: 3, marginBottom: 20 }}>
                 {(['login', 'signup'] as const).map(tab => (
-                  <button key={tab} onClick={() => { setAuthStep(tab); setAuthError(''); }} style={{ flex: 1, padding: '8px 0', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 600, transition: 'all 0.2s', background: authStep === tab ? 'linear-gradient(135deg, #03969c, #027a7f)' : 'transparent', color: authStep === tab ? '#fff' : '#6b7280' }}>
+                  <button key={tab} onClick={() => { setAuthStep(tab); setAuthError(''); }} style={{ flex: 1, padding: '8px 0', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 600, transition: 'all 0.2s', background: authStep === tab ? 'linear-gradient(135deg, #083A85, #0a4da3)' : 'transparent', color: authStep === tab ? '#fff' : '#6b7280' }}>
                     {tab === 'login' ? 'Log In' : 'Sign Up'}
                   </button>
                 ))}
@@ -1545,13 +1476,13 @@ function JoinPackageContent(): React.JSX.Element {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 <div>
                   <label style={{ display: 'block', color: '#d1d5db', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Email</label>
-                  <input type="email" value={loginEmail} onChange={e => setLoginEmail(e.target.value)} placeholder="your@email.com" onKeyDown={e => e.key === 'Enter' && handleAuthLogin()} style={{ width: '100%', padding: '11px 14px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 9, color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} onFocus={e => { e.currentTarget.style.borderColor = '#03969c'; }} onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }} />
+                  <input type="email" value={loginEmail} onChange={e => setLoginEmail(e.target.value)} placeholder="your@email.com" onKeyDown={e => e.key === 'Enter' && handleAuthLogin()} style={{ width: '100%', padding: '11px 14px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 9, color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} onFocus={e => { e.currentTarget.style.borderColor = '#083A85'; }} onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }} />
                 </div>
                 <div>
                   <label style={{ display: 'block', color: '#d1d5db', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Password</label>
-                  <input type="password" value={loginPassword} onChange={e => setLoginPassword(e.target.value)} placeholder="••••••••" onKeyDown={e => e.key === 'Enter' && handleAuthLogin()} style={{ width: '100%', padding: '11px 14px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 9, color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} onFocus={e => { e.currentTarget.style.borderColor = '#03969c'; }} onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }} />
+                  <input type="password" value={loginPassword} onChange={e => setLoginPassword(e.target.value)} placeholder="••••••••" onKeyDown={e => e.key === 'Enter' && handleAuthLogin()} style={{ width: '100%', padding: '11px 14px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 9, color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} onFocus={e => { e.currentTarget.style.borderColor = '#083A85'; }} onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }} />
                 </div>
-                <button onClick={handleAuthLogin} disabled={authLoading || googleLoading} style={{ width: '100%', padding: '13px', background: authLoading ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, #03969c, #027a7f)', border: 'none', borderRadius: 10, color: '#fff', fontSize: 15, fontWeight: 700, cursor: authLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 4 }}>
+                <button onClick={handleAuthLogin} disabled={authLoading || googleLoading} style={{ width: '100%', padding: '13px', background: authLoading ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, #083A85, #0a4da3)', border: 'none', borderRadius: 10, color: '#fff', fontSize: 15, fontWeight: 700, cursor: authLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 4 }}>
                   {authLoading ? <><div style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} /> Signing in…</> : <><i className="bi bi-box-arrow-in-right"></i> Log In</>}
                 </button>
                 {GOOGLE_CLIENT_ID && (
@@ -1574,26 +1505,26 @@ function JoinPackageContent(): React.JSX.Element {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   <div>
                     <label style={{ display: 'block', color: '#d1d5db', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>First Name</label>
-                    <input type="text" value={signupFirstName} onChange={e => setSignupFirstName(e.target.value)} placeholder="First name" style={{ width: '100%', padding: '11px 14px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 9, color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} onFocus={e => { e.currentTarget.style.borderColor = '#03969c'; }} onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }} />
+                    <input type="text" value={signupFirstName} onChange={e => setSignupFirstName(e.target.value)} placeholder="First name" style={{ width: '100%', padding: '11px 14px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 9, color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} onFocus={e => { e.currentTarget.style.borderColor = '#083A85'; }} onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }} />
                   </div>
                   <div>
                     <label style={{ display: 'block', color: '#d1d5db', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Last Name</label>
-                    <input type="text" value={signupLastName} onChange={e => setSignupLastName(e.target.value)} placeholder="Last name" style={{ width: '100%', padding: '11px 14px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 9, color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} onFocus={e => { e.currentTarget.style.borderColor = '#03969c'; }} onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }} />
+                    <input type="text" value={signupLastName} onChange={e => setSignupLastName(e.target.value)} placeholder="Last name" style={{ width: '100%', padding: '11px 14px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 9, color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} onFocus={e => { e.currentTarget.style.borderColor = '#083A85'; }} onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }} />
                   </div>
                 </div>
                 <div>
                   <label style={{ display: 'block', color: '#d1d5db', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Email</label>
-                  <input type="email" value={signupEmail} onChange={e => setSignupEmail(e.target.value)} placeholder="your@email.com" style={{ width: '100%', padding: '11px 14px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 9, color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} onFocus={e => { e.currentTarget.style.borderColor = '#03969c'; }} onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }} />
+                  <input type="email" value={signupEmail} onChange={e => setSignupEmail(e.target.value)} placeholder="your@email.com" style={{ width: '100%', padding: '11px 14px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 9, color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} onFocus={e => { e.currentTarget.style.borderColor = '#083A85'; }} onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }} />
                 </div>
                 <div>
                   <label style={{ display: 'block', color: '#d1d5db', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Phone (optional)</label>
-                  <input type="tel" value={signupPhone} onChange={e => setSignupPhone(e.target.value)} placeholder="078XXXXXXX" style={{ width: '100%', padding: '11px 14px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 9, color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} onFocus={e => { e.currentTarget.style.borderColor = '#03969c'; }} onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }} />
+                  <input type="tel" value={signupPhone} onChange={e => setSignupPhone(e.target.value)} placeholder="078XXXXXXX" style={{ width: '100%', padding: '11px 14px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 9, color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} onFocus={e => { e.currentTarget.style.borderColor = '#083A85'; }} onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }} />
                 </div>
                 <div>
                   <label style={{ display: 'block', color: '#d1d5db', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Password</label>
-                  <input type="password" value={signupPassword} onChange={e => setSignupPassword(e.target.value)} placeholder="••••••••" onKeyDown={e => e.key === 'Enter' && handleAuthSignup()} style={{ width: '100%', padding: '11px 14px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 9, color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} onFocus={e => { e.currentTarget.style.borderColor = '#03969c'; }} onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }} />
+                  <input type="password" value={signupPassword} onChange={e => setSignupPassword(e.target.value)} placeholder="••••••••" onKeyDown={e => e.key === 'Enter' && handleAuthSignup()} style={{ width: '100%', padding: '11px 14px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 9, color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} onFocus={e => { e.currentTarget.style.borderColor = '#083A85'; }} onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }} />
                 </div>
-                <button onClick={handleAuthSignup} disabled={authLoading || googleLoading} style={{ width: '100%', padding: '13px', background: authLoading ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, #03969c, #027a7f)', border: 'none', borderRadius: 10, color: '#fff', fontSize: 15, fontWeight: 700, cursor: authLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 4 }}>
+                <button onClick={handleAuthSignup} disabled={authLoading || googleLoading} style={{ width: '100%', padding: '13px', background: authLoading ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, #083A85, #0a4da3)', border: 'none', borderRadius: 10, color: '#fff', fontSize: 15, fontWeight: 700, cursor: authLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 4 }}>
                   {authLoading ? <><div style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} /> Creating account…</> : <><i className="bi bi-person-plus-fill"></i> Sign Up</>}
                 </button>
                 {GOOGLE_CLIENT_ID && (
@@ -1615,9 +1546,9 @@ function JoinPackageContent(): React.JSX.Element {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 <div>
                   <label style={{ display: 'block', color: '#d1d5db', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Verification Code</label>
-                  <input type="text" value={otpValue} onChange={e => setOtpValue(e.target.value)} placeholder="Enter code" onKeyDown={e => e.key === 'Enter' && handleVerifyOtp()} style={{ width: '100%', padding: '11px 14px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 9, color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box', textAlign: 'center', letterSpacing: 8, fontWeight: 700 }} onFocus={e => { e.currentTarget.style.borderColor = '#03969c'; }} onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }} />
+                  <input type="text" value={otpValue} onChange={e => setOtpValue(e.target.value)} placeholder="Enter code" onKeyDown={e => e.key === 'Enter' && handleVerifyOtp()} style={{ width: '100%', padding: '11px 14px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 9, color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box', textAlign: 'center', letterSpacing: 8, fontWeight: 700 }} onFocus={e => { e.currentTarget.style.borderColor = '#083A85'; }} onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }} />
                 </div>
-                <button onClick={handleVerifyOtp} disabled={authLoading} style={{ width: '100%', padding: '13px', background: authLoading ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, #03969c, #027a7f)', border: 'none', borderRadius: 10, color: '#fff', fontSize: 15, fontWeight: 700, cursor: authLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                <button onClick={handleVerifyOtp} disabled={authLoading} style={{ width: '100%', padding: '13px', background: authLoading ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, #083A85, #0a4da3)', border: 'none', borderRadius: 10, color: '#fff', fontSize: 15, fontWeight: 700, cursor: authLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                   {authLoading ? <><div style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} /> Verifying…</> : <><i className="bi bi-shield-check"></i> Verify</>}
                 </button>
               </div>

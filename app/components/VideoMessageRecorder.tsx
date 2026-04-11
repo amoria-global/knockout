@@ -233,10 +233,17 @@ const VideoMessageRecorder: React.FC<VideoMessageRecorderProps> = ({ onClose, on
       position: 'fixed',
       inset: 0,
       backgroundColor: '#000',
-      zIndex: 9999,
+      zIndex: 99999,
       display: 'flex',
       flexDirection: 'column',
-      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif'
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+      width: '100%',
+      height: '100%',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      overflow: 'hidden'
     }}>
       <style>{`
         @keyframes pulse {
@@ -252,10 +259,147 @@ const VideoMessageRecorder: React.FC<VideoMessageRecorderProps> = ({ onClose, on
         .filter-scroll::-webkit-scrollbar {
           display: none;
         }
+
+        /* Mobile Responsive Styles */
+        @media (max-width: 768px) {
+          .video-recorder-header {
+            padding: 10px 14px !important;
+          }
+
+          .video-recorder-header h2 {
+            font-size: 15px !important;
+          }
+
+          .control-buttons {
+            gap: 6px !important;
+            padding: 12px 10px !important;
+            flex-wrap: wrap !important;
+            justify-content: center !important;
+          }
+
+          .control-button {
+            padding: 7px 14px !important;
+            font-size: 12px !important;
+            min-width: auto !important;
+            flex: 1 1 auto !important;
+            min-width: calc(50% - 3px) !important;
+            min-height: 36px !important;
+          }
+
+          .filter-panel {
+            width: 160px !important;
+            padding: 12px 8px !important;
+          }
+
+          .filter-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 10px !important;
+          }
+
+          .filter-button {
+            width: 45px !important;
+            height: 45px !important;
+            min-width: 45px !important;
+            min-height: 45px !important;
+            font-size: 18px !important;
+          }
+
+          .filter-label {
+            font-size: 8px !important;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .video-recorder-header {
+            padding: 8px 10px !important;
+          }
+
+          .video-recorder-header h2 {
+            font-size: 13px !important;
+          }
+
+          .control-buttons {
+            gap: 4px !important;
+            padding: 8px 6px !important;
+            flex-direction: column !important;
+          }
+
+          .control-button {
+            padding: 6px 12px !important;
+            font-size: 11px !important;
+            width: 100% !important;
+            min-width: 100% !important;
+            flex: none !important;
+            min-height: 36px !important;
+          }
+
+          .filter-panel {
+            width: 140px !important;
+            padding: 10px 6px !important;
+            top: 70px !important;
+            bottom: 70px !important;
+          }
+
+          .filter-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 8px !important;
+          }
+
+          .filter-button {
+            width: 40px !important;
+            height: 40px !important;
+            min-width: 40px !important;
+            min-height: 40px !important;
+            font-size: 16px !important;
+          }
+
+          .filter-label {
+            font-size: 7px !important;
+          }
+
+          .timer-display {
+            font-size: 14px !important;
+            padding: 6px 12px !important;
+          }
+
+          .recording-indicator {
+            font-size: 12px !important;
+            padding: 6px 10px !important;
+          }
+        }
+
+        @media (max-width: 360px) {
+          .control-buttons {
+            gap: 3px !important;
+            padding: 6px 4px !important;
+          }
+
+          .control-button {
+            padding: 5px 10px !important;
+            font-size: 10px !important;
+            min-height: 34px !important;
+          }
+
+          .filter-panel {
+            width: 120px !important;
+          }
+
+          .filter-grid {
+            gap: 6px !important;
+          }
+
+          .filter-button {
+            width: 36px !important;
+            height: 36px !important;
+            min-width: 36px !important;
+            min-height: 36px !important;
+            font-size: 14px !important;
+          }
+        }
       `}</style>
 
       {/* Header */}
-      <div style={{
+      <div className="video-recorder-header" style={{
         padding: '16px 20px',
         backgroundColor: '#18181b',
         display: 'flex',
@@ -263,7 +407,7 @@ const VideoMessageRecorder: React.FC<VideoMessageRecorderProps> = ({ onClose, on
         justifyContent: 'space-between',
         borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
       }}>
-        <h2 style={{
+        <h2 className="video-recorder-header" style={{
           margin: 0,
           fontSize: '18px',
           fontWeight: '600',
@@ -291,7 +435,8 @@ const VideoMessageRecorder: React.FC<VideoMessageRecorderProps> = ({ onClose, on
         flex: 1,
         position: 'relative',
         backgroundColor: '#000',
-        overflow: 'hidden'
+        overflow: 'hidden',
+        minHeight: 0
       }}>
         {/* Loading Spinner */}
         {isLoading && (
@@ -368,7 +513,7 @@ const VideoMessageRecorder: React.FC<VideoMessageRecorderProps> = ({ onClose, on
 
         {/* Recording Indicator */}
         {isRecording && !isPaused && (
-          <div style={{
+          <div className="recording-indicator" style={{
             position: 'absolute',
             top: '16px',
             left: '16px',
@@ -396,7 +541,7 @@ const VideoMessageRecorder: React.FC<VideoMessageRecorderProps> = ({ onClose, on
         {/* Timer and Progress Bar */}
         {isRecording && (
           <>
-            <div style={{
+            <div className="timer-display" style={{
               position: 'absolute',
               top: '16px',
               right: '16px',
@@ -432,7 +577,7 @@ const VideoMessageRecorder: React.FC<VideoMessageRecorderProps> = ({ onClose, on
 
       {/* Filter Selection - Vertical Sidebar on Left (3 columns grid) */}
       {showFilters && !recordedBlob && (
-        <div style={{
+        <div className="filter-panel" style={{
           position: 'absolute',
           left: 0,
           top: '80px',
@@ -446,7 +591,7 @@ const VideoMessageRecorder: React.FC<VideoMessageRecorderProps> = ({ onClose, on
           overflowY: 'auto',
           overflowX: 'hidden'
         }}>
-          <div className="filter-scroll" style={{
+          <div className="filter-scroll filter-grid" style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(3, 1fr)',
             gap: '12px',
@@ -464,6 +609,7 @@ const VideoMessageRecorder: React.FC<VideoMessageRecorderProps> = ({ onClose, on
                 }}
               >
                 <button
+                  className="filter-button"
                   onClick={() => setSelectedFilter(filter)}
                   title={filter.name}
                   style={{
@@ -501,7 +647,7 @@ const VideoMessageRecorder: React.FC<VideoMessageRecorderProps> = ({ onClose, on
                 >
                   {filter.icon}
                 </button>
-                <span style={{
+                <span className="filter-label" style={{
                   fontSize: '9px',
                   color: selectedFilter.id === filter.id ? '#e32733' : 'rgba(255, 255, 255, 0.7)',
                   fontWeight: selectedFilter.id === filter.id ? '600' : '400',
@@ -522,15 +668,18 @@ const VideoMessageRecorder: React.FC<VideoMessageRecorderProps> = ({ onClose, on
 
       {/* Controls */}
       {!recordedBlob && !isRecording && (
-        <div style={{
+        <div className="control-buttons" style={{
           padding: '24px 20px',
+          paddingBottom: 'max(24px, env(safe-area-inset-bottom))',
           backgroundColor: '#18181b',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          gap: '16px'
+          gap: '16px',
+          borderTop: '1px solid rgba(255, 255, 255, 0.1)'
         }}>
           <button
+            className="control-button"
             onClick={() => setShowFilters(!showFilters)}
             style={{
               padding: '5px 22px',
@@ -552,6 +701,7 @@ const VideoMessageRecorder: React.FC<VideoMessageRecorderProps> = ({ onClose, on
           </button>
 
           <button
+            className="control-button"
             onClick={startCountdown}
             disabled={countdown !== null}
             style={{
@@ -581,6 +731,7 @@ const VideoMessageRecorder: React.FC<VideoMessageRecorderProps> = ({ onClose, on
           </button>
 
           <button
+            className="control-button"
             onClick={() => setFacingMode(facingMode === 'user' ? 'environment' : 'user')}
             style={{
               padding: '5px 22px',
@@ -605,15 +756,18 @@ const VideoMessageRecorder: React.FC<VideoMessageRecorderProps> = ({ onClose, on
 
       {/* Recording Controls */}
       {isRecording && (
-        <div style={{
+        <div className="control-buttons" style={{
           padding: '24px 20px',
+          paddingBottom: 'max(24px, env(safe-area-inset-bottom))',
           backgroundColor: '#18181b',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          gap: '16px'
+          gap: '16px',
+          borderTop: '1px solid rgba(255, 255, 255, 0.1)'
         }}>
           <button
+            className="control-button"
             onClick={togglePause}
             style={{
               padding: '5px 22px',
@@ -635,6 +789,7 @@ const VideoMessageRecorder: React.FC<VideoMessageRecorderProps> = ({ onClose, on
           </button>
 
           <button
+            className="control-button"
             onClick={stopRecording}
             style={{
               padding: '5px 22px',
@@ -661,10 +816,12 @@ const VideoMessageRecorder: React.FC<VideoMessageRecorderProps> = ({ onClose, on
       {recordedBlob && (
         <div style={{
           padding: '24px 20px',
+          paddingBottom: 'max(24px, env(safe-area-inset-bottom))',
           backgroundColor: '#18181b',
           display: 'flex',
           flexDirection: 'column',
-          gap: '16px'
+          gap: '16px',
+          borderTop: '1px solid rgba(255, 255, 255, 0.1)'
         }}>
           <div style={{
             display: 'flex',
