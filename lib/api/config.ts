@@ -222,12 +222,6 @@ export const API_ENDPOINTS = {
     UNREAD_COUNT: '/api/remote/chat/unread-count',
   },
 
-  // Wallet endpoints (per-customer wallet read-only views)
-  WALLET: {
-    ME: '/api/remote/wallet/me',
-    ME_MOVEMENTS: '/api/remote/wallet/me/movements',
-  },
-
   // Legacy endpoint paths (for backward compatibility)
   LEGACY: {
     EVENTS: '/api/remote/events',
