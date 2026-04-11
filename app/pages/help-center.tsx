@@ -15,6 +15,8 @@ type FAQ = {
   category: string;
   priority: string;
   helpful: number;
+  notHelpful: number;
+  userVote: 'yes' | 'no' | null;
   lastUpdated: Date;
   tags: string[];
 };
@@ -78,7 +80,6 @@ const HelpSupportCenter: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [openFAQs, setOpenFAQs] = useState<Set<string>>(new Set());
-  const [votedFAQs, setVotedFAQs] = useState<Record<string, 'yes' | 'no'>>({});
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -104,9 +105,9 @@ const HelpSupportCenter: React.FC = () => {
             category: f.category || 'General',
             // Backend sends priority as number (1=high, 2=medium, 3=low)
             priority: f.priority === 1 ? 'high' : f.priority === 2 ? 'medium' : f.priority === 3 ? 'low' : (f.priority || 'medium'),
-            // Backend field is helpfulCount, not helpful
             helpful: f.helpfulCount ?? f.helpful ?? 0,
-            // Backend field is updatedAt, not lastUpdated
+            notHelpful: f.notHelpfulCount ?? 0,
+            userVote: f.userVote ?? null,
             lastUpdated: f.updatedAt ? new Date(f.updatedAt) : f.lastUpdated ? new Date(f.lastUpdated) : new Date(),
             tags: f.tags || [],
           })));
@@ -172,12 +173,53 @@ const HelpSupportCenter: React.FC = () => {
     });
   };
 
-  const handleFAQVote = (faqId: string, vote: 'yes' | 'no') => {
-    if (votedFAQs[faqId]) return; // already voted
-    setVotedFAQs(prev => ({ ...prev, [faqId]: vote }));
-    if (vote === 'yes') {
-      setFAQS(prev => prev.map(faq =>
-        faq.id === faqId ? { ...faq, helpful: faq.helpful + 1 } : faq
+  const handleFAQVote = async (faqId: string, vote: 'yes' | 'no') => {
+    const faq = FAQS.find(f => f.id === faqId);
+    if (!faq || faq.userVote) return; // already voted
+
+    // Optimistic update
+    setFAQS(prev => prev.map(f =>
+      f.id === faqId
+        ? {
+            ...f,
+            userVote: vote,
+            helpful: vote === 'yes' ? f.helpful + 1 : f.helpful,
+            notHelpful: vote === 'no' ? f.notHelpful + 1 : f.notHelpful,
+          }
+        : f
+    ));
+
+    try {
+      const res = await fetch(`/api/remote/public/faqs/${faqId}/vote`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ vote }),
+      });
+      const result = await res.json();
+      if (result?.data) {
+        // Sync with backend response
+        setFAQS(prev => prev.map(f =>
+          f.id === faqId
+            ? {
+                ...f,
+                helpful: result.data.helpfulCount ?? f.helpful,
+                notHelpful: result.data.notHelpfulCount ?? f.notHelpful,
+                userVote: result.data.vote ?? vote,
+              }
+            : f
+        ));
+      }
+    } catch {
+      // Revert on failure
+      setFAQS(prev => prev.map(f =>
+        f.id === faqId
+          ? {
+              ...f,
+              userVote: null,
+              helpful: vote === 'yes' ? Math.max(0, f.helpful - 1) : f.helpful,
+              notHelpful: vote === 'no' ? Math.max(0, f.notHelpful - 1) : f.notHelpful,
+            }
+          : f
       ));
     }
   };
@@ -771,10 +813,10 @@ const HelpSupportCenter: React.FC = () => {
                           }}
                         >
                           <span className="text-gray-700 font-semibold" style={{ fontSize: isMobile ? '0.8125rem' : '0.875rem' }}>Was this helpful?</span>
-                          {votedFAQs[faq.id] ? (
-                            <span style={{ fontSize: isMobile ? '0.8125rem' : '0.875rem', color: votedFAQs[faq.id] === 'yes' ? '#083A85' : '#6B7280', fontWeight: 600 }}>
-                              <i className={`bi ${votedFAQs[faq.id] === 'yes' ? 'bi-hand-thumbs-up-fill' : 'bi-hand-thumbs-down-fill'}`} style={{ marginRight: 6 }}></i>
-                              {votedFAQs[faq.id] === 'yes' ? 'Thanks for your feedback!' : 'Sorry to hear that. We\'ll improve this.'}
+                          {faq.userVote ? (
+                            <span style={{ fontSize: isMobile ? '0.8125rem' : '0.875rem', color: faq.userVote === 'yes' ? '#083A85' : '#6B7280', fontWeight: 600 }}>
+                              <i className={`bi ${faq.userVote === 'yes' ? 'bi-hand-thumbs-up-fill' : 'bi-hand-thumbs-down-fill'}`} style={{ marginRight: 6 }}></i>
+                              {faq.userVote === 'yes' ? 'Thanks for your feedback!' : 'Sorry to hear that. We\'ll improve this.'}
                             </span>
                           ) : (
                             <>

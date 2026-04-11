@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useSearchParams, useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { WHEPClient } from '@/lib/streaming/WHEPClient';
@@ -15,9 +16,9 @@ import { verifyOtp } from '@/lib/APIs/auth/verify-otp/route';
 import { googleAuth } from '@/lib/APIs/auth/google/route';
 import { useGoogleLogin } from '@react-oauth/google';
 import { getStreamChats, type StreamChatMessage } from '@/lib/APIs/streams/chat/route';
-import { sendStreamChat, sendStreamVideoChat, getStreamViewerCount, getPublicViewerCount, requestStreamAccess, checkDeviceAccess, sendHeartbeat, reportStreamIssue, rateStream, blockUserInStream } from '@/lib/APIs/streams/route';
+import { sendStreamChat, sendStreamVideoChat, getStreamViewerCount, getPublicViewerCount, requestStreamAccess, checkDeviceAccess, sendHeartbeat, reportStreamIssue, blockUserInStream } from '@/lib/APIs/streams/route';
 import { getDeviceId } from '@/lib/fingerprint';
-import { checkAnonymousAccessStatus, anonymousDeviceCheck, anonymousHeartbeat, deactivateAnonymousSession, getAnonymousViewerCount, registerAnonymousViewer, switchAnonymousDevice, sendAnonymousChatMessage, sendAnonymousVideoChat, rateStreamAnonymous } from '@/lib/APIs/streams/anonymous-viewer';
+import { checkAnonymousAccessStatus, anonymousDeviceCheck, anonymousHeartbeat, deactivateAnonymousSession, getAnonymousViewerCount, registerAnonymousViewer, switchAnonymousDevice, sendAnonymousChatMessage, sendAnonymousVideoChat } from '@/lib/APIs/streams/anonymous-viewer';
 import ViewerInfoModal from '../../components/ViewerInfoModal';
 import type { ViewerInfoData } from '../../components/ViewerInfoModal';
 import DeviceSwitchModal from '../../components/DeviceSwitchModal';
@@ -33,10 +34,6 @@ import { PlayIcon, PauseIcon, VolumeHighIcon, VolumeLowIcon, VolumeOffIcon, Full
 
 // Dynamically import VideoMessageRecorder to avoid SSR issues
 const VideoMessageRecorder = dynamic(() => import('../../components/VideoMessageRecorder'), { ssr: false });
-
-// Check if a string contains only emoji characters (no text)
-const EMOJI_ONLY_RE = /^(?:\p{Emoji_Presentation}|\p{Emoji}\uFE0F|\p{Emoji_Modifier_Base}\p{Emoji_Modifier}?)+$/u;
-const isEmojiOnly = (text: string) => EMOJI_ONLY_RE.test(text.trim());
 
 // Default user avatar SVG (grey silhouette on light background)
 const DEFAULT_USER_AVATAR = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 150 150'%3E%3Crect width='150' height='150' fill='%234a4a4a'/%3E%3Ccircle cx='75' cy='56' r='30' fill='%23888'/%3E%3Cellipse cx='75' cy='138' rx='48' ry='42' fill='%23888'/%3E%3C/svg%3E";
@@ -187,15 +184,6 @@ const App = () => {
     evStatusUpper !== 'ONGOING' &&
     evStatusUpper !== 'COMPLETED';
 
-  // Check if user already rated this event
-  useEffect(() => {
-    if (mainEvent?.id) {
-      const alreadyRated = localStorage.getItem(`rated_${mainEvent.id}`);
-      if (alreadyRated) setUserHasRated(true);
-      else setUserHasRated(false);
-    }
-  }, [mainEvent?.id]);
-
   // Blocked users (local only)
   const [blockedUsers, setBlockedUsers] = useState<Set<string>>(new Set());
   // Dynamic participants derived from chat messages
@@ -221,6 +209,28 @@ const App = () => {
   const [viewerInfoError, setViewerInfoError] = useState('');
   const [showDeviceSwitchModal, setShowDeviceSwitchModal] = useState(false);
   const [deviceSwitchLoading, setDeviceSwitchLoading] = useState(false);
+
+  // Check if user already rated this event — uses new backend endpoint
+  useEffect(() => {
+    if (!mainEvent?.id) return;
+    const checkRating = async () => {
+      try {
+        const viewerParam = anonymousViewerId ? `?viewerId=${anonymousViewerId}` : '';
+        const res = await fetch(`/api/remote/public/streams/${mainEvent.id}/rating${viewerParam}`);
+        const result = await res.json();
+        if (result?.data?.userRating) {
+          setUserHasRated(true);
+          setRating(result.data.userRating);
+          if (result.data.userRatingComment) setRatingComment(result.data.userRatingComment);
+        } else {
+          setUserHasRated(false);
+        }
+      } catch {
+        setUserHasRated(false);
+      }
+    };
+    checkRating();
+  }, [mainEvent?.id, anonymousViewerId]);
 
   // ── Viewer auth modal state ──
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -1038,82 +1048,49 @@ const App = () => {
             // Mark these API IDs as seen
             newApiMessages.forEach(m => seenApiMessageIds.current.add(String(m.id)));
 
-            // Separate emoji-only messages — show as floating reactions, not in chat
-            const myName = anonymousViewerName
-              || (user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : '');
-            const emojiMessages: Array<Record<string, unknown>> = [];
-            const textMessages: Array<Record<string, unknown>> = [];
-            newApiMessages.forEach(m => {
-              const msgText = String(m.message || m.content || '').trim();
-              if (isEmojiOnly(msgText)) {
-                emojiMessages.push(m);
-              } else {
-                textMessages.push(m);
-              }
-            });
-            // Emoji messages never go to chat — not even the sender's own
+            setEvents(prev => {
+              const updated = [...prev];
+              const currentMessages = [...updated[mainEventIndex].messages];
 
-            // Float emoji reactions on the video player
-            emojiMessages.forEach(m => {
-              const msgText = String(m.message || m.content || '');
-              const sender = String(m.viewerUsername || m.sender || '');
-              const isFromMe = sender === myName;
-              // Skip own emojis — sender already sees them from handleEmojiReaction
-              if (isFromMe) return;
-              const reactionId = Date.now() + Math.random();
-              setActiveReactions(prev => [...prev, { id: reactionId, emoji: msgText, timestamp: Date.now(), fromOther: true }]);
-              setTimeout(() => {
-                setActiveReactions(prev => prev.filter(r => r.id !== reactionId));
-              }, 3000);
-            });
+              const convertedMessages: Message[] = newApiMessages.map(m => {
+                const sender = (m.viewerUsername || m.sender || 'Unknown') as string;
+                const msgText = (m.message || m.content || '') as string;
+                // Use backend's pre-formatted time, fall back to parsing timestamp
+                const timeStr = m.time
+                  ? String(m.time)
+                  : m.timestamp
+                    ? new Date(String(m.timestamp)).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                    : '';
 
-            // Only add text (non-emoji) messages to the chat panel
-            if (textMessages.length > 0) {
-              setEvents(prev => {
-                const updated = [...prev];
-                const currentMessages = [...updated[mainEventIndex].messages];
-
-                const convertedMessages: Message[] = textMessages.map(m => {
-                  const rawSender = (m.viewerUsername || m.sender || 'Unknown') as string;
-                  // Show "You" for the sender's own messages
-                  const sender = rawSender === myName ? 'You' : rawSender;
-                  const msgText = (m.message || m.content || '') as string;
-                  const timeStr = m.time
-                    ? String(m.time)
-                    : m.timestamp
-                      ? new Date(String(m.timestamp)).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                      : '';
-
-                  return {
-                    id: String(m.id),
-                    apiMessageId: String(m.id),
-                    sender,
-                    senderId: m.senderId ? String(m.senderId) : undefined,
-                    text: msgText,
-                    time: timeStr,
-                    delivered: true,
-                    avatar: (m.viewerAvatar || m.avatar || '') as string || DEFAULT_USER_AVATAR,
-                    videoUrl: (m.videoUrl as string) || undefined,
-                  };
-                });
-
-                // Remove optimistic duplicates + any emoji-only messages that slipped into chat
-                const apiTexts = new Set(textMessages.map(m => String(m.message || m.content || '')));
-                const merged = currentMessages.filter(m => {
-                  // Remove optimistic duplicates
-                  if (!m.apiMessageId && apiTexts.has(m.text)) return false;
-                  // Remove any emoji-only messages that were added before the filter was in place
-                  if (isEmojiOnly(m.text.trim())) return false;
-                  return true;
-                });
-
-                updated[mainEventIndex] = {
-                  ...updated[mainEventIndex],
-                  messages: [...merged, ...convertedMessages],
+                return {
+                  id: String(m.id),
+                  apiMessageId: String(m.id),
+                  sender,
+                  senderId: m.senderId ? String(m.senderId) : undefined,
+                  text: msgText,
+                  time: timeStr,
+                  delivered: true,
+                  avatar: (m.viewerAvatar || m.avatar || '') as string || DEFAULT_USER_AVATAR,
+                  videoUrl: (m.videoUrl as string) || undefined,
                 };
-                return updated;
               });
-            }
+
+              // Remove optimistic "You" messages that now have a matching API message
+              const apiTexts = new Set(newApiMessages.map(m => String(m.message || m.content || '')));
+              const merged = currentMessages.filter(m => {
+                if (!m.delivered && apiTexts.has(m.text)) {
+                  return false; // remove optimistic duplicate
+                }
+                return true;
+              });
+
+              updated[mainEventIndex] = {
+                ...updated[mainEventIndex],
+                messages: [...merged, ...convertedMessages],
+              };
+              return updated;
+            });
+          }
 
           // Update participants from all senders
           const senderMap = new Map<string, string>();
@@ -1131,7 +1108,6 @@ const App = () => {
               avatar,
             }))
           );
-          }
         }
       } catch {
         // Silent fail for polling
@@ -1318,21 +1294,6 @@ const App = () => {
 
   // State for the new message input
   const [newMessage, setNewMessage] = useState("");
-  const [showChatEmoji, setShowChatEmoji] = useState(false);
-  const chatEmojiRef = useRef<HTMLDivElement>(null);
-
-  // Close chat emoji picker when clicking outside
-  useEffect(() => {
-    if (!showChatEmoji) return;
-    const handleClick = (e: MouseEvent) => {
-      if (chatEmojiRef.current && !chatEmojiRef.current.contains(e.target as Node)) {
-        setShowChatEmoji(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, [showChatEmoji]);
-
   // Load saved volume from localStorage or default to 100
   const getSavedVolume = () => {
     if (typeof window !== 'undefined') {
@@ -1429,7 +1390,7 @@ const App = () => {
   const [ratingSubmitting, setRatingSubmitting] = useState(false);
   const [ratingSuccess, setRatingSuccess] = useState(false);
   // Emoji reactions state
-  const [activeReactions, setActiveReactions] = useState<Array<{ id: number; emoji: string; timestamp: number; fromOther?: boolean }>>([]);
+  const [activeReactions, setActiveReactions] = useState<Array<{ id: number; emoji: string; timestamp: number }>>([]);
   // Recording state
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
@@ -1753,9 +1714,13 @@ const App = () => {
         : newMessage;
 
       const tempId = Date.now();
+      // Use viewer's real name for display — anonymousViewerName for paid viewers, user profile for JWT-authenticated
+      const senderName = anonymousViewerName
+        || (user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : '')
+        || 'You';
       const newMsg: Message = {
         id: tempId,
-        sender: 'You',
+        sender: senderName,
         text: messageText,
         time: new Date().toLocaleTimeString([], {
           hour: "2-digit",
@@ -1853,26 +1818,12 @@ const App = () => {
       const videoFile = new File([videoBlob], `video-message-${Date.now()}.webm`, { type: videoBlob.type || 'video/webm' });
       let success = false;
 
-      if (anonymousViewerId) {
-        // Paid viewer — use public video chat endpoint
-        const fingerprint = await getDeviceId();
-        const chatBase = typeof window !== 'undefined' && process.env.NODE_ENV === 'production'
-          ? '/api/proxy' : (process.env.NEXT_PUBLIC_API_URL || 'https://backend.connekyt.com');
-        const formData = new FormData();
-        formData.append('video', videoFile);
-        formData.append('viewerId', anonymousViewerId);
-        formData.append('deviceFingerprint', fingerprint);
-        const res = await fetch(`${chatBase}/api/remote/public/events/${eventId}/chats/video`, {
-          method: 'POST',
-          body: formData,
-        });
-        if (res.ok) {
-          const json = await res.json();
-          success = json.action === 1;
-        }
-      } else if (isAuthenticated) {
-        // JWT-authenticated viewer (free/invite_token events)
+      if (isAuthenticated) {
         const res = await sendStreamVideoChat(eventId, videoFile);
+        success = !!res.success;
+      } else if (isAnonymousViewer && anonymousViewerId) {
+        const fingerprint = await getDeviceId();
+        const res = await sendAnonymousVideoChat(eventId, anonymousViewerId, videoFile, fingerprint);
         success = !!res.success;
       }
 
@@ -2446,7 +2397,10 @@ const App = () => {
   };
 
   // Handle leaving/removing an event
-  const handleLeaveStream = () => {
+  const [showLeaveConfirmModal, setShowLeaveConfirmModal] = useState(false);
+
+  const confirmLeaveStream = () => {
+    setShowLeaveConfirmModal(false);
     if (events.length === 1) {
       // Last event, go back
       window.history.back();
@@ -2465,6 +2419,10 @@ const App = () => {
       // Set first remaining event as main
       setMainEventIndex(0);
     }
+  };
+
+  const handleLeaveStream = () => {
+    setShowLeaveConfirmModal(true);
   };
 
   // Handle mouse movement on video player - show controls
@@ -2532,37 +2490,23 @@ const App = () => {
     };
   }, []);
 
-  // Handle emoji reaction — show locally (large for sender) + send to backend as chat message
-  const handleEmojiReaction = async (emoji: string) => {
-    // Local: large floating emoji for the sender
+  // Handle emoji reaction
+  const handleEmojiReaction = (emoji: string) => {
     const newReaction = {
       id: Date.now() + Math.random(),
-      emoji,
+      emoji: emoji,
       timestamp: Date.now()
     };
+
     setActiveReactions(prev => [...prev, newReaction]);
+
+    // Remove reaction after animation (3 seconds)
     setTimeout(() => {
       setActiveReactions(prev => prev.filter(r => r.id !== newReaction.id));
     }, 3000);
-
-    // Send as a chat message so other viewers receive it
-    try {
-      if (anonymousViewerId) {
-        const fingerprint = await getDeviceId();
-        const chatBase = typeof window !== 'undefined' && process.env.NODE_ENV === 'production'
-          ? '/api/proxy' : (process.env.NEXT_PUBLIC_API_URL || 'https://backend.connekyt.com');
-        await fetch(`${chatBase}/api/remote/public/events/${mainEvent.id}/chats`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ viewerId: anonymousViewerId, message: emoji, deviceFingerprint: fingerprint }),
-        });
-      } else if (isAuthenticated) {
-        await sendStreamChat(mainEvent.streamId, emoji);
-      }
-    } catch { /* silent — local reaction still shows */ }
   };
 
-  // Emoji list — video player picker uses first 8, chat picker uses all
+  // Emoji list
   const emojiList = [
     { emoji: "🔥", name: "fire" },
     { emoji: "😂", name: "laughing" },
@@ -2572,30 +2516,6 @@ const App = () => {
     { emoji: "😍", name: "love" },
     { emoji: "🎉", name: "party" },
     { emoji: "😮", name: "wow" },
-    { emoji: "😢", name: "cry" },
-    { emoji: "😡", name: "angry" },
-    { emoji: "🤣", name: "rofl" },
-    { emoji: "🥰", name: "adore" },
-    { emoji: "🤩", name: "starstruck" },
-    { emoji: "😭", name: "sobbing" },
-    { emoji: "🙌", name: "raise hands" },
-    { emoji: "💪", name: "strong" },
-    { emoji: "🙏", name: "pray" },
-    { emoji: "💯", name: "hundred" },
-    { emoji: "✨", name: "sparkles" },
-    { emoji: "🫶", name: "heart hands" },
-    { emoji: "👀", name: "eyes" },
-    { emoji: "💀", name: "skull" },
-    { emoji: "🤯", name: "mind blown" },
-    { emoji: "😎", name: "cool" },
-    { emoji: "🥳", name: "party face" },
-    { emoji: "😱", name: "scream" },
-    { emoji: "💜", name: "purple heart" },
-    { emoji: "🤝", name: "handshake" },
-    { emoji: "🎵", name: "music" },
-    { emoji: "🎶", name: "notes" },
-    { emoji: "📸", name: "camera" },
-    { emoji: "🌟", name: "star" },
   ];
 
   // Participants are now populated from stream chat messages (see polling useEffect above)
@@ -2898,30 +2818,33 @@ const App = () => {
 
     setRatingSubmitting(true);
     try {
-      // Submit stream-specific rating — branch on auth type
-      if (isAuthenticated) {
-        await rateStream(mainEvent.id, rating, ratingComment || undefined);
-      } else if (isAnonymousViewer && anonymousViewerId) {
-        const fingerprint = await getDeviceId();
-        await rateStreamAnonymous(mainEvent.id, anonymousViewerId, rating, ratingComment || undefined, fingerprint);
+      // Use new unified endpoint — backend resolves identity via JWT, viewerId, or IP
+      const body: { rating: number; comment?: string; viewerId?: string } = { rating };
+      if (ratingComment) body.comment = ratingComment;
+      if (anonymousViewerId) body.viewerId = anonymousViewerId;
+
+      const res = await fetch(`/api/remote/public/streams/${mainEvent.id}/rate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const result = await res.json();
+
+      if (result?.data?.userRating) {
+        setRating(result.data.userRating);
+        if (result.data.userRatingComment) setRatingComment(result.data.userRatingComment);
       }
 
-      // Mark as rated in localStorage to prevent duplicate
-      localStorage.setItem(`rated_${mainEvent.id}`, 'true');
       setUserHasRated(true);
       setRatingSuccess(true);
 
       // Show success briefly then close
       setTimeout(() => {
         setShowRatingModal(false);
-        setRating(0);
-        setRatingComment('');
         setRatingSuccess(false);
       }, 1500);
     } catch {
-      // Even on error, prevent spam — mark as rated
-      localStorage.setItem(`rated_${mainEvent.id}`, 'true');
-      setUserHasRated(true);
+      // On error, close modal but don't mark as rated (allow retry)
       setShowRatingModal(false);
       setRating(0);
       setRatingComment('');
@@ -3485,21 +3408,30 @@ const App = () => {
             width: 100% !important;
           }
 
+          /* Mobile floating actions wrapper */
+          .mobile-floating-actions {
+            position: fixed !important;
+            bottom: 16px !important;
+            right: 16px !important;
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 12px !important;
+            z-index: 999 !important;
+            align-items: flex-end !important;
+          }
+
           /* Floating chat toggle button */
           .mobile-chat-toggle {
-            position: fixed !important;
-            bottom: 20px !important;
-            right: 20px !important;
-            width: 60px !important;
-            height: 60px !important;
+            position: relative !important;
+            width: 56px !important;
+            height: 56px !important;
             border-radius: 50% !important;
-            background: linear-gradient(135deg, #03969c 0%, #016a6e 100%) !important;
+            background: linear-gradient(135deg, #083A85 0%, #0a4da3 100%) !important;
             border: none !important;
             color: #fff !important;
-            font-size: 24px !important;
+            font-size: 22px !important;
             cursor: pointer !important;
-            box-shadow: 0 4px 20px rgba(3, 150, 156, 0.4), 0 0 0 0 rgba(3, 150, 156, 0.6) !important;
-            z-index: 999 !important;
+            box-shadow: 0 4px 20px rgba(8, 58, 133, 0.4), 0 0 0 0 rgba(8, 58, 133, 0.6) !important;
             display: flex !important;
             align-items: center !important;
             justify-content: center !important;
@@ -3507,15 +3439,37 @@ const App = () => {
             animation: pulse-ring 2s infinite !important;
           }
 
+          /* Floating video message button */
+          .mobile-video-msg-toggle {
+            position: relative !important;
+            width: 56px !important;
+            height: 56px !important;
+            border-radius: 50% !important;
+            background: linear-gradient(135deg, #16a34a 0%, #15803d 100%) !important;
+            border: 2px solid #22c55e !important;
+            color: #fff !important;
+            font-size: 20px !important;
+            cursor: pointer !important;
+            box-shadow: 0 4px 20px rgba(22, 163, 74, 0.4) !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            transition: all 0.3s ease !important;
+          }
+
+          .mobile-video-msg-toggle:active {
+            transform: scale(0.95) !important;
+          }
+
           @keyframes pulse-ring {
             0% {
-              box-shadow: 0 4px 20px rgba(3, 150, 156, 0.4), 0 0 0 0 rgba(3, 150, 156, 0.6);
+              box-shadow: 0 4px 20px rgba(8, 58, 133, 0.4), 0 0 0 0 rgba(8, 58, 133, 0.6);
             }
             50% {
-              box-shadow: 0 4px 20px rgba(3, 150, 156, 0.4), 0 0 0 10px rgba(3, 150, 156, 0);
+              box-shadow: 0 4px 20px rgba(8, 58, 133, 0.4), 0 0 0 10px rgba(8, 58, 133, 0);
             }
             100% {
-              box-shadow: 0 4px 20px rgba(3, 150, 156, 0.4), 0 0 0 0 rgba(3, 150, 156, 0);
+              box-shadow: 0 4px 20px rgba(8, 58, 133, 0.4), 0 0 0 0 rgba(8, 58, 133, 0);
             }
           }
 
@@ -3894,8 +3848,64 @@ const App = () => {
           }
         }
 
+        /* Mobile-only floating buttons — base styles */
+        .floating-action-btn {
+          position: fixed;
+          right: 20px;
+          width: 52px;
+          height: 52px;
+          border-radius: 50%;
+          color: #fff;
+          cursor: pointer;
+          align-items: center;
+          justify-content: center;
+          z-index: 99999;
+          padding: 0;
+          -webkit-tap-highlight-color: transparent;
+        }
+        @supports (right: max(0px)) {
+          .floating-action-btn {
+            right: max(20px, env(safe-area-inset-right, 20px));
+          }
+        }
+
+        /* Bottom button (chat) — sits above iOS home indicator */
+        .floating-action-bottom {
+          bottom: 80px;
+        }
+        @supports (bottom: max(0px)) {
+          .floating-action-bottom {
+            bottom: max(80px, calc(env(safe-area-inset-bottom, 0px) + 80px));
+          }
+        }
+
+        /* Top button (video msg) — stacked above the chat button */
+        .floating-action-top {
+          bottom: 144px;
+        }
+        @supports (bottom: max(0px)) {
+          .floating-action-top {
+            bottom: max(144px, calc(env(safe-area-inset-bottom, 0px) + 144px));
+          }
+        }
+
+        .mobile-only-float {
+          display: none;
+        }
+        @media (max-width: 1024px) {
+          .mobile-only-float {
+            display: flex !important;
+          }
+        }
+
         /* Desktop-specific styles (maintain unchanged) */
         @media (min-width: 1025px) {
+          .mobile-only-float {
+            display: none !important;
+          }
+          .mobile-floating-actions {
+            display: none !important;
+          }
           .mobile-chat-toggle {
             display: none !important;
           }
@@ -3953,9 +3963,12 @@ const App = () => {
         /* Modal responsive improvements */
         .modal-content,
         .add-event-modal,
-        .rating-modal,
         .participants-modal {
           max-width: 90vw !important;
+          max-height: 90vh !important;
+          overflow-y: auto !important;
+        }
+        .rating-modal {
           max-height: 90vh !important;
           overflow-y: auto !important;
         }
@@ -4267,7 +4280,7 @@ const App = () => {
                     /* ── Loading / verifying state ── */
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#adadb8' }}>
                       <div style={{
-                        width: '24px', height: '24px', border: '3px solid #03969c',
+                        width: '24px', height: '24px', border: '3px solid #93c5fd',
                         borderTopColor: 'transparent', borderRadius: '50%',
                         animation: 'spin 1s linear infinite'
                       }} />
@@ -4294,7 +4307,7 @@ const App = () => {
                   textAlign: 'center',
                   gap: '16px',
                 }}>
-                  <i className="bi bi-display" style={{ fontSize: '48px', color: '#f59e0b' }}></i>
+                  <i className="bi bi-display" style={{ fontSize: '48px', color: '#93c5fd' }}></i>
                   <h3 style={{ color: '#fff', fontSize: '20px', fontWeight: '600', margin: 0 }}>
                     Device Access Restricted
                   </h3>
@@ -4309,13 +4322,14 @@ const App = () => {
                     style={{
                       marginTop: '8px',
                       padding: '12px 28px',
-                      background: 'linear-gradient(135deg, #03969c 0%, #026d72 100%)',
-                      border: 'none',
+                      background: 'linear-gradient(135deg, #083A85 0%, #0a4da3 100%)',
+                      border: '1px solid rgba(255,255,255,0.15)',
                       borderRadius: '12px',
                       color: '#fff',
                       fontSize: '14px',
                       fontWeight: '600',
                       cursor: 'pointer',
+                      boxShadow: '0 4px 12px rgba(8,58,133,0.35)',
                     }}
                   >
                     <i className="bi bi-arrow-clockwise" style={{ marginRight: '8px' }}></i>
@@ -4542,15 +4556,15 @@ const App = () => {
               )}
 
 
-              {/* Floating Emoji Reactions — sender: large, others: small bottom-right */}
+              {/* Floating Emoji Reactions */}
               {activeReactions.map((reaction) => (
                 <div
                   key={reaction.id}
                   style={{
                     position: 'absolute',
-                    ...(reaction.fromOther
-                      ? { right: `${Math.random() * 15 + 2}%`, bottom: '70px', fontSize: '24px' }
-                      : { right: `${Math.random() * 30 + 10}%`, bottom: '60px', fontSize: '48px' }),
+                    right: `${Math.random() * 30 + 10}%`,
+                    bottom: '60px',
+                    fontSize: '48px',
                     animation: 'floatUp 3s ease-out forwards',
                     zIndex: 15,
                     pointerEvents: 'none'
@@ -4882,7 +4896,7 @@ const App = () => {
                     border: '1px solid rgba(255, 255, 255, 0.1)',
                     backdropFilter: 'blur(10px)'
                   }}>
-                  {emojiList.slice(0, 8).map((item, index) => (
+                  {emojiList.map((item, index) => (
                     <button
                       key={index}
                       onClick={() => handleEmojiReaction(item.emoji)}
@@ -5414,7 +5428,7 @@ const App = () => {
                 marginBottom: '12px',
                 flexWrap: 'wrap'
               }}>
-                <span style={{ fontSize: 12, color: '#71717a', fontWeight: 600, flexShrink: 0 }}>Streaming Photographer</span>
+                <span style={{ fontSize: 12, color: '#93c5fd', fontWeight: 600, flexShrink: 0 }}>Streaming Photographer</span>
                 {mainEvent.photographerAvatar ? (
                   <img
                     src={mainEvent.photographerAvatar}
@@ -5459,13 +5473,13 @@ const App = () => {
                     onClick={() => { if (!userHasRated) setShowRatingModal(true); }}
                     disabled={userHasRated}
                     style={{
-                      backgroundColor: userHasRated ? '#065f10' : '#03969c',
+                      backgroundColor: userHasRated ? '#052047' : '#083A85',
                       color: '#fff',
                       fontWeight: '600',
                       padding: '10px 24px',
                       borderRadius: '16px',
                       fontSize: 'clamp(12px, 2.5vw, 13px)',
-                      border: userHasRated ? '1px solid #10b981' : 'none',
+                      border: userHasRated ? '1px solid #0a4da3' : 'none',
                       cursor: userHasRated ? 'default' : 'pointer',
                       transition: 'all 0.2s',
                       display: 'flex',
@@ -5475,8 +5489,8 @@ const App = () => {
                       whiteSpace: 'nowrap',
                       opacity: userHasRated ? 0.85 : 1
                     }}
-                    onMouseEnter={(e) => { if (!userHasRated) e.currentTarget.style.backgroundColor = '#027f83'; }}
-                    onMouseLeave={(e) => { if (!userHasRated) e.currentTarget.style.backgroundColor = '#03969c'; }}
+                    onMouseEnter={(e) => { if (!userHasRated) e.currentTarget.style.backgroundColor = '#062d6b'; }}
+                    onMouseLeave={(e) => { if (!userHasRated) e.currentTarget.style.backgroundColor = '#083A85'; }}
                   >
                     <i className={userHasRated ? "bi bi-check-circle-fill" : "bi bi-star-fill"} style={{ fontSize: 'clamp(12px, 2.5vw, 14px)' }}></i>
                     {userHasRated ? 'Rated' : 'Rate this Live'}
@@ -5487,13 +5501,13 @@ const App = () => {
                     <button
                       onClick={() => setShowAddEventModal(true)}
                       style={{
-                        backgroundColor: '#1890ff',
+                        backgroundColor: 'transparent',
                         color: '#fff',
                         fontWeight: '600',
                         padding: '10px 24px',
                         borderRadius: '16px',
                         fontSize: 'clamp(12px, 2.5vw, 13px)',
-                        border: 'none',
+                        border: '1.5px solid rgba(255,255,255,0.25)',
                         cursor: 'pointer',
                         transition: 'all 0.2s',
                         display: 'flex',
@@ -5502,8 +5516,8 @@ const App = () => {
                         minHeight: '40px',
                         whiteSpace: 'nowrap'
                       }}
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1570d3'}
-                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#1890ff'}
+                      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.5)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)'; }}
                     >
                       <i className="bi bi-plus-circle-fill" style={{ fontSize: 'clamp(12px, 2.5vw, 14px)' }}></i>
                       Add Event
@@ -5797,20 +5811,25 @@ const App = () => {
                     ) : (
                       <>
                         {message.videoUrl ? (
-                          <div style={{
-                            marginTop: '4px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                            padding: '8px 12px',
-                            background: 'rgba(3,150,156,0.1)',
-                            border: '1px solid rgba(3,150,156,0.25)',
-                            borderRadius: '10px',
-                          }}>
-                            <i className="bi bi-camera-video-fill" style={{ color: '#03969c', fontSize: '16px', flexShrink: 0 }}></i>
-                            <span style={{ fontSize: '12px', color: '#9ca3af', fontStyle: 'italic' }}>
-                              Video message sent to event organizer
-                            </span>
+                          <div style={{ marginTop: '4px' }}>
+                            <video
+                              src={message.videoUrl}
+                              controls
+                              style={{
+                                width: '100%',
+                                maxWidth: '250px',
+                                borderRadius: '8px',
+                                backgroundColor: '#000'
+                              }}
+                            />
+                            <p style={{
+                              fontSize: '12px',
+                              color: '#03969c',
+                              marginTop: '4px',
+                              fontStyle: 'italic'
+                            }}>
+                              Video Message
+                            </p>
                           </div>
                         ) : (
                           <p style={{
@@ -6049,116 +6068,50 @@ const App = () => {
               )}
 
               {canInteract ? (
-                <div ref={chatEmojiRef} style={{ position: 'relative' }}>
-                  {/* Emoji picker dropdown */}
-                  {showChatEmoji && (
-                    <div style={{
-                      position: 'absolute',
-                      bottom: '100%',
-                      left: 0,
-                      right: 0,
-                      marginBottom: '6px',
-                      background: '#2f2f35',
-                      borderRadius: '12px',
-                      padding: '8px',
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  backgroundColor: '#2f2f35',
+                  borderRadius: '16px',
+                  padding: '8px 12px',
+                  gap: '8px'
+                }}>
+                  <input
+                    type="text"
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
+                    placeholder={replyingTo ? `Reply to @${replyingTo.sender}...` : "Send a message..."}
+                    style={{
+                      flex: 1,
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      outline: 'none',
+                      fontSize: '13px',
+                      color: '#efeff1'
+                    }}
+                  />
+                  <button
+                    onClick={handleSendMessage}
+                    style={{
+                      color: newMessage.trim() ? '#0a4da3' : '#adadb8',
+                      background: 'transparent',
+                      border: 'none',
+                      cursor: newMessage.trim() ? 'pointer' : 'default',
+                      padding: '4px',
                       display: 'flex',
-                      flexWrap: 'wrap',
-                      gap: '4px',
-                      justifyContent: 'center',
-                      border: '1px solid rgba(255,255,255,0.1)',
-                      boxShadow: '0 -4px 16px rgba(0,0,0,0.3)',
-                      zIndex: 10,
-                    }}>
-                      {emojiList.map((item) => (
-                        <button
-                          key={item.name}
-                          onClick={() => {
-                            setNewMessage(prev => prev + item.emoji);
-                          }}
-                          title={item.name}
-                          style={{
-                            background: 'transparent',
-                            border: 'none',
-                            fontSize: '20px',
-                            cursor: 'pointer',
-                            padding: '4px 6px',
-                            borderRadius: '8px',
-                            transition: 'background 0.15s',
-                            lineHeight: 1,
-                          }}
-                          onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; }}
-                          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-                        >
-                          {item.emoji}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    backgroundColor: '#2f2f35',
-                    borderRadius: '16px',
-                    padding: '8px 12px',
-                    gap: '8px'
-                  }}>
-                    <input
-                      type="text"
-                      value={newMessage}
-                      onChange={(e) => setNewMessage(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-                      onFocus={() => setShowChatEmoji(false)}
-                      placeholder={replyingTo ? `Reply to @${replyingTo.sender}...` : "Send a message..."}
-                      style={{
-                        flex: 1,
-                        backgroundColor: 'transparent',
-                        border: 'none',
-                        outline: 'none',
-                        fontSize: '13px',
-                        color: '#efeff1'
-                      }}
-                    />
-                    {/* Emoji toggle */}
-                    <button
-                      onClick={() => setShowChatEmoji(prev => !prev)}
-                      style={{
-                        color: showChatEmoji ? '#03969c' : '#adadb8',
-                        background: 'transparent',
-                        border: 'none',
-                        cursor: 'pointer',
-                        padding: '4px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        fontSize: '17px',
-                        transition: 'color 0.2s',
-                      }}
-                      title="Emoji"
-                    >
-                      <i className="bi bi-emoji-smile"></i>
-                    </button>
-                    {/* Send */}
-                    <button
-                      onClick={handleSendMessage}
-                      style={{
-                        color: newMessage.trim() ? '#03969c' : '#adadb8',
-                        background: 'transparent',
-                        border: 'none',
-                        cursor: newMessage.trim() ? 'pointer' : 'default',
-                        padding: '4px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        fontSize: '18px',
-                        transition: 'all 0.2s'
-                      }}
-                      onMouseEnter={(e) => {
-                        if (newMessage.trim()) e.currentTarget.style.transform = 'scale(1.1)';
-                      }}
-                      onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                      disabled={!newMessage.trim()}
-                    >
-                      <i className="bi bi-send-fill"></i>
-                    </button>
-                  </div>
+                      alignItems: 'center',
+                      fontSize: '18px',
+                      transition: 'all 0.2s'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (newMessage.trim()) e.currentTarget.style.transform = 'scale(1.1)';
+                    }}
+                    onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                    disabled={!newMessage.trim()}
+                  >
+                    <i className="bi bi-send-fill"></i>
+                  </button>
                 </div>
               ) : (
                 <button
@@ -6185,8 +6138,8 @@ const App = () => {
                   width: '100%',
                   marginTop: '12px',
                   padding: '12px',
-                  backgroundColor: '#e61220',
-                  border: 'none',
+                  backgroundColor: '#16a34a',
+                  border: '2px solid #22c55e',
                   borderRadius: '16px',
                   color: '#fff',
                   fontSize: '13px',
@@ -6201,12 +6154,12 @@ const App = () => {
                   letterSpacing: '0.5px'
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#eb0918';
+                  e.currentTarget.style.backgroundColor = '#15803d';
                   e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(255, 15, 10, 0.2)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(22, 163, 74, 0.3)';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = '#e61220';
+                  e.currentTarget.style.backgroundColor = '#16a34a';
                   e.currentTarget.style.transform = 'translateY(0)';
                   e.currentTarget.style.boxShadow = 'none';
                 }}
@@ -6309,22 +6262,22 @@ const App = () => {
               <button
                 onClick={() => setShowAddEventModal(false)}
                 style={{
-                  padding: '12px 24px',
-                  borderRadius: '14px',
-                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  padding: '9px 18px',
+                  borderRadius: '10px',
+                  border: '1.5px solid rgba(8,58,133,0.15)',
                   backgroundColor: 'transparent',
-                  color: '#efeff1',
-                  fontSize: 'clamp(13px, 3vw, 14px)',
+                  color: '#374151',
+                  fontSize: '13px',
                   fontWeight: '600',
                   cursor: 'pointer',
                   transition: 'all 0.2s',
-                  minHeight: '44px',
-                  minWidth: '100px',
+                  minHeight: '38px',
+                  minWidth: '90px',
                   flex: '1',
-                  maxWidth: '150px'
+                  maxWidth: '130px'
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#f8fafc'; e.currentTarget.style.borderColor = 'rgba(8,58,133,0.3)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.borderColor = 'rgba(8,58,133,0.15)'; }}
               >
                 Cancel
               </button>
@@ -6360,6 +6313,91 @@ const App = () => {
         </div>
       )}
 
+      {/* Leave Stream Confirmation Modal */}
+      {showLeaveConfirmModal && (
+        <div
+          style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.7)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: 2001, backdropFilter: 'blur(6px)', padding: '16px',
+          }}
+          onMouseDown={(e) => { if (e.target === e.currentTarget) setShowLeaveConfirmModal(false); }}
+        >
+          <div
+            style={{
+              background: '#18181b',
+              borderRadius: '16px',
+              padding: '28px 24px',
+              maxWidth: '400px',
+              width: '100%',
+              border: '1px solid rgba(255,255,255,0.08)',
+              boxShadow: '0 32px 80px rgba(0,0,0,0.6)',
+              textAlign: 'center',
+            }}
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'rgba(230,18,32,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px', border: '1px solid rgba(230,18,32,0.25)' }}>
+              <i className="bi bi-box-arrow-left" style={{ fontSize: 22, color: '#ef4444' }}></i>
+            </div>
+            <h2 style={{ fontSize: '18px', fontWeight: 800, color: '#ffffff', margin: '0 0 6px', fontFamily: "'Pragati Narrow', sans-serif" }}>
+              Leave this stream?
+            </h2>
+            <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)', margin: '0 0 20px', lineHeight: 1.5 }}>
+              Are you sure you want to leave <strong style={{ color: '#ffffff' }}>{mainEvent?.title || 'this live stream'}</strong>?
+            </p>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+              <button
+                onClick={() => setShowLeaveConfirmModal(false)}
+                style={{
+                  padding: '10px 22px',
+                  borderRadius: '10px',
+                  border: '1.5px solid rgba(255,255,255,0.2)',
+                  background: 'transparent',
+                  color: 'rgba(255,255,255,0.85)',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  flex: 1,
+                  maxWidth: '140px',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.4)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; }}
+              >
+                Stay
+              </button>
+              <button
+                onClick={confirmLeaveStream}
+                style={{
+                  padding: '10px 22px',
+                  borderRadius: '10px',
+                  border: '1.5px solid #ef4444',
+                  background: '#e61220',
+                  color: '#fff',
+                  fontSize: '13px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  flex: 1,
+                  maxWidth: '140px',
+                  boxShadow: '0 4px 12px rgba(230,18,32,0.3)',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#dc2626'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#e61220'; }}
+              >
+                <i className="bi bi-box-arrow-left"></i>
+                Leave
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Rating Modal */}
       {showRatingModal && (
         <div
@@ -6369,12 +6407,12 @@ const App = () => {
             left: 0,
             right: 0,
             bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            backgroundColor: 'rgba(0,0,0,0.7)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             zIndex: 2000,
-            backdropFilter: 'blur(4px)',
+            backdropFilter: 'blur(6px)',
             padding: '16px',
             overflowY: 'auto'
           }}
@@ -6388,16 +6426,16 @@ const App = () => {
           }}
         >
           <div className="rating-modal" style={{
-            backgroundColor: '#18181b',
-            borderRadius: '20px',
-            padding: 'clamp(20px, 5vw, 32px)',
-            paddingTop: 'clamp(40px, 8vw, 50px)',
-            maxWidth: '400px',
-            width: 'auto',
+            background: '#18181b',
+            borderRadius: '16px',
+            padding: 'clamp(20px, 3vw, 28px)',
+            paddingTop: 'clamp(24px, 4vw, 32px)',
+            maxWidth: '440px',
+            width: '100%',
             maxHeight: '90vh',
             overflowY: 'auto',
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
+            boxShadow: '0 32px 80px rgba(0,0,0,0.6)',
+            border: '1px solid rgba(255,255,255,0.08)',
             position: 'relative',
             margin: 'auto',
             pointerEvents: 'auto'
@@ -6413,27 +6451,27 @@ const App = () => {
                 position: 'absolute',
                 top: 'clamp(12px, 3vw, 16px)',
                 right: 'clamp(12px, 3vw, 16px)',
-                background: 'transparent',
+                background: 'rgba(255,255,255,0.08)',
                 border: 'none',
-                color: '#adadb8',
+                color: '#cbd5e1',
                 cursor: 'pointer',
-                fontSize: 'clamp(18px, 4vw, 20px)',
-                padding: '8px',
-                transition: 'color 0.2s',
+                fontSize: 'clamp(16px, 4vw, 18px)',
+                padding: '6px',
+                transition: 'all 0.2s',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                minWidth: '44px',
-                minHeight: '44px',
+                minWidth: '32px',
+                minHeight: '32px',
                 borderRadius: '50%'
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.color = '#efeff1';
-                e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+                e.currentTarget.style.color = '#fff';
+                e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.15)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.color = '#adadb8';
-                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.color = '#cbd5e1';
+                e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)';
               }}
             >
               <i className="bi bi-x-lg"></i>
@@ -6441,33 +6479,34 @@ const App = () => {
 
             {/* Title */}
             <h2 style={{
-              fontSize: 'clamp(18px, 5vw, 24px)',
-              fontWeight: '600',
-              color: '#efeff1',
-              marginBottom: '8px',
+              fontSize: 'clamp(16px, 4vw, 18px)',
+              fontWeight: '800',
+              color: '#ffffff',
+              marginBottom: '4px',
               marginTop: 0,
               display: 'flex',
               alignItems: 'center',
-              gap: 'clamp(6px, 2vw, 10px)',
+              gap: '8px',
               flexWrap: 'wrap',
-              lineHeight: '1.3'
+              lineHeight: '1.2',
+              fontFamily: "'Pragati Narrow', sans-serif",
             }}>
-              <i className="bi bi-star-fill" style={{ color: '#03969c', fontSize: 'clamp(20px, 5vw, 28px)' }}></i>
+              <i className="bi bi-star-fill" style={{ color: '#fbbf24', fontSize: '18px' }}></i>
               Rate this Live Stream
             </h2>
             <p style={{
-              fontSize: 'clamp(12px, 3vw, 14px)',
-              color: '#adadb8',
-              marginBottom: 'clamp(16px, 4vw, 24px)',
-              lineHeight: '1.5'
+              fontSize: '12px',
+              color: 'rgba(255,255,255,0.6)',
+              marginBottom: '14px',
+              lineHeight: '1.4'
             }}>Share your experience with {mainEvent.photographer}</p>
 
             {/* Star Rating */}
             <div style={{
               display: 'flex',
               justifyContent: 'center',
-              gap: 'clamp(4px, 2vw, 8px)',
-              marginBottom: 'clamp(20px, 5vw, 32px)',
+              gap: '4px',
+              marginBottom: '14px',
               flexWrap: 'wrap'
             }}>
               {[1, 2, 3, 4, 5].map((star) => (
@@ -6480,13 +6519,13 @@ const App = () => {
                     background: 'transparent',
                     border: 'none',
                     cursor: 'pointer',
-                    padding: 'clamp(4px, 1vw, 8px)',
-                    fontSize: 'clamp(32px, 10vw, 48px)',
-                    color: (hoverRating || rating) >= star ? '#fbbf24' : 'rgba(255, 255, 255, 0.2)',
+                    padding: '4px',
+                    fontSize: '28px',
+                    color: (hoverRating || rating) >= star ? '#fbbf24' : 'rgba(255,255,255,0.15)',
                     transition: 'all 0.2s',
                     transform: (hoverRating || rating) >= star ? 'scale(1.1)' : 'scale(1)',
-                    minWidth: '44px',
-                    minHeight: '44px',
+                    minWidth: '36px',
+                    minHeight: '36px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center'
@@ -6503,8 +6542,8 @@ const App = () => {
             {rating > 0 && (
               <div style={{
                 textAlign: 'center',
-                marginBottom: 'clamp(16px, 4vw, 24px)',
-                fontSize: 'clamp(14px, 3.5vw, 16px)',
+                marginBottom: '12px',
+                fontSize: '13px',
                 fontWeight: '600',
                 color: '#fbbf24'
               }}>
@@ -6517,12 +6556,12 @@ const App = () => {
             )}
 
             {/* Comment Section */}
-            <div style={{ marginBottom: 'clamp(16px, 4vw, 24px)' }}>
+            <div style={{ marginBottom: '14px' }}>
               <label style={{
-                fontSize: 'clamp(13px, 3vw, 14px)',
+                fontSize: 'clamp(12px, 3vw, 13px)',
                 fontWeight: '600',
-                color: '#efeff1',
-                marginBottom: '8px',
+                color: 'rgba(255,255,255,0.8)',
+                marginBottom: '6px',
                 display: 'block'
               }}>
                 Add a comment (optional)
@@ -6534,22 +6573,22 @@ const App = () => {
                 maxLength={500}
                 style={{
                   width: '100%',
-                  padding: 'clamp(10px, 3vw, 12px)',
-                  border: '1px solid rgba(255, 255, 255, 0.2)',
-                  borderRadius: '14px',
-                  fontSize: '16px',
+                  padding: '10px 12px',
+                  border: '1.5px solid rgba(255,255,255,0.15)',
+                  borderRadius: '10px',
+                  fontSize: '13px',
                   outline: 'none',
                   boxSizing: 'border-box',
-                  backgroundColor: '#2f2f35',
-                  color: '#efeff1',
-                  minHeight: 'clamp(80px, 20vw, 100px)',
+                  backgroundColor: 'rgba(255,255,255,0.08)',
+                  color: '#ffffff',
+                  minHeight: '70px',
                   resize: 'vertical',
                   fontFamily: 'inherit'
                 }}
               />
               <div style={{
                 fontSize: 'clamp(11px, 2.5vw, 12px)',
-                color: '#adadb8',
+                color: 'rgba(255,255,255,0.5)',
                 marginTop: '6px',
                 textAlign: 'right'
               }}>
@@ -6571,51 +6610,52 @@ const App = () => {
                   setRatingComment('');
                 }}
                 style={{
-                  padding: '12px 24px',
-                  borderRadius: '14px',
-                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  padding: '9px 18px',
+                  borderRadius: '10px',
+                  border: '1.5px solid rgba(255,255,255,0.2)',
                   backgroundColor: 'transparent',
-                  color: '#efeff1',
-                  fontSize: 'clamp(13px, 3vw, 14px)',
+                  color: 'rgba(255,255,255,0.8)',
+                  fontSize: '13px',
                   fontWeight: '600',
                   cursor: 'pointer',
                   transition: 'all 0.2s',
-                  minHeight: '44px',
-                  minWidth: '100px',
+                  minHeight: '38px',
+                  minWidth: '90px',
                   flex: '1',
-                  maxWidth: '150px'
+                  maxWidth: '130px'
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.4)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; }}
               >
                 Cancel
               </button>
               <button
                 onClick={handleSubmitRating}
                 style={{
-                  padding: '12px 24px',
-                  borderRadius: '14px',
+                  padding: '9px 18px',
+                  borderRadius: '10px',
                   border: 'none',
-                  backgroundColor: ratingSuccess ? '#065f10' : (rating === 0 || ratingSubmitting) ? '#4b5563' : '#03969c',
+                  background: ratingSuccess ? '#16a34a' : (rating === 0 || ratingSubmitting) ? '#d1d5db' : 'linear-gradient(135deg, #083A85, #0a4da3)',
                   color: '#fff',
-                  fontSize: 'clamp(13px, 3vw, 14px)',
-                  fontWeight: '600',
+                  fontSize: '13px',
+                  fontWeight: '700',
                   cursor: (rating === 0 || ratingSubmitting || ratingSuccess) ? 'not-allowed' : 'pointer',
                   transition: 'all 0.2s',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: 'clamp(6px, 1.5vw, 8px)',
-                  minHeight: '44px',
+                  gap: '6px',
+                  minHeight: '38px',
                   minWidth: '100px',
                   flex: '1',
-                  maxWidth: '180px'
+                  maxWidth: '150px',
+                  boxShadow: (rating === 0 || ratingSubmitting || ratingSuccess) ? 'none' : '0 4px 12px rgba(8,58,133,0.25)',
                 }}
                 onMouseEnter={(e) => {
-                  if (rating > 0 && !ratingSubmitting && !ratingSuccess) e.currentTarget.style.backgroundColor = '#027f83';
+                  if (rating > 0 && !ratingSubmitting && !ratingSuccess) e.currentTarget.style.boxShadow = '0 6px 16px rgba(8,58,133,0.35)';
                 }}
                 onMouseLeave={(e) => {
-                  if (rating > 0 && !ratingSubmitting && !ratingSuccess) e.currentTarget.style.backgroundColor = '#03969c';
+                  if (rating > 0 && !ratingSubmitting && !ratingSuccess) e.currentTarget.style.boxShadow = '0 4px 12px rgba(8,58,133,0.25)';
                 }}
                 disabled={rating === 0 || ratingSubmitting || ratingSuccess}
               >
@@ -7326,17 +7366,52 @@ const App = () => {
         </div>
       )}
 
-      {/* Mobile Chat Toggle Button (hidden on desktop) */}
-      <button
-        onClick={() => setIsChatOpen(true)}
-        className="mobile-chat-toggle"
-        style={{ display: 'none' }}
-      >
-        <i className="bi bi-chat-dots-fill"></i>
-        {mainEvent.messages.length > 0 && (
-          <span className="unread-badge">{mainEvent.messages.length}</span>
-        )}
-      </button>
+      {/* Mobile Floating Buttons — Portal to document.body to escape parent transforms/overflow */}
+      {!isChatOpen && typeof document !== 'undefined' && createPortal(
+        <>
+          <button
+            onClick={() => canInteract ? setShowVideoMessageRecorder(true) : requireInteraction(() => {})}
+            aria-label="Send video message"
+            className="mobile-only-float floating-action-btn floating-action-top"
+            style={{
+              background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
+              border: '2px solid #22c55e',
+              boxShadow: '0 4px 20px rgba(22, 163, 74, 0.4)',
+            }}
+          >
+            <i className="bi bi-camera-video-fill" style={{ fontSize: 18 }}></i>
+          </button>
+          <button
+            onClick={() => setIsChatOpen(true)}
+            aria-label="Open chat"
+            className="mobile-only-float floating-action-btn floating-action-bottom"
+            style={{
+              background: 'linear-gradient(135deg, #083A85 0%, #0a4da3 100%)',
+              border: 'none',
+              boxShadow: '0 4px 20px rgba(8, 58, 133, 0.4)',
+            }}
+          >
+            <i className="bi bi-chat-dots-fill" style={{ fontSize: 20 }}></i>
+            {mainEvent?.messages?.length > 0 && (
+              <span style={{
+                position: 'absolute',
+                top: -5,
+                right: -5,
+                background: '#ef4444',
+                color: '#fff',
+                fontSize: 12,
+                fontWeight: 700,
+                padding: '4px 8px',
+                borderRadius: 12,
+                minWidth: 24,
+                textAlign: 'center',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
+              }}>{mainEvent.messages.length}</span>
+            )}
+          </button>
+        </>,
+        document.body
+      )}
 
       {/* Video Message Recorder */}
       {showVideoMessageRecorder && (
