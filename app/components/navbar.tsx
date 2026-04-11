@@ -13,6 +13,8 @@ import { useToast } from '@/lib/notifications/ToastProvider';
 import { locales, languageNames, type Locale } from '../../i18n';
 import { getPublicEvents, getPhotographers, getPhotographerById } from '@/lib/APIs/public';
 import { getStreamVideo } from '@/lib/APIs/streams/route';
+import { getMyWallet } from '@/lib/APIs/wallet/route';
+import type { WalletDTO } from '@/lib/api/types';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 
 // Map category names to icons
@@ -75,6 +77,7 @@ const AmoriaKNavbar = () => {
   const [eventCategories, setEventCategories] = useState<{ value: string; icon: string; translationKey: string; displayName?: string; isLive: boolean }[]>([]);
   const [eventCategoriesLoading, setEventCategoriesLoading] = useState(true);
   const [hasLiveEvents, setHasLiveEvents] = useState(false);
+  const [wallet, setWallet] = useState<WalletDTO | null>(null);
 
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
@@ -307,6 +310,33 @@ const AmoriaKNavbar = () => {
       document.body.style.overflow = '';
     };
   }, []);
+
+  // Fetch wallet snapshot for the authenticated user so the profile dropdown
+  // can show an at-a-glance balance + status. Skipped for viewers who do not
+  // have a wallet created on the server side.
+  useEffect(() => {
+    if (!isAuthenticated || !user) {
+      setWallet(null);
+      return;
+    }
+    if (user.customerType?.toLowerCase() === 'viewer') {
+      setWallet(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await getMyWallet();
+        if (cancelled) return;
+        if (res.success && res.data) setWallet(res.data);
+      } catch {
+        // silent — dropdown simply hides the wallet row
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated, user]);
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(prev => {
@@ -1165,8 +1195,76 @@ const AmoriaKNavbar = () => {
                       <p style={{ fontSize: '12px', color: '#6b7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {user.email}
                       </p>
+                      {wallet && (
+                        <div
+                          style={{
+                            marginTop: '10px',
+                            padding: '10px 12px',
+                            borderRadius: '8px',
+                            backgroundColor: 'rgba(8, 58, 133, 0.06)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            gap: '8px',
+                          }}
+                        >
+                          <div>
+                            <div style={{ fontSize: '10px', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                              Wallet
+                            </div>
+                            <div style={{ fontSize: '15px', fontWeight: 700, color: '#083A85' }}>
+                              ${wallet.balanceAvailable.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </div>
+                          </div>
+                          {wallet.status === 'SUSPENDED' && (
+                            <span
+                              style={{
+                                padding: '2px 8px',
+                                borderRadius: 9999,
+                                fontSize: '10px',
+                                fontWeight: 700,
+                                backgroundColor: '#FEE2E2',
+                                color: '#991B1B',
+                              }}
+                            >
+                              SUSPENDED
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
                     <div style={{ padding: '8px' }}>
+                      {user.customerType?.toLowerCase() !== 'viewer' && (
+                        <Link
+                          href="/user/wallet"
+                          onClick={() => setIsProfileDropdownOpen(false)}
+                          className="block cursor-pointer"
+                          style={{
+                            padding: '10px 12px',
+                            borderRadius: '8px',
+                            fontSize: '14px',
+                            fontWeight: '500',
+                            color: '#374151',
+                            backgroundColor: 'transparent',
+                            transition: 'all 0.2s ease',
+                            textDecoration: 'none',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '10px',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = 'rgba(8, 58, 133, 0.05)';
+                            e.currentTarget.style.color = '#083A85';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                            e.currentTarget.style.color = '#374151';
+                          }}
+                        >
+                          <i className="bi bi-wallet2" style={{ fontSize: '16px' }}></i>
+                          My Wallet
+                        </Link>
+                      )}
                       {user.customerType?.toLowerCase() !== 'viewer' && (
                         <a
                           href={getDashboardUrl()}
