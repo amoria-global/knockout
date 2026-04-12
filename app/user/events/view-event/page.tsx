@@ -1,167 +1,11 @@
 'use client';
 
 import React, { useState, useEffect, Suspense } from 'react';
+import dynamic from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
-
-// Mobile-responsive styles - AGGRESSIVE MOBILE OPTIMIZATION
-const responsiveStyles = `
-  /* iPhone specific fixes */
-  @supports (padding: max(0px)) {
-    .ve-cta-bar {
-      padding-left: max(0px, env(safe-area-inset-left)) !important;
-      padding-right: max(0px, env(safe-area-inset-right)) !important;
-    }
-  }
-
-  @media (max-width: 768px) {
-    .ve-cta-bar {
-      max-width: 100% !important;
-      padding: 0 8px !important;
-      gap: 4px !important;
-      -webkit-text-size-adjust: 100% !important;
-    }
-
-    .live-stream-button {
-      font-size: 12px !important;
-      padding: 8px 10px !important;
-      min-height: 36px !important;
-      gap: 4px !important;
-      -webkit-font-smoothing: antialiased !important;
-    }
-
-    .ve-cta-bar button {
-      width: 100% !important;
-      display: flex !important;
-      align-items: center !important;
-      justify-content: center !important;
-      overflow: hidden !important;
-      text-overflow: ellipsis !important;
-    }
-
-    .ve-cta-bar input {
-      font-size: 12px !important;
-      min-height: 36px !important;
-      -webkit-font-smoothing: antialiased !important;
-    }
-
-    .ve-cta-grid {
-      gap: 4px !important;
-      row-gap: 4px !important;
-    }
-  }
-
-  @media (max-width: 600px) {
-    .ve-cta-grid {
-      grid-template-columns: 1fr !important;
-    }
-  }
-
-  @media (max-width: 480px) {
-    .ve-cta-bar {
-      max-width: 100% !important;
-      gap: 3px !important;
-      padding: 0 6px !important;
-      -webkit-text-size-adjust: 100% !important;
-    }
-
-    .live-stream-button {
-      font-size: 10px !important;
-      padding: 5px 7px !important;
-      min-height: 32px !important;
-      gap: 3px !important;
-      -webkit-font-smoothing: antialiased !important;
-      white-space: nowrap !important;
-      overflow: hidden !important;
-      text-overflow: ellipsis !important;
-    }
-
-    .live-stream-button i {
-      font-size: 11px !important;
-      flex-shrink: 0 !important;
-    }
-
-    .ve-cta-bar button {
-      width: 100% !important;
-      display: flex !important;
-      align-items: center !important;
-      justify-content: center !important;
-      overflow: hidden !important;
-    }
-
-    .ve-cta-bar input {
-      font-size: 10px !important;
-      min-height: 32px !important;
-      padding: 5px 7px 5px 26px !important;
-      -webkit-font-smoothing: antialiased !important;
-    }
-
-    .ve-cta-grid {
-      grid-template-columns: 1fr !important;
-      gap: 3px !important;
-      row-gap: 3px !important;
-    }
-  }
-
-  @media (max-width: 420px) {
-    .ve-cta-bar {
-      padding: 0 5px !important;
-      gap: 2px !important;
-    }
-
-    .live-stream-button {
-      font-size: 9px !important;
-      padding: 4px 6px !important;
-      min-height: 30px !important;
-      gap: 2px !important;
-    }
-
-    .live-stream-button i {
-      font-size: 10px !important;
-    }
-
-    .ve-cta-bar input {
-      font-size: 9px !important;
-      min-height: 30px !important;
-      padding: 4px 6px 4px 24px !important;
-    }
-
-    .ve-cta-grid {
-      gap: 2px !important;
-      row-gap: 2px !important;
-    }
-  }
-
-  @media (max-width: 380px) {
-    .ve-cta-bar {
-      padding: 0 4px !important;
-      gap: 2px !important;
-    }
-
-    .live-stream-button {
-      font-size: 8px !important;
-      padding: 3px 5px !important;
-      min-height: 28px !important;
-      gap: 2px !important;
-      letter-spacing: -0.5px !important;
-    }
-
-    .live-stream-button i {
-      font-size: 9px !important;
-    }
-
-    .ve-cta-bar input {
-      font-size: 8px !important;
-      min-height: 28px !important;
-      padding: 3px 5px 3px 22px !important;
-    }
-
-    .ve-cta-grid {
-      gap: 1px !important;
-      row-gap: 1px !important;
-    }
-  }
-`;
 import AmoriaKNavbar from '../../../components/navbar';
+
+const VideoMessageRecorder = dynamic(() => import('../../../components/VideoMessageRecorder'), { ssr: false });
 import { useTranslations } from 'next-intl';
 import { useGoogleLogin } from '@react-oauth/google';
 import { getPublicEventById, type PublicEvent } from '@/lib/APIs/public';
@@ -357,6 +201,143 @@ function ViewEventContent(): React.JSX.Element {
   const [vaLoading, setVaLoading] = useState(false);
   const [vaError, setVaError] = useState<string | null>(null);
 
+  // Group invite code — lightweight identity modal (same pattern as paid viewer)
+  const [showGroupAuth, setShowGroupAuth] = useState(false);
+  const [gaName, setGaName] = useState('');
+  const [gaEmail, setGaEmail] = useState('');
+  const [gaPhone, setGaPhone] = useState('');
+  const [gaLoading, setGaLoading] = useState(false);
+  const [gaError, setGaError] = useState<string | null>(null);
+  const [pendingInviteCode, setPendingInviteCode] = useState('');
+  const [gaEmailRestricted, setGaEmailRestricted] = useState(false);
+
+  // Buyer's group code (fetched from backend)
+  const [savedGroupCode, setSavedGroupCode] = useState<{
+    code: string;
+    viewerCount?: number;
+    usedSlots?: number;
+    remainingSlots?: number;
+    expiresAt?: string;
+    emailRestricted?: boolean;
+    invitedViewers?: Array<{ email: string; name?: string | null; status: string }>;
+  } | null>(null);
+  const [showGroupCodeView, setShowGroupCodeView] = useState(false);
+  const [groupCodeCopied, setGroupCodeCopied] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteLoading, setInviteLoading] = useState(false);
+  const [inviteError, setInviteError] = useState<string | null>(null);
+  const [inviteSuccess, setInviteSuccess] = useState<string | null>(null);
+
+  // Pre-event wishes — text + video reactions before event goes live
+  const [wishName, setWishName] = useState('');
+  const [wishEmail, setWishEmail] = useState('');
+  const [wishMessage, setWishMessage] = useState('');
+  const [wishLoading, setWishLoading] = useState(false);
+  const [wishError, setWishError] = useState<string | null>(null);
+  const [wishSuccess, setWishSuccess] = useState<string | null>(null);
+  const [showWishVideoRecorder, setShowWishVideoRecorder] = useState(false);
+
+  // Restore cached wish identity from localStorage
+  useEffect(() => {
+    try {
+      const cached = localStorage.getItem('eventWishIdentity');
+      if (cached) {
+        const d = JSON.parse(cached);
+        if (d.name) setWishName(d.name);
+        if (d.email) setWishEmail(d.email);
+      }
+    } catch {}
+  }, []);
+
+  const cacheWishIdentity = (name: string, email: string) => {
+    try { localStorage.setItem('eventWishIdentity', JSON.stringify({ name, email })); } catch {}
+  };
+
+  const handleSendTextWish = async () => {
+    const name = wishName.trim();
+    const email = wishEmail.trim();
+    const message = wishMessage.trim();
+    if (!name) { setWishError('Please enter your name.'); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setWishError('Please enter a valid email.'); return; }
+    if (!message) { setWishError('Please write your message.'); return; }
+    if (!selectedEvent?.id) return;
+    setWishLoading(true);
+    setWishError(null);
+    setWishSuccess(null);
+    try {
+      const fp = await getDeviceId();
+      const base = typeof window !== 'undefined' && process.env.NODE_ENV === 'production'
+        ? '/api/proxy' : (process.env.NEXT_PUBLIC_API_URL || 'https://backend.connekyt.com');
+      const res = await fetch(`${base}/api/remote/public/events/${selectedEvent.id}/wishes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, message, deviceFingerprint: fp }),
+      });
+      const data = await res.json();
+      if (data.action === 1) {
+        setWishSuccess('Your wish was sent to the event organizer!');
+        setWishMessage('');
+        cacheWishIdentity(name, email);
+        setTimeout(() => setWishSuccess(null), 5000);
+      } else {
+        const msg = data.message || '';
+        if (msg.includes('only allowed before')) setWishError('The event is now live — please join the stream to send messages.');
+        else if (msg.includes('rate') || msg.includes('limit')) setWishError('You\u2019re sending wishes too quickly. Please wait a moment.');
+        else if (msg.includes('restricted') || msg.includes('blocked')) setWishError('Your message contains restricted content (emails, phone numbers, or links).');
+        else setWishError(msg || 'Could not send your wish. Please try again.');
+      }
+    } catch {
+      setWishError('Connection error. Please try again.');
+    } finally {
+      setWishLoading(false);
+    }
+  };
+
+  const handleSendVideoWish = async (videoBlob: Blob) => {
+    const name = wishName.trim();
+    const email = wishEmail.trim();
+    if (!name) { setWishError('Please enter your name first.'); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setWishError('Please enter a valid email first.'); return; }
+    if (!selectedEvent?.id) return;
+    setWishLoading(true);
+    setWishError(null);
+    setWishSuccess(null);
+    try {
+      const fp = await getDeviceId();
+      const base = typeof window !== 'undefined' && process.env.NODE_ENV === 'production'
+        ? '/api/proxy' : (process.env.NEXT_PUBLIC_API_URL || 'https://backend.connekyt.com');
+      const videoFile = new File([videoBlob], `wish-${Date.now()}.webm`, { type: videoBlob.type || 'video/webm' });
+      const formData = new FormData();
+      formData.append('name', name);
+      formData.append('email', email);
+      formData.append('video', videoFile);
+      formData.append('deviceFingerprint', fp);
+      if (wishMessage.trim()) formData.append('message', wishMessage.trim());
+      const res = await fetch(`${base}/api/remote/public/events/${selectedEvent.id}/wishes/video`, {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.action === 1) {
+        setWishSuccess('Your video wish was sent to the event organizer!');
+        setWishMessage('');
+        setShowWishVideoRecorder(false);
+        cacheWishIdentity(name, email);
+        setTimeout(() => setWishSuccess(null), 5000);
+      } else {
+        const msg = data.message || '';
+        if (msg.includes('only allowed before')) setWishError('The event is now live — please join the stream to send messages.');
+        else if (msg.includes('rate') || msg.includes('limit')) setWishError('You\u2019re sending wishes too quickly. Please wait a moment.');
+        else if (msg.includes('size') || msg.includes('large')) setWishError('Video is too large. Maximum size is 10 MB.');
+        else setWishError(msg || 'Could not send your video wish. Please try again.');
+      }
+    } catch {
+      setWishError('Connection error. Please try again.');
+    } finally {
+      setWishLoading(false);
+    }
+  };
+
   const handleViewerAuth = async () => {
     const name = vaName.trim();
     const email = vaEmail.trim();
@@ -398,6 +379,41 @@ function ViewEventContent(): React.JSX.Element {
       setVaLoading(false);
     }
   };
+
+  // Fetch buyer's group code from backend (persistent, works across devices)
+  const fetchGroupCode = async () => {
+    if (!selectedEvent?.id) return;
+    // Need a viewerId — check localStorage (set during payment or viewer auth)
+    const viewerId = localStorage.getItem(`anonymousViewer_${selectedEvent.id}`);
+    if (!viewerId) return;
+    try {
+      const fp = await getDeviceId();
+      const base = typeof window !== 'undefined' && process.env.NODE_ENV === 'production'
+        ? '/api/proxy' : (process.env.NEXT_PUBLIC_API_URL || 'https://backend.connekyt.com');
+      const res = await fetch(`${base}/api/remote/public/streams/${selectedEvent.id}/group-access/my-code?viewerId=${encodeURIComponent(viewerId)}&deviceFingerprint=${encodeURIComponent(fp)}`);
+      if (res.ok) {
+        const json = await res.json();
+        if (json.action === 1 && json.data?.code) {
+          setSavedGroupCode({
+            code: json.data.code,
+            viewerCount: json.data.viewerCount,
+            usedSlots: json.data.usedSlots,
+            remainingSlots: json.data.remainingSlots,
+            expiresAt: json.data.expiresAt,
+            emailRestricted: json.data.emailRestricted,
+            invitedViewers: json.data.invitedViewers,
+          });
+        }
+      }
+    } catch { /* silent */ }
+  };
+
+  useEffect(() => {
+    if (selectedEvent?.id && selectedEvent?.hasPurchasedAccess) {
+      fetchGroupCode();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedEvent?.id, selectedEvent?.hasPurchasedAccess]);
 
   // Listen for session expiry — show login modal instead of redirecting
   useEffect(() => {
@@ -523,8 +539,8 @@ function ViewEventContent(): React.JSX.Element {
     return (
       <>
         <AmoriaKNavbar />
-        <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#052047' }}>
-          <div style={{ textAlign: 'center', color: '#083A85' }}>
+        <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#0e0e10' }}>
+          <div style={{ textAlign: 'center', color: '#03969c' }}>
             <div style={{ fontSize: '48px', marginBottom: '16px' }}>
               <i className="bi bi-hourglass-split"></i>
             </div>
@@ -540,7 +556,7 @@ function ViewEventContent(): React.JSX.Element {
     return (
       <>
         <AmoriaKNavbar />
-        <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#052047' }}>
+        <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#0e0e10' }}>
           <div style={{ textAlign: 'center', color: '#ef4444' }}>
             <div style={{ fontSize: '48px', marginBottom: '16px' }}>
               <i className="bi bi-exclamation-circle"></i>
@@ -551,7 +567,7 @@ function ViewEventContent(): React.JSX.Element {
               style={{
                 marginTop: '16px',
                 padding: '12px 32px',
-                backgroundColor: '#083A85',
+                backgroundColor: '#03969c',
                 color: '#fff',
                 border: 'none',
                 borderRadius: '8px',
@@ -568,21 +584,18 @@ function ViewEventContent(): React.JSX.Element {
     );
   }
 
-  // Handle group code submission
+  // Handle group code submission — validate then open lightweight identity modal
   const handleGroupCodeSubmit = async () => {
     if (!groupCode.trim()) { setGroupCodeError('Please enter a group invite code'); return; }
     setGroupCodeError('');
     setGroupCodeLoading(true);
     try {
-      // Validate code first (no slot consumed, no auth required)
-      // Pass email if authenticated to check email restrictions
-      const user = isAuthenticated() ? JSON.parse(localStorage.getItem('authUser') || '{}') : {};
-      const validateBody: Record<string, string> = { inviteCode: groupCode.trim() };
-      if (user.email) validateBody.email = user.email;
-      const validateRes = await fetch(`/api/proxy/api/remote/public/streams/${selectedEvent?.id}/validate-group-code`, {
+      const chatBase = typeof window !== 'undefined' && process.env.NODE_ENV === 'production'
+        ? '/api/proxy' : (process.env.NEXT_PUBLIC_API_URL || 'https://backend.connekyt.com');
+      const validateRes = await fetch(`${chatBase}/api/remote/public/streams/${selectedEvent?.id}/validate-group-code`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(validateBody),
+        body: JSON.stringify({ inviteCode: groupCode.trim() }),
       });
       const validateData = await validateRes.json();
       if (validateData.action !== 1) {
@@ -595,48 +608,104 @@ function ViewEventContent(): React.JSX.Element {
         setGroupCodeLoading(false);
         return;
       }
-      // Code is valid — now redeem or prompt login
-      const isEmailRestricted = validateData.data?.emailRestricted === true;
-      if (isAuthenticated()) {
-        const user = JSON.parse(localStorage.getItem('authUser') || '{}');
-        const res = await fetch(`/api/proxy/api/remote/public/streams/${selectedEvent?.id}/redeem-group-code`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', ...(localStorage.getItem('authToken') ? { Authorization: `Bearer ${localStorage.getItem('authToken')}` } : {}) },
-          body: JSON.stringify({ inviteCode: groupCode.trim(), viewerUsername: user.email || '' }),
-        });
-        const data = await res.json();
-        if (data.action === 1 || data.message?.toLowerCase().includes('access granted')) {
-          window.location.href = `/user/events/live-stream?eventId=${selectedEvent?.id}&paid=true&inviteToken=${encodeURIComponent(groupCode.trim())}`;
-        } else {
-          setGroupCodeError(data.message || 'Failed to redeem code.');
-        }
-      } else {
-        // Valid code, not logged in — save code, show appropriate auth form
-        setPendingGroupCode(groupCode.trim());
-        const authorizedEmail = validateData.data?.authorizedEmail || '';
-        const accountExists = validateData.data?.accountExists;
-        if (authorizedEmail) {
-          // Pre-fill the email from the invited address
-          if (accountExists === false) {
-            // No account — show signup with email pre-filled
-            setSignupEmail(authorizedEmail);
-            setAuthStep('signup');
-          } else {
-            // Has account or unknown — show login with email pre-filled
-            setLoginEmail(authorizedEmail);
-            setAuthStep('login');
-          }
-        } else {
-          setAuthStep('login');
-        }
-        setAuthError(isEmailRestricted ? 'This code is restricted to invited emails only. Please sign in with the email this code was sent to.' : '');
-        setShowAuthModal(true);
-      }
+      // Code valid — open lightweight identity modal (same as paid viewer flow)
+      const restricted = validateData.data?.emailRestricted === true;
+      const authorizedEmail = validateData.data?.authorizedEmail || '';
+      setPendingInviteCode(groupCode.trim());
+      setGaEmailRestricted(restricted);
+      setGaEmail(authorizedEmail); // Pre-fill if backend provides the invited email
+      setGaError(null);
+      setShowGroupAuth(true);
     } catch { setGroupCodeError('Connection error. Please try again.'); }
     finally { setGroupCodeLoading(false); }
   };
 
+  // Handle group viewer identity submission
+  const handleGroupViewerAuth = async () => {
+    const name = gaName.trim();
+    const email = gaEmail.trim();
+    const phone = gaPhone.trim();
+    if (!name) { setGaError('Please enter your name.'); return; }
+    if (!email) { setGaError(gaEmailRestricted ? 'Please enter the email you were invited on.' : 'Please enter your email.'); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setGaError('Please enter a valid email address.'); return; }
+    setGaLoading(true);
+    setGaError(null);
+    try {
+      const fp = await getDeviceId();
+      const chatBase = typeof window !== 'undefined' && process.env.NODE_ENV === 'production'
+        ? '/api/proxy' : (process.env.NEXT_PUBLIC_API_URL || 'https://backend.connekyt.com');
+      const res = await fetch(`${chatBase}/api/remote/public/streams/${selectedEvent!.id}/identify-group-viewer`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ inviteCode: pendingInviteCode, name, email, phone, deviceFingerprint: fp }),
+      });
+      const data = await res.json();
+      if (data.action === 1 && data.status === 'ACCESS_GRANTED') {
+        const viewerId = data.viewerId as string;
+        if (viewerId) {
+          localStorage.setItem(`anonymousViewer_${selectedEvent!.id}`, viewerId);
+          localStorage.setItem(`anonymousViewerName_${selectedEvent!.id}`, name);
+        }
+        setShowGroupAuth(false);
+        window.location.href = `/user/events/live-stream?eventId=${selectedEvent!.id}&paid=true${viewerId ? `&viewerId=${viewerId}` : ''}`;
+      } else {
+        const msg = data.message || '';
+        if (msg.includes('different email')) {
+          setGaError('This code was shared with a different email address. Please enter the email you were invited on.');
+        } else if (msg.includes('viewer limit')) {
+          setGaError('This group code has reached its viewer limit.');
+        } else if (msg.includes('expired') || msg.includes('Invalid')) {
+          setGaError('This group code is invalid or expired.');
+        } else {
+          setGaError(msg || 'Could not verify your access. Please try again.');
+        }
+      }
+    } catch {
+      setGaError('Connection error. Please try again.');
+    } finally {
+      setGaLoading(false);
+    }
+  };
+
   // Navigate to purchase page — no auth required (anonymous viewer flow handles it)
+  // Send group invite email
+  const handleInviteEmail = async () => {
+    const email = inviteEmail.trim();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setInviteError('Please enter a valid email address.');
+      return;
+    }
+    if (!selectedEvent?.id) return;
+    const viewerId = localStorage.getItem(`anonymousViewer_${selectedEvent.id}`);
+    if (!viewerId) { setInviteError('Session not found. Please reload.'); return; }
+    setInviteLoading(true);
+    setInviteError(null);
+    setInviteSuccess(null);
+    try {
+      const fp = await getDeviceId();
+      const base = typeof window !== 'undefined' && process.env.NODE_ENV === 'production'
+        ? '/api/proxy' : (process.env.NEXT_PUBLIC_API_URL || 'https://backend.connekyt.com');
+      const res = await fetch(`${base}/api/remote/public/streams/${selectedEvent.id}/group-access/invite`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ viewerId, deviceFingerprint: fp, email }),
+      });
+      const data = await res.json();
+      if (data.action === 1) {
+        setInviteSuccess(`Invitation sent to ${email}`);
+        setInviteEmail('');
+        // Refresh group code data to update slots/invitedViewers
+        fetchGroupCode();
+      } else {
+        setInviteError(data.message || 'Failed to send invitation.');
+      }
+    } catch {
+      setInviteError('Connection error. Please try again.');
+    } finally {
+      setInviteLoading(false);
+    }
+  };
+
   const handlePurchaseAccess = (joinUrl: string) => {
     window.location.href = joinUrl;
   };
@@ -805,37 +874,36 @@ function ViewEventContent(): React.JSX.Element {
 
   return (
     <>
-      <style dangerouslySetInnerHTML={{ __html: responsiveStyles }} />
       <AmoriaKNavbar />
       {/* ── FULL-VIEWPORT CINEMA SHELL ── */}
-      <div className="ve-cinema" style={{ position: 'relative', height: 'calc(100dvh - 64px)', overflow: 'hidden', backgroundColor: '#052047' }}>
+      <div className="ve-cinema" style={{ position: 'relative', height: 'calc(100dvh - 64px)', overflow: 'hidden', backgroundColor: '#0e0e10' }}>
 
         {/* Background image — fills right */}
         <div style={{ position: 'absolute', inset: 0, backgroundImage: `url(${eventImage})`, backgroundSize: 'cover', backgroundPosition: 'center right' }} />
 
         {/* Left-to-right cinematic gradient */}
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(5,32,71,0.88) 25%, rgba(5,32,71,0.7) 45%, rgba(5,32,71,0.35) 65%, rgba(5,32,71,0.05) 100%)' }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, #0e0e10 28%, rgba(14,14,16,0.93) 48%, rgba(14,14,16,0.55) 68%, rgba(14,14,16,0.1) 100%)' }} />
         {/* Top/bottom vignette */}
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(5,32,71,0.4) 0%, transparent 18%, transparent 75%, rgba(5,32,71,0.5) 100%)' }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(14,14,16,0.55) 0%, transparent 18%, transparent 75%, rgba(14,14,16,0.7) 100%)' }} />
 
         {/* ── Status badge — top-right ── */}
         {isLive ? (
-          <div className="live-badge" style={{ position: 'absolute', top: 24, right: 28, zIndex: 30, display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', backgroundColor: 'rgba(22,163,74,0.95)', backdropFilter: 'blur(10px)', border: '2px solid #22c55e', borderRadius: 25, color: '#fff', fontSize: 14, fontWeight: 700, textTransform: 'uppercase', boxShadow: '0 4px 15px rgba(22,163,74,0.4)' }}>
+          <div className="live-badge ve-status-badge" style={{ position: 'absolute', top: 24, right: 28, zIndex: 30, display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', backgroundColor: 'rgba(3,145,48,0.95)', backdropFilter: 'blur(10px)', border: '2px solid #10b981', borderRadius: 25, color: '#fff', fontSize: 14, fontWeight: 700, textTransform: 'uppercase', boxShadow: '0 4px 15px rgba(16,185,129,0.4)' }}>
             <i className="bi bi-camera-video-fill live-badge-icon" style={{ fontSize: 16 }}></i>
             {tStatus('live')}
           </div>
         ) : isCompleted ? (
-          <div style={{ position: 'absolute', top: 24, right: 28, zIndex: 30, display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', backgroundColor: 'rgba(55,65,81,0.95)', backdropFilter: 'blur(10px)', border: '2px solid #6b7280', borderRadius: 25, color: '#fff', fontSize: 14, fontWeight: 700, textTransform: 'uppercase', boxShadow: '0 4px 15px rgba(107,114,128,0.4)' }}>
+          <div className="ve-status-badge" style={{ position: 'absolute', top: 24, right: 28, zIndex: 30, display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', backgroundColor: 'rgba(55,65,81,0.95)', backdropFilter: 'blur(10px)', border: '2px solid #6b7280', borderRadius: 25, color: '#fff', fontSize: 14, fontWeight: 700, textTransform: 'uppercase', boxShadow: '0 4px 15px rgba(107,114,128,0.4)' }}>
             <i className="bi bi-check-circle-fill" style={{ fontSize: 16 }}></i>
             {tStatus('completed')}
           </div>
         ) : isCancelled ? (
-          <div style={{ position: 'absolute', top: 24, right: 28, zIndex: 30, display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', backgroundColor: 'rgba(8,58,133,0.95)', backdropFilter: 'blur(10px)', border: '2px solid #0a4da3', borderRadius: 25, color: '#fff', fontSize: 14, fontWeight: 700, textTransform: 'uppercase', boxShadow: '0 4px 15px rgba(8,58,133,0.4)' }}>
+          <div className="ve-status-badge" style={{ position: 'absolute', top: 24, right: 28, zIndex: 30, display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', backgroundColor: 'rgba(153,27,27,0.95)', backdropFilter: 'blur(10px)', border: '2px solid #ef4444', borderRadius: 25, color: '#fff', fontSize: 14, fontWeight: 700, textTransform: 'uppercase', boxShadow: '0 4px 15px rgba(239,68,68,0.4)' }}>
             <i className="bi bi-x-circle-fill" style={{ fontSize: 16 }}></i>
             {tStatus('cancelled')}
           </div>
         ) : (
-          <div style={{ position: 'absolute', top: 24, right: 28, zIndex: 30, display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', backgroundColor: 'rgba(8,58,133,0.95)', backdropFilter: 'blur(10px)', border: '2px solid #103E83', borderRadius: 25, color: '#fff', fontSize: 14, fontWeight: 700, textTransform: 'uppercase', boxShadow: '0 4px 15px rgba(8,58,133,0.4)' }}>
+          <div className="ve-status-badge" style={{ position: 'absolute', top: 24, right: 28, zIndex: 30, display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', backgroundColor: 'rgba(8,58,133,0.95)', backdropFilter: 'blur(10px)', border: '2px solid #103E83', borderRadius: 25, color: '#fff', fontSize: 14, fontWeight: 700, textTransform: 'uppercase', boxShadow: '0 4px 15px rgba(8,58,133,0.4)' }}>
             <i className="bi bi-broadcast" style={{ fontSize: 16 }}></i>
             {tStatus('upcoming')}
           </div>
@@ -843,47 +911,45 @@ function ViewEventContent(): React.JSX.Element {
 
         {/* ── Price badge — bottom-right ── */}
         {isPaid && (
-          <div className="ve-price-box" style={{ position: 'absolute', bottom: 28, right: 28, zIndex: 30, background: 'rgba(255,255,255,0.08)', border: '1.5px solid rgba(255,255,255,0.15)', borderRadius: 12, padding: '12px 24px', textAlign: 'center', backdropFilter: 'blur(10px)', pointerEvents: 'none' }}>
+          <div className="ve-price-badge" style={{ position: 'absolute', bottom: 28, right: 28, zIndex: 30, background: isCompleted ? 'rgba(127,29,29,0.15)' : hasPurchasedAccess ? 'rgba(16,185,129,0.1)' : 'rgba(246,173,85,0.13)', border: `2px solid ${isCompleted ? '#ef4444' : hasPurchasedAccess ? '#10b981' : '#f5652c'}`, borderRadius: 12, padding: '12px 24px', textAlign: 'center', backdropFilter: 'blur(10px)', pointerEvents: 'none' }}>
             {isCompleted ? (
               <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
-                <i className="bi bi-x-lg" style={{ fontSize: 48, color: 'rgba(255,255,255,0.25)', fontWeight: 900 }}></i>
+                <i className="bi bi-x-lg" style={{ fontSize: 48, color: 'rgba(239,68,68,0.6)', fontWeight: 900 }}></i>
               </div>
             ) : hasPurchasedAccess ? (
               <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
-                <i className="bi bi-check-circle-fill" style={{ fontSize: 36, color: 'rgba(255,255,255,0.4)' }}></i>
+                <i className="bi bi-check-circle-fill" style={{ fontSize: 36, color: 'rgba(16,185,129,0.6)' }}></i>
               </div>
             ) : null}
-            <div style={{ fontSize: 26, fontWeight: 800, color: isCompleted ? 'rgba(255,255,255,0.4)' : '#fff', lineHeight: 1 }}>{(selectedEvent.price || 0).toLocaleString()} RWF</div>
-            <div style={{ fontSize: 12, color: isCompleted ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.5)', marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{isCompleted ? 'Event ended' : hasPurchasedAccess ? 'Spot reserved' : 'Stream Access Fee'}</div>
+            <div style={{ fontSize: 26, fontWeight: 800, color: isCompleted ? 'rgba(246,173,85,0.5)' : hasPurchasedAccess ? 'rgba(16,185,129,0.9)' : '#f5652c', lineHeight: 1 }}>{(selectedEvent.price || 0).toLocaleString()} RWF</div>
+            <div style={{ fontSize: 12, color: isCompleted ? 'rgba(160,174,192,0.5)' : hasPurchasedAccess ? '#10b981' : '#a0aec0', marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{isCompleted ? 'Event ended' : hasPurchasedAccess ? 'Spot reserved' : 'Stream Access Fee'}</div>
           </div>
         )}
 
         {/* ── LEFT CONTENT PANEL ── */}
-        <div className="ve-left-panel" style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: '68%', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: 'clamp(60px, 7vh, 70px) clamp(20px, 4vw, 48px) clamp(16px, 2vh, 24px)', zIndex: 10 }}>
+        <div className="ve-left-panel" style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: '68%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', padding: 'clamp(50px, 6vh, 70px) clamp(20px, 4vw, 48px) clamp(20px, 3vh, 40px)', zIndex: 10 }}>
 
-          {/* Back button — in flow, not overlapping */}
-          <div style={{ marginBottom: 6 }}>
+          {/* TOP block — natural spacing, last child pushed to bottom via auto margin */}
+          <div className="ve-top-block" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 25, minHeight: 0 }}>
+          {/* Back button + meta — same row */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6, flexWrap: 'wrap' }}>
             <button
               onClick={() => window.history.back()}
               aria-label="Go back"
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 36, height: 36, padding: 0, backgroundColor: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.16)', borderRadius: 20, color: '#fff', fontSize: 16, cursor: 'pointer', transition: 'all 0.2s', WebkitTapHighlightColor: 'transparent' }}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 40, height: 40, padding: 0, backgroundColor: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.16)', borderRadius: 22, color: '#fff', fontSize: 17, cursor: 'pointer', transition: 'all 0.2s', WebkitTapHighlightColor: 'transparent', flexShrink: 0 }}
               onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.2)'; }}
               onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)'; }}
             >
               <i className="bi bi-chevron-left"></i>
             </button>
-          </div>
-
-          {/* Category + meta top row */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, flexWrap: 'wrap' }}>
-            <span style={{ padding: '4px 14px', backgroundColor: 'rgba(255,255,255,0.1)', color: '#fff', borderRadius: 20, fontSize: 12, fontWeight: 700, border: '1px solid rgba(255,255,255,0.2)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+            <span style={{ padding: '6px 14px', backgroundColor: 'rgba(8,58,133,0.2)', color: '#5b9bff', borderRadius: 18, fontSize: 13, fontWeight: 700, border: '1px solid rgba(8,58,133,0.4)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
               {getCategoryName(selectedEvent)}
             </span>
-            <span style={{ color: '#4b5563', fontSize: 16 }}>•</span>
-            <span style={{ color: '#9ca3af', fontSize: 16 }}>{formatDate(selectedEvent.eventDate)}</span>
+            <span style={{ color: '#4b5563', fontSize: 15 }}>•</span>
+            <span style={{ color: '#9ca3af', fontSize: 15 }}>{formatDate(selectedEvent.eventDate)}</span>
             {isPaid && <>
-              <span style={{ color: '#4b5563', fontSize: 16 }}>•</span>
-              <span style={{ color: '#93c5fd', fontSize: 16, fontWeight: 700 }}>{formatPrice(selectedEvent.price)}</span>
+              <span style={{ color: '#4b5563', fontSize: 15 }}>•</span>
+              <span style={{ color: '#f5652c', fontSize: 15, fontWeight: 700 }}>{formatPrice(selectedEvent.price)}</span>
             </>}
           </div>
 
@@ -892,55 +958,55 @@ function ViewEventContent(): React.JSX.Element {
             <div style={{
               display: 'inline-flex', alignItems: 'center', gap: 10,
               padding: '10px 18px', marginBottom: 16,
-              background: 'rgba(255,255,255,0.08)',
-              border: '1px solid rgba(255,255,255,0.15)',
-              borderRadius: 999, color: '#93c5fd',
+              background: 'linear-gradient(135deg, rgba(245,101,44,0.15), rgba(245,101,44,0.05))',
+              border: '1px solid rgba(245,101,44,0.45)',
+              borderRadius: 999, color: '#fdba74',
               fontSize: 14, fontWeight: 700, letterSpacing: '0.02em',
               alignSelf: 'flex-start',
             }}>
-              <i className="bi bi-hourglass-split" style={{ color: '#93c5fd' }}></i>
+              <i className="bi bi-hourglass-split" style={{ color: '#f5652c' }}></i>
               <span>Starts in {formatCountdown(msUntilStart)}</span>
             </div>
           )}
 
           {/* Title */}
-          <h1 style={{ fontSize: 'clamp(24px, 4vw, 44px)', fontWeight: 800, color: '#fff', margin: '0 0 8px', lineHeight: 1.1, letterSpacing: '-0.03em', textShadow: '0 2px 20px rgba(0,0,0,0.5)' }}>
+          <h1 style={{ fontSize: 'clamp(28px, 4.5vw, 52px)', fontWeight: 800, color: '#fff', margin: '0 0 6px', lineHeight: 1.08, letterSpacing: '-0.03em', textShadow: '0 2px 20px rgba(0,0,0,0.5)' }}>
             {selectedEvent.title}
           </h1>
 
-          {/* Description — clamped to 3 lines */}
+          {/* Description — clamped to 2 lines */}
           {selectedEvent.description && (
-            <p style={{ fontSize: 'clamp(13px, 1.2vw, 15px)', color: '#a1a1aa', lineHeight: 1.6, margin: '0 0 10px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden', maxWidth: '90%' }}>
+            <p style={{ fontSize: 'clamp(13px, 1.3vw, 16px)', color: '#a1a1aa', lineHeight: 1.5, margin: '0 0 6px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden', maxWidth: '90%' }}>
               {selectedEvent.description}
             </p>
           )}
 
           {/* Info row: location · time · attendees */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, flexWrap: 'wrap', color: '#9ca3af', fontSize: 14 }}>
-            <i className="bi bi-geo-alt-fill" style={{ color: '#93c5fd', fontSize: 16 }}></i>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4, flexWrap: 'wrap', color: '#9ca3af', fontSize: 15 }}>
+            <i className="bi bi-geo-alt-fill" style={{ color: '#f97316', fontSize: 15 }}></i>
             <span>{selectedEvent.location || 'TBD'}</span>
             <span style={{ color: '#4b5563' }}>•</span>
-            <i className="bi bi-clock-fill" style={{ color: '#93c5fd', fontSize: 16 }}></i>
+            <i className="bi bi-clock-fill" style={{ color: '#10b981', fontSize: 15 }}></i>
             <span>{formatTimeRange(selectedEvent.startTime, selectedEvent.endTime)}</span>
             <span style={{ color: '#4b5563' }}>•</span>
-            <i className="bi bi-people-fill" style={{ color: '#93c5fd', fontSize: 16 }}></i>
+            <i className="bi bi-people-fill" style={{ color: '#ec4899', fontSize: 15 }}></i>
             <span>{selectedEvent.maxGuests && selectedEvent.maxGuests > 0 ? `${selectedEvent.maxGuests.toLocaleString()} ${t('people')}` : 'Unlimited'}</span>
           </div>
 
           {/* Organizer row */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: photographerName ? 6 : 10, color: '#9ca3af', fontSize: 14 }}>
-            <i className="bi bi-person-badge-fill" style={{ color: '#93c5fd', fontSize: 17 }}></i>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: photographerName ? 4 : 6, color: '#9ca3af', fontSize: 15 }}>
+            <i className="bi bi-person-badge-fill" style={{ color: '#06b6d4', fontSize: 16 }}></i>
             <span>{t('organizedBy')}</span>
             <span style={{ color: '#efeff1', fontWeight: 700 }}>{selectedEvent.eventOrganizer || 'TBD'}</span>
           </div>
 
           {/* Photographer row */}
           {photographerName && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, color: '#9ca3af', fontSize: 14 }}>
-              <div style={{ width: 36, height: 36, borderRadius: '50%', backgroundColor: 'rgba(8,58,133,0.15)', border: '1.5px solid rgba(8,58,133,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, color: '#9ca3af', fontSize: 15 }}>
+              <div style={{ width: 38, height: 38, borderRadius: '50%', backgroundColor: 'rgba(8,58,133,0.15)', border: '2px solid rgba(8,58,133,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
                 {selectedEvent.photographer?.profilePicture
                   ? <img src={selectedEvent.photographer.profilePicture} alt={photographerName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  : <i className="bi bi-camera-fill" style={{ color: '#93c5fd', fontSize: 20 }}></i>
+                  : <i className="bi bi-camera-fill" style={{ color: '#5b9bff', fontSize: 16 }}></i>
                 }
               </div>
               <span>Photographer</span>
@@ -948,79 +1014,94 @@ function ViewEventContent(): React.JSX.Element {
             </div>
           )}
 
-          {/* Tags */}
+          {/* Tags — pushed to bottom of TOP block */}
           {tags.length > 0 && (
-            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-              {tags.map((tag, i) => (
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 'auto' }}>
+              {tags.slice(0, 5).map((tag, i) => (
                 <span
                   key={i}
-                  style={{ padding: '6px 14px', backgroundColor: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 16, fontSize: 13, color: '#d1d5db', fontWeight: 500, display: 'inline-flex', alignItems: 'center', gap: 4, transition: 'all 0.2s', cursor: 'default' }}
-                  onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(8,58,133,0.2)'; e.currentTarget.style.color = '#93c5fd'; e.currentTarget.style.borderColor = 'rgba(8,58,133,0.4)'; }}
+                  style={{ padding: '7px 14px', backgroundColor: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 18, fontSize: 14, color: '#d1d5db', fontWeight: 500, display: 'inline-flex', alignItems: 'center', gap: 5, transition: 'all 0.2s', cursor: 'default' }}
+                  onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(8,58,133,0.2)'; e.currentTarget.style.color = '#5b9bff'; e.currentTarget.style.borderColor = 'rgba(8,58,133,0.4)'; }}
                   onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = '#d1d5db'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }}
                 >
-                  <i className="bi bi-hash" style={{ fontSize: 14 }}></i>{tag}
+                  <i className="bi bi-hash" style={{ fontSize: 13 }}></i>{tag}
                 </span>
               ))}
             </div>
           )}
 
+          </div>
+
+          {/* BOTTOM block — CTA + wishes (absolute, centered horizontally across viewport, vertically in panel) */}
+          <div className="ve-bottom-block" style={{ position: 'absolute', left: 0, width: '147%' /* compensate for 68% panel width to span full viewport */, bottom: 'clamp(20px, 4vh, 50px)', display: 'flex', justifyContent: 'center', pointerEvents: 'none', transform: 'translateX(20px)' }}>
+          <div style={{ pointerEvents: 'auto' }}>
           {/* ── CTA ── */}
-          <div className="ve-cta-bar" style={{ marginTop: '4px', display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: 4, maxWidth: 'clamp(240px, 94vw, 400px)' }}>
+          <div className="ve-cta-bar" style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: 8, maxWidth: '420px' }}>
           {isLive ? (
             isPaid && hasPurchasedAccess ? (
-              // Paid event, already purchased — go straight to watch
-              <button
-                className="live-stream-button"
-                onClick={() => { window.location.href = `/user/events/live-stream?eventId=${selectedEvent.id}&paid=true`; }}
-                style={{ padding: 'clamp(5px, 1.2vw, 10px) clamp(8px, 1.8vw, 36px)', backgroundColor: '#16a34a', color: '#fff', border: '2px solid #22c55e', borderRadius: 8, fontSize: 'clamp(9px, 1.2vw, 14px)', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, transition: 'all 0.2s', textTransform: 'uppercase', minHeight: 30 }}
-                onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#15803d'; }}
-                onMouseLeave={e => { e.currentTarget.style.backgroundColor = '#16a34a'; }}
-              >
-                <i className="bi bi-play-circle-fill live-badge-icon" style={{ fontSize: 16 }}></i>
-                Start Watching
-              </button>
+              // Paid event, already purchased — watch + optionally share group code
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <button
+                  className="live-stream-button"
+                  onClick={() => { window.location.href = `/user/events/live-stream?eventId=${selectedEvent.id}&paid=true`; }}
+                  style={{ padding: 'clamp(10px, 1.2vw, 13px) clamp(28px, 4vw, 48px)', backgroundColor: '#039130', color: '#fff', border: '2px solid #10b981', borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 10, transition: 'background 0.2s', textTransform: 'uppercase', whiteSpace: 'nowrap' }}
+                  onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#027a28'; }}
+                  onMouseLeave={e => { e.currentTarget.style.backgroundColor = '#039130'; }}
+                >
+                  <i className="bi bi-play-circle-fill live-badge-icon" style={{ fontSize: 16 }}></i>
+                  Start Watching
+                </button>
+                {savedGroupCode && (
+                  <button
+                    onClick={() => { setGroupCodeCopied(false); setShowGroupCodeView(true); }}
+                    style={{ padding: '11px 20px', background: 'transparent', border: '2.5px solid rgba(245,158,11,0.5)', borderRadius: 10, color: '#f59e0b', fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8, transition: 'all 0.2s', whiteSpace: 'nowrap' }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = '#f59e0b'; e.currentTarget.style.background = 'rgba(245,158,11,0.1)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(245,158,11,0.5)'; e.currentTarget.style.background = 'transparent'; }}
+                  >
+                    <i className="bi bi-people-fill" style={{ fontSize: 15 }}></i>
+                    Share Group Code
+                  </button>
+                )}
+              </div>
             ) : isPaid ? (
               <>
                 {/* 2x2 grid: Purchase | Already paid?  /  Input | Redeem */}
-                <div className="ve-cta-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, rowGap: 12, width: '100%', paddingBottom: 2 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, width: '100%' }}>
                   <button
                     className="live-stream-button"
                     onClick={() => handlePurchaseAccess(`/user/events/join-package?id=${selectedEvent.id}`)}
-                    style={{ padding: 'clamp(5px, 1.2vw, 8px) clamp(6px, 1.5vw, 14px)', backgroundColor: '#16a34a', color: '#fff', border: '2px solid #22c55e', borderRadius: 8, fontSize: 'clamp(9px, 1vw, 13px)', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3, transition: 'all 0.2s', textTransform: 'uppercase', whiteSpace: 'nowrap', minHeight: 30, width: '100%' }}
-                    onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#15803d'; }}
-                    onMouseLeave={e => { e.currentTarget.style.backgroundColor = '#16a34a'; }}
+                    style={{ padding: '11px 16px', backgroundColor: '#039130', color: '#fff', border: '2px solid #10b981', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, transition: 'background 0.2s', textTransform: 'uppercase', whiteSpace: 'nowrap' }}
+                    onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#027a28'; }}
+                    onMouseLeave={e => { e.currentTarget.style.backgroundColor = '#039130'; }}
                   >
                     <i className="bi bi-ticket-perforated-fill live-badge-icon" style={{ fontSize: 15 }}></i>
                     Purchase Access
                   </button>
                   <button
                     onClick={() => { setVaError(null); setShowViewerAuth(true); }}
-                    style={{ padding: 'clamp(5px, 1.2vw, 8px) clamp(6px, 1.5vw, 14px)', background: 'transparent', border: '2px solid rgba(255,255,255,0.3)', borderRadius: 8, color: '#d1d5db', fontSize: 'clamp(9px, 1vw, 13px)', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3, transition: 'all 0.2s', whiteSpace: 'nowrap', minHeight: 30, width: '100%' }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.6)'; e.currentTarget.style.color = '#fff'; }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)'; e.currentTarget.style.color = '#d1d5db'; }}
+                    style={{ padding: '11px 16px', background: 'transparent', border: '2.5px solid rgba(255,255,255,0.35)', borderRadius: 10, color: '#d1d5db', fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, transition: 'all 0.2s', whiteSpace: 'nowrap' }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = '#039130'; e.currentTarget.style.color = '#fff'; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.35)'; e.currentTarget.style.color = '#d1d5db'; }}
                   >
                     <i className="bi bi-person-check-fill" style={{ fontSize: 14 }}></i>
                     Already paid?
                   </button>
-                  <div style={{ position: 'relative' }}>
-                    <i className="bi bi-people-fill" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.3)', fontSize: 14, pointerEvents: 'none' }}></i>
-                    <input
-                      type="text"
-                      placeholder="Enter Group Code Here"
-                      value={groupCode}
-                      onChange={e => { setGroupCode(e.target.value); setGroupCodeError(''); }}
-                      style={{ width: '100%', padding: 'clamp(5px, 1.2vw, 8px) clamp(6px, 1.5vw, 12px) clamp(5px, 1.2vw, 8px) clamp(22px, 2.5vw, 30px)', borderRadius: 8, border: groupCodeError ? '1.5px solid #ef4444' : '1.5px dashed rgba(255,255,255,0.25)', background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: 'clamp(9px, 1vw, 13px)', outline: 'none', letterSpacing: '0.3px', minHeight: 30 }}
-                      onFocus={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.5)'; e.currentTarget.style.borderStyle = 'solid'; }}
-                      onBlur={e => { e.currentTarget.style.borderColor = groupCodeError ? '#ef4444' : 'rgba(255,255,255,0.25)'; e.currentTarget.style.borderStyle = groupCodeError ? 'solid' : 'dashed'; }}
-                    />
-                  </div>
+                  <input
+                    type="text"
+                    placeholder="Have a group invite code?"
+                    value={groupCode}
+                    onChange={e => { setGroupCode(e.target.value); setGroupCodeError(''); }}
+                    style={{ padding: '10px 14px', borderRadius: 10, border: groupCodeError ? '1.5px solid #ef4444' : '1.5px solid rgba(255,255,255,0.3)', background: 'rgba(255,255,255,0.85)', color: '#1a1a1a', fontSize: 14, outline: 'none', letterSpacing: '0.5px' }}
+                    onFocus={e => { e.currentTarget.style.borderColor = '#10b981'; }}
+                    onBlur={e => { e.currentTarget.style.borderColor = groupCodeError ? '#ef4444' : 'rgba(255,255,255,0.3)'; }}
+                  />
                   <button
                     onClick={handleGroupCodeSubmit}
                     disabled={groupCodeLoading || !groupCode.trim()}
                     className={groupCode.trim() ? 'live-stream-button' : ''}
-                    style={{ padding: 'clamp(5px, 1.2vw, 8px) clamp(6px, 1.5vw, 14px)', borderRadius: 8, border: groupCode.trim() ? '2px solid #22c55e' : '1.5px solid rgba(255,255,255,0.15)', background: groupCode.trim() ? '#16a34a' : 'rgba(255,255,255,0.04)', color: groupCode.trim() ? '#fff' : 'rgba(255,255,255,0.25)', fontSize: 'clamp(9px, 1vw, 13px)', fontWeight: 600, cursor: groupCode.trim() ? 'pointer' : 'not-allowed', transition: 'all 0.2s', whiteSpace: 'nowrap', minHeight: 30, width: '100%' }}
+                    style={{ padding: '10px 16px', borderRadius: 10, border: groupCode.trim() ? '2px solid #10b981' : '1.5px solid rgba(255,255,255,0.3)', background: groupCode.trim() ? '#039130' : 'rgba(255,255,255,0.85)', color: groupCode.trim() ? '#fff' : 'rgba(0,0,0,0.3)', fontSize: 14, fontWeight: 600, cursor: groupCode.trim() ? 'pointer' : 'not-allowed', transition: 'all 0.2s', whiteSpace: 'nowrap' }}
                   >
-                    {groupCodeLoading ? '...' : 'Continue'}
+                    {groupCodeLoading ? '...' : 'Redeem'}
                   </button>
                 </div>
                 {groupCodeError && (
@@ -1032,9 +1113,9 @@ function ViewEventContent(): React.JSX.Element {
               <button
                 className="live-stream-button"
                 onClick={() => { window.location.href = `/user/events/join-event?id=${selectedEvent.id}`; }}
-                style={{ padding: 'clamp(5px, 1.2vw, 10px) clamp(8px, 1.8vw, 36px)', backgroundColor: '#083A85', color: '#fff', border: '2px solid #0a4da3', borderRadius: 8, fontSize: 'clamp(9px, 1.2vw, 14px)', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, transition: 'background 0.2s', textTransform: 'uppercase', minHeight: 30 }}
-                onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#062d6b'; }}
-                onMouseLeave={e => { e.currentTarget.style.backgroundColor = '#083A85'; }}
+                style={{ padding: 'clamp(12px, 1.5vw, 15px) clamp(28px, 4vw, 48px)', backgroundColor: '#039130', color: '#fff', border: '2px solid #10b981', borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, transition: 'background 0.2s', textTransform: 'uppercase' }}
+                onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#027a28'; }}
+                onMouseLeave={e => { e.currentTarget.style.backgroundColor = '#039130'; }}
               >
                 <i className="bi bi-play-circle-fill live-badge-icon" style={{ fontSize: 16 }}></i>
                 Watch Live
@@ -1043,36 +1124,138 @@ function ViewEventContent(): React.JSX.Element {
           ) : isUpcoming && isPaid ? (
             hasPurchasedAccess ? (
               // Upcoming paid event, already pre-purchased
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ padding: '12px 36px', backgroundColor: 'rgba(16, 185, 129, 0.15)', color: '#0a4da3', border: '2px solid rgba(16, 185, 129, 0.4)', borderRadius: 10, fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 10, backdropFilter: 'blur(8px)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <div style={{ padding: '12px 36px', backgroundColor: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: '2px solid rgba(16, 185, 129, 0.4)', borderRadius: 10, fontSize: 14, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 10, backdropFilter: 'blur(8px)' }}>
                   <i className="bi bi-check-circle-fill" style={{ fontSize: 16 }}></i>
-                  Access Reserved — We&apos;ll notify you when it&apos;s live
+                  Access Reserved
                 </div>
+                {savedGroupCode && (
+                  <button
+                    onClick={() => { setGroupCodeCopied(false); setShowGroupCodeView(true); }}
+                    style={{ padding: '11px 20px', background: 'transparent', border: '2.5px solid rgba(245,158,11,0.5)', borderRadius: 10, color: '#f59e0b', fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8, transition: 'all 0.2s', whiteSpace: 'nowrap' }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = '#f59e0b'; e.currentTarget.style.background = 'rgba(245,158,11,0.1)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(245,158,11,0.5)'; e.currentTarget.style.background = 'transparent'; }}
+                  >
+                    <i className="bi bi-people-fill" style={{ fontSize: 15 }}></i>
+                    Share Group Code
+                  </button>
+                )}
               </div>
             ) : (
               // Upcoming paid event, not purchased — allow pre-purchase
               <>
               <button
                 onClick={() => handlePurchaseAccess(`/user/events/join-package?id=${selectedEvent.id}`)}
-                style={{ padding: 'clamp(5px, 1.2vw, 10px) clamp(8px, 1.8vw, 36px)', backgroundColor: '#083A85', color: '#fff', border: '2px solid #3b82f6', borderRadius: 8, fontSize: 'clamp(9px, 1.2vw, 14px)', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, transition: 'background 0.2s', textTransform: 'uppercase', minHeight: 30, width: '100%' }}
+                style={{ padding: '15px 48px', backgroundColor: '#083A85', color: '#fff', border: '2px solid #3b82f6', borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, transition: 'background 0.2s', textTransform: 'uppercase' }}
                 onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#062d6b'; }}
                 onMouseLeave={e => { e.currentTarget.style.backgroundColor = '#083A85'; }}
               >
                 <i className="bi bi-ticket-perforated-fill" style={{ fontSize: 16 }}></i>
                 Reserve Your Spot
               </button>
-              <button
-                onClick={() => { setVaError(null); setShowViewerAuth(true); }}
-                style={{ padding: 'clamp(5px, 1.2vw, 10px) clamp(8px, 1.5vw, 20px)', background: 'transparent', border: '2.5px solid rgba(255,255,255,0.35)', borderRadius: 8, color: '#d1d5db', fontSize: 'clamp(9px, 1vw, 13px)', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3, transition: 'all 0.2s', minHeight: 30, width: '100%' }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = '#083A85'; e.currentTarget.style.color = '#fff'; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)'; e.currentTarget.style.color = '#d1d5db'; }}
-              >
-                <i className="bi bi-person-check-fill" style={{ fontSize: 13 }}></i>
-                Already paid? Verify here
-              </button>
               </>
             )
           ) : null}
+
+          {/* ── Pre-event Wishes (only when event is upcoming, not live) ── */}
+          {isUpcoming && (
+            <div style={{ marginTop: 10, padding: '12px 14px', background: 'rgba(8,58,133,0.08)', border: '1px solid rgba(8,58,133,0.35)', borderRadius: 10, maxWidth: '100%' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+                <i className="bi bi-chat-heart-fill" style={{ color: '#5b9bff', fontSize: 14 }}></i>
+                <h4 style={{ color: '#fff', fontSize: 13, fontWeight: 700, margin: 0 }}>Send wishes to the organizer</h4>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginBottom: 6 }}>
+                <input
+                  type="text"
+                  value={wishName}
+                  onChange={(e) => { setWishName(e.target.value); setWishError(null); }}
+                  placeholder="Your name"
+                  disabled={wishLoading}
+                  style={{ padding: '8px 12px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(8,58,133,0.4)', borderRadius: 8, color: '#fff', fontSize: 13, outline: 'none', boxSizing: 'border-box', width: '100%' }}
+                  onFocus={(e) => { e.currentTarget.style.borderColor = '#083A85'; }}
+                  onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(8,58,133,0.4)'; }}
+                />
+                <input
+                  type="email"
+                  value={wishEmail}
+                  onChange={(e) => { setWishEmail(e.target.value); setWishError(null); }}
+                  placeholder="Your email"
+                  disabled={wishLoading}
+                  style={{ padding: '8px 12px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(8,58,133,0.4)', borderRadius: 8, color: '#fff', fontSize: 13, outline: 'none', boxSizing: 'border-box', width: '100%' }}
+                  onFocus={(e) => { e.currentTarget.style.borderColor = '#083A85'; }}
+                  onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(8,58,133,0.4)'; }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                <input
+                  type="text"
+                  value={wishMessage}
+                  onChange={(e) => { setWishMessage(e.target.value); setWishError(null); }}
+                  onKeyDown={(e) => e.key === 'Enter' && wishMessage.trim() && handleSendTextWish()}
+                  placeholder="Write your wish..."
+                  disabled={wishLoading}
+                  style={{ flex: 1, padding: '8px 12px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(8,58,133,0.4)', borderRadius: 8, color: '#fff', fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
+                  onFocus={(e) => { e.currentTarget.style.borderColor = '#083A85'; }}
+                  onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(8,58,133,0.4)'; }}
+                />
+                <button
+                  onClick={handleSendTextWish}
+                  disabled={wishLoading || !wishMessage.trim()}
+                  title="Send message"
+                  style={{
+                    padding: '8px 12px', borderRadius: 8,
+                    background: wishLoading || !wishMessage.trim() ? 'rgba(255,255,255,0.1)' : '#083A85',
+                    border: wishLoading || !wishMessage.trim() ? 'none' : '1px solid #3b82f6',
+                    color: '#fff', fontSize: 13,
+                    cursor: wishLoading || !wishMessage.trim() ? 'not-allowed' : 'pointer',
+                    display: 'flex', alignItems: 'center', transition: 'background 0.2s',
+                  }}
+                  onMouseEnter={(e) => { if (!wishLoading && wishMessage.trim()) e.currentTarget.style.background = '#062d6b'; }}
+                  onMouseLeave={(e) => { if (!wishLoading && wishMessage.trim()) e.currentTarget.style.background = '#083A85'; }}
+                >
+                  <i className="bi bi-send-fill"></i>
+                </button>
+                <button
+                  onClick={() => {
+                    if (!wishName.trim() || !wishEmail.trim()) {
+                      setWishError('Please enter your name and email first.');
+                      return;
+                    }
+                    setWishError(null);
+                    setShowWishVideoRecorder(true);
+                  }}
+                  disabled={wishLoading}
+                  title="Record video wish"
+                  style={{
+                    padding: '8px 12px', borderRadius: 8,
+                    background: 'transparent', border: '1.5px solid rgba(8,58,133,0.5)',
+                    color: '#5b9bff', fontSize: 13,
+                    cursor: wishLoading ? 'not-allowed' : 'pointer',
+                    display: 'flex', alignItems: 'center', transition: 'all 0.2s',
+                  }}
+                  onMouseEnter={(e) => { if (!wishLoading) { e.currentTarget.style.borderColor = '#083A85'; e.currentTarget.style.background = 'rgba(8,58,133,0.15)'; } }}
+                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(8,58,133,0.5)'; e.currentTarget.style.background = 'transparent'; }}
+                >
+                  <i className="bi bi-camera-video-fill"></i>
+                </button>
+              </div>
+
+              {wishError && (
+                <p style={{ color: '#fca5a5', fontSize: 11, margin: '6px 0 0' }}>
+                  <i className="bi bi-exclamation-triangle-fill" style={{ marginRight: 4 }}></i>{wishError}
+                </p>
+              )}
+              {wishSuccess && (
+                <p style={{ color: '#6ee7b7', fontSize: 11, margin: '6px 0 0' }}>
+                  <i className="bi bi-check-circle-fill" style={{ marginRight: 4 }}></i>{wishSuccess}
+                </p>
+              )}
+            </div>
+          )}
+          </div>
+          </div>
           </div>
         </div>
       </div>
@@ -1093,97 +1276,93 @@ function ViewEventContent(): React.JSX.Element {
             onMouseDown={(e) => e.stopPropagation()}
             style={{
               background: '#ffffff',
-              borderRadius: 20, padding: 'clamp(24px, 5vw, 36px)',
-              maxWidth: 460, width: '100%',
-              border: '1px solid rgba(8,58,133,0.08)',
-              boxShadow: '0 32px 80px rgba(0,0,0,0.3)',
+              borderRadius: 20, padding: 'clamp(28px, 5vw, 40px)',
+              maxWidth: 480, width: '100%',
+              border: '1px solid rgba(8,58,133,0.06)',
+              boxShadow: '0 32px 80px rgba(0,0,0,0.2)',
               position: 'relative',
             }}
           >
             {/* Close */}
             <button
               onClick={() => { if (!vaLoading) setShowViewerAuth(false); }}
-              style={{ position: 'absolute', top: 14, right: 14, background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, transition: 'color 0.2s' }}
-              onMouseEnter={e => { e.currentTarget.style.color = '#0f172a'; }}
-              onMouseLeave={e => { e.currentTarget.style.color = '#94a3b8'; }}
+              style={{ position: 'absolute', top: 16, right: 16, background: 'rgba(8,58,133,0.04)', border: 'none', color: '#6b7280', cursor: 'pointer', width: 36, height: 36, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, transition: 'all 0.2s' }}
+              onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(8,58,133,0.08)'; }}
+              onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'rgba(8,58,133,0.04)'; }}
             >
               <i className="bi bi-x-lg"></i>
             </button>
 
-            {/* Header with icon */}
-            <div style={{ textAlign: 'center', marginBottom: 20 }}>
-              <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'rgba(8,58,133,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
-                <i className="bi bi-shield-check" style={{ fontSize: 24, color: '#083A85' }}></i>
+            {/* Icon circle */}
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+              <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(8,58,133,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <i className="bi bi-person-check-fill" style={{ fontSize: 24, color: '#083A85' }}></i>
               </div>
-              <h2 style={{ fontSize: 18, fontWeight: 800, color: '#0f172a', margin: '0 0 6px', fontFamily: "'Pragati Narrow', sans-serif" }}>Verify Your Purchase</h2>
-              <p style={{ fontSize: 13, color: '#94a3b8', margin: 0, lineHeight: 1.5 }}>
-                Enter the details you used when purchasing to access the stream
-              </p>
             </div>
 
-            {/* Form fields */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <h2 style={{ fontSize: 22, fontWeight: 800, color: '#083A85', margin: '0 0 4px', textAlign: 'center', fontFamily: "'Pragati Narrow', sans-serif" }}>Your Details</h2>
+            <p style={{ fontSize: 13, color: '#6b7280', margin: '0 0 22px', textAlign: 'center' }}>
+              Quick info to verify your stream access
+            </p>
+
+            <div style={{ marginBottom: 14 }}>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 6 }}>
+                <i className="bi bi-person" style={{ marginRight: 6, color: '#083A85' }}></i>
+                Name <span style={{ color: '#ef4444' }}>*</span>
+              </label>
+              <input
+                type="text"
+                value={vaName}
+                onChange={(e) => setVaName(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleViewerAuth()}
+                placeholder="Your full name"
+                disabled={vaLoading}
+                style={{ width: '100%', padding: '12px 14px', background: '#f9fafb', border: '1.5px solid rgba(8,58,133,0.15)', borderRadius: 10, color: '#0f172a', fontSize: 14, outline: 'none', boxSizing: 'border-box', transition: 'all 0.2s' }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = '#083A85'; e.currentTarget.style.background = '#fff'; }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(8,58,133,0.15)'; e.currentTarget.style.background = '#f9fafb'; }}
+              />
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
               <div>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600, color: '#64748b', marginBottom: 5 }}>
-                  <i className="bi bi-person" style={{ fontSize: 13 }}></i> Full Name
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 6 }}>
+                  <i className="bi bi-envelope" style={{ marginRight: 6, color: '#083A85' }}></i>
+                  Email <span style={{ color: '#ef4444' }}>*</span>
                 </label>
                 <input
-                  type="text"
-                  value={vaName}
-                  onChange={(e) => setVaName(e.target.value)}
+                  type="email"
+                  value={vaEmail}
+                  onChange={(e) => setVaEmail(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleViewerAuth()}
-                  placeholder="Your name"
+                  placeholder="your@email.com"
                   disabled={vaLoading}
-                  style={{ width: '100%', padding: '11px 14px', background: '#f8fafc', border: '1.5px solid rgba(8,58,133,0.1)', borderRadius: 10, color: '#0f172a', fontSize: 14, outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.2s' }}
-                  onFocus={(e) => { e.currentTarget.style.borderColor = '#083A85'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(8,58,133,0.08)'; }}
-                  onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(8,58,133,0.1)'; e.currentTarget.style.boxShadow = 'none'; }}
+                  style={{ width: '100%', padding: '12px 14px', background: '#f9fafb', border: '1.5px solid rgba(8,58,133,0.15)', borderRadius: 10, color: '#0f172a', fontSize: 14, outline: 'none', boxSizing: 'border-box', transition: 'all 0.2s' }}
+                  onFocus={(e) => { e.currentTarget.style.borderColor = '#083A85'; e.currentTarget.style.background = '#fff'; }}
+                  onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(8,58,133,0.15)'; e.currentTarget.style.background = '#f9fafb'; }}
                 />
               </div>
-
-              <div style={{ display: 'flex', gap: 10 }}>
-                <div style={{ flex: 1 }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600, color: '#64748b', marginBottom: 5 }}>
-                    <i className="bi bi-envelope" style={{ fontSize: 12 }}></i> Email
-                  </label>
-                  <input
-                    type="email"
-                    value={vaEmail}
-                    onChange={(e) => setVaEmail(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleViewerAuth()}
-                    placeholder="your@email.com"
-                    disabled={vaLoading}
-                    style={{ width: '100%', padding: '11px 14px', background: '#f8fafc', border: '1.5px solid rgba(8,58,133,0.1)', borderRadius: 10, color: '#0f172a', fontSize: 14, outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.2s' }}
-                    onFocus={(e) => { e.currentTarget.style.borderColor = '#083A85'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(8,58,133,0.08)'; }}
-                    onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(8,58,133,0.1)'; e.currentTarget.style.boxShadow = 'none'; }}
-                  />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600, color: '#64748b', marginBottom: 5 }}>
-                    <i className="bi bi-phone" style={{ fontSize: 12 }}></i> Phone
-                  </label>
-                  <input
-                    type="tel"
-                    value={vaPhone}
-                    onChange={(e) => setVaPhone(e.target.value.replace(/\D/g, '').slice(0, 12))}
-                    onKeyDown={(e) => e.key === 'Enter' && handleViewerAuth()}
-                    placeholder="07XXXXXXXX"
-                    disabled={vaLoading}
-                    style={{ width: '100%', padding: '11px 14px', background: '#f8fafc', border: '1.5px solid rgba(8,58,133,0.1)', borderRadius: 10, color: '#0f172a', fontSize: 14, outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.2s' }}
-                    onFocus={(e) => { e.currentTarget.style.borderColor = '#083A85'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(8,58,133,0.08)'; }}
-                    onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(8,58,133,0.1)'; e.currentTarget.style.boxShadow = 'none'; }}
-                  />
-                </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 6 }}>
+                  <i className="bi bi-phone" style={{ marginRight: 6, color: '#083A85' }}></i>
+                  Phone <span style={{ color: '#ef4444' }}>*</span>
+                </label>
+                <input
+                  type="tel"
+                  value={vaPhone}
+                  onChange={(e) => setVaPhone(e.target.value.replace(/\D/g, '').slice(0, 12))}
+                  onKeyDown={(e) => e.key === 'Enter' && handleViewerAuth()}
+                  placeholder="078XXXXXXX"
+                  disabled={vaLoading}
+                  style={{ width: '100%', padding: '12px 14px', background: '#f9fafb', border: '1.5px solid rgba(8,58,133,0.15)', borderRadius: 10, color: '#0f172a', fontSize: 14, outline: 'none', boxSizing: 'border-box', transition: 'all 0.2s' }}
+                  onFocus={(e) => { e.currentTarget.style.borderColor = '#083A85'; e.currentTarget.style.background = '#fff'; }}
+                  onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(8,58,133,0.15)'; e.currentTarget.style.background = '#f9fafb'; }}
+                />
               </div>
-
-              <p style={{ fontSize: 11, color: '#94a3b8', margin: '-4px 0 0', textAlign: 'center' }}>
-                <i className="bi bi-info-circle" style={{ marginRight: 4 }}></i>
-                Enter email, phone, or both — we match on either
-              </p>
             </div>
 
             {vaError && (
-              <div style={{ padding: '10px 14px', marginTop: 12, background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, color: '#991b1b', fontSize: 13, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <i className="bi bi-exclamation-circle-fill" style={{ flexShrink: 0 }}></i>
+              <div style={{ padding: '10px 12px', marginBottom: 14, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 10, color: '#dc2626', fontSize: 13 }}>
+                <i className="bi bi-exclamation-triangle-fill" style={{ marginRight: 6 }}></i>
                 {vaError}
               </div>
             )}
@@ -1192,27 +1371,280 @@ function ViewEventContent(): React.JSX.Element {
               onClick={handleViewerAuth}
               disabled={vaLoading}
               style={{
-                width: '100%', padding: '13px', borderRadius: 12, marginTop: 16,
-                background: vaLoading ? '#d1d5db' : 'linear-gradient(135deg, #083A85, #0a4da3)',
-                border: 'none', color: '#fff', fontSize: 15, fontWeight: 700,
+                width: '100%', padding: '14px', borderRadius: 12,
+                background: vaLoading ? '#e5e7eb' : '#083A85',
+                border: 'none',
+                color: vaLoading ? '#9ca3af' : '#fff',
+                fontSize: 15, fontWeight: 700,
                 cursor: vaLoading ? 'not-allowed' : 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                transition: 'all 0.2s',
-                boxShadow: vaLoading ? 'none' : '0 4px 12px rgba(8,58,133,0.25)',
+                transition: 'background 0.2s',
+                marginTop: 4,
               }}
+              onMouseEnter={e => { if (!vaLoading) e.currentTarget.style.background = '#062d6b'; }}
+              onMouseLeave={e => { if (!vaLoading) e.currentTarget.style.background = '#083A85'; }}
             >
               {vaLoading ? (
                 <>
-                  <div style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'authSpin 0.8s linear infinite' }} />
+                  <div style={{ width: 16, height: 16, border: '2px solid rgba(0,0,0,0.2)', borderTopColor: '#9ca3af', borderRadius: '50%', animation: 'authSpin 0.8s linear infinite' }} />
                   Verifying…
                 </>
               ) : (
-                <>
-                  <i className="bi bi-shield-check" style={{ fontSize: 16 }}></i>
-                  Verify &amp; Watch
-                </>
+                'Continue'
               )}
             </button>
+
+            <p style={{ fontSize: 11, color: '#6b7280', margin: '14px 0 0', textAlign: 'center' }}>
+              <i className="bi bi-lock-fill" style={{ marginRight: 4 }}></i>
+              No account needed. Your details are only used for this event.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* ── Group Code View Modal (for buyers) ── */}
+      {showGroupCodeView && savedGroupCode && (
+        <div
+          style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0,0,0,0.82)', backdropFilter: 'blur(6px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: 1100, padding: 16,
+          }}
+          onMouseDown={(e) => { if (e.target === e.currentTarget) setShowGroupCodeView(false); }}
+        >
+          <div
+            onMouseDown={(e) => e.stopPropagation()}
+            style={{
+              background: 'linear-gradient(145deg, #141418 0%, #1a1a24 100%)',
+              borderRadius: 20, padding: 'clamp(24px, 5vw, 36px)',
+              maxWidth: 460, width: '100%', maxHeight: '90vh', overflowY: 'auto',
+              border: '1px solid rgba(245,158,11,0.2)',
+              boxShadow: '0 32px 80px rgba(0,0,0,0.6)',
+              position: 'relative', textAlign: 'center',
+            }}
+          >
+            <button
+              onClick={() => { setShowGroupCodeView(false); setInviteError(null); setInviteSuccess(null); }}
+              style={{ position: 'absolute', top: 16, right: 16, background: 'rgba(255,255,255,0.07)', border: 'none', color: '#9ca3af', cursor: 'pointer', width: 36, height: 36, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}
+            >
+              <i className="bi bi-x-lg"></i>
+            </button>
+
+            <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(245,158,11,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
+              <i className="bi bi-people-fill" style={{ fontSize: 22, color: '#f59e0b' }}></i>
+            </div>
+
+            <h2 style={{ fontSize: 18, fontWeight: 700, color: '#fff', margin: '0 0 4px' }}>Your Group Access Code</h2>
+            <p style={{ fontSize: 12, color: '#9ca3af', margin: '0 0 16px' }}>Share this code or invite viewers by email below.</p>
+
+            {/* Code display */}
+            <div style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: 12, padding: '14px 18px', marginBottom: 14 }}>
+              <div style={{ fontSize: 10, color: '#f59e0b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Your Invite Code</div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+                <span style={{ fontSize: 26, fontWeight: 900, letterSpacing: 5, color: '#fff', fontFamily: 'monospace' }}>{savedGroupCode.code}</span>
+                <button
+                  onClick={() => { navigator.clipboard.writeText(savedGroupCode.code); setGroupCodeCopied(true); setTimeout(() => setGroupCodeCopied(false), 2000); }}
+                  style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: 8, padding: '6px 8px', cursor: 'pointer', color: groupCodeCopied ? '#10b981' : '#9ca3af', fontSize: 15, display: 'flex', alignItems: 'center', transition: 'color 0.2s' }}
+                  title="Copy code"
+                >
+                  <i className={groupCodeCopied ? 'bi bi-clipboard-check-fill' : 'bi bi-clipboard'}></i>
+                </button>
+              </div>
+            </div>
+
+            {/* Stats row */}
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: 14 }}>
+              {savedGroupCode.viewerCount != null && (
+                <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: 10, padding: '8px 14px', textAlign: 'center', flex: 1 }}>
+                  <div style={{ fontSize: 10, color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>Allowed</div>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: '#fff' }}>{savedGroupCode.viewerCount}</div>
+                </div>
+              )}
+              {savedGroupCode.remainingSlots != null && (
+                <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: 10, padding: '8px 14px', textAlign: 'center', flex: 1 }}>
+                  <div style={{ fontSize: 10, color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>Remaining</div>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: (savedGroupCode.remainingSlots) > 0 ? '#10b981' : '#ef4444' }}>{savedGroupCode.remainingSlots}</div>
+                </div>
+              )}
+              {savedGroupCode.expiresAt && (
+                <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: 10, padding: '8px 14px', textAlign: 'center', flex: 1 }}>
+                  <div style={{ fontSize: 10, color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>Expires</div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: '#f59e0b' }}>{new Date(savedGroupCode.expiresAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
+                </div>
+              )}
+            </div>
+
+            {/* Invite by email — only if slots remaining */}
+            {(savedGroupCode.remainingSlots == null || savedGroupCode.remainingSlots > 0) && (
+              <div style={{ textAlign: 'left', marginBottom: 14 }}>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#d1d5db', marginBottom: 6 }}>Invite a viewer by email</label>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <input
+                    type="email"
+                    value={inviteEmail}
+                    onChange={(e) => { setInviteEmail(e.target.value); setInviteError(null); setInviteSuccess(null); }}
+                    onKeyDown={(e) => e.key === 'Enter' && handleInviteEmail()}
+                    placeholder="Enter their email"
+                    disabled={inviteLoading}
+                    style={{ flex: 1, padding: '10px 12px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10, color: '#fff', fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
+                    onFocus={(e) => { e.currentTarget.style.borderColor = '#03969c'; }}
+                    onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }}
+                  />
+                  <button
+                    onClick={handleInviteEmail}
+                    disabled={inviteLoading || !inviteEmail.trim()}
+                    style={{
+                      padding: '10px 16px', borderRadius: 10, border: 'none',
+                      background: inviteLoading ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, #03969c, #027a7f)',
+                      color: '#fff', fontSize: 13, fontWeight: 600,
+                      cursor: inviteLoading || !inviteEmail.trim() ? 'not-allowed' : 'pointer',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {inviteLoading ? '...' : 'Send'}
+                  </button>
+                </div>
+                {inviteError && <p style={{ color: '#fca5a5', fontSize: 12, margin: '6px 0 0' }}>{inviteError}</p>}
+                {inviteSuccess && <p style={{ color: '#10b981', fontSize: 12, margin: '6px 0 0' }}>{inviteSuccess}</p>}
+              </div>
+            )}
+
+            {/* Invited viewers list */}
+            {savedGroupCode.invitedViewers && savedGroupCode.invitedViewers.length > 0 && (
+              <div style={{ textAlign: 'left', marginBottom: 14 }}>
+                <div style={{ fontSize: 11, color: '#71717a', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>Invited Viewers</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {savedGroupCode.invitedViewers.map((v, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: 'rgba(255,255,255,0.04)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.06)' }}>
+                      <i className={v.status === 'JOINED' ? 'bi bi-check-circle-fill' : 'bi bi-hourglass-split'} style={{ color: v.status === 'JOINED' ? '#10b981' : '#f59e0b', fontSize: 14, flexShrink: 0 }}></i>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, color: '#efeff1', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.name || v.email}</div>
+                        {v.name && <div style={{ fontSize: 11, color: '#71717a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.email}</div>}
+                      </div>
+                      <span style={{ fontSize: 11, color: v.status === 'JOINED' ? '#10b981' : '#f59e0b', fontWeight: 600, flexShrink: 0 }}>{v.status === 'JOINED' ? 'Joined' : 'Invited'}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {(savedGroupCode.remainingSlots != null && savedGroupCode.remainingSlots === 0) && (
+              <p style={{ fontSize: 12, color: '#ef4444', margin: '0 0 14px' }}>All invite slots have been used.</p>
+            )}
+
+            <button
+              onClick={() => { setShowGroupCodeView(false); setInviteError(null); setInviteSuccess(null); }}
+              style={{ padding: '11px 28px', borderRadius: 12, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', color: '#9ca3af', fontSize: 14, fontWeight: 500, cursor: 'pointer' }}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Group Invite — Viewer Identity Modal ── */}
+      {showGroupAuth && (
+        <div
+          style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0,0,0,0.82)', backdropFilter: 'blur(6px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: 1100, padding: 16,
+          }}
+          onMouseDown={(e) => { if (e.target === e.currentTarget && !gaLoading) setShowGroupAuth(false); }}
+        >
+          <div
+            onMouseDown={(e) => e.stopPropagation()}
+            style={{
+              background: 'linear-gradient(145deg, #141418 0%, #1a1a24 100%)',
+              borderRadius: 20, padding: 'clamp(24px, 5vw, 36px)',
+              maxWidth: 460, width: '100%',
+              border: '1px solid rgba(255,255,255,0.1)',
+              boxShadow: '0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(3,150,156,0.15)',
+              position: 'relative',
+            }}
+          >
+            <button
+              onClick={() => { if (!gaLoading) setShowGroupAuth(false); }}
+              style={{ position: 'absolute', top: 16, right: 16, background: 'rgba(255,255,255,0.07)', border: 'none', color: '#9ca3af', cursor: 'pointer', width: 36, height: 36, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}
+            >
+              <i className="bi bi-x-lg"></i>
+            </button>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+              <i className="bi bi-people-fill" style={{ fontSize: 22, color: '#03969c' }}></i>
+              <h2 style={{ fontSize: 20, fontWeight: 700, color: '#fff', margin: 0 }}>Group Invite Access</h2>
+            </div>
+            <p style={{ fontSize: 13, color: '#9ca3af', margin: '0 0 20px' }}>
+              {gaEmailRestricted
+                ? 'Enter your name and the email this invite was sent to. We\u2019ll verify your access and take you to the stream.'
+                : 'Enter your details to join with your group invite code.'}
+            </p>
+
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#d1d5db', marginBottom: 6 }}>Full Name</label>
+              <input
+                type="text" value={gaName} onChange={(e) => setGaName(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleGroupViewerAuth()}
+                placeholder="Your name" disabled={gaLoading}
+                style={{ width: '100%', padding: '12px 14px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10, color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = '#03969c'; }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }}
+              />
+            </div>
+
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: gaEmailRestricted ? '#f59e0b' : '#d1d5db', marginBottom: 6 }}>
+                {gaEmailRestricted ? 'Email (must match your invite)' : 'Email'}
+              </label>
+              <input
+                type="email" value={gaEmail} onChange={(e) => setGaEmail(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleGroupViewerAuth()}
+                placeholder={gaEmailRestricted ? 'Enter the email you were invited on' : 'Your email'}
+                disabled={gaLoading}
+                style={{ width: '100%', padding: '12px 14px', background: 'rgba(255,255,255,0.06)', border: `1px solid ${gaEmailRestricted ? 'rgba(245,158,11,0.3)' : 'rgba(255,255,255,0.12)'}`, borderRadius: 10, color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = '#03969c'; }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = gaEmailRestricted ? 'rgba(245,158,11,0.3)' : 'rgba(255,255,255,0.12)'; }}
+              />
+            </div>
+
+            <div style={{ marginBottom: 14 }}>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#d1d5db', marginBottom: 6 }}>Phone Number <span style={{ color: '#6b7280', fontWeight: 400 }}>(optional)</span></label>
+              <input
+                type="tel" value={gaPhone}
+                onChange={(e) => setGaPhone(e.target.value.replace(/\D/g, '').slice(0, 12))}
+                onKeyDown={(e) => e.key === 'Enter' && handleGroupViewerAuth()}
+                placeholder="Your phone number" disabled={gaLoading}
+                style={{ width: '100%', padding: '12px 14px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10, color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = '#03969c'; }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }}
+              />
+            </div>
+
+            {gaError && (
+              <div style={{ padding: '10px 12px', marginBottom: 14, background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.35)', borderRadius: 10, color: '#fca5a5', fontSize: 13 }}>
+                <i className="bi bi-exclamation-triangle-fill" style={{ marginRight: 6 }}></i>
+                {gaError}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+              <button
+                onClick={() => { if (!gaLoading) setShowGroupAuth(false); }}
+                disabled={gaLoading}
+                style={{ flex: 1, padding: '12px', borderRadius: 12, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', color: '#9ca3af', fontSize: 14, fontWeight: 500, cursor: gaLoading ? 'not-allowed' : 'pointer' }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleGroupViewerAuth}
+                disabled={gaLoading}
+                style={{ flex: 2, padding: '12px', borderRadius: 12, background: gaLoading ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, #03969c, #027a7f)', border: 'none', color: '#fff', fontSize: 14, fontWeight: 600, cursor: gaLoading ? 'not-allowed' : 'pointer' }}
+              >
+                {gaLoading ? 'Verifying…' : 'Join Stream'}
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -1340,7 +1772,7 @@ function ViewEventContent(): React.JSX.Element {
             {authStep === 'otp' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 <div style={{ background: 'rgba(8,58,133,0.15)', border: '1px solid rgba(8,58,133,0.3)', borderRadius: 10, padding: '12px 16px', display: 'flex', gap: 10, alignItems: 'center' }}>
-                  <i className="bi bi-envelope-check-fill" style={{ color: '#93c5fd', fontSize: 16, flexShrink: 0 }}></i>
+                  <i className="bi bi-envelope-check-fill" style={{ color: '#5b9bff', fontSize: 16, flexShrink: 0 }}></i>
                   <span style={{ color: '#a1a1aa', fontSize: 13 }}>A 6-digit code was sent to <strong style={{ color: '#fff' }}>{signupEmail}</strong></span>
                 </div>
                 <div>
@@ -1367,40 +1799,47 @@ function ViewEventContent(): React.JSX.Element {
           to { transform: rotate(360deg); }
         }
 
-        /* Desktop: center CTA across full viewport by breaking out of left panel */
-        @media (min-width: 769px) {
-          .ve-cta-bar {
-            position: relative;
-            left: calc((100vw * 0.5) - 50%);
-            transform: translateX(-50%);
-            margin-left: 50%;
-          }
-        }
+        /* CTA bar positioned via inline JSX (absolute center within panel area) */
 
         @media (max-width: 768px) {
           .ve-cinema {
             height: auto !important;
-            min-height: 100dvh;
-            overflow: visible !important;
+            min-height: 100dvh !important;
           }
           .ve-left-panel {
+            width: 100% !important;
+            /* Top: avoid status badge (top: 24, height ~38). Bottom: avoid price badge (bottom: 28, height ~88) */
+            padding: 80px 16px 140px !important;
+            position: relative !important;
+            justify-content: flex-start !important;
+          }
+          .ve-top-block {
+            flex: none !important;
+            gap: 10px !important;
+          }
+          .ve-top-block > div[style*="margin-top: auto"],
+          .ve-top-block > div[style*="marginTop: auto"] {
+            margin-top: 10px !important;
+          }
+          .ve-bottom-block {
             position: relative !important;
             width: 100% !important;
-            padding: 70px 16px 24px !important;
-          }
-          .ve-price-box {
-            position: relative !important;
+            left: auto !important;
             bottom: auto !important;
-            right: auto !important;
-            margin: 12px 16px 0 !important;
-            display: inline-block !important;
+            margin-top: 20px !important;
+            transform: none !important;
           }
-          .ve-left-panel h1 {
-            font-size: 24px !important;
-            margin-bottom: 6px !important;
+          /* Smaller floating badges on mobile so they don't overlap content as much */
+          .ve-status-badge {
+            top: 14px !important;
+            right: 14px !important;
+            padding: 6px 12px !important;
+            font-size: 11px !important;
           }
-          .ve-cta-bar {
-            max-width: 100% !important;
+          .ve-price-badge {
+            bottom: 14px !important;
+            right: 14px !important;
+            padding: 8px 14px !important;
           }
           .ve-name-grid {
             grid-template-columns: 1fr !important;
@@ -1409,27 +1848,7 @@ function ViewEventContent(): React.JSX.Element {
 
         @media (max-width: 480px) {
           .ve-left-panel {
-            padding: 60px 12px 16px !important;
-          }
-          .ve-left-panel h1 {
-            font-size: 20px !important;
-            margin-bottom: 4px !important;
-          }
-          .ve-cta-bar {
-            gap: 6px !important;
-            margin-top: 6px !important;
-          }
-          .ve-cta-bar button, .ve-cta-bar input {
-            padding: 8px 10px !important;
-            font-size: 12px !important;
-            border-radius: 8px !important;
-          }
-          .ve-price-box {
-            margin: 8px 12px 0 !important;
-            padding: 8px 16px !important;
-          }
-          .ve-price-box div:first-child {
-            font-size: 18px !important;
+            padding: 70px 14px 130px !important;
           }
         }
       `}</style>
@@ -1495,46 +1914,46 @@ function ViewEventContent(): React.JSX.Element {
 
         @keyframes border-twinkle {
           0%, 100% {
-            border-color: #22c55e;
+            border-color: #10b981;
             filter: brightness(1);
           }
           50% {
-            border-color: #4ade80;
-            filter: brightness(1.2);
+            border-color: #34d399;
+            filter: brightness(1.3);
           }
         }
 
         @keyframes purchase-glow-pulse {
           0% {
-            box-shadow: 0 4px 15px rgba(22, 163, 74, 0.3),
-                        0 0 0 0 rgba(34, 197, 94, 0.7),
-                        0 0 0 0 rgba(34, 197, 94, 0.5);
+            box-shadow: 0 4px 15px rgba(3, 150, 156, 0.3),
+                        0 0 0 0 rgba(6, 182, 212, 0.7),
+                        0 0 0 0 rgba(6, 182, 212, 0.5);
           }
           40% {
-            box-shadow: 0 6px 20px rgba(22, 163, 74, 0.5),
-                        0 0 0 10px rgba(34, 197, 94, 0),
-                        0 0 0 20px rgba(34, 197, 94, 0);
+            box-shadow: 0 6px 20px rgba(3, 150, 156, 0.5),
+                        0 0 0 10px rgba(6, 182, 212, 0),
+                        0 0 0 20px rgba(6, 182, 212, 0);
           }
           80% {
-            box-shadow: 0 4px 15px rgba(22, 163, 74, 0.4),
-                        0 0 0 10px rgba(34, 197, 94, 0),
-                        0 0 0 20px rgba(34, 197, 94, 0);
+            box-shadow: 0 4px 15px rgba(3, 150, 156, 0.4),
+                        0 0 0 10px rgba(6, 182, 212, 0),
+                        0 0 0 20px rgba(6, 182, 212, 0);
           }
           100% {
-            box-shadow: 0 4px 15px rgba(22, 163, 74, 0.3),
-                        0 0 0 0 rgba(34, 197, 94, 0.7),
-                        0 0 0 0 rgba(34, 197, 94, 0.5);
+            box-shadow: 0 4px 15px rgba(3, 150, 156, 0.3),
+                        0 0 0 0 rgba(6, 182, 212, 0.7),
+                        0 0 0 0 rgba(6, 182, 212, 0.5);
           }
         }
 
         @keyframes purchase-border-twinkle {
           0%, 100% {
-            border-color: #22c55e;
+            border-color: #06b6d4;
             filter: brightness(1);
           }
           50% {
-            border-color: #4ade80;
-            filter: brightness(1.2);
+            border-color: #67e8f9;
+            filter: brightness(1.3);
           }
         }
 
@@ -1577,11 +1996,11 @@ function ViewEventContent(): React.JSX.Element {
         }
 
         ::-webkit-scrollbar-track {
-          background: #052047;
+          background: #0e0e10;
         }
 
         ::-webkit-scrollbar-thumb {
-          background: #083A85;
+          background: #03969c;
           border-radius: 4px;
         }
 
@@ -1609,15 +2028,23 @@ function ViewEventContent(): React.JSX.Element {
 
         button:focus-visible,
         a:focus-visible {
-          outline: 3px solid #083A85;
+          outline: 3px solid #03969c;
           outline-offset: 2px;
         }
 
         ::selection {
-          background-color: #083A85;
+          background-color: #03969c;
           color: white;
         }
       `}</style>
+
+      {/* ── Video Wish Recorder Modal ── */}
+      {showWishVideoRecorder && (
+        <VideoMessageRecorder
+          onClose={() => setShowWishVideoRecorder(false)}
+          onSend={handleSendVideoWish}
+        />
+      )}
     </>
   );
 }
@@ -1631,11 +2058,11 @@ function LoadingFallback() {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: '#052047'
+      backgroundColor: '#0e0e10'
     }}>
       <div style={{
         textAlign: 'center',
-        color: '#083A85'
+        color: '#03969c'
       }}>
         <div style={{
           fontSize: '48px',
