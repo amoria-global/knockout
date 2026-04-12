@@ -316,8 +316,8 @@ function JoinPackageContent(): React.JSX.Element {
       id: 'individual',
       name: 'Individual Stream',
       badge: 'Individual',
-      badgeColor: '#083A85',
-      badgeGradient: '#083A85',
+      badgeColor: '#22D3EE',
+      badgeGradient: 'linear-gradient(135deg, #22D3EE 0%, #3B82F6 100%)',
       description: 'Stream the event alone on your personal device',
       price: `${individualFee.toLocaleString()} RWF`,
       priceNote: 'One-time access fee',
@@ -334,8 +334,8 @@ function JoinPackageContent(): React.JSX.Element {
       id: 'group',
       name: `Group Stream (${discountPercentage}% off)`,
       badge: `Group ${discountPercentage}% off`,
-      badgeColor: '#16a34a',
-      badgeGradient: '#16a34a',
+      badgeColor: '#FBBF24',
+      badgeGradient: 'linear-gradient(135deg, #FDE047 0%, #FBBF24 50%, #F59E0B 100%)',
       description: `Buy stream access for multiple people and save ${discountPercentage}%`,
       price: `Save up to ${discountPercentage}% from discount`,
       priceNote: 'Enter number of people below',
@@ -819,13 +819,13 @@ function JoinPackageContent(): React.JSX.Element {
                 style={{
                   position: 'relative',
                   backgroundColor: selectedPackage === pkg.id ? '#0a2540' : '#1e3a5f',
-                  borderRadius: '14px',
+                  borderRadius: '16px',
                   overflow: 'hidden',
                   cursor: 'pointer',
-                  border: selectedPackage === pkg.id ? '2px solid #0a4da3' : '2px solid transparent',
+                  border: selectedPackage === pkg.id ? '3px solid #00BFFF' : '3px solid transparent',
                   transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
                   boxShadow: selectedPackage === pkg.id
-                    ? '0 25px 50px rgba(8, 58, 133, 0.35), 0 0 0 1px rgba(8, 58, 133, 0.1)'
+                    ? '0 25px 50px rgba(0, 191, 255, 0.35), 0 0 0 1px rgba(0, 191, 255, 0.1)'
                     : '0 10px 30px rgba(0, 0, 0, 0.2)',
                   transform: selectedPackage === pkg.id ? 'translateY(-3px) scale(1.005)' : 'translateY(0) scale(1)',
                 }}
@@ -843,22 +843,23 @@ function JoinPackageContent(): React.JSX.Element {
                 }}
               >
 
-                {/* Badge — compact pill at top */}
+                {/* Badge — pill at top */}
                 <div style={{
                   display: 'flex',
                   justifyContent: 'center',
-                  paddingTop: isMobile ? '6px' : '10px',
-                  marginBottom: isMobile ? '-12px' : '-16px',
+                  paddingTop: '14px',
+                  marginBottom: '-20px',
                   position: 'relative',
                   zIndex: 2,
+                  transition: 'all 0.3s ease',
                 }}>
                   <div
                     style={{
                       background: pkg.badgeGradient,
-                      color: '#fff',
-                      padding: '4px 16px',
+                      color: pkg.id === 'group' ? '#1f2937' : '#fff',
+                      padding: '7px 30px',
                       borderRadius: '50px',
-                      fontSize: '11px',
+                      fontSize: '13px',
                       fontWeight: '700',
                       letterSpacing: '0.5px',
                       boxShadow: selectedPackage === pkg.id
@@ -884,7 +885,7 @@ function JoinPackageContent(): React.JSX.Element {
                     position: 'relative',
                     zIndex: 1,
                     transition: 'all 0.3s ease',
-                    border: selectedPackage === pkg.id ? '2px solid rgba(8, 58, 133, 0.2)' : '2px solid transparent',
+                    border: selectedPackage === pkg.id ? '2px solid rgba(0, 191, 255, 0.2)' : '2px solid transparent',
                   }}
                 >
                   {/* Package Name */}
