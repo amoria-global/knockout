@@ -27,7 +27,8 @@ export default function Home() {
   const [networkMousePos, setNetworkMousePos] = useState<{ x: number; y: number } | null>(null)
   const [whyAmoriaMousePos, setWhyAmoriaMousePos] = useState<{ x: number; y: number } | null>(null)
   const [heroMousePos, setHeroMousePos] = useState<{ x: number; y: number } | null>(null)
-  const [howItWorksAutoScroll, setHowItWorksAutoScroll] = useState(true) // Auto-scroll flag
+  const [howItWorksAutoScroll, setHowItWorksAutoScroll] = useState(false) // Auto-scroll flag (mobile-only)
+  const [isMobile, setIsMobile] = useState(false)
   const networkSectionRef = useRef<HTMLElement>(null)
   const heroSectionRef = useRef<HTMLElement>(null)
 
@@ -65,6 +66,19 @@ export default function Home() {
   //   setShowPreloader(false)
   // }
   const showPreloader = false;
+
+  // Mobile detection for carousel - enable auto-scroll only on mobile
+  useEffect(() => {
+    const checkMobileSize = () => {
+      const isMobileView = window.innerWidth < 768;
+      setIsMobile(isMobileView);
+      setHowItWorksAutoScroll(isMobileView); // Enable carousel only on mobile
+    };
+
+    checkMobileSize(); // Check on mount
+    window.addEventListener('resize', checkMobileSize);
+    return () => window.removeEventListener('resize', checkMobileSize);
+  }, []);
 
   // Check whether any event has a live stream active (mirrors navbar logic)
   useEffect(() => {
@@ -345,13 +359,11 @@ export default function Home() {
 
         <main style={{ flex: 1, position: 'relative' }}>
         <style jsx>{`
-          /* Marquee scroll animation - seamless infinite loop with duplicates */
+          /* Marquee scroll animation - 3 steps with visible loop reset */
           @keyframes carouselScroll {
             0% { transform: translateX(0); }
-            16.67% { transform: translateX(-100vw); }
-            33.33% { transform: translateX(-200vw); }
-            50% { transform: translateX(-300vw); }
-            50.01% { transform: translateX(0); }
+            33.33% { transform: translateX(-100vw); }
+            66.67% { transform: translateX(-200vw); }
             100% { transform: translateX(0); }
           }
 
@@ -1229,7 +1241,7 @@ export default function Home() {
                 alignItems: 'flex-start',
                 gap: '40px',
                 position: 'relative',
-                animation: howItWorksAutoScroll ? 'carouselScroll 60s linear infinite' : 'none'
+                animation: howItWorksAutoScroll ? 'carouselScroll 30s linear infinite' : 'none'
               }}>
               {/* Animated Rope Thread - Extended for duplicates */}
               <svg
@@ -1238,14 +1250,14 @@ export default function Home() {
                   position: 'absolute',
                   top: '50%',
                   left: 0,
-                  width: '600vw',
+                  width: '300vw',
                   height: '80px',
                   zIndex: 0,
                   pointerEvents: 'none',
                   transform: 'translateY(-50%)',
-                  animation: howItWorksAutoScroll ? 'ropeFlow 60s linear infinite' : 'none'
+                  animation: howItWorksAutoScroll ? 'ropeFlow 30s linear infinite' : 'none'
                 }}
-                viewBox="0 0 6000 80"
+                viewBox="0 0 3000 80"
                 preserveAspectRatio="none"
               >
                 <defs>
@@ -1258,9 +1270,9 @@ export default function Home() {
                     <feDropShadow dx="0" dy="2" stdDeviation="3" floodOpacity="0.3" />
                   </filter>
                 </defs>
-                {/* Main rope strand - extended for 6 steps */}
+                {/* Main rope strand - 3 steps */}
                 <path
-                  d="M 0,35 Q 375,20 750,35 T 1500,35 T 2250,35 T 3000,35 T 3750,35 T 4500,35 T 5250,35 T 6000,35"
+                  d="M 0,35 Q 375,20 750,35 T 1500,35 T 2250,35 T 3000,35"
                   stroke="url(#ropeGradient)"
                   strokeWidth="12"
                   fill="none"
@@ -1269,20 +1281,17 @@ export default function Home() {
                 />
                 {/* Rope texture detail */}
                 <path
-                  d="M 0,35 Q 375,25 750,35 T 1500,35 T 2250,35 T 3000,35 T 3750,35 T 4500,35 T 5250,35 T 6000,35"
+                  d="M 0,35 Q 375,25 750,35 T 1500,35 T 2250,35 T 3000,35"
                   stroke="#6B5D52"
                   strokeWidth="2"
                   fill="none"
                   strokeLinecap="round"
                   opacity="0.5"
                 />
-                {/* Knots at intervals - for all 6 steps (3 real + 3 duplicates) */}
-                <circle cx="375" cy="35" r="8" fill="#A0826D" filter="url(#ropeShadow)" />
-                <circle cx="1125" cy="35" r="8" fill="#A0826D" filter="url(#ropeShadow)" />
-                <circle cx="1875" cy="35" r="8" fill="#A0826D" filter="url(#ropeShadow)" />
-                <circle cx="2625" cy="35" r="8" fill="#A0826D" filter="url(#ropeShadow)" />
-                <circle cx="3375" cy="35" r="8" fill="#A0826D" filter="url(#ropeShadow)" />
-                <circle cx="4125" cy="35" r="8" fill="#A0826D" filter="url(#ropeShadow)" />
+                {/* Knots at intervals - for 3 steps */}
+                <circle cx="500" cy="35" r="8" fill="#A0826D" filter="url(#ropeShadow)" />
+                <circle cx="1500" cy="35" r="8" fill="#A0826D" filter="url(#ropeShadow)" />
+                <circle cx="2500" cy="35" r="8" fill="#A0826D" filter="url(#ropeShadow)" />
               </svg>
 
               {/* Dotted Line Connector with Flowing Light Inside Dots */}
@@ -1548,127 +1557,6 @@ export default function Home() {
 
 
               {/* Step 3: Go Live */}
-              <div style={{
-                flex: 1,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                textAlign: 'center',
-                position: 'relative',
-                zIndex: 2
-              }}>
-                <img
-                  className="step-img"
-                  src="/ava3.png"
-                  alt="Go Live"
-                  style={{
-                    width: 'clamp(180px, 40vw, 340px)',
-                    height: 'clamp(180px, 40vw, 340px)',
-                    objectFit: 'contain',
-                    marginBottom: 'clamp(20px, 4vw, 30px)'
-                  }}
-                />
-                <h3 className="step-title" style={{
-                  fontSize: 'clamp(18px, 5vw, 30px)',
-                  fontWeight: 700,
-                  color: '#000',
-                  marginBottom: 'clamp(12px, 2vw, 16px)'
-                }}>
-                  {t('howItWorks.goLive.title')}
-                </h3>
-                <p className="step-description" style={{
-                  fontSize: 'clamp(14px, 3.5vw, 17px)',
-                  fontWeight: 400,
-                  color: '#1f1d1d',
-                  lineHeight: '1.65',
-                  maxWidth: 'clamp(200px, 90vw, 280px)'
-                }}>
-                  {t('howItWorks.goLive.description')}
-                </p>
-              </div>
-
-              {/* Duplicated Steps for Seamless Loop - User won't notice the reset */}
-              {/* Step 1 Duplicate */}
-              <div style={{
-                flex: 1,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                textAlign: 'center',
-                position: 'relative',
-                zIndex: 2
-              }}>
-                <img
-                  className="step-img"
-                  src="/ava1.png"
-                  alt="Get Started"
-                  style={{
-                    width: 'clamp(180px, 40vw, 340px)',
-                    height: 'clamp(180px, 40vw, 340px)',
-                    objectFit: 'contain',
-                    marginBottom: 'clamp(20px, 4vw, 30px)'
-                  }}
-                />
-                <h3 className="step-title" style={{
-                  fontSize: 'clamp(18px, 5vw, 30px)',
-                  fontWeight: 700,
-                  color: '#000',
-                  marginBottom: 'clamp(12px, 2vw, 16px)'
-                }}>
-                  {t('howItWorks.getStarted.title')}
-                </h3>
-                <p className="step-description" style={{
-                  fontSize: 'clamp(14px, 3.5vw, 17px)',
-                  fontWeight: 400,
-                  color: '#1f1d1d',
-                  lineHeight: '1.65',
-                  maxWidth: 'clamp(200px, 90vw, 280px)'
-                }}>
-                  {t('howItWorks.getStarted.description')}
-                </p>
-              </div>
-
-              {/* Step 2 Duplicate */}
-              <div style={{
-                flex: 1,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                textAlign: 'center',
-                position: 'relative',
-                zIndex: 2
-              }}>
-                <img
-                  className="step-img"
-                  src="/ava2.png"
-                  alt="Photography"
-                  style={{
-                    width: 'clamp(180px, 40vw, 340px)',
-                    height: 'clamp(180px, 40vw, 340px)',
-                    objectFit: 'contain',
-                    marginBottom: 'clamp(20px, 4vw, 30px)'
-                  }}
-                />
-                <h3 className="step-title" style={{
-                  fontSize: 'clamp(18px, 5vw, 30px)',
-                  fontWeight: 700,
-                  color: '#000',
-                  marginBottom: 'clamp(12px, 2vw, 16px)'
-                }}>
-                  {t('howItWorks.photography.title')}
-                </h3>
-                <p className="step-description" style={{
-                  fontSize: 'clamp(14px, 3.5vw, 17px)',
-                  fontWeight: 400,
-                  color: '#1f1d1d',
-                  lineHeight: '1.65',
-                  maxWidth: 'clamp(200px, 90vw, 280px)'
-                }}>
-                  {t('howItWorks.photography.description')}
-                </p>
-              </div>
-
-              {/* Step 3 Duplicate */}
               <div style={{
                 flex: 1,
                 display: 'flex',
