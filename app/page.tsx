@@ -27,6 +27,7 @@ export default function Home() {
   const [networkMousePos, setNetworkMousePos] = useState<{ x: number; y: number } | null>(null)
   const [whyAmoriaMousePos, setWhyAmoriaMousePos] = useState<{ x: number; y: number } | null>(null)
   const [heroMousePos, setHeroMousePos] = useState<{ x: number; y: number } | null>(null)
+  const [howItWorksAutoScroll, setHowItWorksAutoScroll] = useState(true) // Auto-scroll flag
   const networkSectionRef = useRef<HTMLElement>(null)
   const heroSectionRef = useRef<HTMLElement>(null)
 
@@ -293,6 +294,9 @@ export default function Home() {
     return () => clearTimeout(timer);
   }, [showPreloader]);
 
+  // Note: Auto-scroll is now handled by pure CSS animation (carouselScroll)
+  // No need for JavaScript state updates - they interrupt the smooth CSS animation loop
+
   // NOTE: How It Works to Mockups peel transition disabled for now
   // The original request was to have How It Works scroll normally and reveal mockups behind it
   // This needs a different approach - possibly wrapping both sections in a container
@@ -341,7 +345,86 @@ export default function Home() {
 
         <main style={{ flex: 1, position: 'relative' }}>
         <style jsx>{`
+          /* Marquee scroll animation - seamless infinite loop with duplicates */
+          @keyframes carouselScroll {
+            0% { transform: translateX(0); }
+            16.67% { transform: translateX(-100vw); }
+            33.33% { transform: translateX(-200vw); }
+            50% { transform: translateX(-300vw); }
+            50.01% { transform: translateX(0); }
+            100% { transform: translateX(0); }
+          }
+
+          /* Rope flow animation */
+          @keyframes ropeFlow {
+            0% { stroke-dashoffset: 0; }
+            100% { stroke-dashoffset: -100px; }
+          }
+
+          /* Desktop styles - reset carousel and hide dots */
+          @media (min-width: 769px) {
+            .how-it-works-steps {
+              transform: translateX(0) !important;
+              animation: none !important;
+              flex-wrap: wrap !important;
+              flex-direction: row !important;
+              overflow: visible !important;
+            }
+            .how-it-works-steps > div {
+              min-width: auto !important;
+              flex-shrink: 1 !important;
+              flex: 1 !important;
+            }
+            .how-it-works-steps > div::before,
+            .how-it-works-steps > div::after {
+              display: none !important;
+            }
+            .how-it-works-dots { display: none !important; }
+            .how-it-works-svg { display: block !important; visibility: visible !important; position: absolute !important; width: 76% !important; height: 950px !important; }
+            .carousel-rope { display: none !important; }
+          }
+
           @media (max-width: 768px) {
+            #how-it-works > div > div {
+              max-width: 100% !important;
+              padding: 0 !important;
+              overflow: visible !important;
+            }
+
+            .how-it-works-steps {
+              width: 100vw !important;
+              max-width: none !important;
+              height: auto !important;
+              min-height: 600px !important;
+              overflow: hidden !important;
+              display: flex !important;
+              align-items: stretch !important;
+              gap: 0 !important;
+              position: relative !important;
+              left: 50% !important;
+              right: 50% !important;
+              margin-left: -50vw !important;
+              margin-right: -50vw !important;
+            }
+
+            .how-it-works-steps > div {
+              width: 100vw !important;
+              max-width: 100vw !important;
+              min-width: 100vw !important;
+              flex: 0 0 100vw !important;
+              flex-shrink: 0 !important;
+              display: flex !important;
+              flex-direction: column !important;
+              align-items: center !important;
+              justify-content: center !important;
+              padding: 20px !important;
+              gap: 0 !important;
+            }
+
+            .how-it-works-steps > svg {
+              display: none !important;
+            }
+
             .hero-content { flex-direction: column !important; padding: 20px 15px 20px !important; min-height: auto !important; gap: 10px !important; max-width: 100% !important; }
             .hero-left { width: 100% !important; max-width: 100% !important; text-align: center; padding: 0 15px !important; display: flex !important; flex-direction: column !important; }
             .hero-left .hero-glow { order: 0; }
@@ -365,18 +448,46 @@ export default function Home() {
             .hero-glow { left: 50% !important; transform: translateX(-50%) !important; width: 400px !important; top: 10px !important; }
             .hero-floating-card { transform: none !important; }
 
-            .how-it-works-title { font-size: 36px !important; margin-bottom: 40px !important; text-align: center !important; }
-            .how-it-works-steps { flex-direction: column !important; gap: 30px !important; align-items: center !important; position: relative !important; }
-            .how-it-works-svg { display: none !important; }
-            .how-it-works-mobile-line { display: block !important; }
-            .how-it-works-steps > div { background: transparent !important; z-index: 2 !important; position: relative !important; padding: 10px 20px !important; }
-            .step-img { width: 180px !important; height: 180px !important; }
-            .step-title { font-size: 24px !important; text-align: center !important; }
-            .step-description { font-size: 15px !important; text-align: center !important; }
+            .how-it-works-title { font-size: clamp(24px, 5vw, 36px) !important; margin-bottom: clamp(30px, 6vw, 40px) !important; text-align: center !important; }
+            .how-it-works-steps { flex-direction: row !important; gap: 24px !important; align-items: center !important; position: relative !important; overflow: hidden !important; width: 100% !important; flex-wrap: nowrap !important; display: flex !important; }
+            .how-it-works-svg { display: none !important; visibility: hidden !important; position: absolute !important; width: 0 !important; height: 0 !important; }
+            .how-it-works-mobile-line { display: none !important; visibility: hidden !important; width: 0 !important; height: 0 !important; }
+            .how-it-works-steps > div { background: transparent !important; z-index: 2 !important; position: relative !important; padding: 10px 15px !important; width: 100% !important; flex-shrink: 0 !important; min-width: 100% !important; display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; }
+            .step-img { width: clamp(160px, 35vw, 180px) !important; height: clamp(160px, 35vw, 180px) !important; }
+            .step-title { font-size: clamp(16px, 4.5vw, 24px) !important; text-align: center !important; }
+            .step-description { font-size: clamp(12px, 3vw, 15px) !important; text-align: center !important; max-width: clamp(160px, 85vw, 280px) !important; }
 
-            .photographer-container { flex-direction: column !important; padding: 25px 20px 30px !important; gap: 20px !important; align-items: center !important; text-align: center !important; }
-            .photographer-title { font-size: 32px !important; position: relative !important; top: 0 !important; text-align: center !important; max-width: 100% !important; line-height: 1.1 !important; margin-bottom: 5px !important; }
-            .photographer-description { position: relative !important; top: 0 !important; margin-bottom: 15px !important; font-size: 15px !important; text-align: center !important; opacity: 0.95 !important; }
+            /* Rope attachment knots on step items */
+            .how-it-works-steps > div::before {
+              content: '';
+              position: absolute;
+              top: 45%;
+              left: -15px;
+              width: 16px;
+              height: 16px;
+              background: #A0826D;
+              border-radius: 50%;
+              box-shadow: 0 2px 4px rgba(0,0,0,0.3), inset 0 1px 2px rgba(255,255,255,0.3);
+              z-index: 10;
+            }
+
+            .how-it-works-steps > div::after {
+              content: '';
+              position: absolute;
+              top: calc(45% - 2px);
+              left: -8px;
+              width: 2px;
+              height: 4px;
+              background: rgba(0,0,0,0.2);
+              z-index: 9;
+            }
+            .how-it-works-dots { display: none !important; }
+            .how-it-works-dot { display: none !important; }
+            .how-it-works-dot.active { display: none !important; }
+
+            .photographer-container { flex-direction: column !important; padding: clamp(15px, 4vw, 25px) clamp(15px, 3vw, 20px) clamp(20px, 5vw, 30px) !important; gap: clamp(15px, 3vw, 20px) !important; align-items: center !important; text-align: center !important; }
+            .photographer-title { font-size: clamp(20px, 5vw, 32px) !important; position: relative !important; top: 0 !important; text-align: center !important; max-width: 100% !important; line-height: 1.1 !important; margin-bottom: clamp(5px, 2vw, 10px) !important; }
+            .photographer-description { position: relative !important; top: 0 !important; margin-bottom: clamp(10px, 2vw, 15px) !important; font-size: clamp(12px, 3vw, 15px) !important; text-align: center !important; opacity: 0.95 !important; }
             .photographer-button { position: relative !important; left: 0 !important; top: 0 !important; width: 100% !important; max-width: 220px !important; margin: 0 auto !important; font-size: 17px !important; height: auto !important; padding: 12px 20px !important; }
             .photographer-video-container { max-width: 100% !important; width: 100% !important; height: auto !important; order: -1 !important; }
 
@@ -1081,7 +1192,7 @@ export default function Home() {
           ref={howItWorksSectionRef}
           id="how-it-works"
           style={{
-            padding: '50px 0 100px 0',
+            padding: 'clamp(30px, 8vw, 50px) 0 clamp(50px, 12vw, 100px) 0',
             backgroundColor: '#fff',
             position: 'relative',
             zIndex: 2
@@ -1094,24 +1205,86 @@ export default function Home() {
               }}>
                 {/* Section Title */}
                 <h2 className="how-it-works-title" style={{
-              fontSize: '50px',
+              fontSize: 'clamp(28px, 6vw, 50px)',
               fontWeight: 1000,
               textAlign: 'center',
-              marginBottom: '100px',
+              marginBottom: 'clamp(40px, 8vw, 100px)',
               color: '#000',
               letterSpacing: '-0.02em'
             }}>
               {t('howItWorks.title')}
             </h2>
 
-            {/* Three Steps Container */}
-            <div className="how-it-works-steps" style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'flex-start',
-              gap: '40px',
-              position: 'relative'
-            }}>
+            {/* Three Steps Container - Marquee Carousel on Mobile */}
+            <div
+              className="how-it-works-steps"
+              onMouseEnter={() => setHowItWorksAutoScroll(false)}
+              onMouseLeave={() => setHowItWorksAutoScroll(true)}
+              onTouchStart={() => setHowItWorksAutoScroll(false)}
+              onTouchEnd={() => setHowItWorksAutoScroll(true)}
+              style={{
+                display: 'flex',
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'flex-start',
+                gap: '40px',
+                position: 'relative',
+                animation: howItWorksAutoScroll ? 'carouselScroll 60s linear infinite' : 'none'
+              }}>
+              {/* Animated Rope Thread - Extended for duplicates */}
+              <svg
+                className="carousel-rope"
+                style={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: 0,
+                  width: '600vw',
+                  height: '80px',
+                  zIndex: 0,
+                  pointerEvents: 'none',
+                  transform: 'translateY(-50%)',
+                  animation: howItWorksAutoScroll ? 'ropeFlow 60s linear infinite' : 'none'
+                }}
+                viewBox="0 0 6000 80"
+                preserveAspectRatio="none"
+              >
+                <defs>
+                  <linearGradient id="ropeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="#8B7355" stopOpacity="0.9" />
+                    <stop offset="50%" stopColor="#A0826D" stopOpacity="1" />
+                    <stop offset="100%" stopColor="#8B7355" stopOpacity="0.9" />
+                  </linearGradient>
+                  <filter id="ropeShadow" x="-50%" y="-50%" width="200%" height="200%">
+                    <feDropShadow dx="0" dy="2" stdDeviation="3" floodOpacity="0.3" />
+                  </filter>
+                </defs>
+                {/* Main rope strand - extended for 6 steps */}
+                <path
+                  d="M 0,35 Q 375,20 750,35 T 1500,35 T 2250,35 T 3000,35 T 3750,35 T 4500,35 T 5250,35 T 6000,35"
+                  stroke="url(#ropeGradient)"
+                  strokeWidth="12"
+                  fill="none"
+                  strokeLinecap="round"
+                  filter="url(#ropeShadow)"
+                />
+                {/* Rope texture detail */}
+                <path
+                  d="M 0,35 Q 375,25 750,35 T 1500,35 T 2250,35 T 3000,35 T 3750,35 T 4500,35 T 5250,35 T 6000,35"
+                  stroke="#6B5D52"
+                  strokeWidth="2"
+                  fill="none"
+                  strokeLinecap="round"
+                  opacity="0.5"
+                />
+                {/* Knots at intervals - for all 6 steps (3 real + 3 duplicates) */}
+                <circle cx="375" cy="35" r="8" fill="#A0826D" filter="url(#ropeShadow)" />
+                <circle cx="1125" cy="35" r="8" fill="#A0826D" filter="url(#ropeShadow)" />
+                <circle cx="1875" cy="35" r="8" fill="#A0826D" filter="url(#ropeShadow)" />
+                <circle cx="2625" cy="35" r="8" fill="#A0826D" filter="url(#ropeShadow)" />
+                <circle cx="3375" cy="35" r="8" fill="#A0826D" filter="url(#ropeShadow)" />
+                <circle cx="4125" cy="35" r="8" fill="#A0826D" filter="url(#ropeShadow)" />
+              </svg>
+
               {/* Dotted Line Connector with Flowing Light Inside Dots */}
               <svg
                 className="how-it-works-svg"
@@ -1307,26 +1480,26 @@ export default function Home() {
                   src="/ava1.png"
                   alt="Get Started"
                   style={{
-                    width: '340px',
-                    height: '340px',
+                    width: 'clamp(180px, 40vw, 340px)',
+                    height: 'clamp(180px, 40vw, 340px)',
                     objectFit: 'contain',
-                    marginBottom: '30px'
+                    marginBottom: 'clamp(20px, 4vw, 30px)'
                   }}
                 />
                 <h3 className="step-title" style={{
-                  fontSize: '30px',
+                  fontSize: 'clamp(18px, 5vw, 30px)',
                   fontWeight: 700,
                   color: '#000',
-                  marginBottom: '16px'
+                  marginBottom: 'clamp(12px, 2vw, 16px)'
                 }}>
                   {t('howItWorks.getStarted.title')}
                 </h3>
                 <p className="step-description" style={{
-                  fontSize: '17px',
+                  fontSize: 'clamp(14px, 3.5vw, 17px)',
                   fontWeight: 400,
                   color: '#1f1d1d',
                   lineHeight: '1.65',
-                  maxWidth: '280px'
+                  maxWidth: 'clamp(200px, 90vw, 280px)'
                 }}>
                   {t('howItWorks.getStarted.description')}
                 </p>
@@ -1347,26 +1520,26 @@ export default function Home() {
                   src="/ava2.png"
                   alt="Photography"
                   style={{
-                    width: '340px',
-                    height: '340px',
+                    width: 'clamp(180px, 40vw, 340px)',
+                    height: 'clamp(180px, 40vw, 340px)',
                     objectFit: 'contain',
-                    marginBottom: '30px'
+                    marginBottom: 'clamp(20px, 4vw, 30px)'
                   }}
                 />
                 <h3 className="step-title" style={{
-                  fontSize: '30px',
+                  fontSize: 'clamp(18px, 5vw, 30px)',
                   fontWeight: 700,
                   color: '#000',
-                  marginBottom: '16px'
+                  marginBottom: 'clamp(12px, 2vw, 16px)'
                 }}>
                   {t('howItWorks.photography.title')}
                 </h3>
                 <p className="step-description" style={{
-                  fontSize: '17px',
+                  fontSize: 'clamp(14px, 3.5vw, 17px)',
                   fontWeight: 400,
                   color: '#1f1d1d',
                   lineHeight: '1.65',
-                  maxWidth: '280px'
+                  maxWidth: 'clamp(200px, 90vw, 280px)'
                 }}>
                   {t('howItWorks.photography.description')}
                 </p>
@@ -1389,31 +1562,153 @@ export default function Home() {
                   src="/ava3.png"
                   alt="Go Live"
                   style={{
-                    width: '340px',
-                    height: '340px',
+                    width: 'clamp(180px, 40vw, 340px)',
+                    height: 'clamp(180px, 40vw, 340px)',
                     objectFit: 'contain',
-                    marginBottom: '30px'
+                    marginBottom: 'clamp(20px, 4vw, 30px)'
                   }}
                 />
                 <h3 className="step-title" style={{
-                  fontSize: '30px',
+                  fontSize: 'clamp(18px, 5vw, 30px)',
                   fontWeight: 700,
                   color: '#000',
-                  marginBottom: '16px'
+                  marginBottom: 'clamp(12px, 2vw, 16px)'
                 }}>
                   {t('howItWorks.goLive.title')}
                 </h3>
                 <p className="step-description" style={{
-                  fontSize: '17px',
+                  fontSize: 'clamp(14px, 3.5vw, 17px)',
                   fontWeight: 400,
                   color: '#1f1d1d',
                   lineHeight: '1.65',
-                  maxWidth: '280px'
+                  maxWidth: 'clamp(200px, 90vw, 280px)'
+                }}>
+                  {t('howItWorks.goLive.description')}
+                </p>
+              </div>
+
+              {/* Duplicated Steps for Seamless Loop - User won't notice the reset */}
+              {/* Step 1 Duplicate */}
+              <div style={{
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                textAlign: 'center',
+                position: 'relative',
+                zIndex: 2
+              }}>
+                <img
+                  className="step-img"
+                  src="/ava1.png"
+                  alt="Get Started"
+                  style={{
+                    width: 'clamp(180px, 40vw, 340px)',
+                    height: 'clamp(180px, 40vw, 340px)',
+                    objectFit: 'contain',
+                    marginBottom: 'clamp(20px, 4vw, 30px)'
+                  }}
+                />
+                <h3 className="step-title" style={{
+                  fontSize: 'clamp(18px, 5vw, 30px)',
+                  fontWeight: 700,
+                  color: '#000',
+                  marginBottom: 'clamp(12px, 2vw, 16px)'
+                }}>
+                  {t('howItWorks.getStarted.title')}
+                </h3>
+                <p className="step-description" style={{
+                  fontSize: 'clamp(14px, 3.5vw, 17px)',
+                  fontWeight: 400,
+                  color: '#1f1d1d',
+                  lineHeight: '1.65',
+                  maxWidth: 'clamp(200px, 90vw, 280px)'
+                }}>
+                  {t('howItWorks.getStarted.description')}
+                </p>
+              </div>
+
+              {/* Step 2 Duplicate */}
+              <div style={{
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                textAlign: 'center',
+                position: 'relative',
+                zIndex: 2
+              }}>
+                <img
+                  className="step-img"
+                  src="/ava2.png"
+                  alt="Photography"
+                  style={{
+                    width: 'clamp(180px, 40vw, 340px)',
+                    height: 'clamp(180px, 40vw, 340px)',
+                    objectFit: 'contain',
+                    marginBottom: 'clamp(20px, 4vw, 30px)'
+                  }}
+                />
+                <h3 className="step-title" style={{
+                  fontSize: 'clamp(18px, 5vw, 30px)',
+                  fontWeight: 700,
+                  color: '#000',
+                  marginBottom: 'clamp(12px, 2vw, 16px)'
+                }}>
+                  {t('howItWorks.photography.title')}
+                </h3>
+                <p className="step-description" style={{
+                  fontSize: 'clamp(14px, 3.5vw, 17px)',
+                  fontWeight: 400,
+                  color: '#1f1d1d',
+                  lineHeight: '1.65',
+                  maxWidth: 'clamp(200px, 90vw, 280px)'
+                }}>
+                  {t('howItWorks.photography.description')}
+                </p>
+              </div>
+
+              {/* Step 3 Duplicate */}
+              <div style={{
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                textAlign: 'center',
+                position: 'relative',
+                zIndex: 2
+              }}>
+                <img
+                  className="step-img"
+                  src="/ava3.png"
+                  alt="Go Live"
+                  style={{
+                    width: 'clamp(180px, 40vw, 340px)',
+                    height: 'clamp(180px, 40vw, 340px)',
+                    objectFit: 'contain',
+                    marginBottom: 'clamp(20px, 4vw, 30px)'
+                  }}
+                />
+                <h3 className="step-title" style={{
+                  fontSize: 'clamp(18px, 5vw, 30px)',
+                  fontWeight: 700,
+                  color: '#000',
+                  marginBottom: 'clamp(12px, 2vw, 16px)'
+                }}>
+                  {t('howItWorks.goLive.title')}
+                </h3>
+                <p className="step-description" style={{
+                  fontSize: 'clamp(14px, 3.5vw, 17px)',
+                  fontWeight: 400,
+                  color: '#1f1d1d',
+                  lineHeight: '1.65',
+                  maxWidth: 'clamp(200px, 90vw, 280px)'
                 }}>
                   {t('howItWorks.goLive.description')}
                 </p>
               </div>
             </div>
+
 
             {/* For Photographers Container */}
             <div
