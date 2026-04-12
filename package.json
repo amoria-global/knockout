@@ -27,7 +27,7 @@
     "jwt-decode": "^4.0.0",
     "lightningcss": "^1.31.1",
     "next": "^16.2.3",
-    "next-intl": "^4.4.0",
+    "next-intl": "^4.9.1",
     "prop-types": "^15.8.1",
     "react": "^19.2.0",
     "react-color": "^2.19.3",
