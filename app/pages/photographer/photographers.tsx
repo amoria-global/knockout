@@ -1067,8 +1067,7 @@ const Photographers: React.FC = () => {
                         letterSpacing: '0.01em'
                     }}
                     onClick={() => {
-                        setWizardPhotographerId(photographer.id);
-                        setShowWizard(true);
+                        window.location.href = `/user/photographers/view-profile?id=${photographer.id}`;
                     }}
                     onMouseEnter={(e) => {
                         e.currentTarget.style.backgroundColor = '#2d2d2d';
