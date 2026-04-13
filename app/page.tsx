@@ -359,12 +359,10 @@ export default function Home() {
 
         <main style={{ flex: 1, position: 'relative' }}>
         <style jsx>{`
-          /* Marquee scroll animation - 3 steps with visible loop reset */
+          /* Seamless one-way marquee - steps are duplicated, so reset at -300vw is invisible */
           @keyframes carouselScroll {
-            0% { transform: translateX(0); }
-            33.33% { transform: translateX(-100vw); }
-            66.67% { transform: translateX(-200vw); }
-            100% { transform: translateX(0); }
+            0%   { transform: translateX(0); }
+            100% { transform: translateX(-300vw); }
           }
 
           /* Rope flow animation */
@@ -386,6 +384,9 @@ export default function Home() {
               min-width: auto !important;
               flex-shrink: 1 !important;
               flex: 1 !important;
+            }
+            .how-it-works-steps .step-duplicate {
+              display: none !important;
             }
             .how-it-works-steps > div::before,
             .how-it-works-steps > div::after {
@@ -461,10 +462,10 @@ export default function Home() {
             .hero-floating-card { transform: none !important; }
 
             .how-it-works-title { font-size: clamp(24px, 5vw, 36px) !important; margin-bottom: clamp(30px, 6vw, 40px) !important; text-align: center !important; }
-            .how-it-works-steps { flex-direction: row !important; gap: 24px !important; align-items: center !important; position: relative !important; overflow: hidden !important; width: 100% !important; flex-wrap: nowrap !important; display: flex !important; }
+            .how-it-works-steps { flex-direction: row !important; gap: 0 !important; align-items: center !important; position: relative !important; overflow: hidden !important; width: 100% !important; flex-wrap: nowrap !important; display: flex !important; }
             .how-it-works-svg { display: none !important; visibility: hidden !important; position: absolute !important; width: 0 !important; height: 0 !important; }
             .how-it-works-mobile-line { display: none !important; visibility: hidden !important; width: 0 !important; height: 0 !important; }
-            .how-it-works-steps > div { background: transparent !important; z-index: 2 !important; position: relative !important; padding: 10px 15px !important; width: 100% !important; flex-shrink: 0 !important; min-width: 100% !important; display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; }
+            .how-it-works-steps > div { background: transparent !important; z-index: 2 !important; position: relative !important; padding: 10px 15px !important; width: 100vw !important; flex-shrink: 0 !important; min-width: 100vw !important; display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; }
             .step-img { width: clamp(160px, 35vw, 180px) !important; height: clamp(160px, 35vw, 180px) !important; }
             .step-title { font-size: clamp(16px, 4.5vw, 24px) !important; text-align: center !important; }
             .step-description { font-size: clamp(12px, 3vw, 15px) !important; text-align: center !important; max-width: clamp(160px, 85vw, 280px) !important; }
@@ -1207,7 +1208,8 @@ export default function Home() {
             padding: 'clamp(30px, 8vw, 50px) 0 clamp(50px, 12vw, 100px) 0',
             backgroundColor: '#fff',
             position: 'relative',
-            zIndex: 2
+            zIndex: 2,
+            overflow: 'hidden'
           }}
         >
               <div style={{
@@ -1241,7 +1243,8 @@ export default function Home() {
                 alignItems: 'flex-start',
                 gap: '40px',
                 position: 'relative',
-                animation: howItWorksAutoScroll ? 'carouselScroll 30s linear infinite' : 'none'
+                animation: 'carouselScroll 30s linear infinite',
+                animationPlayState: howItWorksAutoScroll ? 'running' : 'paused'
               }}>
               {/* Animated Rope Thread - Extended for duplicates */}
               <svg
@@ -1250,12 +1253,13 @@ export default function Home() {
                   position: 'absolute',
                   top: '50%',
                   left: 0,
-                  width: '300vw',
+                  width: '600vw',
                   height: '80px',
                   zIndex: 0,
                   pointerEvents: 'none',
                   transform: 'translateY(-50%)',
-                  animation: howItWorksAutoScroll ? 'ropeFlow 30s linear infinite' : 'none'
+                  animation: 'ropeFlow 30s linear infinite',
+                  animationPlayState: howItWorksAutoScroll ? 'running' : 'paused'
                 }}
                 viewBox="0 0 3000 80"
                 preserveAspectRatio="none"
@@ -1474,127 +1478,53 @@ export default function Home() {
                 />
               </svg>
 
-              {/* Step 1: Get Started */}
-              <div style={{
-                flex: 1,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                textAlign: 'center',
-                position: 'relative',
-                zIndex: 2
-              }}>
-                <img
-                  className="step-img"
-                  src="/ava1.png"
-                  alt="Get Started"
-                  style={{
-                    width: 'clamp(180px, 40vw, 340px)',
-                    height: 'clamp(180px, 40vw, 340px)',
-                    objectFit: 'contain',
-                    marginBottom: 'clamp(20px, 4vw, 30px)'
-                  }}
-                />
-                <h3 className="step-title" style={{
-                  fontSize: 'clamp(18px, 5vw, 30px)',
-                  fontWeight: 700,
-                  color: '#000',
-                  marginBottom: 'clamp(12px, 2vw, 16px)'
-                }}>
-                  {t('howItWorks.getStarted.title')}
-                </h3>
-                <p className="step-description" style={{
-                  fontSize: 'clamp(14px, 3.5vw, 17px)',
-                  fontWeight: 400,
-                  color: '#1f1d1d',
-                  lineHeight: '1.65',
-                  maxWidth: 'clamp(200px, 90vw, 280px)'
-                }}>
-                  {t('howItWorks.getStarted.description')}
-                </p>
-              </div>
-
-              {/* Step 2: Photography */}
-              <div style={{
-                flex: 1,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                textAlign: 'center',
-                position: 'relative',
-                zIndex: 2
-              }}>
-                <img
-                  className="step-img"
-                  src="/ava2.png"
-                  alt="Photography"
-                  style={{
-                    width: 'clamp(180px, 40vw, 340px)',
-                    height: 'clamp(180px, 40vw, 340px)',
-                    objectFit: 'contain',
-                    marginBottom: 'clamp(20px, 4vw, 30px)'
-                  }}
-                />
-                <h3 className="step-title" style={{
-                  fontSize: 'clamp(18px, 5vw, 30px)',
-                  fontWeight: 700,
-                  color: '#000',
-                  marginBottom: 'clamp(12px, 2vw, 16px)'
-                }}>
-                  {t('howItWorks.photography.title')}
-                </h3>
-                <p className="step-description" style={{
-                  fontSize: 'clamp(14px, 3.5vw, 17px)',
-                  fontWeight: 400,
-                  color: '#1f1d1d',
-                  lineHeight: '1.65',
-                  maxWidth: 'clamp(200px, 90vw, 280px)'
-                }}>
-                  {t('howItWorks.photography.description')}
-                </p>
-              </div>
-
-
-
-              {/* Step 3: Go Live */}
-              <div style={{
-                flex: 1,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                textAlign: 'center',
-                position: 'relative',
-                zIndex: 2
-              }}>
-                <img
-                  className="step-img"
-                  src="/ava3.png"
-                  alt="Go Live"
-                  style={{
-                    width: 'clamp(180px, 40vw, 340px)',
-                    height: 'clamp(180px, 40vw, 340px)',
-                    objectFit: 'contain',
-                    marginBottom: 'clamp(20px, 4vw, 30px)'
-                  }}
-                />
-                <h3 className="step-title" style={{
-                  fontSize: 'clamp(18px, 5vw, 30px)',
-                  fontWeight: 700,
-                  color: '#000',
-                  marginBottom: 'clamp(12px, 2vw, 16px)'
-                }}>
-                  {t('howItWorks.goLive.title')}
-                </h3>
-                <p className="step-description" style={{
-                  fontSize: 'clamp(14px, 3.5vw, 17px)',
-                  fontWeight: 400,
-                  color: '#1f1d1d',
-                  lineHeight: '1.65',
-                  maxWidth: 'clamp(200px, 90vw, 280px)'
-                }}>
-                  {t('howItWorks.goLive.description')}
-                </p>
-              </div>
+              {(() => {
+                const steps = [
+                  { img: '/ava1.png', alt: 'Get Started', titleKey: 'howItWorks.getStarted.title', descKey: 'howItWorks.getStarted.description' },
+                  { img: '/ava2.png', alt: 'Photography', titleKey: 'howItWorks.photography.title', descKey: 'howItWorks.photography.description' },
+                  { img: '/ava3.png', alt: 'Go Live', titleKey: 'howItWorks.goLive.title', descKey: 'howItWorks.goLive.description' },
+                ];
+                return [...steps, ...steps].map((s, i) => (
+                  <div key={i} className={i >= steps.length ? 'step-duplicate' : undefined} aria-hidden={i >= steps.length} style={{
+                    flex: 1,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    textAlign: 'center',
+                    position: 'relative',
+                    zIndex: 2
+                  }}>
+                    <img
+                      className="step-img"
+                      src={s.img}
+                      alt={s.alt}
+                      style={{
+                        width: 'clamp(180px, 40vw, 340px)',
+                        height: 'clamp(180px, 40vw, 340px)',
+                        objectFit: 'contain',
+                        marginBottom: 'clamp(20px, 4vw, 30px)'
+                      }}
+                    />
+                    <h3 className="step-title" style={{
+                      fontSize: 'clamp(18px, 5vw, 30px)',
+                      fontWeight: 700,
+                      color: '#000',
+                      marginBottom: 'clamp(12px, 2vw, 16px)'
+                    }}>
+                      {t(s.titleKey)}
+                    </h3>
+                    <p className="step-description" style={{
+                      fontSize: 'clamp(14px, 3.5vw, 17px)',
+                      fontWeight: 400,
+                      color: '#1f1d1d',
+                      lineHeight: '1.65',
+                      maxWidth: 'clamp(200px, 90vw, 280px)'
+                    }}>
+                      {t(s.descKey)}
+                    </p>
+                  </div>
+                ));
+              })()}
             </div>
 
 
