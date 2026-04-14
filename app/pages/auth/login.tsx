@@ -769,7 +769,7 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
           </div>
         </form>
 
-        {GOOGLE_CLIENT_ID && (
+        {GOOGLE_CLIENT_ID && signupUserType !== 'Photographer' && (
           <>
             <div style={{ display: 'flex', alignItems: 'center', margin: isMobile ? '8px 0' : '12px 0' }}>
               <hr style={{ flex: '1', border: 'none', borderTop: '1.5px solid #d1d5db' }} />
