@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import AmoriaKNavbar from '../../components/navbar';
 import { useTranslations } from 'next-intl';
 import {
@@ -27,12 +28,14 @@ function formatTimeRange(startTime?: string, endTime?: string): string {
 
 const Events: React.FC = () => {
   const t = useTranslations('events');
-  // States
+  const searchParams = useSearchParams();
+  // States — initialize from URL params so navbar category links work
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [selectedLocation, setSelectedLocation] = useState<string>('all');
-  const [selectedDate, setSelectedDate] = useState<string>('all');
-  const [selectedStatus, setSelectedStatus] = useState<string>('all');
+  const catParam = searchParams.get('category');
+  const [selectedCategory, setSelectedCategory] = useState<string>(catParam || 'all');
+  const [selectedLocation, setSelectedLocation] = useState<string>(searchParams.get('location') || 'all');
+  const [selectedDate, setSelectedDate] = useState<string>(searchParams.get('date') || 'all');
+  const [selectedStatus, setSelectedStatus] = useState<string>(searchParams.get('status') || 'all');
   const [currentPage, setCurrentPage] = useState(1);
   const [isMobile, setIsMobile] = useState(false);
   const [showBanner, setShowBanner] = useState(true);
@@ -71,6 +74,24 @@ const Events: React.FC = () => {
   // Accumulates unique category names seen across all fetched pages — drives the filter dropdown
   const [categoryOptions, setCategoryOptions] = useState<string[]>([]);
   const seenCategoriesRef = React.useRef<Set<string>>(new Set());
+
+  // Sync filters when URL params change (e.g. navbar category link clicked)
+  useEffect(() => {
+    const cat = searchParams.get('category');
+    const loc = searchParams.get('location');
+    const date = searchParams.get('date');
+    const status = searchParams.get('status');
+    if (cat) {
+      // Navbar sends lowercase; dropdown uses proper case — try to match existing options
+      const matched = categoryOptions.find(c => c.toLowerCase() === cat.toLowerCase());
+      const normalized = matched || cat;
+      if (normalized !== selectedCategory) setSelectedCategory(normalized);
+    }
+    if (loc && loc !== selectedLocation) setSelectedLocation(loc);
+    if (date && date !== selectedDate) setSelectedDate(date);
+    if (status && status !== selectedStatus) setSelectedStatus(status);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, categoryOptions]);
 
   const fetchEvents = useCallback(async () => {
     setIsLoading(true);
@@ -1081,4 +1102,10 @@ const Events: React.FC = () => {
   );
 };
 
-export default Events;
+export default function EventsPage() {
+  return (
+    <Suspense fallback={null}>
+      <Events />
+    </Suspense>
+  );
+}
