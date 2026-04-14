@@ -356,6 +356,8 @@ function JoinPackageContent(): React.JSX.Element {
       setShowPeopleInput(true);
     } else {
       setShowPeopleInput(false);
+      // Individual package — skip Continue button, proceed immediately
+      setTimeout(() => handleProceed(), 0);
     }
   };
 
@@ -960,9 +962,9 @@ function JoinPackageContent(): React.JSX.Element {
                   <div style={{ overflow: 'hidden', maxHeight: isMobile ? (expandedPkg === pkg.id ? '500px' : '0') : 'none', transition: 'max-height 0.3s ease' }}>
                   <div style={{ height: '1px', backgroundColor: '#e5e7eb', margin: isMobile ? '5px 0' : '8px 0' }}></div>
 
-                  {/* Features List — only show available, aligned left from center */}
+                  {/* Features List — show all features, unavailable ones with red cross + strikethrough */}
                   <div style={{ display: 'inline-flex', flexDirection: 'column', gap: isMobile ? '2px' : '4px', margin: '0 auto', textAlign: 'left' }}>
-                    {pkg.features.filter(f => f.available).map((feature, index) => (
+                    {pkg.features.map((feature, index) => (
                       <div
                         key={index}
                         style={{
@@ -970,11 +972,15 @@ function JoinPackageContent(): React.JSX.Element {
                           alignItems: 'center',
                           gap: isMobile ? '4px' : '8px',
                           fontSize: isMobile ? '11px' : '13px',
-                          color: '#374151',
+                          color: feature.available ? '#374151' : '#9ca3af',
                         }}
                       >
-                        <i className="bi bi-check" style={{ color: '#083A85', fontSize: isMobile ? '12px' : '14px', fontWeight: 700, flexShrink: 0 }}></i>
-                        {feature.text}
+                        {feature.available ? (
+                          <i className="bi bi-check" style={{ color: '#083A85', fontSize: isMobile ? '12px' : '14px', fontWeight: 700, flexShrink: 0 }}></i>
+                        ) : (
+                          <i className="bi bi-x-lg" style={{ color: '#ef4444', fontSize: isMobile ? '10px' : '12px', fontWeight: 700, flexShrink: 0 }}></i>
+                        )}
+                        <span style={{ textDecoration: feature.available ? 'none' : 'line-through' }}>{feature.text}</span>
                       </div>
                     ))}
                   </div>
@@ -1148,10 +1154,10 @@ function JoinPackageContent(): React.JSX.Element {
             ))}
           </div>
 
-          {/* Action Buttons */}
+          {/* Action Buttons — only visible for group package (individual auto-proceeds) */}
           <div
             style={{
-              display: 'flex',
+              display: selectedPackage === 'group' ? 'flex' : 'none',
               flexDirection: 'row',
               justifyContent: 'center',
               gap: isMobile ? '8px' : '12px',
