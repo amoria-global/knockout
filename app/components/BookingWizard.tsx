@@ -669,13 +669,16 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                   Your event has been created and the photographer has been notified. You can manage your booking from the dashboard.
                 </p>
                 <button onClick={() => {
-                  if (state.createdEventId) {
-                    window.location.href = `/user/events/view-event?id=${state.createdEventId}`;
-                  } else {
-                    onClose();
-                  }
+                  const dashboardUrl = process.env.NEXT_PUBLIC_DASHBOARD_URL || 'https://dashboard.connekyt.com';
+                  const token = getAuthToken();
+                  const userType = (user?.customerType || 'Client')
+                    .replace(/([A-Z])/g, (m: string, l: string, i: number) => (i > 0 ? '-' : '') + l.toLowerCase());
+                  const dest = new URL(`${dashboardUrl}/user/${userType}/events`);
+                  if (state.createdEventId) dest.searchParams.set('eventId', state.createdEventId);
+                  if (token) dest.searchParams.set('token', token);
+                  window.location.href = dest.toString();
                 }} style={btnPrimary}>
-                  View Event <i className="bi bi-arrow-right"></i>
+                  Go to Dashboard <i className="bi bi-arrow-right"></i>
                 </button>
               </div>
 
