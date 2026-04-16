@@ -181,6 +181,7 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
   // ─── SLIDE 1: Specialties ───
 
   const handleSpecialtiesNext = () => {
+    if (selectedSpecialtyIds.length === 0) { setSlideError('Please select at least one specialty'); return; }
     setSlideError('');
     dispatch({ type: 'SET_SLIDE', slide: 2 });
     // Save in background (best-effort)
@@ -204,6 +205,7 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
   };
 
   const handlePhotosNext = () => {
+    if (!profileFile) { setSlideError('Please upload a profile photo'); return; }
     setSlideError('');
     dispatch({ type: 'SET_SLIDE', slide: 3 });
     // Upload in background (best-effort)
