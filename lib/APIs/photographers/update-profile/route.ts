@@ -19,6 +19,9 @@ export interface UpdateImportantDetailsRequest {
   address: string;
   professionalPhilosophy?: string;
   specialtyIds: string[];
+  businessType?: string;
+  organizationName?: string;
+  taxId?: string;
 }
 
 export interface EquipmentRequest {
