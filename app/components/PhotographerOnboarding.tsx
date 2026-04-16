@@ -78,6 +78,9 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
   // ── Shared state across slides ──
   const [address, setAddress] = useState('');
   const [about, setAbout] = useState('');
+  const [businessType, setBusinessType] = useState<'Freelancer' | 'Registered Company'>('Freelancer');
+  const [companyName, setCompanyName] = useState('');
+  const [tin, setTin] = useState('');
   const [selectedSpecialtyIds, setSelectedSpecialtyIds] = useState<string[]>([]);
   const [slideError, setSlideError] = useState('');
 
@@ -160,12 +163,18 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
 
   const handleLocationNext = () => {
     if (!address.trim()) { setSlideError('Please enter your working area/location'); return; }
+    if (businessType === 'Registered Company') {
+      if (!companyName.trim()) { setSlideError('Please enter your company name'); return; }
+      if (!tin.trim()) { setSlideError('Please enter your TIN number'); return; }
+    }
     setSlideError('');
     dispatch({ type: 'SET_SLIDE', slide: 1 });
     // Save in background (best-effort)
     updateImportantDetails({
       firstName, lastName, phone, about: about.trim(), address: address.trim(),
       specialtyIds: [],
+      businessType,
+      ...(businessType === 'Registered Company' ? { organizationName: companyName.trim(), taxId: tin.trim() } : {}),
     }).catch(() => {});
   };
 
@@ -307,6 +316,44 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
                     <label style={{ display: 'block', color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, marginBottom: 6 }}>About You</label>
                     <textarea value={about} onChange={e => setAbout(e.target.value)} placeholder="Tell clients about your experience and style..." rows={3} style={{ ...inputStyle, resize: 'vertical' as const }} />
                   </div>
+
+                  {/* Business Type */}
+                  <div>
+                    <label style={{ display: 'block', color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Business Type *</label>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      {(['Freelancer', 'Registered Company'] as const).map(type => {
+                        const sel = businessType === type;
+                        return (
+                          <button key={type} type="button" onClick={() => setBusinessType(type)} style={{
+                            flex: 1, padding: '10px 8px', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                            background: sel ? `linear-gradient(135deg, ${ACCENT}, ${ACCENT_DARK})` : '#f9fafb',
+                            border: sel ? 'none' : `1px solid ${INPUT_BORDER}`, color: sel ? '#fff' : TEXT_SECONDARY,
+                            transition: 'all 0.2s',
+                          }}>
+                            {type === 'Freelancer' ? (
+                              <><i className="bi bi-person" style={{ marginRight: 6 }}></i>{type}</>
+                            ) : (
+                              <><i className="bi bi-building" style={{ marginRight: 6 }}></i>{type}</>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {businessType === 'Registered Company' && (
+                    <>
+                      <div>
+                        <label style={{ display: 'block', color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Company Name *</label>
+                        <input type="text" value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="e.g. Studio Kigali Ltd" style={inputStyle} />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, marginBottom: 6 }}>TIN (Tax Identification Number) *</label>
+                        <input type="text" value={tin} onChange={e => setTin(e.target.value)} placeholder="e.g. 123456789" style={inputStyle} />
+                      </div>
+                    </>
+                  )}
+
                   <button onClick={handleLocationNext} disabled={state.isSubmitting} style={{ ...btnPrimary, marginTop: 8, opacity: state.isSubmitting ? 0.6 : 1 }}>
                     {state.isSubmitting ? 'Saving...' : <>Continue <i className="bi bi-arrow-right"></i></>}
                   </button>
