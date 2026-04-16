@@ -1075,12 +1075,12 @@ const App = () => {
                 };
               });
 
-              // Remove optimistic "You" messages that now have a matching API message
+              // Remove optimistic messages that now have a matching API message.
+              // Check !m.apiMessageId (locally created) instead of !m.delivered,
+              // because the send callback marks optimistic msgs as delivered before the poll runs.
               const apiTexts = new Set(newApiMessages.map(m => String(m.message || m.content || '')));
               const merged = currentMessages.filter(m => {
-                if (!m.delivered && apiTexts.has(m.text)) {
-                  return false; // remove optimistic duplicate
-                }
+                if (!m.apiMessageId && apiTexts.has(m.text)) return false;
                 return true;
               });
 
@@ -1452,9 +1452,8 @@ const App = () => {
   const isEntryFeeStream = (event: EventStream) => getStreamType(event) === 'entry_fee';
   const isInviteTokenStream = (event: EventStream) => getStreamType(event) === 'invite_token';
 
-  // All invite_token/client streams are giftable — paid (entry_fee) streams are not
-  const isEventGiftable = (event: EventStream) =>
-    !isEntryFeeStream(event) && isInviteTokenStream(event);
+  // All live streams are giftable — both paid (entry_fee) and free (invite_token) events
+  const isEventGiftable = (_event: EventStream) => true;
 
   // Check if current main event is giftable (for backward compatibility)
   const isGiftableEvent = isEventGiftable(mainEvent);
@@ -1462,7 +1461,9 @@ const App = () => {
   // Open gift modal for a specific event - now shows donation prompt first
   const openGiftModal = (event: EventStream) => {
     setGiftTargetEvent(event);
-    setShowDonationPrompt(true);
+    setIncludeDonation(false);
+    setDonationAmount("");
+    setShowGiftModal(true);
   };
 
   // Handle donation prompt responses
@@ -1566,14 +1567,31 @@ const App = () => {
           ...(isCard ? { redirectUrl } : {}),
         });
       } else if (isAnonymousViewer && anonymousViewerId) {
-        // Anonymous viewer — use public anonymous payment endpoint
-        response = await initiateAnonymousStreamingPayment(targetEvent.id, {
-          viewerId: anonymousViewerId,
-          phone: isCard ? undefined : paymentPhone,
-          telecomProvider: isCard ? undefined : providerMap[selectedPaymentMethod!],
-          paymentMethod: paymentMethodType,
-          ...(isCard ? { redirectUrl } : {}),
+        // Anonymous viewer — use public gift endpoint (works for both entry_fee and invite_token)
+        const fingerprint = await getDeviceId();
+        const chatBase = typeof window !== 'undefined' && process.env.NODE_ENV === 'production'
+          ? '/api/proxy' : (process.env.NEXT_PUBLIC_API_URL || 'https://backend.connekyt.com');
+        const giftRes = await fetch(`${chatBase}/api/remote/public/anonymous-viewer/${targetEvent.id}/gift`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            viewerId: anonymousViewerId,
+            deviceFingerprint: fingerprint,
+            amount: parseInt(giftAmount),
+            currencyId,
+            ...(isCard ? {} : { phone: paymentPhone, telecomProvider: providerMap[selectedPaymentMethod!] }),
+            paymentMethod: paymentMethodType,
+            ...(isCard ? { redirectUrl } : {}),
+            ...(giftMessage.trim() ? { giftMessage: giftMessage.trim() } : {}),
+          }),
         });
+        if (giftRes.ok) {
+          const json = await giftRes.json();
+          response = { success: json.action === 1, data: json.data, error: json.message };
+        } else {
+          const json = await giftRes.json().catch(() => ({}));
+          response = { success: false, error: json.message || 'Failed to initiate gift payment' };
+        }
       }
 
       if (!response?.success || !response?.data) {
@@ -1614,7 +1632,24 @@ const App = () => {
       );
     } catch (err) {
       const raw = err instanceof Error ? err.message : '';
-      setGiftError(raw || 'Could not initiate payment. Please try again.');
+      const lower = raw.toLowerCase();
+      let msg: string;
+      if (lower.includes('minimum amount')) {
+        msg = 'The minimum gift amount is 100 RWF. Please enter a higher amount.';
+      } else if (lower.includes('maximum amount') || lower.includes('exceeds')) {
+        msg = 'The gift amount exceeds the allowed limit. Please enter a smaller amount.';
+      } else if (lower.includes('insufficient') || lower.includes('balance')) {
+        msg = 'Insufficient balance. Please check your account and try again.';
+      } else if (lower.includes('network') || lower.includes('fetch') || lower.includes('timeout')) {
+        msg = 'Unable to connect. Please check your internet connection and try again.';
+      } else if (lower.includes('device') || lower.includes('fingerprint')) {
+        msg = 'Device verification failed. Please refresh the page and try again.';
+      } else if (lower.includes('viewer not found') || lower.includes('not found')) {
+        msg = 'Your session has expired. Please refresh the page and try again.';
+      } else {
+        msg = 'Could not initiate payment. Please try again or choose a different payment method.';
+      }
+      setGiftError(msg);
       setGiftStep('failed');
     } finally {
       setGiftLoading(false);
@@ -3896,6 +3931,38 @@ const App = () => {
           .mobile-only-float {
             display: flex !important;
           }
+          /* Gift button: horizontal row on mobile */
+          .gift-btn-main {
+            flex-direction: row !important;
+            min-height: auto !important;
+            min-width: auto !important;
+            padding: 10px 20px !important;
+            gap: 8px !important;
+            font-size: 13px !important;
+          }
+          .gift-btn-main i {
+            font-size: 18px !important;
+          }
+          /* Compact action buttons on mobile */
+          .stream-action-btn {
+            padding: 6px 12px !important;
+            font-size: 11px !important;
+            border-radius: 10px !important;
+            min-height: 32px !important;
+          }
+          /* Hide Stream ID on mobile — not useful for viewers */
+          .desktop-only-stat {
+            display: none !important;
+          }
+          /* Video section: remove side padding on mobile for full-width player */
+          .video-section {
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+            padding-top: 0 !important;
+          }
+          .video-player-container {
+            border-radius: 0 !important;
+          }
         }
 
         /* Desktop-specific styles (maintain unchanged) */
@@ -3963,7 +4030,8 @@ const App = () => {
         /* Modal responsive improvements */
         .modal-content,
         .add-event-modal,
-        .participants-modal {
+        .participants-modal,
+        .gift-modal {
           max-width: 90vw !important;
           max-height: 90vh !important;
           overflow-y: auto !important;
@@ -3976,16 +4044,21 @@ const App = () => {
         @media (max-width: 640px) {
           .modal-content,
           .add-event-modal,
-          .rating-modal {
-            width: 95vw !important;
-            max-width: 95vw !important;
-            margin: 16px !important;
+          .rating-modal,
+          .gift-modal {
+            width: calc(100vw - 24px) !important;
+            max-width: calc(100vw - 24px) !important;
+            margin: 12px !important;
+            padding: 16px !important;
+            padding-top: 40px !important;
+            border-radius: 14px !important;
           }
 
           .modal-content h2,
           .add-event-modal h2,
-          .rating-modal h2 {
-            font-size: clamp(18px, 5vw, 22px) !important;
+          .rating-modal h2,
+          .gift-modal h2 {
+            font-size: clamp(16px, 5vw, 20px) !important;
           }
 
           .modal-content input,
@@ -3993,13 +4066,26 @@ const App = () => {
           .add-event-modal input,
           .add-event-modal textarea,
           .rating-modal input,
-          .rating-modal textarea {
+          .rating-modal textarea,
+          .gift-modal input,
+          .gift-modal textarea {
             font-size: 16px !important; /* Prevents iOS zoom on focus */
           }
 
           .participants-modal {
-            width: calc(100vw - 32px) !important;
-            max-width: calc(100vw - 32px) !important;
+            width: calc(100vw - 24px) !important;
+            max-width: calc(100vw - 24px) !important;
+          }
+
+          .auth-stream-modal {
+            width: calc(100vw - 24px) !important;
+            max-width: calc(100vw - 24px) !important;
+            padding: 20px 16px !important;
+            border-radius: 14px !important;
+          }
+
+          .auth-stream-modal input {
+            font-size: 16px !important;
           }
         }
 
@@ -4007,15 +4093,17 @@ const App = () => {
         @supports (padding: env(safe-area-inset-bottom)) {
           .add-event-modal,
           .rating-modal,
-          .participants-modal {
-            padding-bottom: calc(clamp(20px, 5vw, 32px) + env(safe-area-inset-bottom)) !important;
+          .participants-modal,
+          .gift-modal {
+            padding-bottom: calc(16px + env(safe-area-inset-bottom)) !important;
           }
 
           @media (max-width: 768px) {
             .modal-content,
             .add-event-modal,
             .rating-modal,
-            .participants-modal {
+            .participants-modal,
+            .gift-modal {
               margin-bottom: env(safe-area-inset-bottom) !important;
             }
 
@@ -4641,10 +4729,6 @@ const App = () => {
                     <EmojiIcon />
                   </button>
 
-                  {/* Participants */}
-                  <button className="vjs-btn vjs-mobile-hidden" onClick={() => setShowParticipants(!showParticipants)} title="View participants">
-                    <PeopleIcon />
-                  </button>
 
                   {/* Right group: Settings + Fullscreen */}
                   <div className="vjs-buttons-row--right">
@@ -5123,17 +5207,18 @@ const App = () => {
             {/* Send Gift Button - Only visible for giftable ceremonies when there's only one event */}
             {isGiftableEvent && events.length === 1 && (
               <div style={{
-                padding: '12px 0',
+                padding: '8px 0',
                 display: 'flex',
                 justifyContent: 'center'
               }}>
                 <button
                   onClick={() => openGiftModal(mainEvent)}
+                  className="gift-btn-main"
                   style={{
                     background: 'linear-gradient(135deg, #03969c 0%, #026d72 100%)',
                     border: 'none',
                     borderRadius: '12px',
-                    padding: '16px 28px',
+                    padding: '12px 28px',
                     color: '#fff',
                     fontSize: '14px',
                     fontWeight: '600',
@@ -5142,11 +5227,11 @@ const App = () => {
                     flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: '10px',
+                    gap: '6px',
                     transition: 'all 0.3s ease',
                     boxShadow: '0 4px 15px rgba(3, 150, 156, 0.3)',
                     minWidth: '130px',
-                    minHeight: '120px'
+                    minHeight: '90px'
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.transform = 'scale(1.02)';
@@ -5470,6 +5555,7 @@ const App = () => {
                   flexWrap: 'wrap'
                 }}>
                   <button
+                    className="stream-action-btn"
                     onClick={() => { if (!userHasRated) setShowRatingModal(true); }}
                     disabled={userHasRated}
                     style={{
@@ -5499,6 +5585,7 @@ const App = () => {
                   {/* Add Event Button */}
                   {events.length < 3 && (
                     <button
+                      className="stream-action-btn"
                       onClick={() => setShowAddEventModal(true)}
                       style={{
                         backgroundColor: 'transparent',
@@ -5526,6 +5613,7 @@ const App = () => {
 
                   {/* Leave Stream Button */}
                   <button
+                    className="stream-action-btn"
                     style={{
                       backgroundColor: '#e61220',
                       color: '#fff',
@@ -5588,7 +5676,7 @@ const App = () => {
                   <i className="bi bi-calendar3" style={{ fontSize: 'clamp(12px, 3vw, 14px)' }}></i>
                   {currentTime}
                 </div>
-                <div className="stat-item" style={{
+                <div className="stat-item desktop-only-stat" style={{
                   fontSize: 'clamp(11px, 2.8vw, 13px)',
                   color: '#adadb8',
                   display: 'flex',
@@ -6795,12 +6883,12 @@ const App = () => {
             left: 0,
             right: 0,
             bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            backgroundColor: 'rgba(8,58,133,0.4)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             zIndex: 2000,
-            backdropFilter: 'blur(4px)',
+            backdropFilter: 'blur(8px)',
             padding: '16px',
             overflowY: 'auto'
           }}
@@ -6811,7 +6899,7 @@ const App = () => {
           }}
         >
           <div className="gift-modal" style={{
-            backgroundColor: '#18181b',
+            backgroundColor: '#ffffff',
             borderRadius: '20px',
             padding: 'clamp(20px, 5vw, 32px)',
             paddingTop: 'clamp(40px, 8vw, 50px)',
@@ -6819,8 +6907,8 @@ const App = () => {
             width: '100%',
             maxHeight: '90vh',
             overflowY: 'auto',
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
+            boxShadow: '0 32px 80px rgba(0,0,0,0.2)',
+            border: '1px solid rgba(8,58,133,0.06)',
             position: 'relative',
             margin: 'auto',
             pointerEvents: 'auto'
@@ -6832,13 +6920,13 @@ const App = () => {
                 position: 'absolute',
                 top: 'clamp(12px, 3vw, 16px)',
                 right: 'clamp(12px, 3vw, 16px)',
-                background: 'transparent',
+                background: 'rgba(8,58,133,0.04)',
                 border: 'none',
-                color: '#adadb8',
+                color: '#6b7280',
                 cursor: 'pointer',
                 fontSize: 'clamp(18px, 4vw, 20px)',
                 padding: '8px',
-                transition: 'color 0.2s',
+                transition: 'all 0.2s',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -6847,12 +6935,12 @@ const App = () => {
                 borderRadius: '50%'
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.color = '#efeff1';
-                e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+                e.currentTarget.style.color = '#374151';
+                e.currentTarget.style.backgroundColor = 'rgba(8,58,133,0.08)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.color = '#adadb8';
-                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.color = '#6b7280';
+                e.currentTarget.style.backgroundColor = 'rgba(8,58,133,0.04)';
               }}
             >
               <i className="bi bi-x-lg"></i>
@@ -6862,8 +6950,8 @@ const App = () => {
             {giftStep === 'form' && (<>
             <h2 style={{
               fontSize: 'clamp(18px, 5vw, 24px)',
-              fontWeight: '600',
-              color: '#efeff1',
+              fontWeight: '700',
+              color: '#083A85',
               marginBottom: '8px',
               marginTop: 0,
               display: 'flex',
@@ -6872,12 +6960,12 @@ const App = () => {
               flexWrap: 'wrap',
               lineHeight: '1.3'
             }}>
-              <i className="bi bi-gift-fill" style={{ color: '#03969c', fontSize: 'clamp(20px, 5vw, 28px)' }}></i>
+              <i className="bi bi-gift-fill" style={{ color: '#083A85', fontSize: 'clamp(20px, 5vw, 28px)' }}></i>
               Send a Gift
             </h2>
             <p style={{
               fontSize: 'clamp(12px, 3vw, 14px)',
-              color: '#adadb8',
+              color: '#6b7280',
               marginBottom: 'clamp(16px, 4vw, 24px)',
               lineHeight: '1.5'
             }}>Show your appreciation to {giftTargetEvent?.photographer || mainEvent.photographer}</p>
@@ -6964,7 +7052,7 @@ const App = () => {
                 display: 'block',
                 fontSize: '13px',
                 fontWeight: '600',
-                color: '#efeff1',
+                color: '#374151',
                 marginBottom: '8px'
               }}>Gift Amount ({mainEvent?.streamFeeCurrencyAbbreviation || 'RWF'})</label>
               <input
@@ -6975,17 +7063,17 @@ const App = () => {
                 style={{
                   width: '100%',
                   padding: '12px 16px',
-                  backgroundColor: '#27272a',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  backgroundColor: '#f9fafb',
+                  border: '1.5px solid rgba(8,58,133,0.15)',
                   borderRadius: '12px',
-                  color: '#efeff1',
+                  color: '#0f172a',
                   fontSize: '14px',
                   outline: 'none',
                   transition: 'border-color 0.2s',
                   boxSizing: 'border-box'
                 }}
-                onFocus={(e) => e.currentTarget.style.borderColor = '#03969c'}
-                onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'}
+                onFocus={(e) => { e.currentTarget.style.borderColor = '#083A85'; e.currentTarget.style.backgroundColor = '#fff'; }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(8,58,133,0.15)'; e.currentTarget.style.backgroundColor = '#f9fafb'; }}
               />
             </div>
 
@@ -7004,11 +7092,11 @@ const App = () => {
                     flex: '1 1 calc(25% - 6px)',
                     minWidth: '70px',
                     padding: '10px 12px',
-                    backgroundColor: giftAmount === amount ? '#03969c' : '#27272a',
-                    border: '1px solid',
-                    borderColor: giftAmount === amount ? '#03969c' : 'rgba(255, 255, 255, 0.1)',
+                    backgroundColor: giftAmount === amount ? '#083A85' : '#f9fafb',
+                    border: '1.5px solid',
+                    borderColor: giftAmount === amount ? '#083A85' : 'rgba(8,58,133,0.15)',
                     borderRadius: '10px',
-                    color: '#efeff1',
+                    color: giftAmount === amount ? '#fff' : '#374151',
                     fontSize: '12px',
                     fontWeight: '600',
                     cursor: 'pointer',
@@ -7016,12 +7104,12 @@ const App = () => {
                   }}
                   onMouseEnter={(e) => {
                     if (giftAmount !== amount) {
-                      e.currentTarget.style.borderColor = '#03969c';
+                      e.currentTarget.style.borderColor = '#083A85';
                     }
                   }}
                   onMouseLeave={(e) => {
                     if (giftAmount !== amount) {
-                      e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                      e.currentTarget.style.borderColor = 'rgba(8,58,133,0.15)';
                     }
                   }}
                 >
@@ -7036,7 +7124,7 @@ const App = () => {
                 display: 'block',
                 fontSize: '13px',
                 fontWeight: '600',
-                color: '#efeff1',
+                color: '#374151',
                 marginBottom: '12px'
               }}>Select Payment Method</label>
               <div style={{
@@ -7044,7 +7132,9 @@ const App = () => {
                 flexDirection: 'column',
                 gap: '10px'
               }}>
-                {paymentMethods.map((method) => (
+                {paymentMethods.map((method) => {
+                  const isSelected = selectedPaymentMethod === method.id;
+                  return (
                   <button
                     key={method.id}
                     onClick={() => setSelectedPaymentMethod(method.id)}
@@ -7053,9 +7143,9 @@ const App = () => {
                       alignItems: 'center',
                       gap: '12px',
                       padding: '12px 16px',
-                      backgroundColor: selectedPaymentMethod === method.id ? 'rgba(3, 150, 156, 0.15)' : '#27272a',
+                      backgroundColor: isSelected ? 'rgba(8,58,133,0.06)' : '#f9fafb',
                       border: '2px solid',
-                      borderColor: selectedPaymentMethod === method.id ? '#03969c' : 'rgba(255, 255, 255, 0.1)',
+                      borderColor: isSelected ? '#083A85' : 'rgba(8,58,133,0.12)',
                       borderRadius: '12px',
                       cursor: 'pointer',
                       transition: 'all 0.2s',
@@ -7063,13 +7153,13 @@ const App = () => {
                       textAlign: 'left'
                     }}
                     onMouseEnter={(e) => {
-                      if (selectedPaymentMethod !== method.id) {
-                        e.currentTarget.style.borderColor = 'rgba(3, 150, 156, 0.5)';
+                      if (!isSelected) {
+                        e.currentTarget.style.borderColor = 'rgba(8,58,133,0.4)';
                       }
                     }}
                     onMouseLeave={(e) => {
-                      if (selectedPaymentMethod !== method.id) {
-                        e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                      if (!isSelected) {
+                        e.currentTarget.style.borderColor = 'rgba(8,58,133,0.12)';
                       }
                     }}
                   >
@@ -7078,7 +7168,12 @@ const App = () => {
                       height: '44px',
                       borderRadius: '10px',
                       overflow: 'hidden',
-                      flexShrink: 0
+                      flexShrink: 0,
+                      backgroundColor: '#fff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      border: '1px solid rgba(8,58,133,0.08)',
                     }}>
                       <img
                         src={method.image}
@@ -7091,30 +7186,41 @@ const App = () => {
                       />
                     </div>
                     <span style={{
-                      color: '#efeff1',
+                      color: isSelected ? '#083A85' : '#374151',
                       fontSize: '14px',
-                      fontWeight: '500'
+                      fontWeight: isSelected ? '700' : '500'
                     }}>{method.name}</span>
-                    {selectedPaymentMethod === method.id && (
+                    {isSelected && (
                       <i className="bi bi-check-circle-fill" style={{
                         marginLeft: 'auto',
-                        color: '#03969c',
+                        color: '#083A85',
                         fontSize: '20px'
                       }}></i>
                     )}
                   </button>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
             {/* Payment Details Input - MTN/Airtel Mobile Money */}
+            {/* Amount reminder — shown for all methods when no amount is entered */}
+            {selectedPaymentMethod && (!giftAmount || parseInt(giftAmount) <= 0) && (
+              <div style={{ padding: '12px 16px', marginBottom: '20px', backgroundColor: 'rgba(8,58,133,0.06)', border: '1.5px solid rgba(8,58,133,0.2)', borderRadius: '12px' }}>
+                <p style={{ fontSize: '13px', color: '#083A85', margin: 0 }}>
+                  <i className="bi bi-info-circle-fill" style={{ marginRight: 8 }}></i>
+                  Please select or enter a gift amount above to continue.
+                </p>
+              </div>
+            )}
+
             {(selectedPaymentMethod === 'mtn' || selectedPaymentMethod === 'airtel') && (
               <div style={{ marginBottom: '20px' }}>
                 <label style={{
                   display: 'block',
                   fontSize: '13px',
                   fontWeight: '600',
-                  color: '#efeff1',
+                  color: '#374151',
                   marginBottom: '8px'
                 }}>Your Phone Number *</label>
                 <input
@@ -7125,32 +7231,35 @@ const App = () => {
                   style={{
                     width: '100%',
                     padding: '12px 16px',
-                    backgroundColor: '#27272a',
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    backgroundColor: '#f9fafb',
+                    border: '1.5px solid rgba(8,58,133,0.15)',
                     borderRadius: '12px',
-                    color: '#efeff1',
+                    color: '#0f172a',
                     fontSize: '14px',
                     outline: 'none',
-                    transition: 'border-color 0.2s',
+                    transition: 'all 0.2s',
                     boxSizing: 'border-box'
                   }}
-                  onFocus={(e) => e.currentTarget.style.borderColor = '#03969c'}
-                  onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'}
+                  onFocus={(e) => { e.currentTarget.style.borderColor = '#083A85'; e.currentTarget.style.backgroundColor = '#fff'; }}
+                  onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(8,58,133,0.15)'; e.currentTarget.style.backgroundColor = '#f9fafb'; }}
                 />
                 <p style={{
                   fontSize: '11px',
-                  color: '#71717a',
+                  color: '#6b7280',
                   marginTop: '6px',
                   marginBottom: 0
                 }}>You will receive a payment confirmation SMS on this number</p>
               </div>
             )}
 
-            {/* Card payments are handled via XentriPay redirect — no card fields needed */}
-            {selectedPaymentMethod === 'card' && (
-              <p style={{ fontSize: '13px', color: '#71717a', marginBottom: '20px' }}>
-                You will be redirected to a secure payment page to enter your card details.
-              </p>
+            {/* Card redirect info */}
+            {selectedPaymentMethod === 'card' && giftAmount && parseInt(giftAmount) > 0 && (
+              <div style={{ padding: '12px 16px', marginBottom: '20px', backgroundColor: 'rgba(8,58,133,0.06)', border: '1.5px solid rgba(8,58,133,0.2)', borderRadius: '12px' }}>
+                <p style={{ fontSize: '13px', color: '#083A85', margin: 0 }}>
+                  <i className="bi bi-info-circle-fill" style={{ marginRight: 8 }}></i>
+                  Click &quot;Proceed to Pay&quot; below to open the secure card payment page.
+                </p>
+              </div>
             )}
 
             {/* Gift Message */}
@@ -7159,7 +7268,7 @@ const App = () => {
                 display: 'block',
                 fontSize: '13px',
                 fontWeight: '600',
-                color: '#efeff1',
+                color: '#374151',
                 marginBottom: '8px'
               }}>Add a Message (Optional)</label>
               <textarea
@@ -7170,19 +7279,19 @@ const App = () => {
                 style={{
                   width: '100%',
                   padding: '12px 16px',
-                  backgroundColor: '#27272a',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  backgroundColor: '#f9fafb',
+                  border: '1.5px solid rgba(8,58,133,0.15)',
                   borderRadius: '12px',
-                  color: '#efeff1',
+                  color: '#0f172a',
                   fontSize: '14px',
                   outline: 'none',
-                  transition: 'border-color 0.2s',
+                  transition: 'all 0.2s',
                   resize: 'none',
                   boxSizing: 'border-box',
                   fontFamily: 'inherit'
                 }}
-                onFocus={(e) => e.currentTarget.style.borderColor = '#03969c'}
-                onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'}
+                onFocus={(e) => { e.currentTarget.style.borderColor = '#083A85'; e.currentTarget.style.backgroundColor = '#fff'; }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(8,58,133,0.15)'; e.currentTarget.style.backgroundColor = '#f9fafb'; }}
               />
             </div>
 
@@ -7191,10 +7300,10 @@ const App = () => {
               <div style={{
                 padding: '10px 14px',
                 marginBottom: '12px',
-                backgroundColor: 'rgba(239, 68, 68, 0.15)',
-                border: '1px solid #EF4444',
+                backgroundColor: 'rgba(239, 68, 68, 0.08)',
+                border: '1px solid rgba(239,68,68,0.25)',
                 borderRadius: '10px',
-                color: '#EF4444',
+                color: '#dc2626',
                 fontSize: '13px',
               }}>
                 {giftError}
@@ -7206,21 +7315,21 @@ const App = () => {
               <div style={{
                 marginBottom: '20px',
                 padding: '16px',
-                backgroundColor: '#27272a',
+                backgroundColor: '#f9fafb',
                 borderRadius: '12px',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
+                border: '1.5px solid rgba(8,58,133,0.1)',
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '14px' }}>
-                  <span style={{ color: '#9ca3af' }}>Gift</span>
-                  <span style={{ color: '#efeff1', fontWeight: '500' }}>{(mainEvent?.streamFeeCurrencyAbbreviation || 'RWF')} {parseInt(giftAmount).toLocaleString()}</span>
+                  <span style={{ color: '#6b7280' }}>Gift</span>
+                  <span style={{ color: '#0f172a', fontWeight: '500' }}>{(mainEvent?.streamFeeCurrencyAbbreviation || 'RWF')} {parseInt(giftAmount).toLocaleString()}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', fontSize: '14px' }}>
-                  <span style={{ color: '#9ca3af' }}>Donation</span>
-                  <span style={{ color: '#f59e0b', fontWeight: '500' }}>{(mainEvent?.streamFeeCurrencyAbbreviation || 'RWF')} {parseInt(donationAmount).toLocaleString()}</span>
+                  <span style={{ color: '#6b7280' }}>Donation</span>
+                  <span style={{ color: '#d97706', fontWeight: '500' }}>{(mainEvent?.streamFeeCurrencyAbbreviation || 'RWF')} {parseInt(donationAmount).toLocaleString()}</span>
                 </div>
-                <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.15)', paddingTop: '10px', display: 'flex', justifyContent: 'space-between', fontSize: '15px' }}>
-                  <span style={{ color: '#efeff1', fontWeight: '700' }}>Total</span>
-                  <span style={{ color: '#03969c', fontWeight: '700' }}>{(mainEvent?.streamFeeCurrencyAbbreviation || 'RWF')} {(parseInt(giftAmount) + parseInt(donationAmount)).toLocaleString()}</span>
+                <div style={{ borderTop: '1.5px solid rgba(8,58,133,0.1)', paddingTop: '10px', display: 'flex', justifyContent: 'space-between', fontSize: '15px' }}>
+                  <span style={{ color: '#0f172a', fontWeight: '700' }}>Total</span>
+                  <span style={{ color: '#083A85', fontWeight: '700' }}>{(mainEvent?.streamFeeCurrencyAbbreviation || 'RWF')} {(parseInt(giftAmount) + parseInt(donationAmount)).toLocaleString()}</span>
                 </div>
               </div>
             )}
@@ -7233,42 +7342,41 @@ const App = () => {
                 width: '100%',
                 padding: '14px 24px',
                 background: (!isPaymentDetailsValid() || giftLoading)
-                  ? '#3f3f46'
-                  : 'linear-gradient(135deg, #03969c 0%, #026d72 100%)',
-                border: 'none',
+                  ? '#e5e7eb'
+                  : '#083A85',
+                border: (!isPaymentDetailsValid() || giftLoading) ? 'none' : '1px solid #3b82f6',
                 borderRadius: '12px',
-                color: (!isPaymentDetailsValid() || giftLoading) ? '#71717a' : '#fff',
+                color: (!isPaymentDetailsValid() || giftLoading) ? '#9ca3af' : '#fff',
                 fontSize: '15px',
-                fontWeight: '600',
+                fontWeight: '700',
                 cursor: (!isPaymentDetailsValid() || giftLoading) ? 'not-allowed' : 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '8px',
                 transition: 'all 0.3s ease',
-                boxShadow: (!isPaymentDetailsValid() || giftLoading)
-                  ? 'none'
-                  : '0 4px 15px rgba(3, 150, 156, 0.3)'
+                boxShadow: 'none'
               }}
               onMouseEnter={(e) => {
                 if (isPaymentDetailsValid() && !giftLoading) {
-                  e.currentTarget.style.transform = 'scale(1.02)';
-                  e.currentTarget.style.boxShadow = '0 6px 20px rgba(3, 150, 156, 0.4)';
+                  e.currentTarget.style.backgroundColor = '#062d6b';
                 }
               }}
               onMouseLeave={(e) => {
                 if (isPaymentDetailsValid() && !giftLoading) {
-                  e.currentTarget.style.transform = 'scale(1)';
-                  e.currentTarget.style.boxShadow = '0 4px 15px rgba(3, 150, 156, 0.3)';
+                  e.currentTarget.style.backgroundColor = '#083A85';
                 }
               }}
             >
-              <i className="bi bi-gift-fill" style={{ fontSize: '18px' }}></i>
+              <i className={selectedPaymentMethod === 'card' ? 'bi bi-credit-card-fill' : 'bi bi-gift-fill'} style={{ fontSize: '18px' }}></i>
               {giftLoading ? 'Processing...' : (() => {
                 const currency = mainEvent?.streamFeeCurrencyAbbreviation || 'RWF';
                 const gift = parseInt(giftAmount) || 0;
                 const donation = parseInt(donationAmount) || 0;
                 const total = gift + donation;
+                if (selectedPaymentMethod === 'card') {
+                  return total > 0 ? `Proceed to Pay (${currency} ${total.toLocaleString()})` : 'Proceed to Pay';
+                }
                 return total > 0 ? `Send Gift (${currency} ${total.toLocaleString()})` : 'Send Gift';
               })()}
             </button>
@@ -7281,35 +7389,35 @@ const App = () => {
                   width: '70px',
                   height: '70px',
                   margin: '0 auto 20px',
-                  border: '4px solid #333',
-                  borderTopColor: '#03969c',
+                  border: '4px solid #e5e7eb',
+                  borderTopColor: '#083A85',
                   borderRadius: '50%',
                   animation: 'spin 1s linear infinite',
                 }} />
-                <h3 style={{ fontSize: '20px', fontWeight: 700, color: '#efeff1', marginBottom: '10px' }}>
+                <h3 style={{ fontSize: '20px', fontWeight: 700, color: '#083A85', marginBottom: '10px' }}>
                   {selectedPaymentMethod === 'card' ? 'Complete Payment' : 'Payment Initiated'}
                 </h3>
                 {selectedPaymentMethod === 'card' ? (
                   <>
-                    <p style={{ fontSize: '14px', color: '#9ca3af', marginBottom: '14px', lineHeight: '1.5' }}>
+                    <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '14px', lineHeight: '1.5' }}>
                       A secure payment page has been opened in a new tab. Please complete the payment there.
                     </p>
                     {giftPaymentUrl && (
                       <a href={giftPaymentUrl} target="_blank" rel="noopener noreferrer" style={{
-                        display: 'inline-block', padding: '10px 20px', backgroundColor: '#03969c',
+                        display: 'inline-block', padding: '10px 20px', backgroundColor: '#083A85',
                         color: '#fff', borderRadius: '10px', textDecoration: 'none', fontSize: '14px', fontWeight: 500, marginBottom: '14px',
                       }}>Open Payment Page</a>
                     )}
                   </>
                 ) : (
-                  <p style={{ fontSize: '14px', color: '#9ca3af', marginBottom: '14px', lineHeight: '1.5' }}>
+                  <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '14px', lineHeight: '1.5' }}>
                     A payment prompt has been sent to your phone. Please check and confirm.
                   </p>
                 )}
-                <p style={{ fontSize: '12px', color: '#6b7280' }}>Waiting for confirmation...</p>
+                <p style={{ fontSize: '12px', color: '#9ca3af' }}>Waiting for confirmation...</p>
                 <button onClick={resetGiftModal} style={{
                   marginTop: '16px', padding: '10px 24px', backgroundColor: 'transparent',
-                  border: '1px solid #333', borderRadius: '10px', color: '#9ca3af', fontSize: '14px', cursor: 'pointer',
+                  border: '1px solid #e5e7eb', borderRadius: '10px', color: '#6b7280', fontSize: '14px', cursor: 'pointer',
                 }}>Cancel</button>
                 <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
               </div>
@@ -7320,7 +7428,7 @@ const App = () => {
               <div style={{ textAlign: 'center', padding: '30px 0' }}>
                 <div style={{
                   width: '70px', height: '70px', margin: '0 auto 20px',
-                  backgroundColor: 'rgba(34,197,94,0.15)', borderRadius: '50%',
+                  backgroundColor: 'rgba(34,197,94,0.1)', borderRadius: '50%',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>
                   <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="3">
@@ -7328,7 +7436,7 @@ const App = () => {
                   </svg>
                 </div>
                 <h3 style={{ fontSize: '20px', fontWeight: 700, color: '#16A34A', marginBottom: '8px' }}>Payment Successful!</h3>
-                <p style={{ fontSize: '14px', color: '#9ca3af', margin: 0 }}>
+                <p style={{ fontSize: '14px', color: '#6b7280', margin: 0 }}>
                   Your gift has been sent successfully.
                 </p>
               </div>
@@ -7339,7 +7447,7 @@ const App = () => {
               <div style={{ textAlign: 'center', padding: '30px 0' }}>
                 <div style={{
                   width: '70px', height: '70px', margin: '0 auto 20px',
-                  backgroundColor: 'rgba(239,68,68,0.15)', borderRadius: '50%',
+                  backgroundColor: 'rgba(239,68,68,0.08)', borderRadius: '50%',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>
                   <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="3">
@@ -7347,17 +7455,17 @@ const App = () => {
                   </svg>
                 </div>
                 <h3 style={{ fontSize: '20px', fontWeight: 700, color: '#EF4444', marginBottom: '8px' }}>Payment Failed</h3>
-                <p style={{ fontSize: '14px', color: '#9ca3af', marginBottom: '20px' }}>
+                <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '20px' }}>
                   {giftError || 'The payment could not be completed. Please try again.'}
                 </p>
                 <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
                   <button onClick={() => { setGiftStep('form'); setGiftError(null); }} style={{
-                    padding: '12px 24px', background: 'linear-gradient(135deg, #03969c 0%, #026d72 100%)',
+                    padding: '12px 24px', background: '#083A85',
                     border: 'none', borderRadius: '12px', color: '#fff', fontSize: '15px', fontWeight: 600, cursor: 'pointer',
                   }}>Try Again</button>
                   <button onClick={resetGiftModal} style={{
-                    padding: '12px 24px', backgroundColor: '#27272a', border: 'none',
-                    borderRadius: '12px', color: '#9ca3af', fontSize: '15px', fontWeight: 500, cursor: 'pointer',
+                    padding: '12px 24px', backgroundColor: '#f3f4f6', border: 'none',
+                    borderRadius: '12px', color: '#6b7280', fontSize: '15px', fontWeight: 500, cursor: 'pointer',
                   }}>Close</button>
                 </div>
               </div>
@@ -7425,7 +7533,7 @@ const App = () => {
       {/* ── VIEWER AUTH MODAL ── */}
       {showAuthModal && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '32px 16px', background: 'rgba(0,0,0,0.82)', backdropFilter: 'blur(6px)', overflowY: 'auto' }}>
-          <div style={{ width: '100%', maxWidth: 520, background: 'linear-gradient(145deg, #141418 0%, #1a1a24 100%)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 20, padding: '32px 28px', boxShadow: '0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(3,150,156,0.15)', position: 'relative', margin: 'auto' }}>
+          <div className="auth-stream-modal" style={{ width: '100%', maxWidth: 520, background: 'linear-gradient(145deg, #141418 0%, #1a1a24 100%)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 20, padding: '32px 28px', boxShadow: '0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(3,150,156,0.15)', position: 'relative', margin: 'auto' }}>
 
             {/* Close button */}
             <button onClick={() => setShowAuthModal(false)} style={{ position: 'absolute', top: 14, right: 14, width: 32, height: 32, borderRadius: '50%', background: 'rgba(255,255,255,0.07)', border: 'none', color: '#9ca3af', fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
