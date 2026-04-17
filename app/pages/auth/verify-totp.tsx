@@ -1,14 +1,17 @@
 'use client';
-import React, { useState, useRef, useEffect, Suspense } from 'react';
+import React, { useState, useRef, useEffect, useCallback, Suspense } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { verifyTotp } from '@/lib/APIs/auth/verify-totp/route';
 import { useToast } from '@/lib/notifications/ToastProvider';
 import { getRefreshToken } from '@/lib/api/client';
 import { useAuth } from '@/app/providers/AuthProvider';
+import PostLoginModal from '@/app/components/PostLoginModal';
+import { getDashboardUrlWithToken } from '@/lib/utils/dashboard-url';
 
 function VerifyTotpContent(): React.JSX.Element {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const { success: showSuccess, error: showError, warning: showWarning, isOnline } = useToast();
   const { login: loginUser } = useAuth();
 
@@ -16,8 +19,14 @@ function VerifyTotpContent(): React.JSX.Element {
   const [customerId] = useState(customerIdFromQuery || '');
   const [code, setCode] = useState(['', '', '', '', '', '']);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // PostLoginModal state
+  const [showPostLoginModal, setShowPostLoginModal] = useState(false);
+  const [loggedInUserName, setLoggedInUserName] = useState('');
+  const [loggedInUserType, setLoggedInUserType] = useState<string | undefined>(undefined);
+  const storedTokenRef = useRef<string>('');
+  const storedRefreshTokenRef = useRef<string>('');
 
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
@@ -27,7 +36,65 @@ function VerifyTotpContent(): React.JSX.Element {
     }
   }, [customerId]);
 
-  const isDisabled = code.some(digit => digit === '') || !customerId;
+  const doVerify = useCallback(async (totpCode: string) => {
+    if (!customerId || loading || showPostLoginModal) return;
+
+    if (!isOnline) {
+      showWarning('You are offline. Please check your internet connection.');
+      return;
+    }
+
+    setError('');
+    setLoading(true);
+
+    try {
+      const response = await verifyTotp({ customerId, code: totpCode });
+
+      if (response.success && response.data?.token) {
+        const data = response.data;
+        const token = data.token as string;
+        const customerType = data.customerType || '';
+        const userData = {
+          id: data.customerId || customerId,
+          firstName: data.firstName || '',
+          lastName: data.lastName || '',
+          email: data.email || '',
+          phone: data.phone || '',
+          customerId: data.customerId || customerId,
+          customerType,
+        };
+        loginUser(userData, token);
+
+        // Store for modal handlers
+        storedTokenRef.current = token;
+        storedRefreshTokenRef.current = getRefreshToken() || '';
+        setLoggedInUserName(userData.firstName || 'User');
+        setLoggedInUserType(customerType);
+
+        showSuccess('Verified successfully!');
+        setShowPostLoginModal(true);
+      } else {
+        const errorMessage = response.error || 'Invalid code. Please try again.';
+        setError(errorMessage);
+        showError(errorMessage);
+        setCode(['', '', '', '', '', '']);
+        inputRefs.current[0]?.focus();
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred. Please try again.';
+      setError(errorMessage);
+      showError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, [customerId, loading, showPostLoginModal, isOnline, showWarning, showError, showSuccess, loginUser]);
+
+  // Auto-submit when all 6 digits are filled
+  useEffect(() => {
+    if (code.every(d => d !== '') && !loading && !showPostLoginModal && customerId) {
+      doVerify(code.join(''));
+    }
+  }, [code]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleCodeChange = (index: number, value: string) => {
     if (value && !/^\d$/.test(value)) return;
@@ -66,83 +133,29 @@ function VerifyTotpContent(): React.JSX.Element {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-
-    if (!isOnline) {
-      showWarning('You are offline. Please check your internet connection.');
-      return;
-    }
-
-    if (!isDisabled) {
-      setLoading(true);
-      const totpCode = code.join('');
-
-      try {
-        const response = await verifyTotp({ customerId, code: totpCode });
-
-        if (response.success && response.data?.token) {
-          setSuccess(true);
-          const data = response.data;
-          const token = data.token as string;
-          const customerType = data.customerType || '';
-          const userData = {
-            id: data.customerId || customerId,
-            firstName: data.firstName || '',
-            lastName: data.lastName || '',
-            email: data.email || '',
-            phone: data.phone || '',
-            customerId: data.customerId || customerId,
-            customerType,
-          };
-          loginUser(userData, token);
-
-          showSuccess('Verified! Redirecting to dashboard...');
-          setTimeout(() => {
-            const dashboardBaseUrl = process.env.NEXT_PUBLIC_DASHBOARD_URL || '';
-            const refreshTkn = getRefreshToken();
-            const params = new URLSearchParams();
-            params.set('token', token);
-            if (refreshTkn) params.set('refreshToken', refreshTkn);
-            window.location.href = `${dashboardBaseUrl}/?${params.toString()}`;
-          }, 1500);
-        } else {
-          const errorMessage = response.error || 'Invalid code. Please try again.';
-          setError(errorMessage);
-          showError(errorMessage);
-          setCode(['', '', '', '', '', '']);
-          inputRefs.current[0]?.focus();
-        }
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'An error occurred. Please try again.';
-        setError(errorMessage);
-        showError(errorMessage);
-      } finally {
-        setLoading(false);
-      }
+    if (code.every(d => d !== '') && !loading && !showPostLoginModal && customerId) {
+      doVerify(code.join(''));
     }
   };
 
-  if (success) {
-    return (
-      <div className="h-screen overflow-hidden bg-gray-50 flex items-center justify-center px-3 py-3 sm:px-4 sm:py-4">
-        <div className="w-full max-w-md h-[90vh] max-h-[800px] bg-white rounded-xl sm:rounded-2xl md:rounded-3xl shadow-2xl overflow-hidden flex flex-col items-center justify-center">
-          <div style={{width: '100%', maxWidth: '420px', padding: '32px 36px'}}>
-            <div style={{display: 'flex', justifyContent: 'center', marginBottom: '16px'}}>
-              <div style={{ width: '56px', height: '56px', borderRadius: '50%', backgroundColor: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <i className="bi bi-check-circle" style={{ fontSize: '26px', color: '#ffffff' }}></i>
-              </div>
-            </div>
-            <h1 style={{ fontSize: '22px', fontWeight: '600', textAlign: 'center', color: '#000000', marginBottom: '6px', letterSpacing: '0.3px' }}>Verified Successfully!</h1>
-            <p style={{ fontSize: '14px', fontWeight: '500', color: '#000000', textAlign: 'center', marginBottom: '20px', lineHeight: '1.4', opacity: '0.7' }}>
-              Redirecting to your dashboard...
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // PostLoginModal handlers
+  const handleGoToDashboard = () => {
+    setShowPostLoginModal(false);
+    const dashboardUrl = getDashboardUrlWithToken(loggedInUserType, storedTokenRef.current || undefined, storedRefreshTokenRef.current || undefined);
+    if (dashboardUrl && storedTokenRef.current) {
+      window.open(dashboardUrl, '_blank');
+    } else {
+      window.open('/user/dashboard', '_blank');
+    }
+    router.push('/user/photographers');
+  };
+
+  const handleKeepExploring = () => {
+    setShowPostLoginModal(false);
+    router.push('/user/photographers');
+  };
 
   return (
     <div className="h-screen overflow-hidden bg-gray-50 flex items-center justify-center px-3 py-3 sm:px-4 sm:py-4">
@@ -194,6 +207,7 @@ function VerifyTotpContent(): React.JSX.Element {
                     onChange={(e) => handleCodeChange(index, e.target.value)}
                     onKeyDown={(e) => handleKeyDown(index, e)}
                     onPaste={handlePaste}
+                    disabled={loading}
                     style={{
                       width: '45px',
                       height: '45px',
@@ -204,7 +218,7 @@ function VerifyTotpContent(): React.JSX.Element {
                       borderRadius: '10px',
                       outline: 'none',
                       transition: 'all 0.3s',
-                      backgroundColor: '#ffffff',
+                      backgroundColor: loading ? '#f3f4f6' : '#ffffff',
                       color: '#000000',
                     }}
                     onFocus={(e) => { e.target.style.borderColor = '#083A85'; }}
@@ -214,26 +228,19 @@ function VerifyTotpContent(): React.JSX.Element {
               </div>
             </div>
 
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={isDisabled || loading}
-              style={{
-                width: '100%',
+            {/* Loading indicator (replaces button) */}
+            {loading && (
+              <div style={{
+                textAlign: 'center',
                 padding: '10px',
+                marginBottom: '16px',
+                color: '#083A85',
                 fontSize: '14px',
-                borderRadius: '14px',
                 fontWeight: '600',
-                transition: 'all 0.3s',
-                cursor: (isDisabled || loading) ? 'not-allowed' : 'pointer',
-                backgroundColor: (isDisabled || loading) ? '#d1d5db' : '#083A85',
-                color: (isDisabled || loading) ? '#9ca3af' : '#ffffff',
-                border: 'none',
-                marginBottom: '16px'
-              }}
-            >
-              {loading ? 'Verifying...' : 'Verify & Sign In'}
-            </button>
+              }}>
+                Verifying...
+              </div>
+            )}
 
             {/* Info text */}
             <div style={{
@@ -263,6 +270,14 @@ function VerifyTotpContent(): React.JSX.Element {
           </form>
         </div>
       </div>
+
+      <PostLoginModal
+        isOpen={showPostLoginModal}
+        userName={loggedInUserName}
+        customerType={loggedInUserType}
+        onKeepExploring={handleKeepExploring}
+        onGoToDashboard={handleGoToDashboard}
+      />
     </div>
   );
 }
