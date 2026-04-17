@@ -234,6 +234,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
         response = await initiateXentriPayment({
           declarationId,
           eventId,
+          ...(hasDonation ? { donationAmount } : {}),
           ...(isCard ? {} : { phone, telecomProvider: method.provider }),
           paymentMethod: paymentMethodType,
           redirectUrl,
@@ -243,6 +244,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
           eventId,
           amount,
           currencyId,
+          ...(hasDonation ? { donationAmount } : {}),
           ...(isCard ? {} : { phone, telecomProvider: method.provider }),
           paymentMethod: paymentMethodType,
           redirectUrl,
@@ -252,6 +254,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
           // Anonymous viewer — use public endpoint (no auth)
           response = await initiateAnonymousStreamingPayment(eventId, {
             viewerId,
+            ...(hasDonation ? { donationAmount } : {}),
             ...(isCard ? {} : { phone, telecomProvider: method.provider }),
             paymentMethod: paymentMethodType,
             redirectUrl,
@@ -280,6 +283,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
           eventId,
           amount,
           currencyId,
+          ...(hasDonation ? { donationAmount } : {}),
           ...(isCard ? {} : { phone, telecomProvider: method.provider }),
           paymentMethod: paymentMethodType,
           redirectUrl,
@@ -291,6 +295,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
           photoIds,
           amount,
           currencyId,
+          ...(hasDonation ? { donationAmount } : {}),
           ...(isCard ? {} : { phone, telecomProvider: method.provider }),
           paymentMethod: paymentMethodType,
           redirectUrl,

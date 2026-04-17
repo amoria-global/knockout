@@ -5,6 +5,7 @@ import AmoriaKNavbar from '../../components/navbar';
 import { useRouter } from 'next/navigation';
 import { getPublicEventById, type PublicEvent, getCurrencies, type Currency as APICurrency } from '@/lib/APIs/public';
 import XentriPayModal from '../../components/XentriPayModal';
+import DonationPromptModal from '../../components/DonationPromptModal';
 import { generateGroupAccess, redeemGroupCode } from '@/lib/APIs/streams/route';
 import { useAuth } from '../../providers/AuthProvider';
 import { login as apiLogin } from '@/lib/APIs/auth/login/route';
@@ -34,6 +35,8 @@ function JoinPackageContent(): React.JSX.Element {
   // XentriPay modal state
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [currencies, setCurrencies] = useState<APICurrency[]>([]);
+  const [showDonationPrompt, setShowDonationPrompt] = useState(false);
+  const [pendingDonationAmount, setPendingDonationAmount] = useState(0);
 
   // Group share code modal state
   const [showGroupCodeModal, setShowGroupCodeModal] = useState(false);
@@ -131,7 +134,7 @@ function JoinPackageContent(): React.JSX.Element {
           await authLogin({ id: d.id || d.customerId || '', firstName: d.firstName || userInfo.given_name || '', lastName: d.lastName || userInfo.family_name || '', email: d.email || userInfo.email, phone: d.phone || '', customerId: d.customerId || '', customerType: d.customerType || 'Viewer' }, d.token);
           setShowAuthModal(false);
           // Resume flow after auth
-          if ((selectedEvent?.price || 0) > 0) { setShowPaymentModal(true); } else { handleProceed(); }
+          if ((selectedEvent?.price || 0) > 0) { openPaymentFlow(); } else { handleProceed(); }
         } else {
           setAuthError((res.data as unknown as Record<string, string>)?.message || res.error || 'Could not sign in with Google. Please try another method.');
         }
@@ -149,7 +152,7 @@ function JoinPackageContent(): React.JSX.Element {
         const d = res.data as unknown as Record<string, string>;
         await authLogin({ id: d.id || d.customerId || '', firstName: d.firstName || '', lastName: d.lastName || '', email: d.email || loginEmail, phone: d.phone || '', customerId: d.customerId || '', customerType: d.customerType || 'Viewer' }, d.token);
         setShowAuthModal(false);
-        if ((selectedEvent?.price || 0) > 0) { setShowPaymentModal(true); } else { handleProceed(); }
+        if ((selectedEvent?.price || 0) > 0) { openPaymentFlow(); } else { handleProceed(); }
       } else { setAuthError((res.data as unknown as Record<string, string>)?.message || res.error || 'Incorrect email or password. Please try again.'); }
     } catch { setAuthError('Unable to connect. Please check your internet connection and try again.'); } finally { setAuthLoading(false); }
   };
@@ -178,7 +181,7 @@ function JoinPackageContent(): React.JSX.Element {
         const d = res.data as unknown as Record<string, string>;
         await authLogin({ id: d.id || d.customerId || otpCustomerId, firstName: d.firstName || signupFirstName, lastName: d.lastName || signupLastName, email: d.email || signupEmail, phone: d.phone || signupPhone, customerId: d.customerId || otpCustomerId, customerType: d.customerType || 'Viewer' }, d.token);
         setShowAuthModal(false);
-        if ((selectedEvent?.price || 0) > 0) { setShowPaymentModal(true); } else { handleProceed(); }
+        if ((selectedEvent?.price || 0) > 0) { openPaymentFlow(); } else { handleProceed(); }
       } else { setAuthError((res.data as unknown as Record<string, string>)?.message || res.error || 'The verification code is incorrect or has expired.'); }
     } catch { setAuthError('Unable to verify. Please check your internet connection and try again.'); } finally { setAuthLoading(false); }
   };
@@ -381,6 +384,11 @@ function JoinPackageContent(): React.JSX.Element {
     return price;
   };
 
+  const openPaymentFlow = () => {
+    setPendingDonationAmount(0);
+    setShowDonationPrompt(true);
+  };
+
   const handleSendInvite = async () => {
     if (!inviteEmail.trim() || !groupShareCode || !selectedEvent?.id) return;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -436,7 +444,7 @@ function JoinPackageContent(): React.JSX.Element {
     if (!isAuthenticated) {
       if (identityConfirmed && pendingViewerId) {
         // Banner already captured identity → skip modal, go straight to payment
-        setShowPaymentModal(true);
+        openPaymentFlow();
         return;
       }
       // Fallback — user skipped the banner; open modal to collect name/email/phone
@@ -451,7 +459,7 @@ function JoinPackageContent(): React.JSX.Element {
 
     if (price > 0) {
       // Authenticated — go directly to payment
-      setShowPaymentModal(true);
+      openPaymentFlow();
     } else {
       // Free event — redirect to join-event
       if (selectedPackage === 'individual') {
@@ -516,7 +524,7 @@ function JoinPackageContent(): React.JSX.Element {
         } else {
           // Modal path — user already picked package, go straight to payment
           setShowViewerInfoModal(false);
-          setShowPaymentModal(true);
+          openPaymentFlow();
         }
       }
     } catch {
@@ -1228,10 +1236,27 @@ function JoinPackageContent(): React.JSX.Element {
         </div>
       </div>
 
+      {/* Donation Prompt before payment */}
+      <DonationPromptModal
+        isOpen={showDonationPrompt}
+        onDonate={(amt) => {
+          setPendingDonationAmount(amt);
+          setShowDonationPrompt(false);
+          setShowPaymentModal(true);
+        }}
+        onSkip={() => {
+          setPendingDonationAmount(0);
+          setShowDonationPrompt(false);
+          setShowPaymentModal(true);
+        }}
+        currencyCode={selectedEvent?.streamFeeCurrencyAbbreviation || selectedEvent?.streamFeeCurrencySymbol || 'RWF'}
+        paymentAmount={getPaymentFee()}
+      />
+
       {/* XentriPay Payment Modal */}
       <XentriPayModal
         isOpen={showPaymentModal}
-        onClose={() => setShowPaymentModal(false)}
+        onClose={() => { setShowPaymentModal(false); setPendingDonationAmount(0); }}
         onSuccess={handlePaymentSuccess}
         amount={getPaymentFee()}
         currencyCode={selectedEvent?.streamFeeCurrencyAbbreviation || selectedEvent?.streamFeeCurrencySymbol || 'RWF'}
@@ -1239,6 +1264,7 @@ function JoinPackageContent(): React.JSX.Element {
         paymentType="streaming"
         eventId={selectedEvent?.id || ''}
         viewerId={!isAuthenticated ? (pendingViewerId || undefined) : undefined}
+        donationAmount={pendingDonationAmount > 0 ? pendingDonationAmount : undefined}
         title={`Stream Access — ${selectedEvent?.title || 'Event'}`}
         subtitle={`${selectedPackage === 'group' ? `Group (${typeof numberOfPeople === 'number' ? numberOfPeople : 1} people)` : 'Individual'} · ${getPaymentFee().toLocaleString()} ${selectedEvent?.streamFeeCurrencyAbbreviation || selectedEvent?.streamFeeCurrencySymbol || (currencies.length > 0 ? currencies[0].code : 'RWF')}`}
         darkMode
