@@ -322,6 +322,7 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
       const userInfo = await googleResponse.json();
       const response = await googleAuth({ email: userInfo.email, firstName: userInfo.given_name || '', lastName: userInfo.family_name || '', customerType: 'Client' });
       const data = response.data;
+      if (response.success && data?.twoFactorRequired && data?.customerId) { showInfo('Please enter your authenticator code.'); router.push(`/user/auth/verify-totp?customerId=${encodeURIComponent(String(data.customerId))}`); return; }
       if (response.success && data?.token) {
         const customerType = data.customerType || '';
         if (customerType === 'Viewer') { setLoginError('Viewer accounts can only sign in from event pages.'); showError('Viewer accounts can only sign in from event pages.'); return; }
@@ -346,6 +347,7 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
         const data = response.data;
         if (data?.otpVerified === false && data?.customerId) { showWarning(data?.message || 'Please verify your phone number.'); setLoginLoading(false); router.push(`/user/auth/verify-otp?applicantId=${encodeURIComponent(String(data.customerId))}&email=${encodeURIComponent(loginEmail)}`); return; }
         if (data?.accountLocked === true || data?.accountLocked === 'true') { setLoginError('Your account has been locked.'); showError('Your account has been locked.'); setLoginLoading(false); return; }
+        if (data?.twoFactorRequired && data?.customerId) { showInfo('Please enter your authenticator code.'); setLoginLoading(false); router.push(`/user/auth/verify-totp?customerId=${encodeURIComponent(String(data.customerId))}`); return; }
         if (response.success && data) {
           const customerType = data.user?.userType || data.customerType || '';
           if (customerType === 'Viewer') { setLoginError('Viewer accounts can only sign in from event pages.'); showError('Viewer accounts can only sign in from event pages.'); setLoginLoading(false); return; }
@@ -401,6 +403,7 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
       const userInfo = await response.json();
       try {
         const br = await googleAuth({ email: userInfo.email, firstName: userInfo.given_name || '', lastName: userInfo.family_name || '', customerType: signupUserType });
+        if (br.success && br.data?.twoFactorRequired && br.data?.customerId) { showInfo('Please enter your authenticator code.'); router.push(`/user/auth/verify-totp?customerId=${encodeURIComponent(String(br.data.customerId))}`); return; }
         if (br.success && br.data?.token) { setAuthToken(br.data.token); showSuccess('Welcome back! Redirecting...'); if (isBookingRedirect) { setTimeout(() => redirectToBookingDashboard(br.data?.customerType), 300); } else { router.push(redirectUrl || '/user'); } return; }
       } catch { /* continue with form pre-fill */ }
       if (userInfo.given_name) setFirstName(userInfo.given_name);
