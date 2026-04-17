@@ -326,10 +326,13 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
       let msg: string;
       if (lower.includes('network') || lower.includes('fetch')) {
         msg = 'Unable to connect. Please check your internet connection and try again.';
-      } else if (lower.includes('failed to initiate') || lower.includes('initiate payment')) {
-        msg = 'Payment could not be initiated. Please verify your phone number matches the selected payment method (MTN or Airtel) and try again.';
+      } else if (raw) {
+        // Surface the backend/XentriPay reply verbatim so the user can act
+        // on the real reason (amount too low, phone wrong format, provider
+        // mismatch, etc.) instead of a generic hint.
+        msg = raw;
       } else {
-        msg = raw || 'Could not initiate payment. Please try again or choose a different payment method.';
+        msg = 'Could not initiate payment. Please try again or choose a different payment method.';
       }
       setError(msg);
       onError?.(msg);
