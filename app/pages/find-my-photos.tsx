@@ -37,6 +37,46 @@ function apiUrl(path: string): string {
   return `${base}${p}`;
 }
 
+// Per-viewer identifier persisted in localStorage. Stamped into every preview
+// image the user sees so that any screenshot/leak can be traced back to the
+// specific browser that viewed it. Prefers buyerId once we know one, otherwise
+// falls back to a per-device random id. This is NOT a security token — the
+// server only uses it as watermark text.
+function getViewerId(buyerId?: string | null): string {
+  if (buyerId) return `B${buyerId.slice(0, 8)}`;
+  if (typeof window === 'undefined') return 'anon';
+  try {
+    let id = window.localStorage.getItem('photoViewerId');
+    if (!id) {
+      id = 'V' + Math.random().toString(36).slice(2, 10).toUpperCase();
+      window.localStorage.setItem('photoViewerId', id);
+    }
+    return id;
+  } catch {
+    return 'anon';
+  }
+}
+
+// Append viewer/purchase context to preview URLs so the backend can:
+//   - stamp the viewer id into the pixels (traceability)
+//   - detect purchase status and serve a CLEAR watermarked preview instead of
+//     the pixelated mosaic that unpaid users see
+// Leaves non-preview URLs untouched.
+function stampPreviewUrl(
+  url: string | undefined,
+  viewerId: string,
+  purchase?: { buyerId?: string | null; refid?: string | null },
+): string | undefined {
+  if (!url) return url;
+  if (!url.includes('/api/photos/') || !url.includes('/preview')) return url;
+  const params = new URLSearchParams();
+  params.set('v', viewerId);
+  if (purchase?.buyerId) params.set('buyerId', purchase.buyerId);
+  if (purchase?.refid) params.set('refid', purchase.refid);
+  const sep = url.includes('?') ? '&' : '?';
+  return `${url}${sep}${params.toString()}`;
+}
+
 const FindMyPhotos = () => {
   const searchParams = useSearchParams();
 
@@ -298,11 +338,22 @@ const FindMyPhotos = () => {
         if (response.data.pricing?.currencyId) setAlbumCurrencyId(response.data.pricing.currencyId);
         if (response.data.pricing?.currencySymbol) setAlbumCurrencySymbol(response.data.pricing.currencySymbol);
         const perPhotoPrice = response.data.pricing?.pricePerImage ?? response.data.pricePerPhoto;
+        // Carry album-level identifiers onto every PhotoItem. Without these the
+        // Download button's purchased-photo branch can't fire (it requires
+        // photo.albumId), and the buy flow can't resolve a currency/album.
+        const albumId = response.data.albumId;
+        const albumType = response.data.albumType;
+        const currencyId = response.data.pricing?.currencyId;
+        const currencyAbbreviation = response.data.pricing?.currencyAbbreviation;
         const photos = (response.data.photos ?? []).map((p: AlbumPhoto) => ({
           id: p.id,
           url: p.url || p.thumbnailUrl || '',
           alt: p.alt || p.eventTitle || 'Event photo',
           price: p.price ?? perPhotoPrice,
+          albumId,
+          albumType,
+          currencyId,
+          currencyAbbreviation,
         }));
         setAllPhotos(photos);
         setDisplayedPhotos(photos);
@@ -487,9 +538,9 @@ const FindMyPhotos = () => {
   };
 
   const handleFreePhotoDownload = async (photo: FreeAlbumPhoto) => {
-    const url = photo.url || photo.thumbnailUrl;
-    if (!url) return;
-    await triggerPhotoDownload(url, `photo-${photo.id}.jpg`);
+    // Free-album photos: pull the clean original from the streaming endpoint
+    // instead of the preview URL (which would be watermarked).
+    await triggerPhotoDownload(apiUrl(`/api/photos/${photo.id}/original`), `photo-${photo.id}.jpg`);
   };
 
   const handleFreeDownloadAll = async () => {
@@ -505,6 +556,84 @@ const FindMyPhotos = () => {
         setCurrencies(res.data);
       }
     }).catch(() => {});
+  }, []);
+
+  // When the window loses focus (user alt-tabs, opens Snipping Tool, switches
+  // apps) or the tab becomes hidden, instantly blank every preview image on the
+  // page. Restored on focus/visibility. This catches casual snipping-tool usage
+  // because Snipping Tool steals focus from the browser before the user drags
+  // the selection rectangle — by the time they do, the images are already black.
+  //
+  // Does NOT stop keyboard-shortcut-invoked captures or determined screen
+  // recorders. The real defence remains the baked-in per-viewer watermark.
+  const [isOccluded, setIsOccluded] = useState(false);
+  useEffect(() => {
+    const occlude = () => setIsOccluded(true);
+    const reveal = () => setIsOccluded(false);
+    const onVis = () => {
+      if (document.hidden) occlude();
+      else reveal();
+    };
+    window.addEventListener('blur', occlude);
+    window.addEventListener('focus', reveal);
+    document.addEventListener('visibilitychange', onVis);
+    return () => {
+      window.removeEventListener('blur', occlude);
+      window.removeEventListener('focus', reveal);
+      document.removeEventListener('visibilitychange', onVis);
+    };
+  }, []);
+
+  // Viewer identifier used for dynamic per-viewer watermarks on preview images.
+  // Recomputed when buyerId changes so paying customers get their buyer id
+  // stamped instead of the anonymous fallback.
+  const viewerId = React.useMemo(() => getViewerId(buyerId), [buyerId]);
+
+  // ── Anti-save hardening ──
+  // Every image on this page is a watermarked preview from the backend, so
+  // "saving" them only yields a low-res stamped copy — but we still block the
+  // casual save paths (context menu, drag, Ctrl+S/P, F12) to remove the
+  // friction-free "right-click → save" experience and make it clear the images
+  // are protected. This cannot stop determined screen-capture, and it isn't
+  // meant to — the server-side watermark is the real defence.
+  useEffect(() => {
+    const blockContext = (e: MouseEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && target.closest('img, .photo-card, .photo-preview-modal')) {
+        e.preventDefault();
+      }
+    };
+    const blockDrag = (e: DragEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && target.tagName === 'IMG') {
+        e.preventDefault();
+      }
+    };
+    const blockKeys = (e: KeyboardEvent) => {
+      const k = e.key.toLowerCase();
+      // Ctrl/Cmd + S  → Save page
+      // Ctrl/Cmd + P  → Print
+      // Ctrl/Cmd + Shift + S → Firefox "Take Screenshot"
+      if ((e.ctrlKey || e.metaKey) && (k === 's' || k === 'p')) {
+        e.preventDefault();
+      }
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && k === 's') {
+        e.preventDefault();
+      }
+      // F12 / Ctrl+Shift+I / Ctrl+Shift+J — devtools shortcuts
+      if (k === 'f12') e.preventDefault();
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (k === 'i' || k === 'j')) {
+        e.preventDefault();
+      }
+    };
+    document.addEventListener('contextmenu', blockContext);
+    document.addEventListener('dragstart', blockDrag);
+    document.addEventListener('keydown', blockKeys);
+    return () => {
+      document.removeEventListener('contextmenu', blockContext);
+      document.removeEventListener('dragstart', blockDrag);
+      document.removeEventListener('keydown', blockKeys);
+    };
   }, []);
 
   // Payment methods
@@ -586,15 +715,52 @@ const FindMyPhotos = () => {
     }
   };
 
-  // Download an already-purchased photo via the backend download endpoint.
-  // Prefers persistent buyerId over per-transaction refid.
+  // Download an already-purchased photo.
+  //
+  // Backend: GET /albums/{albumId}/photo/{photoId}/download verifies buyerId/refid
+  // and responds with either a 302 redirect to the image bytes (on success) or
+  // a 403 JSON error body (on denial). fetch() follows the redirect transparently
+  // so a successful response's body IS the JPEG — we save it as a blob directly.
   const downloadPurchasedPhoto = async (
     albumId: string,
     photoId: string,
     token: { refid?: string; buyerId?: string }
   ) => {
     const url = apiUrl(API_ENDPOINTS.PAYMENTS.ALBUM_PHOTO_DOWNLOAD(albumId, photoId, token));
-    await triggerPhotoDownload(url, `photo-${photoId}.jpg`);
+    // The XentriPay webhook that flips AlbumPurchase → COMPLETED can land a
+    // moment after the client sees payment success. Retry 403s briefly so the
+    // auto-download after purchase doesn't lose the race.
+    const delays = [0, 1000, 2000, 3000];
+    try {
+      let res: Response | null = null;
+      for (const delay of delays) {
+        if (delay) await new Promise(r => setTimeout(r, delay));
+        res = await fetch(url, { credentials: 'include' });
+        if (res.ok) break;
+        if (res.status !== 403) break;
+      }
+      if (!res || !res.ok) {
+        let message = `Download authorisation failed (${res?.status ?? 'no response'})`;
+        try {
+          const errJson = await res?.json();
+          if (errJson?.message) message = errJson.message;
+        } catch { /* non-JSON error body — keep generic message */ }
+        throw new Error(message);
+      }
+      const blob = await res.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = objectUrl;
+      a.download = `photo-${photoId}.jpg`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(objectUrl);
+    } catch (err) {
+      console.error('Failed to download purchased photo:', err);
+      setPurchaseNotice(err instanceof Error ? err.message : 'Download failed');
+      setTimeout(() => setPurchaseNotice(null), 4000);
+    }
   };
 
   const togglePhotoSelected = (photoId: string) => {
@@ -821,8 +987,10 @@ const FindMyPhotos = () => {
       setShowDownloadModal(true);
       return;
     }
-    // Free photo → direct download
-    triggerPhotoDownload(photo.url, `photo-${photo.id}.jpg`);
+    // Free photo → download the original via the streaming endpoint.
+    // photo.url now points at /api/photos/{id}/preview (watermarked), so we
+    // swap to /api/photos/{id}/original to fetch the clean full-res file.
+    triggerPhotoDownload(apiUrl(`/api/photos/${photo.id}/original`), `photo-${photo.id}.jpg`);
   };
 
   const startCamera = async () => {
@@ -1042,17 +1210,6 @@ const FindMyPhotos = () => {
             <div style={{ width: '100%', maxWidth: '1200px', margin: '0 auto' }}>
               {/* Album header */}
               <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-                <div style={{
-                  display: 'inline-block',
-                  padding: '4px 14px',
-                  borderRadius: '20px',
-                  background: 'rgba(16, 185, 129, 0.15)',
-                  color: '#10b981',
-                  fontSize: '12px',
-                  fontWeight: 700,
-                  marginBottom: '12px',
-                  letterSpacing: '0.05em',
-                }}>FREE</div>
                 <h2 style={{ color: '#fff', fontSize: isMobile ? '24px' : '32px', fontWeight: 700, marginBottom: '6px' }}>{freeAlbumTitle}</h2>
                 {freeAlbumPhotographer && <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px', marginBottom: '8px' }}>by {freeAlbumPhotographer}</p>}
                 {freeAlbumExpiresAt && (() => {
@@ -1110,24 +1267,23 @@ const FindMyPhotos = () => {
                     })}
                   >
                     <img
-                      src={photo.url || photo.thumbnailUrl}
+                      src={stampPreviewUrl(photo.url || photo.thumbnailUrl, viewerId, { buyerId, refid: purchaseRefid })}
                       alt={photo.caption || 'Free album photo'}
                       loading="lazy"
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      draggable={false}
+                      onDragStart={(e) => e.preventDefault()}
+                      onContextMenu={(e) => e.preventDefault()}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        userSelect: 'none',
+                        WebkitUserSelect: 'none',
+                        pointerEvents: 'none',
+                        filter: isOccluded ? 'brightness(0)' : undefined,
+                        transition: 'filter 0.1s linear',
+                      }}
                     />
-                    {/* FREE badge */}
-                    <div style={{
-                      position: 'absolute',
-                      top: '8px',
-                      right: '8px',
-                      padding: '3px 10px',
-                      borderRadius: '8px',
-                      background: 'rgba(16, 185, 129, 0.85)',
-                      color: '#fff',
-                      fontSize: '11px',
-                      fontWeight: 700,
-                      backdropFilter: 'blur(4px)',
-                    }}>FREE</div>
                     {/* Download button */}
                     <button
                       onClick={(e) => { e.stopPropagation(); handleFreePhotoDownload(photo); }}
@@ -1880,20 +2036,51 @@ const FindMyPhotos = () => {
                   }}
                 >
                   <div
-                    style={{ aspectRatio: '4/3', overflow: 'hidden' }}
+                    style={{ aspectRatio: '4/3', overflow: 'hidden', position: 'relative' }}
                     onClick={() => setSelectedPhoto(photo)}
                   >
                     <img
-                      src={photo.url}
+                      src={stampPreviewUrl(photo.url, viewerId, { buyerId, refid: purchaseRefid })}
                       alt={photo.alt}
+                      draggable={false}
+                      onDragStart={(e) => e.preventDefault()}
+                      onContextMenu={(e) => e.preventDefault()}
                       style={{
                         width: '100%',
                         height: '100%',
                         objectFit: 'cover',
-                        transition: 'transform 0.4s ease',
+                        transition: 'transform 0.4s ease, filter 0.1s linear',
+                        userSelect: 'none',
+                        WebkitUserSelect: 'none',
+                        pointerEvents: 'none',
+                        filter: isOccluded ? 'brightness(0)' : undefined,
                       }}
                       loading="lazy"
                     />
+                    {/* Repeating tile watermark — Shutterstock/Getty style.
+                        Small "AMORIA" text dotted diagonally across the whole
+                        image at low opacity. Visible enough to mark the photo
+                        as a preview without obscuring the subject. */}
+                    {isPaid && !isPurchased && (
+                      <div
+                        aria-hidden
+                        style={{
+                          position: 'absolute',
+                          inset: 0,
+                          pointerEvents: 'none',
+                          backgroundImage:
+                            'url("data:image/svg+xml;utf8,' +
+                            encodeURIComponent(
+                              '<svg xmlns="http://www.w3.org/2000/svg" width="140" height="80" viewBox="0 0 140 80">' +
+                                '<text x="70" y="46" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="700" letter-spacing="2" fill="rgba(255,255,255,0.55)" text-anchor="middle" transform="rotate(-24 70 42)">CONNEKYT</text>' +
+                              '</svg>',
+                            ) +
+                            '")',
+                          backgroundRepeat: 'repeat',
+                          mixBlendMode: 'overlay',
+                        }}
+                      />
+                    )}
                   </div>
                   {/* Selection checkbox (only for purchasable paid photos) */}
                   {isSelectable && (
@@ -2085,21 +2272,39 @@ const FindMyPhotos = () => {
             const isLocked = (selectedPhoto.price ?? 0) > 0 && !selectedPhoto.isPurchased;
             return (
               <div
+                className="photo-preview-modal"
                 onClick={(e) => e.stopPropagation()}
-                onContextMenu={isLocked ? (e) => e.preventDefault() : undefined}
+                onContextMenu={(e) => e.preventDefault()}
                 style={{ position: 'relative', maxWidth: '90vw', maxHeight: '85vh', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}
               >
                 <img
-                  src={selectedPhoto.url.replace('w=600&h=400', 'w=1200&h=800')}
+                  src={stampPreviewUrl(selectedPhoto.url, viewerId, { buyerId, refid: purchaseRefid })}
                   alt={selectedPhoto.alt}
-                  draggable={!isLocked}
+                  draggable={false}
+                  onDragStart={(e) => e.preventDefault()}
+                  onContextMenu={(e) => e.preventDefault()}
                   style={{
                     display: 'block',
                     maxWidth: '90vw',
                     maxHeight: '85vh',
                     objectFit: 'contain',
-                    userSelect: isLocked ? 'none' : 'auto',
-                    pointerEvents: isLocked ? 'none' : 'auto',
+                    userSelect: 'none',
+                    WebkitUserSelect: 'none',
+                    pointerEvents: 'none',
+                    filter: isOccluded ? 'brightness(0)' : undefined,
+                    transition: 'filter 0.1s linear',
+                  }}
+                />
+                {/* Transparent overlay — absorbs right-click / drag / selection
+                    attempts that slip past the handlers above */}
+                <div
+                  aria-hidden
+                  onContextMenu={(e) => e.preventDefault()}
+                  onDragStart={(e) => e.preventDefault()}
+                  style={{
+                    position: 'absolute', inset: 0,
+                    background: 'transparent',
+                    userSelect: 'none',
                   }}
                 />
                 {isLocked && (
