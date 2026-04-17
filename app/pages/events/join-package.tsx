@@ -23,7 +23,6 @@ function JoinPackageContent(): React.JSX.Element {
   const searchParams = useSearchParams();
   const eventId = searchParams.get('id');
   const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
-  const [expandedPkg, setExpandedPkg] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [numberOfPeople, setNumberOfPeople] = useState<number | ''>('');
   const [showPeopleInput, setShowPeopleInput] = useState(false);
@@ -947,19 +946,8 @@ function JoinPackageContent(): React.JSX.Element {
                     {pkg.priceNote}
                   </div>
 
-                  {/* Expand toggle on mobile */}
-                  {isMobile && (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); setExpandedPkg(expandedPkg === pkg.id ? null : pkg.id); }}
-                      style={{ background: 'none', border: 'none', color: '#083A85', fontSize: '11px', fontWeight: 600, cursor: 'pointer', padding: '4px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', width: '100%' }}
-                    >
-                      {expandedPkg === pkg.id ? 'Hide details' : 'View details'}
-                      <i className={`bi bi-chevron-${expandedPkg === pkg.id ? 'up' : 'down'}`} style={{ fontSize: '10px' }}></i>
-                    </button>
-                  )}
-
-                  {/* Features — always on desktop, collapsible on mobile */}
-                  <div style={{ overflow: 'hidden', maxHeight: isMobile ? (expandedPkg === pkg.id ? '500px' : '0') : 'none', transition: 'max-height 0.3s ease' }}>
+                  {/* Features — always shown on both mobile and desktop */}
+                  <div>
                   <div style={{ height: '1px', backgroundColor: '#e5e7eb', margin: isMobile ? '5px 0' : '8px 0' }}></div>
 
                   {/* Features List — show all features, unavailable ones with red cross + strikethrough */}
