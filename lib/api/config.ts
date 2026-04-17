@@ -86,6 +86,7 @@ export const API_ENDPOINTS = {
     REFRESH_TOKEN: '/api/remote/auth/refresh-token',
     LOGOUT: '/api/remote/auth/logout',
     GOOGLE: '/api/remote/auth/google',
+    VERIFY_TOTP: '/api/remote/auth/verify-totp',
   },
 
   // Public endpoints
