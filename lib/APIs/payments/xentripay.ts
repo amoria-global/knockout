@@ -12,6 +12,7 @@ import type { ApiResponse } from '@/lib/api/types';
 export interface XentriPayInitiateRequest {
   declarationId?: string;
   eventId?: string;
+  donationAmount?: number;
   phone?: string;
   telecomProvider?: string; // 'MTN' | 'AIRTEL'
   paymentMethod: string;   // 'MOBILE_MONEY' | 'CARD'
@@ -30,6 +31,7 @@ export interface XentriPayPhotoPurchaseRequest {
   eventId: string;
   amount: number;
   currencyId: string;
+  donationAmount?: number;
   phone?: string;
   telecomProvider?: string;
   paymentMethod?: string;
@@ -46,6 +48,7 @@ export interface XentriPayAlbumPurchaseRequest {
   telecomProvider?: string;
   paymentMethod?: string;
   redirectUrl?: string;
+  donationAmount?: number;
 }
 
 // Backend returns 409 with this shape when some photoIds are already owned
@@ -58,6 +61,7 @@ export interface XentriPayTipRequest {
   eventId: string;
   amount: number;
   currencyId: string;
+  donationAmount?: number;
   phone?: string;
   telecomProvider?: string;
   paymentMethod?: string;
@@ -206,6 +210,7 @@ export async function initiateAnonymousStreamingPayment(
   eventId: string,
   data: {
     viewerId: string;
+    donationAmount?: number;
     phone?: string;
     telecomProvider?: string;
     paymentMethod: string;
