@@ -39,6 +39,8 @@ export interface LoginResponse {
   applicant_id?: string | null;
   customerId?: string | null;
   customer_id?: string | null;
+  twoFactorRequired?: boolean; // True when TOTP verification is needed (action=2)
+  twoFactorSetupRequired?: boolean; // True when 2FA setup is mandatory (balance > 0, action=1)
   token?: string; // JWT token (only on successful login)
   refreshToken?: string; // Refresh token UUID (only on successful login)
   user?: {
@@ -65,11 +67,11 @@ export async function login(data: LoginRequest): Promise<ApiResponse<LoginRespon
     }
   );
 
-  // Store tokens on successful login
-  if (response.success && response.data?.token) {
+  // Store tokens on successful login (skip if 2FA verification is pending)
+  if (response.success && response.data?.token && !response.data?.twoFactorRequired) {
     setAuthToken(response.data.token);
   }
-  if (response.success && response.data?.refreshToken) {
+  if (response.success && response.data?.refreshToken && !response.data?.twoFactorRequired) {
     setRefreshToken(response.data.refreshToken);
   }
 

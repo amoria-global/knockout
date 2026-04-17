@@ -36,6 +36,8 @@ export interface GoogleAuthResponse {
   customerType?: string;
   profilePicture?: string | null;
   coverPicture?: string | null;
+  twoFactorRequired?: boolean;
+  twoFactorSetupRequired?: boolean;
   token?: string;
   refreshToken?: string;
   token_expiry?: string;
@@ -64,8 +66,8 @@ export async function googleAuth(data: GoogleAuthRequest): Promise<ApiResponse<G
     }
   );
 
-  // Store token on successful authentication
-  if (response.success && response.data?.token) {
+  // Store token on successful authentication (skip if 2FA pending)
+  if (response.success && response.data?.token && !response.data?.twoFactorRequired) {
     setAuthToken(response.data.token);
   }
 
