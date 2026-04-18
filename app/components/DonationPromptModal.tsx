@@ -150,10 +150,10 @@ const DonationPromptModal: React.FC<DonationPromptModalProps> = ({
             marginBottom: '6px',
             fontFamily: "'Pragati Narrow', sans-serif",
           }}>
-            Support Connekyt
+            Support a Cause
           </h2>
           <p style={{ fontSize: '13px', color: '#6b7280', lineHeight: '1.5', margin: 0 }}>
-            Help us keep building tools for photographers and creators. Your contribution makes a difference.
+            Your donation helps support vulnerable families, educate children, and empower those in need.
           </p>
         </div>
 
