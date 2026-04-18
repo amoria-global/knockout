@@ -1,5 +1,4 @@
-'use client'
-
+ 'use client'
 import { useState, useEffect, useRef } from 'react'
 import { useTranslations } from 'next-intl'
 import { gsap } from 'gsap'
@@ -54,6 +53,10 @@ export default function Home() {
   const phoneTextRef = useRef<HTMLDivElement>(null)
   const tabletTextRef = useRef<HTMLDivElement>(null)
   const laptopTextRef = useRef<HTMLDivElement>(null)
+  // Mobile-only text refs — flow left→right above/below mockups during each phase
+  const phoneMobileTextRef = useRef<HTMLDivElement>(null)
+  const tabletMobileTextRef = useRef<HTMLDivElement>(null)
+  const laptopMobileTextRef = useRef<HTMLDivElement>(null)
   // Preloader disabled — client requested no preloader (kept for future reuse)
   // const [showPreloader, setShowPreloader] = useState(() => {
   //   if (typeof window !== 'undefined') {
@@ -169,6 +172,9 @@ export default function Home() {
         const phoneText = phoneTextRef.current;
         const tabletText = tabletTextRef.current;
         const laptopText = laptopTextRef.current;
+        const phoneMobileText = phoneMobileTextRef.current;
+        const tabletMobileText = tabletMobileTextRef.current;
+        const laptopMobileText = laptopMobileTextRef.current;
 
         if (!section || !phone || !tablet || !laptop || !phoneOverlay || !tabletOverlay || !laptopOverlay) return;
 
@@ -188,6 +194,10 @@ export default function Home() {
         if (phoneText) gsap.set(phoneText, { y: 300, opacity: 1 });
         if (tabletText) gsap.set(tabletText, { y: 300, opacity: 1 });
         if (laptopText) gsap.set(laptopText, { y: 300, opacity: 1 });
+        // Mobile texts: start off-screen to the right, will flow left during their phase
+        if (phoneMobileText) gsap.set(phoneMobileText, { xPercent: 110, opacity: 1 });
+        if (tabletMobileText) gsap.set(tabletMobileText, { xPercent: 110, opacity: 1 });
+        if (laptopMobileText) gsap.set(laptopMobileText, { xPercent: 110, opacity: 1 });
 
         // Set initial state for Why Amoria section - starts hidden
         if (whyAmoriaSection) {
@@ -231,6 +241,14 @@ export default function Home() {
             ease: 'none'
           }, 0.5);
         }
+        // Mobile phone text flows left→right during the same phase
+        if (phoneMobileText) {
+          tl.to(phoneMobileText, {
+            xPercent: -110,
+            duration: 1.8,
+            ease: 'none'
+          }, 0.5);
+        }
 
         // Phase 2: Phone mockup peels bottom→top AND tablet reveals bottom→top (position 1.5-2.5)
         // Phone peels from bottom to top (top edge moves upward)
@@ -260,6 +278,14 @@ export default function Home() {
             ease: 'none'
           }, 2.5);
         }
+        // Mobile tablet text flows left→right during the same phase
+        if (tabletMobileText) {
+          tl.to(tabletMobileText, {
+            xPercent: -110,
+            duration: 1.8,
+            ease: 'none'
+          }, 2.5);
+        }
 
         // Phase 4: Tablet mockup peels bottom→top AND laptop reveals bottom→top simultaneously (position 3.5-4.5)
         // Tablet peels from bottom to top (clips upward)
@@ -285,6 +311,14 @@ export default function Home() {
         if (laptopText) {
           tl.to(laptopText, {
             y: -300,
+            duration: 1.8,
+            ease: 'none'
+          }, 4.5);
+        }
+        // Mobile laptop text flows left→right during the same phase
+        if (laptopMobileText) {
+          tl.to(laptopMobileText, {
+            xPercent: -110,
             duration: 1.8,
             ease: 'none'
           }, 4.5);
@@ -371,14 +405,41 @@ export default function Home() {
             100% { stroke-dashoffset: -100px; }
           }
 
-          /* Desktop styles - reset carousel and hide dots */
+          /* Mobile mockup flowing text — scroll-driven horizontal flow per mockup */
+          .mobile-mockup-text {
+            display: none;
+          }
+          @media (max-width: 768px) {
+            .mobile-mockup-text {
+              display: block;
+              position: absolute;
+              left: 0;
+              right: 0;
+              width: 100%;
+              text-align: center;
+              white-space: nowrap;
+              z-index: 5;
+              pointer-events: none;
+              font-size: 34px;
+              font-weight: 800;
+              line-height: 1.1;
+              background: linear-gradient(90deg, #8B5CF6 0%, #FF6B6B 100%);
+              -webkit-background-clip: text;
+              -webkit-text-fill-color: transparent;
+              background-clip: text;
+              will-change: transform;
+            }
+            .mobile-mockup-text--top { bottom: calc(50% + 270px); }
+            .mobile-mockup-text--bottom { top: calc(50% + 270px); }
+          }
+
+          /* Desktop styles - static row, no carousel */
           @media (min-width: 769px) {
             .how-it-works-steps {
-              transform: translateX(0) !important;
-              animation: none !important;
-              flex-wrap: wrap !important;
               flex-direction: row !important;
+              flex-wrap: nowrap !important;
               overflow: visible !important;
+              animation: none !important;
             }
             .how-it-works-steps > div {
               min-width: auto !important;
@@ -461,54 +522,35 @@ export default function Home() {
             .hero-glow { left: 50% !important; transform: translateX(-50%) !important; width: 400px !important; top: 10px !important; }
             .hero-floating-card { transform: none !important; }
 
-            .how-it-works-title { font-size: clamp(24px, 5vw, 36px) !important; margin-bottom: clamp(30px, 6vw, 40px) !important; text-align: center !important; }
-            .how-it-works-steps { flex-direction: row !important; gap: 0 !important; align-items: center !important; position: relative !important; overflow: hidden !important; width: 100% !important; flex-wrap: nowrap !important; display: flex !important; }
-            .how-it-works-svg { display: none !important; visibility: hidden !important; position: absolute !important; width: 0 !important; height: 0 !important; }
-            .how-it-works-mobile-line { display: none !important; visibility: hidden !important; width: 0 !important; height: 0 !important; }
-            .how-it-works-steps > div { background: transparent !important; z-index: 2 !important; position: relative !important; padding: 10px 15px !important; width: 100vw !important; flex-shrink: 0 !important; min-width: 100vw !important; display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; }
-            .step-img { width: clamp(160px, 35vw, 180px) !important; height: clamp(160px, 35vw, 180px) !important; }
-            .step-title { font-size: clamp(16px, 4.5vw, 24px) !important; text-align: center !important; }
-            .step-description { font-size: clamp(12px, 3vw, 15px) !important; text-align: center !important; max-width: clamp(160px, 85vw, 280px) !important; }
+            /* Mobile: land10 design — simple clean vertical stack */
+            .how-it-works-title { font-size: 36px !important; margin-bottom: 40px !important; text-align: center !important; }
+            .how-it-works-steps { flex-direction: column !important; gap: 12px !important; align-items: center !important; animation: none !important; }
+            .how-it-works-svg { display: none !important; }
+            .how-it-works-mobile-line { display: none !important; }
+            .carousel-rope { display: none !important; }
+            .step-duplicate { display: none !important; }
+            .how-it-works-steps > div::before { display: none !important; }
+            .how-it-works-steps > div::after { display: none !important; }
+            .step-img { width: 240px !important; height: 240px !important; }
+            .step-title { font-size: 24px !important; text-align: center !important; }
+            .step-description { font-size: 15px !important; text-align: center !important; }
+            /* Keep outer rectangular border on mobile, adjust wrapper spacing */
+            #how-it-works > div > div.how-it-works-rect-wrapper { margin-left: 0 !important; margin-right: 0 !important; padding: 50px 20px 30px !important; }
+            .how-it-works-rect-border { display: block !important; }
+            .step-rect-border { display: block !important; transform: scale(1.1) !important; }
 
-            /* Rope attachment knots on step items */
-            .how-it-works-steps > div::before {
-              content: '';
-              position: absolute;
-              top: 45%;
-              left: -15px;
-              width: 16px;
-              height: 16px;
-              background: #A0826D;
-              border-radius: 50%;
-              box-shadow: 0 2px 4px rgba(0,0,0,0.3), inset 0 1px 2px rgba(255,255,255,0.3);
-              z-index: 10;
-            }
-
-            .how-it-works-steps > div::after {
-              content: '';
-              position: absolute;
-              top: calc(45% - 2px);
-              left: -8px;
-              width: 2px;
-              height: 4px;
-              background: rgba(0,0,0,0.2);
-              z-index: 9;
-            }
-            .how-it-works-dots { display: none !important; }
-            .how-it-works-dot { display: none !important; }
-            .how-it-works-dot.active { display: none !important; }
-
-            .photographer-container { flex-direction: column !important; padding: clamp(15px, 4vw, 25px) clamp(15px, 3vw, 20px) clamp(20px, 5vw, 30px) !important; gap: clamp(15px, 3vw, 20px) !important; align-items: center !important; text-align: center !important; }
+            .photographer-container { flex-direction: column !important; padding: clamp(15px, 4vw, 25px) clamp(15px, 3vw, 20px) clamp(40px, 10vw, 60px) !important; gap: clamp(15px, 3vw, 20px) !important; align-items: center !important; text-align: center !important; }
             .photographer-title { font-size: clamp(20px, 5vw, 32px) !important; position: relative !important; top: 0 !important; text-align: center !important; max-width: 100% !important; line-height: 1.1 !important; margin-bottom: clamp(5px, 2vw, 10px) !important; }
             .photographer-description { position: relative !important; top: 0 !important; margin-bottom: clamp(10px, 2vw, 15px) !important; font-size: clamp(12px, 3vw, 15px) !important; text-align: center !important; opacity: 0.95 !important; }
             .photographer-button { position: relative !important; left: 0 !important; top: 0 !important; width: 100% !important; max-width: 220px !important; margin: 0 auto !important; font-size: 17px !important; height: auto !important; padding: 12px 20px !important; }
+            .photographer-container > button.photographer-button { margin-bottom: clamp(10px, 3vw, 20px) !important; }
             .photographer-video-container { max-width: 100% !important; width: 100% !important; height: auto !important; order: -1 !important; }
 
             .mockups-section { padding: 0 !important; background-color: #1c1c1c !important; min-height: 100vh !important; }
             .mockups-inner { padding: 0 20px !important; margin: 0 auto !important; min-height: 100vh !important; display: flex !important; flex-direction: column !important; justify-content: center !important; align-items: center !important; }
             .mockups-container { display: flex !important; justify-content: center !important; align-items: center !important; margin-left: 0 !important; padding: 0 !important; }
             .mockups-container { height: auto !important; width: 100% !important; max-width: 100% !important; position: relative !important; }
-            .device-laptop { display: none; max-width: 700px !important; max-height: 400px !important; width: 400px !important; height: 300px !important; }
+            .device-laptop { display: flex !important; max-width: none !important; max-height: none !important; transform: translate(-50%, -50%) scale(0.53) !important; transform-origin: center center !important; }
             .device-tablet { width: 320px !important; height: 430px !important; }
             .device-phone { width: 220px !important; height: 430px !important; }
             .phone-body { width: 210px !important; height: 425px !important; border-radius: 30px !important; }
@@ -1230,6 +1272,115 @@ export default function Home() {
             </h2>
 
             {/* Three Steps Container - Marquee Carousel on Mobile */}
+            {/* Outer rectangular flowing-dot border around all steps */}
+            <div className="how-it-works-rect-wrapper" style={{ position: 'relative', paddingTop: isMobile ? '160px' : 'clamp(80px, 12vw, 140px)', paddingBottom: isMobile ? '60px' : 'clamp(16px, 3vw, 28px)', paddingLeft: isMobile ? '20px' : 'clamp(16px, 3vw, 28px)', paddingRight: isMobile ? '20px' : 'clamp(16px, 3vw, 28px)', marginLeft: isMobile ? '0' : '-40px', marginRight: isMobile ? '0' : '-40px' }}>
+              <svg
+                className="how-it-works-rect-border"
+                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', zIndex: 0, pointerEvents: 'none', overflow: 'visible' }}
+              >
+                <defs>
+                  <linearGradient id="stepsRectFlowGrad" gradientUnits="objectBoundingBox" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stopColor="#000000">
+                      <animate attributeName="offset" values="-0.3;1.0;-0.3" dur="3s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.6 1; 0.4 0 0.6 1"/>
+                    </stop>
+                    <stop offset="4%" stopColor="#1d4ed8">
+                      <animate attributeName="offset" values="-0.26;1.04;-0.26" dur="3s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.6 1; 0.4 0 0.6 1"/>
+                    </stop>
+                    <stop offset="8%" stopColor="#3b82f6">
+                      <animate attributeName="offset" values="-0.22;1.08;-0.22" dur="3s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.6 1; 0.4 0 0.6 1"/>
+                    </stop>
+                    <stop offset="12%" stopColor="#60a5fa">
+                      <animate attributeName="offset" values="-0.18;1.12;-0.18" dur="3s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.6 1; 0.4 0 0.6 1"/>
+                    </stop>
+                    <stop offset="15%" stopColor="#93c5fd">
+                      <animate attributeName="offset" values="-0.15;1.15;-0.15" dur="3s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.6 1; 0.4 0 0.6 1"/>
+                    </stop>
+                    <stop offset="18%" stopColor="#60a5fa">
+                      <animate attributeName="offset" values="-0.12;1.18;-0.12" dur="3s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.6 1; 0.4 0 0.6 1"/>
+                    </stop>
+                    <stop offset="22%" stopColor="#3b82f6">
+                      <animate attributeName="offset" values="-0.08;1.22;-0.08" dur="3s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.6 1; 0.4 0 0.6 1"/>
+                    </stop>
+                    <stop offset="26%" stopColor="#1d4ed8">
+                      <animate attributeName="offset" values="-0.04;1.26;-0.04" dur="3s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.6 1; 0.4 0 0.6 1"/>
+                    </stop>
+                    <stop offset="30%" stopColor="#000000">
+                      <animate attributeName="offset" values="0;1.3;0" dur="3s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.6 1; 0.4 0 0.6 1"/>
+                    </stop>
+                  </linearGradient>
+                </defs>
+                <rect
+                  x="1"
+                  y="1"
+                  width="calc(100% - 2px)"
+                  height="calc(100% - 2px)"
+                  rx="20"
+                  ry="20"
+                  fill="none"
+                  stroke="url(#stepsRectFlowGrad)"
+                  strokeWidth="1.5"
+                  strokeDasharray="8,6"
+                  strokeLinecap="round"
+                  vectorEffect="non-scaling-stroke"
+                />
+                <rect
+                  x="5"
+                  y="5"
+                  width="calc(100% - 10px)"
+                  height="calc(100% - 10px)"
+                  rx="17"
+                  ry="17"
+                  fill="none"
+                  stroke="url(#stepsRectFlowGrad)"
+                  strokeWidth="1.5"
+                  strokeDasharray="8,6"
+                  strokeLinecap="round"
+                  vectorEffect="non-scaling-stroke"
+                />
+                <rect
+                  x="9"
+                  y="9"
+                  width="calc(100% - 18px)"
+                  height="calc(100% - 18px)"
+                  rx="14"
+                  ry="14"
+                  fill="none"
+                  stroke="url(#stepsRectFlowGrad)"
+                  strokeWidth="1.5"
+                  strokeDasharray="8,6"
+                  strokeLinecap="round"
+                  vectorEffect="non-scaling-stroke"
+                />
+                <rect
+                  x="13"
+                  y="13"
+                  width="calc(100% - 26px)"
+                  height="calc(100% - 26px)"
+                  rx="11"
+                  ry="11"
+                  fill="none"
+                  stroke="url(#stepsRectFlowGrad)"
+                  strokeWidth="1.5"
+                  strokeDasharray="8,6"
+                  strokeLinecap="round"
+                  vectorEffect="non-scaling-stroke"
+                />
+                <rect
+                  x="17"
+                  y="17"
+                  width="calc(100% - 34px)"
+                  height="calc(100% - 34px)"
+                  rx="8"
+                  ry="8"
+                  fill="none"
+                  stroke="url(#stepsRectFlowGrad)"
+                  strokeWidth="1.5"
+                  strokeDasharray="8,6"
+                  strokeLinecap="round"
+                  vectorEffect="non-scaling-stroke"
+                />
+              </svg>
+
             <div
               className="how-it-works-steps"
               onMouseEnter={() => setHowItWorksAutoScroll(false)}
@@ -1243,8 +1394,6 @@ export default function Home() {
                 alignItems: 'flex-start',
                 gap: '40px',
                 position: 'relative',
-                animation: 'carouselScroll 30s linear infinite',
-                animationPlayState: howItWorksAutoScroll ? 'running' : 'paused'
               }}>
               {/* Animated Rope Thread - Extended for duplicates */}
               <svg
@@ -1420,7 +1569,7 @@ export default function Home() {
                 />
               </svg>
 
-              {/* Vertical S-curve connector for mobile — flows through avatar centers */}
+              {/* Vertical S-curve connector for mobile */}
               <svg
                 className="how-it-works-mobile-line"
                 style={{
@@ -1484,8 +1633,8 @@ export default function Home() {
                   { img: '/ava2.png', alt: 'Photography', titleKey: 'howItWorks.photography.title', descKey: 'howItWorks.photography.description' },
                   { img: '/ava3.png', alt: 'Go Live', titleKey: 'howItWorks.goLive.title', descKey: 'howItWorks.goLive.description' },
                 ];
-                return [...steps, ...steps].map((s, i) => (
-                  <div key={i} className={i >= steps.length ? 'step-duplicate' : undefined} aria-hidden={i >= steps.length} style={{
+                return steps.map((s, i) => (
+                  <div key={i} style={{
                     flex: 1,
                     display: 'flex',
                     flexDirection: 'column',
@@ -1494,17 +1643,97 @@ export default function Home() {
                     position: 'relative',
                     zIndex: 2
                   }}>
-                    <img
-                      className="step-img"
-                      src={s.img}
-                      alt={s.alt}
-                      style={{
-                        width: 'clamp(180px, 40vw, 340px)',
-                        height: 'clamp(180px, 40vw, 340px)',
-                        objectFit: 'contain',
-                        marginBottom: 'clamp(20px, 4vw, 30px)'
-                      }}
-                    />
+                    {/* Zigzag connector linking this avatar to the outer rect (mobile only) */}
+                    {isMobile && (
+                      <svg
+                        width="28"
+                        height="80"
+                        viewBox="0 0 28 80"
+                        style={{ marginBottom: '21px', overflow: 'visible', position: 'relative', zIndex: 3 }}
+                      >
+                        <defs>
+                          <linearGradient id={`zigzagGrad-${i}`} gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="80">
+                            <stop offset="0%" stopColor="#083A85" stopOpacity="0.85">
+                              <animate attributeName="offset" values="-0.3;1.0;-0.3" dur="3s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.6 1; 0.4 0 0.6 1"/>
+                            </stop>
+                            <stop offset="15%" stopColor="#3b82f6" stopOpacity="1">
+                              <animate attributeName="offset" values="-0.15;1.15;-0.15" dur="3s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.6 1; 0.4 0 0.6 1"/>
+                            </stop>
+                            <stop offset="30%" stopColor="#083A85" stopOpacity="0.85">
+                              <animate attributeName="offset" values="0;1.3;0" dur="3s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.6 1; 0.4 0 0.6 1"/>
+                            </stop>
+                          </linearGradient>
+                        </defs>
+                        <path
+                          d="M 3 2 L 25 20 L 3 38 L 25 56 L 3 78"
+                          stroke={`url(#zigzagGrad-${i})`}
+                          strokeWidth="1.5"
+                          strokeDasharray="8,6"
+                          strokeLinecap="round"
+                          fill="none"
+                        />
+                        <path
+                          d="M 25 2 L 3 20 L 25 38 L 3 56 L 25 78"
+                          stroke={`url(#zigzagGrad-${i})`}
+                          strokeWidth="1.5"
+                          strokeDasharray="8,6"
+                          strokeLinecap="round"
+                          fill="none"
+                        />
+                      </svg>
+                    )}
+                    {/* Avatar with rectangular flowing-dot border */}
+                    <div style={{ position: 'relative', width: isMobile ? (i === 0 ? '280px' : '280px') : 'clamp(140px, 22vw, 240px)', height: isMobile ? (i === 0 ? '250px' : '260px') : 'clamp(140px, 22vw, 240px)', marginBottom: isMobile ? '55px' : 'clamp(16px, 3vw, 24px)', left: isMobile ? (i === 0 ? '10px' : '10px') : undefined  }}>
+                      <img
+                        className="step-img"
+                        src={s.img}
+                        alt={s.alt}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'contain',
+                          position: 'relative',
+                          zIndex: 1,
+                          transform: isMobile ? 'scale(1.20)' : undefined,
+                        }}
+                      />
+                      {/* Rectangular dashed border with flowing twinkling gradient */}
+                      <svg
+                        className="step-rect-border"
+                        style={{ position: 'absolute', inset: '-15px', width: 'calc(100% + 4px)', height: 'calc(100% + 34px)', zIndex: 0, pointerEvents: 'none' }}
+                        viewBox="0 0 200 200"
+                        preserveAspectRatio="none"
+                      >
+                        <defs>
+                          <linearGradient id={`rectFlowGrad-${i}`} gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="200" y2="0">
+                            <stop offset="0%" stopColor="#083A85" stopOpacity="0.3">
+                              <animate attributeName="offset" values="-0.3;1.0;-0.3" dur="3s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.6 1; 0.4 0 0.6 1"/>
+                            </stop>
+                            <stop offset="15%" stopColor="#3b82f6" stopOpacity="1">
+                              <animate attributeName="offset" values="-0.15;1.15;-0.15" dur="3s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.6 1; 0.4 0 0.6 1"/>
+                            </stop>
+                            <stop offset="30%" stopColor="#083A85" stopOpacity="0.3">
+                              <animate attributeName="offset" values="0;1.3;0" dur="3s" repeatCount="indefinite" calcMode="spline" keySplines="0.4 0 0.6 1; 0.4 0 0.6 1"/>
+                            </stop>
+                          </linearGradient>
+                        </defs>
+                        {/* Rectangular path with rounded corners */}
+                        <rect x="6" y="6" width="188" height="188" rx="20" ry="20"
+                          fill="none"
+                          stroke={`url(#rectFlowGrad-${i})`}
+                          strokeWidth="1.5"
+                          strokeDasharray="8,6"
+                          strokeLinecap="round"
+                        />
+                        <rect x="11" y="11" width="178" height="178" rx="15" ry="15"
+                          fill="none"
+                          stroke={`url(#rectFlowGrad-${i})`}
+                          strokeWidth="1.5"
+                          strokeDasharray="8,6"
+                          strokeLinecap="round"
+                        />
+                      </svg>
+                    </div>
                     <h3 className="step-title" style={{
                       fontSize: 'clamp(18px, 5vw, 30px)',
                       fontWeight: 700,
@@ -1525,6 +1754,7 @@ export default function Home() {
                   </div>
                 ));
               })()}
+            </div>
             </div>
 
 
@@ -1679,6 +1909,16 @@ export default function Home() {
               position: 'relative'
             }}
           >
+                {/* Mobile-only scroll-driven flowing texts — one per mockup phase */}
+                <div ref={phoneMobileTextRef} className="mobile-mockup-text mobile-mockup-text--bottom" aria-hidden="true">
+                  {t('devices.mockupHeadings.phone.line1')} {t('devices.mockupHeadings.phone.line2')}
+                </div>
+                <div ref={tabletMobileTextRef} className="mobile-mockup-text mobile-mockup-text--top" aria-hidden="true">
+                  {t('devices.mockupHeadings.tablet.line1')} {t('devices.mockupHeadings.tablet.line2')}
+                </div>
+                <div ref={laptopMobileTextRef} className="mobile-mockup-text mobile-mockup-text--bottom" aria-hidden="true">
+                  {t('devices.mockupHeadings.laptop.line1')} {t('devices.mockupHeadings.laptop.line2')}
+                </div>
                 <div className="mockups-container" style={{
                   padding: '0',
                   position: 'relative',
