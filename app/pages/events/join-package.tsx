@@ -5,7 +5,6 @@ import AmoriaKNavbar from '../../components/navbar';
 import { useRouter } from 'next/navigation';
 import { getPublicEventById, type PublicEvent, getCurrencies, type Currency as APICurrency } from '@/lib/APIs/public';
 import XentriPayModal from '../../components/XentriPayModal';
-import DonationPromptModal from '../../components/DonationPromptModal';
 import { generateGroupAccess, redeemGroupCode } from '@/lib/APIs/streams/route';
 import { useAuth } from '../../providers/AuthProvider';
 import { login as apiLogin } from '@/lib/APIs/auth/login/route';
@@ -35,7 +34,6 @@ function JoinPackageContent(): React.JSX.Element {
   // XentriPay modal state
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [currencies, setCurrencies] = useState<APICurrency[]>([]);
-  const [showDonationPrompt, setShowDonationPrompt] = useState(false);
   const [pendingDonationAmount, setPendingDonationAmount] = useState(0);
 
   // Group share code modal state
@@ -386,7 +384,7 @@ function JoinPackageContent(): React.JSX.Element {
 
   const openPaymentFlow = () => {
     setPendingDonationAmount(0);
-    setShowDonationPrompt(true);
+    setShowPaymentModal(true);
   };
 
   const handleSendInvite = async () => {
@@ -1236,23 +1234,6 @@ function JoinPackageContent(): React.JSX.Element {
         </div>
       </div>
 
-      {/* Donation Prompt before payment */}
-      <DonationPromptModal
-        isOpen={showDonationPrompt}
-        onDonate={(amt) => {
-          setPendingDonationAmount(amt);
-          setShowDonationPrompt(false);
-          setShowPaymentModal(true);
-        }}
-        onSkip={() => {
-          setPendingDonationAmount(0);
-          setShowDonationPrompt(false);
-          setShowPaymentModal(true);
-        }}
-        currencyCode={selectedEvent?.streamFeeCurrencyAbbreviation || selectedEvent?.streamFeeCurrencySymbol || 'RWF'}
-        paymentAmount={getPaymentFee()}
-      />
-
       {/* XentriPay Payment Modal */}
       <XentriPayModal
         isOpen={showPaymentModal}
@@ -1265,6 +1246,8 @@ function JoinPackageContent(): React.JSX.Element {
         eventId={selectedEvent?.id || ''}
         viewerId={!isAuthenticated ? (pendingViewerId || undefined) : undefined}
         donationAmount={pendingDonationAmount > 0 ? pendingDonationAmount : undefined}
+        showDonationPrompt
+        onDonationAmountChange={(amt) => setPendingDonationAmount(amt)}
         title={`Stream Access — ${selectedEvent?.title || 'Event'}`}
         subtitle={`${selectedPackage === 'group' ? `Group (${typeof numberOfPeople === 'number' ? numberOfPeople : 1} people)` : 'Individual'} · ${getPaymentFee().toLocaleString()} ${selectedEvent?.streamFeeCurrencyAbbreviation || selectedEvent?.streamFeeCurrencySymbol || (currencies.length > 0 ? currencies[0].code : 'RWF')}`}
         darkMode

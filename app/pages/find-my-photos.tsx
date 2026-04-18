@@ -4,7 +4,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Navbar from '../components/navbar';
 import XentriPayModal from '../components/XentriPayModal';
-import DonationPromptModal from '../components/DonationPromptModal';
 import { getAlbumByCode, type AlbumPhoto } from '@/lib/APIs/public/get-album/route';
 import { uploadSelfieForRecognition, type MatchedPhoto } from '@/lib/APIs/customer/facial-recognition/route';
 import { getCurrencies, type Currency } from '@/lib/APIs/public';
@@ -115,7 +114,6 @@ const FindMyPhotos = () => {
     currencyCode: string;
   } | null>(null);
   const [purchaseNotice, setPurchaseNotice] = useState<string | null>(null);
-  const [showDonationPrompt, setShowDonationPrompt] = useState(false);
   const [pendingDonationAmount, setPendingDonationAmount] = useState(0);
 
   // Persistent buyer identity (one per album) — mirrors anonymous-viewer pattern
@@ -807,7 +805,7 @@ const FindMyPhotos = () => {
       currencyCode: ctx.currencyCode,
     });
     setPendingDonationAmount(0);
-    setShowDonationPrompt(true);
+    setXentriModalOpen(true);
   };
 
   const openPurchaseModal = (photos: PhotoItem[]) => {
@@ -3099,25 +3097,6 @@ const FindMyPhotos = () => {
         );
       })()}
 
-      {/* ── Donation Prompt before payment ── */}
-      {pendingPurchase && (
-        <DonationPromptModal
-          isOpen={showDonationPrompt}
-          onDonate={(amt) => {
-            setPendingDonationAmount(amt);
-            setShowDonationPrompt(false);
-            setXentriModalOpen(true);
-          }}
-          onSkip={() => {
-            setPendingDonationAmount(0);
-            setShowDonationPrompt(false);
-            setXentriModalOpen(true);
-          }}
-          currencyCode={pendingPurchase.currencyCode}
-          paymentAmount={pendingPurchase.amount}
-        />
-      )}
-
       {/* ── XentriPay Modal for album purchase ── */}
       {pendingPurchase && (
         <XentriPayModal
@@ -3135,6 +3114,8 @@ const FindMyPhotos = () => {
           onAlreadyPurchased={handleAlreadyPurchased}
           title={`Buy ${pendingPurchase.photoIds.length} photo${pendingPurchase.photoIds.length > 1 ? 's' : ''}`}
           donationAmount={pendingDonationAmount > 0 ? pendingDonationAmount : undefined}
+          showDonationPrompt
+          onDonationAmountChange={(amt) => setPendingDonationAmount(amt)}
           darkMode
         />
       )}

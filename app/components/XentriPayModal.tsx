@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { API_ENDPOINTS } from '@/lib/api/config';
 import {
   initiateXentriPayTip,
   initiateXentriPayStreaming,
@@ -48,9 +49,15 @@ export interface XentriPayModalProps {
   buyerId?: string;
   // Dark theme to match viewer auth modal
   darkMode?: boolean;
+  // Show donation prompt after payment method selection
+  showDonationPrompt?: boolean;
+  // Callback when donation amount changes (from internal donation step)
+  onDonationAmountChange?: (amount: number) => void;
 }
 
-type PaymentStep = 'method' | 'processing' | 'success' | 'failed';
+type PaymentStep = 'method' | 'donation' | 'processing' | 'success' | 'failed';
+
+const FALLBACK_DONATION_TIERS = [500, 1000, 2000, 5000];
 
 // ==================== Payment Methods ====================
 
@@ -81,8 +88,10 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
   albumId,
   photoIds,
   buyerId,
-  donationAmount = 0,
+  donationAmount: donationAmountProp = 0,
   darkMode = false,
+  showDonationPrompt = false,
+  onDonationAmountChange,
 }) => {
   // State
   const [step, setStep] = useState<PaymentStep>('method');
@@ -94,6 +103,39 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
   const stopPollingRef = useRef<(() => void) | null>(null);
 
+  // Internal donation state (used when showDonationPrompt is true)
+  const [internalDonationAmount, setInternalDonationAmount] = useState(0);
+  const [donationTiers, setDonationTiers] = useState<number[]>(FALLBACK_DONATION_TIERS);
+  const [selectedDonationTier, setSelectedDonationTier] = useState<number | null>(null);
+  const [customDonationAmount, setCustomDonationAmount] = useState('');
+  const [isCustomDonation, setIsCustomDonation] = useState(false);
+  const [donationExchangeRate, setDonationExchangeRate] = useState(1);
+
+  // Effective donation amount: internal (from donation step) or external prop
+  const donationAmount = showDonationPrompt ? internalDonationAmount : donationAmountProp;
+
+  // Fetch donation tiers
+  const fetchDonationTiers = useCallback(async () => {
+    try {
+      const baseUrl = (process.env.NEXT_PUBLIC_API_URL || 'https://backend.connekyt.com').replace(/\/$/, '');
+      const res = await fetch(`${baseUrl}${API_ENDPOINTS.PUBLIC.DONATION_TIERS}`);
+      if (res.ok) {
+        const json = await res.json();
+        const data = json.data;
+        if (data?.tiers?.length) {
+          setDonationTiers(data.tiers.map((t: { amount: number }) => t.amount));
+        }
+        if (data?.exchangeRates && currencyCode && data.baseCurrency && currencyCode !== data.baseCurrency) {
+          const base = data.exchangeRates[data.baseCurrency];
+          const target = data.exchangeRates[currencyCode];
+          if (base?.rateToUsd && target?.rateToUsd) {
+            setDonationExchangeRate(target.rateToUsd / base.rateToUsd);
+          }
+        }
+      }
+    } catch { /* use fallback tiers */ }
+  }, [currencyCode]);
+
   // Reset state when modal opens/closes
   useEffect(() => {
     if (isOpen) {
@@ -104,6 +146,11 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
       setError(null);
       setRefid(null);
       setPaymentUrl(null);
+      setInternalDonationAmount(0);
+      setSelectedDonationTier(null);
+      setCustomDonationAmount('');
+      setIsCustomDonation(false);
+      if (showDonationPrompt) fetchDonationTiers();
     }
     return () => {
       if (stopPollingRef.current) {
@@ -210,7 +257,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
   }, [onSuccess, paymentType, viewerId, eventId]);
 
   // Handle payment initiation
-  const handlePay = async () => {
+  const handlePay = async (overrideDonationAmount?: number) => {
     if (!isValid()) return;
 
     setLoading(true);
@@ -218,6 +265,9 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
 
     const method = paymentMethods.find(m => m.id === selectedMethod);
     if (!method) return;
+
+    const effectiveDonation = overrideDonationAmount !== undefined ? overrideDonationAmount : donationAmount;
+    const hasEffectiveDonation = effectiveDonation > 0;
 
     const isCard = selectedMethod === 'card';
     const paymentMethodType = isCard ? 'CARD' : 'MOBILE_MONEY';
@@ -234,7 +284,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
         response = await initiateXentriPayment({
           declarationId,
           eventId,
-          ...(hasDonation ? { donationAmount } : {}),
+          ...(hasEffectiveDonation ? { donationAmount: effectiveDonation } : {}),
           ...(isCard ? {} : { phone, telecomProvider: method.provider }),
           paymentMethod: paymentMethodType,
           redirectUrl,
@@ -244,7 +294,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
           eventId,
           amount,
           currencyId,
-          ...(hasDonation ? { donationAmount } : {}),
+          ...(hasEffectiveDonation ? { donationAmount: effectiveDonation } : {}),
           ...(isCard ? {} : { phone, telecomProvider: method.provider }),
           paymentMethod: paymentMethodType,
           redirectUrl,
@@ -254,7 +304,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
           // Anonymous viewer — use public endpoint (no auth)
           response = await initiateAnonymousStreamingPayment(eventId, {
             viewerId,
-            ...(hasDonation ? { donationAmount } : {}),
+            ...(hasEffectiveDonation ? { donationAmount: effectiveDonation } : {}),
             ...(isCard ? {} : { phone, telecomProvider: method.provider }),
             paymentMethod: paymentMethodType,
             redirectUrl,
@@ -264,7 +314,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
             eventId,
             amount,
             currencyId,
-            ...(hasDonation ? { donationAmount } : {}),
+            ...(hasEffectiveDonation ? { donationAmount: effectiveDonation } : {}),
             ...(isCard ? {} : { phone, telecomProvider: method.provider }),
             paymentMethod: paymentMethodType,
             redirectUrl,
@@ -283,7 +333,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
           eventId,
           amount,
           currencyId,
-          ...(hasDonation ? { donationAmount } : {}),
+          ...(hasEffectiveDonation ? { donationAmount: effectiveDonation } : {}),
           ...(isCard ? {} : { phone, telecomProvider: method.provider }),
           paymentMethod: paymentMethodType,
           redirectUrl,
@@ -295,7 +345,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
           photoIds,
           amount,
           currencyId,
-          ...(hasDonation ? { donationAmount } : {}),
+          ...(hasEffectiveDonation ? { donationAmount: effectiveDonation } : {}),
           ...(isCard ? {} : { phone, telecomProvider: method.provider }),
           paymentMethod: paymentMethodType,
           redirectUrl,
@@ -632,7 +682,13 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
 
             {/* Pay Button */}
             <button
-              onClick={handlePay}
+              onClick={() => {
+                if (showDonationPrompt && paymentType !== 'donation') {
+                  setStep('donation');
+                } else {
+                  handlePay();
+                }
+              }}
               disabled={!isValid() || loading}
               style={{
                 width: '100%',
@@ -674,12 +730,185 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
                       <><rect x="1" y="4" width="22" height="16" rx="2" ry="2" /><line x1="1" y1="10" x2="23" y2="10" /></>
                     )}
                   </svg>
-                  {selectedMethod === 'card' ? `Proceed to Pay ${formatAmount(totalAmount)}` : `Pay ${formatAmount(totalAmount)}`}
+                  {showDonationPrompt && paymentType !== 'donation'
+                    ? `Continue ${formatAmount(totalAmount)}`
+                    : selectedMethod === 'card' ? `Proceed to Pay ${formatAmount(totalAmount)}` : `Pay ${formatAmount(totalAmount)}`}
                 </>
               )}
             </button>
           </>
         )}
+
+        {/* ==================== STEP: Donation ==================== */}
+        {step === 'donation' && (() => {
+          const convertDonation = (rwfAmount: number): number => {
+            if (donationExchangeRate === 1) return Math.round(rwfAmount);
+            return Math.round(rwfAmount * donationExchangeRate * 100) / 100;
+          };
+          const formatDonationAmt = (val: number): string => {
+            const formatted = new Intl.NumberFormat('en-US', {
+              minimumFractionDigits: 0,
+              maximumFractionDigits: donationExchangeRate === 1 ? 0 : 2,
+            }).format(val);
+            return `${formatted} ${currencyCode}`;
+          };
+          const getDonationAmt = (): number => {
+            if (isCustomDonation && customDonationAmount) return parseFloat(customDonationAmount) || 0;
+            if (selectedDonationTier !== null) return convertDonation(selectedDonationTier);
+            return 0;
+          };
+          const canDonate = getDonationAmt() > 0;
+          const proceedWithDonation = (amt: number) => {
+            setInternalDonationAmount(amt);
+            onDonationAmountChange?.(amt);
+            handlePay(amt);
+          };
+
+          return (
+            <>
+              {/* Header */}
+              <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+                <div style={{
+                  width: '56px', height: '56px', borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #e11d48 0%, #f43f5e 100%)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  margin: '0 auto 14px',
+                  boxShadow: '0 4px 14px rgba(225, 29, 72, 0.3)',
+                }}>
+                  <i className="bi bi-heart-fill" style={{ fontSize: '24px', color: '#fff' }}></i>
+                </div>
+                <h2 style={{
+                  fontSize: 'clamp(18px, 4vw, 22px)', fontWeight: '700', color: '#083A85',
+                  marginBottom: '6px', fontFamily: "'Pragati Narrow', sans-serif", marginTop: 0,
+                }}>
+                  Support a Cause
+                </h2>
+                <p style={{ fontSize: '13px', color: '#6b7280', lineHeight: '1.5', margin: 0 }}>
+                  Your donation helps support vulnerable families, educate children, and empower those in need.
+                </p>
+              </div>
+
+              {/* Payment context */}
+              <div style={{
+                backgroundColor: '#f0f5ff', border: '1px solid #dbeafe', borderRadius: '10px',
+                padding: '10px 14px', marginBottom: '16px',
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              }}>
+                <span style={{ fontSize: '13px', color: '#4b5563' }}>Your payment</span>
+                <strong style={{ fontSize: '14px', color: '#083A85' }}>{formatAmount(amount)}</strong>
+              </div>
+
+              {/* Tier buttons */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', marginBottom: '12px' }}>
+                {donationTiers.map((tier) => {
+                  const convertedAmount = convertDonation(tier);
+                  const isSelected = !isCustomDonation && selectedDonationTier === tier;
+                  return (
+                    <button
+                      key={tier}
+                      onClick={() => { setSelectedDonationTier(tier); setIsCustomDonation(false); setCustomDonationAmount(''); }}
+                      style={{
+                        padding: '12px 8px', borderRadius: '12px',
+                        border: isSelected ? '2px solid #083A85' : '2px solid #e5e7eb',
+                        backgroundColor: isSelected ? '#f0f5ff' : '#fff',
+                        color: isSelected ? '#083A85' : '#374151',
+                        fontWeight: '600', fontSize: '14px', cursor: 'pointer', transition: 'all 0.2s',
+                      }}
+                    >
+                      {formatDonationAmt(convertedAmount)}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Custom amount */}
+              <div style={{ marginBottom: '20px' }}>
+                <div
+                  onClick={() => { setIsCustomDonation(true); setSelectedDonationTier(null); }}
+                  style={{
+                    display: 'flex', alignItems: 'center',
+                    border: isCustomDonation ? '2px solid #083A85' : '2px solid #e5e7eb',
+                    borderRadius: '12px', overflow: 'hidden',
+                    backgroundColor: isCustomDonation ? '#f0f5ff' : '#fff', transition: 'all 0.2s',
+                  }}
+                >
+                  <span style={{
+                    padding: '10px 14px', fontSize: '14px', fontWeight: '600', color: '#6b7280',
+                    backgroundColor: isCustomDonation ? '#dbeafe' : '#f9fafb', borderRight: '1px solid #e5e7eb',
+                  }}>
+                    {currencyCode}
+                  </span>
+                  <input
+                    type="number"
+                    placeholder="Custom amount"
+                    value={customDonationAmount}
+                    onChange={(e) => { setCustomDonationAmount(e.target.value); setIsCustomDonation(true); setSelectedDonationTier(null); }}
+                    onFocus={() => { setIsCustomDonation(true); setSelectedDonationTier(null); }}
+                    style={{
+                      flex: 1, padding: '10px 14px', border: 'none', outline: 'none',
+                      fontSize: '14px', fontWeight: '500', backgroundColor: 'transparent', color: '#1f2937',
+                    }}
+                    min="1"
+                  />
+                </div>
+              </div>
+
+              {/* Total display when donation selected */}
+              {canDonate && (
+                <div style={{
+                  backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '10px',
+                  padding: '10px 14px', marginBottom: '16px', fontSize: '13px', color: '#166534',
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                    <span>Payment:</span>
+                    <strong>{formatAmount(amount)}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                    <span>Donation:</span>
+                    <strong style={{ color: '#e11d48' }}>{formatDonationAmt(getDonationAmt())}</strong>
+                  </div>
+                  <div style={{
+                    borderTop: '1px solid #bbf7d0', paddingTop: '6px',
+                    display: 'flex', justifyContent: 'space-between', fontWeight: '700', fontSize: '14px',
+                  }}>
+                    <span>Total:</span>
+                    <span>{formatAmount(amount + getDonationAmt())}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Action buttons */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <button
+                  onClick={() => proceedWithDonation(getDonationAmt())}
+                  disabled={!canDonate}
+                  style={{
+                    width: '100%', padding: '14px 20px',
+                    backgroundColor: canDonate ? '#083A85' : '#d1d5db',
+                    color: canDonate ? '#fff' : '#9ca3af',
+                    border: 'none', borderRadius: '12px', fontSize: '15px', fontWeight: '600',
+                    cursor: canDonate ? 'pointer' : 'not-allowed', transition: 'all 0.2s ease',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                  }}
+                >
+                  <i className="bi bi-heart-fill" style={{ fontSize: '16px' }}></i>
+                  Add Donation & Continue
+                </button>
+                <button
+                  onClick={() => proceedWithDonation(0)}
+                  style={{
+                    width: '100%', padding: '12px 20px',
+                    backgroundColor: '#fff', color: '#6b7280',
+                    border: '2px solid #e5e7eb', borderRadius: '12px',
+                    fontSize: '14px', fontWeight: '600', cursor: 'pointer', transition: 'all 0.2s ease',
+                  }}
+                >
+                  Skip, continue to payment
+                </button>
+              </div>
+            </>
+          );
+        })()}
 
         {/* ==================== STEP: Processing ==================== */}
         {step === 'processing' && (
