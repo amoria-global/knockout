@@ -16,7 +16,9 @@ import {
   type BookedDate,
 } from '@/lib/APIs/public';
 import { getPublicPhotographerPackages, type PublicPackage } from '@/lib/APIs/packages/get-packages/route';
-import { createEvent } from '@/lib/APIs/events/create-event/route';
+import { createEvent, type CreateEventResponse } from '@/lib/APIs/events/create-event/route';
+import { revokeUnpaidEvent } from '@/lib/APIs/events/revoke-unpaid/route';
+import XentriPayModal from './XentriPayModal';
 import { login } from '@/lib/APIs/auth/login/route';
 import { signup } from '@/lib/APIs/auth/signup/route';
 import { verifyOtp } from '@/lib/APIs/auth/verify-otp/route';
@@ -201,6 +203,8 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
   const [milestoneOption, setMilestoneOption] = useState<'full' | 'half' | 'thirty'>('half');
 
   // ── Slide 5 local state ──
+  const [evtDate, setEvtDate] = useState('');
+  const [evtLocation, setEvtLocation] = useState('');
   const [evtTitle, setEvtTitle] = useState('');
   const [evtDescription, setEvtDescription] = useState('');
   const [evtType, setEvtType] = useState('');
@@ -215,6 +219,15 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
   const [evtTagInput, setEvtTagInput] = useState('');
   const [evtGroupDiscount, setEvtGroupDiscount] = useState<number | ''>('');
   const [evtVenueName, setEvtVenueName] = useState('');
+
+  // ── Payment modal state ──
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentDeclarationId, setPaymentDeclarationId] = useState<string | null>(null);
+  const [paymentAmountValue, setPaymentAmountValue] = useState<number>(0);
+  const [paymentCurrencyCode, setPaymentCurrencyCode] = useState<string>('RWF');
+  const [paymentCurrencyId, setPaymentCurrencyId] = useState<string>('');
+  const [paymentEventId, setPaymentEventId] = useState<string | null>(null);
+  const [isRevoking, setIsRevoking] = useState(false);
 
   // Detect if user is a coordinator
   const isCoordinator = user?.customerType?.toLowerCase().includes('coordinator') || false;
@@ -284,6 +297,26 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
+
+  // ── Auto-fill defaults when preselected photographer (Quick Brief skipped) ──
+  useEffect(() => {
+    if (!isOpen || !preselectedPhotographerId) return;
+    // Set default event date to 7 days from today
+    const defaultDate = new Date();
+    defaultDate.setDate(defaultDate.getDate() + 7);
+    const dateStr = defaultDate.toISOString().split('T')[0];
+    setEvtDate(dateStr);
+    setEvtStartTime('09:00');
+    // Fetch photographer info to auto-fill location
+    getPhotographerById(preselectedPhotographerId).then(res => {
+      if (res.success && res.data) {
+        const raw = res.data as unknown as Record<string, unknown>;
+        const pData = (raw?.data ? raw.data : res.data) as Photographer;
+        if (pData.address) setEvtLocation(pData.address);
+      }
+    }).catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, preselectedPhotographerId]);
 
   // ── Fetch packages when photographer selected ──
   useEffect(() => {
@@ -444,6 +477,11 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
   // ─── SLIDE 5: Event Details + Submit ───
 
   const handleCompleteBooking = async () => {
+    // Validate date & location when Quick Brief was skipped
+    if (!state.quickBrief) {
+      if (!evtDate) { setEvtError('Please select an event date'); return; }
+      if (!evtLocation.trim()) { setEvtError('Please enter the event location'); return; }
+    }
     if (!evtTitle.trim()) { setEvtError('Please enter an event title'); return; }
     if (!evtStartTime) { setEvtError('Please select a start time'); return; }
     if (isCoordinator && !evtOrganizer.trim()) { setEvtError('Please enter the organizer name'); return; }
@@ -468,14 +506,15 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
 
     try {
       // Build location string — include venue name if provided
-      const locationParts = [details.venueName, state.quickBrief?.eventLocation].filter(Boolean);
-      const locationStr = locationParts.join(', ') || state.quickBrief?.eventLocation;
+      const baseLocation = state.quickBrief?.eventLocation || evtLocation.trim();
+      const locationParts = [details.venueName, baseLocation].filter(Boolean);
+      const locationStr = locationParts.join(', ') || baseLocation;
 
       const payload: Record<string, unknown> = {
         title: details.title,
         description: details.description,
         eventType: details.eventType,
-        eventDate: state.quickBrief?.eventDate,
+        eventDate: state.quickBrief?.eventDate || evtDate,
         startTime: details.startTime ? `${details.startTime}:00` : undefined,
         endTime: details.endTime ? `${details.endTime}:00` : undefined,
         location: locationStr,
@@ -500,11 +539,29 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
 
       const res = await createEvent(payload as Parameters<typeof createEvent>[0]);
       if (res.success) {
-        await clearDraft();
-        const eventId = (res.data as unknown as Record<string, unknown>)?.data
-          ? ((res.data as unknown as Record<string, unknown>).data as Record<string, unknown>)?.id as string
-          : (res.data as unknown as Record<string, unknown>)?.id as string;
-        dispatch({ type: 'SET_SUCCESS', eventId: eventId || undefined });
+        // Extract response data — server returns { data: { event, booking, declarationId, ... } }
+        const responseData = res.data as unknown as CreateEventResponse;
+        const innerData = responseData?.data;
+        const eventId = innerData?.event?.id || innerData?.id || undefined;
+        const declarationId = innerData?.declarationId;
+        const payAmount = innerData?.paymentAmount;
+        const currAbbr = innerData?.currencyAbbreviation;
+        const currId = innerData?.currencyId;
+
+        if (declarationId && payAmount && eventId) {
+          // Photographer selected — open payment modal
+          setPaymentDeclarationId(declarationId);
+          setPaymentAmountValue(payAmount);
+          setPaymentCurrencyCode(currAbbr || selectedPkg?.currencyAbbreviation || 'RWF');
+          setPaymentCurrencyId(currId || '');
+          setPaymentEventId(eventId);
+          setShowPaymentModal(true);
+          dispatch({ type: 'SET_SUBMITTING', value: false });
+        } else {
+          // No photographer (or no declaration) — direct success
+          await clearDraft();
+          dispatch({ type: 'SET_SUCCESS', eventId: eventId || undefined });
+        }
       } else {
         setSubmitError(res.error || 'Failed to create booking. Please try again.');
         dispatch({ type: 'SET_SUBMITTING', value: false });
@@ -513,6 +570,42 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
       setSubmitError('Connection error. Please try again.');
       dispatch({ type: 'SET_SUBMITTING', value: false });
     }
+  };
+
+  // ── Payment modal handlers ──
+
+  const handlePaymentSuccess = async (refid: string) => {
+    setShowPaymentModal(false);
+    await clearDraft();
+    dispatch({ type: 'SET_SUCCESS', eventId: paymentEventId || undefined });
+  };
+
+  const handlePaymentError = async (error: string) => {
+    setShowPaymentModal(false);
+    if (paymentEventId) {
+      setIsRevoking(true);
+      try {
+        await revokeUnpaidEvent(paymentEventId);
+      } catch {
+        // Revocation failed — event may need manual cleanup
+      }
+      setIsRevoking(false);
+    }
+    setSubmitError(`Payment failed: ${error}. The booking has been cancelled. Please try again.`);
+  };
+
+  const handlePaymentClose = async () => {
+    setShowPaymentModal(false);
+    if (paymentEventId) {
+      setIsRevoking(true);
+      try {
+        await revokeUnpaidEvent(paymentEventId);
+      } catch {
+        // Revocation failed
+      }
+      setIsRevoking(false);
+    }
+    setSubmitError('Payment was not completed. The booking has been cancelled.');
   };
 
   // ─── AUTH HANDLERS ───
@@ -664,9 +757,13 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                 <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'linear-gradient(135deg, #10b981, #059669)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
                   <i className="bi bi-check-lg" style={{ fontSize: 32, color: '#fff' }}></i>
                 </div>
-                <h2 style={{ color: '#111827', fontSize: 22, fontWeight: 700, margin: '0 0 8px' }}>Booking Created!</h2>
+                <h2 style={{ color: '#111827', fontSize: 22, fontWeight: 700, margin: '0 0 8px' }}>
+                  {paymentDeclarationId ? 'Booking Confirmed!' : 'Booking Created!'}
+                </h2>
                 <p style={{ color: '#40444d', fontSize: 14, margin: '0 0 24px' }}>
-                  Your event has been created and the photographer has been notified. You can manage your booking from the dashboard.
+                  {paymentDeclarationId
+                    ? 'Your payment has been processed and the photographer has been notified. You can manage your booking from the dashboard.'
+                    : 'Your event has been created. You can assign a photographer and manage your booking from the dashboard.'}
                 </p>
                 <button onClick={() => {
                   const dashboardUrl = process.env.NEXT_PUBLIC_DASHBOARD_URL || 'https://dashboard.connekyt.com';
@@ -880,7 +977,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
             ) : state.currentSlide === 2 ? (
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-                  <button onClick={() => dispatch({ type: 'SET_SLIDE', slide: 1 })} style={{ ...btnSecondary, padding: '6px 12px', fontSize: 13 }}>
+                  <button onClick={() => preselectedPhotographerId ? handleClose() : dispatch({ type: 'SET_SLIDE', slide: 1 })} style={{ ...btnSecondary, padding: '6px 12px', fontSize: 13 }}>
                     <i className="bi bi-arrow-left"></i>
                   </button>
                   <h3 style={{ color: TEXT_PRIMARY, fontSize: 18, fontWeight: 700, margin: 0 }}>Select a Package</h3>
@@ -1043,6 +1140,21 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                 {submitError && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '10px 14px', marginBottom: 14, color: '#dc2626', fontSize: 13 }}>{submitError}</div>}
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  {/* Show date & location fields when Quick Brief was skipped */}
+                  {!state.quickBrief && (
+                    <>
+                      <div style={{ display: 'flex', gap: 10 }}>
+                        <div style={{ flex: 1 }}>
+                          <label style={{ display: 'block', color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Event Date *</label>
+                          <input type="date" value={evtDate} onChange={e => setEvtDate(e.target.value)} min={new Date().toISOString().split('T')[0]} style={inputStyle} />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <label style={{ display: 'block', color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Event Location *</label>
+                          <input type="text" value={evtLocation} onChange={e => setEvtLocation(e.target.value)} placeholder="e.g. Kigali, Rwanda" style={inputStyle} />
+                        </div>
+                      </div>
+                    </>
+                  )}
                   <div>
                     <label style={{ display: 'block', color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Event Title *</label>
                     <input type="text" value={evtTitle} onChange={e => setEvtTitle(e.target.value)} placeholder="e.g. Sarah & John's Wedding" style={inputStyle} />
@@ -1246,6 +1358,34 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
             ) : (
               <p style={{ color: TEXT_MUTED, textAlign: 'center', padding: 40 }}>Photographer not found.</p>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Payment Modal ── */}
+      {showPaymentModal && paymentDeclarationId && (
+        <XentriPayModal
+          isOpen={showPaymentModal}
+          onClose={handlePaymentClose}
+          onSuccess={handlePaymentSuccess}
+          onError={handlePaymentError}
+          amount={paymentAmountValue}
+          currencyCode={paymentCurrencyCode}
+          currencyId={paymentCurrencyId}
+          paymentType="booking"
+          declarationId={paymentDeclarationId}
+          eventId={paymentEventId || undefined}
+          title="Complete Booking Payment"
+          subtitle={`First milestone payment (${state.paymentMilestone?.option === 'full' ? '100%' : state.paymentMilestone?.option === 'half' ? '50%' : '30%'})`}
+        />
+      )}
+
+      {/* ── Revoking overlay ── */}
+      {isRevoking && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 10001, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: '#fff', borderRadius: 16, padding: '32px 24px', textAlign: 'center', maxWidth: 320 }}>
+            <div style={{ width: 32, height: 32, border: '3px solid #e5e7eb', borderTopColor: ACCENT, borderRadius: '50%', animation: 'bwSpin 0.8s linear infinite', margin: '0 auto 16px' }} />
+            <p style={{ color: TEXT_SECONDARY, fontSize: 14, margin: 0 }}>Cancelling booking...</p>
           </div>
         </div>
       )}

@@ -25,9 +25,15 @@ export interface CreateEventResponse {
   action: number;
   message: string;
   data?: {
-    id: string;
-    title: string;
-    status: string;
+    event?: { id: string; title: string; status: string; [key: string]: unknown };
+    booking?: { id: string; [key: string]: unknown };
+    declarationId?: string;
+    paymentAmount?: number;
+    currencyAbbreviation?: string;
+    currencyId?: string;
+    id?: string;
+    title?: string;
+    status?: string;
   };
 }
 
