@@ -215,18 +215,18 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
           const res = await checkAnonymousPaymentStatus(eventId, { viewerId, refid: paymentRefid });
           if (stopped) return;
           if (res.success && res.data) {
-            if (res.data.status === 'SUCCESS') { setStep('success'); setTimeout(() => onSuccess(paymentRefid), 2000); return; }
+            if (res.data.status === 'SUCCESS') { setStep('success'); setTimeout(() => onSuccess(paymentRefid), 500); return; }
             if (res.data.status === 'FAILED') { setStep('failed'); setError('Payment was declined or timed out. Please check your balance and try again.'); return; }
           }
-          if (attempts >= 60) { setError('Payment is taking longer than expected. Please check your payment history.'); setStep('failed'); return; }
-          setTimeout(poll, 5000);
+          if (attempts >= 150) { setError('Payment is taking longer than expected. Please check your payment history.'); setStep('failed'); return; }
+          setTimeout(poll, 2000);
         } catch {
           if (stopped) return;
-          if (attempts >= 60) { setError('Unable to check payment status. Please try again later.'); setStep('failed'); return; }
-          setTimeout(poll, 5000);
+          if (attempts >= 150) { setError('Unable to check payment status. Please try again later.'); setStep('failed'); return; }
+          setTimeout(poll, 2000);
         }
       };
-      setTimeout(poll, 5000);
+      setTimeout(poll, 2000);
       stopPollingRef.current = () => { stopped = true; };
       return;
     }
@@ -239,7 +239,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
           setStep('success');
           setTimeout(() => {
             onSuccess(paymentRefid);
-          }, 2000);
+          }, 500);
         },
         onFailure: (_data: XentriPayStatusResponse) => {
           setStep('failed');
@@ -250,8 +250,8 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
           setStep('failed');
         },
       },
-      5000,
-      60,
+      2000,
+      150,
       usePublicStatus
     );
   }, [onSuccess, paymentType, viewerId, eventId]);
