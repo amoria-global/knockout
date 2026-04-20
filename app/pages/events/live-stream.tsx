@@ -1458,10 +1458,10 @@ const App = () => {
   // Check if current main event is giftable (for backward compatibility)
   const isGiftableEvent = isEventGiftable(mainEvent);
 
-  // Open gift modal for a specific event - now shows donation prompt first
+  // Open gift modal for a specific event - donation section included by default
   const openGiftModal = (event: EventStream) => {
     setGiftTargetEvent(event);
-    setIncludeDonation(false);
+    setIncludeDonation(true);
     setDonationAmount("");
     setShowGiftModal(true);
   };
@@ -1626,8 +1626,8 @@ const App = () => {
             setGiftError(errorMsg || 'Something went wrong while processing your payment.');
           },
         },
-        5000,
-        60,
+        2000,
+        150,
         usePublicPolling
       );
     } catch (err) {
@@ -6901,9 +6901,9 @@ const App = () => {
           <div className="gift-modal" style={{
             backgroundColor: '#ffffff',
             borderRadius: '20px',
-            padding: 'clamp(20px, 5vw, 32px)',
-            paddingTop: 'clamp(40px, 8vw, 50px)',
-            maxWidth: '450px',
+            padding: 'clamp(16px, 4vw, 24px)',
+            paddingTop: 'clamp(36px, 7vw, 44px)',
+            maxWidth: '380px',
             width: '100%',
             maxHeight: '90vh',
             overflowY: 'auto',
@@ -6970,14 +6970,21 @@ const App = () => {
               lineHeight: '1.5'
             }}>Show your appreciation to {giftTargetEvent?.photographer || mainEvent.photographer}</p>
 
-            {/* Donation Amount Section — shown when user opted to donate */}
-            {includeDonation && (
+            {/* Donation Section — toggle to include a charitable donation */}
+            <div style={{
+              marginBottom: '20px',
+              padding: '14px',
+              backgroundColor: includeDonation ? 'rgba(245, 158, 11, 0.08)' : '#f9fafb',
+              border: `1px solid ${includeDonation ? 'rgba(245, 158, 11, 0.25)' : '#e5e7eb'}`,
+              borderRadius: '12px',
+              transition: 'all 0.2s',
+            }}>
               <div style={{
-                marginBottom: '20px',
-                padding: '16px',
-                backgroundColor: 'rgba(245, 158, 11, 0.08)',
-                border: '1px solid rgba(245, 158, 11, 0.25)',
-                borderRadius: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '8px',
+                marginBottom: includeDonation ? '10px' : 0,
               }}>
                 <label style={{
                   display: 'flex',
@@ -6985,11 +6992,32 @@ const App = () => {
                   gap: '8px',
                   fontSize: '13px',
                   fontWeight: '600',
-                  color: '#f59e0b',
-                  marginBottom: '10px'
+                  color: includeDonation ? '#f59e0b' : '#6b7280',
+                  cursor: 'pointer',
+                }} onClick={() => { setIncludeDonation(!includeDonation); if (includeDonation) setDonationAmount(''); }}>
+                  <i className="bi bi-heart-fill" style={{ color: includeDonation ? '#ef4444' : '#9ca3af' }}></i>
+                  Support a Cause
+                </label>
+                <button onClick={() => { setIncludeDonation(!includeDonation); if (includeDonation) setDonationAmount(''); }} style={{
+                  padding: '2px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: 600, cursor: 'pointer',
+                  border: `1px solid ${includeDonation ? '#f59e0b' : '#d1d5db'}`,
+                  background: includeDonation ? '#f59e0b' : 'transparent',
+                  color: includeDonation ? '#fff' : '#6b7280',
+                  transition: 'all 0.2s',
                 }}>
-                  <i className="bi bi-heart-fill" style={{ color: '#ef4444' }}></i>
-                  Donation Amount ({mainEvent?.streamFeeCurrencyAbbreviation || 'RWF'})
+                  {includeDonation ? 'Added' : 'Add'}
+                </button>
+              </div>
+            {includeDonation && (
+              <>
+                <label style={{
+                  display: 'block',
+                  fontSize: '12px',
+                  fontWeight: '600',
+                  color: '#f59e0b',
+                  marginBottom: '8px'
+                }}>
+                  Amount ({mainEvent?.streamFeeCurrencyAbbreviation || 'RWF'})
                 </label>
                 <input
                   type="number"
@@ -6999,10 +7027,10 @@ const App = () => {
                   style={{
                     width: '100%',
                     padding: '12px 16px',
-                    backgroundColor: '#27272a',
+                    backgroundColor: '#f9fafb',
                     border: '1px solid rgba(245, 158, 11, 0.3)',
                     borderRadius: '10px',
-                    color: '#efeff1',
+                    color: '#374151',
                     fontSize: '14px',
                     outline: 'none',
                     transition: 'border-color 0.2s',
@@ -7027,10 +7055,10 @@ const App = () => {
                         padding: '8px 10px',
                         fontSize: '12px',
                         fontWeight: '600',
-                        backgroundColor: donationAmount === amt ? '#f59e0b' : '#27272a',
-                        color: donationAmount === amt ? '#000' : '#fff',
+                        backgroundColor: donationAmount === amt ? '#f59e0b' : '#fff',
+                        color: donationAmount === amt ? '#000' : '#374151',
                         border: '1px solid',
-                        borderColor: donationAmount === amt ? '#f59e0b' : 'rgba(245, 158, 11, 0.2)',
+                        borderColor: donationAmount === amt ? '#f59e0b' : 'rgba(245, 158, 11, 0.25)',
                         borderRadius: '8px',
                         cursor: 'pointer',
                         transition: 'all 0.2s ease',
@@ -7043,8 +7071,9 @@ const App = () => {
                 <p style={{ fontSize: '11px', color: '#9ca3af', marginTop: '8px', marginBottom: 0 }}>
                   Supports families in need, medical bills, school requirements, and food for children
                 </p>
-              </div>
+              </>
             )}
+            </div>
 
             {/* Gift Amount Input */}
             <div style={{ marginBottom: '20px' }}>

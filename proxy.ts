@@ -6,7 +6,7 @@ import type { NextRequest } from 'next/server';
  * Checks for authToken cookie and redirects unauthenticated users
  * to login immediately — before any page content loads.
  */
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const authToken = request.cookies.get('authToken')?.value;
