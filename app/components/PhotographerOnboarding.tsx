@@ -106,11 +106,9 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
   const [pkgDelivery, setPkgDelivery] = useState(7);
   const [pkgDescription, setPkgDescription] = useState('');
 
-  // ── Fetch data ──
+  // ── Fetch data (eagerly on mount so specialties are ready when modal opens) ──
   useEffect(() => {
-    if (!isOpen) return;
-    // Fetch specialties from the same endpoint the dashboard uses
-    apiClient.get<{ data: { id: string; name: string }[] }>('/api/remote/public/specialties', { skipAuth: true, retries: 2 }).then(r => {
+    apiClient.get<{ data: { id: string; name: string }[] }>('/api/remote/photographer-categories', { skipAuth: true, retries: 2 }).then(r => {
       if (r.success && r.data) {
         const raw = r.data as unknown as Record<string, unknown>;
         const list = Array.isArray(raw) ? raw : Array.isArray(raw?.data) ? raw.data as { id: string; name: string }[] : [];
@@ -125,7 +123,7 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
         else if (r.data.length > 0) setPkgCurrencyId(r.data[0].id);
       }
     }).catch(() => {});
-  }, [isOpen]);
+  }, []);
 
   // ── Body scroll lock ──
   useEffect(() => {

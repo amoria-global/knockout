@@ -744,9 +744,9 @@ const Events: React.FC = () => {
                   className="event-card"
                   style={{
                     backgroundColor: '#ffffff',
-                    borderRadius: 'clamp(20px, 4vw, 28px)',
+                    borderRadius: isMobile ? 'clamp(12px, 3vw, 16px)' : 'clamp(20px, 4vw, 28px)',
                     boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-                    border: '4px solid #000000',
+                    border: isMobile ? '2px solid #000000' : '4px solid #000000',
                     padding: '3px',
                     position: 'relative',
                     transition: 'transform 0.3s ease, box-shadow 0.3s ease',
@@ -758,10 +758,10 @@ const Events: React.FC = () => {
                   <div style={{
                     position: 'relative',
                     width: '100%',
-                    height: isMobile ? 'clamp(180px, 35vw, 250px)' : '200px',
+                    height: isMobile ? 'clamp(100px, 24vw, 140px)' : '200px',
                     overflow: 'hidden',
-                    borderRadius: 'clamp(16px, 3vw, 20px)',
-                    marginBottom: '1rem'
+                    borderRadius: isMobile ? 'clamp(10px, 2.5vw, 14px)' : 'clamp(16px, 3vw, 20px)',
+                    marginBottom: isMobile ? '0.5rem' : '1rem'
                   }}>
                     <img
                       src={event.eventPhoto || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=500&q=80'}
@@ -775,23 +775,27 @@ const Events: React.FC = () => {
                   </div>
 
                   {/* Event Details */}
-                  <div style={{ padding: '0 clamp(0.25rem, 1vw, 0.5rem) clamp(0.25rem, 1vw, 0.5rem)' }}>
+                  <div style={{ padding: isMobile ? '0 0.35rem 0.35rem' : '0 clamp(0.25rem, 1vw, 0.5rem) clamp(0.25rem, 1vw, 0.5rem)' }}>
                     {/* Event Title */}
                     <div style={{
                       display: 'flex',
                       alignItems: 'center',
-                      justifyContent: 'center',
-                      marginBottom: '0.6rem'
+                      justifyContent: 'flex-start',
+                      marginBottom: isMobile ? '0.3rem' : '0.6rem'
                     }}>
                       <h3 style={{
-                        fontSize: '1.2rem',
+                        fontSize: isMobile ? '0.9rem' : '1.2rem',
                         fontWeight: '700',
                         color: '#111827',
                         lineHeight: '1.2',
                         margin: 0,
-                        textAlign: 'center',
+                        textAlign: 'left',
                         wordBreak: 'break-word',
-                        hyphens: 'auto'
+                        hyphens: 'auto',
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden'
                       }}>
                         {event.title}
                       </h3>
@@ -832,23 +836,23 @@ const Events: React.FC = () => {
                           style={{
                             display: 'flex',
                             alignItems: 'center',
-                            justifyContent: 'center',
+                            justifyContent: isMobile ? 'flex-start' : 'center',
                             gap: '0.4rem',
                             background: 'transparent',
-                            border: `2px solid ${borderColor}`,
+                            border: `${isMobile ? '1.5px' : '2px'} solid ${borderColor}`,
                             color: textColor,
-                            padding: 'clamp(0.5rem, 2vw, 0.625rem) clamp(0.75rem, 2.5vw, 1rem)',
+                            padding: isMobile ? '0.35rem 0.55rem' : 'clamp(0.5rem, 2vw, 0.625rem) clamp(0.75rem, 2.5vw, 1rem)',
                             borderRadius: '10px',
-                            fontSize: '0.9rem',
+                            fontSize: isMobile ? '0.7rem' : '0.9rem',
                             fontWeight: '700',
                             textTransform: 'uppercase',
-                            marginBottom: '0.5rem',
+                            marginBottom: isMobile ? '0.35rem' : '0.5rem',
                             width: '100%',
                             maxWidth: '100%',
                             boxSizing: 'border-box'
                           }}
                         >
-                          <i className={`bi ${icon}`} style={{ fontSize: '0.9rem' }}></i>
+                          <i className={`bi ${icon}`} style={{ fontSize: isMobile ? '0.7rem' : '0.9rem' }}></i>
                           {label}
                         </div>
                       );
@@ -858,18 +862,18 @@ const Events: React.FC = () => {
                     <div style={{
                       display: 'flex',
                       alignItems: 'center',
-                      justifyContent: 'center',
+                      justifyContent: 'flex-start',
                       gap: '0.4rem',
                       color: '#374151',
-                      fontSize: '0.9rem',
-                      marginBottom: '0.4rem',
+                      fontSize: isMobile ? '0.78rem' : '0.9rem',
+                      marginBottom: isMobile ? '0.25rem' : '0.4rem',
                       fontWeight: '500',
                       width: '100%',
                       minWidth: '0'
                     }}>
-                      <i className="bi bi-geo-alt-fill" style={{ fontSize: '0.85rem', color: '#3b82f6', flexShrink: 0 }}></i>
+                      <i className="bi bi-geo-alt-fill" style={{ fontSize: isMobile ? '0.7rem' : '0.85rem', color: '#3b82f6', flexShrink: 0 }}></i>
                       <span style={{
-                        textAlign: 'center'
+                        textAlign: 'left'
                       }}>{event.location || 'Location TBA'}</span>
                     </div>
 
@@ -877,16 +881,16 @@ const Events: React.FC = () => {
                     <div style={{
                       display: 'flex',
                       alignItems: 'center',
-                      justifyContent: 'center',
+                      justifyContent: 'flex-start',
                       gap: '0.4rem',
                       color: '#374151',
-                      fontSize: '0.9rem',
-                      marginBottom: '0.75rem',
+                      fontSize: isMobile ? '0.78rem' : '0.9rem',
+                      marginBottom: isMobile ? '0.5rem' : '0.75rem',
                       fontWeight: '500',
                       width: '100%'
                     }}>
-                      <i className="bi bi-clock-fill" style={{ fontSize: '0.85rem', color: '#3b82f6', flexShrink: 0 }}></i>
-                      <span style={{ textAlign: 'center' }}>{formatTimeRange(event.startTime, event.endTime)}</span>
+                      <i className="bi bi-clock-fill" style={{ fontSize: isMobile ? '0.7rem' : '0.85rem', color: '#3b82f6', flexShrink: 0 }}></i>
+                      <span style={{ textAlign: 'left' }}>{formatTimeRange(event.startTime, event.endTime)}</span>
                     </div>
 
                     {/* Stream Now Button */}
@@ -898,16 +902,16 @@ const Events: React.FC = () => {
                         justifyContent: 'center',
                         gap: '0.4rem',
                         background: isEventLive(event) ? '#039130' : ((event.eventStatus || '').toUpperCase() === 'COMPLETED' || event.streamStatus === 'ended') ? '#4b5563' : '#083A85',
-                        border: `2.5px solid ${isEventLive(event) ? '#059669' : ((event.eventStatus || '').toUpperCase() === 'COMPLETED' || event.streamStatus === 'ended') ? '#4b5563' : '#083A85'}`,
+                        border: `${isMobile ? '1.5px' : '2.5px'} solid ${isEventLive(event) ? '#059669' : ((event.eventStatus || '').toUpperCase() === 'COMPLETED' || event.streamStatus === 'ended') ? '#4b5563' : '#083A85'}`,
                         color: '#FFFFFF',
-                        padding: 'clamp(0.625rem, 2.5vw, 0.75rem) clamp(1rem, 3vw, 1.25rem)',
+                        padding: isMobile ? '0.45rem 0.6rem' : 'clamp(0.625rem, 2.5vw, 0.75rem) clamp(1rem, 3vw, 1.25rem)',
                         borderRadius: '10px',
-                        fontSize: '0.9rem',
+                        fontSize: isMobile ? '0.72rem' : '0.9rem',
                         fontWeight: '700',
                         textTransform: 'uppercase',
                         cursor: 'pointer',
                         transition: 'all 0.3s ease',
-                        letterSpacing: '0.5px',
+                        letterSpacing: isMobile ? '0.2px' : '0.5px',
                         maxWidth: '100%',
                         boxSizing: 'border-box'
                       }}
@@ -921,7 +925,7 @@ const Events: React.FC = () => {
                         e.currentTarget.style.boxShadow = 'none';
                       }}
                     >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ flexShrink: 0 }}>
+                      <svg width={isMobile ? 13 : 16} height={isMobile ? 13 : 16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ flexShrink: 0 }}>
                         <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" />
                         <path d="M12 6v6l4 2" strokeLinecap="round" />
                         <circle cx="12" cy="12" r="2" fill="currentColor" />
