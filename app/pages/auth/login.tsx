@@ -268,7 +268,39 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
   useEffect(() => { if (sessionExpired) { logoutUser(); setShowSessionExpiredBanner(true); const t = setTimeout(() => setShowSessionExpiredBanner(false), 5000); return () => clearTimeout(t); } }, [sessionExpired, logoutUser]);
 
   const loginIsDisabled = !loginEmail || !loginPassword;
-  const returnTo = redirectUrl || '/user/photographers';
+
+  // Only accept a `redirect` param that is either
+  //   (a) an internal path starting with '/' (no '//' or '/\')
+  //   (b) an absolute URL whose host is on an allow-list (dashboard.connekyt.com, connekyt.com)
+  // Anything else → fall back to the default internal page. This closes the
+  // open-redirect + token-leak vuln where ?redirect=https://evil.example would
+  // exfil the JWT as a query param.
+  const DASHBOARD_URL_ENV = process.env.NEXT_PUBLIC_DASHBOARD_URL || 'https://dashboard.connekyt.com';
+  const REDIRECT_HOST_ALLOWLIST = new Set<string>(
+    [
+      'connekyt.com',
+      'www.connekyt.com',
+      'dashboard.connekyt.com',
+      (() => { try { return new URL(DASHBOARD_URL_ENV).host; } catch { return ''; } })(),
+      'localhost:3000',
+      'localhost:3001',
+    ].filter(Boolean)
+  );
+  const isSafeRedirect = (raw: string | null): string | null => {
+    if (!raw) return null;
+    // Internal path
+    if (raw.startsWith('/') && !raw.startsWith('//') && !raw.startsWith('/\\')) return raw;
+    // Absolute URL — host must be allow-listed
+    try {
+      const u = new URL(raw, window.location.origin);
+      if (u.origin === window.location.origin) return u.pathname + u.search + u.hash;
+      if (REDIRECT_HOST_ALLOWLIST.has(u.host)) return u.toString();
+    } catch {
+      // fall through
+    }
+    return null;
+  };
+  const returnTo = isSafeRedirect(redirectUrl) || '/user/photographers';
 
   // Helper: redirect to dashboard with booking params (for book-now flows)
   const redirectToBookingDashboard = (customerType?: string) => {
