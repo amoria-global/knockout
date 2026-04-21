@@ -295,6 +295,27 @@ const Photographers: React.FC = () => {
           padding-right: 16px;
           padding-bottom: 8px;
         }
+        @media (max-width: 640px) {
+          .profile-image-container {
+            top: 55px;
+            left: 8px;
+            width: 46px;
+            height: 46px;
+          }
+          .verification-badge {
+            width: 16px;
+            height: 16px;
+          }
+          .verification-badge i {
+            font-size: 0.65rem !important;
+          }
+          .card-content-left-align {
+            padding-top: 18px;
+            padding-left: 8px;
+            padding-right: 8px;
+            padding-bottom: 6px;
+          }
+        }
       `}</style>
       
       <AmoriaKNavbar />
@@ -736,7 +757,7 @@ const Photographers: React.FC = () => {
             gridTemplateColumns: isMobile
               ? 'repeat(2, 1fr)'
               : 'repeat(auto-fill, minmax(300px, 1fr))',
-            gap: isMobile ? 'clamp(1.5rem, 4vw, 2.5rem) clamp(0.75rem, 2vw, 1.5rem)' : '2.5rem 1.5rem',
+            gap: isMobile ? 'clamp(0.75rem, 2.5vw, 1.25rem)' : '2.5rem 1.5rem',
             width: '100%'
           }}>
             {displayedPhotographers.map((photographer) => {
@@ -751,9 +772,9 @@ const Photographers: React.FC = () => {
                 key={photographer.id}
                 style={{
                   backgroundColor: '#ffffff',
-                  borderRadius: '20px',
+                  borderRadius: isMobile ? '12px' : '20px',
                   boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
-                  border: '3px solid #bab8b8',
+                  border: isMobile ? '2px solid #bab8b8' : '3px solid #bab8b8',
                   position: 'relative',
                   overflow: 'hidden',
                   transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
@@ -773,28 +794,28 @@ const Photographers: React.FC = () => {
                 <div style={{
                   position: 'relative',
                   width: '100%',
-                  height: '140px',
+                  height: isMobile ? '90px' : '140px',
                   ...(coverImage
                     ? { backgroundImage: `url("${coverImage}")`, backgroundSize: 'cover', backgroundPosition: 'center' }
                     : { backgroundColor: '#cbd5e1' }),
-                  borderTopLeftRadius: '17px',
-                  borderTopRightRadius: '17px',
-                  borderBottomRightRadius: '17px',
-                  borderBottomLeftRadius: '17px',
+                  borderTopLeftRadius: isMobile ? '10px' : '17px',
+                  borderTopRightRadius: isMobile ? '10px' : '17px',
+                  borderBottomRightRadius: isMobile ? '10px' : '17px',
+                  borderBottomLeftRadius: isMobile ? '10px' : '17px',
                   flexShrink: 0
                 }}>
                   <div style={{
                     position: 'absolute',
                     inset: 0,
                     backgroundColor: coverImage ? 'rgba(13, 27, 42, 0.3)' : 'transparent',
-                    borderTopLeftRadius: '17px',
-                    borderBottomRightRadius: '17px',
-                    borderBottomLeftRadius: '17px',
-                    borderTopRightRadius: '17px'
+                    borderTopLeftRadius: isMobile ? '10px' : '17px',
+                    borderBottomRightRadius: isMobile ? '10px' : '17px',
+                    borderBottomLeftRadius: isMobile ? '10px' : '17px',
+                    borderTopRightRadius: isMobile ? '10px' : '17px'
                   }}></div>
                   {!coverImage && (
                     <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <i className="bi bi-image" style={{ fontSize: '2.5rem', color: '#94a3b8' }}></i>
+                      <i className="bi bi-image" style={{ fontSize: isMobile ? '1.5rem' : '2.5rem', color: '#94a3b8' }}></i>
                     </div>
                   )}
                 </div>
@@ -826,11 +847,11 @@ const Photographers: React.FC = () => {
                       alignItems: 'center',
                       justifyContent: 'center',
                     }}>
-                      <i className="bi bi-person-fill" style={{ fontSize: '2rem', color: '#94a3b8' }}></i>
+                      <i className="bi bi-person-fill" style={{ fontSize: isMobile ? '1.3rem' : '2rem', color: '#94a3b8' }}></i>
                     </div>
                   )}
                   <div className="verification-badge">
-                    <i className="bi bi-patch-check-fill" style={{ color: '#3b82f6', fontSize: '1rem' }}></i>
+                    <i className="bi bi-patch-check-fill" style={{ color: '#3b82f6', fontSize: isMobile ? '0.65rem' : '1rem' }}></i>
                   </div>
                 </div>
 
@@ -839,8 +860,8 @@ const Photographers: React.FC = () => {
                   {/* Bookmark Button - Top Right */}
                   <div style={{
                     position: 'absolute',
-                    top: '150px',
-                    right: '16px',
+                    top: isMobile ? '96px' : '150px',
+                    right: isMobile ? '8px' : '16px',
                     zIndex: 10
                   }}>
                     <button
@@ -850,9 +871,9 @@ const Photographers: React.FC = () => {
                         cursor: 'pointer',
                         padding: '0',
                         color: isBookmarked ? '#3b82f6' : '#6b7280',
-                        fontSize: '1.05rem',
-                        width: '34px',
-                        height: '34px',
+                        fontSize: isMobile ? '0.72rem' : '1.05rem',
+                        width: isMobile ? '24px' : '34px',
+                        height: isMobile ? '24px' : '34px',
                         borderRadius: '50%',
                         display: 'flex',
                         alignItems: 'center',
@@ -875,16 +896,21 @@ const Photographers: React.FC = () => {
                     marginTop: '0px'
                   }}>
                     <h3 style={{
-                      fontSize: '1.125rem',
+                      fontSize: isMobile ? '0.88rem' : '1.125rem',
                       fontWeight: '700',
                       color: '#111827',
-                      marginBottom: '0.03rem'
+                      marginBottom: '0.03rem',
+                      lineHeight: isMobile ? '1.2' : undefined,
+                      wordBreak: 'break-word',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: isMobile ? 'nowrap' : undefined
                     }}>
                       {displayName}
                     </h3>
                     <p style={{
                       color: '#40444d',
-                      fontSize: '0.85rem',
+                      fontSize: isMobile ? '0.68rem' : '0.85rem',
                       marginBottom: '0.15rem'
                     }}>
                       {photographer.customerType}
@@ -897,50 +923,50 @@ const Photographers: React.FC = () => {
                     alignItems: 'center',
                     gap: '0.25rem',
                     color: '#40444d',
-                    fontSize: '0.78rem',
-                    marginBottom: '0.3rem'
+                    fontSize: isMobile ? '0.66rem' : '0.78rem',
+                    marginBottom: isMobile ? '0.2rem' : '0.3rem'
                   }}>
-                    <i className="bi bi-geo-alt-fill" style={{ fontSize: '0.8rem' }}></i>
-                    <span>{location}</span>
+                    <i className="bi bi-geo-alt-fill" style={{ fontSize: isMobile ? '0.65rem' : '0.8rem' }}></i>
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{location}</span>
                   </div>
 
                   {/* Service Categories / Specialties */}
                   <div style={{
                     display: 'flex',
                     justifyContent: 'flex-start',
-                    gap: '0.3rem',
+                    gap: isMobile ? '0.2rem' : '0.3rem',
                     flexWrap: 'wrap',
-                    marginBottom: '0.4rem'
+                    marginBottom: isMobile ? '0.3rem' : '0.4rem'
                   }}>
                     {(photographer.specialties?.length ?? 0) > 0 ? (
                       <>
-                        {(photographer.specialties ?? []).slice(0, 3).map((specialty, i) => (
+                        {(photographer.specialties ?? []).slice(0, isMobile ? 2 : 3).map((specialty, i) => (
                           <span key={i} style={{
                             backgroundColor: '#f9fafb',
                             color: '#40444d',
-                            padding: '0.25rem 0.7rem',
+                            padding: isMobile ? '0.12rem 0.45rem' : '0.25rem 0.7rem',
                             borderRadius: '9999px',
-                            fontSize: '0.8rem',
+                            fontSize: isMobile ? '0.62rem' : '0.8rem',
                             fontWeight: '500',
                             border: '0.001px solid #adadad'
                           }}>
                             {typeof specialty === 'string' ? specialty : specialty.name}
                           </span>
                         ))}
-                        {(photographer.specialties?.length ?? 0) > 3 && (
+                        {(photographer.specialties?.length ?? 0) > (isMobile ? 2 : 3) && (
                           <span style={{
                             backgroundColor: '#f9fafb',
                             color: '#6b7280',
-                            padding: '0.25rem 0.7rem',
+                            padding: isMobile ? '0.12rem 0.45rem' : '0.25rem 0.7rem',
                             borderRadius: '9999px',
-                            fontSize: '0.8rem',
+                            fontSize: isMobile ? '0.62rem' : '0.8rem',
                             fontWeight: '600',
                             border: '1px solid #bab8b8',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center'
                           }}>
-                            +{(photographer.specialties?.length ?? 0) - 3}
+                            +{(photographer.specialties?.length ?? 0) - (isMobile ? 2 : 3)}
                           </span>
                         )}
                       </>
@@ -948,9 +974,9 @@ const Photographers: React.FC = () => {
                       <span style={{
                         backgroundColor: '#f9fafb',
                         color: '#9ca3af',
-                        padding: '0.25rem 0.7rem',
+                        padding: isMobile ? '0.12rem 0.45rem' : '0.25rem 0.7rem',
                         borderRadius: '9999px',
-                        fontSize: '0.8rem',
+                        fontSize: isMobile ? '0.62rem' : '0.8rem',
                         fontWeight: '500',
                         border: '0.001px solid #adadad'
                       }}>
@@ -964,63 +990,63 @@ const Photographers: React.FC = () => {
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
-                    padding: '0.3rem 0.2rem',
-                    margin: '0.3rem 0 0.35rem 0',
+                    padding: isMobile ? '0.2rem 0.1rem' : '0.3rem 0.2rem',
+                    margin: isMobile ? '0.2rem 0 0.25rem 0' : '0.3rem 0 0.35rem 0',
                     borderTop: '1px solid #bab8b8',
                     borderBottom: '1px solid #e5e7eb',
                     textAlign: 'center'
                   }}>
                     <div style={{ flex: 1 }}>
                       <p style={{
-                        fontSize: '1.1rem',
+                        fontSize: isMobile ? '0.82rem' : '1.1rem',
                         fontWeight: '700',
                         color: '#111827',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '0.25rem',
+                        gap: isMobile ? '0.15rem' : '0.25rem',
                         justifyContent: 'center',
-                        marginBottom: '0.15rem'
+                        marginBottom: isMobile ? '0.05rem' : '0.15rem'
                       }}>
-                        <i className="bi bi-star-fill" style={{ color: '#000000', fontSize: '0.77rem' }}></i>
+                        <i className="bi bi-star-fill" style={{ color: '#000000', fontSize: isMobile ? '0.6rem' : '0.77rem' }}></i>
                         {(photographer.rating ?? 0).toFixed(1)}
                       </p>
-                      <p style={{ fontSize: '0.8rem', color: '#40444d', fontWeight: '500' }}>
+                      <p style={{ fontSize: isMobile ? '0.6rem' : '0.8rem', color: '#40444d', fontWeight: '500' }}>
                         {t('rating')}
                       </p>
                     </div>
                     <div style={{ flex: 1 }}>
                       <p style={{
-                        fontSize: '1.1rem',
+                        fontSize: isMobile ? '0.82rem' : '1.1rem',
                         fontWeight: '700',
                         color: '#111827',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '0.25rem',
+                        gap: isMobile ? '0.15rem' : '0.25rem',
                         justifyContent: 'center',
-                        marginBottom: '0.15rem'
+                        marginBottom: isMobile ? '0.05rem' : '0.15rem'
                       }}>
-                        <i className="bi bi-people-fill" style={{ fontSize: '0.77rem' }}></i>
+                        <i className="bi bi-people-fill" style={{ fontSize: isMobile ? '0.6rem' : '0.77rem' }}></i>
                         {photographer.completedEvents ?? 0}
                       </p>
-                      <p style={{ fontSize: '0.8rem', color: '#40444d', fontWeight: '500' }}>
+                      <p style={{ fontSize: isMobile ? '0.6rem' : '0.8rem', color: '#40444d', fontWeight: '500' }}>
                         {t('completedJobs')}
                       </p>
                     </div>
                     <div style={{ flex: 1 }}>
                       <p style={{
-                        fontSize: '1.1rem',
+                        fontSize: isMobile ? '0.82rem' : '1.1rem',
                         fontWeight: '700',
                         color: '#111827',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '0.25rem',
+                        gap: isMobile ? '0.15rem' : '0.25rem',
                         justifyContent: 'center',
-                        marginBottom: '0.15rem'
+                        marginBottom: isMobile ? '0.05rem' : '0.15rem'
                       }}>
-                        <i className="bi bi-clock" style={{ fontSize: '0.77rem' }}></i>
+                        <i className="bi bi-clock" style={{ fontSize: isMobile ? '0.6rem' : '0.77rem' }}></i>
                         {photographer.reviews?.length ?? 0}
                       </p>
-                      <p style={{ fontSize: '0.8rem', color: '#40444d', fontWeight: '500' }}>
+                      <p style={{ fontSize: isMobile ? '0.6rem' : '0.8rem', color: '#40444d', fontWeight: '500' }}>
                         {t('accuracy')}
                       </p>
                     </div>
@@ -1036,15 +1062,20 @@ const Photographers: React.FC = () => {
                       <div style={{
                         display: 'flex',
                         alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '0.3rem',
-                        marginBottom: '0.5rem',
-                        fontSize: '0.85rem',
+                        justifyContent: 'flex-start',
+                        gap: isMobile ? '0.2rem' : '0.3rem',
+                        marginBottom: isMobile ? '0.35rem' : '0.5rem',
+                        fontSize: isMobile ? '0.68rem' : '0.85rem',
                         color: '#10b981',
                         fontWeight: '600',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
                       }}>
-                        <i className="bi bi-tag-fill" style={{ fontSize: '0.8rem' }}></i>
-                        From {sym}{cheapest.price.toLocaleString()} {cheapest.priceUnit}
+                        <i className="bi bi-tag-fill" style={{ fontSize: isMobile ? '0.65rem' : '0.8rem', flexShrink: 0 }}></i>
+                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
+                          From {sym}{cheapest.price.toLocaleString()} {cheapest.priceUnit}
+                        </span>
                       </div>
                     );
                   })()}
@@ -1053,13 +1084,13 @@ const Photographers: React.FC = () => {
                   <button
                     style={{
                         width: '100%',
-                        padding: '0.65rem 1rem',
+                        padding: isMobile ? '0.4rem 0.5rem' : '0.65rem 1rem',
                         backgroundColor: '#1a1a1a',
                         color: 'white',
                         border: 'none',
-                        borderRadius: '10px',
+                        borderRadius: isMobile ? '8px' : '10px',
                         fontWeight: '600',
-                        fontSize: '0.9rem',
+                        fontSize: isMobile ? '0.7rem' : '0.9rem',
                         cursor: 'pointer',
                         transition: 'all 0.3s ease',
                         boxShadow: '0 2px 6px rgba(0, 0, 0, 0.12)',
