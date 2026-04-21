@@ -316,7 +316,12 @@ class ApiClient {
       headers,
       signal: combinedController.signal,
       mode: 'cors',
-      credentials: options.credentials || 'omit',  // Use provided credentials or default to 'omit'
+      // Default to 'include' so the amoria_auth HttpOnly session cookie
+      // round-trips on every cross-origin API call. Backend's CORS allow-
+      // list is strict (only connekyt.com/amoria subdomains), so credentials
+      // never travel to untrusted origins. Endpoints that explicitly pass
+      // 'omit' (e.g. truly public endpoints) still win.
+      credentials: options.credentials || 'include',
     };
 
     // Add body for non-GET requests
@@ -612,6 +617,7 @@ async function attemptTokenRefresh(): Promise<boolean> {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({ refreshToken: storedRefreshToken }),
+          credentials: 'include',
         }
       );
 
