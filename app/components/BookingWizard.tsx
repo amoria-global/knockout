@@ -767,12 +767,12 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                 </p>
                 <button onClick={() => {
                   const dashboardUrl = process.env.NEXT_PUBLIC_DASHBOARD_URL || 'https://dashboard.connekyt.com';
-                  const token = getAuthToken();
                   const userType = (user?.customerType || 'Client')
                     .replace(/([A-Z])/g, (m: string, l: string, i: number) => (i > 0 ? '-' : '') + l.toLowerCase());
                   const dest = new URL(`${dashboardUrl}/user/${userType}/events`);
                   if (state.createdEventId) dest.searchParams.set('eventId', state.createdEventId);
-                  if (token) dest.searchParams.set('token', token);
+                  // Auth travels via the .connekyt.com HttpOnly session cookie;
+                  // no need to put the JWT in the URL.
                   window.location.href = dest.toString();
                 }} style={btnPrimary}>
                   Go to Dashboard <i className="bi bi-arrow-right"></i>
