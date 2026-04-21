@@ -285,13 +285,12 @@ function BookNowContent(): React.JSX.Element {
 
     const dashboardUrl = process.env.NEXT_PUBLIC_DASHBOARD_URL || 'https://dashboard.connekyt.com';
     const userType = (user?.customerType || 'Client').replace(/([A-Z])/g, (m, l, i) => (i > 0 ? '-' : '') + l.toLowerCase());
-    const token = getAuthToken();
     setShowBookingBanner(true);
     setTimeout(() => {
       const dest = new URL(`${dashboardUrl}/user/${userType}/events`);
       if (photographerId) dest.searchParams.set('photographerId', photographerId);
       if (selectedPackage) dest.searchParams.set('packageId', selectedPackage);
-      if (token) dest.searchParams.set('token', token);
+      // Auth travels via the .connekyt.com HttpOnly cookie; no URL token.
       window.location.href = dest.toString();
     }, 1500);
   };
