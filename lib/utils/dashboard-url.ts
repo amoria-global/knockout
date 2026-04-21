@@ -23,17 +23,16 @@ export function getDashboardUrl(customerType?: string): string {
 }
 
 /**
- * Generate dashboard URL with tokens attached
- * @param customerType - The user's customer type
- * @param token - The auth token to attach
- * @param refreshToken - The refresh token to attach
- * @returns Full dashboard URL with token query parameters
+ * Generate dashboard URL for a given user type.
+ *
+ * Historically this function appended `?token=…&refreshToken=…` so the
+ * dashboard could extract auth from the URL on first load. That handoff is
+ * no longer needed: backend issues the JWT as an HttpOnly cookie scoped to
+ * `.connekyt.com`, which travels automatically on any navigation to
+ * `dashboard.connekyt.com` — no secrets in URL bars, referrer headers, or
+ * browser history. The old `token` / `refreshToken` parameters are
+ * accepted for source-compat and silently dropped.
  */
-export function getDashboardUrlWithToken(customerType?: string, token?: string, refreshToken?: string): string {
-  const dashboardUrl = getDashboardUrl(customerType);
-  const params = new URLSearchParams();
-  if (token) params.set('token', token);
-  if (refreshToken) params.set('refreshToken', refreshToken);
-  const query = params.toString();
-  return query ? `${dashboardUrl}?${query}` : dashboardUrl;
+export function getDashboardUrlWithToken(customerType?: string, _token?: string, _refreshToken?: string): string {
+  return getDashboardUrl(customerType);
 }
