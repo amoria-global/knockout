@@ -302,19 +302,19 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
   };
   const returnTo = isSafeRedirect(redirectUrl) || '/user/photographers';
 
-  // Helper: redirect to dashboard with booking params (for book-now flows)
+  // Helper: redirect to dashboard with booking params (for book-now flows).
+  // No token in the URL — the amoria_auth HttpOnly cookie scoped to
+  // .connekyt.com carries auth across subdomains automatically.
   const redirectToBookingDashboard = (customerType?: string) => {
     const returnToUrl = new URL(returnTo, window.location.origin);
     const photographerId = returnToUrl.searchParams.get('id');
     const packageId = returnToUrl.searchParams.get('packageId');
-    const token = getAuthToken();
     const rawType = (customerType || loggedInUserType || 'client').toLowerCase();
     const userType = rawType === 'coordinator' ? 'event-coordinator' : rawType;
     const dashUrl = process.env.NEXT_PUBLIC_DASHBOARD_URL || 'https://dashboard.connekyt.com';
     const dest = new URL(`${dashUrl}/user/${userType}/events`);
     if (photographerId) dest.searchParams.set('photographerId', photographerId);
     if (packageId) dest.searchParams.set('packageId', packageId);
-    if (token) dest.searchParams.set('token', token);
     window.location.href = dest.toString();
   };
 
@@ -322,13 +322,13 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
 
   const handleKeepExploring = () => {
     setShowPostLoginModal(false);
-    if (returnTo.startsWith('http')) { const token = getAuthToken(); const sep = returnTo.includes('?') ? '&' : '?'; window.location.href = token ? `${returnTo}${sep}token=${encodeURIComponent(token)}` : returnTo; }
+    if (returnTo.startsWith('http')) { window.location.href = returnTo; }
     else { router.push(returnTo); }
   };
 
   const handleGoToDashboard = () => {
     setShowPostLoginModal(false);
-    if (returnTo.startsWith('http')) { const token = getAuthToken(); const sep = returnTo.includes('?') ? '&' : '?'; window.location.href = token ? `${returnTo}${sep}token=${encodeURIComponent(token)}` : returnTo; }
+    if (returnTo.startsWith('http')) { window.location.href = returnTo; }
     else {
       const returnToUrl = new URL(returnTo, window.location.origin);
       const photographerId = returnToUrl.searchParams.get('id');
