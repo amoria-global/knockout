@@ -111,6 +111,13 @@ async function proxyRequest(
     if (authHeader) {
       headers['Authorization'] = authHeader;
     }
+    // Forward browser cookies so the backend can read amoria_auth (HttpOnly
+    // session cookie). Cookies reaching this route are scoped to the landing
+    // app's origin, so no cross-origin state leaks.
+    const cookieHeader = request.headers.get('cookie');
+    if (cookieHeader) {
+      headers['Cookie'] = cookieHeader;
+    }
 
     const fetchOptions: RequestInit = {
       method,
@@ -136,22 +143,30 @@ async function proxyRequest(
     const contentType = response.headers.get('content-type') || '';
     const isJson = contentType.includes('application/json');
 
+    // Echo Set-Cookie headers from the backend so login/logout cookie
+    // lifecycle lands in the browser. With Domain=.connekyt.com on the
+    // backend side, the cookie will be usable across connekyt.com,
+    // dashboard.connekyt.com, and backend.connekyt.com.
+    const responseHeaders = new Headers(cors);
+    const setCookies = typeof response.headers.getSetCookie === 'function'
+      ? response.headers.getSetCookie()
+      : [];
+    for (const sc of setCookies) responseHeaders.append('Set-Cookie', sc);
+
     if (isJson) {
       const data = await response.json().catch(() => ({}));
       return NextResponse.json(data, {
         status: response.status,
-        headers: cors,
+        headers: responseHeaders,
       });
     }
 
+    responseHeaders.set('Content-Type', contentType);
+    responseHeaders.set('Cache-Control', 'public, max-age=86400');
     const body = await response.arrayBuffer();
     return new NextResponse(body, {
       status: response.status,
-      headers: {
-        ...cors,
-        'Content-Type': contentType,
-        'Cache-Control': 'public, max-age=86400',
-      },
+      headers: responseHeaders,
     });
   } catch (error) {
     const aborted = error instanceof Error && error.name === 'AbortError';
