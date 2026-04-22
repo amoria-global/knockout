@@ -2,9 +2,11 @@ name: build
 
 on:
   pull_request:
-    branches: [main]
   push:
     branches: [main]
+
+permissions:
+  contents: read
 
 jobs:
   build:
@@ -30,3 +32,32 @@ jobs:
           NEXT_PUBLIC_API_URL: "https://backend.connekyt.com/"
           NEXT_PUBLIC_DASHBOARD_URL: "https://dashboard.connekyt.com"
         run: yarn build
+
+  # Merges Dependabot PRs directly via the GitHub API once the build job
+  # passes. Using `gh pr merge --squash` (no `--auto` flag) avoids the
+  # "Allow auto-merge" repo setting entirely — that setting is gated to
+  # GitHub Pro/Team on private repos, but a plain merge API call works on
+  # the Free tier.
+  dependabot-merge:
+    needs: build
+    if: github.event_name == 'pull_request' && github.actor == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Fetch Dependabot metadata
+        id: meta
+        uses: dependabot/fetch-metadata@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Squash-merge patch / minor / security updates
+        if: >
+          steps.meta.outputs.update-type == 'version-update:semver-patch' ||
+          steps.meta.outputs.update-type == 'version-update:semver-minor' ||
+          steps.meta.outputs.alert-state == 'open'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: gh pr merge --squash --delete-branch "$PR_URL"
