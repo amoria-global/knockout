@@ -17,7 +17,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: "yarn"
 
       - name: Install dependencies
@@ -58,6 +58,9 @@ jobs:
           steps.meta.outputs.update-type == 'version-update:semver-minor' ||
           steps.meta.outputs.alert-state == 'open'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Uses a fine-grained PAT (stored as AUTO_MERGE_TOKEN) because the
+          # org-level policy caps the default GITHUB_TOKEN at read-only.
+          # The PAT has pull_requests:write + contents:write on this repo only.
+          GH_TOKEN: ${{ secrets.AUTO_MERGE_TOKEN }}
           PR_URL: ${{ github.event.pull_request.html_url }}
         run: gh pr merge --squash --delete-branch "$PR_URL"
