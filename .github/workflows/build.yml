@@ -1,0 +1,32 @@
+name: build
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "yarn"
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+        continue-on-error: true
+
+      - name: Build
+        env:
+          NEXT_PUBLIC_API_URL: "https://backend.connekyt.com/"
+          NEXT_PUBLIC_DASHBOARD_URL: "https://dashboard.connekyt.com"
+        run: yarn build
