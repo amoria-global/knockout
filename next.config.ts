@@ -23,7 +23,7 @@ const SECURITY_HEADERS = [
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "img-src 'self' data: blob: https://backend.connekyt.com https://*.cloudflarestream.com https://lh3.googleusercontent.com",
       "font-src 'self' data: https://fonts.gstatic.com",
-      "connect-src 'self' https://backend.connekyt.com https://dashboard.connekyt.com https://accounts.google.com wss://backend.connekyt.com",
+       "connect-src 'self' http://localhost:8081 https://backend.connekyt.com https://dashboard.connekyt.com https://accounts.google.com wss://backend.connekyt.com",
       "media-src 'self' blob: https://*.cloudflarestream.com",
       "frame-src 'self' https://accounts.google.com https://customer-ngk2huwatflljurq.cloudflarestream.com https://*.cloudflarestream.com",
       "frame-ancestors 'self'",
