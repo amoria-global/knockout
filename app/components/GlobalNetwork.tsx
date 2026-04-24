@@ -33,12 +33,23 @@ const GlobalNetwork: React.FC = () => {
 
   useEffect(() => {
     setMounted(true);
+    let cancelled = false;
     fetch(geoUrl)
-      .then(response => response.json())
+      .then(response => {
+        if (!response.ok) throw new Error(`geo fetch ${response.status}`);
+        return response.json();
+      })
       .then(data => {
+        if (cancelled) return;
         const countries = feature(data, data.objects.countries) as unknown as FeatureCollection;
         setGeographies(countries.features);
+      })
+      .catch(() => {
+        // World-atlas CDN unreachable (offline, blocked, CSP) — fall back to an empty map
+        // so overlay nodes/lines still render. Silent: not worth a console error.
+        if (!cancelled) setGeographies([]);
       });
+    return () => { cancelled = true; };
   }, []);
 
   const projection = useMemo(() => {

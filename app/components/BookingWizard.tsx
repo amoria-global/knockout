@@ -74,6 +74,10 @@ interface WizardState {
   showPhotographerPreview: string | null;
   bookingSuccess: boolean;
   createdEventId: string | null;
+  // When true, renders the availability gate instead of the current slide.
+  // Becomes true right after a photographer is selected, and is flipped
+  // off again once the user picks a free event date and clicks Continue.
+  showAvailabilityGate: boolean;
 }
 
 type WizardAction =
@@ -88,6 +92,8 @@ type WizardAction =
   | { type: 'SHOW_PREVIEW'; id: string | null }
   | { type: 'SET_SUCCESS'; eventId?: string }
   | { type: 'RESTORE_DRAFT'; draft: BookingDraft }
+  | { type: 'SHOW_AVAILABILITY_GATE'; id: string }
+  | { type: 'CONFIRM_AVAILABILITY' }
   | { type: 'RESET' };
 
 const initialState: WizardState = {
@@ -102,14 +108,19 @@ const initialState: WizardState = {
   showPhotographerPreview: null,
   bookingSuccess: false,
   createdEventId: null,
+  showAvailabilityGate: false,
 };
 
 function wizardReducer(state: WizardState, action: WizardAction): WizardState {
   switch (action.type) {
     case 'SET_SLIDE': return { ...state, currentSlide: action.slide };
     case 'SET_QUICK_BRIEF': return { ...state, quickBrief: action.data, currentSlide: 1 };
-    case 'SET_SELECTED_PHOTOGRAPHER': return { ...state, selectedPhotographerId: action.id, currentSlide: 2 };
-    case 'SET_SELECTED_PACKAGE': return { ...state, selectedPackageId: action.id, currentSlide: 3 };
+    // Selecting a photographer now opens the Availability Gate instead of jumping straight to packages.
+    case 'SET_SELECTED_PHOTOGRAPHER': return { ...state, selectedPhotographerId: action.id, showAvailabilityGate: true };
+    case 'SHOW_AVAILABILITY_GATE': return { ...state, selectedPhotographerId: action.id, showAvailabilityGate: true };
+    case 'CONFIRM_AVAILABILITY': return { ...state, showAvailabilityGate: false, currentSlide: state.selectedPackageId ? 3 : 2 };
+    // Just stores the selection — advancing to the Milestone slide happens on explicit Continue.
+    case 'SET_SELECTED_PACKAGE': return { ...state, selectedPackageId: action.id };
     case 'SET_PAYMENT_MILESTONE': return { ...state, paymentMilestone: action.data, currentSlide: 4 };
     case 'SET_EVENT_DETAILS': return { ...state, eventDetails: action.data };
     case 'SET_SUBMITTING': return { ...state, isSubmitting: action.value };
@@ -167,6 +178,28 @@ const INCLUSIVITY_OPTIONS = [
 
 // ─── Main Component ───
 
+// Helper: find a blocked entry matching a "YYYY-MM-DD" date
+function findDateConflict(dateStr: string, bookedDates: BookedDate[]): BookedDate | null {
+  if (!dateStr) return null;
+  return bookedDates.find(b => b.date === dateStr) || null;
+}
+
+// Helper: human-readable reason for a blocked date
+function describeConflict(b: BookedDate): string {
+  if (b.reason === 'event') {
+    return b.isFullDay
+      ? `Photographer is already booked for an event on ${b.date}.`
+      : `Photographer has a partial booking on ${b.date}.`;
+  }
+  if (b.reason === 'preparation') {
+    return `Photographer is preparing for an event on ${b.eventDate} the next day.`;
+  }
+  if (b.reason === 'delivery') {
+    return `Photographer is delivering work for the ${b.eventDate} event (day ${b.deliveryDayIndex} of ${b.deliveryDaysTotal}).`;
+  }
+  return 'This date is unavailable.';
+}
+
 const BookingWizard: React.FC<BookingWizardProps> = ({
   isOpen, onClose, preselectedPhotographerId, preselectedPackageId,
 }) => {
@@ -184,6 +217,8 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
   const [previewPhotographer, setPreviewPhotographer] = useState<Photographer | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewBookedDates, setPreviewBookedDates] = useState<BookedDate[]>([]);
+  const [selectedPhotoBookedDates, setSelectedPhotoBookedDates] = useState<BookedDate[]>([]);
+  const [selectedPhotographer, setSelectedPhotographer] = useState<Photographer | null>(null);
   const [submitError, setSubmitError] = useState('');
 
   // ── Slide 1 local state ──
@@ -231,6 +266,65 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
 
   // Detect if user is a coordinator
   const isCoordinator = user?.customerType?.toLowerCase().includes('coordinator') || false;
+
+  // ── Availability Gate state ──
+  const [gateDate, setGateDate] = useState('');
+  const [gateCalendarMonth, setGateCalendarMonth] = useState<{ year: number; month: number }>(() => {
+    const d = new Date();
+    return { year: d.getFullYear(), month: d.getMonth() };
+  });
+  // Seed gate date from Quick Brief date (non-preselected flow) whenever the gate opens.
+  useEffect(() => {
+    if (state.showAvailabilityGate) {
+      setGateDate(briefDate || '');
+      if (briefDate) {
+        const [yr, mo] = briefDate.split('-').map(Number);
+        if (!isNaN(yr) && !isNaN(mo)) setGateCalendarMonth({ year: yr, month: mo - 1 });
+      }
+    }
+  }, [state.showAvailabilityGate, briefDate]);
+
+  const gateDateConflict = findDateConflict(gateDate, selectedPhotoBookedDates);
+  const gateDateIsPast = (() => {
+    if (!gateDate) return false;
+    const [yr, mo, da] = gateDate.split('-').map(Number);
+    const sel = new Date(yr, mo - 1, da);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return sel < today;
+  })();
+  const gateCanProceed = !!gateDate && !gateDateConflict && !gateDateIsPast;
+
+  const confirmAvailability = () => {
+    if (!gateCanProceed) return;
+    // Mirror the picked date into both Quick-Brief and Event-Details date fields so every
+    // downstream slide reuses it automatically without asking the user again.
+    setBriefDate(gateDate);
+    setEvtDate(gateDate);
+    if (state.quickBrief) {
+      dispatch({ type: 'SET_QUICK_BRIEF', data: { ...state.quickBrief, eventDate: gateDate } });
+    }
+    dispatch({ type: 'CONFIRM_AVAILABILITY' });
+  };
+
+  // Human-readable bits for the gate UI
+  const photographerDisplayName = (() => {
+    const p = selectedPhotographer;
+    if (!p) return 'this photographer';
+    const first = (p.firstName || '').trim();
+    const last = (p.lastName || '').trim();
+    const full = `${first} ${last}`.trim();
+    return full || 'this photographer';
+  })();
+  const photographerAvatar = selectedPhotographer?.profilePicture || null;
+  const gateDateLabel = gateDate && !gateDateConflict && !gateDateIsPast
+    ? (() => {
+        const [yr, mo, da] = gateDate.split('-').map(Number);
+        return new Date(yr, mo - 1, da).toLocaleDateString('en-US', {
+          weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
+        });
+      })()
+    : '';
 
   // ── Auth inline state ──
   const [authStep, setAuthStep] = useState<'login' | 'signup' | 'otp'>('login');
@@ -331,6 +425,34 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
       }
     }).catch(() => {}).finally(() => setPackagesLoading(false));
   }, [state.selectedPhotographerId]);
+
+  // ── Fetch booked dates for the selected photographer (1 year ahead) ──
+  useEffect(() => {
+    if (!state.selectedPhotographerId) { setSelectedPhotoBookedDates([]); return; }
+    const today = new Date();
+    const future = new Date(today);
+    future.setDate(future.getDate() + 365);
+    const fmt = (d: Date) => d.toISOString().slice(0, 10);
+    getBookedDates({ photographerId: state.selectedPhotographerId, from: fmt(today), to: fmt(future) })
+      .then(res => {
+        if (res.success) setSelectedPhotoBookedDates(Array.isArray(res.data) ? res.data : []);
+      }).catch(() => {});
+  }, [state.selectedPhotographerId]);
+
+  // ── Resolve the selected photographer's profile so the gate can show name/avatar ──
+  useEffect(() => {
+    if (!state.selectedPhotographerId) { setSelectedPhotographer(null); return; }
+    // Try local list first (non-preselected flow already loaded it)
+    const fromList = photographers.find(p => p.id === state.selectedPhotographerId);
+    if (fromList) { setSelectedPhotographer(fromList); return; }
+    // Otherwise fetch (preselected flow, list may not be loaded)
+    getPhotographerById(state.selectedPhotographerId).then(res => {
+      if (res.success && res.data) {
+        const raw = res.data as unknown as Record<string, unknown>;
+        setSelectedPhotographer((raw?.data ? raw.data : res.data) as Photographer);
+      }
+    }).catch(() => {});
+  }, [state.selectedPhotographerId, photographers]);
 
   // ── Fetch photographer preview ──
   useEffect(() => {
@@ -460,7 +582,16 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
   };
 
   const handleSelectPackage = (id: string) => {
+    // Reset extras when switching packages so stale counts don't carry over to a different price point.
+    if (id !== state.selectedPackageId) {
+      setExtraPhotos(0);
+      setExtraVideos(0);
+    }
     dispatch({ type: 'SET_SELECTED_PACKAGE', id });
+  };
+  const handlePackageContinue = () => {
+    if (!state.selectedPackageId) return;
+    dispatch({ type: 'SET_SLIDE', slide: 3 });
   };
 
   // ─── SLIDE 4: Payment Milestone ───
@@ -501,6 +632,14 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
   };
 
   const submitBooking = async (details: EventDetails) => {
+    // Client-side pre-check: the chosen date must not collide with the photographer's blocked windows.
+    const eventDateStr = state.quickBrief?.eventDate || evtDate;
+    const preCheck = state.selectedPhotographerId ? findDateConflict(eventDateStr, selectedPhotoBookedDates) : null;
+    if (preCheck) {
+      setSubmitError(describeConflict(preCheck) + ' Please choose another date.');
+      return;
+    }
+
     dispatch({ type: 'SET_SUBMITTING', value: true });
     setSubmitError('');
 
@@ -563,7 +702,34 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
           dispatch({ type: 'SET_SUCCESS', eventId: eventId || undefined });
         }
       } else {
-        setSubmitError(res.error || 'Failed to create booking. Please try again.');
+        // Surface backend DATE_UNAVAILABLE (409) in a friendly way and refresh the blocked-dates cache
+        const rawData = res.data as unknown as Record<string, unknown> | undefined;
+        const errorCode = (rawData?.error ?? rawData?.code) as string | undefined;
+        if (res.statusCode === 409 || errorCode === 'DATE_UNAVAILABLE') {
+          const reason = rawData?.reason as BookedDate['reason'] | undefined;
+          const conflictingEventDate = rawData?.conflictingEventDate as string | undefined;
+          const bookingId = rawData?.conflictingBookingId as string | undefined;
+          const synthetic: BookedDate = {
+            date: eventDateStr,
+            isFullDay: true,
+            reason: reason || 'event',
+            bookingId: bookingId || 'unknown',
+            eventDate: conflictingEventDate || eventDateStr,
+          };
+          setSubmitError(describeConflict(synthetic) + ' Please choose another date.');
+          // Refresh blocked dates so the calendar reflects the new conflict
+          if (state.selectedPhotographerId) {
+            const today = new Date();
+            const future = new Date(today);
+            future.setDate(future.getDate() + 365);
+            const fmt = (d: Date) => d.toISOString().slice(0, 10);
+            getBookedDates({ photographerId: state.selectedPhotographerId, from: fmt(today), to: fmt(future) })
+              .then(r => { if (r.success) setSelectedPhotoBookedDates(Array.isArray(r.data) ? r.data : []); })
+              .catch(() => {});
+          }
+        } else {
+          setSubmitError(res.error || 'Failed to create booking. Please try again.');
+        }
         dispatch({ type: 'SET_SUBMITTING', value: false });
       }
     } catch {
@@ -777,6 +943,216 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                 }} style={btnPrimary}>
                   Go to Dashboard <i className="bi bi-arrow-right"></i>
                 </button>
+              </div>
+
+            /* ── Availability Gate (shown after a photographer is chosen, before packages) ── */
+            ) : state.showAvailabilityGate ? (
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                  <button
+                    onClick={() => {
+                      if (state.quickBrief) {
+                        dispatch({ type: 'SET_SLIDE', slide: 1 });
+                      } else {
+                        handleClose();
+                      }
+                    }}
+                    style={{ ...btnSecondary, padding: '6px 12px', fontSize: 13 }}
+                  >
+                    <i className="bi bi-arrow-left"></i>
+                  </button>
+                  <h3 style={{ color: TEXT_PRIMARY, fontSize: 18, fontWeight: 700, margin: 0 }}>Pick the day of your event</h3>
+                </div>
+
+                {/* Photographer context card — makes it obvious WHO is being booked for WHAT day */}
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 12,
+                  padding: '12px 14px', marginBottom: 14,
+                  background: '#f0f5ff', border: '1px solid #dbeafe', borderRadius: 12,
+                }}>
+                  <div style={{
+                    width: 44, height: 44, borderRadius: '50%', flexShrink: 0,
+                    background: photographerAvatar ? `url(${photographerAvatar}) center/cover` : 'linear-gradient(135deg,#083A85,#1e5bb7)',
+                    color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 18, fontWeight: 700, border: '2px solid #fff',
+                    boxShadow: '0 2px 8px rgba(8,58,133,0.2)',
+                  }}>
+                    {!photographerAvatar && (selectedPhotographer?.firstName?.charAt(0) || '?').toUpperCase()}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 12, color: '#1e40af', fontWeight: 600, letterSpacing: 0.2 }}>
+                      YOU&apos;RE BOOKING
+                    </div>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: TEXT_PRIMARY, lineHeight: 1.3 }}>
+                      {photographerDisplayName}
+                    </div>
+                  </div>
+                </div>
+
+                <p style={{ color: TEXT_SECONDARY, fontSize: 13.5, lineHeight: 1.55, margin: '0 0 14px' }}>
+                  Pick the day <strong>{photographerDisplayName}</strong> will photograph your event. The days highlighted below are already taken by other bookings — choose any available (green) day to continue.
+                </p>
+
+                {/* Calendar */}
+                <div style={{ border: `1px solid ${INPUT_BORDER}`, borderRadius: 12, padding: 14, marginBottom: 14 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                    <button
+                      onClick={() => setGateCalendarMonth(prev => {
+                        const d = new Date(prev.year, prev.month - 1, 1);
+                        return { year: d.getFullYear(), month: d.getMonth() };
+                      })}
+                      style={{ width: 32, height: 32, borderRadius: '50%', border: `1px solid ${INPUT_BORDER}`, background: '#fff', cursor: 'pointer', color: ACCENT }}
+                    >
+                      <i className="bi bi-chevron-left"></i>
+                    </button>
+                    <span style={{ fontSize: 14, fontWeight: 700, color: TEXT_PRIMARY }}>
+                      {new Date(gateCalendarMonth.year, gateCalendarMonth.month).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                    </span>
+                    <button
+                      onClick={() => setGateCalendarMonth(prev => {
+                        const d = new Date(prev.year, prev.month + 1, 1);
+                        return { year: d.getFullYear(), month: d.getMonth() };
+                      })}
+                      style={{ width: 32, height: 32, borderRadius: '50%', border: `1px solid ${INPUT_BORDER}`, background: '#fff', cursor: 'pointer', color: ACCENT }}
+                    >
+                      <i className="bi bi-chevron-right"></i>
+                    </button>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4, marginBottom: 6 }}>
+                    {['Su','Mo','Tu','We','Th','Fr','Sa'].map(d => (
+                      <div key={d} style={{ textAlign: 'center', fontSize: 11, fontWeight: 700, color: '#9ca3af', padding: '4px 0' }}>{d}</div>
+                    ))}
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4 }}>
+                    {(() => {
+                      const { year, month } = gateCalendarMonth;
+                      const firstDay = new Date(year, month, 1).getDay();
+                      const daysInMonth = new Date(year, month + 1, 0).getDate();
+                      const today = new Date();
+                      today.setHours(0, 0, 0, 0);
+                      const priority = { event: 3, preparation: 2, delivery: 1 } as const;
+                      const bookedSet = new Map<string, BookedDate>();
+                      selectedPhotoBookedDates.forEach(b => {
+                        const existing = bookedSet.get(b.date);
+                        if (!existing || priority[b.reason] > priority[existing.reason]) bookedSet.set(b.date, b);
+                      });
+                      const cells: React.ReactNode[] = [];
+                      for (let i = 0; i < firstDay; i++) cells.push(<div key={`e-${i}`}></div>);
+                      for (let day = 1; day <= daysInMonth; day++) {
+                        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                        const dateObj = new Date(year, month, day);
+                        const isPast = dateObj < today;
+                        const booked = bookedSet.get(dateStr);
+                        const isSelected = dateStr === gateDate;
+                        const reason = booked?.reason;
+                        const isFullEvent = reason === 'event' && booked?.isFullDay === true;
+                        const isPartialEvent = reason === 'event' && booked?.isFullDay === false;
+                        const disabled = isPast || !!booked;
+                        let bg = 'transparent', fg = TEXT_PRIMARY, border = '1px solid transparent';
+                        if (isPast) fg = '#d1d5db';
+                        else if (isFullEvent) { bg = '#ef4444'; fg = '#fff'; }
+                        else if (isPartialEvent) bg = '#fef3c7';
+                        else if (reason === 'preparation') { bg = '#e2e8f0'; fg = '#1f2937'; }
+                        else if (reason === 'delivery') { bg = '#c7d2fe'; fg = '#1e3a8a'; }
+                        else { bg = '#f0fdf4'; border = '1px solid #bbf7d0'; }
+                        if (isSelected && !disabled) { bg = ACCENT; fg = '#fff'; border = `2px solid ${ACCENT_DARK}`; }
+                        let title: string | undefined;
+                        if (isFullEvent) title = 'Booked — event day';
+                        else if (isPartialEvent) title = 'Partial event booking';
+                        else if (reason === 'preparation') title = `Prep day (event on ${booked?.eventDate})`;
+                        else if (reason === 'delivery' && booked?.deliveryDayIndex && booked?.deliveryDaysTotal) title = `Delivery day ${booked.deliveryDayIndex} of ${booked.deliveryDaysTotal}`;
+                        else if (!isPast) title = 'Available';
+                        cells.push(
+                          <button
+                            key={day}
+                            type="button"
+                            title={title}
+                            disabled={disabled}
+                            onClick={() => { if (!disabled) setGateDate(dateStr); }}
+                            style={{
+                              textAlign: 'center', padding: '8px 0', fontSize: 13, fontWeight: 500,
+                              color: fg, backgroundColor: bg, borderRadius: '50%', aspectRatio: '1',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              cursor: disabled ? 'not-allowed' : 'pointer', border, opacity: isPast ? 0.5 : 1,
+                            }}
+                          >
+                            {day}
+                          </button>
+                        );
+                      }
+                      return cells;
+                    })()}
+                  </div>
+                  <div style={{ display: 'flex', gap: 10, marginTop: 12, paddingTop: 10, borderTop: '1px solid #f3f4f6', fontSize: 11, color: '#6b7280', flexWrap: 'wrap' }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }} title="Photographer is free — click to select"><span style={{ width: 10, height: 10, background: '#f0fdf4', borderRadius: '50%', border: '1px solid #bbf7d0' }} />Available</span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }} title="Day before an event — photographer is preparing"><span style={{ width: 10, height: 10, background: '#e2e8f0', borderRadius: '50%' }} />Prep day</span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }} title="Photographer is shooting an event that day"><span style={{ width: 10, height: 10, background: '#ef4444', borderRadius: '50%' }} />Event day</span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }} title="Time-boxed event — a portion of the day is booked"><span style={{ width: 10, height: 10, background: '#fef3c7', borderRadius: '50%', border: '1px solid #fde68a' }} />Partial</span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }} title="Photographer is editing & delivering a recent shoot"><span style={{ width: 10, height: 10, background: '#c7d2fe', borderRadius: '50%' }} />Delivery</span>
+                  </div>
+                </div>
+
+                {/* Date input */}
+                <div style={{ marginBottom: 12 }}>
+                  <label style={{ display: 'block', color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, marginBottom: 6 }}>
+                    Type or pick a date above
+                  </label>
+                  <input
+                    type="date"
+                    value={gateDate}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setGateDate(v);
+                      if (v) {
+                        const [yr, mo] = v.split('-').map(Number);
+                        if (!isNaN(yr) && !isNaN(mo)) setGateCalendarMonth({ year: yr, month: mo - 1 });
+                      }
+                    }}
+                    min={new Date().toISOString().split('T')[0]}
+                    style={inputStyle}
+                  />
+                  {gateDateConflict && (
+                    <div style={{ marginTop: 6, padding: '8px 10px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#b91c1c', fontSize: 12, lineHeight: 1.4 }}>
+                      <i className="bi bi-exclamation-triangle-fill" style={{ marginRight: 6 }}></i>
+                      {describeConflict(gateDateConflict)} Please pick another day.
+                    </div>
+                  )}
+                  {gateDateIsPast && !gateDateConflict && (
+                    <div style={{ marginTop: 6, padding: '8px 10px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#b91c1c', fontSize: 12 }}>
+                      <i className="bi bi-exclamation-triangle-fill" style={{ marginRight: 6 }}></i>
+                      The event date must be in the future.
+                    </div>
+                  )}
+                </div>
+
+                {/* Confirmation pill — reinforces exactly what's being booked */}
+                {gateCanProceed && (
+                  <div style={{
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    padding: '10px 12px', marginBottom: 12,
+                    background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: 10,
+                    color: '#065f46', fontSize: 13, lineHeight: 1.4,
+                  }}>
+                    <i className="bi bi-check2-circle" style={{ fontSize: 18, color: '#059669' }}></i>
+                    <div>
+                      <strong>{photographerDisplayName}</strong> will photograph your event on{' '}
+                      <strong>{gateDateLabel}</strong>.
+                    </div>
+                  </div>
+                )}
+
+                <button
+                  onClick={confirmAvailability}
+                  disabled={!gateCanProceed}
+                  style={{ ...btnPrimary, opacity: gateCanProceed ? 1 : 0.55, cursor: gateCanProceed ? 'pointer' : 'not-allowed' }}
+                >
+                  {gateCanProceed ? 'Continue to choose a package' : 'Pick an available date to continue'}
+                  {gateCanProceed && <i className="bi bi-arrow-right"></i>}
+                </button>
+
+                <p style={{ color: TEXT_MUTED, fontSize: 11.5, textAlign: 'center', margin: '10px 0 0', lineHeight: 1.5 }}>
+                  This date will be used automatically on every remaining step.
+                </p>
               </div>
 
             /* ── Auth inline overlay ── */
@@ -1016,7 +1392,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                             <span><i className="bi bi-clock" style={{ marginRight: 4 }}></i>{pkg.durationHours}h</span>
                             {pkg.includedPhotos && <span><i className="bi bi-image" style={{ marginRight: 4 }}></i>{pkg.includedPhotos} photos</span>}
                             {pkg.includedVideos && <span><i className="bi bi-camera-video" style={{ marginRight: 4 }}></i>{pkg.includedVideos} videos</span>}
-                            {pkg.deliveryDays && <span><i className="bi bi-calendar-check" style={{ marginRight: 4 }}></i>{pkg.deliveryDays}d delivery</span>}
+                            {pkg.deliveryDays ? <span><i className="bi bi-calendar-check" style={{ marginRight: 4 }}></i>{pkg.deliveryDays === 1 ? '1-day' : `${pkg.deliveryDays}-days`} delivery</span> : null}
                           </div>
 
                           {pkg.features?.length > 0 && (
@@ -1033,30 +1409,39 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                       );
                     })}
 
-                    {/* Extras */}
+                    {/* Extras — revealed once a package is picked, so users can add media before continuing */}
                     {state.selectedPackageId && selectedPkg && (
                       <div style={{ background: '#f9fafb', border: `1px solid ${INPUT_BORDER}`, borderRadius: 14, padding: 16 }}>
-                        <p style={{ color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, margin: '0 0 10px' }}>Add Extras</p>
-                        <div style={{ display: 'flex', gap: 12 }}>
-                          {selectedPkg.extraPhotoPrice ? (
-                            <div style={{ flex: 1 }}>
-                              <label style={{ color: TEXT_MUTED, fontSize: 12, display: 'block', marginBottom: 4 }}>Extra Photos ({selectedPkg.currencyAbbreviation || ''}{selectedPkg.extraPhotoPrice}/ea)</label>
-                              <input type="number" min={0} value={extraPhotos || ''} onChange={e => setExtraPhotos(parseInt(e.target.value) || 0)} style={inputStyle} />
-                            </div>
-                          ) : null}
-                          {selectedPkg.extraVideoPrice ? (
-                            <div style={{ flex: 1 }}>
-                              <label style={{ color: TEXT_MUTED, fontSize: 12, display: 'block', marginBottom: 4 }}>Extra Videos ({selectedPkg.currencyAbbreviation || ''}{selectedPkg.extraVideoPrice}/ea)</label>
-                              <input type="number" min={0} value={extraVideos || ''} onChange={e => setExtraVideos(parseInt(e.target.value) || 0)} style={inputStyle} />
-                            </div>
-                          ) : null}
-                        </div>
+                        <p style={{ color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, margin: '0 0 4px' }}>Add Extras</p>
+                        <p style={{ color: TEXT_MUTED, fontSize: 12, margin: '0 0 10px' }}>
+                          Need more photos or videos than what the package includes? Add them here — optional.
+                        </p>
+                        {(selectedPkg.extraPhotoPrice || selectedPkg.extraVideoPrice) ? (
+                          <div style={{ display: 'flex', gap: 12 }}>
+                            {selectedPkg.extraPhotoPrice ? (
+                              <div style={{ flex: 1 }}>
+                                <label style={{ color: TEXT_MUTED, fontSize: 12, display: 'block', marginBottom: 4 }}>Extra Photos ({selectedPkg.currencyAbbreviation || ''}{selectedPkg.extraPhotoPrice}/ea)</label>
+                                <input type="number" min={0} value={extraPhotos || ''} onChange={e => setExtraPhotos(parseInt(e.target.value) || 0)} placeholder="0" style={inputStyle} />
+                              </div>
+                            ) : null}
+                            {selectedPkg.extraVideoPrice ? (
+                              <div style={{ flex: 1 }}>
+                                <label style={{ color: TEXT_MUTED, fontSize: 12, display: 'block', marginBottom: 4 }}>Extra Videos ({selectedPkg.currencyAbbreviation || ''}{selectedPkg.extraVideoPrice}/ea)</label>
+                                <input type="number" min={0} value={extraVideos || ''} onChange={e => setExtraVideos(parseInt(e.target.value) || 0)} placeholder="0" style={inputStyle} />
+                              </div>
+                            ) : null}
+                          </div>
+                        ) : (
+                          <p style={{ color: TEXT_MUTED, fontSize: 12, margin: '4px 0 0', fontStyle: 'italic' }}>
+                            This package doesn’t offer add-on photos or videos.
+                          </p>
+                        )}
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 12, paddingTop: 12, borderTop: '1px solid #e5e7eb' }}>
                           <span style={{ color: TEXT_SECONDARY, fontSize: 14, fontWeight: 600 }}>Total</span>
                           <span style={{ color: TEXT_PRIMARY, fontSize: 18, fontWeight: 700 }}>{currencySymbol}{totalPrice.toLocaleString()}</span>
                         </div>
-                        <button onClick={() => handleSelectPackage(state.selectedPackageId!)} style={{ ...btnPrimary, marginTop: 14 }}>
-                          Continue <i className="bi bi-arrow-right"></i>
+                        <button onClick={handlePackageContinue} style={{ ...btnPrimary, marginTop: 14 }}>
+                          Continue to payment plan <i className="bi bi-arrow-right"></i>
                         </button>
                       </div>
                     )}
@@ -1140,20 +1525,61 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                 {submitError && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '10px 14px', marginBottom: 14, color: '#dc2626', fontSize: 13 }}>{submitError}</div>}
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                  {/* Show date & location fields when Quick Brief was skipped */}
-                  {!state.quickBrief && (
-                    <>
-                      <div style={{ display: 'flex', gap: 10 }}>
-                        <div style={{ flex: 1 }}>
-                          <label style={{ display: 'block', color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Event Date *</label>
-                          <input type="date" value={evtDate} onChange={e => setEvtDate(e.target.value)} min={new Date().toISOString().split('T')[0]} style={inputStyle} />
+                  {/* Locked event-date summary — the date was chosen on the Availability step */}
+                  {(() => {
+                    const lockedDate = state.quickBrief?.eventDate || evtDate;
+                    if (!lockedDate) return null;
+                    const [yr, mo, da] = lockedDate.split('-').map(Number);
+                    const friendly = !isNaN(yr) ? new Date(yr, mo - 1, da).toLocaleDateString('en-US', {
+                      weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
+                    }) : lockedDate;
+                    return (
+                      <div>
+                        <label style={{ display: 'block', color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Event Date</label>
+                        <div style={{
+                          display: 'flex', alignItems: 'center', gap: 10,
+                          padding: '10px 12px', background: '#f0f5ff',
+                          border: '1px solid #dbeafe', borderRadius: 9,
+                          color: TEXT_PRIMARY, fontSize: 14,
+                        }}>
+                          <i className="bi bi-calendar-check-fill" style={{ color: ACCENT, fontSize: 16 }}></i>
+                          <span style={{ flex: 1 }}>
+                            <strong>{friendly}</strong>
+                          </span>
+                          <span style={{
+                            display: 'inline-flex', alignItems: 'center', gap: 4,
+                            color: '#6b7280', fontSize: 11, fontWeight: 600,
+                          }}>
+                            <i className="bi bi-lock-fill"></i> Locked
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (!state.selectedPhotographerId) return;
+                              dispatch({ type: 'SHOW_AVAILABILITY_GATE', id: state.selectedPhotographerId });
+                            }}
+                            style={{
+                              background: 'transparent', border: 'none',
+                              color: ACCENT, fontSize: 12, fontWeight: 700,
+                              cursor: 'pointer', padding: '4px 6px', textDecoration: 'underline',
+                            }}
+                          >
+                            Change
+                          </button>
                         </div>
-                        <div style={{ flex: 1 }}>
-                          <label style={{ display: 'block', color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Event Location *</label>
-                          <input type="text" value={evtLocation} onChange={e => setEvtLocation(e.target.value)} placeholder="e.g. Kigali, Rwanda" style={inputStyle} />
-                        </div>
+                        <p style={{ color: TEXT_MUTED, fontSize: 11.5, margin: '6px 0 0' }}>
+                          You picked this date on the availability step. Use “Change” to open the calendar again.
+                        </p>
                       </div>
-                    </>
+                    );
+                  })()}
+
+                  {/* Location — only when Quick Brief was skipped (preselected-photographer flow) */}
+                  {!state.quickBrief && (
+                    <div>
+                      <label style={{ display: 'block', color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Event Location *</label>
+                      <input type="text" value={evtLocation} onChange={e => setEvtLocation(e.target.value)} placeholder="e.g. Kigali, Rwanda" style={inputStyle} />
+                    </div>
                   )}
                   <div>
                     <label style={{ display: 'block', color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Event Title *</label>

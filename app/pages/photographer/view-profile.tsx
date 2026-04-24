@@ -38,16 +38,6 @@ const formatJoinDate = (dateString: string): string => {
   }
 };
 
-// Format "YYYY-MM-DD" → "Oct 10, 2026"
-const formatAvailableDate = (dateStr: string): string => {
-  try {
-    const [y, m, d] = dateStr.split('-').map(Number);
-    return new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  } catch {
-    return dateStr;
-  }
-};
-
 // Component that uses useSearchParams - needs to be wrapped in Suspense
 function ViewProfileContent(): React.JSX.Element {
   const t = useTranslations('viewProfile');
@@ -972,69 +962,43 @@ function ViewProfileContent(): React.JSX.Element {
             alignItems: 'stretch',
             width: isMobile ? '100%' : 'auto',
           }}>
-            {photographer?.currentStatus === 'booked' ? (
-              <div style={{
+            <button
+              onClick={handleBookNowClick}
+              style={{
                 padding: isMobile ? 'clamp(12px, 3vw, 14px) clamp(20px, 5vw, 24px)' : '12px 24px',
-                backgroundColor: 'rgba(251, 191, 36, 0.25)',
-                color: '#92400e',
-                border: '1px solid rgba(251, 191, 36, 0.5)',
+                backgroundColor: '#083A85',
+                color: 'white',
+                border: 'none',
                 borderRadius: isMobile ? 'clamp(6px, 1.5vw, 8px)' : '8px',
-                fontSize: isMobile ? 'clamp(13px, 3.2vw, 14px)' : '14px',
+                fontSize: isMobile ? 'clamp(14px, 3.5vw, 15px)' : '15px',
                 fontWeight: '600',
+                cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '8px',
+                gap: isMobile ? 'clamp(6px, 1.5vw, 8px)' : '8px',
+                boxShadow: '0 4px 12px rgba(8, 58, 133, 0.25)',
+                transition: 'all 0.3s ease',
                 whiteSpace: 'nowrap',
-                cursor: 'not-allowed',
-              }}>
-                <i className="bi bi-calendar-x" style={{ fontSize: '15px', color: '#b45309' }}></i>
-                Booked
-                {photographer.nextAvailableDate && (
-                  <span style={{ fontWeight: '400', color: '#92400e' }}>
-                    · Available from {formatAvailableDate(photographer.nextAvailableDate)}
-                  </span>
-                )}
-              </div>
-            ) : (
-              <button
-                onClick={handleBookNowClick}
-                style={{
-                  padding: isMobile ? 'clamp(12px, 3vw, 14px) clamp(20px, 5vw, 24px)' : '12px 24px',
-                  backgroundColor: '#083A85',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: isMobile ? 'clamp(6px, 1.5vw, 8px)' : '8px',
-                  fontSize: isMobile ? 'clamp(14px, 3.5vw, 15px)' : '15px',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: isMobile ? 'clamp(6px, 1.5vw, 8px)' : '8px',
-                  boxShadow: '0 4px 12px rgba(8, 58, 133, 0.25)',
-                  transition: 'all 0.3s ease',
-                  whiteSpace: 'nowrap',
-                }}
-                onMouseEnter={(e) => {
-                  if (!isMobile) {
-                    e.currentTarget.style.backgroundColor = '#062d6b';
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.boxShadow = '0 6px 16px rgba(8, 58, 133, 0.35)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isMobile) {
-                    e.currentTarget.style.backgroundColor = '#083A85';
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(8, 58, 133, 0.25)';
-                  }
-                }}
-              >
-                <i className="bi bi-calendar-check" style={{ fontSize: isMobile ? 'clamp(14px, 3.5vw, 16px)' : '16px' }}></i>
-                {t('bookNow')}
-              </button>
-            )}
+              }}
+              onMouseEnter={(e) => {
+                if (!isMobile) {
+                  e.currentTarget.style.backgroundColor = '#062d6b';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 6px 16px rgba(8, 58, 133, 0.35)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isMobile) {
+                  e.currentTarget.style.backgroundColor = '#083A85';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(8, 58, 133, 0.25)';
+                }
+              }}
+            >
+              <i className="bi bi-calendar-check" style={{ fontSize: isMobile ? 'clamp(14px, 3.5vw, 16px)' : '16px' }}></i>
+              {t('bookNow')}
+            </button>
 
           </div>
         </div>
@@ -1315,8 +1279,14 @@ function ViewProfileContent(): React.JSX.Element {
                       const daysInMonth = new Date(year, month + 1, 0).getDate();
                       const today = new Date();
                       today.setHours(0, 0, 0, 0);
+
+                      // Pick one representative row per date; event > preparation > delivery
+                      const priority = { event: 3, preparation: 2, delivery: 1 } as const;
                       const bookedSet = new Map<string, BookedDate>();
-                      bookedDates.forEach(b => bookedSet.set(b.date, b));
+                      bookedDates.forEach(b => {
+                        const existing = bookedSet.get(b.date);
+                        if (!existing || priority[b.reason] > priority[existing.reason]) bookedSet.set(b.date, b);
+                      });
 
                       const cells = [];
                       for (let i = 0; i < firstDay; i++) {
@@ -1327,35 +1297,53 @@ function ViewProfileContent(): React.JSX.Element {
                         const dateObj = new Date(year, month, day);
                         const isPast = dateObj < today;
                         const booked = bookedSet.get(dateStr);
-                        const isFullDay = booked?.isFullDay === true;
-                        const isPartial = booked && !booked.isFullDay;
                         const isToday = dateObj.getTime() === today.getTime();
-                        const isAvailable = !isPast && !isFullDay && !isPartial && !isToday;
+                        const reason = booked?.reason;
+                        const isPartialEvent = reason === 'event' && booked?.isFullDay === false;
+                        const isFullEvent = reason === 'event' && booked?.isFullDay === true;
+                        const isAvailable = !isPast && !booked && !isToday;
+
+                        // Color per reason
+                        let bg = 'transparent', fg = '#374151', border = '1px solid transparent';
+                        if (isPast) fg = '#d1d5db';
+                        else if (isFullEvent) { bg = '#ef4444'; fg = '#fff'; }
+                        else if (isPartialEvent) { bg = '#fef3c7'; }
+                        else if (reason === 'preparation') { bg = '#e2e8f0'; fg = '#1f2937'; }
+                        else if (reason === 'delivery') { bg = '#c7d2fe'; fg = '#1e3a8a'; }
+                        else if (isToday) { bg = '#dbeafe'; fg = '#083A85'; border = '2px solid #083A85'; }
+                        else if (isAvailable) { bg = '#f0fdf4'; border = '1px solid #bbf7d0'; }
+
+                        let title: string | undefined;
+                        if (isFullEvent) title = 'Booked — event day';
+                        else if (isPartialEvent && booked?.startTime && booked?.endTime) title = `Event booked: ${formatTimeValue(booked.startTime)} - ${formatTimeValue(booked.endTime)}`;
+                        else if (reason === 'preparation') title = `Prep day (event on ${booked?.eventDate})`;
+                        else if (reason === 'delivery' && booked?.deliveryDayIndex && booked?.deliveryDaysTotal) title = `Delivery day ${booked.deliveryDayIndex} of ${booked.deliveryDaysTotal} (event on ${booked.eventDate})`;
+                        else if (isAvailable) title = 'Available';
 
                         cells.push(
                           <div
                             key={day}
-                            title={isFullDay ? 'Fully booked' : isPartial && booked.startTime && booked.endTime ? `Booked: ${formatTimeValue(booked.startTime)} - ${formatTimeValue(booked.endTime)}` : isAvailable ? 'Available' : undefined}
+                            title={title}
                             style={{
                               textAlign: 'center',
                               padding: '8px 0',
                               fontSize: '13px',
                               fontWeight: isToday ? '800' : '500',
-                              color: isPast ? '#d1d5db' : isFullDay ? '#fff' : isToday ? '#083A85' : '#374151',
-                              backgroundColor: isFullDay ? '#ef4444' : isPartial ? '#fef3c7' : isToday ? '#dbeafe' : isAvailable ? '#f0fdf4' : 'transparent',
+                              color: fg,
+                              backgroundColor: bg,
                               borderRadius: '50%',
                               aspectRatio: '1',
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
                               cursor: 'default',
-                              border: isToday ? '2px solid #083A85' : isAvailable ? '1px solid #bbf7d0' : '1px solid transparent',
+                              border,
                               position: 'relative',
                               transition: 'all 0.2s ease',
                             }}
                           >
                             {day}
-                            {isPartial && (
+                            {isPartialEvent && (
                               <div style={{
                                 position: 'absolute',
                                 bottom: '4px',
@@ -1374,18 +1362,26 @@ function ViewProfileContent(): React.JSX.Element {
                     })()}
                   </div>
                   {/* Legend */}
-                  <div style={{ display: 'flex', gap: '14px', marginTop: '16px', paddingTop: '12px', borderTop: '1px solid #f3f4f6', fontSize: '11px', color: '#6b7280', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', gap: '12px', marginTop: '16px', paddingTop: '12px', borderTop: '1px solid #f3f4f6', fontSize: '11px', color: '#6b7280', flexWrap: 'wrap' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                       <div style={{ width: '10px', height: '10px', backgroundColor: '#f0fdf4', borderRadius: '50%', border: '1px solid #bbf7d0' }}></div>
                       Available
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                      <div style={{ width: '10px', height: '10px', backgroundColor: '#e2e8f0', borderRadius: '50%' }}></div>
+                      Prep day
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                       <div style={{ width: '10px', height: '10px', backgroundColor: '#ef4444', borderRadius: '50%' }}></div>
-                      Booked
+                      Event
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                       <div style={{ width: '10px', height: '10px', backgroundColor: '#fef3c7', borderRadius: '50%', border: '1px solid #fde68a' }}></div>
-                      Partial
+                      Partial event
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                      <div style={{ width: '10px', height: '10px', backgroundColor: '#c7d2fe', borderRadius: '50%' }}></div>
+                      Delivery
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                       <div style={{ width: '10px', height: '10px', backgroundColor: '#dbeafe', borderRadius: '50%', border: '2px solid #083A85' }}></div>
