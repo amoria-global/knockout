@@ -8,12 +8,14 @@ import { logger } from '../logger';
 import { isTimeoutError, isAbortError } from './timeout';
 
 /**
- * Default retry configuration
+ * Default retry configuration — kept aligned with lib/api/config.ts so any
+ * caller that invokes withRetry() without explicit config gets the same
+ * backend-deploy-tolerant behavior as the standard apiClient path.
  */
 export const DEFAULT_RETRY_CONFIG: RetryConfig = {
-  maxRetries: 3,
+  maxRetries: 5,
   baseDelay: 1000,
-  maxDelay: 10000,
+  maxDelay: 15000,
   retryableStatuses: [408, 429, 500, 502, 503, 504],
 };
 
