@@ -22,12 +22,19 @@ function getBaseUrl(): string {
 }
 
 /**
- * Default retry configuration
+ * Default retry configuration.
+ *
+ * Sized so a normal backend deploy (Spring Boot cold-start is ~15–25s) is
+ * absorbed by the retry loop and users don't see a 502 surface. With baseDelay
+ * 1s, maxDelay 15s and maxRetries=5, the backoff schedule is roughly
+ * 1s → 2s → 4s → 8s → 15s  (capped) = up to ~30s total, matching the worst
+ * case. The first attempt almost always succeeds; real errors fail fast on
+ * attempt #1 and hit the client error path without the full wait.
  */
 export const DEFAULT_RETRY_CONFIG: RetryConfig = {
-  maxRetries: 3,
+  maxRetries: 5,
   baseDelay: 1000, // 1 second
-  maxDelay: 10000, // 10 seconds
+  maxDelay: 15000, // 15 seconds (last attempt)
   retryableStatuses: [408, 429, 500, 502, 503, 504],
   retryCondition: (error, statusCode) => {
     // Retry on network errors
