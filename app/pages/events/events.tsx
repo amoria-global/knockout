@@ -583,21 +583,9 @@ const Events: React.FC = () => {
           WebkitOverflowScrolling: 'touch',
           scrollbarWidth: 'thin'
         }}>
-          {/* Connector Line - Full Width (attached to badge) */}
-          <div style={{
-            position: 'absolute',
-            left: '0',
-            right: '0',
-            top: '50%',
-            height: '3px',
-            background: 'linear-gradient(90deg, #083A85 0%, #0a4da3 50%, #083A85 100%)',
-            transform: 'translateY(-50%)',
-            zIndex: 0
-          }}></div>
-
           {/* Hot Live Trends Badge */}
           <div style={{
-            background: 'linear-gradient(135deg, #083A85 0%, #0a4da3 100%)',
+            background: 'linear-gradient(135deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)',
             padding: isMobile ? 'clamp(0.5rem, 2vw, 0.75rem) clamp(1rem, 3vw, 1.5rem)' : '0.75rem 1.5rem',
             borderRadius: '50px',
             display: 'flex',
@@ -607,7 +595,7 @@ const Events: React.FC = () => {
             fontSize: '1.1rem',
             color: 'white',
             whiteSpace: 'nowrap',
-            boxShadow: '0 4px 15px rgba(8, 58, 133, 0.4)',
+            boxShadow: '0 4px 15px rgba(220, 39, 67, 0.4)',
             flexShrink: 0,
             position: 'relative',
             zIndex: 2
@@ -619,7 +607,7 @@ const Events: React.FC = () => {
           <div style={{
             width: isMobile ? '1rem' : '1.5rem',
             height: '3px',
-            background: 'linear-gradient(90deg, #ec4899, #f97316)',
+            background: 'linear-gradient(90deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)',
             flexShrink: 0,
             zIndex: 0
           }}></div>
@@ -632,7 +620,7 @@ const Events: React.FC = () => {
             zIndex: 1,
             gap: isMobile ? 'clamp(0.5rem, 2vw, 0.75rem)' : '0.75rem',
             minWidth: isMobile ? 'max-content' : 'auto',
-            backgroundImage: 'linear-gradient(90deg, #f97316 0%, #8b5cf6 100%)',
+            backgroundImage: 'linear-gradient(90deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)',
             backgroundSize: '100% 3px',
             backgroundRepeat: 'no-repeat',
             backgroundPosition: 'center',
@@ -660,20 +648,28 @@ const Events: React.FC = () => {
                   width: isMobile ? 'clamp(50px, 10vw, 70px)' : '70px',
                   height: isMobile ? 'clamp(50px, 10vw, 70px)' : '70px',
                   borderRadius: '50%',
-                  overflow: 'hidden',
-                  border: '3px solid #083A85',
-                  boxShadow: '0 4px 10px rgba(8, 58, 133, 0.3)',
-                  backgroundColor: 'white'
+                  padding: '3px',
+                  background: 'linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)',
+                  boxShadow: '0 4px 10px rgba(220, 39, 67, 0.3)'
                 }}>
-                  <img
-                    src={event.image}
-                    alt={event.name}
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'cover'
-                    }}
-                  />
+                  <div style={{
+                    width: '100%',
+                    height: '100%',
+                    borderRadius: '50%',
+                    overflow: 'hidden',
+                    border: '2px solid white',
+                    backgroundColor: '#f3f4f6'
+                  }}>
+                    <img
+                      src={event.image}
+                      alt={event.name}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover'
+                      }}
+                    />
+                  </div>
                 </div>
               </div>
             ))}
