@@ -182,7 +182,23 @@ export const logger = {
   },
 
   /**
-   * Log API response
+   * Log API response.
+   *
+   * Level policy (matters in production — `warn` always prints, `debug` does not):
+   *   - 2xx/3xx                           → debug   (routine success)
+   *   - 401 / 403                         → debug   (not authenticated / not authorized —
+   *                                                  expected at public surfaces before sign-in)
+   *   - 404                               → debug   (routine "not found" for optional resources)
+   *   - 408, 500, 502, 503, 504           → debug   (transient infrastructure failures the client
+   *                                                  already retries via withRetry with exponential
+   *                                                  backoff — logging each failed attempt as warn
+   *                                                  spammed the console with a red wall during
+   *                                                  backend restarts/deploys. If the retry chain
+   *                                                  truly exhausts, the app surfaces its own error
+   *                                                  UI; the developer doesn't need console noise
+   *                                                  for every 502 that self-heals in 2s.)
+   *   - 429                               → warn    (rate-limit hits are actionable)
+   *   - Other 4xx (400, 405, 409, 422...) → warn    (business/validation errors the dev should see)
    */
   response(
     method: string,
@@ -191,13 +207,25 @@ export const logger = {
     duration: number,
     requestId: string
   ): void {
-    const level = statusCode >= 400 ? 'warn' : 'debug';
+    const isExpectedAuthOrMissing =
+      statusCode === 401 || statusCode === 403 || statusCode === 404;
+    const isRetryableInfraBlip =
+      statusCode === 408 ||
+      statusCode === 500 ||
+      statusCode === 502 ||
+      statusCode === 503 ||
+      statusCode === 504;
+    const level: LogLevel =
+      !isExpectedAuthOrMissing && !isRetryableInfraBlip && statusCode >= 400
+        ? 'warn'
+        : 'debug';
     const message = `API Response: ${method} ${endpoint} - ${statusCode}`;
+    const context = { method, endpoint, statusCode, duration, requestId };
 
     if (level === 'warn') {
-      this.warn(message, { method, endpoint, statusCode, duration, requestId });
+      this.warn(message, context);
     } else {
-      this.debug(message, { method, endpoint, statusCode, duration, requestId });
+      this.debug(message, context);
     }
   },
 

@@ -866,7 +866,7 @@ function BookNowContent(): React.JSX.Element {
                           color: selectedPackage === pkg.id ? '#1f2937' : '#374151',
                           fontWeight: selectedPackage === pkg.id ? '600' : '500',
                         }}>
-                          {pkg.deliveryDays}-days delivery time
+                          {pkg.deliveryDays === 1 ? '1-day' : `${pkg.deliveryDays}-days`} delivery time
                         </span>
                       </div>
                     )}
