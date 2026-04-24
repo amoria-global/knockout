@@ -3367,59 +3367,84 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Extra small accent card - Bottom Right */}
+              {/* Extra small accent card - Bottom Right — Facial Recognition */}
               <div
                 className="why-amoria-card-accent"
+                onMouseEnter={() => setActiveCard(4)}
+                onClick={() => window.location.href = '/user/find-my-photos'}
                 style={{
                   position: 'absolute',
-                  bottom: '50px',
-                  right: '20px',
-                  width: '220px',
+                  bottom: '-30px',
+                  right: '120px',
+                  width: '320px',
                   backgroundColor: '#fff',
-                  borderRadius: '16px',
-                  boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
-                  padding: '18px',
-                  zIndex: 2
+                  borderRadius: '18px',
+                  boxShadow: activeCard === 4
+                    ? '0 22px 55px rgba(8, 58, 133, 0.28)'
+                    : '0 10px 30px rgba(0,0,0,0.1)',
+                  overflow: 'hidden',
+                  cursor: 'pointer',
+                  transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                  transform: activeCard === 4 ? 'scale(1.05)' : 'scale(1)',
+                  zIndex: activeCard === 4 ? 10 : 2
                 }}
               >
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  marginBottom: '12px'
-                }}>
+                <div style={{ padding: '12px 14px 14px' }}>
                   <div style={{
-                    width: '44px',
-                    height: '44px',
-                    background: 'linear-gradient(135deg, #083A85 0%, #1e5bb7 100%)',
-                    borderRadius: '12px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
+                    height: '180px',
+                    borderRadius: '14px',
+                    overflow: 'hidden',
+                    position: 'relative'
                   }}>
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2">
-                      <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-                      <path d="M2 17l10 5 10-5"/>
-                      <path d="M2 12l10 5 10-5"/>
-                    </svg>
+                    <img
+                      src="/scan.png"
+                      alt="Facial Recognition"
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover'
+                      }}
+                    />
+                    <div style={{
+                      position: 'absolute',
+                      bottom: '10px',
+                      left: '10px',
+                      backgroundColor: 'rgba(255,255,255,0.95)',
+                      color: '#083A85',
+                      padding: '5px 10px',
+                      borderRadius: '12px',
+                      fontSize: '11px',
+                      fontWeight: 600,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '5px'
+                    }}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#083A85" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M3 7V5a2 2 0 0 1 2-2h2"/>
+                        <path d="M17 3h2a2 2 0 0 1 2 2v2"/>
+                        <path d="M21 17v2a2 2 0 0 1-2 2h-2"/>
+                        <path d="M7 21H5a2 2 0 0 1-2-2v-2"/>
+                      </svg>
+                      AI Scan
+                    </div>
                   </div>
-                  <div>
-                    <div style={{ fontSize: '15px', fontWeight: 700, color: '#083A85' }}>All in One</div>
-                    <div style={{ fontSize: '12px', color: '#64748b' }}>Platform</div>
-                  </div>
-                </div>
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  color: '#083A85',
-                  fontSize: '13px',
-                  fontWeight: 600
-                }}>
-                  See more
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M6 9l6 6 6-6"/>
-                  </svg>
+                  <h3 style={{
+                    fontSize: '16px',
+                    fontWeight: 700,
+                    color: '#083A85',
+                    marginTop: '10px',
+                    marginBottom: '4px'
+                  }}>
+                    Facial Recognition
+                  </h3>
+                  <p style={{
+                    fontSize: '13px',
+                    color: '#000',
+                    lineHeight: '1.4',
+                    margin: 0
+                  }}>
+                    Instantly find photos of you captured by event photographers.
+                  </p>
                 </div>
               </div>
             </div>
