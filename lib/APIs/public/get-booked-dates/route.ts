@@ -7,11 +7,18 @@ import { apiClient } from '@/lib/api/client';
 import { API_ENDPOINTS } from '@/lib/api/config';
 import type { ApiResponse } from '@/lib/api/types';
 
+export type BookedDateReason = 'preparation' | 'event' | 'delivery';
+
 export interface BookedDate {
-  date: string;
+  date: string;                 // "YYYY-MM-DD" — the blocked calendar day
   isFullDay: boolean;
-  startTime: { hour: number; minute: number } | null;
-  endTime: { hour: number; minute: number } | null;
+  reason: BookedDateReason;     // why this day is blocked
+  bookingId: string;            // source booking id
+  eventDate: string;            // "YYYY-MM-DD" — event date of the source booking
+  startTime?: { hour: number; minute: number } | null;
+  endTime?: { hour: number; minute: number } | null;
+  deliveryDaysTotal?: number;   // present only when reason === 'delivery'
+  deliveryDayIndex?: number;    // 1..deliveryDaysTotal, only when reason === 'delivery'
 }
 
 export interface GetBookedDatesRequest {
