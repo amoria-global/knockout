@@ -32,15 +32,7 @@ const SECURITY_HEADERS = [
       //   ui-avatars     — auto-generated participant avatar fallback in live-stream
       "img-src 'self' data: blob: https://backend.connekyt.com https://*.cloudflarestream.com https://lh3.googleusercontent.com https://flagcdn.com https://images.unsplash.com https://i.pinimg.com https://www.svgrepo.com https://www.gstatic.com https://unpkg.com https://ui-avatars.com",
       "font-src 'self' data: https://fonts.gstatic.com",
-      // cdn.jsdelivr.net          — world-atlas TopoJSON fetched by Rotating/HalfEarth globes
-      // unpkg.com                 — three-globe texture URLs are also fetched via JS, not only rendered as <img>
-      // www.googleapis.com        — /oauth2/v3/userinfo call in handleGoogleLoginSuccess /
-      //                             handleGoogleSignupSuccess (auth/login.tsx) to resolve the
-      //                             Google account's email + given/family name after GIS returns an
-      //                             access token. Without this, Google sign-in fails with "Failed to fetch".
-      // *.cloudflarestream.com    — WHEP HTTP SDP exchange in WHEPClient, used by
-      //                             events/live-stream.tsx to play paid live streams.
-      "connect-src 'self' https://backend.connekyt.com https://dashboard.connekyt.com https://accounts.google.com https://www.googleapis.com wss://backend.connekyt.com https://cdn.jsdelivr.net https://unpkg.com https://*.cloudflarestream.com",
+       "connect-src 'self' http://localhost:8081 https://backend.connekyt.com https://dashboard.connekyt.com https://accounts.google.com wss://backend.connekyt.com",
       "media-src 'self' blob: https://*.cloudflarestream.com",
       // www.google.com — Google Maps embed iframe on the contact page.
       "frame-src 'self' https://accounts.google.com https://customer-ngk2huwatflljurq.cloudflarestream.com https://*.cloudflarestream.com https://www.google.com",
