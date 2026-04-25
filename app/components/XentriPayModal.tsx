@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { API_ENDPOINTS } from '@/lib/api/config';
+import PaymentCurrencyPreview, { type CurrencyCode } from './PaymentCurrencyPreview';
 import {
   initiateXentriPayTip,
   initiateXentriPayStreaming,
@@ -551,6 +552,27 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
                   Amount: <strong style={{ color: '#083A85' }}>{formatAmount(amount)}</strong>
                 </p>
               )}
+
+              {/* Currency preview — lets the user see what the payment amount
+                  (and donation + total, if present) is in their preferred
+                  currency before confirming. Display-only; the submit still
+                  goes out as the original currencyCode / amount, and the
+                  backend converts to USD canonically before XentriPay. */}
+              <div style={{ marginTop: '12px', display: 'flex', justifyContent: 'flex-end' }}>
+                <PaymentCurrencyPreview
+                  fromCurrency={(currencyCode || 'RWF') as CurrencyCode}
+                  darkMode={darkMode}
+                  amounts={
+                    hasDonation
+                      ? [
+                          { label: 'Gift', amount },
+                          { label: 'Donation', amount: donationAmount || 0 },
+                          { label: 'Total', amount: totalAmount },
+                        ]
+                      : [{ label: 'Amount', amount }]
+                  }
+                />
+              </div>
             </div>
 
             {/* Payment Method Selection */}

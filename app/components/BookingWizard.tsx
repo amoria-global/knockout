@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useReducer, useCallback, useRef } from 'react';
+import PaymentCurrencyPreview, { type CurrencyCode } from './PaymentCurrencyPreview';
 import { useAuth } from '../providers/AuthProvider';
 import { getAuthToken, getRefreshToken } from '@/lib/api/client';
 import { useGoogleLogin } from '@react-oauth/google';
@@ -1479,9 +1480,19 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                   <h3 style={{ color: TEXT_PRIMARY, fontSize: 18, fontWeight: 700, margin: 0 }}>Payment Plan</h3>
                 </div>
 
-                <div style={{ textAlign: 'center', marginBottom: 24 }}>
+                <div style={{ textAlign: 'center', marginBottom: 16 }}>
                   <p style={{ color: TEXT_MUTED, fontSize: 13, margin: '0 0 4px' }}>Total Amount</p>
                   <p style={{ color: TEXT_PRIMARY, fontSize: 28, fontWeight: 700, margin: 0 }}>{currencySymbol}{totalPrice.toLocaleString()}</p>
+                </div>
+                {/* Currency preview panel — shows the booking total in the
+                    user's chosen currency so they can eyeball what they're
+                    about to pay before proceeding to XentriPay. Display-only;
+                    the wire still carries the original paymentCurrencyCode. */}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 20 }}>
+                  <PaymentCurrencyPreview
+                    fromCurrency={(paymentCurrencyCode || 'RWF') as CurrencyCode}
+                    amounts={[{ label: 'Total Amount', amount: totalPrice }]}
+                  />
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
