@@ -44,9 +44,10 @@ const GlobalNetwork: React.FC = () => {
         const countries = feature(data, data.objects.countries) as unknown as FeatureCollection;
         setGeographies(countries.features);
       })
-      .catch(() => {
-        // World-atlas CDN unreachable (offline, blocked, CSP) — fall back to an empty map
-        // so overlay nodes/lines still render. Silent: not worth a console error.
+      .catch((err) => {
+        if (process.env.NODE_ENV !== 'production') {
+          console.warn('[GlobalNetwork] world-atlas fetch failed:', err);
+        }
         if (!cancelled) setGeographies([]);
       });
     return () => { cancelled = true; };
