@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import Navbar from "../components/navbar";
 import Footer from "../components/footer";
+import PaymentCurrencyPreview, { type CurrencyCode } from "../components/PaymentCurrencyPreview";
 import { getCurrencies, createPublicDonation, getDonationTiers, getCurrencyRates, type Currency as APICurrency, type ExchangeRate } from '@/lib/APIs/public';
 import XentriPayModal from '../components/XentriPayModal';
 import RotatingGlobe from '../components/RotatingGlobe';
@@ -1302,6 +1303,23 @@ const Donations = () => {
               <input type="number" value={customAmount} onChange={(e) => { setCustomAmount(e.target.value); setSelectedAmount(0); }}
                 placeholder="Custom amount" style={{ flex: 1, border: 'none', outline: 'none', padding: '11px 8px', fontSize: '15px', fontWeight: 500 }} />
               {currency === 'RWF' && <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 600 }}>RWF</span>}
+            </div>
+
+            {/* Live-rate cross-currency preview. The page has its own
+                per-currency selector above, but this panel lets the donor
+                spot-check what their pick converts to in every other
+                supported currency at live rates without toggling the main
+                selector back and forth. */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
+              <PaymentCurrencyPreview
+                fromCurrency={currency as CurrencyCode}
+                amounts={[{
+                  label: 'Donation amount',
+                  amount: customAmount
+                    ? (parseFloat(customAmount) || 0)
+                    : convertFromRWF(selectedAmount, currency),
+                }]}
+              />
             </div>
 
             {/* Frequency */}
