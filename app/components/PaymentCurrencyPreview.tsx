@@ -321,3 +321,46 @@ export function formatInCurrency(amount: number, code: CurrencyCode): string {
 }
 
 export { DECIMALS as CURRENCY_DECIMALS, SYMBOL as CURRENCY_SYMBOL, FLAG as CURRENCY_FLAG };
+
+/**
+ * Hook that gives a parent modal direct access to the live-rate table the
+ * preview panel uses, plus a convert() helper so every amount display in
+ * the modal (headers, summaries, buttons, inputs) can re-render in the
+ * user's chosen display currency without duplicating the rate-fetch.
+ *
+ * Used by XentriPayModal / BookingWizard / join-event to flip every amount
+ * on the modal — not just the preview panel — when the user picks a new
+ * currency in the panel's selector. The modal holds the display currency
+ * state and passes it back into the panel via defaultCurrency + receives
+ * changes via onCurrencyChange.
+ */
+export function useLiveRates() {
+  const [rates, setRates] = useState<Record<string, CurrencyRate> | null>(ratesCache);
+  useEffect(() => {
+    if (!rates) loadRates().then(setRates);
+  }, [rates]);
+
+  const convert = React.useCallback(
+    (amount: number, from: CurrencyCode, to: CurrencyCode): number => {
+      // Before rates load, returning a converted value would use rate=1 as a
+      // fallback — which treats e.g. 1000 RWF as $1000 USD. Wildly wrong to
+      // show. Return the original amount unchanged; callers should pair this
+      // with `ready` or format() so they don't mislabel the currency.
+      if (!rates && from !== to) return amount;
+      return convertAmount(amount, from, to, rates);
+    },
+    [rates],
+  );
+
+  const format = React.useCallback(
+    (amount: number, from: CurrencyCode, to: CurrencyCode): string => {
+      // While rates are still loading, keep the source-currency label so the
+      // user doesn't see a wrong symbol next to a pre-conversion number.
+      if (!rates && from !== to) return formatInCurrency(amount, from);
+      return formatInCurrency(convertAmount(amount, from, to, rates), to);
+    },
+    [rates],
+  );
+
+  return { rates, convert, format, ready: rates !== null };
+}

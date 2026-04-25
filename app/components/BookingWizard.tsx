@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useReducer, useCallback, useRef } from 'react';
-import PaymentCurrencyPreview, { type CurrencyCode } from './PaymentCurrencyPreview';
+import PaymentCurrencyPreview, { type CurrencyCode, useLiveRates } from './PaymentCurrencyPreview';
 import { useAuth } from '../providers/AuthProvider';
 import { getAuthToken, getRefreshToken } from '@/lib/api/client';
 import { useGoogleLogin } from '@react-oauth/google';
@@ -262,6 +262,13 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
   const [paymentAmountValue, setPaymentAmountValue] = useState<number>(0);
   const [paymentCurrencyCode, setPaymentCurrencyCode] = useState<string>('RWF');
   const [paymentCurrencyId, setPaymentCurrencyId] = useState<string>('');
+  // Display-only currency for the Payment Plan step. Controlled by the
+  // PaymentCurrencyPreview panel's selector — picking a new currency there
+  // re-renders every amount on this step (total + milestone breakdowns +
+  // the per-option previews). Submit still uses paymentCurrencyCode.
+  const [displayCurrency, setDisplayCurrency] = useState<CurrencyCode>('USD');
+  const { format: formatLive } = useLiveRates();
+  const fmtLive = (val: number) => formatLive(val, (paymentCurrencyCode || 'RWF') as CurrencyCode, displayCurrency);
   const [paymentEventId, setPaymentEventId] = useState<string | null>(null);
   const [isRevoking, setIsRevoking] = useState(false);
 
@@ -1482,15 +1489,17 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
 
                 <div style={{ textAlign: 'center', marginBottom: 16 }}>
                   <p style={{ color: TEXT_MUTED, fontSize: 13, margin: '0 0 4px' }}>Total Amount</p>
-                  <p style={{ color: TEXT_PRIMARY, fontSize: 28, fontWeight: 700, margin: 0 }}>{currencySymbol}{totalPrice.toLocaleString()}</p>
+                  <p style={{ color: TEXT_PRIMARY, fontSize: 28, fontWeight: 700, margin: 0 }}>{fmtLive(totalPrice)}</p>
                 </div>
-                {/* Currency preview panel — shows the booking total in the
-                    user's chosen currency so they can eyeball what they're
-                    about to pay before proceeding to XentriPay. Display-only;
-                    the wire still carries the original paymentCurrencyCode. */}
+                {/* Currency preview panel — same selector that controls the
+                    entire Payment Plan step's amount displays (total +
+                    milestone rows below). Display-only; submit still goes
+                    through XentriPay in the original paymentCurrencyCode. */}
                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 20 }}>
                   <PaymentCurrencyPreview
                     fromCurrency={(paymentCurrencyCode || 'RWF') as CurrencyCode}
+                    defaultCurrency={displayCurrency}
+                    onCurrencyChange={setDisplayCurrency}
                     amounts={[{ label: 'Total Amount', amount: totalPrice }]}
                   />
                 </div>
@@ -1532,7 +1541,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                         <div style={{ width: 8, height: 8, borderRadius: '50%', background: i === 0 ? ACCENT : TEXT_MUTED }} />
                         <span style={{ color: TEXT_SECONDARY, fontSize: 13 }}>{m.label}</span>
                       </div>
-                      <span style={{ color: TEXT_PRIMARY, fontSize: 14, fontWeight: 600 }}>{currencySymbol}{m.amount.toLocaleString()}</span>
+                      <span style={{ color: TEXT_PRIMARY, fontSize: 14, fontWeight: 600 }}>{fmtLive(m.amount)}</span>
                     </div>
                   ))}
                 </div>

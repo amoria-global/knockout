@@ -1305,14 +1305,17 @@ const Donations = () => {
               {currency === 'RWF' && <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 600 }}>RWF</span>}
             </div>
 
-            {/* Live-rate cross-currency preview. The page has its own
-                per-currency selector above, but this panel lets the donor
-                spot-check what their pick converts to in every other
-                supported currency at live rates without toggling the main
-                selector back and forth. */}
+            {/* Live-rate cross-currency preview. The panel's selector
+                drives the main page `currency` state too, so picking a
+                currency here flips every amount on the donation page
+                (tier buttons, custom-input prefix, final displayed
+                donation) in one move. `currency` ∈ supported landing
+                currencies maps 1:1 to the panel's CurrencyCode. */}
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
               <PaymentCurrencyPreview
                 fromCurrency={currency as CurrencyCode}
+                defaultCurrency={currency as CurrencyCode}
+                onCurrencyChange={(code) => { setCurrency(code as typeof currency); setCustomAmount(''); }}
                 amounts={[{
                   label: 'Donation amount',
                   amount: customAmount

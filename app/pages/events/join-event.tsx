@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Navbar from '../../components/navbar';
-import PaymentCurrencyPreview from '../../components/PaymentCurrencyPreview';
+import PaymentCurrencyPreview, { type CurrencyCode, useLiveRates } from '../../components/PaymentCurrencyPreview';
 import { getPublicEvents, getPublicEventById, type PublicEvent } from '@/lib/APIs/public';
 import { joinEvent } from '@/lib/APIs/events/join-event/route';
 import { validateStreamToken } from '@/lib/APIs/streams/route';
@@ -111,6 +111,16 @@ export default function JoinEvent() {
   const [packageType, setPackageType] = useState<string | null>(null);
   const [numberOfPeople, setNumberOfPeople] = useState(1);
   const [paymentError, setPaymentError] = useState('');
+
+  // Display currency for every amount shown on this page. Defaults to USD;
+  // controlled by the PaymentCurrencyPreview panel's selector below.
+  // Picking a new currency re-renders both the "entry fee" headline and
+  // the "per person" split in that currency. Live rates are fetched and
+  // module-cached. The wire to XentriPay still carries the original RWF
+  // (server converts to USD canonically before the gateway).
+  const [displayCurrency, setDisplayCurrency] = useState<CurrencyCode>('USD');
+  const { format: formatLive } = useLiveRates();
+  const fmtFee = (rwfAmount: number) => formatLive(rwfAmount, 'RWF', displayCurrency);
 
   // Input validation error states
   const [phoneError, setPhoneError] = useState('');
@@ -628,23 +638,24 @@ export default function JoinEvent() {
                         )}
                       </div>
                       <p style={{ color: '#fff', fontSize: '30px', fontWeight: '700', margin: 0 }}>
-                        {detectedEvent.fee.toLocaleString()} RWF
+                        {fmtFee(detectedEvent.fee)}
                       </p>
                       {packageType === 'group' && (
                         <p style={{ color: '#10b981', fontSize: '14px', margin: '2px 0 0 0' }}>
-                          {Math.round(detectedEvent.fee / numberOfPeople).toLocaleString()} RWF per person (discounted)
+                          {fmtFee(Math.round(detectedEvent.fee / numberOfPeople))} per person (discounted)
                         </p>
                       )}
-                      {/* Currency preview — lets the user see the RWF fee +
-                          per-person split in their preferred currency before
-                          paying. Live rates are fetched from the backend and
-                          cached module-level, so switching currency here is
-                          instant. Display-only; the payment still submits
-                          in RWF to XentriPay as before. */}
+                      {/* Currency preview — same selector that controls the
+                          fee headline + per-person split just above, plus
+                          the Pay button label further below. Flipping the
+                          selector re-renders every amount on this page in
+                          the chosen currency at live rates. */}
                       <div style={{ marginTop: '12px' }}>
                         <PaymentCurrencyPreview
                           fromCurrency="RWF"
                           darkMode
+                          defaultCurrency={displayCurrency}
+                          onCurrencyChange={setDisplayCurrency}
                           amounts={packageType === 'group'
                             ? [
                                 { label: 'Group total', amount: detectedEvent.fee },
@@ -831,7 +842,7 @@ export default function JoinEvent() {
                     }}
                   >
                     <i className="bi bi-lock-fill" style={{ fontSize: '16px' }}></i>
-                    Pay {detectedEvent.fee.toLocaleString()} RWF {packageType === 'group' ? `for ${numberOfPeople} People` : '& Join'}
+                    Pay {fmtFee(detectedEvent.fee)} {packageType === 'group' ? `for ${numberOfPeople} People` : '& Join'}
                   </button>
 
                   {/* Payment error */}
