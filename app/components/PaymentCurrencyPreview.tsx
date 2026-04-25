@@ -128,9 +128,20 @@ const PaymentCurrencyPreview: React.FC<PaymentCurrencyPreviewProps> = ({
     onCurrencyChange?.(code);
   };
 
+  // The outer panel uses a transparent background so it picks up whatever
+  // color the host modal sits on, instead of painting its own dark/light
+  // card. This fixes the visual mismatch where a light modal (e.g. the
+  // "Buy 1 photo" XentriPayModal) was rendering a dark grey panel over it.
+  // The dropdown menu + pill button stay opaque so they remain legible as
+  // overlays regardless of the parent's backdrop. Border + text colors
+  // still honor `darkMode` so contrast stays correct either way.
+  // Border / textSecondary bumped a touch from the previous revision so
+  // both the outline and the "View in / Amount" label are clearly visible
+  // on typical modal backdrops. Panel bg stays transparent so it blends
+  // with whatever color the host modal paints behind it.
   const palette = darkMode
-    ? { bg: "#1F2937", bg2: "#111827", bg3: "#374151", border: "#374151", text: "#F9FAFB", textSecondary: "#9CA3AF", selectedBg: "#1E3A5F", checkColor: "#60A5FA" }
-    : { bg: "#FFFFFF", bg2: "#F9FAFB", bg3: "#F3F4F6", border: "#E5E7EB", text: "#111827", textSecondary: "#6B7280", selectedBg: "#EFF6FF", checkColor: "#083A85" };
+    ? { bg: "transparent", bg2: "#111827", bg3: "rgba(255,255,255,0.1)", border: "rgba(255,255,255,0.28)", text: "#F9FAFB", textSecondary: "rgba(249,250,251,0.82)", selectedBg: "#1E3A5F", checkColor: "#60A5FA" }
+    : { bg: "transparent", bg2: "#FFFFFF", bg3: "#F3F4F6", border: "#CBD5E1", text: "#111827", textSecondary: "#4B5563", selectedBg: "#EFF6FF", checkColor: "#083A85" };
 
   return (
     <div
