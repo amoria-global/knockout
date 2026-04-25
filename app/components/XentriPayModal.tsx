@@ -568,9 +568,18 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
                   goes out as the original currencyCode / amount, and the
                   backend converts to USD canonically before XentriPay. */}
               <div style={{ marginTop: '12px', display: 'flex', justifyContent: 'flex-end' }}>
+                {/*
+                  NOTE: intentionally NOT forwarding the XentriPayModal
+                  `darkMode` prop to the panel. The modal's body renders
+                  in light theme regardless of that prop (the prop is
+                  historical and doesn't actually switch the modal's own
+                  surfaces today), so passing darkMode=true here would
+                  render the panel with white text that disappears on the
+                  modal's white backdrop. If a truly dark XentriPayModal
+                  skin is ever added, re-forward the prop at that point.
+                */}
                 <PaymentCurrencyPreview
                   fromCurrency={(currencyCode || 'RWF') as CurrencyCode}
-                  darkMode={darkMode}
                   defaultCurrency={displayCurrency}
                   onCurrencyChange={setDisplayCurrency}
                   amounts={
