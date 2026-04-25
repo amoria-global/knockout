@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { API_ENDPOINTS } from '@/lib/api/config';
-import PaymentCurrencyPreview, { type CurrencyCode } from './PaymentCurrencyPreview';
+import PaymentCurrencyPreview, { type CurrencyCode, useLiveRates } from './PaymentCurrencyPreview';
 import {
   initiateXentriPayTip,
   initiateXentriPayStreaming,
@@ -427,11 +427,20 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
     : paymentType === 'album_purchase' ? 'Buy Photos'
     : 'Make Payment';
 
+  // Display currency for the whole modal. Defaults to USD (safe universal
+  // default) and is controlled by the PaymentCurrencyPreview panel's
+  // selector below — picking a new currency there re-renders every amount
+  // in the modal (header, summaries, inputs, fee lines, success page).
+  // The submit wire still carries the original `amount` + `currencyCode`
+  // props unchanged — this is purely presentation.
+  const [displayCurrency, setDisplayCurrency] = React.useState<CurrencyCode>('USD');
+  const { format: formatLive } = useLiveRates();
+
   const formatAmount = (val: number) => {
-    return new Intl.NumberFormat('en-US', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(val) + ' ' + currencyCode;
+    const from = (currencyCode || 'RWF') as CurrencyCode;
+    // While rates haven't loaded yet, fall back to the original currency
+    // string so the user doesn't see a flash of unconverted numerics.
+    return formatLive(val, from, displayCurrency);
   };
 
   const totalAmount = amount + (donationAmount || 0);
@@ -562,6 +571,8 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
                 <PaymentCurrencyPreview
                   fromCurrency={(currencyCode || 'RWF') as CurrencyCode}
                   darkMode={darkMode}
+                  defaultCurrency={displayCurrency}
+                  onCurrencyChange={setDisplayCurrency}
                   amounts={
                     hasDonation
                       ? [
