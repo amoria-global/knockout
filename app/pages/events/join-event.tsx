@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Navbar from '../../components/navbar';
+import PaymentCurrencyPreview from '../../components/PaymentCurrencyPreview';
 import { getPublicEvents, getPublicEventById, type PublicEvent } from '@/lib/APIs/public';
 import { joinEvent } from '@/lib/APIs/events/join-event/route';
 import { validateStreamToken } from '@/lib/APIs/streams/route';
@@ -634,6 +635,24 @@ export default function JoinEvent() {
                           {Math.round(detectedEvent.fee / numberOfPeople).toLocaleString()} RWF per person (discounted)
                         </p>
                       )}
+                      {/* Currency preview — lets the user see the RWF fee +
+                          per-person split in their preferred currency before
+                          paying. Live rates are fetched from the backend and
+                          cached module-level, so switching currency here is
+                          instant. Display-only; the payment still submits
+                          in RWF to XentriPay as before. */}
+                      <div style={{ marginTop: '12px' }}>
+                        <PaymentCurrencyPreview
+                          fromCurrency="RWF"
+                          darkMode
+                          amounts={packageType === 'group'
+                            ? [
+                                { label: 'Group total', amount: detectedEvent.fee },
+                                { label: 'Per person', amount: Math.round(detectedEvent.fee / numberOfPeople) },
+                              ]
+                            : [{ label: 'Entry fee', amount: detectedEvent.fee }]}
+                        />
+                      </div>
                     </div>
                     <div style={{
                       width: '42px',
