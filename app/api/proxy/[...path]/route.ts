@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://backend.connekyt.com/';
+// Decouple frontend and proxy targets. In production both resolve to
+// https://backend.connekyt.com. In local dev, NEXT_PUBLIC_API_URL points at
+// this same-origin proxy (e.g. http://localhost:3000/api/proxy) while
+// BACKEND_API_URL stays pointed at the real backend so the proxy doesn't
+// loop on itself.
+const API_BASE_URL = process.env.BACKEND_API_URL
+  || process.env.NEXT_PUBLIC_API_URL
+  || 'https://backend.connekyt.com/';
 
 // Only same-origin + sibling apps may use this proxy. Add/remove as needed.
 const ALLOWED_ORIGINS = new Set<string>([
@@ -144,14 +151,26 @@ async function proxyRequest(
     const isJson = contentType.includes('application/json');
 
     // Echo Set-Cookie headers from the backend so login/logout cookie
-    // lifecycle lands in the browser. With Domain=.connekyt.com on the
-    // backend side, the cookie will be usable across connekyt.com,
+    // lifecycle lands in the browser. In production the backend sends
+    // Domain=.connekyt.com so the cookie is shared across connekyt.com,
     // dashboard.connekyt.com, and backend.connekyt.com.
+    // In local dev the proxy host is localhost — a Domain=.connekyt.com
+    // attribute would get rejected by the browser as a cross-domain cookie.
+    // Strip Domain in that case so the cookie becomes host-only on
+    // `localhost`. Host-only cookies match by hostname (not port), so a
+    // cookie set during login on localhost:3000 will also be sent to
+    // localhost:3001 — bridging landing → dashboard locally without any
+    // SameSite/Lax cross-site headache.
+    const proxyHost = (request.headers.get('host') || '').toLowerCase();
+    const isLocalhost = proxyHost.startsWith('localhost') || proxyHost.startsWith('127.0.0.1');
     const responseHeaders = new Headers(cors);
     const setCookies = typeof response.headers.getSetCookie === 'function'
       ? response.headers.getSetCookie()
       : [];
-    for (const sc of setCookies) responseHeaders.append('Set-Cookie', sc);
+    for (const sc of setCookies) {
+      const rewritten = isLocalhost ? sc.replace(/;\s*Domain=[^;]+/i, '') : sc;
+      responseHeaders.append('Set-Cookie', rewritten);
+    }
 
     if (isJson) {
       const data = await response.json().catch(() => ({}));
