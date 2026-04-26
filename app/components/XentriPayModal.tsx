@@ -16,6 +16,7 @@ import {
   type XentriPayResponse,
   type XentriPayStatusResponse,
 } from '@/lib/APIs/payments/xentripay';
+import { useGeoPaymentStatus } from '@/app/hooks/useGeoPaymentStatus';
 
 // ==================== Types ====================
 
@@ -114,6 +115,9 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
 
   // Effective donation amount: internal (from donation step) or external prop
   const donationAmount = showDonationPrompt ? internalDonationAmount : donationAmountProp;
+
+  // Check geo-restriction status
+  const geoStatus = useGeoPaymentStatus();
 
   // Fetch donation tiers
   const fetchDonationTiers = useCallback(async () => {
@@ -595,6 +599,70 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
               </div>
             </div>
 
+            {/* Geo-restriction Warning */}
+            {!geoStatus.loading && geoStatus.blocked && (
+              <div style={{
+                background: 'linear-gradient(135deg, #fee2e2 0%, #fef2f2 100%)',
+                border: '1.5px solid #fca5a5',
+                borderRadius: '12px',
+                padding: '16px',
+                marginBottom: '20px',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, marginTop: '2px' }}>
+                    <path d="M12 9V11M12 15H12.01M5.07183 19H18.9282C20.4678 19 21.4301 17.3333 20.6603 16L13.7321 4C12.9623 2.66667 11.0377 2.66667 10.2679 4L3.33975 16C2.56995 17.3333 3.53223 19 5.07183 19Z" stroke="#dc2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  <div style={{ flex: 1 }}>
+                    <h4 style={{
+                      margin: '0 0 6px 0',
+                      fontSize: '15px',
+                      fontWeight: 700,
+                      color: '#991b1b',
+                      fontFamily: "'Pragati Narrow', sans-serif",
+                    }}>
+                      Payment Not Available
+                    </h4>
+                    <p style={{
+                      margin: 0,
+                      fontSize: '13px',
+                      color: '#7f1d1d',
+                      lineHeight: '1.5',
+                    }}>
+                      {geoStatus.message || 'Payment services are not available in your country.'}
+                      {geoStatus.country && (
+                        <><br /><span style={{ fontSize: '12px', opacity: 0.8 }}>Detected location: {geoStatus.country}</span></>
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Mobile Money Disabled Warning */}
+            {!geoStatus.loading && geoStatus.disableMobileMoney && !geoStatus.blocked && (
+              <div style={{
+                background: 'linear-gradient(135deg, #fef3c7 0%, #fefce8 100%)',
+                border: '1.5px solid #fbbf24',
+                borderRadius: '12px',
+                padding: '14px 16px',
+                marginBottom: '20px',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+                    <path d="M12 9V11M12 15H12.01M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  <p style={{
+                    margin: 0,
+                    fontSize: '13px',
+                    color: '#92400e',
+                    fontWeight: 500,
+                  }}>
+                    Mobile money (MTN/Airtel) is unavailable in your region. Please use card payment.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Payment Method Selection */}
             <div style={{ marginBottom: '20px' }}>
               <label style={{
@@ -608,25 +676,31 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
                 {paymentMethods.map((method) => {
                   const isSelected = selectedMethod === method.id;
+                  // Disable mobile money if blocked or restricted
+                  const isMobileMoneyMethod = method.id === 'mtn' || method.id === 'airtel';
+                  const isDisabled = geoStatus.blocked || (isMobileMoneyMethod && geoStatus.disableMobileMoney);
+
                   return (
                     <button
                       key={method.id}
-                      onClick={() => setSelectedMethod(method.id)}
+                      onClick={() => !isDisabled && setSelectedMethod(method.id)}
+                      disabled={isDisabled}
                       style={{
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
                         gap: '8px',
                         padding: '14px 8px',
-                        backgroundColor: isSelected ? 'rgba(8, 58, 133, 0.06)' : '#fff',
-                        border: isSelected ? '2px solid #083A85' : '1.5px solid rgba(8,58,133,0.1)',
+                        backgroundColor: isSelected ? 'rgba(8, 58, 133, 0.06)' : (isDisabled ? '#f9fafb' : '#fff'),
+                        border: isSelected ? '2px solid #083A85' : (isDisabled ? '1.5px solid #e5e7eb' : '1.5px solid rgba(8,58,133,0.1)'),
                         borderRadius: '12px',
-                        cursor: 'pointer',
+                        cursor: isDisabled ? 'not-allowed' : 'pointer',
                         transition: 'all 0.2s',
                         position: 'relative',
+                        opacity: isDisabled ? 0.5 : 1,
                       }}
-                      onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.borderColor = 'rgba(8,58,133,0.25)'; }}
-                      onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.borderColor = 'rgba(8,58,133,0.1)'; }}
+                      onMouseEnter={(e) => { if (!isSelected && !isDisabled) e.currentTarget.style.borderColor = 'rgba(8,58,133,0.25)'; }}
+                      onMouseLeave={(e) => { if (!isSelected && !isDisabled) e.currentTarget.style.borderColor = 'rgba(8,58,133,0.1)'; }}
                     >
                       {isSelected && (
                         <div style={{ position: 'absolute', top: 6, right: 6, width: 16, height: 16, borderRadius: '50%', background: '#083A85', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -647,7 +721,14 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
                       }}>
                         <img src={method.image} alt={method.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       </div>
-                      <span style={{ color: isSelected ? '#083A85' : '#374151', fontSize: '11px', fontWeight: isSelected ? 700 : 500, textAlign: 'center', lineHeight: 1.2 }}>{method.name}</span>
+                      <span style={{ color: isSelected ? '#083A85' : (isDisabled ? '#9ca3af' : '#374151'), fontSize: '11px', fontWeight: isSelected ? 700 : 500, textAlign: 'center', lineHeight: 1.2 }}>
+                        {isDisabled ? (
+                          <>
+                            {method.name}
+                            <div style={{ fontSize: '9px', color: '#ef4444', marginTop: '2px', fontWeight: 600 }}>Unavailable</div>
+                          </>
+                        ) : method.name}
+                      </span>
                     </button>
                   );
                 })}
