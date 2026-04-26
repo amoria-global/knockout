@@ -5,6 +5,8 @@ interface GeoCheckResult {
   mode?: string;
   userCity?: string;
   userCountry?: string;
+  allowedCountries?: string[];
+  blockedCountries?: string[];
   allowedCities?: string[];
   blockedCities?: string[];
   blockReason?: string;

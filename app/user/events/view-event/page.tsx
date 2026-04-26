@@ -914,6 +914,38 @@ function ViewEventContent(): React.JSX.Element {
               {geoStatus.blockReason || 'This event has geographic restrictions that may affect your ability to book or pay.'}
             </p>
 
+            {geoStatus.allowedCountries && geoStatus.allowedCountries.length > 0 && (
+              <div style={{
+                background: '#fef2f2',
+                padding: '12px',
+                borderRadius: '8px',
+                marginTop: '12px'
+              }}>
+                <p style={{ color: '#7f1d1d', fontSize: '0.9rem', marginBottom: '6px' }}>
+                  <strong>Allowed countries:</strong>
+                </p>
+                <p style={{ color: '#991b1b', fontSize: '0.9rem' }}>
+                  {geoStatus.allowedCountries.join(', ')}
+                </p>
+              </div>
+            )}
+
+            {geoStatus.blockedCountries && geoStatus.blockedCountries.length > 0 && (
+              <div style={{
+                background: '#fef2f2',
+                padding: '12px',
+                borderRadius: '8px',
+                marginTop: '12px'
+              }}>
+                <p style={{ color: '#7f1d1d', fontSize: '0.9rem', marginBottom: '6px' }}>
+                  <strong>Blocked countries:</strong>
+                </p>
+                <p style={{ color: '#991b1b', fontSize: '0.9rem' }}>
+                  {geoStatus.blockedCountries.join(', ')}
+                </p>
+              </div>
+            )}
+
             {geoStatus.allowedCities && geoStatus.allowedCities.length > 0 && (
               <div style={{
                 background: '#fef2f2',
