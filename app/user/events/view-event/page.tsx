@@ -10,6 +10,7 @@ import { useTranslations } from 'next-intl';
 import { useGoogleLogin } from '@react-oauth/google';
 import { getPublicEventById, type PublicEvent } from '@/lib/APIs/public';
 import { isAuthenticated } from '@/lib/api/client';
+import { useEventGeoCheck } from '@/app/hooks/useEventGeoCheck';
 import { registerAnonymousViewer } from '@/lib/APIs/streams/anonymous-viewer';
 import { getDeviceId } from '@/lib/fingerprint';
 import { login } from '@/lib/APIs/auth/login/route';
@@ -153,6 +154,9 @@ function ViewEventContent(): React.JSX.Element {
   const [selectedEvent, setSelectedEvent] = useState<PublicEvent | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [msUntilStart, setMsUntilStart] = useState<number | null>(null);
+
+  // Geo-restriction check
+  const { geoStatus, loading: geoLoading } = useEventGeoCheck(eventId);
 
   // Tick every second to drive the 6h-window countdown badge
   useEffect(() => {
@@ -875,6 +879,87 @@ function ViewEventContent(): React.JSX.Element {
   return (
     <>
       <AmoriaKNavbar />
+
+      {/* ── GEO-RESTRICTION WARNING BANNER ── */}
+      {geoStatus && !geoStatus.allowed && (
+        <div style={{
+          background: '#fee2e2',
+          border: '1px solid #fca5a5',
+          borderRadius: '12px',
+          padding: '20px',
+          margin: '16px 20px',
+          display: 'flex',
+          gap: '16px',
+          alignItems: 'flex-start'
+        }}>
+          <div style={{
+            width: '24px',
+            height: '24px',
+            flexShrink: 0
+          }}>
+            <svg width="24" height="24" fill="#DC2626" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"/>
+            </svg>
+          </div>
+          <div style={{ flex: 1 }}>
+            <h3 style={{
+              color: '#991b1b',
+              marginBottom: '8px',
+              fontWeight: 600,
+              fontSize: '1.1rem'
+            }}>
+              Location Restriction
+            </h3>
+            <p style={{ color: '#7f1d1d', marginBottom: '12px', lineHeight: 1.6 }}>
+              {geoStatus.blockReason || 'This event has geographic restrictions that may affect your ability to book or pay.'}
+            </p>
+
+            {geoStatus.allowedCities && geoStatus.allowedCities.length > 0 && (
+              <div style={{
+                background: '#fef2f2',
+                padding: '12px',
+                borderRadius: '8px',
+                marginTop: '12px'
+              }}>
+                <p style={{ color: '#7f1d1d', fontSize: '0.9rem', marginBottom: '6px' }}>
+                  <strong>Allowed cities:</strong>
+                </p>
+                <p style={{ color: '#991b1b', fontSize: '0.9rem' }}>
+                  {geoStatus.allowedCities.join(', ')}
+                </p>
+              </div>
+            )}
+
+            {geoStatus.blockedCities && geoStatus.blockedCities.length > 0 && (
+              <div style={{
+                background: '#fef2f2',
+                padding: '12px',
+                borderRadius: '8px',
+                marginTop: '12px'
+              }}>
+                <p style={{ color: '#7f1d1d', fontSize: '0.9rem', marginBottom: '6px' }}>
+                  <strong>Blocked cities:</strong>
+                </p>
+                <p style={{ color: '#991b1b', fontSize: '0.9rem' }}>
+                  {geoStatus.blockedCities.join(', ')}
+                </p>
+              </div>
+            )}
+
+            {geoStatus.userCity && (
+              <p style={{
+                color: '#991b1b',
+                fontSize: '0.85rem',
+                marginTop: '12px',
+                fontStyle: 'italic'
+              }}>
+                Your detected location: {geoStatus.userCity}, {geoStatus.userCountry}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* ── FULL-VIEWPORT CINEMA SHELL ── */}
       <div className="ve-cinema" style={{ position: 'relative', height: 'calc(100dvh - 64px)', overflow: 'hidden', backgroundColor: '#0e0e10' }}>
 
