@@ -119,6 +119,11 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
   // Check geo-restriction status
   const geoStatus = useGeoPaymentStatus();
 
+  // Per-event geo-restriction state
+  const [userCity, setUserCity] = useState<string>('');
+  const [availableCities, setAvailableCities] = useState<Array<{ id: string; name: string; countryCode: string }>>([]);
+  const [eventGeoCheck, setEventGeoCheck] = useState<{ allowed: boolean; reason?: string } | null>(null);
+
   // Fetch donation tiers
   const fetchDonationTiers = useCallback(async () => {
     try {
@@ -164,6 +169,32 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
       }
     };
   }, [isOpen]);
+
+  // Fetch available cities and check event geo-restrictions
+  useEffect(() => {
+    if (isOpen && eventId) {
+      // Load available cities
+      const baseUrl = (process.env.NEXT_PUBLIC_API_URL || 'https://backend.connekyt.com').replace(/\/$/, '');
+      fetch(`${baseUrl}/api/admin/events/${eventId}/geo-restrictions/cities/available`)
+        .then(res => res.json())
+        .then(cities => setAvailableCities(cities))
+        .catch(err => console.error('Failed to load cities:', err));
+
+      // Check event geo-restrictions
+      fetch(`${baseUrl}/api/remote/events/${eventId}/geo-check`)
+        .then(res => res.json())
+        .then(result => {
+          setEventGeoCheck({
+            allowed: result.allowed,
+            reason: result.blockReason
+          });
+        })
+        .catch(err => {
+          console.error('Geo check failed:', err);
+          setEventGeoCheck({ allowed: true }); // Fail-open
+        });
+    }
+  }, [isOpen, eventId]);
 
   // Close modal when session expires so auth modal can take over
   useEffect(() => {
@@ -264,6 +295,25 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
   // Handle payment initiation
   const handlePay = async (overrideDonationAmount?: number) => {
     if (!isValid()) return;
+
+    // Re-check geo-restrictions with user-declared city
+    if (userCity && eventId) {
+      try {
+        const baseUrl = (process.env.NEXT_PUBLIC_API_URL || 'https://backend.connekyt.com').replace(/\/$/, '');
+        const response = await fetch(
+          `${baseUrl}/api/remote/events/${eventId}/geo-check?cityName=${encodeURIComponent(userCity)}`
+        );
+        const result = await response.json();
+
+        if (!result.allowed) {
+          setError(result.blockReason || 'Your location is not allowed for this event');
+          return;
+        }
+      } catch (error) {
+        console.error('Geo check failed:', error);
+        // Fail-open: continue with payment
+      }
+    }
 
     setLoading(true);
     setError(null);
@@ -660,6 +710,71 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
                     Mobile money (MTN/Airtel) is unavailable in your region. Please use card payment.
                   </p>
                 </div>
+              </div>
+            )}
+
+            {/* City Selector - shown if event has geo-restrictions */}
+            {((eventGeoCheck && !eventGeoCheck.allowed) || availableCities.length > 0) && (
+              <div style={{
+                marginBottom: '24px',
+                padding: '16px',
+                background: '#fef3c7',
+                border: '1px solid #fbbf24',
+                borderRadius: '8px'
+              }}>
+                <label style={{
+                  display: 'block',
+                  fontWeight: 600,
+                  color: '#78350f',
+                  marginBottom: '8px',
+                  fontSize: '0.9rem'
+                }}>
+                  Select Your City <span style={{ color: '#DC2626' }}>*</span>
+                </label>
+                <select
+                  value={userCity}
+                  onChange={(e) => setUserCity(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    borderRadius: '8px',
+                    border: '1px solid #d97706',
+                    fontSize: '0.95rem',
+                    background: 'white'
+                  }}
+                  required
+                >
+                  <option value="">Choose your city...</option>
+                  {availableCities.map(city => (
+                    <option key={city.id} value={city.name}>
+                      {city.name} ({city.countryCode})
+                    </option>
+                  ))}
+                </select>
+                <small style={{
+                  display: 'block',
+                  color: '#92400e',
+                  fontSize: '0.8rem',
+                  marginTop: '6px'
+                }}>
+                  This event has location restrictions. Your city is required to verify eligibility.
+                </small>
+              </div>
+            )}
+
+            {/* Geo Block Warning - shown if initial check failed */}
+            {eventGeoCheck && !eventGeoCheck.allowed && !userCity && (
+              <div style={{
+                marginBottom: '20px',
+                padding: '16px',
+                background: '#fee2e2',
+                border: '1px solid #fca5a5',
+                borderRadius: '8px'
+              }}>
+                <strong style={{ color: '#991b1b' }}>Location Restriction:</strong>
+                <p style={{ color: '#7f1d1d', marginTop: '6px', marginBottom: 0 }}>
+                  {eventGeoCheck.reason || 'This event may not be available in your location. Please select your city above.'}
+                </p>
               </div>
             )}
 
