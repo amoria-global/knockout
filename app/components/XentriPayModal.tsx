@@ -119,10 +119,13 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
   // Check geo-restriction status
   const geoStatus = useGeoPaymentStatus();
 
-  // Per-event geo-restriction state
-  const [userCity, setUserCity] = useState<string>('');
-  const [availableCities, setAvailableCities] = useState<Array<{ id: string; name: string; countryCode: string }>>([]);
-  const [eventGeoCheck, setEventGeoCheck] = useState<{ allowed: boolean; reason?: string } | null>(null);
+  // Per-event geo-restriction state (automatic detection via IP)
+  const [eventGeoCheck, setEventGeoCheck] = useState<{
+    allowed: boolean;
+    reason?: string;
+    userCity?: string;
+    userCountry?: string;
+  } | null>(null);
 
   // Fetch donation tiers
   const fetchDonationTiers = useCallback(async () => {
@@ -170,23 +173,20 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
     };
   }, [isOpen]);
 
-  // Fetch available cities and check event geo-restrictions
+  // Automatic event geo-check based on IP address
   useEffect(() => {
     if (isOpen && eventId) {
-      // Load available cities
       const baseUrl = (process.env.NEXT_PUBLIC_API_URL || 'https://backend.connekyt.com').replace(/\/$/, '');
-      fetch(`${baseUrl}/api/admin/events/${eventId}/geo-restrictions/cities/available`)
-        .then(res => res.json())
-        .then(cities => setAvailableCities(cities))
-        .catch(err => console.error('Failed to load cities:', err));
 
-      // Check event geo-restrictions
+      // Automatic geo-check (backend detects location from IP)
       fetch(`${baseUrl}/api/remote/events/${eventId}/geo-check`)
         .then(res => res.json())
         .then(result => {
           setEventGeoCheck({
             allowed: result.allowed,
-            reason: result.blockReason
+            reason: result.blockReason,
+            userCity: result.userCity,
+            userCountry: result.userCountry
           });
         })
         .catch(err => {
@@ -295,25 +295,6 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
   // Handle payment initiation
   const handlePay = async (overrideDonationAmount?: number) => {
     if (!isValid()) return;
-
-    // Re-check geo-restrictions with user-declared city
-    if (userCity && eventId) {
-      try {
-        const baseUrl = (process.env.NEXT_PUBLIC_API_URL || 'https://backend.connekyt.com').replace(/\/$/, '');
-        const response = await fetch(
-          `${baseUrl}/api/remote/events/${eventId}/geo-check?cityName=${encodeURIComponent(userCity)}`
-        );
-        const result = await response.json();
-
-        if (!result.allowed) {
-          setError(result.blockReason || 'Your location is not allowed for this event');
-          return;
-        }
-      } catch (error) {
-        console.error('Geo check failed:', error);
-        // Fail-open: continue with payment
-      }
-    }
 
     setLoading(true);
     setError(null);
@@ -713,57 +694,8 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
               </div>
             )}
 
-            {/* City Selector - shown if event has geo-restrictions */}
-            {((eventGeoCheck && !eventGeoCheck.allowed) || availableCities.length > 0) && (
-              <div style={{
-                marginBottom: '24px',
-                padding: '16px',
-                background: '#fef3c7',
-                border: '1px solid #fbbf24',
-                borderRadius: '8px'
-              }}>
-                <label style={{
-                  display: 'block',
-                  fontWeight: 600,
-                  color: '#78350f',
-                  marginBottom: '8px',
-                  fontSize: '0.9rem'
-                }}>
-                  Select Your City <span style={{ color: '#DC2626' }}>*</span>
-                </label>
-                <select
-                  value={userCity}
-                  onChange={(e) => setUserCity(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '12px',
-                    borderRadius: '8px',
-                    border: '1px solid #d97706',
-                    fontSize: '0.95rem',
-                    background: 'white'
-                  }}
-                  required
-                >
-                  <option value="">Choose your city...</option>
-                  {availableCities.map(city => (
-                    <option key={city.id} value={city.name}>
-                      {city.name} ({city.countryCode})
-                    </option>
-                  ))}
-                </select>
-                <small style={{
-                  display: 'block',
-                  color: '#92400e',
-                  fontSize: '0.8rem',
-                  marginTop: '6px'
-                }}>
-                  This event has location restrictions. Your city is required to verify eligibility.
-                </small>
-              </div>
-            )}
-
-            {/* Geo Block Warning - shown if initial check failed */}
-            {eventGeoCheck && !eventGeoCheck.allowed && !userCity && (
+            {/* Event Geo-Restriction Warning - automatic IP-based detection */}
+            {eventGeoCheck && !eventGeoCheck.allowed && (
               <div style={{
                 marginBottom: '20px',
                 padding: '16px',
@@ -771,10 +703,24 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
                 border: '1px solid #fca5a5',
                 borderRadius: '8px'
               }}>
-                <strong style={{ color: '#991b1b' }}>Location Restriction:</strong>
-                <p style={{ color: '#7f1d1d', marginTop: '6px', marginBottom: 0 }}>
-                  {eventGeoCheck.reason || 'This event may not be available in your location. Please select your city above.'}
-                </p>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                  <svg width="24" height="24" fill="#DC2626" viewBox="0 0 20 20" style={{ flexShrink: 0 }}>
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"/>
+                  </svg>
+                  <div style={{ flex: 1 }}>
+                    <strong style={{ color: '#991b1b', display: 'block', marginBottom: '6px' }}>
+                      Location Restriction
+                    </strong>
+                    <p style={{ color: '#7f1d1d', marginBottom: 0, fontSize: '14px' }}>
+                      {eventGeoCheck.reason || 'This event is not available in your location.'}
+                    </p>
+                    {eventGeoCheck.userCity && (
+                      <p style={{ color: '#991b1b', fontSize: '12px', marginTop: '8px', fontStyle: 'italic', marginBottom: 0 }}>
+                        Your detected location: {eventGeoCheck.userCity}, {eventGeoCheck.userCountry}
+                      </p>
+                    )}
+                  </div>
+                </div>
               </div>
             )}
 
@@ -927,19 +873,19 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
                   handlePay();
                 }
               }}
-              disabled={!isValid() || loading}
+              disabled={!isValid() || loading || (eventGeoCheck?.allowed === false)}
               style={{
                 width: '100%',
                 padding: '13px 20px',
-                background: (!isValid() || loading)
+                background: (!isValid() || loading || (eventGeoCheck?.allowed === false))
                   ? ('#d1d5db')
                   : ('linear-gradient(135deg, #083A85, #0a4da3)'),
                 border: 'none',
                 borderRadius: '14px',
-                color: (!isValid() || loading) ? '#999' : '#fff',
+                color: (!isValid() || loading || (eventGeoCheck?.allowed === false)) ? '#999' : '#fff',
                 fontSize: '16px',
                 fontWeight: 600,
-                cursor: (!isValid() || loading) ? 'not-allowed' : 'pointer',
+                cursor: (!isValid() || loading || (eventGeoCheck?.allowed === false)) ? 'not-allowed' : 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
