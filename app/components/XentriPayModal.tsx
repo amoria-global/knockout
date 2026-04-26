@@ -125,6 +125,10 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
     reason?: string;
     userCity?: string;
     userCountry?: string;
+    allowedCountries?: string[];
+    blockedCountries?: string[];
+    allowedCities?: string[];
+    blockedCities?: string[];
   } | null>(null);
 
   // Fetch donation tiers
@@ -186,7 +190,11 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
             allowed: result.allowed,
             reason: result.blockReason,
             userCity: result.userCity,
-            userCountry: result.userCountry
+            userCountry: result.userCountry,
+            allowedCountries: result.allowedCountries || [],
+            blockedCountries: result.blockedCountries || [],
+            allowedCities: result.allowedCities || [],
+            blockedCities: result.blockedCities || [],
           });
         })
         .catch(err => {
@@ -714,9 +722,29 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
                     <p style={{ color: '#7f1d1d', marginBottom: 0, fontSize: '14px' }}>
                       {eventGeoCheck.reason || 'This event is not available in your location.'}
                     </p>
-                    {eventGeoCheck.userCity && (
+                    {eventGeoCheck.allowedCountries && eventGeoCheck.allowedCountries.length > 0 && (
+                      <p style={{ color: '#991b1b', fontSize: '12px', marginTop: '8px', marginBottom: 0 }}>
+                        <strong>Allowed countries:</strong> {eventGeoCheck.allowedCountries.join(', ')}
+                      </p>
+                    )}
+                    {eventGeoCheck.blockedCountries && eventGeoCheck.blockedCountries.length > 0 && (
+                      <p style={{ color: '#991b1b', fontSize: '12px', marginTop: '4px', marginBottom: 0 }}>
+                        <strong>Blocked countries:</strong> {eventGeoCheck.blockedCountries.join(', ')}
+                      </p>
+                    )}
+                    {eventGeoCheck.allowedCities && eventGeoCheck.allowedCities.length > 0 && (
+                      <p style={{ color: '#991b1b', fontSize: '12px', marginTop: '4px', marginBottom: 0 }}>
+                        <strong>Allowed cities:</strong> {eventGeoCheck.allowedCities.join(', ')}
+                      </p>
+                    )}
+                    {eventGeoCheck.blockedCities && eventGeoCheck.blockedCities.length > 0 && (
+                      <p style={{ color: '#991b1b', fontSize: '12px', marginTop: '4px', marginBottom: 0 }}>
+                        <strong>Blocked cities:</strong> {eventGeoCheck.blockedCities.join(', ')}
+                      </p>
+                    )}
+                    {eventGeoCheck.userCountry && (
                       <p style={{ color: '#991b1b', fontSize: '12px', marginTop: '8px', fontStyle: 'italic', marginBottom: 0 }}>
-                        Your detected location: {eventGeoCheck.userCity}, {eventGeoCheck.userCountry}
+                        Your detected location: {eventGeoCheck.userCity ? `${eventGeoCheck.userCity}, ` : ''}{eventGeoCheck.userCountry}
                       </p>
                     )}
                   </div>
