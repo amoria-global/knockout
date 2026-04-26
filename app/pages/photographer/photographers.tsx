@@ -55,13 +55,6 @@ const Photographers: React.FC = () => {
   const [showWizard, setShowWizard] = useState(false);
   const [wizardPhotographerId, setWizardPhotographerId] = useState<string | undefined>();
 
-  // Auto-popup wizard after 5 seconds (once per session)
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (sessionStorage.getItem('wizardDismissed')) return;
-    const timer = setTimeout(() => setShowWizard(true), 5000);
-    return () => clearTimeout(timer);
-  }, []);
 
   const itemsPerPage = 12;
 
