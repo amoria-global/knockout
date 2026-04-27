@@ -190,7 +190,10 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
     const baseUrl = (process.env.NEXT_PUBLIC_API_URL || 'https://backend.connekyt.com').replace(/\/$/, '');
 
     fetch(`${baseUrl}/api/remote/events/${eventId}/geo-check`)
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error('Geo check failed');
+        return res.json();
+      })
       .then(result => {
         setEventGeoCheck({
           allowed: result.allowed,
