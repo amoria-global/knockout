@@ -1444,6 +1444,16 @@ const App = () => {
       .catch(() => {});
   }, []);
 
+  // Prevent accidental page reload while gift payment is being processed
+  useEffect(() => {
+    if (giftStep !== 'processing') return;
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [giftStep]);
+
   // Stream type detection using explicit streamType field from API
   // Fallback to heuristic if API doesn't return streamType yet
   const getStreamType = (event: EventStream): 'entry_fee' | 'invite_token' | null =>
