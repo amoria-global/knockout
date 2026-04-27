@@ -9,6 +9,7 @@ interface GeoCheckResult {
   blockedCountries?: string[];
   allowedCities?: string[];
   blockedCities?: string[];
+  allowedPaymentMethods?: string[];
   blockReason?: string;
 }
 

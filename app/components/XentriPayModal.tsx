@@ -129,6 +129,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
     blockedCountries?: string[];
     allowedCities?: string[];
     blockedCities?: string[];
+    allowedPaymentMethods?: string[];
   } | null>(null);
 
   // Fetch donation tiers
@@ -195,6 +196,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
             blockedCountries: result.blockedCountries || [],
             allowedCities: result.allowedCities || [],
             blockedCities: result.blockedCities || [],
+            allowedPaymentMethods: result.allowedPaymentMethods || [],
           });
         })
         .catch(err => {
@@ -763,7 +765,14 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
                 letterSpacing: '0.5px',
               }}>Select Payment Method</label>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
-                {paymentMethods.map((method) => {
+                {paymentMethods
+                  .filter((method) => {
+                    // Filter by per-country allowed payment methods from geo-check
+                    const allowed = eventGeoCheck?.allowedPaymentMethods;
+                    if (!allowed || allowed.length === 0) return true; // No restriction = show all
+                    return allowed.includes(method.provider);
+                  })
+                  .map((method) => {
                   const isSelected = selectedMethod === method.id;
                   // Disable mobile money if blocked or restricted
                   const isMobileMoneyMethod = method.id === 'mtn' || method.id === 'airtel';
