@@ -99,15 +99,16 @@ function getEventStartDate(dateStr?: string, timeStr?: string): Date | null {
 }
 
 /**
- * Format a ms-duration as "HHh MMm SSs" padded.
+ * Break ms-duration into { days, hours, minutes, seconds } for countdown boxes.
  */
-function formatCountdown(ms: number): string {
+function getCountdownParts(ms: number) {
   const totalSec = Math.max(0, Math.floor(ms / 1000));
-  const h = Math.floor(totalSec / 3600);
-  const m = Math.floor((totalSec % 3600) / 60);
-  const s = totalSec % 60;
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${pad(h)}h ${pad(m)}m ${pad(s)}s`;
+  return {
+    days: Math.floor(totalSec / 86400),
+    hours: Math.floor((totalSec % 86400) / 3600),
+    minutes: Math.floor((totalSec % 3600) / 60),
+    seconds: totalSec % 60,
+  };
 }
 
 /**
@@ -189,8 +190,7 @@ function ViewEventContent(): React.JSX.Element {
     return () => window.clearInterval(id);
   }, [selectedEvent?.eventDate, selectedEvent?.startTime]);
 
-  const SIX_HOURS_MS = 6 * 60 * 60 * 1000;
-  const showCountdown = msUntilStart !== null && msUntilStart > 0 && msUntilStart <= SIX_HOURS_MS;
+  const showCountdown = msUntilStart !== null && msUntilStart > 0;
 
   // Viewer auth modal state
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -1110,26 +1110,109 @@ function ViewEventContent(): React.JSX.Element {
             </>}
           </div>
 
-          {/* Countdown badge — only when event starts within 6 hours */}
-          {showCountdown && msUntilStart !== null && (
-            <div style={{
-              display: 'inline-flex', alignItems: 'center', gap: 10,
-              padding: '10px 18px', marginBottom: 16,
-              background: 'linear-gradient(135deg, rgba(245,101,44,0.15), rgba(245,101,44,0.05))',
-              border: '1px solid rgba(245,101,44,0.45)',
-              borderRadius: 999, color: '#fdba74',
-              fontSize: 14, fontWeight: 700, letterSpacing: '0.02em',
-              alignSelf: 'flex-start',
-            }}>
-              <i className="bi bi-hourglass-split" style={{ color: '#f5652c' }}></i>
-              <span>Starts in {formatCountdown(msUntilStart)}</span>
-            </div>
-          )}
-
           {/* Title */}
           <h1 style={{ fontSize: 'clamp(28px, 4.5vw, 52px)', fontWeight: 800, color: '#fff', margin: '0 0 6px', lineHeight: 1.08, letterSpacing: '-0.03em', textShadow: '0 2px 20px rgba(0,0,0,0.5)' }}>
             {selectedEvent.title}
           </h1>
+
+          {/* Countdown / Happening Now / Event Ended */}
+          {isLive && (
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '10px',
+              padding: '12px 24px',
+              background: 'linear-gradient(135deg, rgba(16,185,129,0.2), rgba(16,185,129,0.08))',
+              border: '1px solid rgba(16,185,129,0.5)',
+              borderRadius: '16px',
+              alignSelf: 'flex-start',
+              marginBottom: '4px',
+            }}>
+              <span style={{
+                width: '12px',
+                height: '12px',
+                borderRadius: '50%',
+                backgroundColor: '#10b981',
+                boxShadow: '0 0 8px rgba(16,185,129,0.6)',
+                animation: 'livePulse 1.5s ease-in-out infinite',
+                flexShrink: 0,
+              }} />
+              <span style={{
+                fontSize: 'clamp(16px, 2.5vw, 22px)',
+                fontWeight: 800,
+                color: '#34d399',
+                letterSpacing: '0.02em',
+                fontFamily: "'Pragati Narrow', sans-serif",
+              }}>
+                Happening Now
+              </span>
+            </div>
+          )}
+
+          {isUpcoming && showCountdown && msUntilStart !== null && (() => {
+            const { days, hours, minutes, seconds } = getCountdownParts(msUntilStart);
+            const pad = (n: number) => String(n).padStart(2, '0');
+            const boxStyle: React.CSSProperties = {
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 'clamp(10px, 2vw, 16px) clamp(12px, 2.5vw, 20px)',
+              background: 'rgba(255,255,255,0.08)',
+              backdropFilter: 'blur(12px)',
+              border: '1px solid rgba(255,255,255,0.15)',
+              borderRadius: '14px',
+              minWidth: 'clamp(52px, 10vw, 76px)',
+            };
+            const numStyle: React.CSSProperties = {
+              fontSize: 'clamp(26px, 5vw, 44px)',
+              fontWeight: 800,
+              color: '#fff',
+              lineHeight: 1,
+              fontFamily: "'Pragati Narrow', monospace",
+              letterSpacing: '-0.02em',
+            };
+            const labelStyle: React.CSSProperties = {
+              fontSize: '10px',
+              fontWeight: 600,
+              color: '#9ca3af',
+              textTransform: 'uppercase',
+              letterSpacing: '0.1em',
+              marginTop: '4px',
+            };
+            const colonStyle: React.CSSProperties = {
+              fontSize: 'clamp(20px, 4vw, 36px)',
+              fontWeight: 700,
+              color: 'rgba(255,255,255,0.3)',
+              lineHeight: 1,
+              alignSelf: 'flex-start',
+              paddingTop: 'clamp(8px, 1.5vw, 14px)',
+            };
+
+            return (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(6px, 1.5vw, 12px)', alignSelf: 'flex-start', marginBottom: '4px' }}>
+                <div style={boxStyle}>
+                  <span style={numStyle}>{pad(days)}</span>
+                  <span style={labelStyle}>Days</span>
+                </div>
+                <span style={colonStyle}>:</span>
+                <div style={boxStyle}>
+                  <span style={numStyle}>{pad(hours)}</span>
+                  <span style={labelStyle}>Hrs</span>
+                </div>
+                <span style={colonStyle}>:</span>
+                <div style={boxStyle}>
+                  <span style={numStyle}>{pad(minutes)}</span>
+                  <span style={labelStyle}>Min</span>
+                </div>
+                <span style={colonStyle}>:</span>
+                <div style={boxStyle}>
+                  <span style={numStyle}>{pad(seconds)}</span>
+                  <span style={labelStyle}>Sec</span>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Description — clamped to 2 lines */}
           {selectedEvent.description && (
@@ -1954,6 +2037,10 @@ function ViewEventContent(): React.JSX.Element {
         @keyframes authSpin {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
+        }
+        @keyframes livePulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.5; transform: scale(1.15); }
         }
 
         /* CTA bar positioned via inline JSX (absolute center within panel area) */
