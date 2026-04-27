@@ -566,26 +566,25 @@ const App = () => {
 
 
   // Stream access gate — determine flow based on streamType
-  // entry_fee: backend already guards whepUrl (nulls it for unpaid viewers)
-  // invite_token: backend fix pending — frontend must validate token
-  // paid=true param: viewer came from join-package/join-event after completing flow
+  // Access is ALWAYS verified from the database (whepUrl / checkAnonymousAccessStatus).
+  // The `from=payment` param only triggers a retry to handle post-payment race conditions.
   useEffect(() => {
     if (!mainEvent?.id || mainEvent.title === 'Loading...') return;
 
     const type = getStreamType(mainEvent);
-    const paid = searchParams.get('paid') === 'true';
+    const fromPayment = searchParams.get('from') === 'payment';
     const urlToken = searchParams.get('inviteToken');
+    const urlViewerId = searchParams.get('viewerId');
 
-    // Paid param: viewer came from join-package/join-event or email notification after payment
-    // Verify with backend to prevent spoofing
-    if (paid) {
+    if (type === 'entry_fee') {
+      // Backend guards whepUrl for entry_fee streams:
+      // authenticated + paid → whepUrl is populated
+      // unauthenticated or unpaid → whepUrl is null
       if (isAuthenticated) {
-        // Check backend — whepUrl is only returned for paid viewers
         if (mainEvent.whepUrl) {
           setStreamAccessGranted(true);
-        } else {
-          // whepUrl may not yet be in state (race with loadEventDetails).
-          // Retry once after 2s — if still null, the viewer hasn't paid.
+        } else if (fromPayment) {
+          // Just completed payment — backend may not have processed yet, retry after 2s
           setAccessCheckLoading(true);
           setTimeout(async () => {
             try {
@@ -602,13 +601,9 @@ const App = () => {
           }, 2000);
         }
       } else {
-        // Check if this is an anonymous viewer (came from join-package with viewerId)
-        const urlViewerId = searchParams.get('viewerId');
-        const savedViewerId = localStorage.getItem(`anonymousViewer_${mainEvent.id}`);
-        const viewerId = urlViewerId || savedViewerId;
-
+        // Anonymous viewer — check access via DB (fingerprint + viewerId)
+        const viewerId = urlViewerId || localStorage.getItem(`anonymousViewer_${mainEvent.id}`);
         if (viewerId) {
-          // Anonymous viewer with viewerId — check access via fingerprint
           setAnonymousViewerId(viewerId);
           setIsAnonymousViewer(true);
           setAccessCheckLoading(true);
@@ -622,7 +617,6 @@ const App = () => {
                 if (whepUrl) {
                   setEvents(prev => [{ ...prev[0], whepUrl }, ...prev.slice(1)]);
                 }
-                // Persist anonymous viewer name for session restoration
                 const resName = resData?.name as string;
                 if (resName) {
                   setAnonymousViewerName(resName);
@@ -631,7 +625,6 @@ const App = () => {
                 setStreamAccessGranted(true);
                 setAccessCheckLoading(false);
               } else if (resData?.reason === 'DEVICE_MISMATCH') {
-                // Paid viewer on a new device — switch, don't re-pay
                 const resName = resData?.name as string;
                 if (resName) {
                   setAnonymousViewerName(resName);
@@ -639,8 +632,8 @@ const App = () => {
                 }
                 setShowDeviceSwitchModal(true);
                 setAccessCheckLoading(false);
-              } else {
-                // confirm-payment may still be processing — retry after 2s
+              } else if (fromPayment) {
+                // Just completed payment — backend may not have processed yet, retry after 2s
                 setTimeout(async () => {
                   try {
                     const fp = await getDeviceId();
@@ -668,63 +661,17 @@ const App = () => {
                   } catch { /* silent */ }
                   setAccessCheckLoading(false);
                 }, 2000);
+              } else {
+                setAccessCheckLoading(false);
               }
             } catch {
               setAccessCheckLoading(false);
             }
           })();
-        } else {
-          // No viewerId stored (e.g. user opened the stream URL in a fresh browser/incognito).
-          // Show the simple name/email/phone modal so the backend can recognize them as a
-          // returning paid viewer without forcing a full login.
+        } else if (fromPayment) {
+          // Came from payment but no viewerId — show modal to re-identify
           setViewerInfoError('');
           setShowViewerInfoModal(true);
-        }
-      }
-      return;
-    }
-
-    if (type === 'entry_fee') {
-      // Backend guards whepUrl for entry_fee streams:
-      // authenticated + paid → whepUrl is populated
-      // unauthenticated or unpaid → whepUrl is null
-      if (isAuthenticated && mainEvent.whepUrl) {
-        setStreamAccessGranted(true);
-      } else if (!isAuthenticated) {
-        // Check if anonymous viewer has access via fingerprint
-        const savedViewerId = localStorage.getItem(`anonymousViewer_${mainEvent.id}`);
-        if (savedViewerId) {
-          setAnonymousViewerId(savedViewerId);
-          setIsAnonymousViewer(true);
-          setAccessCheckLoading(true);
-          (async () => {
-            try {
-              const fingerprint = await getDeviceId();
-              const res = await checkAnonymousAccessStatus(mainEvent.id, fingerprint, savedViewerId);
-              const resData = res.data as Record<string, unknown> | undefined;
-              if (res.success && resData?.hasAccess) {
-                const whepUrl = resData?.whepUrl as string;
-                if (whepUrl) {
-                  setEvents(prev => [{ ...prev[0], whepUrl }, ...prev.slice(1)]);
-                }
-                const resName = resData?.name as string;
-                if (resName) {
-                  setAnonymousViewerName(resName);
-                  localStorage.setItem(`anonymousViewerName_${mainEvent.id}`, resName);
-                }
-                setStreamAccessGranted(true);
-              } else if (resData?.reason === 'DEVICE_MISMATCH') {
-                // Paid viewer on a new device — switch, don't re-pay
-                const resName = resData?.name as string;
-                if (resName) {
-                  setAnonymousViewerName(resName);
-                  localStorage.setItem(`anonymousViewerName_${mainEvent.id}`, resName);
-                }
-                setShowDeviceSwitchModal(true);
-              }
-            } catch { /* silent */ }
-            setAccessCheckLoading(false);
-          })();
         }
       }
       // Otherwise, "Purchase Access" overlay will show
