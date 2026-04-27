@@ -1444,15 +1444,15 @@ const App = () => {
       .catch(() => {});
   }, []);
 
-  // Prevent accidental page reload while gift payment is being processed
+  // Prevent accidental page reload while gift modal is open
   useEffect(() => {
-    if (giftStep !== 'processing') return;
+    if (!showGiftModal) return;
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       e.preventDefault();
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [giftStep]);
+  }, [showGiftModal]);
 
   // Stream type detection using explicit streamType field from API
   // Fallback to heuristic if API doesn't return streamType yet

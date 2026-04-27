@@ -243,15 +243,15 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
     }
   }, [isOpen]);
 
-  // Prevent accidental page reload while payment is being processed
+  // Prevent accidental page reload while payment modal is open
   useEffect(() => {
-    if (step !== 'processing') return;
+    if (!isOpen) return;
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       e.preventDefault();
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [step]);
+  }, [isOpen]);
 
   // Validate payment details
   const isValid = useCallback(() => {
