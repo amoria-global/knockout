@@ -15,7 +15,7 @@ export interface RecordTipRequest {
   amount: string;
   eventId?: string;
   recipientId?: string;
-  currencyId?: string;
+  currencyId: string;
   remarks?: string;
 }
 
@@ -37,7 +37,7 @@ export async function recordTip(data: RecordTipRequest): Promise<ApiResponse<Rec
   queryParams.append('amount', data.amount);
   if (data.eventId) queryParams.append('eventId', data.eventId);
   if (data.recipientId) queryParams.append('recipientId', data.recipientId);
-  if (data.currencyId) queryParams.append('currencyId', data.currencyId);
+  queryParams.append('currencyId', data.currencyId);
   if (data.remarks) queryParams.append('remarks', data.remarks);
 
   return apiClient.post<RecordTipResponse>(
@@ -52,7 +52,7 @@ export async function recordTip(data: RecordTipRequest): Promise<ApiResponse<Rec
 export interface RecordStreamingPaymentRequest {
   eventId: string;
   amount: string;
-  currencyId?: string;
+  currencyId: string;
   remarks?: string;
 }
 
@@ -73,7 +73,7 @@ export async function recordStreamingPayment(data: RecordStreamingPaymentRequest
   const queryParams = new URLSearchParams();
   queryParams.append('eventId', data.eventId);
   queryParams.append('amount', data.amount);
-  if (data.currencyId) queryParams.append('currencyId', data.currencyId);
+  queryParams.append('currencyId', data.currencyId);
   if (data.remarks) queryParams.append('remarks', data.remarks);
 
   return apiClient.post<RecordStreamingPaymentResponse>(
