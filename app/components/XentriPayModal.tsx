@@ -534,8 +534,8 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
         }}
         onMouseDown={(e) => e.stopPropagation()}
       >
-        {/* Close button - hidden during processing */}
-        {step !== 'processing' && (
+        {/* Close button - hidden during processing and when geo-blocked */}
+        {step !== 'processing' && !(eventId && !geoCheckLoading && eventGeoCheck && !eventGeoCheck.allowed) && (
           <button
             onClick={handleClose}
             style={{
@@ -599,92 +599,108 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
               </div>
             )}
 
-            {/* Blocked overlay — user's region is restricted */}
+            {/* Blocked overlay — full-screen, no close option */}
             {eventId && !geoCheckLoading && eventGeoCheck && !eventGeoCheck.allowed && (
               <div style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: 'rgba(0, 0, 0, 0.75)',
+                backdropFilter: 'blur(12px)',
                 display: 'flex',
-                flexDirection: 'column',
                 alignItems: 'center',
-                textAlign: 'center',
-                padding: '32px 20px',
+                justifyContent: 'center',
+                zIndex: 9999,
+                padding: '24px',
               }}>
                 <div style={{
-                  width: '72px',
-                  height: '72px',
-                  borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #fee2e2 0%, #fef2f2 100%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginBottom: '20px',
+                  background: '#fff',
+                  borderRadius: '24px',
+                  padding: 'clamp(32px, 6vw, 48px) clamp(24px, 5vw, 40px)',
+                  maxWidth: '420px',
+                  width: '100%',
+                  textAlign: 'center',
+                  boxShadow: '0 32px 80px rgba(0,0,0,0.3)',
                 }}>
-                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                    <line x1="9" y1="9" x2="15" y2="15" />
-                    <line x1="15" y1="9" x2="9" y2="15" />
-                  </svg>
-                </div>
-
-                <h3 style={{
-                  fontSize: '20px',
-                  fontWeight: 700,
-                  color: '#1f2937',
-                  marginBottom: '8px',
-                  marginTop: 0,
-                  fontFamily: "'Pragati Narrow', sans-serif",
-                }}>
-                  Not available in your region
-                </h3>
-
-                <p style={{
-                  fontSize: '15px',
-                  color: '#6b7280',
-                  lineHeight: 1.6,
-                  marginBottom: '20px',
-                  maxWidth: '300px',
-                }}>
-                  {eventGeoCheck.reason || 'Sorry, this event is not available for booking from your current location.'}
-                </p>
-
-                {eventGeoCheck.userCountry && (
+                  {/* Icon */}
                   <div style={{
-                    display: 'inline-flex',
+                    width: '80px',
+                    height: '80px',
+                    borderRadius: '50%',
+                    background: 'linear-gradient(135deg, #fee2e2 0%, #fef2f2 100%)',
+                    display: 'flex',
                     alignItems: 'center',
-                    gap: '6px',
-                    padding: '8px 16px',
-                    backgroundColor: '#f9fafb',
-                    borderRadius: '20px',
-                    border: '1px solid #e5e7eb',
-                    marginBottom: '24px',
+                    justifyContent: 'center',
+                    margin: '0 auto 24px',
                   }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                      <circle cx="12" cy="10" r="3" />
+                      <line x1="9" y1="9" x2="15" y2="15" />
+                      <line x1="15" y1="9" x2="9" y2="15" />
                     </svg>
-                    <span style={{ fontSize: '13px', color: '#9ca3af' }}>
-                      {eventGeoCheck.userCity && eventGeoCheck.userCity !== 'Unknown'
-                        ? `${eventGeoCheck.userCity}, ${eventGeoCheck.userCountry}`
-                        : eventGeoCheck.userCountry}
-                    </span>
                   </div>
-                )}
 
-                <button
-                  onClick={handleClose}
-                  style={{
-                    padding: '12px 32px',
-                    background: 'linear-gradient(135deg, #083A85, #0a4da3)',
-                    border: 'none',
-                    borderRadius: '12px',
-                    color: '#fff',
+                  <h2 style={{
+                    fontSize: 'clamp(20px, 4vw, 26px)',
+                    fontWeight: 700,
+                    color: '#1f2937',
+                    marginBottom: '12px',
+                    marginTop: 0,
+                    fontFamily: "'Pragati Narrow', sans-serif",
+                  }}>
+                    This event is not available in your region
+                  </h2>
+
+                  <p style={{
                     fontSize: '15px',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                  }}
-                >
-                  Got it
-                </button>
+                    color: '#6b7280',
+                    lineHeight: 1.7,
+                    marginBottom: '24px',
+                    maxWidth: '340px',
+                    marginLeft: 'auto',
+                    marginRight: 'auto',
+                  }}>
+                    We&apos;re sorry, but the event organizer has restricted access to this event from your current location. This may be due to regional availability or licensing requirements.
+                  </p>
+
+                  {/* Detected location pill */}
+                  {eventGeoCheck.userCountry && (
+                    <div style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '10px 20px',
+                      backgroundColor: '#f9fafb',
+                      borderRadius: '24px',
+                      border: '1px solid #e5e7eb',
+                      marginBottom: '28px',
+                    }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                        <circle cx="12" cy="10" r="3" />
+                      </svg>
+                      <span style={{ fontSize: '14px', color: '#6b7280' }}>
+                        Your location: {eventGeoCheck.userCity && eventGeoCheck.userCity !== 'Unknown'
+                          ? `${eventGeoCheck.userCity}, ${eventGeoCheck.userCountry}`
+                          : eventGeoCheck.userCountry}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Divider */}
+                  <div style={{ height: '1px', backgroundColor: '#f3f4f6', margin: '0 0 20px' }} />
+
+                  <p style={{
+                    fontSize: '13px',
+                    color: '#9ca3af',
+                    lineHeight: 1.5,
+                    margin: 0,
+                  }}>
+                    If you believe this is an error, please contact the event organizer for assistance.
+                  </p>
+                </div>
               </div>
             )}
 
