@@ -154,6 +154,31 @@ function ViewEventContent(): React.JSX.Element {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [msUntilStart, setMsUntilStart] = useState<number | null>(null);
 
+  // Geo-restriction check
+  const [geoCheck, setGeoCheck] = useState<{
+    allowed: boolean;
+    userCity?: string;
+    userCountry?: string;
+  } | null>(null);
+  const [geoOverlayDismissed, setGeoOverlayDismissed] = useState(false);
+
+  useEffect(() => {
+    if (!eventId) return;
+    const baseUrl = (process.env.NEXT_PUBLIC_API_URL || 'https://backend.connekyt.com').replace(/\/$/, '');
+    fetch(`${baseUrl}/api/remote/events/${eventId}/geo-check`)
+      .then(res => res.json())
+      .then(result => {
+        setGeoCheck({
+          allowed: result.allowed,
+          userCity: result.userCity,
+          userCountry: result.userCountry,
+        });
+      })
+      .catch(() => {
+        setGeoCheck({ allowed: true }); // Fail-open
+      });
+  }, [eventId]);
+
   // Tick every second to drive the 6h-window countdown badge
   useEffect(() => {
     const start = getEventStartDate(selectedEvent?.eventDate, selectedEvent?.startTime);
@@ -875,6 +900,137 @@ function ViewEventContent(): React.JSX.Element {
   return (
     <>
       <AmoriaKNavbar />
+
+      {/* ── GEO-RESTRICTION OVERLAY ── */}
+      {geoCheck && !geoCheck.allowed && !geoOverlayDismissed && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.75)',
+          backdropFilter: 'blur(12px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          padding: '24px',
+        }}>
+          <div style={{
+            background: '#fff',
+            borderRadius: '24px',
+            padding: 'clamp(32px, 6vw, 48px) clamp(24px, 5vw, 40px)',
+            maxWidth: '420px',
+            width: '100%',
+            textAlign: 'center',
+            boxShadow: '0 32px 80px rgba(0,0,0,0.3)',
+            position: 'relative',
+          }}>
+            {/* Close button */}
+            <button
+              onClick={() => setGeoOverlayDismissed(true)}
+              style={{
+                position: 'absolute',
+                top: '16px',
+                right: '16px',
+                background: 'rgba(0,0,0,0.05)',
+                border: 'none',
+                borderRadius: '50%',
+                width: '36px',
+                height: '36px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                color: '#9ca3af',
+                transition: 'all 0.2s',
+              }}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+
+            {/* Icon */}
+            <div style={{
+              width: '80px',
+              height: '80px',
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, #fee2e2 0%, #fef2f2 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 24px',
+            }}>
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                <line x1="9" y1="9" x2="15" y2="15" />
+                <line x1="15" y1="9" x2="9" y2="15" />
+              </svg>
+            </div>
+
+            <h2 style={{
+              fontSize: 'clamp(20px, 4vw, 26px)',
+              fontWeight: 700,
+              color: '#1f2937',
+              marginBottom: '12px',
+              marginTop: 0,
+              fontFamily: "'Pragati Narrow', sans-serif",
+            }}>
+              This event is not available in your region
+            </h2>
+
+            <p style={{
+              fontSize: '15px',
+              color: '#6b7280',
+              lineHeight: 1.7,
+              marginBottom: '24px',
+              maxWidth: '340px',
+              marginLeft: 'auto',
+              marginRight: 'auto',
+            }}>
+              The event organizer has restricted access from your current location. You can still browse the event details, but booking and payments are unavailable.
+            </p>
+
+            {/* Detected location pill */}
+            {geoCheck.userCountry && (
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '10px 20px',
+                backgroundColor: '#f9fafb',
+                borderRadius: '24px',
+                border: '1px solid #e5e7eb',
+                marginBottom: '28px',
+              }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                  <circle cx="12" cy="10" r="3" />
+                </svg>
+                <span style={{ fontSize: '14px', color: '#6b7280' }}>
+                  Your location: {geoCheck.userCity && geoCheck.userCity !== 'Unknown'
+                    ? `${geoCheck.userCity}, ${geoCheck.userCountry}`
+                    : geoCheck.userCountry}
+                </span>
+              </div>
+            )}
+
+            <div style={{ height: '1px', backgroundColor: '#f3f4f6', margin: '0 0 20px' }} />
+
+            <p style={{
+              fontSize: '13px',
+              color: '#9ca3af',
+              lineHeight: 1.5,
+              margin: 0,
+            }}>
+              If you believe this is an error, please contact the event organizer for assistance.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* ── FULL-VIEWPORT CINEMA SHELL ── */}
       <div className="ve-cinema" style={{ position: 'relative', height: 'calc(100dvh - 64px)', overflow: 'hidden', backgroundColor: '#0e0e10' }}>
