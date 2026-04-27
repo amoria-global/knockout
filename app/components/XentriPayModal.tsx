@@ -366,6 +366,8 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
           // Anonymous viewer — use public endpoint (no auth)
           response = await initiateAnonymousStreamingPayment(eventId, {
             viewerId,
+            amount,
+            currencyId,
             ...(hasEffectiveDonation ? { donationAmount: effectiveDonation } : {}),
             ...(isCard ? {} : { phone, telecomProvider: method.provider }),
             paymentMethod: paymentMethodType,

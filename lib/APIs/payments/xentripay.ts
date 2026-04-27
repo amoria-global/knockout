@@ -210,6 +210,8 @@ export async function initiateAnonymousStreamingPayment(
   eventId: string,
   data: {
     viewerId: string;
+    amount: number;
+    currencyId: string;
     donationAmount?: number;
     phone?: string;
     telecomProvider?: string;

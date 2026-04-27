@@ -694,7 +694,12 @@ const FindMyPhotos = () => {
     setDlError(null);
     try {
       const amount = String(downloadTarget.price ?? 0);
-      const currencyId = albumCurrencyId || (currencies.length > 0 ? currencies[0].id : undefined);
+      const currencyId = albumCurrencyId || (currencies.length > 0 ? currencies[0].id : '');
+      if (!currencyId) {
+        setDlError('Currency not available. Please try again.');
+        setDlLoading(false);
+        return;
+      }
       const response = await recordStreamingPayment({
         eventId: albumEventId || downloadTarget.id,
         amount,
