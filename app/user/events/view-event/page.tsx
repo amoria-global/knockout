@@ -396,7 +396,7 @@ function ViewEventContent(): React.JSX.Element {
           localStorage.setItem(`anonymousViewer_${selectedEvent!.id}`, viewerId);
           localStorage.setItem(`anonymousViewerName_${selectedEvent!.id}`, name);
         }
-        window.location.href = `/user/events/live-stream?eventId=${selectedEvent!.id}&paid=true${viewerId ? `&viewerId=${viewerId}` : ''}`;
+        window.location.href = `/user/events/live-stream?eventId=${selectedEvent!.id}&from=payment${viewerId ? `&viewerId=${viewerId}` : ''}`;
       } else {
         // REQUIRES_PAYMENT — not found as a paid viewer
         setVaError('No payment found for this email or phone. Please double-check the details you used when purchasing, or purchase the new access.');
@@ -492,7 +492,7 @@ function ViewEventContent(): React.JSX.Element {
             const redeemData = await redeemRes.json();
             if (redeemData.action === 1 || redeemData.message?.toLowerCase().includes('access granted')) {
               setPendingGroupCode('');
-              window.location.href = `/user/events/live-stream?eventId=${selectedEvent.id}&paid=true&inviteToken=${encodeURIComponent(pendingGroupCode)}`;
+              window.location.href = `/user/events/live-stream?eventId=${selectedEvent.id}&from=payment&inviteToken=${encodeURIComponent(pendingGroupCode)}`;
               return;
             } else {
               setGroupCodeError(redeemData.message || 'Failed to redeem group code.');
@@ -504,7 +504,7 @@ function ViewEventContent(): React.JSX.Element {
         if (selectedEvent?.id) {
           const eventCheck = await getPublicEventById(selectedEvent.id);
           if (eventCheck.success && eventCheck.data?.hasPurchasedAccess) {
-            window.location.href = `/user/events/live-stream?eventId=${selectedEvent.id}&paid=true`;
+            window.location.href = `/user/events/live-stream?eventId=${selectedEvent.id}&from=payment`;
             return;
           }
         }
@@ -675,7 +675,7 @@ function ViewEventContent(): React.JSX.Element {
           localStorage.setItem(`anonymousViewerName_${selectedEvent!.id}`, name);
         }
         setShowGroupAuth(false);
-        window.location.href = `/user/events/live-stream?eventId=${selectedEvent!.id}&paid=true${viewerId ? `&viewerId=${viewerId}` : ''}`;
+        window.location.href = `/user/events/live-stream?eventId=${selectedEvent!.id}&from=payment${viewerId ? `&viewerId=${viewerId}` : ''}`;
       } else {
         const msg = data.message || '';
         if (msg.includes('different email')) {
@@ -767,7 +767,7 @@ function ViewEventContent(): React.JSX.Element {
             const redeemData = await redeemRes.json();
             if (redeemData.action === 1 || redeemData.message?.toLowerCase().includes('access granted')) {
               setPendingGroupCode('');
-              window.location.href = `/user/events/live-stream?eventId=${selectedEvent.id}&paid=true&inviteToken=${encodeURIComponent(pendingGroupCode)}`;
+              window.location.href = `/user/events/live-stream?eventId=${selectedEvent.id}&from=payment&inviteToken=${encodeURIComponent(pendingGroupCode)}`;
               return;
             } else {
               setGroupCodeError(redeemData.message || 'Failed to redeem group code.');
@@ -780,7 +780,7 @@ function ViewEventContent(): React.JSX.Element {
         if (selectedEvent?.id) {
           const eventCheck = await getPublicEventById(selectedEvent.id);
           if (eventCheck.success && eventCheck.data?.hasPurchasedAccess) {
-            window.location.href = `/user/events/live-stream?eventId=${selectedEvent.id}&paid=true`;
+            window.location.href = `/user/events/live-stream?eventId=${selectedEvent.id}&from=payment`;
             return;
           }
         }
@@ -857,7 +857,7 @@ function ViewEventContent(): React.JSX.Element {
               const redeemData = await redeemRes.json();
               if (redeemData.action === 1 || redeemData.message?.toLowerCase().includes('access granted')) {
                 setPendingGroupCode('');
-                window.location.href = `/user/events/live-stream?eventId=${selectedEvent.id}&paid=true&inviteToken=${encodeURIComponent(pendingGroupCode)}`;
+                window.location.href = `/user/events/live-stream?eventId=${selectedEvent.id}&from=payment&inviteToken=${encodeURIComponent(pendingGroupCode)}`;
                 return;
               } else {
                 setGroupCodeError(redeemData.message || 'Failed to redeem group code.');
@@ -869,7 +869,7 @@ function ViewEventContent(): React.JSX.Element {
           if (selectedEvent?.id) {
             const eventCheck = await getPublicEventById(selectedEvent.id);
             if (eventCheck.success && eventCheck.data?.hasPurchasedAccess) {
-              window.location.href = `/user/events/live-stream?eventId=${selectedEvent.id}&paid=true`;
+              window.location.href = `/user/events/live-stream?eventId=${selectedEvent.id}&from=payment`;
               return;
             }
           }
@@ -1238,7 +1238,7 @@ function ViewEventContent(): React.JSX.Element {
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                 <button
                   className="live-stream-button"
-                  onClick={() => { window.location.href = `/user/events/live-stream?eventId=${selectedEvent.id}&paid=true`; }}
+                  onClick={() => { window.location.href = `/user/events/live-stream?eventId=${selectedEvent.id}&from=payment`; }}
                   style={{ padding: 'clamp(10px, 1.2vw, 13px) clamp(28px, 4vw, 48px)', backgroundColor: '#039130', color: '#fff', border: '2px solid #10b981', borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 10, transition: 'background 0.2s', textTransform: 'uppercase', whiteSpace: 'nowrap' }}
                   onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#027a28'; }}
                   onMouseLeave={e => { e.currentTarget.style.backgroundColor = '#039130'; }}

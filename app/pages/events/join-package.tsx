@@ -277,7 +277,7 @@ function JoinPackageContent(): React.JSX.Element {
         const userName = userStr ? `${JSON.parse(userStr).firstName || ''} ${JSON.parse(userStr).lastName || ''}`.trim() : 'Viewer';
         const res = await redeemGroupCode(selectedEvent.id, { inviteCode: urlToken, viewerUsername: userName });
         if (res.success && res.data) {
-          router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&paid=true&inviteToken=${encodeURIComponent(urlToken)}`);
+          router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&from=payment&inviteToken=${encodeURIComponent(urlToken)}`);
         } else {
           const msg = res.error || '';
           if (msg.includes('viewer limit')) {
@@ -318,7 +318,7 @@ function JoinPackageContent(): React.JSX.Element {
         const res = await checkAnonymousAccessStatus(selectedEvent.id, fingerprint, savedViewerId);
         if (cancelled) return;
         if (res.success && res.data?.hasAccess) {
-          router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&paid=true`);
+          router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&from=payment`);
         }
       } catch {
         // Silent — fall through to normal purchase flow
@@ -534,7 +534,7 @@ function JoinPackageContent(): React.JSX.Element {
       if (status === 'ACCESS_GRANTED') {
         // Already paid — go to stream (skip packages entirely)
         setShowViewerInfoModal(false);
-        router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&paid=true`);
+        router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&from=payment`);
       } else if (status === 'DEVICE_CONFLICT') {
         // Active on another device — ask to switch
         setShowViewerInfoModal(false);
@@ -580,7 +580,7 @@ function JoinPackageContent(): React.JSX.Element {
       const res = await switchAnonymousDevice(selectedEvent.id, pendingViewerId, fingerprint);
       if (res.success) {
         setShowDeviceSwitchModal(false);
-        router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&paid=true`);
+        router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&from=payment`);
       } else {
         setShowDeviceSwitchModal(false);
         setViewerInfoError(res.error || 'Could not switch device.');
@@ -662,7 +662,7 @@ function JoinPackageContent(): React.JSX.Element {
             await confirmAnonymousPayment(selectedEvent.id, pendingViewerId, refid);
           } catch { /* backend can reconcile via payment ref later */ }
         }
-        router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&paid=true&viewerId=${pendingViewerId}`);
+        router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&from=payment&viewerId=${pendingViewerId}`);
         return;
       }
 
@@ -676,19 +676,19 @@ function JoinPackageContent(): React.JSX.Element {
             const userName = userStr ? `${JSON.parse(userStr).firstName || ''} ${JSON.parse(userStr).lastName || ''}`.trim() : 'Viewer';
             const res = await redeemGroupCode(selectedEvent.id, { inviteCode: code, viewerUsername: userName });
             if (res.success && res.data) {
-              router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&paid=true&inviteToken=${encodeURIComponent(code)}`);
+              router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&from=payment&inviteToken=${encodeURIComponent(code)}`);
             } else {
-              router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&paid=true`);
+              router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&from=payment`);
             }
           } catch {
-            router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&paid=true`);
+            router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&from=payment`);
           }
         } else {
           const inviteToken = searchParams.get('inviteToken') || '';
           if (inviteToken) {
-            router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&paid=true&inviteToken=${encodeURIComponent(inviteToken)}`);
+            router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&from=payment&inviteToken=${encodeURIComponent(inviteToken)}`);
           } else {
-            router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&paid=true`);
+            router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&from=payment`);
           }
         }
       } else {
@@ -1436,7 +1436,7 @@ function JoinPackageContent(): React.JSX.Element {
               <button
                 onClick={() => {
                   setShowGroupCodeModal(false);
-                  router.push(`/user/events/live-stream?eventId=${selectedEvent?.id}&paid=true&inviteToken=${encodeURIComponent(groupShareCode)}`);
+                  router.push(`/user/events/live-stream?eventId=${selectedEvent?.id}&from=payment&inviteToken=${encodeURIComponent(groupShareCode)}`);
                 }}
                 style={{ padding: '6px 16px', borderRadius: 20, border: '1px solid rgba(255,255,255,0.15)', background: 'transparent', color: '#9ca3af', fontSize: 12, cursor: 'pointer', transition: 'all 0.2s' }}
                 onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)'; }}
@@ -1567,7 +1567,7 @@ function JoinPackageContent(): React.JSX.Element {
               <button
                 onClick={() => {
                   setShowGroupCodeModal(false);
-                  router.push(`/user/events/live-stream?eventId=${selectedEvent?.id}&paid=true&inviteToken=${encodeURIComponent(groupShareCode)}`);
+                  router.push(`/user/events/live-stream?eventId=${selectedEvent?.id}&from=payment&inviteToken=${encodeURIComponent(groupShareCode)}`);
                 }}
                 style={{ flex: 1, padding: '12px', background: 'linear-gradient(135deg, #083A85, #0a4da3)', border: 'none', borderRadius: 10, color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
               >
