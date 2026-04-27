@@ -51,7 +51,7 @@
     "@types/react-simple-maps": "^3.0.6",
     "@types/three": "^0.184.0",
     "@types/topojson-client": "^3.1.5",
-    "baseline-browser-mapping": "^2.10.20",
+    "baseline-browser-mapping": "^2.10.23",
     "tailwindcss": "^4.1.14",
     "typescript": "^6.0.3"
   }
