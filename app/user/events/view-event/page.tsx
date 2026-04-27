@@ -1046,28 +1046,45 @@ function ViewEventContent(): React.JSX.Element {
         {/* Top/bottom vignette */}
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(14,14,16,0.55) 0%, transparent 18%, transparent 75%, rgba(14,14,16,0.7) 100%)' }} />
 
-        {/* ── Status badge — top-right ── */}
-        {isLive ? (
-          <div className="live-badge ve-status-badge" style={{ position: 'absolute', top: 24, right: 28, zIndex: 30, display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', backgroundColor: 'rgba(3,145,48,0.95)', backdropFilter: 'blur(10px)', border: '2px solid #10b981', borderRadius: 25, color: '#fff', fontSize: 14, fontWeight: 700, textTransform: 'uppercase', boxShadow: '0 4px 15px rgba(16,185,129,0.4)' }}>
-            <i className="bi bi-camera-video-fill live-badge-icon" style={{ fontSize: 16 }}></i>
-            {tStatus('live')}
-          </div>
-        ) : isCompleted ? (
-          <div className="ve-status-badge" style={{ position: 'absolute', top: 24, right: 28, zIndex: 30, display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', backgroundColor: 'rgba(55,65,81,0.95)', backdropFilter: 'blur(10px)', border: '2px solid #6b7280', borderRadius: 25, color: '#fff', fontSize: 14, fontWeight: 700, textTransform: 'uppercase', boxShadow: '0 4px 15px rgba(107,114,128,0.4)' }}>
-            <i className="bi bi-check-circle-fill" style={{ fontSize: 16 }}></i>
-            {tStatus('completed')}
-          </div>
-        ) : isCancelled ? (
-          <div className="ve-status-badge" style={{ position: 'absolute', top: 24, right: 28, zIndex: 30, display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', backgroundColor: 'rgba(153,27,27,0.95)', backdropFilter: 'blur(10px)', border: '2px solid #ef4444', borderRadius: 25, color: '#fff', fontSize: 14, fontWeight: 700, textTransform: 'uppercase', boxShadow: '0 4px 15px rgba(239,68,68,0.4)' }}>
-            <i className="bi bi-x-circle-fill" style={{ fontSize: 16 }}></i>
-            {tStatus('cancelled')}
-          </div>
-        ) : (
-          <div className="ve-status-badge" style={{ position: 'absolute', top: 24, right: 28, zIndex: 30, display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', backgroundColor: 'rgba(8,58,133,0.95)', backdropFilter: 'blur(10px)', border: '2px solid #103E83', borderRadius: 25, color: '#fff', fontSize: 14, fontWeight: 700, textTransform: 'uppercase', boxShadow: '0 4px 15px rgba(8,58,133,0.4)' }}>
-            <i className="bi bi-broadcast" style={{ fontSize: 16 }}></i>
-            {tStatus('upcoming')}
-          </div>
-        )}
+        {/* ── Top-right: countdown + status ── */}
+        <div className="ve-top-right-badges" style={{ position: 'absolute', top: 24, right: 28, zIndex: 30, display: 'flex', alignItems: 'center', gap: 10 }}>
+          {/* Compact countdown pill (upcoming events within 6h window) */}
+          {isUpcoming && showCountdown && msUntilStart !== null && (() => {
+            const { days, hours, minutes, seconds } = getCountdownParts(msUntilStart);
+            const pad = (n: number) => String(n).padStart(2, '0');
+            return (
+              <div className="ve-countdown-pill" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 20px', backgroundColor: 'rgba(8,58,133,0.95)', backdropFilter: 'blur(10px)', border: '2px solid #103E83', borderRadius: 25, color: '#fff', fontSize: 14, fontWeight: 700, boxShadow: '0 4px 15px rgba(8,58,133,0.4)' }}>
+                <i className="bi bi-clock" style={{ fontSize: 16 }}></i>
+                <span style={{ fontFamily: "'Pragati Narrow', monospace", letterSpacing: '0.04em' }}>
+                  {days > 0 ? `${pad(days)}d ${pad(hours)}h ${pad(minutes)}m` : `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`}
+                </span>
+              </div>
+            );
+          })()}
+
+          {/* Status badge */}
+          {isLive ? (
+            <div className="live-badge ve-status-badge" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', backgroundColor: 'rgba(3,145,48,0.95)', backdropFilter: 'blur(10px)', border: '2px solid #10b981', borderRadius: 25, color: '#fff', fontSize: 14, fontWeight: 700, textTransform: 'uppercase', boxShadow: '0 4px 15px rgba(16,185,129,0.4)' }}>
+              <i className="bi bi-camera-video-fill live-badge-icon" style={{ fontSize: 16 }}></i>
+              {tStatus('live')}
+            </div>
+          ) : isCompleted ? (
+            <div className="ve-status-badge" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', backgroundColor: 'rgba(55,65,81,0.95)', backdropFilter: 'blur(10px)', border: '2px solid #6b7280', borderRadius: 25, color: '#fff', fontSize: 14, fontWeight: 700, textTransform: 'uppercase', boxShadow: '0 4px 15px rgba(107,114,128,0.4)' }}>
+              <i className="bi bi-check-circle-fill" style={{ fontSize: 16 }}></i>
+              {tStatus('completed')}
+            </div>
+          ) : isCancelled ? (
+            <div className="ve-status-badge" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', backgroundColor: 'rgba(153,27,27,0.95)', backdropFilter: 'blur(10px)', border: '2px solid #ef4444', borderRadius: 25, color: '#fff', fontSize: 14, fontWeight: 700, textTransform: 'uppercase', boxShadow: '0 4px 15px rgba(239,68,68,0.4)' }}>
+              <i className="bi bi-x-circle-fill" style={{ fontSize: 16 }}></i>
+              {tStatus('cancelled')}
+            </div>
+          ) : (
+            <div className="ve-status-badge" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', backgroundColor: 'rgba(8,58,133,0.95)', backdropFilter: 'blur(10px)', border: '2px solid #103E83', borderRadius: 25, color: '#fff', fontSize: 14, fontWeight: 700, textTransform: 'uppercase', boxShadow: '0 4px 15px rgba(8,58,133,0.4)' }}>
+              <i className="bi bi-broadcast" style={{ fontSize: 16 }}></i>
+              {tStatus('upcoming')}
+            </div>
+          )}
+        </div>
 
         {/* ── Price badge — bottom-right ── */}
         {isPaid && (
@@ -1151,71 +1168,6 @@ function ViewEventContent(): React.JSX.Element {
               </span>
             </div>
           )}
-
-          {isUpcoming && showCountdown && msUntilStart !== null && (() => {
-            const { days, hours, minutes, seconds } = getCountdownParts(msUntilStart);
-            const pad = (n: number) => String(n).padStart(2, '0');
-            const boxStyle: React.CSSProperties = {
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: 'clamp(10px, 2vw, 16px) clamp(12px, 2.5vw, 20px)',
-              background: 'rgba(255,255,255,0.08)',
-              backdropFilter: 'blur(12px)',
-              border: '1px solid rgba(255,255,255,0.15)',
-              borderRadius: '14px',
-              minWidth: 'clamp(52px, 10vw, 76px)',
-            };
-            const numStyle: React.CSSProperties = {
-              fontSize: 'clamp(26px, 5vw, 44px)',
-              fontWeight: 800,
-              color: '#fff',
-              lineHeight: 1,
-              fontFamily: "'Pragati Narrow', monospace",
-              letterSpacing: '-0.02em',
-            };
-            const labelStyle: React.CSSProperties = {
-              fontSize: '10px',
-              fontWeight: 600,
-              color: '#9ca3af',
-              textTransform: 'uppercase',
-              letterSpacing: '0.1em',
-              marginTop: '4px',
-            };
-            const colonStyle: React.CSSProperties = {
-              fontSize: 'clamp(20px, 4vw, 36px)',
-              fontWeight: 700,
-              color: 'rgba(255,255,255,0.3)',
-              lineHeight: 1,
-              alignSelf: 'flex-start',
-              paddingTop: 'clamp(8px, 1.5vw, 14px)',
-            };
-
-            return (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(6px, 1.5vw, 12px)', alignSelf: 'flex-start', marginBottom: '4px' }}>
-                <div style={boxStyle}>
-                  <span style={numStyle}>{pad(days)}</span>
-                  <span style={labelStyle}>Days</span>
-                </div>
-                <span style={colonStyle}>:</span>
-                <div style={boxStyle}>
-                  <span style={numStyle}>{pad(hours)}</span>
-                  <span style={labelStyle}>Hrs</span>
-                </div>
-                <span style={colonStyle}>:</span>
-                <div style={boxStyle}>
-                  <span style={numStyle}>{pad(minutes)}</span>
-                  <span style={labelStyle}>Min</span>
-                </div>
-                <span style={colonStyle}>:</span>
-                <div style={boxStyle}>
-                  <span style={numStyle}>{pad(seconds)}</span>
-                  <span style={labelStyle}>Sec</span>
-                </div>
-              </div>
-            );
-          })()}
 
           {/* Description — clamped to 2 lines */}
           {selectedEvent.description && (
@@ -2077,9 +2029,13 @@ function ViewEventContent(): React.JSX.Element {
             transform: none !important;
           }
           /* Smaller floating badges on mobile so they don't overlap content as much */
-          .ve-status-badge {
+          .ve-top-right-badges {
             top: 14px !important;
             right: 14px !important;
+            gap: 6px !important;
+          }
+          .ve-status-badge,
+          .ve-countdown-pill {
             padding: 6px 12px !important;
             font-size: 11px !important;
           }
