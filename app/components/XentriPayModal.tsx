@@ -125,12 +125,9 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
     reason?: string;
     userCity?: string;
     userCountry?: string;
-    allowedCountries?: string[];
-    blockedCountries?: string[];
-    allowedCities?: string[];
-    blockedCities?: string[];
     allowedPaymentMethods?: string[];
   } | null>(null);
+  const [geoCheckLoading, setGeoCheckLoading] = useState(false);
 
   // Fetch donation tiers
   const fetchDonationTiers = useCallback(async () => {
@@ -178,32 +175,38 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
     };
   }, [isOpen]);
 
-  // Automatic event geo-check based on IP address
+  // Automatic event geo-check based on IP address (only when modal opens)
   useEffect(() => {
-    if (isOpen && eventId) {
-      const baseUrl = (process.env.NEXT_PUBLIC_API_URL || 'https://backend.connekyt.com').replace(/\/$/, '');
+    if (!isOpen) return;
 
-      // Automatic geo-check (backend detects location from IP)
-      fetch(`${baseUrl}/api/remote/events/${eventId}/geo-check`)
-        .then(res => res.json())
-        .then(result => {
-          setEventGeoCheck({
-            allowed: result.allowed,
-            reason: result.blockReason,
-            userCity: result.userCity,
-            userCountry: result.userCountry,
-            allowedCountries: result.allowedCountries || [],
-            blockedCountries: result.blockedCountries || [],
-            allowedCities: result.allowedCities || [],
-            blockedCities: result.blockedCities || [],
-            allowedPaymentMethods: result.allowedPaymentMethods || [],
-          });
-        })
-        .catch(err => {
-          console.error('Geo check failed:', err);
-          setEventGeoCheck({ allowed: true }); // Fail-open
-        });
+    if (!eventId) {
+      setEventGeoCheck({ allowed: true });
+      setGeoCheckLoading(false);
+      return;
     }
+
+    setGeoCheckLoading(true);
+    setEventGeoCheck(null);
+    const baseUrl = (process.env.NEXT_PUBLIC_API_URL || 'https://backend.connekyt.com').replace(/\/$/, '');
+
+    fetch(`${baseUrl}/api/remote/events/${eventId}/geo-check`)
+      .then(res => res.json())
+      .then(result => {
+        setEventGeoCheck({
+          allowed: result.allowed,
+          reason: result.blockReason,
+          userCity: result.userCity,
+          userCountry: result.userCountry,
+          allowedPaymentMethods: result.allowedPaymentMethods || [],
+        });
+      })
+      .catch(err => {
+        console.error('Geo check failed:', err);
+        setEventGeoCheck({ allowed: true }); // Fail-open
+      })
+      .finally(() => {
+        setGeoCheckLoading(false);
+      });
   }, [isOpen, eventId]);
 
   // Close modal when session expires so auth modal can take over
@@ -572,6 +575,121 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
         {/* ==================== STEP: Select Method ==================== */}
         {step === 'method' && (
           <>
+            {/* Loading state while geo-check is in progress */}
+            {eventId && geoCheckLoading && (
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '48px 20px',
+              }}>
+                <div style={{
+                  width: '40px',
+                  height: '40px',
+                  border: '3px solid #e5e7eb',
+                  borderTopColor: '#083A85',
+                  borderRadius: '50%',
+                  animation: 'spin 0.8s linear infinite',
+                  marginBottom: '16px',
+                }} />
+                <p style={{ fontSize: '14px', color: '#6b7280', margin: 0 }}>
+                  Checking availability...
+                </p>
+              </div>
+            )}
+
+            {/* Blocked overlay — user's region is restricted */}
+            {eventId && !geoCheckLoading && eventGeoCheck && !eventGeoCheck.allowed && (
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                textAlign: 'center',
+                padding: '32px 20px',
+              }}>
+                <div style={{
+                  width: '72px',
+                  height: '72px',
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #fee2e2 0%, #fef2f2 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: '20px',
+                }}>
+                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                    <line x1="9" y1="9" x2="15" y2="15" />
+                    <line x1="15" y1="9" x2="9" y2="15" />
+                  </svg>
+                </div>
+
+                <h3 style={{
+                  fontSize: '20px',
+                  fontWeight: 700,
+                  color: '#1f2937',
+                  marginBottom: '8px',
+                  marginTop: 0,
+                  fontFamily: "'Pragati Narrow', sans-serif",
+                }}>
+                  Not available in your region
+                </h3>
+
+                <p style={{
+                  fontSize: '15px',
+                  color: '#6b7280',
+                  lineHeight: 1.6,
+                  marginBottom: '20px',
+                  maxWidth: '300px',
+                }}>
+                  {eventGeoCheck.reason || 'Sorry, this event is not available for booking from your current location.'}
+                </p>
+
+                {eventGeoCheck.userCountry && (
+                  <div style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '8px 16px',
+                    backgroundColor: '#f9fafb',
+                    borderRadius: '20px',
+                    border: '1px solid #e5e7eb',
+                    marginBottom: '24px',
+                  }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2">
+                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                      <circle cx="12" cy="10" r="3" />
+                    </svg>
+                    <span style={{ fontSize: '13px', color: '#9ca3af' }}>
+                      {eventGeoCheck.userCity && eventGeoCheck.userCity !== 'Unknown'
+                        ? `${eventGeoCheck.userCity}, ${eventGeoCheck.userCountry}`
+                        : eventGeoCheck.userCountry}
+                    </span>
+                  </div>
+                )}
+
+                <button
+                  onClick={handleClose}
+                  style={{
+                    padding: '12px 32px',
+                    background: 'linear-gradient(135deg, #083A85, #0a4da3)',
+                    border: 'none',
+                    borderRadius: '12px',
+                    color: '#fff',
+                    fontSize: '15px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  Got it
+                </button>
+              </div>
+            )}
+
+            {/* Normal payment form — only when allowed */}
+            {(!eventId || (!geoCheckLoading && eventGeoCheck?.allowed !== false)) && (<>
             {/* Header */}
             <div style={{ marginBottom: '16px' }}>
               <h2 style={{
@@ -700,56 +818,6 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
                   }}>
                     Mobile money (MTN/Airtel) is unavailable in your region. Please use card payment.
                   </p>
-                </div>
-              </div>
-            )}
-
-            {/* Event Geo-Restriction Warning - automatic IP-based detection */}
-            {eventGeoCheck && !eventGeoCheck.allowed && (
-              <div style={{
-                marginBottom: '20px',
-                padding: '16px',
-                background: '#fee2e2',
-                border: '1px solid #fca5a5',
-                borderRadius: '8px'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-                  <svg width="24" height="24" fill="#DC2626" viewBox="0 0 20 20" style={{ flexShrink: 0 }}>
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"/>
-                  </svg>
-                  <div style={{ flex: 1 }}>
-                    <strong style={{ color: '#991b1b', display: 'block', marginBottom: '6px' }}>
-                      Location Restriction
-                    </strong>
-                    <p style={{ color: '#7f1d1d', marginBottom: 0, fontSize: '14px' }}>
-                      {eventGeoCheck.reason || 'This event is not available in your location.'}
-                    </p>
-                    {eventGeoCheck.allowedCountries && eventGeoCheck.allowedCountries.length > 0 && (
-                      <p style={{ color: '#991b1b', fontSize: '12px', marginTop: '8px', marginBottom: 0 }}>
-                        <strong>Allowed countries:</strong> {eventGeoCheck.allowedCountries.join(', ')}
-                      </p>
-                    )}
-                    {eventGeoCheck.blockedCountries && eventGeoCheck.blockedCountries.length > 0 && (
-                      <p style={{ color: '#991b1b', fontSize: '12px', marginTop: '4px', marginBottom: 0 }}>
-                        <strong>Blocked countries:</strong> {eventGeoCheck.blockedCountries.join(', ')}
-                      </p>
-                    )}
-                    {eventGeoCheck.allowedCities && eventGeoCheck.allowedCities.length > 0 && (
-                      <p style={{ color: '#991b1b', fontSize: '12px', marginTop: '4px', marginBottom: 0 }}>
-                        <strong>Allowed cities:</strong> {eventGeoCheck.allowedCities.join(', ')}
-                      </p>
-                    )}
-                    {eventGeoCheck.blockedCities && eventGeoCheck.blockedCities.length > 0 && (
-                      <p style={{ color: '#991b1b', fontSize: '12px', marginTop: '4px', marginBottom: 0 }}>
-                        <strong>Blocked cities:</strong> {eventGeoCheck.blockedCities.join(', ')}
-                      </p>
-                    )}
-                    {eventGeoCheck.userCountry && (
-                      <p style={{ color: '#991b1b', fontSize: '12px', marginTop: '8px', fontStyle: 'italic', marginBottom: 0 }}>
-                        Your detected location: {eventGeoCheck.userCity ? `${eventGeoCheck.userCity}, ` : ''}{eventGeoCheck.userCountry}
-                      </p>
-                    )}
-                  </div>
                 </div>
               </div>
             )}
@@ -910,19 +978,19 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
                   handlePay();
                 }
               }}
-              disabled={!isValid() || loading || (eventGeoCheck?.allowed === false)}
+              disabled={!isValid() || loading}
               style={{
                 width: '100%',
                 padding: '13px 20px',
-                background: (!isValid() || loading || (eventGeoCheck?.allowed === false))
+                background: (!isValid() || loading)
                   ? ('#d1d5db')
                   : ('linear-gradient(135deg, #083A85, #0a4da3)'),
                 border: 'none',
                 borderRadius: '14px',
-                color: (!isValid() || loading || (eventGeoCheck?.allowed === false)) ? '#999' : '#fff',
+                color: (!isValid() || loading) ? '#999' : '#fff',
                 fontSize: '16px',
                 fontWeight: 600,
-                cursor: (!isValid() || loading || (eventGeoCheck?.allowed === false)) ? 'not-allowed' : 'pointer',
+                cursor: (!isValid() || loading) ? 'not-allowed' : 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -957,6 +1025,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
                 </>
               )}
             </button>
+            </>)}
           </>
         )}
 
