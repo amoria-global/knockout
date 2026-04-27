@@ -469,6 +469,11 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
     onClose();
   };
 
+  // Display currency for the whole modal (must be before early return to
+  // satisfy React's Rules of Hooks — hooks cannot be called conditionally).
+  const [displayCurrency, setDisplayCurrency] = React.useState<CurrencyCode>('USD');
+  const { format: formatLive } = useLiveRates();
+
   if (!isOpen) return null;
 
   const defaultTitle = paymentType === 'donation' ? 'Complete Your Donation'
@@ -477,15 +482,6 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
     : paymentType === 'booking' ? 'Complete Payment'
     : paymentType === 'album_purchase' ? 'Buy Photos'
     : 'Make Payment';
-
-  // Display currency for the whole modal. Defaults to USD (safe universal
-  // default) and is controlled by the PaymentCurrencyPreview panel's
-  // selector below — picking a new currency there re-renders every amount
-  // in the modal (header, summaries, inputs, fee lines, success page).
-  // The submit wire still carries the original `amount` + `currencyCode`
-  // props unchanged — this is purely presentation.
-  const [displayCurrency, setDisplayCurrency] = React.useState<CurrencyCode>('USD');
-  const { format: formatLive } = useLiveRates();
 
   const formatAmount = (val: number) => {
     const from = (currencyCode || 'RWF') as CurrencyCode;
