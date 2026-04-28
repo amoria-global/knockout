@@ -1198,31 +1198,65 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 <button
                   onClick={() => proceedWithDonation(getDonationAmt())}
-                  disabled={!canDonate}
+                  disabled={!canDonate || loading}
                   style={{
                     width: '100%', padding: '14px 20px',
-                    backgroundColor: canDonate ? '#083A85' : '#d1d5db',
-                    color: canDonate ? '#fff' : '#9ca3af',
+                    backgroundColor: (canDonate && !loading) ? '#083A85' : '#d1d5db',
+                    color: (canDonate && !loading) ? '#fff' : '#9ca3af',
                     border: 'none', borderRadius: '12px', fontSize: '15px', fontWeight: '600',
-                    cursor: canDonate ? 'pointer' : 'not-allowed', transition: 'all 0.2s ease',
+                    cursor: (canDonate && !loading) ? 'pointer' : 'not-allowed', transition: 'all 0.2s ease',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
                   }}
                 >
-                  <i className="bi bi-heart-fill" style={{ fontSize: '16px' }}></i>
-                  Add Donation & Continue
+                  {loading ? (
+                    <>
+                      <div style={{
+                        width: '16px', height: '16px',
+                        border: '2px solid rgba(255,255,255,0.3)',
+                        borderTopColor: '#fff',
+                        borderRadius: '50%',
+                        animation: 'spin 0.8s linear infinite',
+                      }} />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <i className="bi bi-heart-fill" style={{ fontSize: '16px' }}></i>
+                      Add Donation & Continue
+                    </>
+                  )}
                 </button>
                 <button
                   onClick={() => proceedWithDonation(0)}
+                  disabled={loading}
                   style={{
                     width: '100%', padding: '12px 20px',
-                    backgroundColor: '#fff', color: '#6b7280',
+                    backgroundColor: '#fff', color: loading ? '#d1d5db' : '#6b7280',
                     border: '2px solid #e5e7eb', borderRadius: '12px',
-                    fontSize: '14px', fontWeight: '600', cursor: 'pointer', transition: 'all 0.2s ease',
+                    fontSize: '14px', fontWeight: '600',
+                    cursor: loading ? 'not-allowed' : 'pointer',
+                    opacity: loading ? 0.6 : 1,
+                    transition: 'all 0.2s ease',
                   }}
                 >
-                  Skip, continue to payment
+                  {loading ? 'Processing...' : 'Skip, continue to payment'}
                 </button>
               </div>
+
+              {/* Error display */}
+              {error && (
+                <div style={{
+                  padding: '12px 16px',
+                  marginTop: '12px',
+                  backgroundColor: '#FEF2F2',
+                  border: '1px solid #fecaca',
+                  borderRadius: '12px',
+                  color: '#EF4444',
+                  fontSize: '14px',
+                }}>
+                  {error}
+                </div>
+              )}
             </>
           );
         })()}

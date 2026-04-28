@@ -1046,44 +1046,40 @@ function ViewEventContent(): React.JSX.Element {
         {/* Top/bottom vignette */}
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(14,14,16,0.55) 0%, transparent 18%, transparent 75%, rgba(14,14,16,0.7) 100%)' }} />
 
-        {/* ── Top-right: countdown + status ── */}
+        {/* ── Top-right: status badge ── */}
         <div className="ve-top-right-badges" style={{ position: 'absolute', top: 24, right: 28, zIndex: 30, display: 'flex', alignItems: 'center', gap: 10 }}>
-          {/* Compact countdown pill (upcoming events within 6h window) */}
-          {isUpcoming && showCountdown && msUntilStart !== null && (() => {
-            const { days, hours, minutes, seconds } = getCountdownParts(msUntilStart);
-            const pad = (n: number) => String(n).padStart(2, '0');
+          {/* Unified glass status badge — colored dot differentiates status */}
+          {(() => {
+            const dotColor = isLive ? '#10b981' : isCompleted ? '#6b7280' : isCancelled ? '#ef4444' : '#3b82f6';
+            const statusIcon = isLive ? 'bi-camera-video-fill' : isCompleted ? 'bi-check-circle-fill' : isCancelled ? 'bi-x-circle-fill' : 'bi-broadcast';
+            const statusKey = isLive ? 'live' : isCompleted ? 'completed' : isCancelled ? 'cancelled' : 'upcoming';
+            const badgeStyle: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', backgroundColor: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 20, color: '#fff', fontSize: 14, fontWeight: 700, textTransform: 'uppercase', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' };
+
+            // For upcoming events with countdown, merge into one pill
+            if (isUpcoming && showCountdown && msUntilStart !== null) {
+              const { days, hours, minutes, seconds } = getCountdownParts(msUntilStart);
+              const pad = (n: number) => String(n).padStart(2, '0');
+              const timeStr = days > 0 ? `${pad(days)}d ${pad(hours)}h ${pad(minutes)}m ${pad(seconds)}s` : `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+              return (
+                <div className={`ve-status-badge ve-countdown-pill${isLive ? ' live-badge' : ''}`} style={badgeStyle}>
+                  <span className="ve-status-dot" style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: dotColor, flexShrink: 0 }} />
+                  <i className={`bi ${statusIcon}`} style={{ fontSize: 15, opacity: 0.85 }}></i>
+                  <span>{tStatus(statusKey)}</span>
+                  <span style={{ width: 1, height: 16, backgroundColor: 'rgba(255,255,255,0.25)', flexShrink: 0 }} />
+                  <i className="bi bi-clock" style={{ fontSize: 14, opacity: 0.7 }}></i>
+                  <span style={{ fontFamily: "'Pragati Narrow', monospace", letterSpacing: '0.04em' }}>{timeStr}</span>
+                </div>
+              );
+            }
+
             return (
-              <div className="ve-countdown-pill" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 20px', backgroundColor: 'rgba(8,58,133,0.95)', backdropFilter: 'blur(10px)', border: '2px solid #103E83', borderRadius: 25, color: '#fff', fontSize: 14, fontWeight: 700, boxShadow: '0 4px 15px rgba(8,58,133,0.4)' }}>
-                <i className="bi bi-clock" style={{ fontSize: 16 }}></i>
-                <span style={{ fontFamily: "'Pragati Narrow', monospace", letterSpacing: '0.04em' }}>
-                  {days > 0 ? `${pad(days)}d ${pad(hours)}h ${pad(minutes)}m` : `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`}
-                </span>
+              <div className={`ve-status-badge${isLive ? ' live-badge' : ''}`} style={badgeStyle}>
+                <span className="ve-status-dot" style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: dotColor, flexShrink: 0, ...(isLive ? { animation: 'pulse-dot 1.5s ease-in-out infinite' } : {}) }} />
+                <i className={`bi ${statusIcon}`} style={{ fontSize: 15, opacity: 0.85 }}></i>
+                <span>{tStatus(statusKey)}</span>
               </div>
             );
           })()}
-
-          {/* Status badge */}
-          {isLive ? (
-            <div className="live-badge ve-status-badge" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', backgroundColor: 'rgba(3,145,48,0.95)', backdropFilter: 'blur(10px)', border: '2px solid #10b981', borderRadius: 25, color: '#fff', fontSize: 14, fontWeight: 700, textTransform: 'uppercase', boxShadow: '0 4px 15px rgba(16,185,129,0.4)' }}>
-              <i className="bi bi-camera-video-fill live-badge-icon" style={{ fontSize: 16 }}></i>
-              {tStatus('live')}
-            </div>
-          ) : isCompleted ? (
-            <div className="ve-status-badge" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', backgroundColor: 'rgba(55,65,81,0.95)', backdropFilter: 'blur(10px)', border: '2px solid #6b7280', borderRadius: 25, color: '#fff', fontSize: 14, fontWeight: 700, textTransform: 'uppercase', boxShadow: '0 4px 15px rgba(107,114,128,0.4)' }}>
-              <i className="bi bi-check-circle-fill" style={{ fontSize: 16 }}></i>
-              {tStatus('completed')}
-            </div>
-          ) : isCancelled ? (
-            <div className="ve-status-badge" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', backgroundColor: 'rgba(153,27,27,0.95)', backdropFilter: 'blur(10px)', border: '2px solid #ef4444', borderRadius: 25, color: '#fff', fontSize: 14, fontWeight: 700, textTransform: 'uppercase', boxShadow: '0 4px 15px rgba(239,68,68,0.4)' }}>
-              <i className="bi bi-x-circle-fill" style={{ fontSize: 16 }}></i>
-              {tStatus('cancelled')}
-            </div>
-          ) : (
-            <div className="ve-status-badge" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', backgroundColor: 'rgba(8,58,133,0.95)', backdropFilter: 'blur(10px)', border: '2px solid #103E83', borderRadius: 25, color: '#fff', fontSize: 14, fontWeight: 700, textTransform: 'uppercase', boxShadow: '0 4px 15px rgba(8,58,133,0.4)' }}>
-              <i className="bi bi-broadcast" style={{ fontSize: 16 }}></i>
-              {tStatus('upcoming')}
-            </div>
-          )}
         </div>
 
         {/* ── Price badge — bottom-right ── */}
@@ -1996,6 +1992,10 @@ function ViewEventContent(): React.JSX.Element {
         @keyframes livePulse {
           0%, 100% { opacity: 1; transform: scale(1); }
           50% { opacity: 0.5; transform: scale(1.15); }
+        }
+        @keyframes pulse-dot {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.4; transform: scale(1.3); }
         }
 
         /* CTA bar positioned via inline JSX (absolute center within panel area) */
