@@ -20,6 +20,7 @@ interface EventItem {
   location: string;
   status: string;
   price: string;
+  currency: string;
   attendees: number;
 }
 
@@ -47,6 +48,7 @@ function mapPublicEvent(e: PublicEvent): EventItem {
     location: e.location || 'TBD',
     status: e.eventStatus || 'UPCOMING',
     price,
+    currency: e.streamFeeCurrencyAbbreviation || 'RWF',
     attendees: 0,
   };
 }
@@ -62,6 +64,7 @@ const placeholderEvent: EventItem = {
   location: '',
   status: 'UPCOMING',
   price: 'Free',
+  currency: 'RWF',
   attendees: 0,
 };
 // eventsData removed — replaced by real API calls
@@ -102,7 +105,7 @@ export default function JoinEvent() {
   const [eventsLoading, setEventsLoading] = useState(true);
 
   // Payment state for big LIVE events
-  const [detectedEvent, setDetectedEvent] = useState<{ id: string; title: string; category: string; fee: number; location: string; image: string; status: string } | null>(null);
+  const [detectedEvent, setDetectedEvent] = useState<{ id: string; title: string; category: string; fee: number; currency: string; location: string; image: string; status: string } | null>(null);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string | null>(null);
   const [paymentPhone, setPaymentPhone] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -132,11 +135,11 @@ export default function JoinEvent() {
   // controlled by the PaymentCurrencyPreview panel's selector below.
   // Picking a new currency re-renders both the "entry fee" headline and
   // the "per person" split in that currency. Live rates are fetched and
-  // module-cached. The wire to XentriPay still carries the original RWF
-  // (server converts to USD canonically before the gateway).
+  // module-cached.
   const [displayCurrency, setDisplayCurrency] = useState<CurrencyCode>('USD');
   const { format: formatLive } = useLiveRates();
-  const fmtFee = (rwfAmount: number) => formatLive(rwfAmount, 'RWF', displayCurrency);
+  const eventCurrency = (detectedEvent?.currency || 'RWF') as CurrencyCode;
+  const fmtFee = (amount: number) => formatLive(amount, eventCurrency, displayCurrency);
 
   // Input validation error states
   const [phoneError, setPhoneError] = useState('');
@@ -263,6 +266,7 @@ export default function JoinEvent() {
           title: event.title,
           category: event.category,
           fee: fee,
+          currency: event.currency,
           location: event.location,
           image: event.image,
           status: event.status
@@ -430,6 +434,7 @@ export default function JoinEvent() {
           title: event.title,
           category: event.category,
           fee: fee,
+          currency: event.currency,
           location: event.location,
           image: event.image,
           status: event.status
@@ -694,7 +699,7 @@ export default function JoinEvent() {
                           the chosen currency at live rates. */}
                       <div style={{ marginTop: '12px' }}>
                         <PaymentCurrencyPreview
-                          fromCurrency="RWF"
+                          fromCurrency={eventCurrency}
                           darkMode
                           defaultCurrency={displayCurrency}
                           onCurrencyChange={setDisplayCurrency}
