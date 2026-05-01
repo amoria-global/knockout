@@ -1501,7 +1501,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                         const isPartialEvent = reason === 'event' && booked?.isFullDay === false;
                         const disabled = isPast || !!booked;
                         // Solid colored chips so each status reads at a glance.
-                        let bg = 'transparent', fg = '#fff', border = '1px solid transparent';
+                        let bg: string, fg = '#fff', border = '1px solid transparent';
                         let shadow = '';
                         if (isPast) { bg = 'transparent'; fg = '#cbd5e1'; }
                         else if (isFullEvent)        { bg = '#ef4444'; border = '1px solid #dc2626'; shadow = '0 1px 4px rgba(239,68,68,0.30)'; }
