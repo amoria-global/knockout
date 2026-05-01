@@ -356,6 +356,7 @@ function JoinPackageContent(): React.JSX.Element {
   const peopleCount = typeof numberOfPeople === 'number' ? numberOfPeople : 0;
   const totalGroupFee = discountedFeePerPerson * peopleCount;
   const totalSavings = (individualFee * peopleCount) - totalGroupFee;
+  const currencyLabel = selectedEvent?.streamFeeCurrencyAbbreviation || 'RWF';
 
   const packages = [
     {
@@ -365,7 +366,7 @@ function JoinPackageContent(): React.JSX.Element {
       badgeColor: '#22D3EE',
       badgeGradient: 'linear-gradient(135deg, #22D3EE 0%, #3B82F6 100%)',
       description: 'Stream the event alone on your personal device',
-      price: `${individualFee.toLocaleString()} RWF`,
+      price: `${individualFee.toLocaleString()} ${currencyLabel}`,
       priceNote: 'One-time access fee',
       features: [
         { text: 'Personal stream access', available: true },
@@ -923,7 +924,7 @@ function JoinPackageContent(): React.JSX.Element {
           {individualFee > 0 && (
             <div className="jp-event-price">
               <small>From</small>
-              <strong>{individualFee.toLocaleString()} <span>RWF</span></strong>
+              <strong>{individualFee.toLocaleString()} <span>{currencyLabel}</span></strong>
             </div>
           )}
         </header>
@@ -983,7 +984,7 @@ function JoinPackageContent(): React.JSX.Element {
                   {pkg.id === 'individual' ? (
                     <>
                       <span className="jp-price-num">{individualFee.toLocaleString()}</span>
-                      <span className="jp-price-cur">RWF</span>
+                      <span className="jp-price-cur">{currencyLabel}</span>
                     </>
                   ) : (
                     <span className="jp-price-tag discount-bounce">Save up to {discountPercentage}%</span>
@@ -1049,17 +1050,17 @@ function JoinPackageContent(): React.JSX.Element {
                     {isGroupInputValid() && (
                       <div className="jp-breakdown">
                         <div className="jp-breakdown-row">
-                          <span>Original ({peopleCount} × {individualFee.toLocaleString()} RWF)</span>
-                          <span className="jp-strike">{(individualFee * peopleCount).toLocaleString()} RWF</span>
+                          <span>Original ({peopleCount} × {individualFee.toLocaleString()} {currencyLabel})</span>
+                          <span className="jp-strike">{(individualFee * peopleCount).toLocaleString()} {currencyLabel}</span>
                         </div>
                         <div className="jp-breakdown-row jp-breakdown-row--save">
                           <span>{discountPercentage}% group discount</span>
-                          <span>−{totalSavings.toLocaleString()} RWF</span>
+                          <span>−{totalSavings.toLocaleString()} {currencyLabel}</span>
                         </div>
                         <div className="jp-breakdown-divider" aria-hidden="true" />
                         <div className="jp-breakdown-row jp-breakdown-row--total">
                           <span>Total to pay</span>
-                          <strong>{totalGroupFee.toLocaleString()} RWF</strong>
+                          <strong>{totalGroupFee.toLocaleString()} {currencyLabel}</strong>
                         </div>
                       </div>
                     )}
