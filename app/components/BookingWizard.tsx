@@ -143,33 +143,40 @@ function wizardReducer(state: WizardState, action: WizardAction): WizardState {
 }
 
 // ─── Styles ───
+// Brand palette + visual tokens — change here and the whole wizard updates.
 
 const ACCENT = '#083A85';
-const ACCENT_DARK = '#0a4da3';
-const OVERLAY_BG = 'rgba(0,0,0,0.45)';
+const ACCENT_DARK = '#062a63';
+const OVERLAY_BG = 'rgba(8, 28, 60, 0.55)';
 const PANEL_BG = '#ffffff';
-const INPUT_BG = '#f9fafb';
-const INPUT_BORDER = '#e5e7eb';
-const TEXT_PRIMARY = '#111827';
-const TEXT_SECONDARY = '#40444d';
-const TEXT_MUTED = '#6b7280';
+const INPUT_BG = '#f8fafc';
+const INPUT_BORDER = '#e2e8f0';
+const TEXT_PRIMARY = '#0f172a';
+const TEXT_SECONDARY = '#475569';
+const TEXT_MUTED = '#64748b';
 
 const inputStyle: React.CSSProperties = {
-  width: '100%', padding: '11px 14px', background: INPUT_BG,
-  border: `1px solid ${INPUT_BORDER}`, borderRadius: 9, color: TEXT_PRIMARY,
+  width: '100%', padding: '12px 14px', background: INPUT_BG,
+  border: `1.5px solid ${INPUT_BORDER}`, borderRadius: 10, color: TEXT_PRIMARY,
   fontSize: 14, outline: 'none', boxSizing: 'border-box',
 };
 
 const btnPrimary: React.CSSProperties = {
-  width: '100%', padding: '13px', background: `linear-gradient(135deg, ${ACCENT}, ${ACCENT_DARK})`,
-  border: 'none', borderRadius: 10, color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer',
+  width: '100%', padding: '13px 20px',
+  background: `linear-gradient(135deg, ${ACCENT}, ${ACCENT_DARK})`,
+  border: 'none', borderRadius: 12, color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer',
   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+  boxShadow: '0 10px 24px -10px rgba(8,58,133,0.55)',
+  transition: 'transform 0.18s, box-shadow 0.18s, opacity 0.18s',
+  fontFamily: 'inherit',
 };
 
 const btnSecondary: React.CSSProperties = {
-  padding: '10px 20px', background: '#ffffff',
-  border: '1px solid #bab8b8', borderRadius: 10,
+  padding: '10px 18px', background: '#ffffff',
+  border: `1.5px solid ${INPUT_BORDER}`, borderRadius: 10,
   color: TEXT_SECONDARY, fontSize: 14, fontWeight: 600, cursor: 'pointer',
+  transition: 'all 0.18s',
+  fontFamily: 'inherit',
 };
 
 const INCLUSIVITY_OPTIONS = [
@@ -201,6 +208,390 @@ function describeConflict(b: BookedDate): string {
   return 'This date is unavailable.';
 }
 
+// Currency code → ISO 3166-1 alpha-2 country code, used to fetch flag PNGs
+// from flagcdn.com. Native flag emojis don't render on Windows fonts, so we
+// use the same image-CDN approach the navbar's language picker uses.
+const CURRENCY_FLAG_CODES: Record<string, string> = {
+  // East / Africa
+  RWF: 'rw', KES: 'ke', UGX: 'ug', TZS: 'tz', BIF: 'bi',
+  ZAR: 'za', NGN: 'ng', GHS: 'gh', EGP: 'eg', ETB: 'et',
+  MAD: 'ma', DZD: 'dz', TND: 'tn',
+  // World
+  USD: 'us', EUR: 'eu', GBP: 'gb', CAD: 'ca', AUD: 'au', NZD: 'nz',
+  CHF: 'ch', SEK: 'se', NOK: 'no', DKK: 'dk',
+  JPY: 'jp', CNY: 'cn', INR: 'in', BRL: 'br', MXN: 'mx',
+  AED: 'ae', SAR: 'sa', QAR: 'qa', TRY: 'tr', RUB: 'ru',
+  SGD: 'sg', HKD: 'hk', KRW: 'kr', THB: 'th',
+};
+function flagCode(code?: string): string | null {
+  if (!code) return null;
+  return CURRENCY_FLAG_CODES[code.toUpperCase()] || null;
+}
+
+// ─── Visual styles for the wizard shell, stepper, and inputs/buttons ───
+// Scoped via the .bw-* class prefix so nothing leaks. Keeps the existing
+// inline-style world working — these are layered on top.
+function BookingWizardStyles() {
+  return (
+    <style>{`
+      @keyframes bwFadeIn { from { opacity: 0 } to { opacity: 1 } }
+      @keyframes bwSlideUp {
+        from { opacity: 0; transform: translateY(20px) scale(0.96); }
+        to   { opacity: 1; transform: translateY(0) scale(1); }
+      }
+
+      /* Overlay + panel */
+      .bw-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 9998;
+        background: rgba(8, 28, 60, 0.55);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+        animation: bwFadeIn 0.2s ease-out;
+      }
+      .bw-panel {
+        position: relative;
+        width: 100%;
+        max-width: 720px;
+        max-height: 92vh;
+        background: #fff;
+        border-radius: 24px;
+        box-shadow: 0 30px 80px -20px rgba(8, 28, 60, 0.40), 0 0 0 1px rgba(8, 58, 133, 0.06);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        animation: bwSlideUp 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+        font-family: 'Pragati Narrow', system-ui, sans-serif;
+      }
+
+      /* Branded header — 3 columns: [back] [eyebrow] [close] */
+      .bw-header {
+        position: relative;
+        background: linear-gradient(135deg, #083A85 0%, #062a63 100%);
+        color: #fff;
+        padding: 16px 18px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        overflow: hidden;
+      }
+      .bw-header::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background-image: radial-gradient(rgba(255,255,255,0.10) 1px, transparent 1px);
+        background-size: 18px 18px;
+        opacity: 0.5;
+        pointer-events: none;
+      }
+      .bw-header-text {
+        position: relative;
+        z-index: 1;
+        flex: 1;
+        min-width: 0;
+        text-align: center;
+      }
+      .bw-header-eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.10em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.85);
+      }
+      .bw-header-eyebrow i { color: #ffd28a; }
+      .bw-header-title {
+        margin: 4px 0 0;
+        font-size: 1.15rem;
+        font-weight: 800;
+        color: #fff;
+        letter-spacing: -0.01em;
+        line-height: 1.2;
+      }
+      .bw-header-back,
+      .bw-header-close {
+        position: relative;
+        z-index: 1;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border: none;
+        background: rgba(255, 255, 255, 0.18);
+        color: #fff;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.95rem;
+        flex-shrink: 0;
+        transition: background 0.18s, transform 0.18s;
+        font-family: inherit;
+      }
+      .bw-header-close:hover { background: rgba(255, 255, 255, 0.30); transform: scale(1.06); }
+      .bw-header-back:hover  { background: rgba(255, 255, 255, 0.30); transform: translateX(-2px); }
+      /* Spacer keeps the eyebrow centered when the back button is hidden */
+      .bw-header-spacer { width: 36px; height: 36px; flex-shrink: 0; }
+
+      /* Step indicator */
+      .bw-stepper {
+        display: flex;
+        align-items: center;
+        padding: 18px 24px;
+        gap: 0;
+        background: linear-gradient(180deg, rgba(8,58,133,0.04) 0%, transparent 100%);
+        border-bottom: 1px solid #f1f5f9;
+      }
+      .bw-step {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        flex: 0 0 auto;
+      }
+      .bw-step-circle {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.78rem;
+        font-weight: 700;
+        background: #fff;
+        color: #94a3b8;
+        border: 2px solid #e2e8f0;
+        transition: background 0.2s, color 0.2s, border-color 0.2s, box-shadow 0.2s;
+      }
+      .bw-step.is-active .bw-step-circle {
+        background: #083A85;
+        color: #fff;
+        border-color: #083A85;
+        box-shadow: 0 0 0 4px rgba(8, 58, 133, 0.15);
+      }
+      .bw-step.is-done .bw-step-circle {
+        background: #083A85;
+        color: #fff;
+        border-color: #083A85;
+      }
+      .bw-step-label {
+        font-size: 0.62rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: #94a3b8;
+        white-space: nowrap;
+      }
+      .bw-step.is-active .bw-step-label,
+      .bw-step.is-done .bw-step-label { color: #083A85; }
+      .bw-step-line {
+        flex: 1;
+        height: 2px;
+        background: #e2e8f0;
+        border-radius: 2px;
+        margin: 0 4px 22px;
+        transition: background 0.32s ease-out;
+      }
+      .bw-step-line.is-done { background: #083A85; }
+
+      /* Content scroll area */
+      .bw-content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 24px;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(8,58,133,0.25) transparent;
+      }
+      .bw-content::-webkit-scrollbar { width: 8px; }
+      .bw-content::-webkit-scrollbar-track { background: transparent; }
+      .bw-content::-webkit-scrollbar-thumb { background: rgba(8,58,133,0.25); border-radius: 4px; }
+
+      /* Input focus ring (layers on top of inline inputStyle) */
+      .bw-panel input:not([type="checkbox"]):not([type="radio"]):focus,
+      .bw-panel select:focus,
+      .bw-panel textarea:focus {
+        border-color: #083A85 !important;
+        box-shadow: 0 0 0 4px rgba(8, 58, 133, 0.10);
+        background: #fff !important;
+      }
+      .bw-panel input::placeholder,
+      .bw-panel textarea::placeholder { color: #94a3b8; }
+
+      /* Primary button hover (matches the gradient inline style) */
+      .bw-panel button[style*="linear-gradient(135deg, rgb(8, 58, 133)"]:hover:not(:disabled),
+      .bw-panel button[style*="linear-gradient(135deg, #083A85"]:hover:not(:disabled) {
+        transform: translateY(-1px);
+        box-shadow: 0 14px 30px -10px rgba(8, 58, 133, 0.7) !important;
+      }
+      .bw-panel button:disabled { opacity: 0.55; cursor: not-allowed; }
+      .bw-panel button:focus-visible {
+        outline: 2px solid #083A85;
+        outline-offset: 2px;
+      }
+
+      /* Mobile */
+      @media (max-width: 600px) {
+        .bw-overlay { padding: 0; align-items: flex-end; }
+        .bw-panel {
+          max-height: 96vh;
+          border-radius: 20px 20px 0 0;
+          max-width: 100%;
+        }
+        .bw-header { padding: 14px 14px; }
+        .bw-header-title { font-size: 1rem; }
+        .bw-header-eyebrow { font-size: 0.62rem; }
+        .bw-header-back, .bw-header-close, .bw-header-spacer { width: 32px; height: 32px; }
+        .bw-stepper { padding: 14px 14px; }
+        .bw-step-circle { width: 26px; height: 26px; font-size: 0.7rem; }
+        .bw-step-label { font-size: 0.52rem; letter-spacing: 0.04em; }
+        .bw-step-line { margin: 0 2px 18px; }
+        .bw-content { padding: 18px; }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .bw-overlay, .bw-panel { animation: none; }
+      }
+    `}</style>
+  );
+}
+
+// Tiny visual atom — flag image (flagcdn.com) + currency code. Used inside
+// the custom CurrencySelect since native <option> elements strip HTML.
+function CurrencyChip({ code, size = 18 }: { code: string; size?: number }) {
+  const cc = flagCode(code);
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, minWidth: 0 }}>
+      {cc ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={`https://flagcdn.com/w40/${cc}.png`}
+          alt=""
+          width={size + 6}
+          height={Math.round((size + 6) * 0.75)}
+          style={{ display: 'block', borderRadius: 2, objectFit: 'cover', flex: 'none' }}
+          loading="lazy"
+        />
+      ) : (
+        <span style={{ fontSize: size, lineHeight: 1, flex: 'none' }} aria-hidden="true">🌐</span>
+      )}
+      <span>{code}</span>
+    </span>
+  );
+}
+
+// Custom currency dropdown — looks like the inputStyle trigger but the
+// popover renders flag images via CurrencyChip (native <select> can't).
+function CurrencySelect({
+  value, options, onChange,
+}: {
+  value: string;
+  options: { id: string; code: string }[];
+  onChange: (code: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e: MouseEvent) => {
+      if (!wrapRef.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
+    document.addEventListener('mousedown', onDoc);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDoc);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+
+  return (
+    <div ref={wrapRef} style={{ position: 'relative', flex: '0 0 auto', minWidth: 118 }}>
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        style={{
+          ...inputStyle,
+          width: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 6,
+          cursor: 'pointer',
+          textAlign: 'left',
+        }}
+      >
+        <CurrencyChip code={value} />
+        <i className="bi bi-chevron-up" aria-hidden="true" style={{ color: '#94a3b8', fontSize: 11, flex: 'none' }} />
+      </button>
+      {open && (
+        <ul
+          role="listbox"
+          aria-label="Currency"
+          style={{
+            position: 'absolute',
+            bottom: 'calc(100% + 6px)',
+            left: 0,
+            right: 0,
+            zIndex: 50,
+            margin: 0,
+            padding: 4,
+            listStyle: 'none',
+            background: '#fff',
+            border: `1px solid rgba(8, 58, 133, 0.12)`,
+            borderRadius: 12,
+            boxShadow: '0 16px 36px -12px rgba(8, 58, 133, 0.22), 0 4px 10px rgba(0,0,0,0.06)',
+            maxHeight: 260,
+            overflowY: 'auto',
+            scrollbarWidth: 'thin',
+            scrollbarColor: 'rgba(8,58,133,0.25) transparent',
+          }}
+        >
+          {options.map(opt => {
+            const isSelected = opt.code === value;
+            return (
+              <li key={opt.id}>
+                <button
+                  type="button"
+                  role="option"
+                  aria-selected={isSelected}
+                  onClick={() => { onChange(opt.code); setOpen(false); }}
+                  style={{
+                    width: '100%',
+                    padding: '8px 10px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    background: isSelected ? 'rgba(8,58,133,0.08)' : 'transparent',
+                    border: 'none',
+                    borderRadius: 8,
+                    cursor: 'pointer',
+                    fontFamily: 'inherit',
+                    fontSize: 14,
+                    color: isSelected ? ACCENT : TEXT_PRIMARY,
+                    fontWeight: isSelected ? 700 : 500,
+                    textAlign: 'left',
+                  }}
+                >
+                  <CurrencyChip code={opt.code} />
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 const BookingWizard: React.FC<BookingWizardProps> = ({
   isOpen, onClose, preselectedPhotographerId, preselectedPackageId,
 }) => {
@@ -226,7 +617,10 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
   const [briefDate, setBriefDate] = useState('');
   const [briefLocation, setBriefLocation] = useState('');
   const [briefBudgetMin, setBriefBudgetMin] = useState<number>(0);
-  const [briefBudgetMax, setBriefBudgetMax] = useState<number>(10000);
+  // 0 = "no max specified" — the photographer filter treats it as Infinity
+  // (see line ~967). Showing 0 as empty in the input lets the placeholder
+  // appear naturally and lets users type their own preferred max.
+  const [briefBudgetMax, setBriefBudgetMax] = useState<number>(0);
   const [briefPrefs, setBriefPrefs] = useState<string[]>([]);
   const [briefCurrency, setBriefCurrency] = useState('RWF');
   const [briefError, setBriefError] = useState('');
@@ -576,8 +970,14 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
     return minPrice <= (state.quickBrief?.budgetMax || Infinity);
   });
 
-  const handleSelectPhotographer = (id: string) => {
-    dispatch({ type: 'SET_SELECTED_PHOTOGRAPHER', id });
+  // Send the user to the photographer's profile page instead of selecting them
+  // in-wizard. The booking commitment now happens from view-profile, which
+  // re-opens this wizard with the photographer pre-selected (via the
+  // `preselectedPhotographerId` prop on this component).
+  const handleViewProfile = (id: string) => {
+    if (typeof window === 'undefined') return;
+    onClose();
+    window.location.href = `/user/photographers/view-profile?id=${encodeURIComponent(id)}`;
   };
 
   // ─── SLIDE 3: Package Selection ───
@@ -905,27 +1305,83 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
 
   return (
     <>
-      {/* Overlay */}
-      <div style={{ position: 'fixed', inset: 0, zIndex: 9998, background: OVERLAY_BG, backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-        <div style={{
-          width: '100%', maxWidth: 620, maxHeight: '92vh', background: PANEL_BG,
-          border: '1px solid #e5e7eb', borderRadius: 20,
-          boxShadow: '0 24px 60px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.04)', position: 'relative',
-          display: 'flex', flexDirection: 'column', overflow: 'hidden',
-        }}>
-          {/* Close button */}
-          <button onClick={handleClose} style={{
-            position: 'absolute', top: 14, right: 14, zIndex: 10, width: 36, height: 36,
-            borderRadius: '50%', background: '#f3f4f6', border: '1px solid #e5e7eb',
-            color: '#6b7280', fontSize: 16, cursor: 'pointer', display: 'flex',
-            alignItems: 'center', justifyContent: 'center',
-          }}>
-            <i className="bi bi-x-lg"></i>
-          </button>
+      <BookingWizardStyles />
+      <div className="bw-overlay">
+        <div className="bw-panel" role="dialog" aria-modal="true" aria-label="Book a photographer">
+          {/* Branded header strip — back button (left) + eyebrow + close (right) */}
+          <header className="bw-header">
+            {(() => {
+              const canGoBack =
+                !state.bookingSuccess &&
+                (state.showAuthInline || state.showAvailabilityGate || state.currentSlide > 0);
+              if (!canGoBack) return <div className="bw-header-spacer" aria-hidden="true" />;
+              return (
+                <button
+                  type="button"
+                  className="bw-header-back"
+                  onClick={() => {
+                    if (state.showAuthInline) {
+                      dispatch({ type: 'SHOW_AUTH', value: false });
+                      return;
+                    }
+                    if (state.showAvailabilityGate) {
+                      if (state.quickBrief) dispatch({ type: 'SET_SLIDE', slide: 1 });
+                      else handleClose();
+                      return;
+                    }
+                    if (state.currentSlide > 0) {
+                      dispatch({ type: 'SET_SLIDE', slide: state.currentSlide - 1 });
+                    }
+                  }}
+                  aria-label="Go to previous step"
+                >
+                  <i className="bi bi-arrow-left" aria-hidden="true" />
+                </button>
+              );
+            })()}
+            <div className="bw-header-text">
+              <span className="bw-header-eyebrow">
+                <i className="bi bi-calendar-check" aria-hidden="true" /> Connekyt booking
+              </span>
+              {state.bookingSuccess && (
+                <h2 className="bw-header-title">You&apos;re all set!</h2>
+              )}
+            </div>
+            <button
+              type="button"
+              className="bw-header-close"
+              onClick={handleClose}
+              aria-label="Close booking wizard"
+            >
+              <i className="bi bi-x-lg" aria-hidden="true" />
+            </button>
+          </header>
 
+          {/* Step indicator (hidden on overlays/success) */}
+          {!state.bookingSuccess && !state.showAuthInline && !state.showAvailabilityGate && (
+            <div className="bw-stepper" aria-label="Booking progress">
+              {(['Brief', 'Photographer', 'Package', 'Payment', 'Details'] as const).map((label, i, arr) => {
+                const isActive = i === state.currentSlide;
+                const isDone = i < state.currentSlide;
+                return (
+                  <React.Fragment key={label}>
+                    <div className={`bw-step${isActive ? ' is-active' : ''}${isDone ? ' is-done' : ''}`}>
+                      <div className="bw-step-circle" aria-current={isActive ? 'step' : undefined}>
+                        {isDone ? <i className="bi bi-check-lg" aria-hidden="true" /> : i + 1}
+                      </div>
+                      <span className="bw-step-label">{label}</span>
+                    </div>
+                    {i < arr.length - 1 && (
+                      <div className={`bw-step-line${isDone ? ' is-done' : ''}`} aria-hidden="true" />
+                    )}
+                  </React.Fragment>
+                );
+              })}
+            </div>
+          )}
 
-          {/* Content area */}
-          <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px 24px' }}>
+          {/* Content area (scrollable) */}
+          <div className="bw-content">
 
             {/* ── Success state ── */}
             {state.bookingSuccess ? (
@@ -958,21 +1414,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
             /* ── Availability Gate (shown after a photographer is chosen, before packages) ── */
             ) : state.showAvailabilityGate ? (
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-                  <button
-                    onClick={() => {
-                      if (state.quickBrief) {
-                        dispatch({ type: 'SET_SLIDE', slide: 1 });
-                      } else {
-                        handleClose();
-                      }
-                    }}
-                    style={{ ...btnSecondary, padding: '6px 12px', fontSize: 13 }}
-                  >
-                    <i className="bi bi-arrow-left"></i>
-                  </button>
-                  <h3 style={{ color: TEXT_PRIMARY, fontSize: 18, fontWeight: 700, margin: 0 }}>Pick the day of your event</h3>
-                </div>
+                <h3 style={{ color: TEXT_PRIMARY, fontSize: 18, fontWeight: 700, margin: '0 0 12px' }}>Pick the day of your event</h3>
 
                 {/* Photographer context card — makes it obvious WHO is being booked for WHAT day */}
                 <div style={{
@@ -1004,7 +1446,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                 </p>
 
                 {/* Calendar */}
-                <div style={{ border: `1px solid ${INPUT_BORDER}`, borderRadius: 12, padding: 14, marginBottom: 14 }}>
+                <div style={{ border: `1px solid ${INPUT_BORDER}`, borderRadius: 12, padding: 10, marginBottom: 14 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                     <button
                       onClick={() => setGateCalendarMonth(prev => {
@@ -1028,12 +1470,12 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                       <i className="bi bi-chevron-right"></i>
                     </button>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4, marginBottom: 6 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 3, marginBottom: 4 }}>
                     {['Su','Mo','Tu','We','Th','Fr','Sa'].map(d => (
-                      <div key={d} style={{ textAlign: 'center', fontSize: 11, fontWeight: 700, color: '#9ca3af', padding: '4px 0' }}>{d}</div>
+                      <div key={d} style={{ textAlign: 'center', fontSize: 10, fontWeight: 700, color: '#94a3b8', padding: '2px 0', letterSpacing: '0.04em' }}>{d}</div>
                     ))}
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 3 }}>
                     {(() => {
                       const { year, month } = gateCalendarMonth;
                       const firstDay = new Date(year, month, 1).getDay();
@@ -1058,14 +1500,23 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                         const isFullEvent = reason === 'event' && booked?.isFullDay === true;
                         const isPartialEvent = reason === 'event' && booked?.isFullDay === false;
                         const disabled = isPast || !!booked;
-                        let bg = 'transparent', fg = TEXT_PRIMARY, border = '1px solid transparent';
-                        if (isPast) fg = '#d1d5db';
-                        else if (isFullEvent) { bg = '#ef4444'; fg = '#fff'; }
-                        else if (isPartialEvent) bg = '#fef3c7';
-                        else if (reason === 'preparation') { bg = '#e2e8f0'; fg = '#1f2937'; }
-                        else if (reason === 'delivery') { bg = '#c7d2fe'; fg = '#1e3a8a'; }
-                        else { bg = '#f0fdf4'; border = '1px solid #bbf7d0'; }
-                        if (isSelected && !disabled) { bg = ACCENT; fg = '#fff'; border = `2px solid ${ACCENT_DARK}`; }
+                        // Solid colored chips so each status reads at a glance.
+                        let bg: string, fg = '#fff', border = '1px solid transparent';
+                        let shadow = '';
+                        if (isPast) { bg = 'transparent'; fg = '#cbd5e1'; }
+                        else if (isFullEvent)        { bg = '#ef4444'; border = '1px solid #dc2626'; shadow = '0 1px 4px rgba(239,68,68,0.30)'; }
+                        else if (isPartialEvent)     { bg = '#f59e0b'; border = '1px solid #d97706'; shadow = '0 1px 4px rgba(245,158,11,0.30)'; }
+                        else if (reason === 'preparation') { bg = '#94a3b8'; border = '1px solid #64748b'; shadow = '0 1px 4px rgba(148,163,184,0.25)'; }
+                        else if (reason === 'delivery')    { bg = '#6366f1'; border = '1px solid #4f46e5'; shadow = '0 1px 4px rgba(99,102,241,0.30)'; }
+                        else                          { bg = '#10b981'; border = '1px solid #059669'; shadow = '0 1px 4px rgba(16,185,129,0.25)'; }
+                        // Selected: keep the green theme, deepen the border + add a green
+                        // halo ring + lift shadow so the chosen day clearly stands out.
+                        if (isSelected && !disabled) {
+                          bg = '#059669';
+                          fg = '#fff';
+                          border = '2px solid #064e3b';
+                          shadow = '0 0 0 3px rgba(16,185,129,0.40), 0 4px 12px rgba(5,150,105,0.45)';
+                        }
                         let title: string | undefined;
                         if (isFullEvent) title = 'Booked — event day';
                         else if (isPartialEvent) title = 'Partial event booking';
@@ -1080,10 +1531,14 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                             disabled={disabled}
                             onClick={() => { if (!disabled) setGateDate(dateStr); }}
                             style={{
-                              textAlign: 'center', padding: '8px 0', fontSize: 13, fontWeight: 500,
-                              color: fg, backgroundColor: bg, borderRadius: '50%', aspectRatio: '1',
+                              textAlign: 'center', padding: 0, fontSize: 11, fontWeight: 700,
+                              color: fg, backgroundColor: bg, borderRadius: 8, aspectRatio: '1',
                               display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              cursor: disabled ? 'not-allowed' : 'pointer', border, opacity: isPast ? 0.5 : 1,
+                              cursor: disabled ? 'not-allowed' : 'pointer', border,
+                              opacity: isPast ? 0.5 : 1,
+                              boxShadow: shadow,
+                              fontFamily: 'inherit',
+                              transition: 'transform 0.15s, box-shadow 0.15s',
                             }}
                           >
                             {day}
@@ -1093,12 +1548,12 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                       return cells;
                     })()}
                   </div>
-                  <div style={{ display: 'flex', gap: 10, marginTop: 12, paddingTop: 10, borderTop: '1px solid #f3f4f6', fontSize: 11, color: '#6b7280', flexWrap: 'wrap' }}>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }} title="Photographer is free — click to select"><span style={{ width: 10, height: 10, background: '#f0fdf4', borderRadius: '50%', border: '1px solid #bbf7d0' }} />Available</span>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }} title="Day before an event — photographer is preparing"><span style={{ width: 10, height: 10, background: '#e2e8f0', borderRadius: '50%' }} />Prep day</span>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }} title="Photographer is shooting an event that day"><span style={{ width: 10, height: 10, background: '#ef4444', borderRadius: '50%' }} />Event day</span>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }} title="Time-boxed event — a portion of the day is booked"><span style={{ width: 10, height: 10, background: '#fef3c7', borderRadius: '50%', border: '1px solid #fde68a' }} />Partial</span>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }} title="Photographer is editing & delivering a recent shoot"><span style={{ width: 10, height: 10, background: '#c7d2fe', borderRadius: '50%' }} />Delivery</span>
+                  <div style={{ display: 'flex', gap: 10, marginTop: 10, paddingTop: 8, borderTop: '1px solid #f1f5f9', fontSize: 10.5, color: '#475569', flexWrap: 'wrap' }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }} title="Photographer is free — click to select"><span style={{ width: 10, height: 10, background: '#10b981', borderRadius: 3 }} />Available</span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }} title="Day before an event — photographer is preparing"><span style={{ width: 10, height: 10, background: '#94a3b8', borderRadius: 3 }} />Prep day</span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }} title="Photographer is shooting an event that day"><span style={{ width: 10, height: 10, background: '#ef4444', borderRadius: 3 }} />Event day</span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }} title="Time-boxed event — a portion of the day is booked"><span style={{ width: 10, height: 10, background: '#f59e0b', borderRadius: 3 }} />Partial</span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }} title="Photographer is editing & delivering a recent shoot"><span style={{ width: 10, height: 10, background: '#6366f1', borderRadius: 3 }} />Delivery</span>
                   </div>
                 </div>
 
@@ -1168,9 +1623,6 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
             /* ── Auth inline overlay ── */
             ) : state.showAuthInline ? (
               <div>
-                <button onClick={() => dispatch({ type: 'SHOW_AUTH', value: false })} style={{ ...btnSecondary, marginBottom: 16, padding: '8px 16px', fontSize: 13 }}>
-                  <i className="bi bi-arrow-left" style={{ marginRight: 6 }}></i> Back
-                </button>
                 <h3 style={{ color: TEXT_PRIMARY, fontSize: 18, fontWeight: 700, margin: '0 0 4px', textAlign: 'center' }}>
                   {authStep === 'otp' ? 'Verify Email' : authStep === 'signup' ? 'Create Account' : 'Log In'}
                 </h3>
@@ -1268,15 +1720,39 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                   <div>
                     <label style={{ display: 'block', color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Budget Range</label>
                     <div style={{ display: 'flex', gap: 8 }}>
-                      <select value={briefCurrency} onChange={e => setBriefCurrency(e.target.value)} style={{ ...inputStyle, width: 'auto', minWidth: 90, flex: '0 0 auto', appearance: 'auto' as const }}>
-                        {currencies.length > 0 ? currencies.map(c => (
-                          <option key={c.id} value={c.code || c.symbol}>{c.code || c.symbol}</option>
-                        )) : (
-                          <option value="RWF">RWF</option>
-                        )}
-                      </select>
-                      <input type="number" value={briefBudgetMin || ''} onChange={e => setBriefBudgetMin(parseInt(e.target.value) || 0)} placeholder="Min" style={{ ...inputStyle, flex: 1 }} />
-                      <input type="number" value={briefBudgetMax || ''} onChange={e => setBriefBudgetMax(parseInt(e.target.value) || 10000)} placeholder="Max" style={{ ...inputStyle, flex: 1 }} />
+                      <CurrencySelect
+                        value={briefCurrency}
+                        onChange={setBriefCurrency}
+                        options={
+                          currencies.length > 0
+                            ? currencies.map(c => ({ id: c.id, code: (c.code || c.symbol || '') }))
+                            : [{ id: 'RWF', code: 'RWF' }]
+                        }
+                      />
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        min={0}
+                        value={briefBudgetMin || ''}
+                        onChange={e => {
+                          const v = e.target.value;
+                          setBriefBudgetMin(v === '' ? 0 : Math.max(0, parseInt(v, 10) || 0));
+                        }}
+                        placeholder="Min"
+                        style={{ ...inputStyle, flex: 1 }}
+                      />
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        min={0}
+                        value={briefBudgetMax || ''}
+                        onChange={e => {
+                          const v = e.target.value;
+                          setBriefBudgetMax(v === '' ? 0 : Math.max(0, parseInt(v, 10) || 0));
+                        }}
+                        placeholder="Max"
+                        style={{ ...inputStyle, flex: 1 }}
+                      />
                     </div>
                   </div>
                   <div>
@@ -1306,14 +1782,9 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
             /* ── SLIDE 1: Best Matches ── */
             ) : state.currentSlide === 1 ? (
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-                  <button onClick={() => dispatch({ type: 'SET_SLIDE', slide: 0 })} style={{ ...btnSecondary, padding: '6px 12px', fontSize: 13 }}>
-                    <i className="bi bi-arrow-left"></i>
-                  </button>
-                  <div>
-                    <h3 style={{ color: TEXT_PRIMARY, fontSize: 18, fontWeight: 700, margin: 0 }}>Best Matches</h3>
-                    <p style={{ color: TEXT_MUTED, fontSize: 12, margin: 0 }}>{filteredPhotographers.length} photographer{filteredPhotographers.length !== 1 ? 's' : ''} found</p>
-                  </div>
+                <div style={{ marginBottom: 16 }}>
+                  <h3 style={{ color: TEXT_PRIMARY, fontSize: 18, fontWeight: 700, margin: 0 }}>Best Matches</h3>
+                  <p style={{ color: TEXT_MUTED, fontSize: 12, margin: 0 }}>{filteredPhotographers.length} photographer{filteredPhotographers.length !== 1 ? 's' : ''} found</p>
                 </div>
 
                 {photographersLoading ? (
@@ -1359,17 +1830,17 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                               )}
                             </div>
                           </div>
-                          <div style={{ display: 'flex', gap: 8 }}>
-                            <button onClick={() => dispatch({ type: 'SHOW_PREVIEW', id: p.id })} style={{ ...btnSecondary, flex: 1, fontSize: 12, padding: '8px 0', textAlign: 'center' as const }}>
-                              <i className="bi bi-eye" style={{ marginRight: 4 }}></i> Preview
-                            </button>
-                            <button onClick={() => handleSelectPhotographer(p.id)} style={{
-                              flex: 1, padding: '8px 0', background: `linear-gradient(135deg, ${ACCENT}, ${ACCENT_DARK})`,
-                              border: 'none', borderRadius: 10, color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                            }}>
-                              Select
-                            </button>
-                          </div>
+                          <button onClick={() => handleViewProfile(p.id)} style={{
+                            width: '100%', padding: '10px 0',
+                            background: `linear-gradient(135deg, ${ACCENT}, ${ACCENT_DARK})`,
+                            border: 'none', borderRadius: 10, color: '#fff',
+                            fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                            display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                            boxShadow: '0 8px 18px -8px rgba(8,58,133,0.55)',
+                            fontFamily: 'inherit',
+                          }}>
+                            View Profile <i className="bi bi-arrow-right"></i>
+                          </button>
                         </div>
                       );
                     })}
@@ -1380,12 +1851,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
             /* ── SLIDE 2: Package Selection ── */
             ) : state.currentSlide === 2 ? (
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-                  <button onClick={() => preselectedPhotographerId ? handleClose() : dispatch({ type: 'SET_SLIDE', slide: 1 })} style={{ ...btnSecondary, padding: '6px 12px', fontSize: 13 }}>
-                    <i className="bi bi-arrow-left"></i>
-                  </button>
-                  <h3 style={{ color: TEXT_PRIMARY, fontSize: 18, fontWeight: 700, margin: 0 }}>Select a Package</h3>
-                </div>
+                <h3 style={{ color: TEXT_PRIMARY, fontSize: 18, fontWeight: 700, margin: '0 0 16px' }}>Select a Package</h3>
 
                 {packagesLoading ? (
                   <div style={{ textAlign: 'center', padding: 40 }}>
@@ -1480,12 +1946,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
             /* ── SLIDE 3: Payment Milestone ── */
             ) : state.currentSlide === 3 ? (
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-                  <button onClick={() => dispatch({ type: 'SET_SLIDE', slide: 2 })} style={{ ...btnSecondary, padding: '6px 12px', fontSize: 13 }}>
-                    <i className="bi bi-arrow-left"></i>
-                  </button>
-                  <h3 style={{ color: TEXT_PRIMARY, fontSize: 18, fontWeight: 700, margin: 0 }}>Payment Plan</h3>
-                </div>
+                <h3 style={{ color: TEXT_PRIMARY, fontSize: 18, fontWeight: 700, margin: '0 0 16px' }}>Payment Plan</h3>
 
                 <div style={{ textAlign: 'center', marginBottom: 16 }}>
                   <p style={{ color: TEXT_MUTED, fontSize: 13, margin: '0 0 4px' }}>Total Amount</p>
@@ -1554,12 +2015,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
             /* ── SLIDE 4: Event Details ── */
             ) : state.currentSlide === 4 ? (
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-                  <button onClick={() => dispatch({ type: 'SET_SLIDE', slide: 3 })} style={{ ...btnSecondary, padding: '6px 12px', fontSize: 13 }}>
-                    <i className="bi bi-arrow-left"></i>
-                  </button>
-                  <h3 style={{ color: TEXT_PRIMARY, fontSize: 18, fontWeight: 700, margin: 0 }}>Event Details</h3>
-                </div>
+                <h3 style={{ color: TEXT_PRIMARY, fontSize: 18, fontWeight: 700, margin: '0 0 16px' }}>Event Details</h3>
 
                 {evtError && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '10px 14px', marginBottom: 14, color: '#dc2626', fontSize: 13 }}>{evtError}</div>}
                 {submitError && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '10px 14px', marginBottom: 14, color: '#dc2626', fontSize: 13 }}>{submitError}</div>}
@@ -1813,12 +2269,12 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                   </div>
                 )}
 
-                {/* Select button */}
+                {/* View full profile — booking is initiated from there */}
                 <button onClick={() => {
                   dispatch({ type: 'SHOW_PREVIEW', id: null });
-                  handleSelectPhotographer(state.showPhotographerPreview!);
+                  handleViewProfile(state.showPhotographerPreview!);
                 }} style={{ ...btnPrimary, marginTop: 8 }}>
-                  <i className="bi bi-check-circle-fill"></i> Select This Photographer
+                  <i className="bi bi-person-vcard-fill"></i> View Full Profile
                 </button>
               </div>
             ) : (

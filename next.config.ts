@@ -57,6 +57,10 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: __dirname,
   },
+  // page-flip (used internally by react-pageflip) ships only a CJS build with no ESM
+  // "module" field, which trips Turbopack's ESM resolver. Transpiling both packages
+  // through SWC routes them through Next's bundler and resolves the module graph cleanly.
+  transpilePackages: ['react-pageflip', 'page-flip'],
   images: {
     remotePatterns: [
       {

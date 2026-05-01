@@ -1,16 +1,27 @@
 'use client';
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import AmoriaKNavbar from '../../components/navbar';
-import { getPhotographerById, type Photographer, getCities, type City, getReviewerName, getReviewText, formatTimeValue, getBookedDates, type BookedDate } from '@/lib/APIs/public';
+import {
+  getPhotographerById,
+  type Photographer,
+  getCities,
+  type City,
+  getReviewerName,
+  getReviewText,
+  getBookedDates,
+  type BookedDate,
+} from '@/lib/APIs/public';
 import { useToast } from '@/lib/notifications/ToastProvider';
 import dynamic from 'next/dynamic';
 
 const BookingWizard = dynamic(() => import('../../components/BookingWizard'), { ssr: false });
 
-// Default images for fallback
-// Helper function to get valid profile image
+const BRAND = '#083A85';
+const BRAND_DARK = '#062a63';
+
+// ----- Helpers (preserved from original) -----
 const getProfileImage = (photographer: Photographer | null): string | null => {
   if (!photographer) return null;
   if (photographer.profilePicture && !photographer.profilePicture.includes('/null')) {
@@ -19,7 +30,6 @@ const getProfileImage = (photographer: Photographer | null): string | null => {
   return null;
 };
 
-// Helper function to get valid cover image
 const getCoverImage = (photographer: Photographer | null): string | null => {
   if (!photographer) return null;
   if (photographer.coverPicture && !photographer.coverPicture.includes('/null')) {
@@ -28,7 +38,6 @@ const getCoverImage = (photographer: Photographer | null): string | null => {
   return null;
 };
 
-// Helper to format date
 const formatJoinDate = (dateString: string): string => {
   try {
     const date = new Date(dateString);
@@ -38,20 +47,21 @@ const formatJoinDate = (dateString: string): string => {
   }
 };
 
-// Component that uses useSearchParams - needs to be wrapped in Suspense
+// =================================================================
+// Main content component
+// =================================================================
 function ViewProfileContent(): React.JSX.Element {
   const t = useTranslations('viewProfile');
   const searchParams = useSearchParams();
   const photographerId = searchParams.get('id');
   const toast = useToast();
 
+  // ----- State (preserved 1:1) -----
   const [activeTab, setActiveTab] = useState('overview');
   const [isLoading, setIsLoading] = useState(true);
   const [imageViewerOpen, setImageViewerOpen] = useState(false);
   const [currentImageType, setCurrentImageType] = useState<'profile' | 'cover' | null>(null);
   const [isMobile, setIsMobile] = useState(false);
-
-  // API data state
   const [photographer, setPhotographer] = useState<Photographer | null>(null);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [cities, setCities] = useState<City[]>([]);
@@ -60,8 +70,14 @@ function ViewProfileContent(): React.JSX.Element {
     const now = new Date();
     return { year: now.getFullYear(), month: now.getMonth() };
   });
+  const [showWizard, setShowWizard] = useState(false);
+  // New, redesign-only: contact "show" toggle for privacy
+  const [contactRevealed, setContactRevealed] = useState<{ phone: boolean; email: boolean }>({
+    phone: false,
+    email: false,
+  });
 
-  // Fetch photographer data from API by filtering from main list
+  // ----- Effects (preserved 1:1) -----
   useEffect(() => {
     const fetchPhotographer = async () => {
       if (!photographerId) {
@@ -69,21 +85,15 @@ function ViewProfileContent(): React.JSX.Element {
         setIsLoading(false);
         return;
       }
-
       setIsLoading(true);
       setFetchError(null);
-
       try {
-        // Fetch single photographer by ID
         const response = await getPhotographerById(photographerId);
-
         if (response.success && response.data) {
-          // Handle both direct data and wrapped { action, data } response formats
           const rawData = response.data as unknown as Record<string, unknown>;
           const photographerData = rawData?.data
-            ? rawData.data as Photographer
-            : response.data as Photographer;
-
+            ? (rawData.data as Photographer)
+            : (response.data as Photographer);
           setPhotographer(photographerData);
         } else {
           setFetchError(response.error || 'Photographer not found');
@@ -97,11 +107,9 @@ function ViewProfileContent(): React.JSX.Element {
         setIsLoading(false);
       }
     };
-
     fetchPhotographer();
   }, [photographerId, toast]);
 
-  // Fetch cities for location display
   useEffect(() => {
     const fetchCities = async () => {
       try {
@@ -110,19 +118,22 @@ function ViewProfileContent(): React.JSX.Element {
           const cityList = Array.isArray(response.data) ? response.data : [];
           setCities(cityList);
         }
-      } catch { /* silent */ }
+      } catch {
+        /* silent */
+      }
     };
     fetchCities();
   }, []);
 
-  // Fetch booked dates for mini calendar (next 60 days)
   useEffect(() => {
     if (!photographerId) return;
     const today = new Date();
     const from = today.toISOString().split('T')[0];
-    const to = new Date(today.getFullYear(), today.getMonth() + 2, today.getDate()).toISOString().split('T')[0];
+    const to = new Date(today.getFullYear(), today.getMonth() + 2, today.getDate())
+      .toISOString()
+      .split('T')[0];
     getBookedDates({ photographerId, from, to })
-      .then(res => {
+      .then((res) => {
         if (res.success && res.data) {
           setBookedDates(Array.isArray(res.data) ? res.data : []);
         }
@@ -130,46 +141,32 @@ function ViewProfileContent(): React.JSX.Element {
       .catch(() => {});
   }, [photographerId]);
 
-  // Booking wizard state
-  const [showWizard, setShowWizard] = useState(false);
-
-  // Handle Book Now button click — open wizard instead of navigating
-  const handleBookNowClick = () => {
-    setShowWizard(true);
-  };
-
-  // Detect screen size
   useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-
-    handleResize(); // Initial check
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   useEffect(() => {
-    // Handle ESC key to close image viewer
     const handleEscKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && imageViewerOpen) {
-        closeImageViewer();
-      }
+      if (e.key === 'Escape' && imageViewerOpen) closeImageViewer();
     };
-
     if (imageViewerOpen) {
       document.addEventListener('keydown', handleEscKey);
       document.body.style.overflow = 'hidden';
     }
-
     return () => {
       document.removeEventListener('keydown', handleEscKey);
       document.body.style.overflow = 'unset';
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [imageViewerOpen]);
 
+  // ----- Handlers -----
+  const handleBookNowClick = () => setShowWizard(true);
+
   const openImageViewer = (type: 'profile' | 'cover') => {
-    // Don't open viewer if there's no image to show
     const img = type === 'profile' ? photographerData?.profileImage : photographerData?.backgroundImage;
     if (!img) return;
     setCurrentImageType(type);
@@ -181,14 +178,36 @@ function ViewProfileContent(): React.JSX.Element {
     setCurrentImageType(null);
   };
 
-  // Build photographer display data from API response - NO mock data, only real API data
+  const handleShare = async () => {
+    const url = typeof window !== 'undefined' ? window.location.href : '';
+    const title = photographerData?.name || 'Photographer profile';
+    if (typeof navigator !== 'undefined' && 'share' in navigator) {
+      try {
+        await (navigator as Navigator & { share: (data: ShareData) => Promise<void> }).share({
+          url,
+          title,
+          text: `Check out ${title} on Connekyt`,
+        });
+        return;
+      } catch {
+        /* fall through to clipboard */
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success('Link copied to clipboard');
+    } catch {
+      toast.error('Could not share — try copying the URL manually');
+    }
+  };
+
+  // ----- Photographer display data (preserved 1:1) -----
   const photographerData = {
     name: photographer ? `${photographer.firstName} ${photographer.lastName}` : '',
     location: (() => {
       if (!photographer) return '';
-      // Try to match address to a city name from the API
       if (photographer.address && cities.length > 0) {
-        const matchedCity = cities.find(c =>
+        const matchedCity = cities.find((c) =>
           photographer.address?.toLowerCase().includes(c.name.toLowerCase())
         );
         if (matchedCity) {
@@ -204,2181 +223,2271 @@ function ViewProfileContent(): React.JSX.Element {
     profileImage: getProfileImage(photographer),
     backgroundImage: getCoverImage(photographer),
     about: photographer?.about || photographer?.professionalPhilosophy || '',
-    specialties: (photographer?.specialties || []).map((s: string | { id: string; name: string }) => typeof s === 'string' ? s : s.name),
-    equipments: photographer?.equipments?.map(eq => eq.name) || [],
+    specialties: (photographer?.specialties || []).map((s: string | { id: string; name: string }) =>
+      typeof s === 'string' ? s : s.name
+    ),
+    equipments: photographer?.equipments?.map((eq) => eq.name) || [],
     portfolio: {
       beliefs: photographer?.professionalPhilosophy || '',
-      skills: photographer?.professionalSkills?.map((skill, index) => ({
-        name: skill.name,
-        level: skill.proficiencyLevel || skill.skillPercentage || Math.max(70, 95 - (index * 5))
-      })) || [],
-      qualifications: photographer?.certifications?.map((cert, index) => ({
-        id: index + 1,
-        title: cert.title || cert.name || 'Untitled',
-        issuer: cert.issuer || cert.institution || cert.issuingOrganization || '',
-        year: (() => {
-          if (cert.year) return cert.year;
-          if (cert.yearObtained) return cert.yearObtained;
-          if (cert.issueDate) { try { return new Date(cert.issueDate).getFullYear().toString(); } catch { return ''; } }
-          return '';
-        })(),
-        description: cert.description || `Certification from ${cert.issuer || cert.institution || cert.issuingOrganization || 'Unknown'}`,
-      })) || [],
-      education: photographer?.educationLevels?.map((edu, index) => ({
-        id: index + 1,
-        degree: edu.degree,
-        institution: edu.institution,
-        year: (() => {
-          if (edu.startYear) return `${edu.startYear}${edu.endYear ? ` - ${edu.endYear}` : ''}`;
-          if (edu.startDate) return `${edu.startDate}${edu.endDate ? ` - ${edu.endDate}` : ''}`;
-          return '';
-        })(),
-        description: edu.description || edu.fieldOfStudy || `Studied at ${edu.institution}`,
-      })) || [],
-      training: photographer?.trainings?.map((training, index) => ({
-        id: index + 1,
-        title: training.title || training.name || 'Untitled',
-        institution: training.institution || training.provider || '',
-        year: (() => {
-          if (training.year) return training.year;
-          if (training.yearObtained) return training.yearObtained;
-          if (training.completionDate) { try { return new Date(training.completionDate).getFullYear().toString(); } catch { return ''; } }
-          return '';
-        })(),
-        description: training.description || `Training completed at ${training.institution || training.provider || 'Unknown'}`,
-      })) || [],
-      projects: photographer?.projects?.map((project, index) => ({
-        id: index + 1,
-        image: project.projectImage || project.images?.[0] || '',
-        title: project.title,
-        description: project.description,
-        year: project.year?.toString() || project.category || '',
-      })) || [],
-    },
-    reviews: photographer?.reviews?.map((review, index) => ({
-      id: index + 1,
-      name: getReviewerName(review.reviewer),
-      avatar: review.reviewer?.profilePicture || null,
-      rating: review.rating,
-      date: review.createdAt || '',
-      comment: getReviewText(review),
-      customerType: review.reviewer?.customerType || '',
-      images: review.images || [],
-    })) || [],
-    experience: (photographer?.workExperiences && photographer.workExperiences.length > 0)
-      ? photographer.workExperiences.map((exp, index) => ({
+      skills:
+        photographer?.professionalSkills?.map((skill, index) => ({
+          name: skill.name,
+          level: skill.proficiencyLevel || skill.skillPercentage || Math.max(70, 95 - index * 5),
+        })) || [],
+      qualifications:
+        photographer?.certifications?.map((cert, index) => ({
           id: index + 1,
-          position: exp.position,
-          company: exp.company,
-          location: exp.location,
-          startDate: exp.startDate ? formatJoinDate(exp.startDate) : '',
-          endDate: exp.endDate ? formatJoinDate(exp.endDate) : 'Present',
-          description: exp.description,
-        }))
-      : photographer ? [{
-          id: 1,
-          position: photographer.customerType || 'Photographer',
-          company: 'Self-employed',
-          location: photographer.address || '',
-          startDate: photographer.joinedFrom ? formatJoinDate(photographer.joinedFrom) : '',
-          endDate: 'Present',
-          description: photographer.about || '',
-        }] : [],
+          title: cert.title || cert.name || 'Untitled',
+          issuer: cert.issuer || cert.institution || cert.issuingOrganization || '',
+          year: (() => {
+            if (cert.year) return cert.year;
+            if (cert.yearObtained) return cert.yearObtained;
+            if (cert.issueDate) {
+              try {
+                return new Date(cert.issueDate).getFullYear().toString();
+              } catch {
+                return '';
+              }
+            }
+            return '';
+          })(),
+          description:
+            cert.description ||
+            `Certification from ${
+              cert.issuer || cert.institution || cert.issuingOrganization || 'Unknown'
+            }`,
+        })) || [],
+      education:
+        photographer?.educationLevels?.map((edu, index) => ({
+          id: index + 1,
+          degree: edu.degree,
+          institution: edu.institution,
+          year: (() => {
+            if (edu.startYear) return `${edu.startYear}${edu.endYear ? ` - ${edu.endYear}` : ''}`;
+            if (edu.startDate) return `${edu.startDate}${edu.endDate ? ` - ${edu.endDate}` : ''}`;
+            return '';
+          })(),
+          description: edu.description || edu.fieldOfStudy || `Studied at ${edu.institution}`,
+        })) || [],
+      training:
+        photographer?.trainings?.map((training, index) => ({
+          id: index + 1,
+          title: training.title || training.name || 'Untitled',
+          institution: training.institution || training.provider || '',
+          year: (() => {
+            if (training.year) return training.year;
+            if (training.yearObtained) return training.yearObtained;
+            if (training.completionDate) {
+              try {
+                return new Date(training.completionDate).getFullYear().toString();
+              } catch {
+                return '';
+              }
+            }
+            return '';
+          })(),
+          description:
+            training.description ||
+            `Training completed at ${training.institution || training.provider || 'Unknown'}`,
+        })) || [],
+      projects:
+        photographer?.projects?.map((project, index) => ({
+          id: index + 1,
+          image: project.projectImage || project.images?.[0] || '',
+          title: project.title,
+          description: project.description,
+          year: project.year?.toString() || project.category || '',
+        })) || [],
+    },
+    reviews:
+      photographer?.reviews?.map((review, index) => ({
+        id: index + 1,
+        name: getReviewerName(review.reviewer),
+        avatar: review.reviewer?.profilePicture || null,
+        rating: review.rating,
+        date: review.createdAt || '',
+        comment: getReviewText(review),
+        customerType: review.reviewer?.customerType || '',
+        images: review.images || [],
+      })) || [],
+    experience:
+      photographer?.workExperiences && photographer.workExperiences.length > 0
+        ? photographer.workExperiences.map((exp, index) => ({
+            id: index + 1,
+            position: exp.position,
+            company: exp.company,
+            location: exp.location,
+            startDate: exp.startDate ? formatJoinDate(exp.startDate) : '',
+            endDate: exp.endDate ? formatJoinDate(exp.endDate) : 'Present',
+            description: exp.description,
+          }))
+        : photographer
+        ? [
+            {
+              id: 1,
+              position: photographer.customerType || 'Photographer',
+              company: 'Self-employed',
+              location: photographer.address || '',
+              startDate: photographer.joinedFrom ? formatJoinDate(photographer.joinedFrom) : '',
+              endDate: 'Present',
+              description: photographer.about || '',
+            },
+          ]
+        : [],
     joinedFrom: photographer?.joinedFrom ? formatJoinDate(photographer.joinedFrom) : '',
     customerType: photographer?.customerType || '',
     phone: photographer?.phone || '',
     email: photographer?.email || '',
+    packages: photographer?.packages || [],
   };
 
-  const renderStars = (rating: number) => {
+  // Cheapest active package (used by sidebar pricing card + mobile bottom CTA)
+  const cheapestPackage = useMemo(() => {
+    const active = (photographer?.packages ?? []).filter((p) => p.isActive);
+    if (active.length === 0) return null;
+    return active.reduce((min, p) => (p.price < min.price ? p : min), active[0]);
+  }, [photographer]);
+
+  // Rating distribution for the reviews summary
+  const ratingBreakdown = useMemo(() => {
+    const buckets = [0, 0, 0, 0, 0]; // index 0 = 5★, 4 = 1★
+    photographerData.reviews.forEach((r) => {
+      const star = Math.round(r.rating);
+      const idx = Math.min(4, Math.max(0, 5 - star));
+      buckets[idx]++;
+    });
+    return buckets;
+  }, [photographerData.reviews]);
+
+  const renderStars = (rating: number, size = 14) => {
     const stars = [];
     for (let i = 1; i <= 5; i++) {
       stars.push(
         <i
           key={i}
           className={i <= rating ? 'bi bi-star-fill' : 'bi bi-star'}
-          style={{ color: '#FFA500', fontSize: '14px' }}
-        ></i>
+          style={{ color: '#f59e0b', fontSize: size }}
+        />
       );
     }
     return stars;
   };
 
-  // Loading State
+  const maskPhone = (p: string) => {
+    if (!p) return '';
+    return p.length > 4 ? `${p.slice(0, 3)}····${p.slice(-2)}` : '····';
+  };
+  const maskEmail = (e: string) => {
+    if (!e) return '';
+    const [user, domain] = e.split('@');
+    if (!user || !domain) return '····';
+    const u = user.length > 2 ? `${user.slice(0, 2)}····` : '····';
+    return `${u}@${domain}`;
+  };
+
+  // ----- Loading state — branded skeleton -----
   if (isLoading) {
     return (
       <>
         <AmoriaKNavbar />
-        <div style={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          minHeight: '80vh',
-          backgroundColor: '#f9fafb',
-        }}>
-          <div style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '1rem',
-          }}>
-            <div style={{
-              width: '48px',
-              height: '48px',
-              border: '4px solid #e5e7eb',
-              borderTopColor: '#083A85',
-              borderRadius: '50%',
-              animation: 'spin 1s linear infinite',
-            }}></div>
-            <p style={{ color: '#6b7280', fontSize: '1rem' }}>Loading photographer profile...</p>
-            <style>{`
-              @keyframes spin {
-                to { transform: rotate(360deg); }
-              }
-            `}</style>
-          </div>
-        </div>
+        <ProfileSkeleton loadingLabel={t('loadingProfile')} />
       </>
     );
   }
 
-  // Error State
-  if (fetchError) {
+  // ----- Error / not-found state -----
+  if (fetchError || !photographer) {
     return (
       <>
         <AmoriaKNavbar />
-        <div style={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          minHeight: '80vh',
-          backgroundColor: '#f9fafb',
-        }}>
-          <div style={{
-            textAlign: 'center',
-            padding: '2rem',
-            backgroundColor: '#fef2f2',
-            borderRadius: '12px',
-            border: '1px solid #fecaca',
-            maxWidth: '400px',
-          }}>
-            <i className="bi bi-exclamation-circle" style={{ fontSize: '3rem', color: '#dc2626' }}></i>
-            <h2 style={{ color: '#dc2626', marginTop: '1rem', fontSize: '1.25rem', fontWeight: '600' }}>
-              Error Loading Profile
-            </h2>
-            <p style={{ color: '#991b1b', marginTop: '0.5rem' }}>{fetchError}</p>
-            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '1.5rem' }}>
-              <button
-                onClick={() => window.location.reload()}
-                style={{
-                  padding: '0.5rem 1.5rem',
-                  backgroundColor: '#083A85',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontWeight: '500',
-                }}
-              >
-                Try Again
-              </button>
-              <button
-                onClick={() => window.history.back()}
-                style={{
-                  padding: '0.5rem 1.5rem',
-                  backgroundColor: '#ffffff',
-                  color: '#374151',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontWeight: '500',
-                }}
-              >
-                Go Back
-              </button>
-            </div>
-          </div>
-        </div>
+        <ProfileError message={fetchError || 'Photographer not found'} />
       </>
     );
   }
 
-  // Not Found State
-  if (!photographer) {
-    return (
-      <>
-        <AmoriaKNavbar />
-        <div style={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          minHeight: '80vh',
-          backgroundColor: '#f9fafb',
-        }}>
-          <div style={{
-            textAlign: 'center',
-            padding: '2rem',
-          }}>
-            <i className="bi bi-person-x" style={{ fontSize: '4rem', color: '#9ca3af' }}></i>
-            <h2 style={{ color: '#374151', marginTop: '1rem', fontSize: '1.5rem', fontWeight: '600' }}>
-              Photographer Not Found
-            </h2>
-            <p style={{ color: '#6b7280', marginTop: '0.5rem' }}>
-              The photographer you're looking for doesn't exist or has been removed.
-            </p>
-            <button
-              onClick={() => window.location.href = '/user/photographers'}
-              style={{
-                marginTop: '1.5rem',
-                padding: '0.75rem 2rem',
-                backgroundColor: '#083A85',
-                color: 'white',
-                border: 'none',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                fontWeight: '500',
-              }}
-            >
-              Browse Photographers
-            </button>
-          </div>
-        </div>
-      </>
-    );
-  }
-
+  // ----- Main render -----
   return (
     <>
       <AmoriaKNavbar />
-
-
-      {/* CSS Animation Keyframes */}
-      <style jsx>{`
-        @keyframes slideDown {
-          from {
-            transform: translateY(-100%);
-            opacity: 0;
+      <main className="vp-root">
+        {/* ===========  HERO  =========== */}
+        <section
+          className={`vp-hero${photographerData.backgroundImage ? '' : ' vp-hero--no-cover'}`}
+          aria-labelledby="vp-name"
+          style={
+            photographerData.backgroundImage
+              ? { backgroundImage: `url("${photographerData.backgroundImage}")` }
+              : undefined
           }
-          to {
-            transform: translateY(0);
-            opacity: 1;
-          }
-        }
-        @keyframes spin {
-          from {
-            transform: rotate(0deg);
-          }
-          to {
-            transform: rotate(360deg);
-          }
-        }
-      `}</style>
-
-      <div className="min-h-screen bg-white" style={{ opacity: isLoading ? 0 : 1, transition: 'opacity 0.3s ease-in' }}>
-        {/* Header Section - Matching Photographers Card Design */}
-      <div
-        style={{
-          position: 'relative',
-          margin: isMobile ? '0 clamp(12px, 3vw, 24px)' : '0 24px',
-          marginTop: isMobile ? 'clamp(12px, 3vw, 20px)' : '20px',
-        }}
-      >
-        {/* Banner Container with Border - 50% Taller */}
-        <div
-          style={{
-            position: 'relative',
-            height: isMobile ? 'clamp(180px, 35vw, 270px)' : '270px',
-            ...(photographerData.backgroundImage
-              ? { backgroundImage: `url("${photographerData.backgroundImage}")`, backgroundSize: 'cover' as const, backgroundPosition: 'center' }
-              : { backgroundColor: '#edf1f5' }),
-            borderRadius: isMobile ? 'clamp(12px, 3vw, 17px)' : '17px',
-            border: isMobile ? '2px solid #bab8b8' : '3px solid #bab8b8',
-            overflow: 'hidden',
-            cursor: 'pointer',
-            transition: 'all 0.3s ease',
-          }}
-          onClick={() => openImageViewer('cover')}
-          onMouseEnter={(e) => {
-            if (!isMobile) {
-              e.currentTarget.style.transform = 'scale(1.01)';
-              e.currentTarget.style.boxShadow = '0 8px 20px rgba(0, 0, 0, 0.15)';
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (!isMobile) {
-              e.currentTarget.style.transform = 'scale(1)';
-              e.currentTarget.style.boxShadow = 'none';
-            }
-          }}
-        >
-          {!photographerData.backgroundImage && (
-            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <i className="bi bi-image" style={{ fontSize: isMobile ? '3rem' : '4rem', color: '#94a3b8' }}></i>
-            </div>
-          )}
-          {/* Back Button - Glassmorphism */}
-          <button
-              onClick={(e) => {
-                e.stopPropagation();
-                window.history.back();
-              }}
-              style={{
-                  position: 'absolute',
-                  top: isMobile ? 'clamp(12px, 3vw, 20px)' : '20px',
-                  left: isMobile ? 'clamp(12px, 3vw, 20px)' : '20px',
-                  zIndex: 10,
-                  width: isMobile ? 'clamp(36px, 8vw, 40px)' : '40px',
-                  height: isMobile ? 'clamp(36px, 8vw, 40px)' : '40px',
-                  borderRadius: '50%',
-                  backgroundColor: 'rgba(255, 255, 255, 0.15)',
-                  backdropFilter: 'blur(10px)',
-                  WebkitBackdropFilter: 'blur(10px)',
-                  border: '1px solid rgba(255, 255, 255, 0.2)',
-                  color: '#fff',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease',
-                  boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)',
-              }}
-              onMouseEnter={(e) => {
-                if (!isMobile) {
-                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.25)';
-                  e.currentTarget.style.transform = 'scale(1.05)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isMobile) {
-                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.15)';
-                  e.currentTarget.style.transform = 'scale(1)';
-                }
-              }}
-              aria-label="Go back"
-              >
-              <i className="bi bi-chevron-left" style={{ fontSize: isMobile ? 'clamp(16px, 4vw, 20px)' : '20px', fontWeight: 'bold' }}></i>
-          </button>
-
-          {/* View Full Size Indicator */}
-          <div
-            style={{
-              position: 'absolute',
-              top: '20px',
-              right: '20px',
-              zIndex: 10,
-              padding: '8px 16px',
-              backgroundColor: 'rgba(255, 255, 255, 0.15)',
-              backdropFilter: 'blur(10px)',
-              WebkitBackdropFilter: 'blur(10px)',
-              border: '1px solid rgba(255, 255, 255, 0.2)',
-              borderRadius: '20px',
-              color: '#fff',
-              fontSize: '12px',
-              fontWeight: '600',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              pointerEvents: 'none',
-            }}
-          >
-            <i className="bi bi-arrows-fullscreen" style={{ fontSize: '14px' }}></i>
-            {t('viewFull')}
-          </div>
-
-          {/* Overlay - Matching photographers.tsx */}
-          <div
-            style={{
-              position: 'absolute',
-              inset: 0,
-              backgroundColor: 'rgba(13, 27, 42, 0.3)',
-              borderRadius: '17px',
-            }}
-          ></div>
-        </div>
-
-        {/* Profile Picture Container - Positioned with click to view */}
-        <div
-          style={{
-            position: 'absolute',
-            top: isMobile ? 'clamp(140px, 28vw, 210px)' : '210px',
-            left: isMobile ? 'clamp(12px, 3vw, 20px)' : '20px',
-            width: isMobile ? 'clamp(70px, 16vw, 90px)' : '110px',
-            height: isMobile ? 'clamp(70px, 16vw, 90px)' : '110px',
-            zIndex: 10,
-            cursor: 'pointer',
-          }}
-          onClick={() => openImageViewer('profile')}
         >
           <div
-            style={{
-              position: 'relative',
-              width: '100%',
-              height: '100%',
-              transition: 'transform 0.3s ease',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'scale(1.08)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'scale(1)';
+            className="vp-hero-cover"
+            role={photographerData.backgroundImage ? 'button' : undefined}
+            tabIndex={photographerData.backgroundImage ? 0 : -1}
+            aria-label={photographerData.backgroundImage ? 'View cover image' : 'No cover image'}
+            onClick={() => openImageViewer('cover')}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                openImageViewer('cover');
+              }
             }}
           >
-            {photographerData.profileImage ? (
-              <img
-                src={photographerData.profileImage}
-                alt={photographerData.name}
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  borderRadius: '50%',
-                  border: '2px solid white',
-                  objectFit: 'cover',
-                  objectPosition: 'center',
-                  display: 'block',
-                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
-                }}
-                loading="lazy"
-              />
-            ) : (
-              <div style={{
-                width: '100%',
-                height: '100%',
-                borderRadius: '50%',
-                border: '3px solid white',
-                backgroundColor: '#cbd5e1',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
-              }}>
-                <i className="bi bi-person-fill" style={{ fontSize: isMobile ? '2.5rem' : '3.5rem', color: '#94a3b8' }}></i>
-              </div>
-            )}
-            {/* Verification Badge - only shown when photographer is verified */}
-            {photographer?.isVerified && (
-              <div
-                style={{
-                  position: 'absolute',
-                  bottom: '0px',
-                  right: '0px',
-                  background: 'white',
-                  borderRadius: '50%',
-                  width: '24px',
-                  height: '24px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: '0 2px 4px rgba(0, 0, 0, 0.15)',
-                  zIndex: 5,
-                }}
-              >
-                <i className="bi bi-patch-check-fill" style={{ color: '#3b82f6', fontSize: '1rem' }}></i>
+            {/* Brand-blue overlay + dot pattern for readability + brand identity */}
+            <div className="vp-hero-cover-tint" aria-hidden="true" />
+            <div className="vp-hero-cover-pattern" aria-hidden="true" />
+
+            {/* Empty-state placeholder — shown when the photographer has no cover image */}
+            {!photographerData.backgroundImage && (
+              <div className="vp-hero-cover-empty" aria-hidden="true">
+                <i className="bi bi-image" />
               </div>
             )}
 
-            {/* Hover overlay indicator */}
-            <div
-              style={{
-                position: 'absolute',
-                inset: 0,
-                borderRadius: '50%',
-                backgroundColor: 'rgba(0, 0, 0, 0)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                transition: 'background-color 0.3s ease',
-                pointerEvents: 'none',
-              }}
-              className="profile-hover-overlay"
-            >
-              <i className="bi bi-eye view-icon" style={{ color: 'white', fontSize: '20px', opacity: 0, transition: 'opacity 0.3s ease' }}></i>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Profile Section - White Background with Shadow */}
-      <div
-        style={{
-          backgroundColor: '#fff',
-          position: 'relative',
-          zIndex: 5,
-          paddingBottom: isMobile ? 'clamp(16px, 4vw, 24px)' : '24px',
-          marginTop: '0',
-          marginRight: isMobile ? 'clamp(12px, 3vw, 24px)' : '24px',
-          marginBottom: '0',
-          marginLeft: isMobile ? 'clamp(12px, 3vw, 24px)' : '24px',
-          boxShadow: '0 2px 10px rgba(0, 0, 0, 0.05)',
-          borderRadius: isMobile ? '0 0 clamp(12px, 3vw, 17px) clamp(12px, 3vw, 17px)' : '0 0 17px 17px',
-          border: isMobile ? '2px solid #bab8b8' : '3px solid #bab8b8',
-          borderTop: 'none',
-        }}
-      >
-        {/* Profile Content - Hybrid Layout */}
-        <div
-          style={{
-            paddingTop: isMobile ? 'clamp(40px, 9vw, 52px)' : '58px',
-            paddingLeft: isMobile ? 'clamp(12px, 3vw, 16px)' : '16px',
-            paddingRight: isMobile ? 'clamp(12px, 3vw, 16px)' : '16px',
-            paddingBottom: isMobile ? 'clamp(12px, 3vw, 16px)' : '16px',
-            display: 'flex',
-            flexDirection: isMobile ? 'column' : 'row',
-            justifyContent: 'space-between',
-            alignItems: isMobile ? 'stretch' : 'flex-start',
-            gap: isMobile ? 'clamp(16px, 4vw, 20px)' : '20px',
-          }}
-        >
-          {/* Left Side - Name, Location, and Stats under profile photo */}
-          <div style={{ flex: 1 }}>
-            {/* Name and Type Badge */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px', flexWrap: 'wrap' }}>
-              <h3 style={{
-                fontSize: '20px',
-                fontWeight: '700',
-                color: '#111827',
-                margin: 0,
-              }}>
-                {photographerData.name}
-              </h3>
-              {photographer?.isVerified && (
-                <i className="bi bi-patch-check-fill" style={{ color: '#3b82f6', fontSize: '18px' }} title="Verified"></i>
-              )}
-              {photographerData.customerType && (
-                <span style={{
-                  padding: '3px 10px',
-                  backgroundColor: '#f0f9ff',
-                  border: '1px solid #bfdbfe',
-                  borderRadius: '12px',
-                  fontSize: '12px',
-                  fontWeight: '600',
-                  color: '#083A85',
-                }}>
-                  {photographerData.customerType}
-                </span>
-              )}
-            </div>
-
-            {/* Location and Member Since */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '16px' }}>
-              {photographerData.location && (
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  color: '#40444d',
-                  fontSize: '15px',
-                }}>
-                  <i className="bi bi-geo-alt-fill" style={{ fontSize: '15px' }}></i>
-                  <span>{photographerData.location}</span>
-                </div>
-              )}
-              {photographerData.joinedFrom && (
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  color: '#6b7280',
-                  fontSize: '13px',
-                }}>
-                  <i className="bi bi-calendar3" style={{ fontSize: '13px' }}></i>
-                  <span>Member since {photographerData.joinedFrom}</span>
-                </div>
-              )}
-            </div>
-
-            {/* Stats Row */}
-            <div style={{
-              display: 'flex',
-              gap: '24px',
-              alignItems: 'center',
-              marginTop: '12px',
-            }}>
-              {/* Rating */}
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-              }}>
-                <i className="bi bi-star-fill" style={{ color: '#FFA500', fontSize: '16px' }}></i>
-                <span style={{
-                  fontSize: '16px',
-                  fontWeight: '700',
-                  color: '#111827',
-                }}>
-                  {photographerData.rating}
-                </span>
-                <span style={{
-                  fontSize: '14px',
-                  color: '#6b7280',
-                  fontWeight: '500',
-                }}>
-                  Rating
-                </span>
-              </div>
-
-              {/* Events Completed */}
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-              }}>
-                <i className="bi bi-calendar-check-fill" style={{ color: '#083A85', fontSize: '16px' }}></i>
-                <span style={{
-                  fontSize: '16px',
-                  fontWeight: '700',
-                  color: '#111827',
-                }}>
-                  {photographerData.eventsCompleted}+
-                </span>
-                <span style={{
-                  fontSize: '14px',
-                  color: '#6b7280',
-                  fontWeight: '500',
-                }}>
-                  {t('events')}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Middle Section - Availability, Working Hours, Starting Price */}
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: isMobile ? 'column' : 'row',
-              gap: isMobile ? '20px' : '72px',
-              alignItems: isMobile ? 'flex-start' : 'center',
-              flex: isMobile ? 'none' : 2,
-              justifyContent: 'flex-start',
-              paddingLeft: isMobile ? '0' : '40px',
-            }}
-          >
-            {/* Availability */}
-            <div>
-              <div
-                style={{
-                  fontSize: '11px',
-                  fontWeight: '600',
-                  color: '#083A85',
-                  marginBottom: '4px',
-                  letterSpacing: '0.3px',
-                  textTransform: 'uppercase',
-                }}
-              >
-                {t('overview.availability')}
-              </div>
-              <div style={{ fontSize: '14px', color: '#111827', fontWeight: '600' }}>
-                {(() => {
-                  const avails = photographer?.availabilities?.filter(a => a.isAvailable !== false) || [];
-                  if (avails.length === 0) return 'Contact for availability';
-                  if (avails.length === 7) return 'Monday - Sunday';
-                  return avails.map(a => a.dayOfWeek.charAt(0).toUpperCase() + a.dayOfWeek.slice(1).toLowerCase()).join(', ');
-                })()}
-              </div>
-            </div>
-
-            {/* Working Hours */}
-            <div>
-              <div
-                style={{
-                  fontSize: '11px',
-                  fontWeight: '600',
-                  color: '#083A85',
-                  marginBottom: '4px',
-                  letterSpacing: '0.3px',
-                  textTransform: 'uppercase',
-                }}
-              >
-                {t('overview.workingHours')}
-              </div>
-              <div
-                style={{
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  color: '#111827',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                <i className="bi bi-clock-fill" style={{ color: '#083A85', fontSize: '14px' }}></i>
-                {(() => {
-                  const avails = photographer?.availabilities?.filter(a => a.isAvailable !== false) || [];
-                  if (avails.length === 0) return 'Contact for hours';
-                  const first = avails[0];
-                  return `${formatTimeValue(first.startTime)} - ${formatTimeValue(first.endTime)}`;
-                })()}
-              </div>
-            </div>
-
-            {/* Starting Price */}
-            <div>
-              <div
-                style={{
-                  fontSize: '11px',
-                  fontWeight: '600',
-                  color: '#083A85',
-                  marginBottom: '4px',
-                  letterSpacing: '0.3px',
-                  textTransform: 'uppercase',
-                }}
-              >
-                {t('overview.startingPrice')}
-              </div>
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                <i className="bi bi-tag-fill" style={{ color: '#10b981', fontSize: '14px' }}></i>
-                <span
-                  style={{
-                    fontSize: '16px',
-                    color: '#10b981',
-                    fontWeight: '700',
-                  }}
-                >
-                  {(() => {
-                    const activePkgs = (photographer?.packages || []).filter(p => p.isActive);
-                    if (activePkgs.length === 0) return 'Contact for pricing';
-                    const cheapest = activePkgs.reduce((min, p) => p.price < min.price ? p : min, activePkgs[0]);
-                    const sym = cheapest.currencySymbol || '';
-                    return `${sym}${cheapest.price.toLocaleString()} / ${cheapest.priceUnit || 'Event'}`;
-                  })()}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Right Side - Modern Action Buttons */}
-          <div style={{
-            display: 'flex',
-            flexDirection: isMobile ? 'column' : 'row',
-            gap: isMobile ? 'clamp(10px, 2.5vw, 12px)' : '12px',
-            alignItems: 'stretch',
-            width: isMobile ? '100%' : 'auto',
-          }}>
-            <button
-              onClick={handleBookNowClick}
-              style={{
-                padding: isMobile ? 'clamp(12px, 3vw, 14px) clamp(20px, 5vw, 24px)' : '12px 24px',
-                backgroundColor: '#083A85',
-                color: 'white',
-                border: 'none',
-                borderRadius: isMobile ? 'clamp(6px, 1.5vw, 8px)' : '8px',
-                fontSize: isMobile ? 'clamp(14px, 3.5vw, 15px)' : '15px',
-                fontWeight: '600',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: isMobile ? 'clamp(6px, 1.5vw, 8px)' : '8px',
-                boxShadow: '0 4px 12px rgba(8, 58, 133, 0.25)',
-                transition: 'all 0.3s ease',
-                whiteSpace: 'nowrap',
-              }}
-              onMouseEnter={(e) => {
-                if (!isMobile) {
-                  e.currentTarget.style.backgroundColor = '#062d6b';
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 6px 16px rgba(8, 58, 133, 0.35)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isMobile) {
-                  e.currentTarget.style.backgroundColor = '#083A85';
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(8, 58, 133, 0.25)';
-                }
-              }}
-            >
-              <i className="bi bi-calendar-check" style={{ fontSize: isMobile ? 'clamp(14px, 3.5vw, 16px)' : '16px' }}></i>
-              {t('bookNow')}
-            </button>
-
-          </div>
-        </div>
-
-        {/* Tabs - Rounded Pill Style */}
-        <div
-          style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: isMobile ? '8px' : '10px',
-            padding: isMobile ? '12px 12px' : '16px 16px',
-            backgroundColor: '#f3f4f6',
-            borderRadius: '12px',
-            margin: '0',
-          }}
-        >
-          {[
-            { key: 'overview', label: t('tabs.overview'), icon: 'bi-person-lines-fill' },
-            { key: 'portfolio', label: t('tabs.portfolio'), icon: 'bi-briefcase-fill' },
-            { key: 'reviews', label: t('tabs.reviews'), icon: 'bi-chat-square-quote-fill' },
-            { key: 'working-experience', label: t('tabs.workingExperience'), icon: 'bi-building' }
-          ].map((tab) => {
-            const isActive = activeTab === tab.key;
-            return (
+            {/* Top toolbar */}
+            <div className="vp-hero-toolbar">
               <button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
-                style={{
-                  flex: isMobile ? '1 1 calc(50% - 4px)' : '1 1 0',
-                  padding: isMobile ? '10px 12px' : '12px 20px',
-                  border: 'none',
-                  backgroundColor: isActive ? '#083A85' : '#fff',
-                  fontSize: isMobile ? '13px' : '14px',
-                  fontWeight: isActive ? '700' : '600',
-                  color: isActive ? '#fff' : '#4b5563',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease',
-                  borderRadius: '10px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                  boxShadow: isActive
-                    ? '0 4px 12px rgba(8, 58, 133, 0.3)'
-                    : '0 1px 3px rgba(0, 0, 0, 0.08)',
-                  whiteSpace: 'nowrap',
+                type="button"
+                className="vp-icon-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (typeof window !== 'undefined') window.history.back();
                 }}
-                onMouseEnter={(e) => {
-                  if (!isActive && !isMobile) {
-                    e.currentTarget.style.backgroundColor = '#e5e7eb';
-                    e.currentTarget.style.color = '#083A85';
-                    e.currentTarget.style.transform = 'translateY(-1px)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isActive && !isMobile) {
-                    e.currentTarget.style.backgroundColor = '#fff';
-                    e.currentTarget.style.color = '#4b5563';
-                    e.currentTarget.style.transform = 'translateY(0)';
-                  }
-                }}
+                aria-label="Go back"
               >
-                <i className={`bi ${tab.icon}`} style={{ fontSize: isMobile ? '14px' : '15px' }}></i>
-                {tab.label}
+                <i className="bi bi-arrow-left" />
               </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Tab Content Area with Gray Background */}
-      <div style={{
-        backgroundColor: '#f0f4f8',
-        padding: isMobile ? 'clamp(16px, 4vw, 24px)' : '24px',
-        minHeight: isMobile ? '300px' : '400px'
-      }}>
-        <div style={{
-          padding: isMobile ? 'clamp(20px, 5vw, 32px)' : '32px',
-          backgroundColor: '#fff',
-          borderRadius: isMobile ? 'clamp(12px, 3vw, 16px)' : '16px',
-          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
-          transition: 'all 0.3s ease',
-        }}>
-          {activeTab === 'overview' && (
-            <div>
-              {/* About Section - Enhanced */}
-              <div style={{ marginBottom: '32px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-                  <div style={{
-                    width: '4px',
-                    height: '24px',
-                    backgroundColor: '#083A85',
-                    borderRadius: '2px',
-                  }}></div>
-                  <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#000', margin: 0 }}>
-                    {t('overview.about')}
-                  </h3>
-                </div>
-                {photographerData.about ? (
-                  <p style={{
-                    fontSize: '16px',
-                    color: '#4b5563',
-                    lineHeight: '1.8',
-                    padding: '16px',
-                    backgroundColor: '#f9fafb',
-                    borderRadius: '10px',
-                  }}>
-                    {photographerData.about}
-                  </p>
-                ) : (
-                  <p style={{ fontSize: '14px', color: '#9ca3af', fontStyle: 'italic', padding: '16px', backgroundColor: '#f9fafb', borderRadius: '10px' }}>
-                    No bio available yet.
-                  </p>
-                )}
-              </div>
-
-              {/* Specialties Section - Enhanced with Icons */}
-              <div style={{ marginBottom: '32px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-                  <div style={{
-                    width: '4px',
-                    height: '24px',
-                    backgroundColor: '#083A85',
-                    borderRadius: '2px',
-                  }}></div>
-                  <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#000', margin: 0 }}>
-                    {t('overview.specialties')}
-                  </h3>
-                </div>
-                {photographerData.specialties.length > 0 ? (
-                  <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    {photographerData.specialties.map((specialty, index) => (
-                      <li
-                        key={index}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '10px',
-                          fontSize: '15px',
-                          color: '#374151',
-                          fontWeight: '500',
-                          padding: '6px 0',
-                        }}
-                      >
-                        <i className="bi bi-check-circle-fill" style={{ color: '#083A85', fontSize: '16px', flexShrink: 0 }}></i>
-                        {specialty}
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p style={{ fontSize: '14px', color: '#9ca3af', fontStyle: 'italic' }}>No specialties listed yet.</p>
-                )}
-              </div>
-
-              {/* Equipments Section - Enhanced Grid Layout */}
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-                  <div style={{
-                    width: '4px',
-                    height: '24px',
-                    backgroundColor: '#083A85',
-                    borderRadius: '2px',
-                  }}></div>
-                  <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#000', margin: 0 }}>
-                    {t('overview.equipment')}
-                  </h3>
-                </div>
-                {photographerData.equipments.length > 0 ? (
-                  <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    {photographerData.equipments.map((equipment, index) => (
-                      <li
-                        key={index}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '10px',
-                          fontSize: '15px',
-                          color: '#374151',
-                          fontWeight: '500',
-                          padding: '6px 0',
-                        }}
-                      >
-                        <i className="bi bi-check-circle-fill" style={{ color: '#083A85', fontSize: '16px', flexShrink: 0 }}></i>
-                        {equipment}
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p style={{ fontSize: '14px', color: '#9ca3af', fontStyle: 'italic' }}>{t('overview.noEquipment')}</p>
-                )}
-              </div>
-
-              {/* Booked Dates Mini Calendar */}
-              <div style={{ marginTop: '32px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-                  <div style={{ width: '4px', height: '24px', backgroundColor: '#083A85', borderRadius: '2px' }}></div>
-                  <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#000', margin: 0 }}>
-                    Availability Calendar
-                  </h3>
-                </div>
-                <div style={{
-                  maxWidth: '420px',
-                  backgroundColor: '#fff',
-                  border: '1px solid #e5e7eb',
-                  borderRadius: '16px',
-                  padding: isMobile ? '16px' : '20px',
-                  boxShadow: '0 2px 10px rgba(0, 0, 0, 0.06)',
-                }}>
-                  {/* Month navigation */}
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-                    <button
-                      onClick={() => {
-                        setBookedCalendarMonth(prev => {
-                          const d = new Date(prev.year, prev.month - 1, 1);
-                          return { year: d.getFullYear(), month: d.getMonth() };
-                        });
-                      }}
-                      style={{
-                        width: '36px',
-                        height: '36px',
-                        borderRadius: '50%',
-                        border: '1px solid #e5e7eb',
-                        backgroundColor: '#fff',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '16px',
-                        color: '#083A85',
-                        transition: 'all 0.2s ease',
-                      }}
-                      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#f0f9ff'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#fff'; }}
-                    >
-                      <i className="bi bi-chevron-left"></i>
-                    </button>
-                    <span style={{ fontSize: '16px', fontWeight: '700', color: '#111827' }}>
-                      {new Date(bookedCalendarMonth.year, bookedCalendarMonth.month).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-                    </span>
-                    <button
-                      onClick={() => {
-                        setBookedCalendarMonth(prev => {
-                          const d = new Date(prev.year, prev.month + 1, 1);
-                          return { year: d.getFullYear(), month: d.getMonth() };
-                        });
-                      }}
-                      style={{
-                        width: '36px',
-                        height: '36px',
-                        borderRadius: '50%',
-                        border: '1px solid #e5e7eb',
-                        backgroundColor: '#fff',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '16px',
-                        color: '#083A85',
-                        transition: 'all 0.2s ease',
-                      }}
-                      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#f0f9ff'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#fff'; }}
-                    >
-                      <i className="bi bi-chevron-right"></i>
-                    </button>
-                  </div>
-                  {/* Day headers */}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px', marginBottom: '8px' }}>
-                    {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => (
-                      <div key={d} style={{ textAlign: 'center', fontSize: '12px', fontWeight: '700', color: '#9ca3af', padding: '4px 0', textTransform: 'uppercase' }}>{d}</div>
-                    ))}
-                  </div>
-                  {/* Calendar grid */}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px' }}>
-                    {(() => {
-                      const { year, month } = bookedCalendarMonth;
-                      const firstDay = new Date(year, month, 1).getDay();
-                      const daysInMonth = new Date(year, month + 1, 0).getDate();
-                      const today = new Date();
-                      today.setHours(0, 0, 0, 0);
-
-                      // Pick one representative row per date; event > preparation > delivery
-                      const priority = { event: 3, preparation: 2, delivery: 1 } as const;
-                      const bookedSet = new Map<string, BookedDate>();
-                      bookedDates.forEach(b => {
-                        const existing = bookedSet.get(b.date);
-                        if (!existing || priority[b.reason] > priority[existing.reason]) bookedSet.set(b.date, b);
-                      });
-
-                      const cells = [];
-                      for (let i = 0; i < firstDay; i++) {
-                        cells.push(<div key={`empty-${i}`}></div>);
-                      }
-                      for (let day = 1; day <= daysInMonth; day++) {
-                        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                        const dateObj = new Date(year, month, day);
-                        const isPast = dateObj < today;
-                        const booked = bookedSet.get(dateStr);
-                        const isToday = dateObj.getTime() === today.getTime();
-                        const reason = booked?.reason;
-                        const isPartialEvent = reason === 'event' && booked?.isFullDay === false;
-                        const isFullEvent = reason === 'event' && booked?.isFullDay === true;
-                        const isAvailable = !isPast && !booked && !isToday;
-
-                        // Color per reason
-                        let bg = 'transparent', fg = '#374151', border = '1px solid transparent';
-                        if (isPast) fg = '#d1d5db';
-                        else if (isFullEvent) { bg = '#ef4444'; fg = '#fff'; }
-                        else if (isPartialEvent) { bg = '#fef3c7'; }
-                        else if (reason === 'preparation') { bg = '#e2e8f0'; fg = '#1f2937'; }
-                        else if (reason === 'delivery') { bg = '#c7d2fe'; fg = '#1e3a8a'; }
-                        else if (isToday) { bg = '#dbeafe'; fg = '#083A85'; border = '2px solid #083A85'; }
-                        else if (isAvailable) { bg = '#f0fdf4'; border = '1px solid #bbf7d0'; }
-
-                        let title: string | undefined;
-                        if (isFullEvent) title = 'Booked — event day';
-                        else if (isPartialEvent && booked?.startTime && booked?.endTime) title = `Event booked: ${formatTimeValue(booked.startTime)} - ${formatTimeValue(booked.endTime)}`;
-                        else if (reason === 'preparation') title = `Prep day (event on ${booked?.eventDate})`;
-                        else if (reason === 'delivery' && booked?.deliveryDayIndex && booked?.deliveryDaysTotal) title = `Delivery day ${booked.deliveryDayIndex} of ${booked.deliveryDaysTotal} (event on ${booked.eventDate})`;
-                        else if (isAvailable) title = 'Available';
-
-                        cells.push(
-                          <div
-                            key={day}
-                            title={title}
-                            style={{
-                              textAlign: 'center',
-                              padding: '8px 0',
-                              fontSize: '13px',
-                              fontWeight: isToday ? '800' : '500',
-                              color: fg,
-                              backgroundColor: bg,
-                              borderRadius: '50%',
-                              aspectRatio: '1',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              cursor: 'default',
-                              border,
-                              position: 'relative',
-                              transition: 'all 0.2s ease',
-                            }}
-                          >
-                            {day}
-                            {isPartialEvent && (
-                              <div style={{
-                                position: 'absolute',
-                                bottom: '4px',
-                                left: '50%',
-                                transform: 'translateX(-50%)',
-                                width: '4px',
-                                height: '4px',
-                                borderRadius: '50%',
-                                backgroundColor: '#f59e0b',
-                              }}></div>
-                            )}
-                          </div>
-                        );
-                      }
-                      return cells;
-                    })()}
-                  </div>
-                  {/* Legend */}
-                  <div style={{ display: 'flex', gap: '12px', marginTop: '16px', paddingTop: '12px', borderTop: '1px solid #f3f4f6', fontSize: '11px', color: '#6b7280', flexWrap: 'wrap' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                      <div style={{ width: '10px', height: '10px', backgroundColor: '#f0fdf4', borderRadius: '50%', border: '1px solid #bbf7d0' }}></div>
-                      Available
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                      <div style={{ width: '10px', height: '10px', backgroundColor: '#e2e8f0', borderRadius: '50%' }}></div>
-                      Prep day
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                      <div style={{ width: '10px', height: '10px', backgroundColor: '#ef4444', borderRadius: '50%' }}></div>
-                      Event
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                      <div style={{ width: '10px', height: '10px', backgroundColor: '#fef3c7', borderRadius: '50%', border: '1px solid #fde68a' }}></div>
-                      Partial event
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                      <div style={{ width: '10px', height: '10px', backgroundColor: '#c7d2fe', borderRadius: '50%' }}></div>
-                      Delivery
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                      <div style={{ width: '10px', height: '10px', backgroundColor: '#dbeafe', borderRadius: '50%', border: '2px solid #083A85' }}></div>
-                      Today
-                    </div>
-                  </div>
-                </div>
+              <div className="vp-hero-toolbar-right">
+                <button
+                  type="button"
+                  className="vp-icon-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleShare();
+                  }}
+                  aria-label="Share profile"
+                >
+                  <i className="bi bi-share" />
+                </button>
+                <button type="button" className="vp-icon-btn" aria-label="Save photographer">
+                  <i className="bi bi-bookmark" />
+                </button>
               </div>
             </div>
-          )}
+          </div>
 
-          {activeTab === 'portfolio' && (
-            <div>
-              {/* Professional Beliefs - Enhanced with Quote Design */}
-              {photographerData.portfolio.beliefs && (
-                <div style={{ marginBottom: '36px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-                    <div style={{
-                      width: '4px',
-                      height: '24px',
-                      backgroundColor: '#083A85',
-                      borderRadius: '2px',
-                    }}></div>
-                    <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#000', margin: 0 }}>
-                      Professional Philosophy
-                    </h3>
-                  </div>
-                  <div style={{
-                    position: 'relative',
-                    padding: '24px 28px',
-                    backgroundColor: 'linear-gradient(135deg, #f0f9ff 0%, #dbeafe 100%)',
-                    background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
-                    borderRadius: '12px',
-                    boxShadow: '0 4px 12px rgba(8, 58, 133, 0.1)',
-                  }}>
-                    <i className="bi bi-quote" style={{
-                      position: 'absolute',
-                      top: '10px',
-                      left: '16px',
-                      fontSize: '36px',
-                      color: 'rgba(8, 58, 133, 0.15)',
-                    }}></i>
-                    <p style={{
-                      fontSize: '16px',
-                      color: '#1e3a8a',
-                      lineHeight: '1.8',
-                      fontStyle: 'italic',
-                      margin: 0,
-                      paddingLeft: '20px',
-                    }}>
-                      "{photographerData.portfolio.beliefs}"
-                    </p>
-                  </div>
+          {/* Identity strip — straddles cover bottom (frosted-glass band) */}
+          <div className="vp-hero-content">
+            <div className="vp-hero-content-inner">
+            <div
+              className="vp-avatar"
+              role="button"
+              tabIndex={photographerData.profileImage ? 0 : -1}
+              onClick={() => openImageViewer('profile')}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  openImageViewer('profile');
+                }
+              }}
+              aria-label={photographerData.profileImage ? 'View profile photo' : 'No profile photo'}
+            >
+              {photographerData.profileImage ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img src={photographerData.profileImage} alt={photographerData.name} loading="lazy" />
+              ) : (
+                <div className="vp-avatar-empty" aria-hidden="true">
+                  <i className="bi bi-person-fill" />
                 </div>
               )}
-
-              {/* Skills - Enhanced with Better Visual Design */}
-              <div style={{ marginBottom: '36px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
-                  <div style={{
-                    width: '4px',
-                    height: '24px',
-                    backgroundColor: '#083A85',
-                    borderRadius: '2px',
-                  }}></div>
-                  <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#000', margin: 0 }}>
-                    {t('portfolio.professionalSkills')}
-                  </h3>
-                </div>
-                {photographerData.portfolio.skills.length > 0 ? (
-                  <div style={{ display: 'grid', gap: '16px' }}>
-                    {photographerData.portfolio.skills.map((skill, index) => (
-                      <div key={index} style={{
-                        padding: '18px',
-                        backgroundColor: '#f9fafb',
-                        borderRadius: '10px',
-                        border: '1px solid #e5e7eb',
-                        transition: 'all 0.3s ease',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = '#f0f9ff';
-                        e.currentTarget.style.borderColor = '#083A85';
-                        e.currentTarget.style.transform = 'translateX(4px)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = '#f9fafb';
-                        e.currentTarget.style.borderColor = '#e5e7eb';
-                        e.currentTarget.style.transform = 'translateX(0)';
-                      }}
-                      >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                          <span style={{ fontSize: '16px', fontWeight: '600', color: '#1f2937' }}>
-                            {skill.name}
-                          </span>
-                          <span style={{
-                            fontSize: '15px',
-                            fontWeight: '700',
-                            color: '#fff',
-                            backgroundColor: '#083A85',
-                            padding: '4px 12px',
-                            borderRadius: '12px',
-                          }}>
-                            {skill.level}%
-                          </span>
-                        </div>
-                        <div style={{
-                          width: '100%',
-                          height: '10px',
-                          backgroundColor: '#e5e7eb',
-                          borderRadius: '10px',
-                          overflow: 'hidden',
-                          position: 'relative',
-                        }}>
-                          <div
-                            style={{
-                              width: `${skill.level}%`,
-                              height: '100%',
-                              background: 'linear-gradient(90deg, #083A85 0%, #3b82f6 100%)',
-                              borderRadius: '10px',
-                              transition: 'width 0.8s ease',
-                              boxShadow: '0 0 10px rgba(8, 58, 133, 0.3)',
-                            }}
-                          ></div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p style={{ fontSize: '14px', color: '#9ca3af', fontStyle: 'italic' }}>No skills listed yet.</p>
-                )}
-              </div>
-
-              {/* Education */}
-              <div style={{ marginBottom: '28px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
-                  <div style={{ width: '4px', height: '24px', backgroundColor: '#083A85', borderRadius: '2px' }}></div>
-                  <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#000', margin: 0 }}>
-                    {t('portfolio.education')}
-                  </h3>
-                </div>
-                {photographerData.portfolio.education.length > 0 ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {photographerData.portfolio.education.map((edu) => (
-                      <div
-                        key={edu.id}
-                        style={{
-                          padding: '14px',
-                          backgroundColor: '#f9fafb',
-                          borderRadius: '6px',
-                          border: '1px solid #e5e7eb',
-                        }}
-                      >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
-                          <h4 style={{ fontSize: '15px', fontWeight: '700', color: '#000' }}>
-                            {edu.degree}
-                          </h4>
-                          <span style={{ fontSize: '13px', fontWeight: '600', color: '#083A85', backgroundColor: '#dbeafe', padding: '3px 8px', borderRadius: '4px' }}>
-                            {edu.year}
-                          </span>
-                        </div>
-                        <p style={{ fontSize: '14px', fontWeight: '600', color: '#6b7280', marginBottom: '6px' }}>
-                          {edu.institution}
-                        </p>
-                        <p style={{ fontSize: '13px', color: '#4b5563', lineHeight: '1.5' }}>
-                          {edu.description}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p style={{ fontSize: '14px', color: '#9ca3af', fontStyle: 'italic' }}>No education history listed yet.</p>
-                )}
-              </div>
-
-              {/* Qualifications & Certifications */}
-              <div style={{ marginBottom: '28px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
-                  <div style={{ width: '4px', height: '24px', backgroundColor: '#083A85', borderRadius: '2px' }}></div>
-                  <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#000', margin: 0 }}>
-                    {t('portfolio.qualifications')}
-                  </h3>
-                </div>
-                {photographerData.portfolio.qualifications.length > 0 ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {photographerData.portfolio.qualifications.map((qual) => (
-                      <div
-                        key={qual.id}
-                        style={{
-                          padding: '14px',
-                          backgroundColor: '#ffffffff',
-                          borderRadius: '6px',
-                          border: '1px solid #083A85',
-                          display: 'flex',
-                          gap: '12px',
-                        }}
-                      >
-                        <div style={{ flexShrink: 0, width: '40px', height: '40px', backgroundColor: '#083A85', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <i className="bi bi-award-fill" style={{ color: '#fff', fontSize: '18px' }}></i>
-                        </div>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                            <h4 style={{ fontSize: '15px', fontWeight: '700', color: '#000' }}>
-                              {qual.title}
-                            </h4>
-                            <span style={{ fontSize: '15px', fontWeight: '600', color: '#083A85' }}>
-                              {qual.year}
-                            </span>
-                          </div>
-                          <p style={{ fontSize: '14px', fontWeight: '600', color: '#083A85', marginBottom: '4px' }}>
-                            {qual.issuer}
-                          </p>
-                          <p style={{ fontSize: '13px', color: '#083A85', lineHeight: '1.5' }}>
-                            {qual.description}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p style={{ fontSize: '14px', color: '#9ca3af', fontStyle: 'italic' }}>No certifications listed yet.</p>
-                )}
-              </div>
-
-              {/* Training */}
-              <div style={{ marginBottom: '28px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
-                  <div style={{ width: '4px', height: '24px', backgroundColor: '#083A85', borderRadius: '2px' }}></div>
-                  <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#000', margin: 0 }}>
-                    Professional Training
-                  </h3>
-                </div>
-                {photographerData.portfolio.training.length > 0 ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {photographerData.portfolio.training.map((training) => (
-                      <div
-                        key={training.id}
-                        style={{
-                          padding: '16px',
-                          backgroundColor: '#f0f9ff',
-                          borderRadius: '10px',
-                          position: 'relative',
-                          overflow: 'hidden',
-                        }}
-                      >
-                        <div style={{
-                          position: 'absolute',
-                          top: '12px',
-                          right: '12px',
-                          backgroundColor: '#083A85',
-                          color: '#fff',
-                          fontSize: '12px',
-                          fontWeight: '600',
-                          padding: '4px 10px',
-                          borderRadius: '12px',
-                        }}>
-                          {training.year}
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                          <i className="bi bi-journal-bookmark-fill" style={{ color: '#083A85', fontSize: '18px' }}></i>
-                          <h4 style={{ fontSize: '15px', fontWeight: '700', color: '#1e293b', margin: 0 }}>
-                            {training.title}
-                          </h4>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
-                          <i className="bi bi-building" style={{ color: '#64748b', fontSize: '13px' }}></i>
-                          <p style={{ fontSize: '14px', fontWeight: '600', color: '#475569', margin: 0 }}>
-                            {training.institution}
-                          </p>
-                        </div>
-                        <p style={{ fontSize: '13px', color: '#64748b', lineHeight: '1.6', margin: 0, paddingLeft: '26px' }}>
-                          {training.description}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p style={{ fontSize: '14px', color: '#9ca3af', fontStyle: 'italic' }}>No training history listed yet.</p>
-                )}
-              </div>
-
-              {/* Featured Projects - Modern Card Grid */}
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
-                  <div style={{
-                    width: '4px',
-                    height: '24px',
-                    backgroundColor: '#083A85',
-                    borderRadius: '2px',
-                  }}></div>
-                  <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#000', margin: 0 }}>
-                    Featured Projects
-                  </h3>
-                </div>
-                {photographerData.portfolio.projects.length > 0 ? (
-                  <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: isMobile
-                      ? 'repeat(auto-fill, minmax(min(240px, 100%), 1fr))'
-                      : 'repeat(auto-fill, minmax(250px, 1fr))',
-                    gap: isMobile ? 'clamp(16px, 4vw, 20px)' : '20px'
-                  }}>
-                    {photographerData.portfolio.projects.map((project) => (
-                      <div
-                        key={project.id}
-                        style={{
-                          borderRadius: '16px',
-                          overflow: 'hidden',
-                          border: '2px solid #e5e7eb',
-                          boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                          transition: 'all 0.3s ease',
-                          cursor: 'pointer',
-                          backgroundColor: '#fff',
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.transform = 'translateY(-8px)';
-                          e.currentTarget.style.boxShadow = '0 12px 28px rgba(8, 58, 133, 0.2)';
-                          e.currentTarget.style.borderColor = '#083A85';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.transform = 'translateY(0)';
-                          e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)';
-                          e.currentTarget.style.borderColor = '#e5e7eb';
-                        }}
-                      >
-                        {project.image && (
-                          <div style={{ position: 'relative', overflow: 'hidden' }}>
-                            <img
-                              src={project.image}
-                              alt={project.title}
-                              style={{
-                                width: '100%',
-                                height: '180px',
-                                objectFit: 'cover',
-                                transition: 'transform 0.3s ease',
-                              }}
-                              loading="lazy"
-                              onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
-                              onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                            />
-                            {project.year && (
-                              <div style={{
-                                position: 'absolute',
-                                top: '12px',
-                                right: '12px',
-                                backgroundColor: '#083A85',
-                                color: '#fff',
-                                padding: '6px 12px',
-                                borderRadius: '20px',
-                                fontSize: '13px',
-                                fontWeight: '700',
-                                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
-                              }}>
-                                {project.year}
-                              </div>
-                            )}
-                          </div>
-                        )}
-                        <div style={{ padding: '16px', backgroundColor: '#fff' }}>
-                          <h4 style={{
-                            fontSize: '15px',
-                            fontWeight: '700',
-                            color: '#000',
-                            marginBottom: '8px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                          }}>
-                            <i className="bi bi-image" style={{ color: '#083A85', fontSize: '16px' }}></i>
-                            {project.title}
-                          </h4>
-                          <p style={{
-                            fontSize: '14px',
-                          color: '#6b7280',
-                          lineHeight: '1.6',
-                          margin: 0,
-                        }}>
-                          {project.description}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                  </div>
-                ) : (
-                  <p style={{ fontSize: '14px', color: '#9ca3af', fontStyle: 'italic' }}>No projects added yet.</p>
-                )}
+              <div className="vp-avatar-verif" title="Verified photographer" aria-label="Verified">
+                <i className="bi bi-patch-check-fill" aria-hidden="true" />
               </div>
             </div>
-          )}
 
-          {activeTab === 'reviews' && (
-            <div>
-              {/* Reviews Summary with Write Review Button - Enhanced */}
-              <div style={{
-                marginBottom: '32px',
-                paddingBottom: '24px',
-                borderBottom: '2px solid #e5e7eb',
-              }}>
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  flexWrap: 'wrap',
-                  gap: '20px',
-                  marginBottom: '20px',
-                }}>
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '20px',
-                    padding: '20px',
-                    backgroundColor: '#f0f9ff',
-                    borderRadius: '16px',
-                    border: '2px solid #dbeafe',
-                  }}>
-                    <div style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      padding: '16px',
-                      backgroundColor: '#fff',
-                      borderRadius: '12px',
-                      minWidth: '100px',
-                    }}>
-                      <span style={{
-                        fontSize: '48px',
-                        fontWeight: '700',
-                        color: '#083A85',
-                        lineHeight: 1,
-                      }}>
-                        {photographerData.rating.toFixed(1)}
-                      </span>
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                        margin: '8px 0',
-                      }}>
-                        {renderStars(photographerData.rating)}
-                      </div>
-                      <p style={{
-                        fontSize: '12px',
-                        color: '#6b7280',
-                        fontWeight: '500',
-                        margin: 0,
-                      }}>
-                        {photographerData.reviews.length} {t('reviews.reviewsCount')}
-                      </p>
-                    </div>
-                  </div>
-                </div>
+            <div className="vp-hero-text">
+              <h1 id="vp-name" className="vp-name">
+                {photographerData.name}
+              </h1>
+              <p className="vp-headline">
+                {photographerData.customerType && (
+                  <span className="vp-headline-role">{photographerData.customerType}</span>
+                )}
+                {photographerData.customerType && photographerData.location && (
+                  <span className="vp-sep" aria-hidden="true">
+                    ·
+                  </span>
+                )}
+                {photographerData.location && (
+                  <span className="vp-headline-loc">
+                    <i className="bi bi-geo-alt-fill" aria-hidden="true" />
+                    {photographerData.location}
+                  </span>
+                )}
+              </p>
+              <div className="vp-stats">
+                {photographerData.rating > 0 && (
+                  <span className="vp-stat">
+                    <i className="bi bi-star-fill" aria-hidden="true" style={{ color: '#f59e0b' }} />
+                    <strong>{photographerData.rating.toFixed(1)}</strong>
+                    <span className="vp-stat-mute">
+                      ({photographerData.reviews.length}
+                      {photographerData.reviews.length === 1 ? ' review' : ' reviews'})
+                    </span>
+                  </span>
+                )}
+                <span className="vp-stat">
+                  <i className="bi bi-camera-reels-fill" aria-hidden="true" />
+                  <strong>{photographerData.eventsCompleted}</strong>
+                  <span className="vp-stat-mute">{t('events')}</span>
+                </span>
+                {photographerData.joinedFrom && (
+                  <span className="vp-stat">
+                    <i className="bi bi-calendar-event" aria-hidden="true" />
+                    <span className="vp-stat-mute">Since {photographerData.joinedFrom}</span>
+                  </span>
+                )}
+                <span className="vp-stat vp-stat--avail">
+                  <span className="vp-status-dot" aria-hidden="true" />
+                  Available
+                </span>
               </div>
+            </div>
 
-              {/* Individual Reviews - Enhanced Cards */}
-              {photographerData.reviews.length > 0 ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                  {photographerData.reviews.map((review) => (
-                    <div
-                      key={review.id}
-                      style={{
-                        padding: '20px',
-                        backgroundColor: '#fff',
-                        borderRadius: '16px',
-                        border: '2px solid #e5e7eb',
-                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
-                        transition: 'all 0.3s ease',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.borderColor = '#083A85';
-                        e.currentTarget.style.boxShadow = '0 8px 20px rgba(8, 58, 133, 0.15)';
-                        e.currentTarget.style.transform = 'translateX(4px)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.borderColor = '#e5e7eb';
-                        e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.04)';
-                        e.currentTarget.style.transform = 'translateX(0)';
-                      }}
-                    >
-                      {/* Reviewer Info */}
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '14px',
-                        marginBottom: '14px',
-                      }}>
-                        {review.avatar ? (
-                          <img
-                            src={review.avatar}
-                            alt={review.name}
-                            style={{
-                              width: '52px',
-                              height: '52px',
-                              borderRadius: '50%',
-                              objectFit: 'cover',
-                              border: '3px solid #f0f9ff',
-                              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-                            }}
-                            loading="lazy"
-                          />
-                        ) : (
-                          <div style={{
-                            width: '52px',
-                            height: '52px',
-                            borderRadius: '50%',
-                            background: 'linear-gradient(135deg, #e2e8f0 0%, #cbd5e1100%)',
-                            border: '3px solid #f0f9ff',
-                            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            flexShrink: 0,
-                          }}>
-                            <i className="bi bi-person-fill" style={{ fontSize: '1.4rem', color: '#94a3b8' }}></i>
-                          </div>
-                        )}
-                        <div style={{ flex: 1 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                            <h4 style={{
-                              fontSize: '15px',
-                              fontWeight: '700',
-                              color: '#000',
-                              margin: 0,
-                            }}>
-                              {review.name}
-                            </h4>
-                            {review.customerType && (
-                              <span style={{
-                                padding: '2px 8px',
-                                backgroundColor: '#f0f9ff',
-                                border: '1px solid #bfdbfe',
-                                borderRadius: '10px',
-                                fontSize: '11px',
-                                fontWeight: '600',
-                                color: '#083A85',
-                              }}>
-                                {review.customerType}
-                              </span>
-                            )}
-                          </div>
-                          <p style={{
-                            fontSize: '12px',
-                            color: '#6b7280',
-                            margin: 0,
-                          }}>
-                            {review.date ? new Date(review.date).toLocaleDateString('en-US', {
-                              year: 'numeric',
-                              month: 'long',
-                              day: 'numeric',
-                            }) : 'Recently'}
-                          </p>
-                        </div>
-                        <div style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                          padding: '8px 12px',
-                          backgroundColor: '#f0f9ff',
-                          borderRadius: '20px',
-                        }}>
-                          {renderStars(review.rating)}
-                        </div>
-                      </div>
+            </div>
+          </div>
+        </section>
 
-                      {/* Review Comment */}
-                      <p style={{
-                        fontSize: '14px',
-                        color: '#4b5563',
-                        lineHeight: '1.7',
-                        margin: 0,
-                        padding: '12px',
-                        backgroundColor: '#f9fafb',
-                        borderRadius: '10px',
-                      }}>
-                        {review.comment}
-                      </p>
+        {/* ===========  STICKY TAB BAR  =========== */}
+        <nav className="vp-tabs" aria-label="Profile sections">
+          {(
+            [
+              { key: 'overview', icon: 'bi-grid-fill', label: t('tabs.overview') },
+              { key: 'portfolio', icon: 'bi-images', label: t('tabs.portfolio') },
+              { key: 'reviews', icon: 'bi-chat-square-quote-fill', label: t('tabs.reviews') },
+              {
+                key: 'working-experience',
+                icon: 'bi-briefcase-fill',
+                label: t('tabs.workingExperience'),
+              },
+            ] as const
+          ).map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              className={`vp-tab ${activeTab === tab.key ? 'is-active' : ''}`}
+              onClick={() => setActiveTab(tab.key)}
+              aria-current={activeTab === tab.key ? 'page' : undefined}
+            >
+              <i className={`bi ${tab.icon}`} aria-hidden="true" />
+              <span>{tab.label}</span>
+            </button>
+          ))}
+        </nav>
 
-                      {/* Review Images */}
-                      {review.images && review.images.length > 0 && (
-                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '12px' }}>
-                          {review.images.map((img: string, imgIdx: number) => (
-                            <img
-                              key={imgIdx}
-                              src={img}
-                              alt={`Review image ${imgIdx + 1}`}
-                              style={{
-                                width: '80px',
-                                height: '80px',
-                                objectFit: 'cover',
-                                borderRadius: '8px',
-                                border: '1px solid #e5e7eb',
-                              }}
-                              loading="lazy"
-                            />
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ))}
+        {/* ===========  GRID: main + sticky sidebar  =========== */}
+        <div className="vp-grid">
+          {/* ---- main content ---- */}
+          <div className="vp-main">
+            {/* OVERVIEW TAB */}
+            {activeTab === 'overview' &&
+              (!photographerData.about &&
+              !photographerData.specialties.length &&
+              !photographerData.equipments.length ? (
+                <div className="vp-empty">
+                  <span className="vp-empty-icon" aria-hidden="true">
+                    <i className="bi bi-person-vcard" />
+                  </span>
+                  <h3>No profile details yet</h3>
+                  <p>
+                    {photographerData.name} hasn&apos;t shared their about,
+                    specialties, or equipment yet. Check back soon.
+                  </p>
                 </div>
               ) : (
-                <div style={{
-                  textAlign: 'center',
-                  padding: '40px 20px',
-                  backgroundColor: '#f9fafb',
-                  borderRadius: '12px',
-                }}>
-                  <i className="bi bi-chat-square-text" style={{ fontSize: '48px', color: '#9ca3af', display: 'block', marginBottom: '16px' }}></i>
-                  <p style={{ fontSize: '16px', color: '#6b7280', margin: 0 }}>No reviews yet. Be the first to leave a review!</p>
+                <>
+                  {photographerData.about && (
+                    <section className="vp-section">
+                      <h2 className="vp-section-title">
+                        <i className="bi bi-person-lines-fill" aria-hidden="true" />
+                        {t('overview.about')}
+                      </h2>
+                      <p className="vp-prose">{photographerData.about}</p>
+                    </section>
+                  )}
+
+                  {photographerData.specialties.length > 0 && (
+                    <section className="vp-section">
+                      <h2 className="vp-section-title">
+                        <i className="bi bi-stars" aria-hidden="true" />
+                        {t('overview.specialties')}
+                      </h2>
+                      <div className="vp-chips">
+                        {photographerData.specialties.map((s, i) => (
+                          <span className="vp-chip" key={i}>
+                            {s}
+                          </span>
+                        ))}
+                      </div>
+                    </section>
+                  )}
+
+                  <section className="vp-section">
+                    <h2 className="vp-section-title">
+                      <i className="bi bi-camera2" aria-hidden="true" />
+                      {t('overview.equipment')}
+                    </h2>
+                    {photographerData.equipments.length > 0 ? (
+                      <div className="vp-equip-grid">
+                        {photographerData.equipments.map((e, i) => (
+                          <div className="vp-equip-card" key={i}>
+                            <span className="vp-equip-icon" aria-hidden="true">
+                              <i className="bi bi-camera2" />
+                            </span>
+                            <span className="vp-equip-name">{e}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="vp-empty-text">{t('overview.noEquipment')}</p>
+                    )}
+                  </section>
+                </>
+              ))}
+
+            {/* PORTFOLIO TAB */}
+            {activeTab === 'portfolio' &&
+              (!photographerData.portfolio.beliefs &&
+              !photographerData.portfolio.skills.length &&
+              !photographerData.portfolio.projects.length &&
+              !photographerData.portfolio.education.length &&
+              !photographerData.portfolio.qualifications.length &&
+              !photographerData.portfolio.training.length ? (
+                <div className="vp-empty">
+                  <span className="vp-empty-icon" aria-hidden="true">
+                    <i className="bi bi-images" />
+                  </span>
+                  <h3>No portfolio yet</h3>
+                  <p>
+                    {photographerData.name} hasn&apos;t published projects, skills,
+                    or credentials yet. Their work history will appear here once
+                    added.
+                  </p>
                 </div>
-              )}
-            </div>
-          )}
+              ) : (
+              <>
+                {photographerData.portfolio.beliefs && (
+                  <section className="vp-section vp-section--quote">
+                    <i className="bi bi-quote vp-quote-mark" aria-hidden="true" />
+                    <blockquote className="vp-quote-text">
+                      {photographerData.portfolio.beliefs}
+                    </blockquote>
+                  </section>
+                )}
 
-          {activeTab === 'working-experience' && (
-            <div>
-              <h3 style={{ fontSize: '22px', fontWeight: '700', color: '#000', marginBottom: '18px' }}>
-                {t('workingExperience.title')}
-              </h3>
+                {photographerData.portfolio.skills.length > 0 && (
+                  <section className="vp-section">
+                    <h2 className="vp-section-title">
+                      <i className="bi bi-bar-chart-fill" aria-hidden="true" />
+                      {t('portfolio.professionalSkills')}
+                    </h2>
+                    <div className="vp-skills">
+                      {photographerData.portfolio.skills.map((s, i) => (
+                        <div className="vp-skill" key={i}>
+                          <div className="vp-skill-row">
+                            <span className="vp-skill-name">{s.name}</span>
+                            <span className="vp-skill-pct">{Math.round(s.level)}%</span>
+                          </div>
+                          <div className="vp-skill-bar" aria-hidden="true">
+                            <div
+                              className="vp-skill-fill"
+                              style={{ width: `${Math.min(100, Math.max(0, s.level))}%` }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                )}
 
-              {photographerData.experience.length > 0 ? (
-                /* Timeline */
-                <div style={{ position: 'relative', paddingLeft: '24px' }}>
-                  {/* Timeline Line */}
-                  <div
-                    style={{
-                      position: 'absolute',
-                      left: '7px',
-                      top: '8px',
-                      bottom: '8px',
-                      width: '2px',
-                      backgroundColor: '#e5e7eb',
-                    }}
-                  ></div>
+                {photographerData.portfolio.projects.length > 0 && (
+                  <section className="vp-section">
+                    <h2 className="vp-section-title">
+                      <i className="bi bi-images" aria-hidden="true" />
+                      Featured projects
+                    </h2>
+                    <div className="vp-projects">
+                      {photographerData.portfolio.projects.map((p) => (
+                        <article className="vp-project" key={p.id}>
+                          {p.image ? (
+                            /* eslint-disable-next-line @next/next/no-img-element */
+                            <img src={p.image} alt={p.title} loading="lazy" />
+                          ) : (
+                            <div className="vp-project-empty" aria-hidden="true">
+                              <i className="bi bi-image" />
+                            </div>
+                          )}
+                          <div className="vp-project-overlay">
+                            <h3 className="vp-project-title">{p.title}</h3>
+                            {p.year && <span className="vp-project-year">{p.year}</span>}
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  </section>
+                )}
 
-                  {/* Experience Items */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                    {photographerData.experience.map((exp, index) => (
-                      <div key={exp.id} style={{ position: 'relative' }}>
-                        {/* Timeline Dot */}
-                        <div
-                          style={{
-                            position: 'absolute',
-                            left: '-20px',
-                            top: '6px',
-                            width: '16px',
-                            height: '16px',
-                            borderRadius: '50%',
-                            backgroundColor: index === 0 ? '#083A85' : '#9ca3af',
-                            border: '2px solid #fff',
-                            boxShadow: '0 0 0 2px #e5e7eb',
-                          }}
-                        ></div>
-
-                        {/* Experience Card */}
-                        <div
-                          style={{
-                            padding: '14px 16px',
-                            backgroundColor: '#f9fafb',
-                            borderRadius: '8px',
-                            border: '1px solid #e5e7eb',
-                          }}
-                        >
-                          {/* Position & Company */}
-                          <h4 style={{ fontSize: '17px', fontWeight: '700', color: '#000', marginBottom: '4px' }}>
-                            {exp.position}
-                          </h4>
-                          <p style={{ fontSize: '15px', fontWeight: '600', color: '#083A85', marginBottom: '6px' }}>
-                            {exp.company}
-                          </p>
-
-                          {/* Location & Date */}
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px', flexWrap: 'wrap' }}>
-                            {exp.location && (
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                <i className="bi bi-geo-alt" style={{ color: '#6b7280', fontSize: '14px' }}></i>
-                                <span style={{ fontSize: '15px', color: '#6b7280' }}>
-                                  {exp.location}
-                                </span>
-                              </div>
-                            )}
-                            {exp.startDate && (
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                <i className="bi bi-calendar3" style={{ color: '#6b7280', fontSize: '10px' }}></i>
-                                <span style={{ fontSize: '15px', color: '#6b7280' }}>
-                                  {exp.startDate} - {exp.endDate}
-                                </span>
-                              </div>
+                {photographerData.portfolio.education.length > 0 && (
+                  <section className="vp-section">
+                    <h2 className="vp-section-title">
+                      <i className="bi bi-mortarboard-fill" aria-hidden="true" />
+                      {t('portfolio.education')}
+                    </h2>
+                    <div className="vp-timeline">
+                      {photographerData.portfolio.education.map((e) => (
+                        <div className="vp-timeline-item" key={e.id}>
+                          <span className="vp-timeline-dot" aria-hidden="true" />
+                          <div className="vp-timeline-content">
+                            <div className="vp-timeline-head">
+                              <h3 className="vp-timeline-title">{e.degree}</h3>
+                              {e.year && <span className="vp-timeline-meta">{e.year}</span>}
+                            </div>
+                            <p className="vp-timeline-sub">{e.institution}</p>
+                            {e.description && (
+                              <p className="vp-timeline-desc">{e.description}</p>
                             )}
                           </div>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                )}
 
-                          {/* Description */}
+                {photographerData.portfolio.qualifications.length > 0 && (
+                  <section className="vp-section">
+                    <h2 className="vp-section-title">
+                      <i className="bi bi-award-fill" aria-hidden="true" />
+                      {t('portfolio.qualifications')}
+                    </h2>
+                    <div className="vp-cred-grid">
+                      {photographerData.portfolio.qualifications.map((q) => (
+                        <article className="vp-cred-card" key={q.id}>
+                          <div className="vp-cred-icon" aria-hidden="true">
+                            <i className="bi bi-patch-check-fill" />
+                          </div>
+                          <h3 className="vp-cred-title">{q.title}</h3>
+                          <p className="vp-cred-issuer">{q.issuer}</p>
+                          {q.year && <span className="vp-cred-year">{q.year}</span>}
+                          {q.description && <p className="vp-cred-desc">{q.description}</p>}
+                        </article>
+                      ))}
+                    </div>
+                  </section>
+                )}
+
+                {photographerData.portfolio.training.length > 0 && (
+                  <section className="vp-section">
+                    <h2 className="vp-section-title">
+                      <i className="bi bi-bookmark-star-fill" aria-hidden="true" />
+                      Training
+                    </h2>
+                    <div className="vp-cred-grid">
+                      {photographerData.portfolio.training.map((tr) => (
+                        <article className="vp-cred-card" key={tr.id}>
+                          <div className="vp-cred-icon" aria-hidden="true">
+                            <i className="bi bi-bookmark-star-fill" />
+                          </div>
+                          <h3 className="vp-cred-title">{tr.title}</h3>
+                          <p className="vp-cred-issuer">{tr.institution}</p>
+                          {tr.year && <span className="vp-cred-year">{tr.year}</span>}
+                          {tr.description && <p className="vp-cred-desc">{tr.description}</p>}
+                        </article>
+                      ))}
+                    </div>
+                  </section>
+                )}
+              </>
+              ))}
+
+            {/* REVIEWS TAB */}
+            {activeTab === 'reviews' && (
+              <>
+                {photographerData.reviews.length > 0 ? (
+                  <>
+                    <section className="vp-section vp-rating-summary">
+                      <div className="vp-rating-big">
+                        <span className="vp-rating-num">
+                          {photographerData.rating.toFixed(1)}
+                        </span>
+                        <div className="vp-rating-stars" aria-hidden="true">
+                          {renderStars(Math.round(photographerData.rating), 18)}
+                        </div>
+                        <span className="vp-rating-count">
+                          {photographerData.reviews.length}{' '}
+                          {photographerData.reviews.length === 1 ? 'review' : 'reviews'}
+                        </span>
+                      </div>
+                      <div className="vp-rating-bars">
+                        {[5, 4, 3, 2, 1].map((star, i) => {
+                          const count = ratingBreakdown[i];
+                          const total = photographerData.reviews.length;
+                          const pct = total > 0 ? (count / total) * 100 : 0;
+                          return (
+                            <div className="vp-rating-row" key={star}>
+                              <span className="vp-rating-row-label">
+                                {star}
+                                <i className="bi bi-star-fill" aria-hidden="true" />
+                              </span>
+                              <div className="vp-rating-bar" aria-hidden="true">
+                                <div className="vp-rating-fill" style={{ width: `${pct}%` }} />
+                              </div>
+                              <span className="vp-rating-row-count">{count}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </section>
+
+                    <section className="vp-section">
+                      <h2 className="vp-section-title">
+                        <i className="bi bi-chat-square-quote-fill" aria-hidden="true" />
+                        All reviews
+                      </h2>
+                      <div className="vp-reviews">
+                        {photographerData.reviews.map((r) => (
+                          <article className="vp-review" key={r.id}>
+                            <div className="vp-review-head">
+                              <div className="vp-review-avatar">
+                                {r.avatar ? (
+                                  /* eslint-disable-next-line @next/next/no-img-element */
+                                  <img src={r.avatar} alt="" loading="lazy" />
+                                ) : (
+                                  <i className="bi bi-person-circle" aria-hidden="true" />
+                                )}
+                              </div>
+                              <div className="vp-review-meta">
+                                <h3 className="vp-review-name">{r.name}</h3>
+                                {r.customerType && (
+                                  <span className="vp-review-type">{r.customerType}</span>
+                                )}
+                              </div>
+                              <div className="vp-review-rating" aria-label={`Rated ${r.rating} out of 5`}>
+                                {renderStars(Math.round(r.rating), 14)}
+                              </div>
+                            </div>
+                            {r.date && (
+                              <span className="vp-review-date">{formatJoinDate(r.date)}</span>
+                            )}
+                            <p className="vp-review-comment">{r.comment}</p>
+                            {r.images && r.images.length > 0 && (
+                              <div className="vp-review-imgs">
+                                {r.images.map((img, idx) => (
+                                  /* eslint-disable-next-line @next/next/no-img-element */
+                                  <img key={idx} src={img} alt="" loading="lazy" />
+                                ))}
+                              </div>
+                            )}
+                          </article>
+                        ))}
+                      </div>
+                    </section>
+                  </>
+                ) : (
+                  <div className="vp-empty">
+                    <span className="vp-empty-icon" aria-hidden="true">
+                      <i className="bi bi-chat-square-text" />
+                    </span>
+                    <h3>No reviews yet</h3>
+                    <p>Be the first to work with {photographerData.name} and leave a review.</p>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* WORKING EXPERIENCE TAB */}
+            {activeTab === 'working-experience' &&
+              (photographerData.experience.length === 0 ? (
+                <div className="vp-empty">
+                  <span className="vp-empty-icon" aria-hidden="true">
+                    <i className="bi bi-briefcase" />
+                  </span>
+                  <h3>No work history yet</h3>
+                  <p>
+                    {photographerData.name} hasn&apos;t shared their professional
+                    experience yet. Their journey will appear here once added.
+                  </p>
+                </div>
+              ) : (
+                <section className="vp-section">
+                  <h2 className="vp-section-title">
+                    <i className="bi bi-briefcase-fill" aria-hidden="true" />
+                    {t('workingExperience.title')}
+                  </h2>
+                  <div className="vp-timeline">
+                    {photographerData.experience.map((exp) => (
+                      <div className="vp-timeline-item" key={exp.id}>
+                        <span className="vp-timeline-dot" aria-hidden="true" />
+                        <div className="vp-timeline-content">
+                          <div className="vp-timeline-head">
+                            <h3 className="vp-timeline-title">{exp.position}</h3>
+                            <span className="vp-timeline-meta">
+                              {exp.startDate}
+                              {exp.endDate ? ` — ${exp.endDate}` : ''}
+                            </span>
+                          </div>
+                          <p className="vp-timeline-sub">
+                            {exp.company}
+                            {exp.location ? ` · ${exp.location}` : ''}
+                          </p>
                           {exp.description && (
-                            <p style={{ fontSize: '14px', color: '#4b5563', lineHeight: '1.6' }}>
-                              {exp.description}
-                            </p>
+                            <p className="vp-timeline-desc">{exp.description}</p>
                           )}
                         </div>
                       </div>
                     ))}
                   </div>
+                </section>
+              ))}
+          </div>
+
+          {/* ---- sticky sidebar ---- */}
+          <aside className="vp-sidebar" aria-label="Booking and contact">
+            <div className="vp-side-card">
+              <span className="vp-side-eyebrow">{t('overview.startingPrice')}</span>
+              {cheapestPackage ? (
+                <div className="vp-side-price">
+                  <span className="vp-side-price-value">
+                    {cheapestPackage.currencySymbol || ''}
+                    {cheapestPackage.price.toLocaleString()}
+                  </span>
+                  <span className="vp-side-price-unit">{cheapestPackage.priceUnit}</span>
                 </div>
               ) : (
-                <div style={{
-                  textAlign: 'center',
-                  padding: '40px 20px',
-                  backgroundColor: '#f9fafb',
-                  borderRadius: '12px',
-                }}>
-                  <i className="bi bi-briefcase" style={{ fontSize: '48px', color: '#9ca3af', display: 'block', marginBottom: '16px' }}></i>
-                  <p style={{ fontSize: '16px', color: '#6b7280', margin: 0 }}>No work experience listed yet.</p>
+                <div className="vp-side-price">
+                  <span className="vp-side-price-onreq">On request</span>
                 </div>
               )}
+              <button
+                type="button"
+                className="vp-cta vp-cta--primary vp-cta--block"
+                onClick={handleBookNowClick}
+              >
+                <i className="bi bi-calendar-check" aria-hidden="true" /> {t('bookNow')}
+              </button>
+              <p className="vp-side-note">
+                <i className="bi bi-shield-check" aria-hidden="true" /> No payment to inquire
+              </p>
             </div>
+
+            <div className="vp-side-card">
+              <div className="vp-side-cal-head">
+                <span className="vp-side-eyebrow">{t('overview.availability')}</span>
+                <div className="vp-side-cal-nav">
+                  <button
+                    type="button"
+                    className="vp-icon-btn vp-icon-btn--small"
+                    aria-label="Previous month"
+                    onClick={() =>
+                      setBookedCalendarMonth(({ year, month }) =>
+                        month === 0
+                          ? { year: year - 1, month: 11 }
+                          : { year, month: month - 1 }
+                      )
+                    }
+                  >
+                    <i className="bi bi-chevron-left" />
+                  </button>
+                  <span className="vp-side-cal-month">
+                    {new Date(bookedCalendarMonth.year, bookedCalendarMonth.month).toLocaleDateString(
+                      'en-US',
+                      { month: 'long', year: 'numeric' }
+                    )}
+                  </span>
+                  <button
+                    type="button"
+                    className="vp-icon-btn vp-icon-btn--small"
+                    aria-label="Next month"
+                    onClick={() =>
+                      setBookedCalendarMonth(({ year, month }) =>
+                        month === 11
+                          ? { year: year + 1, month: 0 }
+                          : { year, month: month + 1 }
+                      )
+                    }
+                  >
+                    <i className="bi bi-chevron-right" />
+                  </button>
+                </div>
+              </div>
+              <MiniCalendar
+                year={bookedCalendarMonth.year}
+                month={bookedCalendarMonth.month}
+                bookedDates={bookedDates}
+              />
+              <div className="vp-side-cal-legend">
+                <span>
+                  <span className="vp-cal-dot vp-cal-dot--free" /> Free
+                </span>
+                <span>
+                  <span className="vp-cal-dot vp-cal-dot--booked" /> Booked
+                </span>
+              </div>
+            </div>
+
+            <div className="vp-side-card">
+              <span className="vp-side-eyebrow">Trust signals</span>
+              <ul className="vp-trust">
+                <li>
+                  <i className="bi bi-patch-check-fill" aria-hidden="true" /> Verified photographer
+                </li>
+                <li>
+                  <i className="bi bi-shield-lock-fill" aria-hidden="true" /> Secure on-platform payments
+                </li>
+                <li>
+                  <i className="bi bi-translate" aria-hidden="true" /> Speaks EN · FR · RW
+                </li>
+              </ul>
+            </div>
+
+            {(photographerData.phone || photographerData.email) && (
+              <div className="vp-side-card">
+                <span className="vp-side-eyebrow">Contact</span>
+                <ul className="vp-contact">
+                  {photographerData.phone && (
+                    <li>
+                      <i className="bi bi-telephone-fill" aria-hidden="true" />
+                      {contactRevealed.phone ? (
+                        <a href={`tel:${photographerData.phone}`} className="vp-contact-value">
+                          {photographerData.phone}
+                        </a>
+                      ) : (
+                        <button
+                          type="button"
+                          className="vp-link-btn"
+                          onClick={() => setContactRevealed((s) => ({ ...s, phone: true }))}
+                        >
+                          <span>{maskPhone(photographerData.phone)}</span>
+                          <span className="vp-link-btn-cta">Show</span>
+                        </button>
+                      )}
+                    </li>
+                  )}
+                  {photographerData.email && (
+                    <li>
+                      <i className="bi bi-envelope-fill" aria-hidden="true" />
+                      {contactRevealed.email ? (
+                        <a
+                          href={`mailto:${photographerData.email}`}
+                          className="vp-contact-value vp-contact-value--break"
+                        >
+                          {photographerData.email}
+                        </a>
+                      ) : (
+                        <button
+                          type="button"
+                          className="vp-link-btn"
+                          onClick={() => setContactRevealed((s) => ({ ...s, email: true }))}
+                        >
+                          <span>{maskEmail(photographerData.email)}</span>
+                          <span className="vp-link-btn-cta">Show</span>
+                        </button>
+                      )}
+                    </li>
+                  )}
+                </ul>
+              </div>
+            )}
+          </aside>
+        </div>
+
+        {/* Mobile floating bottom CTA */}
+        {isMobile && (
+          <div className="vp-mobile-cta" role="region" aria-label="Quick booking action">
+            <div className="vp-mobile-cta-price">
+              {cheapestPackage ? (
+                <>
+                  <span className="vp-mobile-cta-from">From</span>
+                  <strong>
+                    {cheapestPackage.currencySymbol || ''}
+                    {cheapestPackage.price.toLocaleString()}
+                  </strong>
+                  <span className="vp-mobile-cta-unit">{cheapestPackage.priceUnit}</span>
+                </>
+              ) : (
+                <span className="vp-mobile-cta-onreq">On request</span>
+              )}
+            </div>
+            <button
+              type="button"
+              className="vp-cta vp-cta--primary"
+              onClick={handleBookNowClick}
+            >
+              <i className="bi bi-calendar-check" aria-hidden="true" /> {t('bookNow')}
+            </button>
+          </div>
+        )}
+      </main>
+
+      {/* IMAGE VIEWER MODAL */}
+      {imageViewerOpen && (
+        <div
+          className="vp-img-modal image-viewer-modal"
+          onClick={closeImageViewer}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Image viewer"
+        >
+          <button
+            type="button"
+            className="vp-img-modal-close"
+            onClick={closeImageViewer}
+            aria-label="Close image viewer"
+          >
+            <i className="bi bi-x-lg" />
+          </button>
+          {currentImageType === 'profile' && photographerData.profileImage && (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={photographerData.profileImage}
+              alt={`${photographerData.name} profile`}
+              onClick={(e) => e.stopPropagation()}
+            />
+          )}
+          {currentImageType === 'cover' && photographerData.backgroundImage && (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={photographerData.backgroundImage}
+              alt="Cover"
+              onClick={(e) => e.stopPropagation()}
+            />
           )}
         </div>
-      </div>
-    </div>
+      )}
 
-    {/* Image Viewer Modal */}
-    {imageViewerOpen && (
-      <div
-        className="image-viewer-modal"
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.95)',
-          backdropFilter: 'blur(10px)',
-          zIndex: 9999,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          animation: 'fadeIn 0.3s ease',
-        }}
-        onClick={closeImageViewer}
-      >
-        {/* Close Button */}
-        <button
-          onClick={closeImageViewer}
-          style={{
-            position: 'absolute',
-            top: '20px',
-            right: '20px',
-            width: '50px',
-            height: '50px',
-            borderRadius: '50%',
-            backgroundColor: 'rgba(255, 255, 255, 0.1)',
-            backdropFilter: 'blur(10px)',
-            border: '2px solid rgba(255, 255, 255, 0.2)',
-            color: '#fff',
-            fontSize: '24px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            transition: 'all 0.3s ease',
-            zIndex: 10001,
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
-            e.currentTarget.style.transform = 'scale(1.1) rotate(90deg)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
-            e.currentTarget.style.transform = 'scale(1) rotate(0deg)';
-          }}
-          aria-label="Close image viewer"
-        >
-          <i className="bi bi-x-lg"></i>
-        </button>
+      <BookingWizard
+        isOpen={showWizard}
+        onClose={() => setShowWizard(false)}
+        preselectedPhotographerId={photographerId || undefined}
+      />
 
-        {/* Image Type Label */}
-        <div
-          style={{
-            position: 'absolute',
-            top: '30px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            padding: '12px 24px',
-            backgroundColor: 'rgba(255, 255, 255, 0.1)',
-            backdropFilter: 'blur(10px)',
-            border: '1px solid rgba(255, 255, 255, 0.2)',
-            borderRadius: '30px',
-            color: '#fff',
-            fontSize: '14px',
-            fontWeight: '600',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px',
-            zIndex: 10001,
-          }}
-        >
-          <i className={currentImageType === 'profile' ? 'bi bi-person-circle' : 'bi bi-image'} style={{ fontSize: '18px' }}></i>
-          {currentImageType === 'profile' ? 'Profile Photo' : 'Cover Photo'}
-        </div>
-
-        {/* Image Container - Full Size */}
-        <div
-          style={{
-            position: 'relative',
-            width: currentImageType === 'profile' ? 'auto' : '95vw',
-            height: currentImageType === 'profile' ? 'auto' : '90vh',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <img
-            src={currentImageType === 'profile' ? photographerData.profileImage || undefined : photographerData.backgroundImage || undefined}
-            alt={currentImageType === 'profile' ? `${photographerData.name} profile` : `${photographerData.name} cover`}
-            style={{
-              width: currentImageType === 'profile' ? '80vh' : '100%',
-              height: currentImageType === 'profile' ? '80vh' : '100%',
-              objectFit: currentImageType === 'profile' ? 'cover' : 'contain',
-              borderRadius: currentImageType === 'profile' ? '50%' : '0',
-              boxShadow: currentImageType === 'profile' ? '0 20px 60px rgba(0, 0, 0, 0.8)' : 'none',
-              border: currentImageType === 'profile' ? '6px solid rgba(255, 255, 255, 0.2)' : 'none',
-              animation: 'slideInFromLeft 0.4s ease',
-            }}
-          />
-        </div>
-
-        {/* Instructions */}
-        <div
-          style={{
-            position: 'absolute',
-            bottom: '20px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            padding: '10px 20px',
-            backgroundColor: 'rgba(255, 255, 255, 0.05)',
-            backdropFilter: 'blur(10px)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            borderRadius: '20px',
-            color: 'rgba(255, 255, 255, 0.7)',
-            fontSize: '12px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px',
-          }}
-        >
-          <i className="bi bi-info-circle"></i>
-          <span>Press ESC or click outside to close</span>
-        </div>
-      </div>
-    )}
-
-    {/* CSS Animations */}
-    <style jsx>{`
-      @keyframes pulse {
-        0%, 100% {
-          transform: scale(1);
-          opacity: 1;
+      <style>{`
+        /* ============================================================
+           VIEW-PROFILE — scoped styles
+           Brand: ${BRAND} / ${BRAND_DARK}
+           ============================================================ */
+        .vp-root {
+          font-family: 'Pragati Narrow', system-ui, sans-serif;
+          background: linear-gradient(to bottom, #f9fafb 0%, #f3f4f6 100%);
+          min-height: 100vh;
+          padding-bottom: 4rem;
         }
-        50% {
-          transform: scale(1.05);
-          opacity: 0.9;
+
+        /* ===== HERO =====
+           Cover image is on the parent (.vp-hero) so it extends through both
+           the visible cover area and behind the identity strip below.
+           The strip uses backdrop-filter + a translucent blue gradient so the
+           cover bleeds through with a frosted-glass effect. */
+        .vp-hero {
+          position: relative;
+          /* Neutral dark fallback so when a cover image is missing or loading
+             we don't flash brand-blue — keeps the cover area photo-faithful. */
+          background-color: #1f2937;
+          background-size: cover;
+          background-position: center;
+          background-repeat: no-repeat;
         }
-      }
-
-      @keyframes fadeIn {
-        from {
-          opacity: 0;
-          transform: translateY(10px);
+        /* Empty-state hero — matches the photographer card empty state */
+        .vp-hero.vp-hero--no-cover {
+          background-color: transparent;
+          background-image: linear-gradient(135deg, #cbd5e1 0%, #94a3b8 100%);
         }
-        to {
-          opacity: 1;
-          transform: translateY(0);
+        .vp-hero-cover {
+          position: relative;
+          width: 100%;
+          height: 380px;
+          cursor: pointer;
+          overflow: hidden;
         }
-      }
-
-      @keyframes slideInFromLeft {
-        from {
-          opacity: 0;
-          transform: translateX(-20px);
+        .vp-hero--no-cover .vp-hero-cover { cursor: default; }
+        /* No tint over a real cover image — let the photo show in its own
+           colors. The bottom .vp-hero-content black gradient handles text
+           contrast for the identity strip. */
+        .vp-hero-cover-tint {
+          position: absolute; inset: 0;
+          background: linear-gradient(180deg, rgba(0,0,0,0.00) 0%, rgba(0,0,0,0.10) 100%);
+          pointer-events: none;
         }
-        to {
-          opacity: 1;
-          transform: translateX(0);
+        /* No cover image — drop the tint so the gray placeholder shows clean */
+        .vp-hero--no-cover .vp-hero-cover-tint { display: none; }
+        .vp-hero-cover-pattern {
+          position: absolute; inset: 0;
+          background-image: radial-gradient(rgba(255,255,255,0.10) 1.2px, transparent 1.2px);
+          background-size: 22px 22px;
+          opacity: 0.45;
+          pointer-events: none;
         }
-      }
-
-      @keyframes shimmer {
-        0% {
-          background-position: -1000px 0;
+        .vp-hero--no-cover .vp-hero-cover-pattern {
+          background-image: radial-gradient(rgba(255,255,255,0.30) 1.2px, transparent 1.2px);
+          opacity: 0.6;
         }
-        100% {
-          background-position: 1000px 0;
+        /* Centered "no image" placeholder (mirrors .ph-card-cover-empty on the listing page) */
+        .vp-hero-cover-empty {
+          position: absolute;
+          inset: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: rgba(255, 255, 255, 0.75);
+          font-size: 4rem;
+          pointer-events: none;
+          z-index: 1;
         }
-      }
-
-      /* Smooth scrolling */
-      html {
-        scroll-behavior: smooth;
-      }
-
-      /* Custom scrollbar */
-      ::-webkit-scrollbar {
-        width: 10px;
-      }
-
-      ::-webkit-scrollbar-track {
-        background: #f1f1f1;
-      }
-
-      ::-webkit-scrollbar-thumb {
-        background: #083A85;
-        border-radius: 5px;
-      }
-
-      ::-webkit-scrollbar-thumb:hover {
-        background: #062d6b;
-      }
-
-      /* Responsive improvements */
-      @media (max-width: 768px) {
-        .profile-stats {
-          flex-direction: column;
-          align-items: flex-start !important;
+        .vp-hero-toolbar {
+          position: absolute;
+          top: 16px; left: 16px; right: 16px;
+          display: flex; justify-content: space-between; align-items: center;
+          z-index: 3;
         }
-      }
-
-      @media (max-width: 480px) {
-        [style*="gridTemplateColumns"]:not([style*="repeat(2"]) {
-          grid-template-columns: 1fr !important;
+        .vp-hero-toolbar-right { display: flex; gap: 8px; }
+        .vp-icon-btn {
+          width: 40px; height: 40px;
+          border-radius: 50%;
+          border: none;
+          background: rgba(255,255,255,0.95);
+          color: ${BRAND};
+          cursor: pointer;
+          display: inline-flex; align-items: center; justify-content: center;
+          font-size: 0.95rem;
+          backdrop-filter: blur(8px);
+          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+          transition: transform 0.18s, background 0.18s;
         }
-      }
+        .vp-icon-btn:hover { transform: scale(1.06); background: #fff; }
+        .vp-icon-btn--small {
+          width: 30px; height: 30px;
+          background: #fff;
+          color: ${BRAND};
+          border: 1px solid #e2e8f0;
+          box-shadow: none;
+          font-size: 0.78rem;
+        }
+        .vp-icon-btn--small:hover { background: rgba(8,58,133,0.06); }
 
-      /* Focus styles for accessibility */
-      button:focus-visible,
-      a:focus-visible {
-        outline: 3px solid #083A85;
-        outline-offset: 2px;
-      }
+        .vp-hero-content {
+          position: relative;
+          margin-top: -80px;
+          padding: 0;
+          z-index: 2;
+          /* Smooth black gradient — fades from clear at top (cover image
+             still readable) to dark at bottom. backdrop-filter blurs whatever
+             sits behind so the cover image becomes a soft impression. */
+          background: linear-gradient(180deg,
+            rgba(0, 0, 0, 0.00) 0%,
+            rgba(0, 0, 0, 0.45) 35%,
+            rgba(0, 0, 0, 0.72) 100%);
+          backdrop-filter: blur(10px) saturate(1.0);
+          -webkit-backdrop-filter: blur(10px) saturate(1.0);
+        }
+        .vp-hero-content-inner {
+          max-width: 1280px;
+          margin: 0 auto;
+          padding: 0 clamp(1rem, 2vw, 2rem) 1.5rem;
+          display: grid;
+          grid-template-columns: auto 1fr;
+          gap: 1.25rem;
+          align-items: end;
+        }
+        .vp-avatar {
+          position: relative;
+          width: 160px;
+          height: 160px;
+          border-radius: 50%;
+          background: #cbd5e1;
+          flex: none;
+          cursor: pointer;
+          transition: transform 0.18s;
+        }
+        .vp-avatar:hover { transform: scale(1.02); }
+        .vp-avatar img,
+        .vp-avatar-empty {
+          width: 100%; height: 100%;
+          border-radius: 50%;
+          border: 4px solid #fff;
+          object-fit: cover;
+          box-shadow: 0 18px 40px -16px rgba(0,0,0,0.35);
+          display: block;
+        }
+        .vp-avatar-empty {
+          background: linear-gradient(135deg, #cbd5e1, #94a3b8);
+          display: flex; align-items: center; justify-content: center;
+          color: #fff; font-size: 4rem;
+        }
+        .vp-avatar-verif {
+          position: absolute;
+          bottom: 6px;
+          right: 10px;
+          width: 36px; height: 36px;
+          background: #fff;
+          border-radius: 50%;
+          display: flex; align-items: center; justify-content: center;
+          line-height: 0;
+          box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+          z-index: 2;
+        }
+        .vp-avatar-verif i {
+          color: #3b82f6;
+          font-size: 1.5rem;
+          display: block;
+          line-height: 1;
+        }
 
-      /* Selection styling */
-      ::selection {
-        background-color: #083A85;
-        color: white;
-      }
+        .vp-hero-text {
+          color: #fff;
+          padding-bottom: 12px;
+          min-width: 0;
+        }
+        .vp-name {
+          font-size: clamp(1.6rem, 3vw, 2.4rem);
+          font-weight: 800;
+          line-height: 1.1;
+          margin: 0 0 8px;
+          color: #fff;
+          text-shadow: 0 2px 8px rgba(0,0,0,0.25);
+        }
+        .vp-headline {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-wrap: wrap;
+          font-size: 0.95rem;
+          color: rgba(255,255,255,0.92);
+          margin: 0 0 12px;
+        }
+        .vp-headline-role { font-weight: 600; }
+        .vp-headline-loc { display: inline-flex; align-items: center; gap: 5px; }
+        .vp-headline-loc i { font-size: 0.85rem; }
+        .vp-sep { color: rgba(255,255,255,0.5); }
+        .vp-stats {
+          display: flex; flex-wrap: wrap; gap: 14px;
+          font-size: 0.86rem;
+          color: rgba(255,255,255,0.92);
+        }
+        .vp-stat {
+          display: inline-flex; align-items: center; gap: 6px;
+        }
+        .vp-stat strong { font-weight: 800; color: #fff; }
+        .vp-stat-mute { color: rgba(255,255,255,0.78); }
+        .vp-stat--avail {
+          padding: 3px 10px;
+          border-radius: 999px;
+          background: rgba(16,185,129,0.20);
+          color: #d1fae5;
+          font-weight: 700;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
+          font-size: 0.7rem;
+          border: 1px solid rgba(16,185,129,0.4);
+        }
+        .vp-status-dot {
+          width: 7px; height: 7px;
+          border-radius: 50%;
+          background: #10b981;
+          animation: vp-pulse 2s ease-out infinite;
+          box-shadow: 0 0 0 0 rgba(16,185,129,0.6);
+        }
+        @keyframes vp-pulse {
+          0%   { box-shadow: 0 0 0 0 rgba(16,185,129,0.55); }
+          70%  { box-shadow: 0 0 0 8px rgba(16,185,129,0); }
+          100% { box-shadow: 0 0 0 0 rgba(16,185,129,0); }
+        }
+        /* ===== CTAs ===== */
+        .vp-cta {
+          display: inline-flex; align-items: center; gap: 8px;
+          padding: 0.7rem 1.4rem;
+          border-radius: 12px;
+          border: none;
+          font-size: 0.92rem;
+          font-weight: 700;
+          font-family: inherit;
+          cursor: pointer;
+          text-decoration: none;
+          transition: transform 0.18s, box-shadow 0.18s, background 0.18s;
+        }
+        .vp-cta--primary {
+          background: linear-gradient(135deg, ${BRAND}, ${BRAND_DARK});
+          color: #fff;
+          box-shadow: 0 10px 24px -10px rgba(8,58,133,0.7);
+        }
+        .vp-cta--primary:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 14px 30px -10px rgba(8,58,133,0.85);
+        }
+        .vp-cta--ghost {
+          background: #fff;
+          color: ${BRAND};
+          border: 1.5px solid #e2e8f0;
+        }
+        .vp-cta--ghost:hover { border-color: ${BRAND}; }
+        .vp-cta--block { width: 100%; justify-content: center; }
 
-      /* Profile hover effect */
-      .profile-hover-overlay:hover {
-        background-color: rgba(0, 0, 0, 0.5) !important;
-      }
+        /* ===== TAB BAR ===== */
+        .vp-tabs {
+          position: sticky;
+          top: 0;
+          z-index: 10;
+          display: flex;
+          gap: 6px;
+          padding: 0.85rem clamp(1rem, 2vw, 2rem);
+          max-width: 1280px;
+          margin: 1.5rem auto 0;
+          background: rgba(255,255,255,0.92);
+          backdrop-filter: blur(8px);
+          border: 1px solid rgba(8,58,133,0.08);
+          border-radius: 16px;
+          overflow-x: auto;
+          scrollbar-width: none;
+          box-shadow: 0 4px 16px rgba(8,58,133,0.06);
+        }
+        .vp-tabs::-webkit-scrollbar { display: none; }
+        .vp-tab {
+          display: inline-flex; align-items: center; gap: 6px;
+          padding: 0.55rem 1rem;
+          border-radius: 999px;
+          border: none;
+          background: transparent;
+          color: #475569;
+          font-size: 0.86rem;
+          font-weight: 600;
+          font-family: inherit;
+          cursor: pointer;
+          white-space: nowrap;
+          transition: background 0.18s, color 0.18s, transform 0.18s;
+        }
+        .vp-tab i { font-size: 0.85rem; }
+        .vp-tab:hover {
+          background: rgba(8,58,133,0.06);
+          color: ${BRAND};
+        }
+        .vp-tab.is-active {
+          background: linear-gradient(135deg, ${BRAND}, ${BRAND_DARK});
+          color: #fff;
+          box-shadow: 0 6px 14px -6px rgba(8,58,133,0.55);
+        }
 
-      .profile-hover-overlay:hover .view-icon {
-        opacity: 1 !important;
-      }
+        /* ===== GRID LAYOUT ===== */
+        .vp-grid {
+          max-width: 1280px;
+          margin: 1.25rem auto 0;
+          padding: 0 clamp(1rem, 2vw, 2rem);
+          display: grid;
+          grid-template-columns: minmax(0, 8fr) minmax(0, 4fr);
+          gap: 2rem;
+          align-items: start;
+        }
+        .vp-main {
+          display: flex; flex-direction: column; gap: 1.25rem;
+          min-width: 0;
+        }
+        .vp-sidebar {
+          position: sticky;
+          top: 96px; /* below the sticky tab bar */
+          display: flex; flex-direction: column; gap: 1rem;
+          align-self: start;
+        }
 
-      /* Prevent body scroll when modal is open */
-      body:has(.image-viewer-modal) {
-        overflow: hidden;
-      }
-    `}</style>
+        /* ===== SECTION ===== */
+        .vp-section {
+          background: #fff;
+          border: 1px solid #e5e7eb;
+          border-radius: 16px;
+          padding: 1.5rem clamp(1rem, 2vw, 1.75rem);
+          box-shadow: 0 1px 4px rgba(8,58,133,0.04);
+        }
+        .vp-section-title {
+          display: flex; align-items: center; gap: 8px;
+          font-size: 1.05rem;
+          font-weight: 700;
+          color: #0f172a;
+          margin: 0 0 1rem;
+        }
+        .vp-section-title i { color: ${BRAND}; font-size: 1rem; }
+        .vp-prose {
+          color: #475569;
+          line-height: 1.65;
+          font-size: 0.95rem;
+          margin: 0;
+          white-space: pre-wrap;
+        }
 
-    <BookingWizard
-      isOpen={showWizard}
-      onClose={() => setShowWizard(false)}
-      preselectedPhotographerId={photographerId || undefined}
-    />
+        /* ===== CHIPS ===== */
+        .vp-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+        .vp-chip {
+          padding: 6px 14px;
+          border-radius: 999px;
+          background: rgba(8,58,133,0.06);
+          color: ${BRAND};
+          font-size: 0.85rem;
+          font-weight: 600;
+          border: 1px solid rgba(8,58,133,0.12);
+        }
+
+        /* ===== EQUIPMENT ===== */
+        .vp-equip-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+          gap: 10px;
+        }
+        .vp-equip-card {
+          display: flex; align-items: center; gap: 10px;
+          padding: 10px 14px;
+          background: #f8fafc;
+          border: 1px solid #e2e8f0;
+          border-radius: 12px;
+          transition: border-color 0.18s, transform 0.18s;
+        }
+        .vp-equip-card:hover { border-color: ${BRAND}; transform: translateY(-1px); }
+        .vp-equip-icon {
+          width: 32px; height: 32px;
+          border-radius: 8px;
+          background: rgba(8,58,133,0.08);
+          color: ${BRAND};
+          display: inline-flex; align-items: center; justify-content: center;
+          flex: none;
+        }
+        .vp-equip-name { font-size: 0.86rem; color: #0f172a; font-weight: 600; }
+
+        /* ===== QUOTE ===== */
+        .vp-section--quote {
+          position: relative;
+          background: linear-gradient(135deg, ${BRAND} 0%, ${BRAND_DARK} 100%);
+          color: #fff;
+          border: none;
+          padding: 2rem;
+        }
+        .vp-quote-mark {
+          font-size: 4rem;
+          line-height: 1;
+          color: rgba(255,255,255,0.15);
+          position: absolute;
+          top: 1rem; left: 1.25rem;
+        }
+        .vp-quote-text {
+          margin: 0;
+          padding: 0 0 0 3.5rem;
+          font-size: 1.1rem;
+          line-height: 1.6;
+          font-style: italic;
+          font-weight: 500;
+          color: rgba(255,255,255,0.95);
+        }
+
+        /* ===== SKILLS ===== */
+        .vp-skills { display: flex; flex-direction: column; gap: 14px; }
+        .vp-skill { display: flex; flex-direction: column; gap: 6px; }
+        .vp-skill-row {
+          display: flex; justify-content: space-between; align-items: center;
+          font-size: 0.88rem;
+        }
+        .vp-skill-name { color: #0f172a; font-weight: 600; }
+        .vp-skill-pct { color: ${BRAND}; font-weight: 700; }
+        .vp-skill-bar {
+          width: 100%; height: 8px;
+          background: rgba(8,58,133,0.08);
+          border-radius: 999px;
+          overflow: hidden;
+        }
+        .vp-skill-fill {
+          height: 100%;
+          background: linear-gradient(90deg, ${BRAND}, ${BRAND_DARK});
+          border-radius: 999px;
+          transition: width 0.6s cubic-bezier(0.22,1,0.36,1);
+        }
+
+        /* ===== PROJECTS ===== */
+        .vp-projects {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+          gap: 12px;
+        }
+        .vp-project {
+          position: relative;
+          aspect-ratio: 4/3;
+          border-radius: 12px;
+          overflow: hidden;
+          background: #cbd5e1;
+          cursor: pointer;
+          border: 1px solid #e5e7eb;
+        }
+        .vp-project img {
+          width: 100%; height: 100%;
+          object-fit: cover; object-position: center;
+          transition: transform 0.4s cubic-bezier(0.22,1,0.36,1);
+          display: block;
+        }
+        .vp-project:hover img { transform: scale(1.06); }
+        .vp-project-empty {
+          position: absolute; inset: 0;
+          display: flex; align-items: center; justify-content: center;
+          color: rgba(255,255,255,0.7); font-size: 2rem;
+        }
+        .vp-project-overlay {
+          position: absolute; inset: 0;
+          background: linear-gradient(to top, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0) 60%);
+          padding: 0.75rem 0.85rem;
+          color: #fff;
+          display: flex; flex-direction: column; justify-content: flex-end;
+          gap: 4px;
+        }
+        .vp-project-title {
+          margin: 0;
+          font-size: 0.9rem;
+          font-weight: 700;
+        }
+        .vp-project-year {
+          font-size: 0.7rem;
+          opacity: 0.85;
+          letter-spacing: 0.02em;
+        }
+
+        /* ===== TIMELINE ===== */
+        .vp-timeline {
+          position: relative;
+          display: flex; flex-direction: column; gap: 1.25rem;
+          padding-left: 22px;
+        }
+        .vp-timeline::before {
+          content: '';
+          position: absolute;
+          left: 6px; top: 6px; bottom: 6px;
+          width: 2px;
+          background: linear-gradient(${BRAND}, rgba(8,58,133,0.15));
+        }
+        .vp-timeline-item { position: relative; }
+        .vp-timeline-dot {
+          position: absolute;
+          left: -22px; top: 6px;
+          width: 14px; height: 14px;
+          border-radius: 50%;
+          background: ${BRAND};
+          border: 3px solid #fff;
+          box-shadow: 0 0 0 2px ${BRAND};
+        }
+        .vp-timeline-content {
+          background: #f8fafc;
+          border: 1px solid #e2e8f0;
+          border-radius: 12px;
+          padding: 0.85rem 1rem;
+        }
+        .vp-timeline-head {
+          display: flex; justify-content: space-between; align-items: baseline;
+          gap: 8px; flex-wrap: wrap;
+          margin-bottom: 4px;
+        }
+        .vp-timeline-title {
+          margin: 0;
+          font-size: 0.95rem;
+          font-weight: 700;
+          color: #0f172a;
+        }
+        .vp-timeline-meta {
+          font-size: 0.76rem;
+          color: ${BRAND};
+          font-weight: 700;
+          padding: 2px 8px;
+          background: rgba(8,58,133,0.08);
+          border-radius: 999px;
+          white-space: nowrap;
+        }
+        .vp-timeline-sub {
+          font-size: 0.84rem;
+          color: #475569;
+          font-weight: 600;
+          margin: 0 0 6px;
+        }
+        .vp-timeline-desc {
+          font-size: 0.86rem;
+          color: #64748b;
+          line-height: 1.55;
+          margin: 0;
+        }
+
+        /* ===== CREDENTIAL CARDS ===== */
+        .vp-cred-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+          gap: 12px;
+        }
+        .vp-cred-card {
+          background: #f8fafc;
+          border: 1px solid #e2e8f0;
+          border-radius: 14px;
+          padding: 1rem;
+          transition: border-color 0.18s, transform 0.18s, box-shadow 0.18s;
+        }
+        .vp-cred-card:hover {
+          border-color: ${BRAND};
+          transform: translateY(-2px);
+          box-shadow: 0 12px 24px -14px rgba(8,58,133,0.25);
+        }
+        .vp-cred-icon {
+          width: 36px; height: 36px;
+          border-radius: 10px;
+          background: rgba(8,58,133,0.08);
+          color: ${BRAND};
+          display: inline-flex; align-items: center; justify-content: center;
+          font-size: 1rem;
+          margin-bottom: 8px;
+        }
+        .vp-cred-title {
+          margin: 0 0 4px;
+          font-size: 0.95rem;
+          font-weight: 700;
+          color: #0f172a;
+        }
+        .vp-cred-issuer { margin: 0; font-size: 0.84rem; color: #475569; font-weight: 600; }
+        .vp-cred-year {
+          display: inline-block;
+          margin-top: 6px;
+          font-size: 0.72rem;
+          color: ${BRAND};
+          font-weight: 700;
+          padding: 2px 8px;
+          background: rgba(8,58,133,0.08);
+          border-radius: 999px;
+        }
+        .vp-cred-desc {
+          margin: 8px 0 0;
+          font-size: 0.84rem;
+          color: #64748b;
+          line-height: 1.5;
+        }
+
+        /* ===== REVIEWS ===== */
+        .vp-rating-summary {
+          display: grid;
+          grid-template-columns: auto 1fr;
+          gap: 1.5rem;
+          align-items: center;
+        }
+        .vp-rating-big {
+          display: flex; flex-direction: column; align-items: center; gap: 6px;
+          padding: 0.75rem 1.25rem;
+          background: linear-gradient(135deg, rgba(8,58,133,0.06), rgba(8,58,133,0.02));
+          border-radius: 14px;
+          min-width: 130px;
+        }
+        .vp-rating-num {
+          font-size: 2.5rem;
+          font-weight: 800;
+          color: ${BRAND};
+          line-height: 1;
+        }
+        .vp-rating-stars { display: flex; gap: 2px; }
+        .vp-rating-count { font-size: 0.78rem; color: #64748b; font-weight: 600; }
+        .vp-rating-bars { display: flex; flex-direction: column; gap: 6px; }
+        .vp-rating-row {
+          display: grid;
+          grid-template-columns: 30px 1fr 28px;
+          align-items: center;
+          gap: 10px;
+          font-size: 0.82rem;
+        }
+        .vp-rating-row-label {
+          display: inline-flex; align-items: center; gap: 3px;
+          color: #475569; font-weight: 600;
+        }
+        .vp-rating-row-label i { color: #f59e0b; font-size: 0.75rem; }
+        .vp-rating-bar {
+          height: 8px;
+          background: rgba(8,58,133,0.06);
+          border-radius: 999px;
+          overflow: hidden;
+        }
+        .vp-rating-fill {
+          height: 100%;
+          background: linear-gradient(90deg, #f59e0b, #fbbf24);
+          border-radius: 999px;
+          transition: width 0.6s cubic-bezier(0.22,1,0.36,1);
+        }
+        .vp-rating-row-count { text-align: right; color: #64748b; font-weight: 600; }
+
+        .vp-reviews { display: flex; flex-direction: column; gap: 12px; }
+        .vp-review {
+          padding: 1rem 1.1rem;
+          background: #f8fafc;
+          border: 1px solid #e2e8f0;
+          border-radius: 14px;
+          transition: border-color 0.18s, transform 0.18s;
+        }
+        .vp-review:hover { border-color: ${BRAND}; transform: translateY(-1px); }
+        .vp-review-head {
+          display: flex; align-items: center; gap: 12px;
+          margin-bottom: 8px;
+        }
+        .vp-review-avatar {
+          width: 44px; height: 44px;
+          border-radius: 50%;
+          background: rgba(8,58,133,0.08);
+          color: ${BRAND};
+          display: flex; align-items: center; justify-content: center;
+          overflow: hidden;
+          flex: none;
+          font-size: 1.6rem;
+        }
+        .vp-review-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .vp-review-meta { flex: 1; min-width: 0; }
+        .vp-review-name {
+          margin: 0;
+          font-size: 0.92rem;
+          font-weight: 700;
+          color: #0f172a;
+        }
+        .vp-review-type {
+          font-size: 0.74rem;
+          color: #64748b;
+        }
+        .vp-review-rating { display: flex; gap: 2px; flex: none; }
+        .vp-review-date {
+          display: inline-block;
+          font-size: 0.74rem;
+          color: #94a3b8;
+          margin-bottom: 6px;
+        }
+        .vp-review-comment {
+          margin: 0;
+          font-size: 0.9rem;
+          color: #475569;
+          line-height: 1.6;
+        }
+        .vp-review-imgs {
+          display: flex;
+          gap: 6px;
+          margin-top: 10px;
+          flex-wrap: wrap;
+        }
+        .vp-review-imgs img {
+          width: 64px; height: 64px;
+          border-radius: 8px;
+          object-fit: cover;
+          border: 1px solid #e2e8f0;
+        }
+
+        /* ===== EMPTY ===== */
+        .vp-empty {
+          background: #fff;
+          border: 1px dashed #e2e8f0;
+          border-radius: 16px;
+          padding: 3rem 1.5rem;
+          text-align: center;
+        }
+        .vp-empty-icon {
+          width: 72px; height: 72px;
+          border-radius: 50%;
+          background: rgba(8,58,133,0.08);
+          color: ${BRAND};
+          display: inline-flex; align-items: center; justify-content: center;
+          font-size: 2rem;
+          margin-bottom: 1rem;
+        }
+        .vp-empty h3 {
+          font-size: 1.1rem;
+          color: #0f172a;
+          margin: 0 0 6px;
+          font-weight: 700;
+        }
+        .vp-empty p { color: #64748b; margin: 0; font-size: 0.92rem; }
+        .vp-empty-text { color: #64748b; font-size: 0.92rem; margin: 0; }
+
+        /* ===== SIDEBAR CARDS ===== */
+        .vp-side-card {
+          background: #fff;
+          border: 1px solid #e5e7eb;
+          border-radius: 16px;
+          padding: 1.1rem;
+          box-shadow: 0 4px 12px rgba(8,58,133,0.05);
+        }
+        .vp-side-eyebrow {
+          display: block;
+          font-size: 0.7rem;
+          font-weight: 700;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          color: ${BRAND};
+          margin-bottom: 8px;
+        }
+        .vp-side-price {
+          display: flex; align-items: baseline; gap: 6px;
+          margin-bottom: 0.85rem;
+        }
+        .vp-side-price-value {
+          font-size: 1.6rem;
+          font-weight: 800;
+          color: #0f172a;
+        }
+        .vp-side-price-unit {
+          font-size: 0.85rem;
+          color: #64748b;
+          font-weight: 500;
+        }
+        .vp-side-price-onreq {
+          font-size: 1.1rem;
+          font-weight: 700;
+          color: #475569;
+        }
+        .vp-side-note {
+          margin: 10px 0 0;
+          font-size: 0.74rem;
+          color: #64748b;
+          display: flex; align-items: center; gap: 6px;
+        }
+        .vp-side-note i { color: #10b981; }
+
+        .vp-side-cal-head {
+          display: flex; justify-content: space-between; align-items: center;
+          margin-bottom: 10px;
+        }
+        .vp-side-cal-nav { display: inline-flex; align-items: center; gap: 6px; }
+        .vp-side-cal-month {
+          font-size: 0.82rem;
+          font-weight: 700;
+          color: #0f172a;
+          min-width: 110px;
+          text-align: center;
+        }
+        .vp-side-cal-legend {
+          display: flex; justify-content: space-between;
+          margin-top: 10px;
+          font-size: 0.72rem;
+          color: #64748b;
+        }
+        .vp-side-cal-legend span {
+          display: inline-flex; align-items: center; gap: 6px;
+        }
+        .vp-cal-dot {
+          width: 8px; height: 8px;
+          border-radius: 50%;
+          display: inline-block;
+        }
+        .vp-cal-dot--free { background: #10b981; }
+        .vp-cal-dot--booked { background: #ef4444; }
+
+        /* ===== MINI CALENDAR ===== */
+        .vp-cal { user-select: none; }
+        .vp-cal-weekdays {
+          display: grid;
+          grid-template-columns: repeat(7, 1fr);
+          gap: 2px;
+          margin-bottom: 6px;
+        }
+        .vp-cal-weekday {
+          text-align: center;
+          font-size: 0.65rem;
+          font-weight: 700;
+          color: #94a3b8;
+          letter-spacing: 0.05em;
+          text-transform: uppercase;
+        }
+        .vp-cal-grid {
+          display: grid;
+          grid-template-columns: repeat(7, 1fr);
+          gap: 4px;
+        }
+        .vp-cal-cell {
+          aspect-ratio: 1/1;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 0.78rem;
+          font-weight: 700;
+          color: #fff;
+          border-radius: 8px;
+          /* Available (free) — solid emerald chip, matches the legend dot */
+          background: #10b981;
+          border: 1px solid #059669;
+          box-shadow: 0 2px 6px rgba(16, 185, 129, 0.22);
+        }
+        .vp-cal-cell--empty {
+          background: transparent;
+          border-color: transparent;
+          box-shadow: none;
+        }
+        /* Past — faded out, no fill */
+        .vp-cal-cell.is-past {
+          color: #cbd5e1;
+          background: transparent;
+          border-color: transparent;
+          box-shadow: none;
+          font-weight: 600;
+        }
+        /* Today — solid brand-blue chip so it pops in the grid */
+        .vp-cal-cell.is-today {
+          background: ${BRAND};
+          color: #fff;
+          font-weight: 800;
+          border-color: ${BRAND};
+          box-shadow: 0 2px 6px rgba(8, 58, 133, 0.35);
+        }
+        /* Booked — solid red chip with white digit, clearly readable */
+        .vp-cal-cell.is-booked {
+          background: #ef4444;
+          color: #fff;
+          font-weight: 800;
+          border-color: #dc2626;
+          box-shadow: 0 2px 6px rgba(239, 68, 68, 0.30);
+        }
+        /* Booked + today — keep red bg, ring it with brand-blue outline */
+        .vp-cal-cell.is-booked.is-today {
+          background: #ef4444;
+          border-color: #dc2626;
+          outline: 2px solid ${BRAND};
+          outline-offset: -1px;
+        }
+
+        /* ===== TRUST ===== */
+        .vp-trust { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+        .vp-trust li {
+          display: flex; align-items: center; gap: 8px;
+          font-size: 0.85rem;
+          color: #475569;
+        }
+        .vp-trust i {
+          color: ${BRAND};
+          font-size: 0.95rem;
+          width: 18px;
+          text-align: center;
+        }
+
+        /* ===== CONTACT ===== */
+        .vp-contact { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; }
+        .vp-contact li {
+          display: flex; align-items: center; gap: 10px;
+          font-size: 0.86rem;
+        }
+        .vp-contact i {
+          color: ${BRAND};
+          font-size: 0.95rem;
+          width: 18px;
+          text-align: center;
+          flex: none;
+        }
+        .vp-contact-value {
+          color: #0f172a;
+          text-decoration: none;
+          font-weight: 600;
+          word-break: break-all;
+        }
+        .vp-contact-value--break { word-break: break-all; }
+        .vp-contact-value:hover { color: ${BRAND}; }
+        .vp-link-btn {
+          display: inline-flex; align-items: center; gap: 8px;
+          background: transparent;
+          border: none;
+          padding: 0;
+          font-family: inherit;
+          font-size: 0.86rem;
+          color: #94a3b8;
+          font-weight: 600;
+          cursor: pointer;
+          letter-spacing: 0.04em;
+        }
+        .vp-link-btn-cta {
+          color: ${BRAND};
+          font-weight: 700;
+          font-size: 0.78rem;
+          text-decoration: underline;
+        }
+        .vp-link-btn:hover { color: #475569; }
+
+        /* ===== MOBILE BOTTOM CTA ===== */
+        .vp-mobile-cta {
+          position: fixed;
+          bottom: 0; left: 0; right: 0;
+          z-index: 100;
+          background: #fff;
+          border-top: 1px solid #e2e8f0;
+          padding: 0.65rem 1rem;
+          display: flex; align-items: center; justify-content: space-between;
+          gap: 12px;
+          box-shadow: 0 -4px 16px rgba(8,58,133,0.10);
+        }
+        .vp-mobile-cta-price {
+          display: flex; align-items: baseline; gap: 5px;
+          color: #0f172a;
+        }
+        .vp-mobile-cta-from {
+          font-size: 0.62rem;
+          font-weight: 700;
+          letter-spacing: 0.05em;
+          text-transform: uppercase;
+          color: #94a3b8;
+        }
+        .vp-mobile-cta-price strong {
+          font-size: 1.05rem;
+          font-weight: 800;
+        }
+        .vp-mobile-cta-unit {
+          font-size: 0.72rem;
+          color: #64748b;
+        }
+        .vp-mobile-cta-onreq { font-size: 0.95rem; color: #475569; font-weight: 700; }
+
+        /* ===== IMAGE VIEWER ===== */
+        .vp-img-modal {
+          position: fixed;
+          inset: 0;
+          background: rgba(0,0,0,0.92);
+          backdrop-filter: blur(8px);
+          z-index: 9999;
+          display: flex; align-items: center; justify-content: center;
+          padding: 1.5rem;
+          animation: vp-fade-in 0.18s ease-out;
+        }
+        @keyframes vp-fade-in { from { opacity: 0; } to { opacity: 1; } }
+        .vp-img-modal img {
+          max-width: 95vw; max-height: 90vh;
+          object-fit: contain;
+          border-radius: 12px;
+          box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+        }
+        .vp-img-modal-close {
+          position: absolute;
+          top: 16px; right: 16px;
+          width: 44px; height: 44px;
+          border-radius: 50%;
+          border: none;
+          background: rgba(255,255,255,0.96);
+          color: #0f172a;
+          cursor: pointer;
+          display: inline-flex; align-items: center; justify-content: center;
+          font-size: 1rem;
+          box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+          transition: transform 0.18s, background 0.18s;
+        }
+        .vp-img-modal-close:hover { transform: scale(1.06); background: #fff; }
+
+        /* ===== ACCESSIBILITY ===== */
+        .vp-root :where(a, button, [tabindex]):focus-visible {
+          outline: 2px solid ${BRAND};
+          outline-offset: 2px;
+          border-radius: 8px;
+        }
+        ::selection { background: ${BRAND}; color: #fff; }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 1024px) {
+          .vp-grid { grid-template-columns: 1fr; }
+          .vp-sidebar {
+            position: static;
+            order: -1; /* sidebar above content on tablet */
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+          }
+        }
+        @media (max-width: 768px) {
+          .vp-hero-cover { height: 240px; }
+          .vp-hero-cover-empty { font-size: 3rem; }
+          .vp-hero-content {
+            margin-top: -56px;
+            grid-template-columns: 1fr;
+            gap: 0.85rem;
+            padding-bottom: 1rem;
+          }
+          .vp-avatar { width: 110px; height: 110px; }
+          .vp-avatar-verif { width: 28px; height: 28px; bottom: 4px; right: 6px; }
+          .vp-avatar-verif i { font-size: 1.1rem; }
+          .vp-name { font-size: 1.55rem; }
+          .vp-headline { font-size: 0.85rem; }
+          .vp-stats { font-size: 0.78rem; gap: 10px; }
+          .vp-tabs { margin: 1rem 1rem 0; padding: 0.6rem; border-radius: 12px; }
+          .vp-tab { padding: 0.5rem 0.85rem; font-size: 0.8rem; }
+          .vp-grid { gap: 1rem; padding: 0 1rem; }
+          .vp-section { padding: 1.1rem; border-radius: 14px; }
+          .vp-rating-summary { grid-template-columns: 1fr; gap: 1rem; }
+          .vp-rating-big { width: 100%; }
+          .vp-sidebar { grid-template-columns: 1fr; gap: 0.75rem; }
+          .vp-root { padding-bottom: 5.5rem; }
+        }
+        @media (max-width: 480px) {
+          .vp-name { font-size: 1.3rem; }
+          .vp-stats { gap: 8px; }
+          .vp-projects { grid-template-columns: repeat(2, 1fr); }
+          .vp-equip-grid { grid-template-columns: 1fr; }
+          .vp-cred-grid { grid-template-columns: 1fr; }
+        }
+
+        /* Prevent body scroll when image viewer open */
+        body:has(.image-viewer-modal) { overflow: hidden; }
+      `}</style>
     </>
   );
 }
 
-// Main page component with Suspense boundary
+// =================================================================
+// MiniCalendar — small reusable inline component
+// =================================================================
+function MiniCalendar({
+  year,
+  month,
+  bookedDates,
+}: {
+  year: number;
+  month: number;
+  bookedDates: BookedDate[];
+}) {
+  const firstDay = new Date(year, month, 1);
+  const startDayOfWeek = firstDay.getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  const cells: (number | null)[] = [];
+  for (let i = 0; i < startDayOfWeek; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+
+  const isBooked = (day: number) => {
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    return bookedDates.some((b) => {
+      if (!b || typeof b !== 'object') return false;
+      const obj = b as unknown as Record<string, unknown>;
+      if (typeof obj.date === 'string' && obj.date === dateStr) return true;
+      if (typeof obj.startDate === 'string' && typeof obj.endDate === 'string') {
+        return dateStr >= (obj.startDate as string) && dateStr <= (obj.endDate as string);
+      }
+      return false;
+    });
+  };
+
+  const todayStr = new Date().toISOString().split('T')[0];
+
+  return (
+    <div className="vp-cal">
+      <div className="vp-cal-weekdays">
+        {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
+          <div key={i} className="vp-cal-weekday">
+            {d}
+          </div>
+        ))}
+      </div>
+      <div className="vp-cal-grid">
+        {cells.map((day, i) => {
+          if (day === null) return <div key={i} className="vp-cal-cell vp-cal-cell--empty" />;
+          const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+          const booked = isBooked(day);
+          const isToday = dateStr === todayStr;
+          const isPast = dateStr < todayStr;
+          const cls = [
+            'vp-cal-cell',
+            booked ? 'is-booked' : '',
+            isToday ? 'is-today' : '',
+            isPast ? 'is-past' : '',
+          ]
+            .filter(Boolean)
+            .join(' ');
+          return (
+            <div key={i} className={cls} aria-label={booked ? `${dateStr} — booked` : `${dateStr} — available`}>
+              {day}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// =================================================================
+// Skeleton + Error states
+// =================================================================
+function ProfileSkeleton({ loadingLabel }: { loadingLabel: string }) {
+  return (
+    <div className="vp-skel-root">
+      <div className="vp-skel-hero" />
+      <div className="vp-skel-content">
+        <div className="vp-skel-avatar" />
+        <div className="vp-skel-lines">
+          <div className="vp-skel-line" style={{ width: '40%', height: 24 }} />
+          <div className="vp-skel-line" style={{ width: '70%' }} />
+          <div className="vp-skel-line" style={{ width: '55%' }} />
+        </div>
+      </div>
+      <p className="vp-skel-loading">{loadingLabel}</p>
+      <style>{`
+        .vp-skel-root {
+          min-height: 100vh;
+          background: #f9fafb;
+        }
+        .vp-skel-hero {
+          width: 100%;
+          height: 380px;
+          background: linear-gradient(90deg, #e2e8f0 25%, #cbd5e1 37%, #e2e8f0 63%);
+          background-size: 400% 100%;
+          animation: vp-shimmer 1.4s linear infinite;
+        }
+        .vp-skel-content {
+          max-width: 1280px;
+          margin: -80px auto 0;
+          padding: 0 2rem;
+          display: flex;
+          gap: 1.5rem;
+          align-items: end;
+        }
+        .vp-skel-avatar {
+          width: 160px; height: 160px;
+          border-radius: 50%;
+          border: 4px solid #fff;
+          background: linear-gradient(90deg, #e2e8f0 25%, #cbd5e1 37%, #e2e8f0 63%);
+          background-size: 400% 100%;
+          animation: vp-shimmer 1.4s linear infinite;
+          flex: none;
+        }
+        .vp-skel-lines {
+          flex: 1; display: flex; flex-direction: column; gap: 10px;
+          padding-bottom: 16px;
+        }
+        .vp-skel-line {
+          height: 14px; border-radius: 6px;
+          background: linear-gradient(90deg, #e2e8f0 25%, #cbd5e1 37%, #e2e8f0 63%);
+          background-size: 400% 100%;
+          animation: vp-shimmer 1.4s linear infinite;
+        }
+        .vp-skel-loading {
+          text-align: center;
+          color: #475569;
+          font-weight: 600;
+          margin-top: 4rem;
+          font-size: 0.95rem;
+        }
+        @keyframes vp-shimmer {
+          0%   { background-position: 100% 0; }
+          100% { background-position: -100% 0; }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+function ProfileError({ message }: { message: string }) {
+  return (
+    <div className="vp-err-root">
+      <div className="vp-err-card" role="alert">
+        <div className="vp-err-icon">
+          <i className="bi bi-exclamation-triangle-fill" />
+        </div>
+        <h2>Could not load profile</h2>
+        <p>{message}</p>
+        <div className="vp-err-actions">
+          <button
+            type="button"
+            onClick={() => {
+              if (typeof window !== 'undefined') window.location.reload();
+            }}
+            className="vp-err-btn vp-err-btn--primary"
+          >
+            <i className="bi bi-arrow-clockwise" /> Try again
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              if (typeof window !== 'undefined') window.history.back();
+            }}
+            className="vp-err-btn vp-err-btn--ghost"
+          >
+            <i className="bi bi-arrow-left" /> Go back
+          </button>
+        </div>
+      </div>
+      <style>{`
+        .vp-err-root {
+          min-height: 80vh;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 2rem;
+          background: #f9fafb;
+        }
+        .vp-err-card {
+          max-width: 480px; width: 100%;
+          padding: 2rem;
+          background: #fff;
+          border-radius: 18px;
+          border: 1px solid #fecaca;
+          box-shadow: 0 24px 60px -28px rgba(220,38,38,0.25);
+          text-align: center;
+        }
+        .vp-err-icon {
+          width: 72px; height: 72px;
+          border-radius: 50%;
+          background: rgba(239,68,68,0.10);
+          color: #dc2626;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 2rem;
+          margin: 0 auto 1rem;
+        }
+        .vp-err-card h2 {
+          color: #0f172a;
+          font-size: 1.25rem;
+          font-weight: 700;
+          margin: 0 0 0.5rem;
+        }
+        .vp-err-card p {
+          color: #64748b;
+          margin: 0 0 1.5rem;
+        }
+        .vp-err-actions {
+          display: flex; gap: 0.75rem;
+          justify-content: center;
+          flex-wrap: wrap;
+        }
+        .vp-err-btn {
+          display: inline-flex; align-items: center; gap: 6px;
+          padding: 0.65rem 1.25rem;
+          border-radius: 10px;
+          border: none;
+          font-size: 0.9rem;
+          font-weight: 700;
+          font-family: inherit;
+          cursor: pointer;
+          transition: transform 0.18s, box-shadow 0.18s;
+        }
+        .vp-err-btn--primary {
+          background: linear-gradient(135deg, ${BRAND}, ${BRAND_DARK});
+          color: #fff;
+          box-shadow: 0 6px 16px -8px rgba(8,58,133,0.55);
+        }
+        .vp-err-btn--primary:hover { transform: translateY(-1px); }
+        .vp-err-btn--ghost {
+          background: #fff;
+          color: #475569;
+          border: 1.5px solid #e2e8f0;
+        }
+        .vp-err-btn--ghost:hover { border-color: ${BRAND}; color: ${BRAND}; }
+      `}</style>
+    </div>
+  );
+}
+
+// =================================================================
+// Default export with Suspense (preserved)
+// =================================================================
 export default function ViewProfilePage(): React.JSX.Element {
   const t = useTranslations('viewProfile');
 
   return (
-    <Suspense fallback={
-      <div style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: '#fff'
-      }}>
-        <div style={{
-          textAlign: 'center',
-          color: '#083A85'
-        }}>
-          <div style={{
-            fontSize: '48px',
-            marginBottom: '16px'
-          }}>
-            <i className="bi bi-hourglass-split"></i>
+    <Suspense
+      fallback={
+        <div
+          style={{
+            minHeight: '100vh',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: '#fff',
+          }}
+        >
+          <div style={{ textAlign: 'center', color: BRAND }}>
+            <div style={{ fontSize: '48px', marginBottom: '16px' }}>
+              <i className="bi bi-hourglass-split" />
+            </div>
+            <p style={{ fontSize: '18px', fontWeight: '600' }}>{t('loadingProfile')}</p>
           </div>
-          <p style={{
-            fontSize: '18px',
-            fontWeight: '600'
-          }}>{t('loadingProfile')}</p>
         </div>
-      </div>
-    }>
+      }
+    >
       <ViewProfileContent />
     </Suspense>
   );
