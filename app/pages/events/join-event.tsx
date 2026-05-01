@@ -182,6 +182,7 @@ export default function JoinEvent() {
         title: decodeURIComponent(titleParam),
         category: decodeURIComponent(categoryParam || ''),
         fee: parseFloat(feeParam),
+        currency: decodeURIComponent(searchParams.get('currency') || 'RWF'),
         location: decodeURIComponent(locationParam || ''),
         image: '',
         status: 'ongoing',
