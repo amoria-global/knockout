@@ -264,6 +264,7 @@ function ViewEventContent(): React.JSX.Element {
   const [wishError, setWishError] = useState<string | null>(null);
   const [wishSuccess, setWishSuccess] = useState<string | null>(null);
   const [showWishVideoRecorder, setShowWishVideoRecorder] = useState(false);
+  const [showFullDescription, setShowFullDescription] = useState(false);
 
   // Restore cached wish identity from localStorage
   useEffect(() => {
@@ -1048,29 +1049,25 @@ function ViewEventContent(): React.JSX.Element {
 
         {/* ── Top-right: status badge ── */}
         <div className="ve-top-right-badges" style={{ position: 'absolute', top: 24, right: 28, zIndex: 30, display: 'flex', alignItems: 'center', gap: 10 }}>
-          {/* Unified glass status badge — colored dot differentiates status */}
+          {/* Unified glass status badge — status-aware colors */}
           {(() => {
             const dotColor = isLive ? '#10b981' : isCompleted ? '#6b7280' : isCancelled ? '#ef4444' : '#3b82f6';
             const statusIcon = isLive ? 'bi-camera-video-fill' : isCompleted ? 'bi-check-circle-fill' : isCancelled ? 'bi-x-circle-fill' : 'bi-broadcast';
             const statusKey = isLive ? 'live' : isCompleted ? 'completed' : isCancelled ? 'cancelled' : 'upcoming';
-            const badgeStyle: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', backgroundColor: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 20, color: '#fff', fontSize: 14, fontWeight: 700, textTransform: 'uppercase', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' };
-
-            // For upcoming events with countdown, merge into one pill
-            if (isUpcoming && showCountdown && msUntilStart !== null) {
-              const { days, hours, minutes, seconds } = getCountdownParts(msUntilStart);
-              const pad = (n: number) => String(n).padStart(2, '0');
-              const timeStr = days > 0 ? `${pad(days)}d ${pad(hours)}h ${pad(minutes)}m ${pad(seconds)}s` : `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
-              return (
-                <div className={`ve-status-badge ve-countdown-pill${isLive ? ' live-badge' : ''}`} style={badgeStyle}>
-                  <span className="ve-status-dot" style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: dotColor, flexShrink: 0 }} />
-                  <i className={`bi ${statusIcon}`} style={{ fontSize: 15, opacity: 0.85 }}></i>
-                  <span>{tStatus(statusKey)}</span>
-                  <span style={{ width: 1, height: 16, backgroundColor: 'rgba(255,255,255,0.25)', flexShrink: 0 }} />
-                  <i className="bi bi-clock" style={{ fontSize: 14, opacity: 0.7 }}></i>
-                  <span style={{ fontFamily: "'Pragati Narrow', monospace", letterSpacing: '0.04em' }}>{timeStr}</span>
-                </div>
-              );
-            }
+            const isUpcomingStatus = !isLive && !isCompleted && !isCancelled;
+            const badgeStyle: React.CSSProperties = {
+              display: 'flex', alignItems: 'center', gap: 8,
+              padding: '10px 20px',
+              backgroundColor: isUpcomingStatus ? 'rgba(59,130,246,0.2)' : isLive ? 'rgba(16,185,129,0.15)' : 'rgba(0,0,0,0.55)',
+              backdropFilter: 'blur(12px)',
+              border: `1px solid ${isUpcomingStatus ? 'rgba(59,130,246,0.5)' : isLive ? 'rgba(16,185,129,0.4)' : 'rgba(255,255,255,0.15)'}`,
+              borderRadius: 20,
+              color: '#fff',
+              fontSize: 14,
+              fontWeight: 700,
+              textTransform: 'uppercase',
+              boxShadow: isUpcomingStatus ? '0 4px 16px rgba(59,130,246,0.15)' : '0 4px 12px rgba(0,0,0,0.3)',
+            };
 
             return (
               <div className={`ve-status-badge${isLive ? ' live-badge' : ''}`} style={badgeStyle}>
@@ -1131,7 +1128,54 @@ function ViewEventContent(): React.JSX.Element {
             {selectedEvent.title}
           </h1>
 
-          {/* Countdown / Happening Now / Event Ended */}
+          {/* Countdown — prominent display for upcoming events */}
+          {isUpcoming && showCountdown && msUntilStart !== null && (() => {
+            const { days, hours, minutes, seconds } = getCountdownParts(msUntilStart);
+            const pad = (n: number) => String(n).padStart(2, '0');
+            return (
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '14px',
+                padding: '14px 28px',
+                background: 'linear-gradient(135deg, rgba(59,130,246,0.15), rgba(59,130,246,0.05))',
+                border: '1px solid rgba(59,130,246,0.4)',
+                borderRadius: '16px',
+                alignSelf: 'flex-start',
+                marginBottom: '4px',
+              }}>
+                <i className="bi bi-clock-fill" style={{ color: '#60a5fa', fontSize: 22 }}></i>
+                <div style={{ display: 'flex', gap: '6px', alignItems: 'baseline' }}>
+                  {[
+                    { value: pad(days), label: 'd' },
+                    { value: pad(hours), label: 'h' },
+                    { value: pad(minutes), label: 'm' },
+                    { value: pad(seconds), label: 's' },
+                  ].map((unit, i) => (
+                    <span key={i} style={{ display: 'inline-flex', alignItems: 'baseline' }}>
+                      <span style={{
+                        fontSize: 'clamp(22px, 3vw, 32px)',
+                        fontWeight: 800,
+                        color: '#93c5fd',
+                        fontFamily: "'Pragati Narrow', monospace",
+                        letterSpacing: '0.04em',
+                      }}>{unit.value}</span>
+                      <span style={{
+                        fontSize: 'clamp(12px, 1.5vw, 14px)',
+                        fontWeight: 600,
+                        color: 'rgba(147,197,253,0.6)',
+                        marginLeft: '2px',
+                        marginRight: i < 3 ? '4px' : '0',
+                        textTransform: 'uppercase',
+                      }}>{unit.label}</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Happening Now indicator */}
           {isLive && (
             <div style={{
               display: 'inline-flex',
@@ -1165,23 +1209,42 @@ function ViewEventContent(): React.JSX.Element {
             </div>
           )}
 
-          {/* Description — clamped to 2 lines */}
+          {/* Description — expandable with "View more" */}
           {selectedEvent.description && (
-            <p style={{ fontSize: 'clamp(13px, 1.3vw, 16px)', color: '#a1a1aa', lineHeight: 1.5, margin: '0 0 6px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden', maxWidth: '90%' }}>
-              {selectedEvent.description}
-            </p>
+            <div style={{ maxWidth: '90%' }}>
+              <p style={{
+                fontSize: 'clamp(13px, 1.3vw, 16px)', color: '#a1a1aa', lineHeight: 1.5, margin: '0 0 4px', wordBreak: 'break-word',
+                ...(showFullDescription ? {} : { display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden' }),
+              }}>
+                {selectedEvent.description}
+              </p>
+              {selectedEvent.description.length > 120 && (
+                <button
+                  onClick={() => setShowFullDescription(prev => !prev)}
+                  style={{ background: 'none', border: 'none', color: '#60a5fa', fontSize: 13, fontWeight: 600, cursor: 'pointer', padding: 0, letterSpacing: '0.02em' }}
+                >
+                  {showFullDescription ? 'View less' : 'View more'}
+                </button>
+              )}
+            </div>
           )}
 
           {/* Info row: location · time · attendees */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4, flexWrap: 'wrap', color: '#9ca3af', fontSize: 15 }}>
-            <i className="bi bi-geo-alt-fill" style={{ color: '#f97316', fontSize: 15 }}></i>
-            <span>{selectedEvent.location || 'TBD'}</span>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 4, flexWrap: 'wrap', color: '#9ca3af', fontSize: 15 }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, wordBreak: 'break-word', overflowWrap: 'break-word', minWidth: 0 }}>
+              <i className="bi bi-geo-alt-fill" style={{ color: '#f97316', fontSize: 15, flexShrink: 0 }}></i>
+              <span style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}>{selectedEvent.location || 'TBD'}</span>
+            </span>
             <span style={{ color: '#4b5563' }}>•</span>
-            <i className="bi bi-clock-fill" style={{ color: '#10b981', fontSize: 15 }}></i>
-            <span>{formatTimeRange(selectedEvent.startTime, selectedEvent.endTime)}</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' }}>
+              <i className="bi bi-clock-fill" style={{ color: '#10b981', fontSize: 15, flexShrink: 0 }}></i>
+              <span>{formatTimeRange(selectedEvent.startTime, selectedEvent.endTime)}</span>
+            </span>
             <span style={{ color: '#4b5563' }}>•</span>
-            <i className="bi bi-people-fill" style={{ color: '#ec4899', fontSize: 15 }}></i>
-            <span>{selectedEvent.maxGuests && selectedEvent.maxGuests > 0 ? `${selectedEvent.maxGuests.toLocaleString()} ${t('people')}` : 'Unlimited'}</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' }}>
+              <i className="bi bi-people-fill" style={{ color: '#ec4899', fontSize: 15, flexShrink: 0 }}></i>
+              <span>{selectedEvent.maxGuests && selectedEvent.maxGuests > 0 ? `${selectedEvent.maxGuests.toLocaleString()} ${t('people')}` : 'Unlimited'}</span>
+            </span>
           </div>
 
           {/* Organizer row */}
@@ -1207,15 +1270,15 @@ function ViewEventContent(): React.JSX.Element {
 
           {/* Tags — pushed to bottom of TOP block */}
           {tags.length > 0 && (
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 'auto' }}>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 'auto', maxWidth: '100%' }}>
               {tags.slice(0, 5).map((tag, i) => (
                 <span
                   key={i}
-                  style={{ padding: '7px 14px', backgroundColor: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 18, fontSize: 14, color: '#d1d5db', fontWeight: 500, display: 'inline-flex', alignItems: 'center', gap: 5, transition: 'all 0.2s', cursor: 'default' }}
+                  style={{ padding: '7px 14px', backgroundColor: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 18, fontSize: 14, color: '#d1d5db', fontWeight: 500, display: 'inline-flex', alignItems: 'center', gap: 5, transition: 'all 0.2s', cursor: 'default', maxWidth: '100%', wordBreak: 'break-word', overflowWrap: 'break-word' }}
                   onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(8,58,133,0.2)'; e.currentTarget.style.color = '#5b9bff'; e.currentTarget.style.borderColor = 'rgba(8,58,133,0.4)'; }}
                   onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = '#d1d5db'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }}
                 >
-                  <i className="bi bi-hash" style={{ fontSize: 13 }}></i>{tag}
+                  <i className="bi bi-hash" style={{ fontSize: 13, flexShrink: 0 }}></i>{tag}
                 </span>
               ))}
             </div>
@@ -1223,9 +1286,9 @@ function ViewEventContent(): React.JSX.Element {
 
           </div>
 
-          {/* BOTTOM block — CTA + wishes (absolute, centered horizontally across viewport, vertically in panel) */}
-          <div className="ve-bottom-block" style={{ position: 'absolute', left: 0, width: '147%' /* compensate for 68% panel width to span full viewport */, bottom: 'clamp(20px, 4vh, 50px)', display: 'flex', justifyContent: 'center', pointerEvents: 'none', transform: 'translateX(20px)' }}>
-          <div style={{ pointerEvents: 'auto' }}>
+          {/* BOTTOM block — CTA + wishes */}
+          <div className="ve-bottom-block" style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', paddingTop: '16px', flexShrink: 0 }}>
+          <div>
           {/* ── CTA ── */}
           <div className="ve-cta-bar" style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: 8, maxWidth: '420px' }}>
           {isLive ? (
