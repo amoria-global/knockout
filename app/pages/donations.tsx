@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import Navbar from "../components/navbar";
+import ErrorPopup, { type PopupSeverity } from "../components/ErrorPopup";
 import Footer from "../components/footer";
 import PaymentCurrencyPreview, { type CurrencyCode } from "../components/PaymentCurrencyPreview";
 import { getCurrencies, createPublicDonation, getDonationTiers, getCurrencyRates, type Currency as APICurrency, type ExchangeRate } from '@/lib/APIs/public';
@@ -80,69 +81,97 @@ const ImpactCounter = ({
   return (
     <div style={{
       textAlign: 'center',
-      padding: '32px 20px',
+      padding: '36px 22px 28px',
       backgroundColor: '#fff',
-      borderRadius: '20px',
-      transition: 'all 0.35s ease',
+      borderRadius: '22px',
+      transition: 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
       cursor: 'default',
       position: 'relative',
       overflow: 'hidden',
-      minHeight: '170px',
+      minHeight: '210px',
       display: 'flex',
       flexDirection: 'column',
       justifyContent: 'center',
-      boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
-      border: '1px solid #e2e8f0',
+      boxShadow: `0 4px 16px rgba(0,0,0,0.04), 0 1px 2px ${color}10`,
+      border: `1px solid ${color}1F`,
     }}
     className="impact-card"
-    onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-6px)'; e.currentTarget.style.boxShadow = `0 12px 30px ${color}20`; e.currentTarget.style.borderColor = `${color}40`; }}
-    onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 12px rgba(0,0,0,0.06)'; e.currentTarget.style.borderColor = '#e2e8f0'; }}
+    onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-8px)'; e.currentTarget.style.boxShadow = `0 22px 44px -12px ${color}45, 0 6px 14px -4px rgba(0,0,0,0.08)`; e.currentTarget.style.borderColor = `${color}60`; }}
+    onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = `0 4px 16px rgba(0,0,0,0.04), 0 1px 2px ${color}10`; e.currentTarget.style.borderColor = `${color}1F`; }}
     >
-      {/* Subtle background glow */}
-      <div style={{ position: 'absolute', top: '-30px', left: '50%', transform: 'translateX(-50%)', width: '120px', height: '120px', background: `radial-gradient(circle, ${color}10 0%, transparent 70%)`, borderRadius: '50%', pointerEvents: 'none' }} />
+      {/* Top accent stripe — fades in on hover via the card transition */}
+      <div style={{ position: 'absolute', top: 0, left: '15%', right: '15%', height: 3, borderRadius: '0 0 3px 3px', background: `linear-gradient(90deg, transparent, ${color}, transparent)`, opacity: 0.85, pointerEvents: 'none' }} />
+
+      {/* Background glow */}
+      <div style={{ position: 'absolute', top: '-40px', left: '50%', transform: 'translateX(-50%)', width: '160px', height: '160px', background: `radial-gradient(circle, ${color}15 0%, transparent 70%)`, borderRadius: '50%', pointerEvents: 'none' }} />
 
       {/* Icon */}
       <div style={{
-        width: '50px',
-        height: '50px',
-        borderRadius: '14px',
-        background: `linear-gradient(135deg, ${color} 0%, ${color}cc 100%)`,
+        width: '56px',
+        height: '56px',
+        borderRadius: '16px',
+        background: `linear-gradient(135deg, ${color} 0%, ${color}aa 100%)`,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        margin: '0 auto 14px',
+        margin: '0 auto 16px',
         position: 'relative',
         zIndex: 2,
-        boxShadow: `0 4px 12px ${color}30`,
+        boxShadow: `0 8px 22px -6px ${color}55, inset 0 1px 0 rgba(255,255,255,0.18)`,
       }}>
-        <i className={icon} style={{ fontSize: '22px', color: '#fff' }} />
+        <i className={icon} style={{ fontSize: '24px', color: '#fff' }} />
       </div>
 
-      {/* Number with gradient */}
+      {/* Number — uses each card's own brand color in the gradient */}
       <div style={{
-        fontSize: '40px',
-        fontWeight: 800,
-        lineHeight: 1.1,
-        marginBottom: '6px',
+        fontFamily: "'Georgia', 'Times New Roman', serif",
+        fontSize: '46px',
+        fontWeight: 700,
+        lineHeight: 1,
+        marginBottom: '8px',
         position: 'relative',
         zIndex: 2,
-        background: 'linear-gradient(90deg, #8B5CF6 0%, #FF6B6B 100%)',
+        background: `linear-gradient(180deg, #0F172A 0%, ${color} 100%)`,
         WebkitBackgroundClip: 'text',
         WebkitTextFillColor: 'transparent',
         backgroundClip: 'text',
+        letterSpacing: '-0.01em',
       }}>
-        {formatNumber(count)}{suffix}
+        {formatNumber(count)}<span style={{ color, fontSize: '0.5em', verticalAlign: 'super', WebkitTextFillColor: color }}>{suffix}</span>
       </div>
 
+      {/* Label */}
       <div style={{
-        fontSize: '13px',
+        fontSize: '11px',
         color: '#64748b',
-        fontWeight: 600,
-        letterSpacing: '0.3px',
+        fontWeight: 700,
+        letterSpacing: '0.22em',
+        textTransform: 'uppercase',
         position: 'relative',
         zIndex: 2,
+        marginBottom: 12,
       }}>
         {label}
+      </div>
+
+      {/* Mini progress bar — visualizes the "growing impact" feel */}
+      <div style={{
+        width: '60%', maxWidth: 120,
+        height: 3,
+        margin: '0 auto',
+        borderRadius: 3,
+        background: `${color}18`,
+        position: 'relative', zIndex: 2,
+        overflow: 'hidden',
+      }}>
+        <div style={{
+          height: '100%',
+          width: `${Math.min(100, (count / targetNumber) * 100)}%`,
+          background: `linear-gradient(90deg, ${color}, ${color}cc)`,
+          borderRadius: 3,
+          transition: 'width 0.6s ease',
+          boxShadow: `0 0 8px ${color}99`,
+        }} />
       </div>
     </div>
   );
@@ -296,6 +325,17 @@ const Donations = () => {
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [donationLoading, setDonationLoading] = useState(false);
   const [donationError, setDonationError] = useState<string | null>(null);
+
+  // Designed error popup state (used for processing failures; validation hints stay inline)
+  const [errorPopup, setErrorPopup] = useState<{
+    open: boolean;
+    severity: PopupSeverity;
+    title?: string;
+    message: string;
+    hint?: string;
+    primaryAction?: { label: string; onClick: () => void; icon?: string };
+  }>({ open: false, severity: 'error', message: '' });
+  const closeErrorPopup = useCallback(() => setErrorPopup(p => ({ ...p, open: false })), []);
   const [donationSuccess, setDonationSuccess] = useState(false);
 
   // XentriPay modal state
@@ -361,7 +401,20 @@ const Donations = () => {
       setShowXentriPayModal(true);
     } catch (err) {
       const raw = err instanceof Error ? err.message : '';
-      setDonationError(raw || 'Unable to process your donation. Please check your connection and try again.');
+      const message = raw || 'Unable to process your donation. Please check your connection and try again.';
+      setDonationError(message);
+      setErrorPopup({
+        open: true,
+        severity: 'error',
+        title: 'Donation could not be processed',
+        message,
+        hint: 'No charge was made. You can try again with the same or a different payment method.',
+        primaryAction: {
+          label: 'Try again',
+          icon: 'bi-arrow-clockwise',
+          onClick: () => { closeErrorPopup(); handleDonation(); },
+        },
+      });
     } finally {
       setDonationLoading(false);
     }
@@ -555,6 +608,34 @@ const Donations = () => {
           box-shadow: 0 20px 50px rgba(0,0,0,0.1) !important;
         }
 
+        /* ── Donation hero — cinematic ambient effects ── */
+        @keyframes donHeartFloat {
+          0%, 100% { transform: translateY(0) rotate(0); opacity: 0.5; }
+          50%      { transform: translateY(-22px) rotate(-8deg); opacity: 1; }
+        }
+        @keyframes donStarTwinkle {
+          0%, 100% { opacity: 0.3; }
+          50%      { opacity: 1; }
+        }
+        @keyframes donDotPulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50%      { opacity: 0.55; transform: scale(0.85); }
+        }
+        @keyframes donAuroraDrift {
+          0%, 100% { transform: translateX(0) skewX(-6deg); opacity: 0.7; }
+          50%      { transform: translateX(20px) skewX(-3deg); opacity: 1; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .don-hero-heart, .don-hero-star,
+          [style*="donDotPulse"], [style*="donAuroraDrift"] {
+            animation: none !important;
+          }
+        }
+        .don-hero-cta:focus-visible {
+          outline: 2px solid #fff;
+          outline-offset: 3px;
+        }
+
         @media (max-width: 768px) {
           /* Hero Section */
           .donations-page > section:first-of-type { min-height: auto !important; }
@@ -692,60 +773,141 @@ const Donations = () => {
         </div>
       )}
 
-      {/* Hero Section */}
+      {/* ━━━ Hero Section — cinematic redesign ━━━ */}
       <section
         ref={heroSectionRef}
+        className="don-hero"
         style={{
           position: 'relative',
           overflow: 'hidden',
           minHeight: '100vh',
+          background: 'linear-gradient(135deg, #03152F 0%, #052047 30%, #083A85 70%, #0F4FB6 100%)',
         }}
       >
-        {/* Background image with overlay — same pattern as events page */}
+        {/* Soft photo backdrop with stronger artistic blur */}
         <div style={{ position: 'absolute', inset: 0 }}>
           <img
             src="/students.png"
-            alt="Donations Background"
+            alt=""
             style={{
               width: '100%',
               height: '100%',
               objectFit: 'cover',
               objectPosition: 'center',
-              filter: 'blur(6px)',
-              transform: 'scale(1.05)',
+              filter: 'blur(8px) saturate(0.85) brightness(0.65)',
+              transform: 'scale(1.08)',
+              opacity: 0.35,
             }}
           />
           <div style={{
             position: 'absolute',
             inset: 0,
-            background: 'linear-gradient(135deg, #083A85 0%, #0a4da3 50%, #083A85 100%)',
-            opacity: 0.78,
+            background: 'linear-gradient(180deg, rgba(3,21,47,0.7) 0%, rgba(8,58,133,0.55) 50%, rgba(3,21,47,0.85) 100%)',
           }} />
         </div>
 
-        {/* Rotating Globe — background decoration */}
+        {/* Floating heart particles — subtle generosity motif */}
+        {[
+          { l: '8%',  t: '14%', d: 0,    s: 16, op: 0.18 },
+          { l: '92%', t: '22%', d: 1.8,  s: 22, op: 0.20 },
+          { l: '14%', t: '78%', d: 3.2,  s: 14, op: 0.16 },
+          { l: '88%', t: '70%', d: 2.4,  s: 18, op: 0.18 },
+          { l: '50%', t: '8%',  d: 0.6,  s: 12, op: 0.14 },
+          { l: '24%', t: '46%', d: 4.0,  s: 12, op: 0.13 },
+          { l: '76%', t: '50%', d: 2.0,  s: 14, op: 0.15 },
+        ].map((h, i) => (
+          <i
+            key={i}
+            className="bi bi-heart-fill don-hero-heart"
+            aria-hidden="true"
+            style={{
+              position: 'absolute',
+              left: h.l,
+              top: h.t,
+              fontSize: h.s,
+              color: `rgba(236,72,153,${h.op})`,
+              animation: `donHeartFloat 9s ease-in-out ${h.d}s infinite`,
+              pointerEvents: 'none',
+              zIndex: 1,
+              filter: 'drop-shadow(0 0 8px rgba(236,72,153,0.45))',
+            }}
+          />
+        ))}
+
+        {/* Twinkling stars */}
+        {[
+          { l: '12%', t: '12%', d: 0,    big: true  },
+          { l: '34%', t: '8%',  d: 1.2,  big: false },
+          { l: '58%', t: '18%', d: 2.4,  big: false },
+          { l: '78%', t: '10%', d: 0.8,  big: true  },
+          { l: '20%', t: '34%', d: 1.6,  big: false },
+          { l: '82%', t: '38%', d: 2.8,  big: false },
+          { l: '8%',  t: '60%', d: 0.4,  big: false },
+          { l: '46%', t: '76%', d: 1.1,  big: true  },
+          { l: '64%', t: '88%', d: 2.6,  big: false },
+          { l: '94%', t: '60%', d: 1.9,  big: false },
+        ].map((s, i) => (
+          <span
+            key={i}
+            className={`don-hero-star${s.big ? ' lg' : ''}`}
+            aria-hidden="true"
+            style={{
+              position: 'absolute',
+              left: s.l, top: s.t,
+              width: s.big ? 3 : 2,
+              height: s.big ? 3 : 2,
+              borderRadius: '50%',
+              background: '#fff',
+              boxShadow: s.big ? '0 0 8px rgba(255,255,255,0.95)' : '0 0 4px rgba(255,255,255,0.85)',
+              opacity: 0.5,
+              animation: `donStarTwinkle 4.2s ease-in-out ${s.d}s infinite`,
+              pointerEvents: 'none',
+              zIndex: 1,
+            }}
+          />
+        ))}
+
+        {/* Aurora ribbon */}
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            top: '15%', left: '-10%', right: '-10%', height: '14%',
+            background: 'linear-gradient(90deg, transparent 0%, rgba(192,132,252,0.20) 25%, rgba(236,72,153,0.18) 50%, rgba(125,211,252,0.16) 75%, transparent 100%)',
+            filter: 'blur(40px)',
+            pointerEvents: 'none',
+            zIndex: 1,
+            animation: 'donAuroraDrift 18s ease-in-out infinite',
+          }}
+        />
+
+        {/* Soft brand orbs */}
+        <div aria-hidden="true" style={{ position: 'absolute', top: '12%', left: '6%', width: 280, height: 280, background: 'radial-gradient(circle, rgba(168,85,247,0.22) 0%, transparent 70%)', borderRadius: '50%', filter: 'blur(48px)', pointerEvents: 'none' }} />
+        <div aria-hidden="true" style={{ position: 'absolute', bottom: '8%', right: '6%', width: 320, height: 320, background: 'radial-gradient(circle, rgba(236,72,153,0.18) 0%, transparent 70%)', borderRadius: '50%', filter: 'blur(50px)', pointerEvents: 'none' }} />
+
+        {/* Rotating Globe — center, larger and richer */}
         <div style={{
           position: 'absolute',
           top: '50%',
           left: '50%',
           transform: 'translate(-50%, -50%)',
           zIndex: 1,
-          opacity: 0.3,
+          opacity: 0.32,
           pointerEvents: 'none',
         }}>
           <RotatingGlobe
-            size={500}
+            size={580}
             rotationSpeed={0.15}
-            landColor="rgba(255, 255, 255, 0.12)"
+            landColor="rgba(255, 255, 255, 0.16)"
             oceanColor="rgba(255, 255, 255, 0.03)"
-            borderColor="rgba(255, 255, 255, 0.2)"
-            graticuleColor="rgba(255, 255, 255, 0.08)"
-            glowColor="rgba(139, 92, 246, 0.2)"
+            borderColor="rgba(168,85,247, 0.30)"
+            graticuleColor="rgba(255, 255, 255, 0.10)"
+            glowColor="rgba(236, 72, 153, 0.30)"
           />
         </div>
 
         <div className="hero-content" style={{
-          maxWidth: '900px',
+          maxWidth: '980px',
           margin: '0 auto',
           padding: 'clamp(24px, 4vw, 48px) clamp(15px, 4vw, 40px)',
           position: 'relative',
@@ -757,85 +919,165 @@ const Donations = () => {
           justifyContent: 'center',
           minHeight: 'calc(100vh - 110px)',
         }}>
-          {/* Badge */}
-          <div style={{
+          {/* Premium eyebrow pill */}
+          <div className="don-hero-eyebrow" style={{
             display: 'inline-flex',
             alignItems: 'center',
-            gap: '8px',
-            backgroundColor: 'rgba(255,255,255,0.12)',
+            gap: '10px',
+            background: 'rgba(255,255,255,0.06)',
             padding: '8px 18px',
-            borderRadius: '50px',
-            marginBottom: '14px',
-            backdropFilter: 'blur(10px)',
-            border: '1px solid rgba(255,255,255,0.15)',
+            borderRadius: '999px',
+            marginBottom: '18px',
+            backdropFilter: 'blur(12px)',
+            border: '1px solid rgba(255,255,255,0.18)',
+            position: 'relative',
+            overflow: 'hidden',
           }}>
-            <i className="bi bi-heart-fill" style={{ fontSize: '12px', color: '#fff' }} />
-            <span style={{ color: '#fff', fontSize: '13px', fontWeight: 500 }}>Making a Difference Together</span>
+            <span style={{
+              width: 7, height: 7, borderRadius: '50%',
+              background: 'linear-gradient(135deg, #C084FC, #EC4899)',
+              boxShadow: '0 0 10px rgba(236,72,153,0.7)',
+              animation: 'donDotPulse 1.6s ease-in-out infinite',
+            }} />
+            <span style={{ color: '#F5EBFF', fontSize: '11px', fontWeight: 700, letterSpacing: '0.32em', textTransform: 'uppercase' }}>Donate · Empower · Inspire</span>
+            <span style={{ color: '#EC4899', fontSize: '12px' }}>✦</span>
           </div>
 
           <h1 className="hero-title" style={{
-            fontSize: 'clamp(28px, 5vw, 48px)',
-            fontWeight: 700,
+            fontSize: 'clamp(34px, 6vw, 64px)',
+            fontWeight: 300,
             color: '#fff',
-            lineHeight: 1.15,
-            marginBottom: '12px',
+            lineHeight: 1.05,
+            marginBottom: '18px',
             letterSpacing: '-0.02em',
-            fontFamily: "'Pragati Narrow', sans-serif",
+            fontFamily: "'Georgia', 'Times New Roman', serif",
+            textShadow: '0 4px 30px rgba(0,0,0,0.45), 0 0 50px rgba(168,85,247,0.20)',
           }}>
-            Transform Lives Through
-            <br />
-            Your Generosity
+            Transform lives through{' '}
+            <span style={{
+              fontWeight: 600,
+              fontStyle: 'italic',
+              background: 'linear-gradient(90deg, #ffffff 0%, #C084FC 50%, #EC4899 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+              paddingRight: '0.12em',
+            }}>your generosity</span>
           </h1>
 
           <p style={{
-            fontSize: '16px',
-            color: 'rgba(255,255,255,0.85)',
-            lineHeight: 1.6,
-            maxWidth: '600px',
-            margin: '0 auto 22px',
+            fontSize: 'clamp(14px, 1.5vw, 17px)',
+            color: 'rgba(255,255,255,0.72)',
+            lineHeight: 1.7,
+            maxWidth: '640px',
+            margin: '0 auto 28px',
           }}>
-            At Amoria Connekyt, we believe in the power of community. Every donation helps us support vulnerable families, educate children, feed the hungry, and empower those with disabilities.
+            We believe in the power of community. Every contribution supports vulnerable families,
+            educates children, feeds the hungry, and empowers those with disabilities.
           </p>
 
-          {/* Buttons */}
-          <div className="hero-buttons" style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '28px' }}>
+          {/* Live impact counter mini-strip — directly under the lede */}
+          <div className="don-hero-counter" style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 14,
+            padding: '8px 16px',
+            borderRadius: 999,
+            background: 'rgba(16,185,129,0.10)',
+            border: '1px solid rgba(16,185,129,0.28)',
+            marginBottom: 24,
+            backdropFilter: 'blur(8px)',
+          }}>
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#34D399', boxShadow: '0 0 10px #34D399', animation: 'donDotPulse 1.4s ease-in-out infinite' }} />
+            <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#86EFAC' }}>
+              Live · 3 donations in the last hour
+            </span>
+          </div>
+
+          {/* CTAs */}
+          <div className="hero-buttons" style={{ display: 'flex', gap: '14px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '36px' }}>
             <button
               onClick={() => setShowDonationModal(true)}
+              className="don-hero-cta"
               style={{
-                backgroundColor: '#fff',
-                color: '#083A85',
-                padding: '12px 32px',
-                borderRadius: '12px',
-                border: 'none',
+                display: 'inline-flex', alignItems: 'center', gap: 10,
+                background: 'linear-gradient(135deg, #C084FC 0%, #B83AB6 50%, #EC4899 100%)',
+                color: '#fff',
+                padding: '14px 32px',
+                borderRadius: '14px',
+                border: '1px solid rgba(255,255,255,0.18)',
                 fontSize: '15px',
-                fontWeight: 600,
+                fontWeight: 700,
                 cursor: 'pointer',
                 transition: 'all 0.3s ease',
-                boxShadow: '0 4px 14px rgba(0, 0, 0, 0.15)',
+                boxShadow: '0 14px 32px -10px rgba(236,72,153,0.55), 0 4px 10px -2px rgba(168,85,247,0.35)',
+                letterSpacing: '0.02em',
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.2)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(0,0,0,0.15)'; }}
+              onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 20px 38px -10px rgba(236,72,153,0.65), 0 6px 14px -2px rgba(168,85,247,0.45)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 14px 32px -10px rgba(236,72,153,0.55), 0 4px 10px -2px rgba(168,85,247,0.35)'; }}
             >
+              <i className="bi bi-heart-fill" style={{ fontSize: 14 }} />
               Donate Now
             </button>
             <button
               onClick={() => document.getElementById('impact-section')?.scrollIntoView({ behavior: 'smooth' })}
               style={{
-                backgroundColor: 'transparent',
+                background: 'rgba(255,255,255,0.06)',
                 color: '#fff',
-                padding: '12px 32px',
-                borderRadius: '12px',
-                border: '2px solid rgba(255,255,255,0.35)',
+                padding: '14px 32px',
+                borderRadius: '14px',
+                border: '1px solid rgba(255,255,255,0.25)',
                 fontSize: '15px',
                 fontWeight: 600,
                 cursor: 'pointer',
                 transition: 'all 0.3s ease',
+                backdropFilter: 'blur(10px)',
+                display: 'inline-flex', alignItems: 'center', gap: 8,
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.6)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.35)'; }}
+              onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.55)'; e.currentTarget.style.background = 'rgba(255,255,255,0.10)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)'; e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; }}
             >
-              See Our Impact
+              See Our Impact <span aria-hidden="true">↓</span>
             </button>
+          </div>
+
+          {/* Impact preview row — quick stats anchoring the hero */}
+          <div className="don-hero-stats" style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            justifyContent: 'center',
+            gap: 'clamp(14px, 3vw, 36px)',
+            padding: '18px 22px',
+            borderRadius: 16,
+            background: 'rgba(255,255,255,0.05)',
+            border: '1px solid rgba(255,255,255,0.12)',
+            backdropFilter: 'blur(12px)',
+            maxWidth: 760,
+          }}>
+            {[
+              { num: '120', sup: '+', label: 'Children Educated', icon: 'bi-mortarboard-fill', tint: '#C084FC' },
+              { num: '50',  sup: '+', label: 'Families Supported', icon: 'bi-people-fill',     tint: '#93C5FD' },
+              { num: '300', sup: '+', label: 'Meals Provided',     icon: 'bi-basket3-fill',    tint: '#86EFAC' },
+              { num: '15',  sup: '+', label: 'Lives Empowered',    icon: 'bi-heart-pulse-fill', tint: '#F472B6' },
+            ].map((s, i) => (
+              <div key={i} className="don-hero-stat" style={{
+                display: 'flex', alignItems: 'center', gap: 10,
+                minWidth: 120,
+              }}>
+                <i className={`bi ${s.icon}`} style={{ fontSize: 22, color: s.tint, filter: `drop-shadow(0 0 8px ${s.tint}66)` }} />
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                  <span style={{
+                    fontFamily: "'Georgia', serif",
+                    fontSize: 22, fontWeight: 700, color: '#fff', lineHeight: 1,
+                  }}>
+                    {s.num}<sup style={{ fontSize: '0.55em', color: s.tint, verticalAlign: 'super', marginLeft: 1 }}>{s.sup}</sup>
+                  </span>
+                  <span style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.55)', marginTop: 3 }}>
+                    {s.label}
+                  </span>
+                </div>
+              </div>
+            ))}
           </div>
 
         </div>
@@ -1636,6 +1878,17 @@ const Donations = () => {
           Donation successful! Thank you for your generosity.
         </div>
       )}
+
+      {/* Designed error popup */}
+      <ErrorPopup
+        open={errorPopup.open}
+        onClose={closeErrorPopup}
+        severity={errorPopup.severity}
+        title={errorPopup.title}
+        message={errorPopup.message}
+        hint={errorPopup.hint}
+        primaryAction={errorPopup.primaryAction}
+      />
 
     </div>
   );

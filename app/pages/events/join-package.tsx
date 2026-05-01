@@ -1,5 +1,6 @@
 'use client';
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, useCallback, Suspense } from 'react';
+import ErrorPopup, { type PopupSeverity } from '../../components/ErrorPopup';
 import { useSearchParams } from 'next/navigation';
 import AmoriaKNavbar from '../../components/navbar';
 import { useRouter } from 'next/navigation';
@@ -31,13 +32,6 @@ function JoinPackageContent(): React.JSX.Element {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
-  // Geo-restriction check
-  const [geoCheck, setGeoCheck] = useState<{
-    allowed: boolean;
-    userCity?: string;
-    userCountry?: string;
-  } | null>(null);
-
   // XentriPay modal state
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [currencies, setCurrencies] = useState<APICurrency[]>([]);
@@ -60,6 +54,18 @@ function JoinPackageContent(): React.JSX.Element {
   // Invite code input — auto-fill from URL if shared via group link
   const [inviteCode, setInviteCode] = useState(searchParams.get('inviteToken') || '');
   const [groupRedeemError, setGroupRedeemError] = useState<string | null>(null);
+
+  // Designed error popup state
+  const [errorPopup, setErrorPopup] = useState<{
+    open: boolean;
+    severity: PopupSeverity;
+    title?: string;
+    message: string;
+    hint?: string;
+    primaryAction?: { label: string; onClick: () => void; icon?: string };
+    secondaryAction?: { label: string; onClick: () => void; icon?: string };
+  }>({ open: false, severity: 'error', message: '' });
+  const closeErrorPopup = useCallback(() => setErrorPopup(p => ({ ...p, open: false })), []);
 
   // Load saved group code from localStorage on mount
   useEffect(() => {
@@ -236,23 +242,6 @@ function JoinPackageContent(): React.JSX.Element {
     fetchEvent();
   }, [eventId]);
 
-  // Geo-restriction check — runs on page load
-  useEffect(() => {
-    if (!eventId) return;
-    const baseUrl = (process.env.NEXT_PUBLIC_API_URL || 'https://backend.connekyt.com').replace(/\/$/, '');
-    fetch(`${baseUrl}/api/remote/events/${eventId}/geo-check`)
-      .then(res => {
-        if (!res.ok) throw new Error('Geo check failed');
-        return res.json();
-      })
-      .then(result => {
-        setGeoCheck({ allowed: result.allowed, userCity: result.userCity, userCountry: result.userCountry });
-      })
-      .catch(() => {
-        setGeoCheck({ allowed: true });
-      });
-  }, [eventId]);
-
   // Auto-redeem group invite code from URL for free events
   // Requires auth since group codes are limited to a set number of viewers
   useEffect(() => {
@@ -280,21 +269,45 @@ function JoinPackageContent(): React.JSX.Element {
           router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&from=payment&inviteToken=${encodeURIComponent(urlToken)}`);
         } else {
           const msg = res.error || '';
+          let title = 'Invite code problem';
+          let body = msg || 'Unable to redeem this invite code.';
+          let hint: string | undefined;
           if (msg.includes('viewer limit')) {
-            setGroupRedeemError('This group invite code has reached its viewer limit. Please ask the host for a new code.');
+            title = 'Code is full';
+            body = 'This group invite code has already reached its viewer limit.';
+            hint = 'Ask the host for a new invite code to join the stream.';
           } else if (msg.includes('expired')) {
-            setGroupRedeemError('This group invite code has expired. Please ask the host for a new one.');
+            title = 'Code expired';
+            body = 'This group invite code is no longer valid.';
+            hint = 'Ask the host to generate a new code for you.';
           } else if (msg.includes('Invalid')) {
-            setGroupRedeemError('This group invite code is invalid. Please check the code and try again.');
-          } else {
-            setGroupRedeemError(msg || 'Unable to redeem this invite code.');
+            title = 'Invalid invite code';
+            body = 'We couldn’t find that invite code.';
+            hint = 'Double-check the code with the host or paste it again carefully.';
           }
+          setGroupRedeemError(body);
+          setErrorPopup({
+            open: true,
+            severity: 'warning',
+            title,
+            message: body,
+            hint,
+            primaryAction: { label: 'Got it', icon: 'bi-check2', onClick: closeErrorPopup },
+          });
         }
       } catch {
-        setGroupRedeemError('Unable to redeem invite code. Please check your connection and try again.');
+        const body = 'Unable to redeem invite code. Please check your connection and try again.';
+        setGroupRedeemError(body);
+        setErrorPopup({
+          open: true,
+          severity: 'error',
+          title: 'Connection error',
+          message: body,
+          primaryAction: { label: 'Got it', icon: 'bi-check2', onClick: closeErrorPopup },
+        });
       }
     })();
-  }, [selectedEvent, isLoading, searchParams, router, isAuthenticated]);
+  }, [selectedEvent, isLoading, searchParams, router, isAuthenticated, closeErrorPopup]);
 
   // Fetch currencies for XentriPay
   useEffect(() => {
@@ -318,7 +331,16 @@ function JoinPackageContent(): React.JSX.Element {
         const res = await checkAnonymousAccessStatus(selectedEvent.id, fingerprint, savedViewerId);
         if (cancelled) return;
         if (res.success && res.data?.hasAccess) {
-          router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&from=payment`);
+          // Only redirect to live-stream if the event is genuinely live now.
+          // Otherwise route back to view-event so the user sees the
+          // "Spot reserved" / owned-access banners.
+          const isLiveNow = (selectedEvent.eventStatus || '').toUpperCase() === 'ONGOING'
+            && (selectedEvent as Record<string, unknown>).streamStatus !== 'ended';
+          if (isLiveNow) {
+            router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&from=payment`);
+          } else {
+            router.push(`/user/events/view-event?id=${selectedEvent.id}`);
+          }
         }
       } catch {
         // Silent — fall through to normal purchase flow
@@ -334,7 +356,6 @@ function JoinPackageContent(): React.JSX.Element {
   const peopleCount = typeof numberOfPeople === 'number' ? numberOfPeople : 0;
   const totalGroupFee = discountedFeePerPerson * peopleCount;
   const totalSavings = (individualFee * peopleCount) - totalGroupFee;
-  const currencyLabel = selectedEvent?.streamFeeCurrencyAbbreviation || 'RWF';
 
   const packages = [
     {
@@ -344,7 +365,7 @@ function JoinPackageContent(): React.JSX.Element {
       badgeColor: '#22D3EE',
       badgeGradient: 'linear-gradient(135deg, #22D3EE 0%, #3B82F6 100%)',
       description: 'Stream the event alone on your personal device',
-      price: `${individualFee.toLocaleString()} ${currencyLabel}`,
+      price: `${individualFee.toLocaleString()} RWF`,
       priceNote: 'One-time access fee',
       features: [
         { text: 'Personal stream access', available: true },
@@ -462,7 +483,6 @@ function JoinPackageContent(): React.JSX.Element {
 
   const handleProceed = () => {
     if (!selectedEvent) return;
-    if (geoCheck && !geoCheck.allowed) return;
 
     // Anonymous viewer: identity must be known before payment.
     if (!isAuthenticated) {
@@ -600,6 +620,24 @@ function JoinPackageContent(): React.JSX.Element {
     setShowPaymentModal(false);
     if (!selectedEvent) return;
 
+    // Single source of truth for event live-ness — used everywhere below
+    // to decide whether the viewer should land on the live-stream player
+    // or be sent back to view-event with a "spot reserved" confirmation.
+    const isEventCurrentlyLive =
+      (selectedEvent.eventStatus || '').toUpperCase() === 'ONGOING'
+      && (selectedEvent as Record<string, unknown>).streamStatus !== 'ended';
+
+    // Write per-event purchase proof to localStorage. The view-event page
+    // requires this marker (in addition to the backend's hasPurchasedAccess
+    // flag) before showing "Access reserved", so a stale backend response
+    // can't hand out access to viewers who didn't actually pay.
+    try {
+      localStorage.setItem(
+        `connekyt:purchased_${selectedEvent.id}`,
+        JSON.stringify({ refid, at: Date.now(), pkg: selectedPackage || 'individual' })
+      );
+    } catch { /* localStorage may be full or disabled */ }
+
     if (selectedPackage === 'group') {
       const people = typeof numberOfPeople === 'number' ? numberOfPeople : 2;
       const userEmail = localStorage.getItem('authUser') ? (JSON.parse(localStorage.getItem('authUser') || '{}').email || '') : '';
@@ -653,9 +691,11 @@ function JoinPackageContent(): React.JSX.Element {
         setShowGroupCodeModal(true);
       }
     } else {
-      // Individual payment success
+      // ── Individual payment success ───────────────────────────────
+      // Confirm anonymous payment with backend (if applicable) BEFORE
+      // routing — the route decision depends on event live-ness, not
+      // anonymous-vs-authenticated.
       if (!isAuthenticated && pendingViewerId) {
-        // Anonymous viewer — confirm payment with backend (retry once on failure)
         try {
           await confirmAnonymousPayment(selectedEvent.id, pendingViewerId, refid);
         } catch {
@@ -663,38 +703,44 @@ function JoinPackageContent(): React.JSX.Element {
             await confirmAnonymousPayment(selectedEvent.id, pendingViewerId, refid);
           } catch { /* backend can reconcile via payment ref later */ }
         }
-        router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&from=payment&viewerId=${pendingViewerId}`);
-        return;
       }
 
-      const isLive = (selectedEvent.eventStatus || '').toUpperCase() === 'ONGOING';
-      if (isLive) {
-        // Event is live — go to stream
+      // STRICT ROUTING RULE: only redirect to live-stream when the event
+      // is genuinely live right now. Upcoming events ALWAYS route back to
+      // the view-event page with a `?reserved=1` flag so a success modal
+      // + "Spot reserved" banners show.
+      if (isEventCurrentlyLive) {
+        // Event is live — proceed to the stream
         const code = inviteCode.trim();
         if (code && selectedEvent.id) {
           try {
             const userStr = localStorage.getItem('authUser');
             const userName = userStr ? `${JSON.parse(userStr).firstName || ''} ${JSON.parse(userStr).lastName || ''}`.trim() : 'Viewer';
             const res = await redeemGroupCode(selectedEvent.id, { inviteCode: code, viewerUsername: userName });
+            const viewerSuffix = !isAuthenticated && pendingViewerId ? `&viewerId=${pendingViewerId}` : '';
             if (res.success && res.data) {
-              router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&from=payment&inviteToken=${encodeURIComponent(code)}`);
+              router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&from=payment&inviteToken=${encodeURIComponent(code)}${viewerSuffix}`);
             } else {
-              router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&from=payment`);
+              router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&from=payment${viewerSuffix}`);
             }
           } catch {
-            router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&from=payment`);
+            const viewerSuffix = !isAuthenticated && pendingViewerId ? `&viewerId=${pendingViewerId}` : '';
+            router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&from=payment${viewerSuffix}`);
           }
         } else {
           const inviteToken = searchParams.get('inviteToken') || '';
+          const viewerSuffix = !isAuthenticated && pendingViewerId ? `&viewerId=${pendingViewerId}` : '';
           if (inviteToken) {
-            router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&from=payment&inviteToken=${encodeURIComponent(inviteToken)}`);
+            router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&from=payment&inviteToken=${encodeURIComponent(inviteToken)}${viewerSuffix}`);
           } else {
-            router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&from=payment`);
+            router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&from=payment${viewerSuffix}`);
           }
         }
       } else {
-        // Event is upcoming — go back to view-event (spot reserved)
-        router.push(`/user/events/view-event?id=${selectedEvent.id}`);
+        // Event is UPCOMING / not yet live — go back to view-event with
+        // ?reserved=1 to trigger the "Spot reserved" success modal +
+        // owned-access banners. The user can return when the event goes live.
+        router.push(`/user/events/view-event?id=${selectedEvent.id}&reserved=1`);
       }
     }
   };
@@ -723,16 +769,20 @@ function JoinPackageContent(): React.JSX.Element {
     }
   };
 
+  // Loading state — silent dark backdrop matching the cinematic theme.
   if (isLoading) {
     return (
       <>
         <AmoriaKNavbar />
-        <div className="min-h-screen" style={{ backgroundColor: '#052047', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.7)' }}>
-            <div style={{ fontSize: '48px', marginBottom: '16px' }}><i className="bi bi-hourglass-split"></i></div>
-            <p style={{ fontSize: '18px', fontWeight: '600' }}>Loading event...</p>
-          </div>
-        </div>
+        <div
+          aria-busy="true"
+          aria-label="Loading event package"
+          style={{
+            minHeight: '100vh',
+            background:
+              'radial-gradient(80% 60% at 50% 0%, rgba(8,58,133,0.18) 0%, rgba(8,58,133,0) 60%), linear-gradient(180deg, #07080d 0%, #0c0e15 60%, #11141d 100%)',
+          }}
+        />
       </>
     );
   }
@@ -741,11 +791,62 @@ function JoinPackageContent(): React.JSX.Element {
     return (
       <>
         <AmoriaKNavbar />
-        <div className="min-h-screen" style={{ backgroundColor: '#052047', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ textAlign: 'center', color: '#ef4444' }}>
-            <div style={{ fontSize: '48px', marginBottom: '16px' }}><i className="bi bi-exclamation-circle"></i></div>
-            <p style={{ fontSize: '18px', fontWeight: '600' }}>Event not found</p>
-            <button onClick={() => window.history.back()} style={{ marginTop: '16px', padding: '12px 32px', backgroundColor: '#083A85', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer' }}>Go Back</button>
+        <div
+          style={{
+            minHeight: '100vh',
+            background:
+              'radial-gradient(80% 60% at 50% 0%, rgba(8,58,133,0.18) 0%, rgba(8,58,133,0) 60%), linear-gradient(180deg, #07080d 0%, #0c0e15 60%, #11141d 100%)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '24px',
+            fontFamily: "'Pragati Narrow', system-ui, sans-serif",
+          }}
+        >
+          <div style={{ textAlign: 'center', maxWidth: 420 }}>
+            <div
+              style={{
+                width: 72,
+                height: 72,
+                borderRadius: '50%',
+                background: 'rgba(239,68,68,0.12)',
+                border: '1px solid rgba(239,68,68,0.45)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: 16,
+                color: '#fca5a5',
+                fontSize: 28,
+              }}
+            >
+              <i className="bi bi-exclamation-triangle"></i>
+            </div>
+            <h1 style={{ fontSize: 24, fontWeight: 800, color: '#f4f6fb', margin: '0 0 6px', letterSpacing: '-0.01em' }}>
+              Event not found
+            </h1>
+            <p style={{ fontSize: 14, color: '#9ca3af', margin: '0 0 20px', lineHeight: 1.5 }}>
+              The event you&apos;re trying to access may have been removed, or the link may be incorrect.
+            </p>
+            <button
+              onClick={() => window.history.back()}
+              style={{
+                padding: '12px 28px',
+                background: '#083A85',
+                color: '#fff',
+                border: '1px solid rgba(255,255,255,0.18)',
+                borderRadius: 12,
+                fontSize: 14,
+                fontWeight: 700,
+                cursor: 'pointer',
+                boxShadow: '0 12px 36px -10px rgba(8,58,133,0.55)',
+                fontFamily: 'inherit',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+              }}
+            >
+              <i className="bi bi-chevron-left"></i> Go back
+            </button>
           </div>
         </div>
       </>
@@ -754,621 +855,959 @@ function JoinPackageContent(): React.JSX.Element {
 
   const eventImage = selectedEvent?.eventPhoto || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=1200&q=80';
 
+  // Derived event metadata for the cinematic header
+  const fmtDate = (d?: string): string => {
+    if (!d) return 'TBD';
+    try {
+      const [y, m, day] = d.split('-').map(Number);
+      return new Date(y, m - 1, day).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    } catch { return d; }
+  };
+  const evRawStatus = (selectedEvent.eventStatus || '').toUpperCase();
+  const evIsLive = evRawStatus === 'ONGOING';
+  const evIsCancelled = evRawStatus === 'CANCELLED';
+  const evStatusLabel = evIsLive ? 'LIVE NOW' : evIsCancelled ? 'CANCELLED' : 'UPCOMING';
+  const evStatusKey = evIsLive ? 'live' : evIsCancelled ? 'cancelled' : 'upcoming';
+  const evCategoryName = selectedEvent.eventCategory?.name || (selectedEvent.eventTags?.split(',')[0]?.trim() || 'Event');
+
+  const groupReady = selectedPackage === 'group' && isGroupInputValid();
+
   return (
-    <div style={{ backgroundColor: '#052047', minHeight: '100vh' }}>
+    <div className="jp-page">
       <AmoriaKNavbar />
 
-      {/* ── GEO-RESTRICTION OVERLAY (non-closable) ── */}
-      {geoCheck && !geoCheck.allowed && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.75)',
-          backdropFilter: 'blur(12px)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 9999,
-          padding: '24px',
-        }}>
-          <div style={{
-            background: '#fff',
-            borderRadius: '24px',
-            padding: 'clamp(32px, 6vw, 48px) clamp(24px, 5vw, 40px)',
-            maxWidth: '420px',
-            width: '100%',
-            textAlign: 'center',
-            boxShadow: '0 32px 80px rgba(0,0,0,0.3)',
-          }}>
-            <div style={{
-              width: '80px',
-              height: '80px',
-              borderRadius: '50%',
-              background: 'linear-gradient(135deg, #fee2e2 0%, #fef2f2 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              margin: '0 auto 24px',
-            }}>
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                <line x1="9" y1="9" x2="15" y2="15" />
-                <line x1="15" y1="9" x2="9" y2="15" />
-              </svg>
+      {/* Group-code error is shown via the global ErrorPopup (rendered at the bottom of this page) */}
+
+      {/* Cinematic backdrop — blurred event poster + dark veil + grain */}
+      <div className="jp-backdrop" aria-hidden="true">
+        <div className="jp-backdrop-img" style={{ backgroundImage: `url("${encodeURI(eventImage)}")` }} />
+        <div className="jp-backdrop-veil" />
+        <div className="jp-backdrop-grain" />
+      </div>
+
+      <main className="jp-main">
+        {/* ─── Event header strip ─── */}
+        <header className="jp-event">
+          <button
+            type="button"
+            className="jp-back"
+            onClick={() => window.history.back()}
+            aria-label="Go back to event"
+          >
+            <i className="bi bi-chevron-left" aria-hidden="true"></i>
+          </button>
+          <div
+            className="jp-event-poster"
+            style={{ backgroundImage: `url("${encodeURI(eventImage)}")` }}
+            aria-hidden="true"
+          />
+          <div className="jp-event-info">
+            <div className="jp-event-chips">
+              <span className={`jp-status jp-status--${evStatusKey}`}>
+                {evIsLive && <span className="jp-pulse" aria-hidden="true" />}
+                {evStatusLabel}
+              </span>
+              <span className="jp-cat">{evCategoryName}</span>
             </div>
-
-            <h2 style={{
-              fontSize: 'clamp(20px, 4vw, 26px)',
-              fontWeight: 700,
-              color: '#1f2937',
-              marginBottom: '12px',
-              marginTop: 0,
-              fontFamily: "'Pragati Narrow', sans-serif",
-            }}>
-              This event is not available in your region
-            </h2>
-
-            <p style={{
-              fontSize: '15px',
-              color: '#6b7280',
-              lineHeight: 1.7,
-              marginBottom: '24px',
-              maxWidth: '340px',
-              marginLeft: 'auto',
-              marginRight: 'auto',
-            }}>
-              The event organizer has restricted access from your current location. Booking and payments are unavailable.
-            </p>
-
-            {geoCheck.userCountry && (
-              <div style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '10px 20px',
-                backgroundColor: '#f9fafb',
-                borderRadius: '24px',
-                border: '1px solid #e5e7eb',
-                marginBottom: '28px',
-              }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2">
-                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                  <circle cx="12" cy="10" r="3" />
-                </svg>
-                <span style={{ fontSize: '14px', color: '#6b7280' }}>
-                  Your location: {geoCheck.userCity && geoCheck.userCity !== 'Unknown'
-                    ? `${geoCheck.userCity}, ${geoCheck.userCountry}`
-                    : geoCheck.userCountry}
-                </span>
-              </div>
-            )}
-
-            <div style={{ height: '1px', backgroundColor: '#f3f4f6', margin: '0 0 20px' }} />
-
-            <button
-              onClick={() => window.history.back()}
-              style={{
-                padding: '12px 32px',
-                background: '#083A85',
-                border: 'none',
-                borderRadius: '10px',
-                color: '#fff',
-                fontSize: '14px',
-                fontWeight: 600,
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-              }}
-            >
-              Go Back
-            </button>
+            <h1 className="jp-event-title">{selectedEvent.title}</h1>
+            <div className="jp-event-meta">
+              <span><i className="bi bi-calendar-event" aria-hidden="true"></i>{fmtDate(selectedEvent.eventDate)}</span>
+              {selectedEvent.location && (
+                <>
+                  <span className="jp-sep" aria-hidden="true">·</span>
+                  <span><i className="bi bi-geo-alt" aria-hidden="true"></i>{selectedEvent.location}</span>
+                </>
+              )}
+            </div>
           </div>
-        </div>
-      )}
-
-      {/* Group code redeem error banner */}
-      {groupRedeemError && (
-        <div style={{
-          position: 'relative', zIndex: 50, maxWidth: '600px', margin: '16px auto',
-          padding: '16px 20px', backgroundColor: 'rgba(239, 68, 68, 0.1)',
-          border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '12px',
-          display: 'flex', alignItems: 'center', gap: '12px', color: '#fca5a5', fontSize: '14px',
-        }}>
-          <i className="bi bi-exclamation-triangle-fill" style={{ color: '#ef4444', fontSize: '18px', flexShrink: 0 }}></i>
-          <span>{groupRedeemError}</span>
-        </div>
-      )}
-
-      <div style={{ position: 'relative', overflow: 'hidden' }}>
-        {/* Cinematic background image */}
-        <div style={{ position: 'absolute', inset: 0, backgroundImage: `url(${encodeURI(eventImage)})`, backgroundSize: 'cover', backgroundPosition: 'center right' }} />
-        {/* Top-to-bottom cinematic gradient */}
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(5,32,71,0.1) 0%, rgba(5,32,71,0.55) 32%, rgba(5,32,71,0.93) 52%, #052047 72%)' }} />
-
-        {/* Main Content Container */}
-        <div
-          style={{
-            position: 'relative',
-            zIndex: 10,
-            maxWidth: '1000px',
-            margin: '0 auto',
-            padding: isMobile ? '4px 16px 16px' : '6px 24px 16px',
-          }}
-        >
-          {/* Viewer auth for returning paid viewers has moved to the view-event page.
-              join-package now only shows package cards and payment flow. */}
-
-          {/* Page Header */}
-          <div style={{ marginBottom: isMobile ? '10px' : '20px', textAlign: 'center' }}>
-            <h1
-              style={{
-                fontSize: isMobile ? '24px' : '36px',
-                fontWeight: '800',
-                color: '#ffffff',
-                marginBottom: '6px',
-                fontFamily: "'Pragati Narrow', sans-serif",
-              }}
-            >
-              Choose Your Stream Package
-            </h1>
-            <p style={{ fontSize: isMobile ? '13px' : '15px', color: 'rgba(255,255,255,0.5)', maxWidth: '500px', margin: '0 auto' }}>
-              Select how you want to watch this live event
-            </p>
-          </div>
-
-          {/* View My Code button — shown when viewer has a saved group code */}
-          {groupShareCode && (
-            <div style={{ textAlign: 'center', marginBottom: '16px' }}>
-              <button
-                onClick={() => setShowGroupCodeModal(true)}
-                style={{
-                  padding: '10px 24px',
-                  background: 'linear-gradient(135deg, #60a5fa 0%, #93c5fd 50%, #083A85 100%)',
-                  border: 'none',
-                  borderRadius: '10px',
-                  color: '#1f2937',
-                  fontSize: '14px',
-                  fontWeight: '700',
-                  cursor: 'pointer',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  boxShadow: '0 4px 12px rgba(245, 158, 11, 0.3)',
-                }}
-              >
-                <i className="bi bi-key-fill"></i>
-                View My Group Code
-              </button>
+          {individualFee > 0 && (
+            <div className="jp-event-price">
+              <small>From</small>
+              <strong>{individualFee.toLocaleString()} <span>RWF</span></strong>
             </div>
           )}
+        </header>
 
-          {/* Package Cards Section */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: isMobile ? '1fr' : (discountPercentage ? 'repeat(2, 1fr)' : '1fr'),
-            maxWidth: !discountPercentage && !isMobile ? '380px' : undefined,
-            marginLeft: !discountPercentage ? 'auto' : undefined,
-            marginRight: !discountPercentage ? 'auto' : undefined,
-            gap: isMobile ? '10px' : '16px',
-            marginBottom: isMobile ? '16px' : '32px',
-            alignItems: 'start',
-          }}>
-            {packages.filter(pkg => pkg.id !== 'group' || discountPercentage > 0).map((pkg) => (
-              <div
+        {/* ─── Page heading ─── */}
+        <div className="jp-heading">
+          <h2>Choose your stream package</h2>
+          <p>Pick how you want to watch — pay once, watch live in HD.</p>
+        </div>
+
+        {/* View My Code button — shown when viewer has a saved group code */}
+        {groupShareCode && (
+          <div className="jp-savedcode">
+            <button
+              type="button"
+              className="jp-savedcode-btn"
+              onClick={() => setShowGroupCodeModal(true)}
+            >
+              <span className="jp-savedcode-ico" aria-hidden="true"><i className="bi bi-key-fill"></i></span>
+              <span className="jp-savedcode-text">
+                <strong>You have a group code</strong>
+                <small>Tap to view, share, or skip to the stream</small>
+              </span>
+              <i className="bi bi-arrow-right" aria-hidden="true"></i>
+            </button>
+          </div>
+        )}
+
+        {/* ─── Package cards ─── */}
+        <section className="jp-cards" aria-label="Stream packages">
+          {packages.filter(pkg => pkg.id !== 'group' || discountPercentage > 0).map((pkg) => {
+            const selected = selectedPackage === pkg.id;
+            return (
+              <article
                 key={pkg.id}
                 onClick={() => handlePackageSelect(pkg.id)}
-                style={{
-                  position: 'relative',
-                  backgroundColor: selectedPackage === pkg.id ? '#0a2540' : '#1e3a5f',
-                  borderRadius: '16px',
-                  overflow: 'hidden',
-                  cursor: 'pointer',
-                  border: selectedPackage === pkg.id ? '3px solid #00BFFF' : '3px solid transparent',
-                  transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-                  boxShadow: selectedPackage === pkg.id
-                    ? '0 25px 50px rgba(0, 191, 255, 0.35), 0 0 0 1px rgba(0, 191, 255, 0.1)'
-                    : '0 10px 30px rgba(0, 0, 0, 0.2)',
-                  transform: selectedPackage === pkg.id ? 'translateY(-3px) scale(1.005)' : 'translateY(0) scale(1)',
-                }}
-                onMouseEnter={(e) => {
-                  if (selectedPackage !== pkg.id) {
-                    e.currentTarget.style.transform = 'translateY(-4px)';
-                    e.currentTarget.style.boxShadow = '0 15px 35px rgba(0, 0, 0, 0.25)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (selectedPackage !== pkg.id) {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 10px 30px rgba(0, 0, 0, 0.2)';
-                  }
-                }}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handlePackageSelect(pkg.id); } }}
+                role="button"
+                tabIndex={0}
+                aria-pressed={selected}
+                className={`jp-card ${selected ? 'is-selected' : ''} ${pkg.id === 'group' ? 'jp-card--group' : 'jp-card--individual'}`}
               >
-
-                {/* Badge — pill at top */}
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'center',
-                  paddingTop: '14px',
-                  marginBottom: '-20px',
-                  position: 'relative',
-                  zIndex: 2,
-                  transition: 'all 0.3s ease',
-                }}>
-                  <div
-                    style={{
-                      background: pkg.badgeGradient,
-                      color: pkg.id === 'group' ? '#1f2937' : '#fff',
-                      padding: '7px 30px',
-                      borderRadius: '50px',
-                      fontSize: '13px',
-                      fontWeight: '700',
-                      letterSpacing: '0.5px',
-                      boxShadow: selectedPackage === pkg.id
-                        ? '0 6px 20px rgba(0, 0, 0, 0.3)'
-                        : '0 4px 12px rgba(0, 0, 0, 0.2)',
-                      minWidth: '110px',
-                      textAlign: 'center',
-                      transition: 'all 0.3s ease',
-                    }}
-                  >
-                    {pkg.badge}
-                  </div>
-                </div>
-
-                {/* Price Section - White Card */}
-                <div
-                  style={{
-                    backgroundColor: selectedPackage === pkg.id ? '#f0f9ff' : '#fff',
-                    margin: isMobile ? '0 4px 4px 4px' : '0 8px 8px 8px',
-                    borderRadius: isMobile ? '10px' : '12px',
-                    padding: isMobile ? '10px 8px 8px 8px' : '20px 14px 14px 14px',
-                    textAlign: 'center',
-                    position: 'relative',
-                    zIndex: 1,
-                    transition: 'all 0.3s ease',
-                    border: selectedPackage === pkg.id ? '2px solid rgba(0, 191, 255, 0.2)' : '2px solid transparent',
-                  }}
-                >
-                  {/* Package Name */}
-                  <h3
-                    style={{
-                      fontSize: isMobile ? '13px' : '16px',
-                      fontWeight: '800',
-                      color: selectedPackage === pkg.id ? '#083A85' : '#1f2937',
-                      marginBottom: '2px',
-                      fontFamily: "'Pragati Narrow', sans-serif",
-                    }}
-                  >
-                    {pkg.name}
-                  </h3>
-
-                  {/* Description */}
-                  <p
-                    style={{
-                      fontSize: '12px',
-                      color: '#6b7280',
-                      marginBottom: '6px',
-                    }}
-                  >
-                    {pkg.description}
-                  </p>
-
-                  {/* Price */}
-                  <div
-                    className={pkg.id === 'group' ? 'discount-bounce' : ''}
-                    style={{
-                      fontSize: pkg.id === 'group'
-                        ? (isMobile ? '13px' : '16px')
-                        : (isMobile ? '18px' : '26px'),
-                      fontWeight: '900',
-                      background: pkg.id === 'group'
-                        ? 'linear-gradient(135deg, #083A85 0%, #0a4da3 50%, #0a4da3 100%)'
-                        : 'none',
-                      WebkitBackgroundClip: pkg.id === 'group' ? 'text' : 'unset',
-                      WebkitTextFillColor: pkg.id === 'group' ? 'transparent' : 'unset',
-                      backgroundClip: pkg.id === 'group' ? 'text' : 'unset',
-                      color: pkg.id === 'group' ? 'transparent' : (selectedPackage === pkg.id ? '#083A85' : '#1f2937'),
-                      lineHeight: 1,
-                      marginBottom: '4px',
-                      transition: 'all 0.3s ease',
-                      display: 'inline-block',
-                    }}
-                  >
-                    {pkg.price}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: '12px',
-                      color: '#6b7280',
-                      marginBottom: '6px',
-                    }}
-                  >
-                    {pkg.priceNote}
-                  </div>
-
-                  {/* Features — always shown on both mobile and desktop */}
-                  <div>
-                  <div style={{ height: '1px', backgroundColor: '#e5e7eb', margin: isMobile ? '5px 0' : '8px 0' }}></div>
-
-                  {/* Features List — show all features, unavailable ones with red cross + strikethrough */}
-                  <div style={{ display: 'inline-flex', flexDirection: 'column', gap: isMobile ? '2px' : '4px', margin: '0 auto', textAlign: 'left' }}>
-                    {pkg.features.map((feature, index) => (
-                      <div
-                        key={index}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: isMobile ? '4px' : '8px',
-                          fontSize: isMobile ? '11px' : '13px',
-                          color: feature.available ? '#374151' : '#9ca3af',
-                        }}
-                      >
-                        {feature.available ? (
-                          <i className="bi bi-check" style={{ color: '#083A85', fontSize: isMobile ? '12px' : '14px', fontWeight: 700, flexShrink: 0 }}></i>
-                        ) : (
-                          <i className="bi bi-x-lg" style={{ color: '#ef4444', fontSize: isMobile ? '10px' : '12px', fontWeight: 700, flexShrink: 0 }}></i>
-                        )}
-                        <span style={{ textDecoration: feature.available ? 'none' : 'line-through' }}>{feature.text}</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Group Package - People Input (only when selected) */}
-                  {pkg.id === 'group' && selectedPackage === 'group' && (
-                    <div
-                      style={{
-                        marginTop: '10px',
-                        paddingTop: '10px',
-                        borderTop: '1px dashed #0a4da3',
-                        animation: 'fadeIn 0.3s ease',
-                      }}
-                    >
-                      <label
-                        style={{
-                          display: 'block',
-                          fontSize: '13px',
-                          fontWeight: '700',
-                          color: '#083A85',
-                          marginBottom: '6px',
-                        }}
-                      >
-                        <i className="bi bi-people-fill" style={{ marginRight: '6px', fontSize: '14px' }}></i>
-                        Number of People (including you) <span style={{ color: '#ef4444' }}>*</span>
-                      </label>
-                      <div style={{ position: 'relative' }}>
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          pattern="[0-9]*"
-                          placeholder="Enter number (min. 2)"
-                          value={numberOfPeople}
-                          onChange={(e) => handlePeopleChange(e.target.value)}
-                          onClick={(e) => e.stopPropagation()}
-                          onKeyDown={(e) => {
-                            // Prevent non-numeric keys except backspace, delete, arrows
-                            if (!/[0-9]/.test(e.key) && !['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.key)) {
-                              e.preventDefault();
-                              setPeopleInputError('Please enter numbers only');
-                            }
-                          }}
-                          style={{
-                            width: '100%',
-                            padding: '8px 16px',
-                            fontSize: '13px',
-                            fontWeight: '800',
-                            textAlign: 'center',
-                            backgroundColor: peopleInputError ? '#fef2f2' : '#f0f4fa',
-                            border: peopleInputError ? '2px solid #ef4444' : '2px solid #0a4da3',
-                            borderRadius: '10px',
-                            color: '#083A85',
-                            outline: 'none',
-                            boxSizing: 'border-box',
-                            boxShadow: peopleInputError
-                              ? '0 0 0 2px rgba(239, 68, 68, 0.1)'
-                              : '0 0 0 2px rgba(8, 58, 133, 0.1)',
-                            transition: 'all 0.3s ease',
-                          }}
-                        />
-                        {isGroupInputValid() && (
-                          <div
-                            style={{
-                              position: 'absolute',
-                              right: '12px',
-                              top: '50%',
-                              transform: 'translateY(-50%)',
-                              width: '22px',
-                              height: '22px',
-                              borderRadius: '50%',
-                              backgroundColor: '#0a4da3',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                            }}
-                          >
-                            <i className="bi bi-check-lg" style={{ color: '#fff', fontSize: '12px' }}></i>
-                          </div>
-                        )}
-                      </div>
-                      {peopleInputError ? (
-                        <p style={{
-                          fontSize: '11px',
-                          color: '#ef4444',
-                          marginTop: '4px',
-                          fontWeight: '600',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                        }}>
-                          <i className="bi bi-exclamation-circle-fill"></i>
-                          {peopleInputError}
-                        </p>
-                      ) : (
-                        <p style={{ fontSize: '11px', color: '#0a4da3', marginTop: '4px', fontWeight: '500' }}>
-                          <i className="bi bi-info-circle" style={{ marginRight: '4px' }}></i>
-                          Enter how many people will access the stream, including you
-                        </p>
-                      )}
-
-                      {/* Price Breakdown - only show when valid input */}
-                      {isGroupInputValid() && (
-                        <div
-                          style={{
-                            marginTop: '8px',
-                            padding: '10px',
-                            backgroundColor: '#ecfdf5',
-                            borderRadius: '8px',
-                            border: '1px solid #0a4da3',
-                            animation: 'fadeIn 0.3s ease',
-                          }}
-                        >
-                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                            <span style={{ fontSize: '12px', color: '#374151' }}>Original ({peopleCount} x {individualFee.toLocaleString()} {currencyLabel})</span>
-                            <span style={{ fontSize: '12px', color: '#374151', textDecoration: 'line-through' }}>
-                              {(individualFee * peopleCount).toLocaleString()} {currencyLabel}
-                            </span>
-                          </div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                            <span style={{ fontSize: '12px', color: '#0a4da3', fontWeight: '600' }}>{discountPercentage}% Group Discount</span>
-                            <span style={{ fontSize: '12px', color: '#0a4da3', fontWeight: '600' }}>
-                              -{totalSavings.toLocaleString()} {currencyLabel}
-                            </span>
-                          </div>
-                          <div
-                            style={{
-                              height: '1px',
-                              backgroundColor: '#0a4da3',
-                              margin: '4px 0',
-                            }}
-                          ></div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <span style={{ fontSize: '13px', color: '#083A85', fontWeight: '700' }}>Total to Pay</span>
-                            <span style={{ fontSize: '14px', color: '#083A85', fontWeight: '800' }}>
-                              {totalGroupFee.toLocaleString()} {currencyLabel}
-                            </span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
+                <header className="jp-card-head">
+                  <span className="jp-card-badge">
+                    <i className={pkg.id === 'group' ? 'bi bi-people-fill' : 'bi bi-person-fill'} aria-hidden="true"></i>
+                    {pkg.id === 'group' ? 'Group' : 'Individual'}
+                  </span>
+                  {pkg.id === 'group' && discountPercentage > 0 && (
+                    <span className="jp-card-savings">Save {discountPercentage}%</span>
                   )}
+                </header>
 
-                </div>
-                </div>
+                <h3 className="jp-card-name">{pkg.name}</h3>
+                <p className="jp-card-desc">{pkg.description}</p>
 
-                {/* Select indicator */}
-                <div style={{ padding: isMobile ? '4px 8px' : '6px 10px' }}>
-                  {selectedPackage === pkg.id ? (
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', color: '#083A85', fontSize: '12px', fontWeight: '700' }}>
-                      <i className="bi bi-check-circle-fill" style={{ fontSize: '13px' }}></i>
-                      Selected
-                    </div>
+                <div className="jp-card-price">
+                  {pkg.id === 'individual' ? (
+                    <>
+                      <span className="jp-price-num">{individualFee.toLocaleString()}</span>
+                      <span className="jp-price-cur">RWF</span>
+                    </>
                   ) : (
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '6px',
-                        color: 'rgba(255, 255, 255, 0.5)',
-                        fontSize: '13px',
-                        fontWeight: '500',
-                      }}
-                    >
-                      <i className="bi bi-hand-index-thumb"></i>
-                      Click to select
-                    </div>
+                    <span className="jp-price-tag discount-bounce">Save up to {discountPercentage}%</span>
                   )}
                 </div>
-              </div>
-            ))}
-          </div>
+                <div className="jp-card-pricenote">{pkg.priceNote}</div>
 
-          {/* Action Buttons — only visible for group package (individual auto-proceeds) */}
-          <div
-            style={{
-              display: selectedPackage === 'group' ? 'flex' : 'none',
-              flexDirection: 'row',
-              justifyContent: 'center',
-              gap: isMobile ? '8px' : '12px',
-              paddingTop: '4px',
-            }}
-          >
-            <button
-              onClick={handleCancel}
-              style={{
-                padding: isMobile ? '10px 20px' : '10px 32px',
-                backgroundColor: 'rgba(255,255,255,0.1)',
-                color: '#ffffff',
-                border: '2px solid rgba(255,255,255,0.2)',
-                borderRadius: '10px',
-                fontSize: isMobile ? '13px' : '15px',
-                fontWeight: '700',
-                cursor: 'pointer',
-                transition: 'all 0.3s ease',
-                minWidth: isMobile ? 'auto' : '160px',
-                flex: isMobile ? 1 : 'unset',
-                backdropFilter: 'blur(8px)',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.2)';
-                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)';
-                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)';
-              }}
-            >
+                <ul className="jp-card-features">
+                  {pkg.features.map((feature, i) => (
+                    <li key={i} className={feature.available ? '' : 'is-unavailable'}>
+                      <span className="jp-feat-ico" aria-hidden="true">
+                        <i className={feature.available ? 'bi bi-check-lg' : 'bi bi-x-lg'}></i>
+                      </span>
+                      <span className="jp-feat-text">{feature.text}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                {/* Group package — people input + price breakdown */}
+                {pkg.id === 'group' && selected && (
+                  <div className="jp-group-input" onClick={(e) => e.stopPropagation()}>
+                    <label htmlFor="jp-people-count" className="jp-input-label">
+                      <i className="bi bi-people-fill" aria-hidden="true"></i>
+                      Number of people <span className="jp-required">*</span>
+                    </label>
+                    <div className="jp-input-wrap">
+                      <input
+                        id="jp-people-count"
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        placeholder="Enter number (min. 2)"
+                        value={numberOfPeople}
+                        onChange={(e) => handlePeopleChange(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (!/[0-9]/.test(e.key) && !['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab', 'Enter'].includes(e.key)) {
+                            e.preventDefault();
+                            setPeopleInputError('Please enter numbers only');
+                          }
+                        }}
+                        className={`jp-input ${peopleInputError ? 'is-error' : ''}`}
+                        aria-invalid={!!peopleInputError}
+                        aria-describedby={peopleInputError ? 'jp-people-err' : 'jp-people-hint'}
+                      />
+                      {isGroupInputValid() && (
+                        <span className="jp-input-check" aria-hidden="true">
+                          <i className="bi bi-check-lg"></i>
+                        </span>
+                      )}
+                    </div>
+                    {peopleInputError ? (
+                      <p id="jp-people-err" className="jp-msg jp-msg--err">
+                        <i className="bi bi-exclamation-circle-fill" aria-hidden="true"></i>
+                        {peopleInputError}
+                      </p>
+                    ) : (
+                      <p id="jp-people-hint" className="jp-msg jp-msg--hint">
+                        <i className="bi bi-info-circle" aria-hidden="true"></i>
+                        Including yourself — minimum 2 people
+                      </p>
+                    )}
+
+                    {isGroupInputValid() && (
+                      <div className="jp-breakdown">
+                        <div className="jp-breakdown-row">
+                          <span>Original ({peopleCount} × {individualFee.toLocaleString()} RWF)</span>
+                          <span className="jp-strike">{(individualFee * peopleCount).toLocaleString()} RWF</span>
+                        </div>
+                        <div className="jp-breakdown-row jp-breakdown-row--save">
+                          <span>{discountPercentage}% group discount</span>
+                          <span>−{totalSavings.toLocaleString()} RWF</span>
+                        </div>
+                        <div className="jp-breakdown-divider" aria-hidden="true" />
+                        <div className="jp-breakdown-row jp-breakdown-row--total">
+                          <span>Total to pay</span>
+                          <strong>{totalGroupFee.toLocaleString()} RWF</strong>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <footer className="jp-card-footer">
+                  {selected ? (
+                    <span className="jp-selected">
+                      <i className="bi bi-check-circle-fill" aria-hidden="true"></i>
+                      Selected
+                    </span>
+                  ) : (
+                    <span className="jp-tap">
+                      <i className="bi bi-hand-index-thumb" aria-hidden="true"></i>
+                      Tap to select
+                    </span>
+                  )}
+                </footer>
+              </article>
+            );
+          })}
+        </section>
+
+        {/* ─── Action bar — group only (individual auto-proceeds) ─── */}
+        {selectedPackage === 'group' && (
+          <div className="jp-actions" role="group" aria-label="Confirm selection">
+            <button type="button" className="jp-btn jp-btn--ghost" onClick={handleCancel}>
               Cancel
             </button>
             <button
+              type="button"
+              className="jp-btn jp-btn--primary"
               onClick={handleProceed}
-              disabled={!selectedPackage || (selectedPackage === 'group' && !isGroupInputValid())}
-              style={{
-                padding: isMobile ? '10px 20px' : '12px 32px',
-                background: (selectedPackage === 'individual' || (selectedPackage === 'group' && isGroupInputValid()))
-                  ? '#16a34a'
-                  : '#374151',
-                color: '#fff',
-                border: (selectedPackage === 'individual' || (selectedPackage === 'group' && isGroupInputValid()))
-                  ? '2px solid #22c55e'
-                  : 'none',
-                borderRadius: '12px',
-                fontSize: '15px',
-                fontWeight: '700',
-                cursor: (selectedPackage === 'individual' || (selectedPackage === 'group' && isGroupInputValid())) ? 'pointer' : 'not-allowed',
-                transition: 'all 0.3s ease',
-                boxShadow: (selectedPackage === 'individual' || (selectedPackage === 'group' && isGroupInputValid()))
-                  ? '0 8px 20px rgba(22, 163, 74, 0.35)'
-                  : 'none',
-                minWidth: isMobile ? 'auto' : '200px',
-                flex: isMobile ? 1 : 'unset',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-              }}
-              onMouseEnter={(e) => {
-                if (selectedPackage === 'individual' || (selectedPackage === 'group' && isGroupInputValid())) {
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 12px 28px rgba(22, 163, 74, 0.45)';
-                  e.currentTarget.style.backgroundColor = '#15803d';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (selectedPackage === 'individual' || (selectedPackage === 'group' && isGroupInputValid())) {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 8px 20px rgba(22, 163, 74, 0.35)';
-                  e.currentTarget.style.backgroundColor = '#16a34a';
-                }
-              }}
+              disabled={!groupReady}
             >
               Continue
-              <i className="bi bi-arrow-right"></i>
+              <i className="bi bi-arrow-right" aria-hidden="true"></i>
             </button>
-          </div>       
+          </div>
+        )}
+
+        {/* ─── Trust strip ─── */}
+        <div className="jp-trust">
+          <span><i className="bi bi-shield-check" aria-hidden="true"></i> Secure payment</span>
+          <span><i className="bi bi-arrow-clockwise" aria-hidden="true"></i> Refundable</span>
+          <span><i className="bi bi-headset" aria-hidden="true"></i> 24/7 support</span>
         </div>
-      </div>
+      </main>
+
+      {/* ───────────────────────── Scoped cinematic styles ───────────────────────── */}
+      <style jsx global>{`
+        :root {
+          --jp-bg: #07080d;
+          --jp-bg-2: #0c0e15;
+          --jp-bg-3: #11141d;
+          --jp-text: #f4f6fb;
+          --jp-text-soft: #b8bdca;
+          --jp-text-mute: #7d8294;
+          --jp-line: rgba(255,255,255,0.08);
+          --jp-line-strong: rgba(255,255,255,0.16);
+          --jp-brand: #083A85;
+          --jp-brand-2: #1f6bff;
+          --jp-brand-soft: rgba(8,58,133,0.18);
+          --jp-amber: #f59e0b;
+          --jp-emerald: #10b981;
+          --jp-red: #ef4444;
+        }
+
+        .jp-page {
+          position: relative;
+          min-height: 100vh;
+          font-family: 'Pragati Narrow', system-ui, -apple-system, 'Segoe UI', sans-serif;
+          color: var(--jp-text);
+          background:
+            radial-gradient(80% 60% at 50% 0%, rgba(8,58,133,0.18) 0%, rgba(8,58,133,0) 60%),
+            linear-gradient(180deg, var(--jp-bg) 0%, var(--jp-bg-2) 60%, var(--jp-bg-3) 100%);
+          overflow-x: hidden;
+        }
+
+        /* ── Backdrop ─────────────────────────────────────────────── */
+        .jp-backdrop {
+          position: absolute;
+          top: 0; left: 0; right: 0;
+          height: 540px;
+          z-index: 0;
+          overflow: hidden;
+          pointer-events: none;
+        }
+        .jp-backdrop-img {
+          position: absolute; inset: -10% 0 0;
+          background-size: cover;
+          background-position: center;
+          filter: blur(28px) saturate(120%);
+          transform: scale(1.18);
+          opacity: 0.55;
+        }
+        .jp-backdrop-veil {
+          position: absolute; inset: 0;
+          background:
+            linear-gradient(180deg, rgba(7,8,13,0.55) 0%, rgba(7,8,13,0.55) 30%, rgba(7,8,13,0.85) 70%, var(--jp-bg) 100%),
+            radial-gradient(80% 60% at 0% 0%, rgba(8,58,133,0.35) 0%, rgba(8,58,133,0) 60%);
+        }
+        .jp-backdrop-grain {
+          position: absolute; inset: 0;
+          opacity: 0.14;
+          mix-blend-mode: overlay;
+          background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.6'/></svg>");
+        }
+
+        /* ── Banner ───────────────────────────────────────────────── */
+        .jp-banner {
+          position: relative;
+          z-index: 5;
+          max-width: 720px;
+          margin: 80px auto 0;
+          padding: 14px 18px;
+          border-radius: 14px;
+          display: flex; align-items: center; gap: 12px;
+          font-size: 14px; font-weight: 500;
+        }
+        .jp-banner--err {
+          background: rgba(239,68,68,0.10);
+          border: 1px solid rgba(239,68,68,0.40);
+          color: #fca5a5;
+        }
+        .jp-banner--err i { color: #ef4444; font-size: 18px; flex: none; }
+
+        /* ── Main container ───────────────────────────────────────── */
+        .jp-main {
+          position: relative;
+          z-index: 5;
+          max-width: 1120px;
+          margin: 0 auto;
+          padding: clamp(80px, 10vh, 110px) clamp(16px, 4vw, 32px) clamp(40px, 6vw, 60px);
+        }
+
+        /* ── Event header strip ───────────────────────────────────── */
+        .jp-event {
+          display: grid;
+          grid-template-columns: auto 96px 1fr auto;
+          align-items: center;
+          gap: clamp(12px, 2vw, 20px);
+          padding: clamp(14px, 2vw, 18px);
+          margin-bottom: clamp(20px, 3vw, 32px);
+          background: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.025) 100%);
+          border: 1px solid var(--jp-line-strong);
+          border-radius: 20px;
+          backdrop-filter: blur(20px) saturate(150%);
+          -webkit-backdrop-filter: blur(20px) saturate(150%);
+          box-shadow: 0 16px 48px -12px rgba(0,0,0,0.55);
+        }
+        .jp-back {
+          width: 40px; height: 40px; flex: none;
+          border-radius: 12px;
+          background: rgba(255,255,255,0.06);
+          border: 1px solid var(--jp-line);
+          color: var(--jp-text);
+          font-size: 16px;
+          cursor: pointer;
+          display: inline-flex; align-items: center; justify-content: center;
+          transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
+        }
+        .jp-back:hover {
+          background: rgba(255,255,255,0.12);
+          border-color: var(--jp-line-strong);
+          transform: translateX(-1px);
+        }
+        .jp-event-poster {
+          width: 96px; height: 96px;
+          border-radius: 14px;
+          background: #1a1d28 50% 50% / cover no-repeat;
+          border: 1px solid var(--jp-line);
+          box-shadow: 0 8px 22px -6px rgba(0,0,0,0.55);
+          flex: none;
+        }
+        .jp-event-info {
+          min-width: 0;
+          display: flex; flex-direction: column; gap: 6px;
+        }
+        .jp-event-chips {
+          display: flex; gap: 8px; flex-wrap: wrap;
+        }
+        .jp-status {
+          display: inline-flex; align-items: center; gap: 6px;
+          padding: 4px 10px;
+          border-radius: 999px;
+          font-size: 10.5px;
+          font-weight: 800;
+          letter-spacing: 0.10em;
+          text-transform: uppercase;
+        }
+        .jp-status--live {
+          background: rgba(16,185,129,0.85);
+          color: #fff;
+          border: 1px solid rgba(255,255,255,0.30);
+        }
+        .jp-status--upcoming {
+          background: rgba(31,107,255,0.55);
+          color: #fff;
+          border: 1px solid rgba(255,255,255,0.30);
+        }
+        .jp-status--cancelled {
+          background: rgba(239,68,68,0.78);
+          color: #fff;
+          border: 1px solid rgba(255,255,255,0.28);
+        }
+        .jp-pulse {
+          width: 7px; height: 7px;
+          border-radius: 50%;
+          background: #fff;
+          box-shadow: 0 0 0 0 rgba(255,255,255,0.7);
+          animation: jpPulse 1.6s ease-out infinite;
+        }
+        @keyframes jpPulse {
+          0% { box-shadow: 0 0 0 0 rgba(255,255,255,0.7); }
+          70% { box-shadow: 0 0 0 6px rgba(255,255,255,0); }
+          100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); }
+        }
+        .jp-cat {
+          display: inline-flex; align-items: center;
+          padding: 4px 10px;
+          border-radius: 999px;
+          background: rgba(7,8,13,0.55);
+          border: 1px solid var(--jp-line-strong);
+          color: var(--jp-text);
+          font-size: 10.5px;
+          font-weight: 800;
+          letter-spacing: 0.10em;
+          text-transform: uppercase;
+        }
+        .jp-event-title {
+          font-size: clamp(20px, 2.4vw, 26px);
+          font-weight: 800;
+          line-height: 1.18;
+          letter-spacing: -0.01em;
+          color: var(--jp-text);
+          margin: 0;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+        .jp-event-meta {
+          display: flex; align-items: center;
+          flex-wrap: wrap;
+          gap: 8px;
+          color: var(--jp-text-soft);
+          font-size: 13px;
+        }
+        .jp-event-meta span { display: inline-flex; align-items: center; gap: 6px; }
+        .jp-event-meta i { color: var(--jp-brand-2); font-size: 13px; }
+        .jp-event-meta .jp-sep { color: var(--jp-text-mute); }
+
+        .jp-event-price {
+          display: flex; flex-direction: column;
+          align-items: flex-end;
+          padding: 10px 16px;
+          border-radius: 14px;
+          background: rgba(8,58,133,0.18);
+          border: 1px solid rgba(31,107,255,0.45);
+          flex: none;
+        }
+        .jp-event-price small {
+          font-size: 11px;
+          text-transform: uppercase;
+          letter-spacing: 0.12em;
+          color: #93c5fd;
+          font-weight: 800;
+        }
+        .jp-event-price strong {
+          font-size: clamp(26px, 2.6vw, 32px);
+          font-weight: 900;
+          color: var(--jp-text);
+          letter-spacing: -0.02em;
+          font-variant-numeric: tabular-nums;
+          line-height: 1;
+        }
+        .jp-event-price strong span {
+          font-size: 13px;
+          font-weight: 800;
+          color: var(--jp-text-mute);
+          margin-left: 4px;
+          letter-spacing: 0.04em;
+        }
+
+        @media (max-width: 720px) {
+          .jp-event {
+            grid-template-columns: auto 1fr;
+            grid-template-areas:
+              "back  poster"
+              "info  info"
+              "price price";
+            gap: 12px;
+          }
+          .jp-back { grid-area: back; }
+          .jp-event-poster { grid-area: poster; width: 64px; height: 64px; justify-self: end; }
+          .jp-event-info { grid-area: info; }
+          .jp-event-price { grid-area: price; flex-direction: row; align-items: center; gap: 10px; align-self: stretch; justify-content: space-between; }
+          .jp-event-price small { font-size: 10px; }
+          .jp-event-price strong { font-size: 22px; }
+        }
+
+        /* ── Page heading ─────────────────────────────────────────── */
+        .jp-heading {
+          text-align: center;
+          margin-bottom: clamp(16px, 2vw, 24px);
+        }
+        .jp-heading h2 {
+          font-size: clamp(24px, 3.6vw, 36px);
+          font-weight: 800;
+          color: var(--jp-text);
+          letter-spacing: -0.02em;
+          margin: 0 0 6px;
+        }
+        .jp-heading p {
+          font-size: clamp(13px, 1.4vw, 15px);
+          color: var(--jp-text-soft);
+          margin: 0;
+        }
+
+        /* ── Saved-code button ────────────────────────────────────── */
+        .jp-savedcode { margin-bottom: 16px; }
+        .jp-savedcode-btn {
+          display: flex; align-items: center; gap: 14px;
+          width: 100%;
+          padding: 12px 16px;
+          background: linear-gradient(135deg, rgba(245,158,11,0.18) 0%, rgba(245,158,11,0.06) 100%);
+          border: 1px solid rgba(245,158,11,0.55);
+          border-radius: 14px;
+          color: var(--jp-text);
+          font-family: inherit;
+          cursor: pointer;
+          transition: background 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+          text-align: left;
+        }
+        .jp-savedcode-btn:hover {
+          background: linear-gradient(135deg, rgba(245,158,11,0.28) 0%, rgba(245,158,11,0.10) 100%);
+          transform: translateY(-1px);
+          box-shadow: 0 10px 30px -8px rgba(245,158,11,0.40);
+        }
+        .jp-savedcode-ico {
+          width: 38px; height: 38px;
+          border-radius: 12px;
+          background: rgba(245,158,11,0.30);
+          border: 1px solid rgba(245,158,11,0.55);
+          color: #fbbf77;
+          display: inline-flex; align-items: center; justify-content: center;
+          font-size: 16px;
+          flex: none;
+        }
+        .jp-savedcode-text { display: flex; flex-direction: column; gap: 1px; flex: 1; min-width: 0; }
+        .jp-savedcode-text strong { font-size: 14px; font-weight: 800; color: var(--jp-text); }
+        .jp-savedcode-text small { font-size: 12px; color: var(--jp-text-mute); }
+        .jp-savedcode-btn > i:last-child { color: #fbbf77; font-size: 14px; }
+
+        /* ── Cards grid — auto-fit handles 1 or 2 cards gracefully:
+              • 1 card  → centered, up to 460px wide
+              • 2 cards → side-by-side, each up to 1fr
+              • mobile  → stacked single column */
+        .jp-cards {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+          max-width: 960px;
+          margin: 0 auto clamp(16px, 2vw, 24px);
+          gap: clamp(14px, 2vw, 20px);
+          align-items: stretch;
+        }
+        @media (max-width: 720px) {
+          .jp-cards { grid-template-columns: 1fr; }
+        }
+
+        .jp-card {
+          position: relative;
+          display: flex; flex-direction: column;
+          padding: clamp(18px, 2.5vw, 24px);
+          background: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.025) 100%);
+          border: 1.5px solid var(--jp-line-strong);
+          border-radius: 22px;
+          cursor: pointer;
+          backdrop-filter: blur(16px) saturate(150%);
+          -webkit-backdrop-filter: blur(16px) saturate(150%);
+          transition:
+            transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1),
+            border-color 220ms ease,
+            box-shadow 220ms ease,
+            background 220ms ease;
+          outline: none;
+          isolation: isolate;
+        }
+        .jp-card::before {
+          content: '';
+          position: absolute; inset: 0;
+          border-radius: inherit;
+          pointer-events: none;
+          background: radial-gradient(80% 50% at 50% 0%, rgba(31,107,255,0.10) 0%, rgba(0,0,0,0) 60%);
+          opacity: 0;
+          transition: opacity 220ms ease;
+        }
+        .jp-card:hover { transform: translateY(-3px); border-color: rgba(255,255,255,0.28); box-shadow: 0 22px 50px -16px rgba(0,0,0,0.55); }
+        .jp-card:hover::before { opacity: 1; }
+        .jp-card.is-selected {
+          border-color: var(--jp-brand-2);
+          background: linear-gradient(180deg, rgba(31,107,255,0.12) 0%, rgba(8,58,133,0.06) 100%);
+          box-shadow:
+            0 0 0 1px rgba(31,107,255,0.45),
+            0 22px 60px -16px rgba(31,107,255,0.55);
+          transform: translateY(-2px);
+        }
+        .jp-card.is-selected::before { opacity: 1; }
+        .jp-card:focus-visible { outline: 2px solid var(--jp-brand-2); outline-offset: 3px; }
+
+        .jp-card-head {
+          display: flex; align-items: center; justify-content: space-between;
+          gap: 8px;
+          margin-bottom: 10px;
+        }
+        .jp-card-badge {
+          display: inline-flex; align-items: center; gap: 6px;
+          padding: 6px 12px;
+          border-radius: 999px;
+          font-size: 11px;
+          font-weight: 800;
+          letter-spacing: 0.10em;
+          text-transform: uppercase;
+          background: rgba(31,107,255,0.18);
+          border: 1px solid rgba(31,107,255,0.45);
+          color: #93c5fd;
+        }
+        .jp-card-badge i { font-size: 11px; }
+        .jp-card--group .jp-card-badge {
+          background: rgba(245,158,11,0.18);
+          border-color: rgba(245,158,11,0.55);
+          color: #fbbf77;
+        }
+        .jp-card-savings {
+          display: inline-flex;
+          padding: 5px 11px;
+          border-radius: 999px;
+          background: rgba(16,185,129,0.20);
+          border: 1px solid rgba(16,185,129,0.55);
+          color: #6ee7b7;
+          font-size: 11px;
+          font-weight: 800;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+        }
+
+        .jp-card-name {
+          font-size: clamp(20px, 2.2vw, 24px);
+          font-weight: 800;
+          color: var(--jp-text);
+          letter-spacing: -0.01em;
+          margin: 0 0 4px;
+        }
+        .jp-card-desc {
+          font-size: 13.5px;
+          color: var(--jp-text-soft);
+          line-height: 1.5;
+          margin: 0 0 18px;
+        }
+
+        .jp-card-price {
+          display: flex; align-items: baseline; gap: 8px;
+          margin-bottom: 4px;
+        }
+        .jp-price-num {
+          font-size: clamp(44px, 5vw, 56px);
+          font-weight: 900;
+          color: var(--jp-text);
+          letter-spacing: -0.030em;
+          line-height: 1;
+          font-variant-numeric: tabular-nums;
+          text-shadow: 0 4px 24px rgba(31,107,255,0.25);
+        }
+        .jp-price-cur {
+          font-size: 18px;
+          font-weight: 800;
+          color: var(--jp-text-mute);
+          letter-spacing: 0.06em;
+        }
+        .jp-price-tag {
+          font-size: clamp(28px, 3.2vw, 36px);
+          font-weight: 900;
+          background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+          -webkit-background-clip: text;
+          background-clip: text;
+          -webkit-text-fill-color: transparent;
+          letter-spacing: -0.02em;
+          line-height: 1;
+        }
+        .jp-card-pricenote {
+          font-size: 12.5px;
+          color: var(--jp-text-mute);
+          margin-bottom: 18px;
+        }
+
+        /* Group card — center the bouncing "Save up to N%" tag and its
+           price-note caption so the rotation in discount-bounce reads
+           cleanly and the tag becomes the visual anchor of the card. */
+        .jp-card--group .jp-card-price {
+          justify-content: center;
+          padding: 6px 0 4px;
+          min-height: clamp(40px, 5vw, 56px);
+        }
+        .jp-card--group .jp-card-pricenote {
+          text-align: center;
+        }
+
+        .jp-card-features {
+          list-style: none;
+          padding: 0; margin: 0 0 16px;
+          display: flex; flex-direction: column;
+          gap: 9px;
+          padding-top: 16px;
+          border-top: 1px solid var(--jp-line);
+        }
+        .jp-card-features li {
+          display: flex; align-items: center;
+          gap: 10px;
+          font-size: 13px;
+          color: var(--jp-text-soft);
+        }
+        .jp-card-features li.is-unavailable {
+          color: var(--jp-text-mute);
+        }
+        .jp-card-features li.is-unavailable .jp-feat-text {
+          text-decoration: line-through;
+          text-decoration-color: rgba(239,68,68,0.45);
+        }
+        .jp-feat-ico {
+          width: 22px; height: 22px;
+          border-radius: 50%;
+          background: rgba(31,107,255,0.18);
+          border: 1px solid rgba(31,107,255,0.40);
+          color: #93c5fd;
+          display: inline-flex; align-items: center; justify-content: center;
+          font-size: 11px;
+          font-weight: 700;
+          flex: none;
+        }
+        .jp-card-features li.is-unavailable .jp-feat-ico {
+          background: rgba(239,68,68,0.14);
+          border-color: rgba(239,68,68,0.40);
+          color: #fca5a5;
+        }
+
+        /* ── Group input ──────────────────────────────────────────── */
+        .jp-group-input {
+          margin-top: 4px;
+          padding: 14px;
+          border-radius: 14px;
+          background: rgba(31,107,255,0.10);
+          border: 1px dashed rgba(31,107,255,0.55);
+          animation: jpFadeIn 0.28s ease;
+        }
+        @keyframes jpFadeIn {
+          from { opacity: 0; transform: translateY(-4px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .jp-input-label {
+          display: flex; align-items: center; gap: 6px;
+          font-size: 12.5px; font-weight: 700;
+          color: #93c5fd;
+          margin-bottom: 8px;
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
+        }
+        .jp-input-label i { color: var(--jp-brand-2); font-size: 13px; }
+        .jp-required { color: #fca5a5; }
+        .jp-input-wrap { position: relative; }
+        .jp-input {
+          width: 100%;
+          padding: 12px 44px 12px 16px;
+          font-family: inherit;
+          font-size: 15px;
+          font-weight: 800;
+          text-align: center;
+          background: rgba(7,8,13,0.65);
+          border: 1.5px solid var(--jp-line-strong);
+          border-radius: 12px;
+          color: var(--jp-text);
+          outline: none;
+          box-sizing: border-box;
+          transition: border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
+          letter-spacing: 0.02em;
+        }
+        .jp-input::placeholder { color: var(--jp-text-mute); font-weight: 500; }
+        .jp-input:focus {
+          border-color: var(--jp-brand-2);
+          background: rgba(7,8,13,0.85);
+          box-shadow: 0 0 0 4px rgba(31,107,255,0.18);
+        }
+        .jp-input.is-error {
+          border-color: rgba(239,68,68,0.6);
+          box-shadow: 0 0 0 4px rgba(239,68,68,0.15);
+        }
+        .jp-input-check {
+          position: absolute;
+          right: 12px;
+          top: 50%;
+          transform: translateY(-50%);
+          width: 24px; height: 24px;
+          border-radius: 50%;
+          background: var(--jp-emerald);
+          color: #fff;
+          font-size: 13px;
+          display: inline-flex; align-items: center; justify-content: center;
+        }
+        .jp-msg {
+          margin: 8px 0 0;
+          font-size: 12px;
+          display: inline-flex; align-items: center; gap: 6px;
+        }
+        .jp-msg--err { color: #fca5a5; }
+        .jp-msg--hint { color: var(--jp-text-mute); }
+        .jp-msg i { font-size: 12px; }
+
+        .jp-breakdown {
+          margin-top: 12px;
+          padding: 12px 14px;
+          background: rgba(7,8,13,0.55);
+          border: 1px solid var(--jp-line-strong);
+          border-radius: 12px;
+          animation: jpFadeIn 0.28s ease;
+        }
+        .jp-breakdown-row {
+          display: flex; justify-content: space-between; align-items: center;
+          font-size: 12.5px;
+          color: var(--jp-text-soft);
+          padding: 3px 0;
+        }
+        .jp-strike { text-decoration: line-through; color: var(--jp-text-mute); }
+        .jp-breakdown-row--save { color: #6ee7b7; font-weight: 700; }
+        .jp-breakdown-row--total { color: var(--jp-text); font-size: 14px; font-weight: 700; padding-top: 8px; }
+        .jp-breakdown-row--total strong {
+          font-size: 24px;
+          font-weight: 900;
+          color: #93c5fd;
+          font-variant-numeric: tabular-nums;
+          letter-spacing: -0.01em;
+          line-height: 1;
+        }
+        .jp-breakdown-divider {
+          height: 1px;
+          background: var(--jp-line-strong);
+          margin: 6px 0;
+        }
+
+        .jp-card-footer {
+          margin-top: auto;
+          padding-top: 16px;
+          border-top: 1px solid var(--jp-line);
+          display: flex; align-items: center; justify-content: center;
+        }
+        .jp-selected {
+          display: inline-flex; align-items: center; gap: 8px;
+          padding: 8px 16px;
+          background: rgba(16,185,129,0.18);
+          border: 1px solid rgba(16,185,129,0.50);
+          border-radius: 999px;
+          color: #6ee7b7;
+          font-size: 12.5px;
+          font-weight: 800;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+        }
+        .jp-tap {
+          display: inline-flex; align-items: center; gap: 7px;
+          color: var(--jp-text-mute);
+          font-size: 13px;
+          font-weight: 600;
+        }
+
+        /* ── Action buttons ───────────────────────────────────────── */
+        .jp-actions {
+          display: flex; justify-content: center;
+          gap: 12px;
+          margin: clamp(16px, 2vw, 22px) 0 clamp(20px, 3vw, 28px);
+          animation: jpFadeIn 0.28s ease;
+        }
+        .jp-btn {
+          display: inline-flex; align-items: center; justify-content: center;
+          gap: 9px;
+          padding: 13px 28px;
+          font-family: inherit;
+          font-size: 14.5px;
+          font-weight: 800;
+          letter-spacing: 0.02em;
+          border-radius: 14px;
+          border: 1px solid transparent;
+          cursor: pointer;
+          transition: transform 160ms ease, background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+          min-width: 160px;
+        }
+        .jp-btn:disabled { cursor: not-allowed; opacity: 0.55; }
+        .jp-btn--ghost {
+          background: rgba(255,255,255,0.05);
+          color: var(--jp-text);
+          border-color: var(--jp-line-strong);
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
+        }
+        .jp-btn--ghost:hover:not(:disabled) {
+          background: rgba(255,255,255,0.10);
+          border-color: rgba(255,255,255,0.30);
+          transform: translateY(-1px);
+        }
+        .jp-btn--primary {
+          background: var(--jp-brand);
+          color: #fff;
+          border-color: rgba(255,255,255,0.18);
+          box-shadow: 0 12px 36px -10px rgba(8,58,133,0.65), inset 0 1px 0 rgba(255,255,255,0.18);
+        }
+        .jp-btn--primary:hover:not(:disabled) {
+          background: #062d6b;
+          transform: translateY(-1.5px);
+          box-shadow: 0 18px 40px -8px rgba(8,58,133,0.75), inset 0 1px 0 rgba(255,255,255,0.18);
+        }
+        @media (max-width: 540px) {
+          .jp-actions { flex-direction: column-reverse; }
+          .jp-btn { width: 100%; min-width: 0; }
+        }
+
+        /* ── Trust strip ──────────────────────────────────────────── */
+        .jp-trust {
+          display: flex; flex-wrap: wrap; justify-content: center;
+          gap: 18px;
+          padding-top: clamp(20px, 3vw, 28px);
+          border-top: 1px solid var(--jp-line);
+          font-size: 12.5px;
+          color: var(--jp-text-mute);
+        }
+        .jp-trust span {
+          display: inline-flex; align-items: center; gap: 6px;
+        }
+        .jp-trust i {
+          color: var(--jp-emerald);
+          font-size: 14px;
+        }
+
+        /* Reduced motion */
+        @media (prefers-reduced-motion: reduce) {
+          .jp-pulse { animation: none; }
+          .jp-card, .jp-btn, .jp-back, .jp-savedcode-btn { transition-duration: 0.001ms !important; }
+          .jp-card:hover { transform: none; }
+        }
+      `}</style>
 
       {/* XentriPay Payment Modal */}
       <XentriPayModal
@@ -1387,6 +1826,11 @@ function JoinPackageContent(): React.JSX.Element {
         title={`Stream Access — ${selectedEvent?.title || 'Event'}`}
         subtitle={`${selectedPackage === 'group' ? `Group (${typeof numberOfPeople === 'number' ? numberOfPeople : 1} people)` : 'Individual'} · ${getPaymentFee().toLocaleString()} ${selectedEvent?.streamFeeCurrencyAbbreviation || selectedEvent?.streamFeeCurrencySymbol || (currencies.length > 0 ? currencies[0].code : 'RWF')}`}
         darkMode
+        // Geo-restriction is for spot reservers (upcoming events) only.
+        // Once the event is live, anyone who has paid may join regardless
+        // of country, so we skip the per-event IP geo-check entirely.
+        skipEventGeoCheck={(selectedEvent?.eventStatus || '').toUpperCase() === 'ONGOING'
+          && (selectedEvent as Record<string, unknown> | null)?.streamStatus !== 'ended'}
       />
 
       {/* Discount Badge — overlays payment modal when group package selected */}
@@ -1433,11 +1877,19 @@ function JoinPackageContent(): React.JSX.Element {
               <p style={{ color: '#9ca3af', fontSize: 13, margin: '0 0 12px' }}>
                 Invite your group to access the stream
               </p>
-              {/* Skip to watch */}
+              {/* Skip — context-aware: only routes to live-stream when the
+                  event is live. Otherwise sends back to view-event with
+                  ?reserved=1 (success banners + spot-reserved confirmation). */}
               <button
                 onClick={() => {
                   setShowGroupCodeModal(false);
-                  router.push(`/user/events/live-stream?eventId=${selectedEvent?.id}&from=payment&inviteToken=${encodeURIComponent(groupShareCode)}`);
+                  const isLiveNow = (selectedEvent?.eventStatus || '').toUpperCase() === 'ONGOING'
+                    && (selectedEvent as Record<string, unknown> | null)?.streamStatus !== 'ended';
+                  if (isLiveNow && selectedEvent?.id) {
+                    router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&from=payment&inviteToken=${encodeURIComponent(groupShareCode)}`);
+                  } else if (selectedEvent?.id) {
+                    router.push(`/user/events/view-event?id=${selectedEvent.id}&reserved=1&group=1`);
+                  }
                 }}
                 style={{ padding: '6px 16px', borderRadius: 20, border: '1px solid rgba(255,255,255,0.15)', background: 'transparent', color: '#9ca3af', fontSize: 12, cursor: 'pointer', transition: 'all 0.2s' }}
                 onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)'; }}
@@ -1563,17 +2015,32 @@ function JoinPackageContent(): React.JSX.Element {
               You can invite viewers now or come back later to add more.
             </p>
 
-            {/* Action buttons */}
+            {/* Action button — context-aware: "Watch now" routes to the
+                live-stream player ONLY when the event is live; on upcoming
+                events the button instead becomes "Done — back to event"
+                and routes to view-event with the success flag. */}
             <div style={{ display: 'flex', gap: 10 }}>
-              <button
-                onClick={() => {
-                  setShowGroupCodeModal(false);
-                  router.push(`/user/events/live-stream?eventId=${selectedEvent?.id}&from=payment&inviteToken=${encodeURIComponent(groupShareCode)}`);
-                }}
-                style={{ flex: 1, padding: '12px', background: 'linear-gradient(135deg, #083A85, #0a4da3)', border: 'none', borderRadius: 10, color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
-              >
-                <i className="bi bi-play-circle"></i> Watch Now
-              </button>
+              {(() => {
+                const isLiveNow = (selectedEvent?.eventStatus || '').toUpperCase() === 'ONGOING'
+                  && (selectedEvent as Record<string, unknown> | null)?.streamStatus !== 'ended';
+                return (
+                  <button
+                    onClick={() => {
+                      setShowGroupCodeModal(false);
+                      if (!selectedEvent?.id) return;
+                      if (isLiveNow) {
+                        router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&from=payment&inviteToken=${encodeURIComponent(groupShareCode)}`);
+                      } else {
+                        router.push(`/user/events/view-event?id=${selectedEvent.id}&reserved=1&group=1`);
+                      }
+                    }}
+                    style={{ flex: 1, padding: '12px', background: 'linear-gradient(135deg, #083A85, #0a4da3)', border: 'none', borderRadius: 10, color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+                  >
+                    <i className={isLiveNow ? 'bi bi-play-circle' : 'bi bi-check-circle-fill'}></i>
+                    {isLiveNow ? 'Watch Now' : 'Done — back to event'}
+                  </button>
+                );
+              })()}
             </div>
           </div>
         </div>
@@ -1755,6 +2222,18 @@ function JoinPackageContent(): React.JSX.Element {
           display: inline-block;
         }
       `}</style>
+
+      {/* Global designed error popup */}
+      <ErrorPopup
+        open={errorPopup.open}
+        onClose={closeErrorPopup}
+        severity={errorPopup.severity}
+        title={errorPopup.title}
+        message={errorPopup.message}
+        hint={errorPopup.hint}
+        primaryAction={errorPopup.primaryAction}
+        secondaryAction={errorPopup.secondaryAction}
+      />
     </div>
   );
 }

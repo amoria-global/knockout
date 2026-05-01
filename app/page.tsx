@@ -6,10 +6,13 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import Footer from "./components/footer";
 import Navbar from "./components/navbar";
 import GlobalNetwork from "./components/GlobalNetwork";
+import DotGrid from "./components/DotGrid";
 // import Preloader from "./components/Preloader"; // Commented out — client requested no preloader
 import { getPublicEvents } from '@/lib/APIs/public';
 import { getStreamVideo } from '@/lib/APIs/streams/route';
+import { getPhotographers } from '@/lib/APIs/photographers/get-photographers/route';
 import TextType from './components/TextType';
+import Lenis from 'lenis';
 
 // Register GSAP plugins
 if (typeof window !== 'undefined') {
@@ -19,12 +22,20 @@ if (typeof window !== 'undefined') {
 export default function Home() {
   const t = useTranslations();
   const [hasLiveEvents, setHasLiveEvents] = useState(false);
+  // Real platform stats fetched from public APIs — feed the hero trust strip
+  // and the "Joined by N photographers" pill. null while loading; numbers
+  // once the API responds (success or failure). Refreshed periodically.
+  const [stats, setStats] = useState<{
+    photographers: number | null;
+    totalEvents: number | null;
+    avgRating: number | null;
+  }>({ photographers: null, totalEvents: null, avgRating: null });
   const [heroEventImages, setHeroEventImages] = useState<string[]>([]);
   const [heroEventSlide, setHeroEventSlide] = useState(0);
   const [heroSlideKey, setHeroSlideKey] = useState(0);
   const [activeCard, setActiveCard] = useState(0) // rated, 1: live, 2: pay, 3: gallery
-  const [networkMousePos, setNetworkMousePos] = useState<{ x: number; y: number } | null>(null)
-  const [whyAmoriaMousePos, setWhyAmoriaMousePos] = useState<{ x: number; y: number } | null>(null)
+  // (Manual mouse-tracking state for the dot patterns was removed — replaced with the
+  // interactive DotGrid component which handles cursor tracking + GSAP InertiaPlugin internally.)
   const [heroMousePos, setHeroMousePos] = useState<{ x: number; y: number } | null>(null)
   const [howItWorksAutoScroll, setHowItWorksAutoScroll] = useState(false) // Auto-scroll flag (mobile-only)
   const [isMobile, setIsMobile] = useState(false)
@@ -110,10 +121,22 @@ export default function Home() {
         const ongoingEvents = allEvents.filter(
           ev => (ev.eventStatus as string)?.toLowerCase() === 'ongoing' && (ev as Record<string, unknown>).streamStatus !== 'ended'
         );
-        if (ongoingEvents.length === 0) return;
 
-        // Fast path: hasLiveStream flag from backend
-        let anyLive = ongoingEvents.some(ev => ev.hasLiveStream === true);
+        // (totalEvents already set above — defensive parse before any
+        // downstream filter logic that might throw)
+
+        // No ongoing events at all — clear the flag and bail
+        if (ongoingEvents.length === 0) {
+          setHasLiveEvents(false);
+          return;
+        }
+
+        // Fast paths: hasLiveStream flag OR streamStatus signals live state
+        let anyLive = ongoingEvents.some(ev => {
+          if (ev.hasLiveStream === true) return true;
+          const ss = ((ev as Record<string, unknown>).streamStatus || '') as string;
+          return ss === 'live' || ss === 'started' || ss === 'streaming';
+        });
 
         // Fallback: check Cloudflare connection status
         if (!anyLive) {
@@ -128,10 +151,163 @@ export default function Home() {
         }
 
         setHasLiveEvents(anyLive);
-      } catch { /* silent */ }
+      } catch { /* silent — totalEvents handled by separate effect */ }
     };
+    // Run immediately, then poll every 30s so streams that go live AFTER
+    // the page loads also light up the EVENTS card pulse without needing
+    // a refresh. Cleared on unmount to avoid memory leaks.
     checkLiveEvents();
+    const liveInterval = setInterval(checkLiveEvents, 30000);
+    return () => clearInterval(liveInterval);
   }, []);
+
+  // ─── LENIS smooth scroll for the home page ──────────────────────────
+  // The landing page has multiple heavy pinned/peeling ScrollTriggers
+  // (Why Amoria → Mockups peel, How It Works steppers, Global Network,
+  // mockup card stack). Native wheel/touch input arrives in chunky bursts,
+  // making those pinned animations stutter. Lenis interpolates the scroll
+  // input itself; ScrollTrigger and any ref-driven onUpdate handlers
+  // receive an already-smoothed scroll position at 60fps — no React
+  // re-renders, no choppy peel transitions.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduced) return; // honor accessibility preference
+
+    const lenis = new Lenis({
+      duration: 1.15,
+      easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      smoothWheel: true,
+      touchMultiplier: 2,
+      wheelMultiplier: 1,
+      lerp: 0.1,
+      syncTouch: true,
+      syncTouchLerp: 0.08,
+    });
+
+    // Hand Lenis updates to ScrollTrigger so all pin/scrub timelines read
+    // the smoothed scroll value Lenis is currently emitting.
+    lenis.on('scroll', ScrollTrigger.update);
+
+    // Drive Lenis from GSAP's ticker — single rAF loop site-wide.
+    const tick = (time: number) => lenis.raf(time * 1000);
+    gsap.ticker.add(tick);
+    gsap.ticker.lagSmoothing(0);
+
+    return () => {
+      gsap.ticker.remove(tick);
+      lenis.destroy();
+    };
+  }, []);
+
+  // Fetch the FULL events count (upcoming + ongoing + completed) by
+  // querying each status separately and summing their `totalElements`.
+  // This avoids any default backend filter that might exclude historic
+  // or completed events when called without a status parameter.
+  useEffect(() => {
+    const fetchTotalEventsCount = async () => {
+      try {
+        const statuses = ['UPCOMING', 'ONGOING', 'COMPLETED'];
+        const results = await Promise.allSettled(
+          statuses.map((status) => getPublicEvents({ size: 1, status }))
+        );
+        let sum = 0;
+        let anyOk = false;
+        for (const r of results) {
+          if (r.status !== 'fulfilled' || !r.value.success || !r.value.data) continue;
+          anyOk = true;
+          const raw = r.value.data as unknown as {
+            content?: unknown[]; events?: unknown[]; items?: unknown[];
+            totalElements?: number; total?: number; totalCount?: number; count?: number;
+          };
+          const arr = raw.content ?? raw.events ?? raw.items ?? [];
+          const n =
+            (typeof raw.totalElements === 'number' && raw.totalElements >= 0) ? raw.totalElements
+            : (typeof raw.total === 'number' && raw.total >= 0) ? raw.total
+            : (typeof raw.totalCount === 'number' && raw.totalCount >= 0) ? raw.totalCount
+            : (typeof raw.count === 'number' && raw.count >= 0) ? raw.count
+            : arr.length;
+          sum += Math.max(0, n);
+        }
+        if (anyOk) {
+          setStats(prev => ({ ...prev, totalEvents: sum }));
+        }
+      } catch {
+        // Silent — keep previous totalEvents value
+      }
+    };
+    fetchTotalEventsCount();
+    // Refresh once a minute so completed events also rack up
+    const id = setInterval(fetchTotalEventsCount, 60000);
+    return () => clearInterval(id);
+  }, []);
+
+  // Fetch photographer stats — total count + avg rating — for the hero
+  // trust strip. Refreshes every 5 minutes; safe-fails to keep the UI
+  // from breaking if the API is unreachable.
+  useEffect(() => {
+    const fetchPhotographerStats = async () => {
+      try {
+        const res = await getPhotographers({ size: 100 });
+        if (!res.success || !res.data) {
+          // API failed — set safe zeros so UI doesn't dangle on "—"
+          setStats(prev => ({
+            ...prev,
+            photographers: prev.photographers ?? 0,
+            avgRating: prev.avgRating ?? 0,
+          }));
+          return;
+        }
+        // The real backend response is Spring Boot pagination
+        // ({ content, totalElements, totalPages }) — the TS interface in
+        // the route.ts is outdated. Read both shapes defensively so we
+        // work whichever the backend returns.
+        const raw = res.data as unknown as {
+          content?: Array<{ rating?: number; reviewCount?: number }>;
+          photographers?: Array<{ rating?: number; reviewCount?: number }>;
+          totalElements?: number;
+          total?: number;
+        };
+        const list = raw.content ?? raw.photographers ?? [];
+        const total = (typeof raw.totalElements === 'number' ? raw.totalElements
+          : (typeof raw.total === 'number' ? raw.total : list.length));
+        // Compute average rating from the sample (only count photographers
+        // who have at least one review so newcomers don't drag it to 0).
+        // Default to 5.0 (perfect) if no rated photographers yet — better
+        // marketing optics for a platform with limited reviews.
+        const rated = list.filter((p) => (p.reviewCount || 0) > 0 && (p.rating || 0) > 0);
+        const avg = rated.length > 0
+          ? rated.reduce((sum, p) => sum + (p.rating || 0), 0) / rated.length
+          : 5.0;
+        setStats(prev => ({
+          ...prev,
+          photographers: total,
+          avgRating: Math.round(avg * 10) / 10,
+        }));
+      } catch {
+        // Network error — keep previous values, but ensure they're never null
+        setStats(prev => ({
+          ...prev,
+          photographers: prev.photographers ?? 0,
+          avgRating: prev.avgRating ?? 0,
+        }));
+      }
+    };
+    fetchPhotographerStats();
+    const statsInterval = setInterval(fetchPhotographerStats, 5 * 60 * 1000);
+    return () => clearInterval(statsInterval);
+  }, []);
+
+  // Format helpers — abbreviate large numbers (5,000 → 5K), graceful "—"
+  // while data is loading. Used by the hero trust strip + the "Joined by"
+  // pill in the For Creators card.
+  const fmtCount = (n: number | null): string => {
+    if (n === null) return '—';
+    if (n >= 1000) return `${(n / 1000).toFixed(n >= 10000 ? 0 : 1).replace(/\.0$/, '')}K+`;
+    if (n >= 100) return `${Math.floor(n / 10) * 10}+`;
+    return String(n);
+  };
+  const fmtRating = (r: number | null): string => r === null ? '—' : r.toFixed(1);
 
   // Auto-slide hero event images carousel
   useEffect(() => {
@@ -212,14 +388,29 @@ export default function Home() {
         gsap.set(section, { zIndex: 1 });
 
         const tl = gsap.timeline({
+          defaults: {
+            // Soft sine ease-out gives a "settling" feel on every clip
+            // animation — much lovelier than pure linear scrubbing.
+            ease: 'sine.inOut',
+            // Force the GPU to handle the transform layer for every tween.
+            force3D: true,
+          },
           scrollTrigger: {
             trigger: section,
             start: 'top top',
             end: '+=1300%',
-            scrub: 0.5,
+            // Heavier scrub smoothing (was 0.5) — playback gently catches
+            // up with the scroll wheel instead of snapping frame-by-frame.
+            scrub: 1.2,
             pin: true,
             pinSpacing: true,
-            anticipatePin: 0,
+            // Pre-pin a frame ahead so iOS/older CPUs don't flicker.
+            anticipatePin: 1,
+            // Recompute pin coordinates whenever the layout reflows
+            // (mobile address bars hide/show, fonts swap, etc.)
+            invalidateOnRefresh: true,
+            fastScrollEnd: true,
+            preventOverlaps: true,
             // markers: true, // Uncomment for debugging
           }
         });
@@ -231,14 +422,14 @@ export default function Home() {
         tl.to(phoneOverlay, {
           clipPath: 'polygon(0% 0%, 0% 0%, 0% 100%, 0% 100%)',
           duration: 1,
-          ease: 'none'
+          /* ease inherited from timeline default (sine.inOut) */
         }, 0.5);
         // Phone text scrolls continuously from bottom to top (no fade, just scroll)
         if (phoneText) {
           tl.to(phoneText, {
             y: -300,
             duration: 1.8,
-            ease: 'none'
+            /* ease inherited from timeline default (sine.inOut) */
           }, 0.5);
         }
         // Mobile phone text flows left→right during the same phase
@@ -246,7 +437,7 @@ export default function Home() {
           tl.to(phoneMobileText, {
             xPercent: -110,
             duration: 1.8,
-            ease: 'none'
+            /* ease inherited from timeline default (sine.inOut) */
           }, 0.5);
         }
 
@@ -255,27 +446,27 @@ export default function Home() {
         tl.to(phone, {
           clipPath: 'polygon(0% 0%, 100% 0%, 100% 0%, 0% 0%)',
           duration: 1,
-          ease: 'none'
+          /* ease inherited from timeline default (sine.inOut) */
         }, 1.5);
         // Tablet reveals from bottom to top (top edge moves upward) - same direction as phone peel
         tl.to(tablet, {
           clipPath: 'polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)',
           duration: 1,
-          ease: 'none'
+          /* ease inherited from timeline default (sine.inOut) */
         }, 1.5);
 
         // Phase 3: Tablet wireframe peels top→bottom to reveal tablet mockup (position 2.5-3.5)
         tl.to(tabletOverlay, {
           clipPath: 'polygon(0% 100%, 100% 100%, 100% 100%, 0% 100%)',
           duration: 1,
-          ease: 'none'
+          /* ease inherited from timeline default (sine.inOut) */
         }, 2.5);
         // Tablet text scrolls continuously from bottom to top (no fade, just scroll)
         if (tabletText) {
           tl.to(tabletText, {
             y: -300,
             duration: 1.8,
-            ease: 'none'
+            /* ease inherited from timeline default (sine.inOut) */
           }, 2.5);
         }
         // Mobile tablet text flows left→right during the same phase
@@ -283,7 +474,7 @@ export default function Home() {
           tl.to(tabletMobileText, {
             xPercent: -110,
             duration: 1.8,
-            ease: 'none'
+            /* ease inherited from timeline default (sine.inOut) */
           }, 2.5);
         }
 
@@ -292,27 +483,27 @@ export default function Home() {
         tl.to(tablet, {
           clipPath: 'polygon(0% 0%, 100% 0%, 100% 0%, 0% 0%)',
           duration: 1,
-          ease: 'none'
+          /* ease inherited from timeline default (sine.inOut) */
         }, 3.5);
         // Laptop reveals from bottom to top (expands upward) - in sync with tablet peel
         tl.to(laptop, {
           clipPath: 'polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)',
           duration: 1,
-          ease: 'none'
+          /* ease inherited from timeline default (sine.inOut) */
         }, 3.5);
 
         // Phase 5: Laptop wireframe peels left→right to reveal laptop mockup (position 4.5-5.5)
         tl.to(laptopOverlay, {
           clipPath: 'polygon(100% 0%, 100% 0%, 100% 100%, 100% 100%)',
           duration: 1,
-          ease: 'none'
+          /* ease inherited from timeline default (sine.inOut) */
         }, 4.5);
         // Laptop text scrolls continuously from bottom to top (no fade, just scroll)
         if (laptopText) {
           tl.to(laptopText, {
             y: -300,
             duration: 1.8,
-            ease: 'none'
+            /* ease inherited from timeline default (sine.inOut) */
           }, 4.5);
         }
         // Mobile laptop text flows left→right during the same phase
@@ -320,7 +511,7 @@ export default function Home() {
           tl.to(laptopMobileText, {
             xPercent: -110,
             duration: 1.8,
-            ease: 'none'
+            /* ease inherited from timeline default (sine.inOut) */
           }, 4.5);
         }
 
@@ -329,7 +520,7 @@ export default function Home() {
           tl.to(whyAmoriaSection, {
             clipPath: 'polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)',
             duration: 1,
-            ease: 'none'
+            /* ease inherited from timeline default (sine.inOut) */
           }, 5.5);
         }
 
@@ -349,35 +540,8 @@ export default function Home() {
   // The original request was to have How It Works scroll normally and reveal mockups behind it
   // This needs a different approach - possibly wrapping both sections in a container
 
-  // Mouse handlers for Global Network section dotted background effect
-  const handleNetworkMouseMove = (e: React.MouseEvent<HTMLElement>) => {
-    if (networkSectionRef.current) {
-      const rect = networkSectionRef.current.getBoundingClientRect();
-      setNetworkMousePos({
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top
-      });
-    }
-  };
-
-  const handleNetworkMouseLeave = () => {
-    setNetworkMousePos(null);
-  };
-
-  // Mouse handlers for Why Amoria section dotted background effect
-  const handleWhyAmoriaMouseMove = (e: React.MouseEvent<HTMLElement>) => {
-    if (whyAmoriaSectionRef.current) {
-      const rect = whyAmoriaSectionRef.current.getBoundingClientRect();
-      setWhyAmoriaMousePos({
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top
-      });
-    }
-  };
-
-  const handleWhyAmoriaMouseLeave = () => {
-    setWhyAmoriaMousePos(null);
-  };
+  // Mouse handlers for the dot-pattern spotlight effect were removed —
+  // the DotGrid component handles all cursor tracking internally.
 
   return (
     <>
@@ -403,6 +567,625 @@ export default function Home() {
           @keyframes ropeFlow {
             0% { stroke-dashoffset: 0; }
             100% { stroke-dashoffset: -100px; }
+          }
+
+          /* ─── Mockups section innovations ─────────────────────────────
+             Smoothness comes from GPU-accelerated transforms + will-change
+             on every animated element. Ambient layers (halos, particles,
+             dot-grid) live on z-index 0–1 and never animate clip-path so
+             they never compete with the device peel for compositor time. */
+
+          /* Force GPU compositing on every animated mockup layer so the
+             scrubbed clip-path animations stay buttery on lower-end CPUs */
+          .device-phone,
+          .device-tablet,
+          .device-laptop,
+          .mockups-inner > div[ref]  {
+            will-change: clip-path, transform;
+            backface-visibility: hidden;
+            transform: translateZ(0);
+          }
+
+          /* Drifting brand-blue halos behind the devices */
+          .mockups-halo {
+            position: absolute;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 0;
+            filter: blur(80px);
+            opacity: 0.45;
+            mix-blend-mode: screen;
+            will-change: transform, opacity;
+          }
+          .mockups-halo--a {
+            top: -120px;
+            left: 10%;
+            width: 480px;
+            height: 480px;
+            background: radial-gradient(circle, rgba(59, 130, 246, 0.55) 0%, rgba(59, 130, 246, 0.18) 50%, rgba(59, 130, 246, 0) 80%);
+            animation: mockups-halo-drift 18s ease-in-out infinite;
+          }
+          .mockups-halo--b {
+            bottom: -100px;
+            right: 8%;
+            width: 420px;
+            height: 420px;
+            background: radial-gradient(circle, rgba(139, 92, 246, 0.40) 0%, rgba(255, 107, 107, 0.15) 50%, rgba(255, 107, 107, 0) 80%);
+            animation: mockups-halo-drift 22s ease-in-out infinite reverse;
+            animation-delay: -6s;
+          }
+          @keyframes mockups-halo-drift {
+            0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+            50%      { transform: translate3d(40px, -30px, 0) scale(1.10); }
+          }
+
+          /* Floating particles — small dots drifting across the bg */
+          .mockups-particle {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+            box-shadow: 0 0 12px rgba(96, 165, 250, 0.85);
+            pointer-events: none;
+            z-index: 1;
+            opacity: 0.65;
+            will-change: transform, opacity;
+          }
+          .mockups-particle--1 { top: 18%; left: 8%;  animation: mockups-particle-float 7s ease-in-out infinite; }
+          .mockups-particle--2 { top: 65%; left: 14%; width: 4px; height: 4px; animation: mockups-particle-float 9s ease-in-out infinite; animation-delay: -2s; }
+          .mockups-particle--3 { top: 30%; right: 12%; width: 5px; height: 5px; animation: mockups-particle-float 8s ease-in-out infinite; animation-delay: -4s; background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%); box-shadow: 0 0 12px rgba(167, 139, 250, 0.80); }
+          .mockups-particle--4 { top: 78%; right: 20%; width: 4px; height: 4px; animation: mockups-particle-float 10s ease-in-out infinite; animation-delay: -1.5s; }
+          .mockups-particle--5 { top: 50%; left: 50%; width: 5px; height: 5px; animation: mockups-particle-float 11s ease-in-out infinite; animation-delay: -3.5s; background: linear-gradient(135deg, #fb923c 0%, #f43f5e 100%); box-shadow: 0 0 12px rgba(251, 146, 60, 0.70); }
+          @keyframes mockups-particle-float {
+            0%, 100% { transform: translate3d(0, 0, 0); opacity: 0.40; }
+            50%      { transform: translate3d(20px, -30px, 0); opacity: 1.00; }
+          }
+
+          /* Soft dot grid for tactile depth — masked to fade at edges */
+          .mockups-grid {
+            position: absolute;
+            inset: 0;
+            background-image: radial-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1.5px);
+            background-size: 26px 26px;
+            mask-image: radial-gradient(ellipse 70% 80% at 50% 50%, #000 30%, transparent 90%);
+            -webkit-mask-image: radial-gradient(ellipse 70% 80% at 50% 50%, #000 30%, transparent 90%);
+            opacity: 0.55;
+            pointer-events: none;
+            z-index: 0;
+          }
+
+          /* Reduced motion — calm everything */
+          @media (prefers-reduced-motion: reduce) {
+            .mockups-halo,
+            .mockups-particle {
+              animation: none !important;
+            }
+          }
+
+          /* ─── Why Amoria section innovations ───────────────────────── */
+
+          /* Eyebrow pill above the title — matches the rest of the page */
+          .wa-eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 9px;
+            padding: 6px 14px 6px 11px;
+            margin-bottom: 18px;
+            background: linear-gradient(135deg, rgba(8, 58, 133, 0.10) 0%, rgba(255, 99, 99, 0.08) 100%);
+            border: 1px solid rgba(8, 58, 133, 0.20);
+            border-radius: 999px;
+            font-family: 'Pragati Narrow', sans-serif;
+            font-size: 11.5px;
+            font-weight: 800;
+            color: #083A85;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            box-shadow: 0 4px 12px -4px rgba(8, 58, 133, 0.30);
+          }
+          .wa-eyebrow-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #083A85 0%, #FF6363 100%);
+            box-shadow: 0 0 10px rgba(8, 58, 133, 0.65);
+            animation: wa-eyebrow-pulse 1.6s ease-in-out infinite;
+          }
+          @keyframes wa-eyebrow-pulse {
+            0%, 100% { transform: scale(1); }
+            50%      { transform: scale(1.30); }
+          }
+          .wa-eyebrow-spark {
+            font-size: 12px;
+            line-height: 1;
+            animation: wa-eyebrow-twinkle 2.4s ease-in-out infinite;
+          }
+          @keyframes wa-eyebrow-twinkle {
+            0%, 100% { opacity: 0.55; transform: rotate(0deg); }
+            50%      { opacity: 1.00; transform: rotate(20deg); }
+          }
+
+          /* Animated brand-blue accent line below the title */
+          .wa-accent-line {
+            position: relative;
+            height: 4px;
+            width: 96px;
+            margin: -6px auto 22px;
+            border-radius: 999px;
+            overflow: hidden;
+            background: rgba(8, 58, 133, 0.12);
+          }
+          .wa-accent-line span {
+            display: block;
+            width: 50%;
+            height: 100%;
+            border-radius: 999px;
+            background: linear-gradient(90deg, #083A85 0%, #3b82f6 50%, #7763FF 100%);
+            animation: wa-accent-sweep 2.6s ease-in-out infinite;
+          }
+          @keyframes wa-accent-sweep {
+            0%   { transform: translateX(-110%); }
+            50%  { transform: translateX(110%); }
+            100% { transform: translateX(110%); }
+          }
+
+          /* Drifting brand halos — soft blurred glows */
+          .wa-halo {
+            position: absolute;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 0;
+            filter: blur(70px);
+            opacity: 0.50;
+            mix-blend-mode: multiply;
+            will-change: transform;
+          }
+          .wa-halo--a {
+            top: -120px;
+            left: 5%;
+            width: 460px;
+            height: 460px;
+            background: radial-gradient(circle, rgba(8, 58, 133, 0.30) 0%, rgba(59, 130, 246, 0.12) 50%, rgba(59, 130, 246, 0) 80%);
+            animation: wa-halo-drift 18s ease-in-out infinite;
+          }
+          .wa-halo--b {
+            bottom: -100px;
+            right: 5%;
+            width: 420px;
+            height: 420px;
+            background: radial-gradient(circle, rgba(119, 99, 255, 0.22) 0%, rgba(255, 99, 99, 0.10) 50%, rgba(255, 99, 99, 0) 80%);
+            animation: wa-halo-drift 22s ease-in-out infinite reverse;
+            animation-delay: -6s;
+          }
+          @keyframes wa-halo-drift {
+            0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+            50%      { transform: translate3d(40px, -30px, 0) scale(1.10); }
+          }
+
+          /* Floating sparkle particles */
+          .wa-particle {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+            box-shadow: 0 0 12px rgba(96, 165, 250, 0.85);
+            pointer-events: none;
+            z-index: 1;
+            opacity: 0.55;
+            will-change: transform, opacity;
+          }
+          .wa-particle--1 { top: 10%; left: 18%; animation: wa-particle-float 7s ease-in-out infinite; }
+          .wa-particle--2 { top: 22%; right: 14%; width: 4px; height: 4px; animation: wa-particle-float 9s ease-in-out infinite; animation-delay: -2s; background: linear-gradient(135deg, #a78bfa 0%, #7763FF 100%); box-shadow: 0 0 12px rgba(167, 139, 250, 0.80); }
+          .wa-particle--3 { top: 70%; left: 12%; width: 5px; height: 5px; animation: wa-particle-float 8s ease-in-out infinite; animation-delay: -4s; }
+          .wa-particle--4 { bottom: 12%; right: 22%; width: 4px; height: 4px; animation: wa-particle-float 10s ease-in-out infinite; animation-delay: -1.5s; background: linear-gradient(135deg, #fb923c 0%, #FF6363 100%); box-shadow: 0 0 12px rgba(251, 146, 60, 0.70); }
+          .wa-particle--5 { top: 50%; right: 8%; width: 5px; height: 5px; animation: wa-particle-float 11s ease-in-out infinite; animation-delay: -3.5s; }
+          @keyframes wa-particle-float {
+            0%, 100% { transform: translate3d(0, 0, 0); opacity: 0.40; }
+            50%      { transform: translate3d(20px, -30px, 0); opacity: 1.00; }
+          }
+
+          /* ─── Global Network section spices ────────────────────────── */
+
+          .gn-eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 9px;
+            padding: 6px 14px 6px 11px;
+            margin-bottom: 18px;
+            background: rgba(0, 232, 255, 0.10);
+            border: 1px solid rgba(0, 232, 255, 0.32);
+            border-radius: 999px;
+            font-family: 'Pragati Narrow', sans-serif;
+            font-size: 11.5px;
+            font-weight: 800;
+            color: #00E8FF;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            box-shadow: 0 4px 14px -4px rgba(0, 232, 255, 0.40);
+          }
+          .gn-eyebrow-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #ef4444;
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.85);
+            animation: gn-eyebrow-pulse 1.4s ease-in-out infinite;
+          }
+          @keyframes gn-eyebrow-pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50%      { transform: scale(1.30); opacity: 0.55; }
+          }
+          .gn-eyebrow-spark {
+            font-size: 12px;
+            line-height: 1;
+            animation: gn-eyebrow-twinkle 2.4s ease-in-out infinite;
+            color: #00E8FF;
+          }
+          @keyframes gn-eyebrow-twinkle {
+            0%, 100% { opacity: 0.55; transform: rotate(0deg); }
+            50%      { opacity: 1.00; transform: rotate(20deg); }
+          }
+
+          /* Floating cyan particles drifting across the dark space */
+          .gn-particle {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #FFFFFF 0%, #00E8FF 100%);
+            box-shadow: 0 0 14px rgba(0, 232, 255, 0.85);
+            pointer-events: none;
+            z-index: 1;
+            opacity: 0.55;
+            will-change: transform, opacity;
+          }
+          .gn-particle--1 { top: 14%; left: 28%; animation: gn-particle-float 8s ease-in-out infinite; }
+          .gn-particle--2 { top: 70%; left: 18%; width: 4px; height: 4px; animation: gn-particle-float 11s ease-in-out infinite; animation-delay: -3s; }
+          .gn-particle--3 { top: 22%; right: 28%; width: 5px; height: 5px; animation: gn-particle-float 9s ease-in-out infinite; animation-delay: -2s; }
+          .gn-particle--4 { top: 60%; right: 16%; width: 4px; height: 4px; animation: gn-particle-float 10s ease-in-out infinite; animation-delay: -5s; }
+          .gn-particle--5 { top: 40%; left: 50%; width: 3px; height: 3px; animation: gn-particle-float 12s ease-in-out infinite; animation-delay: -1.5s; }
+          .gn-particle--6 { top: 85%; right: 40%; width: 4px; height: 4px; animation: gn-particle-float 9.5s ease-in-out infinite; animation-delay: -4s; }
+          @keyframes gn-particle-float {
+            0%, 100% { transform: translate3d(0, 0, 0); opacity: 0.40; }
+            50%      { transform: translate3d(20px, -30px, 0); opacity: 1.00; }
+          }
+
+          /* Compass coordinate ornament — top-left corner of section */
+          .gn-compass {
+            position: absolute;
+            top: 26px;
+            left: 26px;
+            width: 78px;
+            height: 78px;
+            opacity: 0.85;
+            z-index: 2;
+            pointer-events: none;
+            will-change: transform;
+          }
+          .gn-compass svg { width: 100%; height: 100%; display: block; animation: gn-compass-spin 60s linear infinite; }
+          @keyframes gn-compass-spin {
+            to { transform: rotate(360deg); }
+          }
+
+          /* Live network stats chips below CTAs */
+          .gn-stats {
+            display: flex;
+            gap: 18px;
+            margin-top: 28px;
+            padding-top: 20px;
+            border-top: 1px dashed rgba(255, 255, 255, 0.18);
+            flex-wrap: wrap;
+          }
+          .gn-stat {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            font-family: 'Pragati Narrow', sans-serif;
+          }
+          .gn-stat-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #00E8FF;
+            box-shadow: 0 0 10px rgba(0, 232, 255, 0.85);
+            animation: gn-stat-blink 1.6s ease-in-out infinite;
+          }
+          .gn-stat:nth-child(2) .gn-stat-dot { animation-delay: -0.5s; background: #60a5fa; box-shadow: 0 0 10px rgba(96, 165, 250, 0.85); }
+          .gn-stat:nth-child(3) .gn-stat-dot { animation-delay: -1s; background: #ef4444; box-shadow: 0 0 10px rgba(239, 68, 68, 0.85); }
+          @keyframes gn-stat-blink {
+            0%, 100% { opacity: 1; }
+            50%      { opacity: 0.40; }
+          }
+          .gn-stat > div {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.10;
+          }
+          .gn-stat strong {
+            font-size: 18px;
+            font-weight: 800;
+            color: #ffffff;
+            letter-spacing: -0.01em;
+          }
+          .gn-stat span:not(.gn-stat-dot) {
+            font-size: 11px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.65);
+            text-transform: uppercase;
+            letter-spacing: 0.10em;
+            margin-top: 2px;
+          }
+
+          @media (max-width: 768px) {
+            .gn-compass { top: 14px; left: 14px; width: 50px; height: 50px; }
+            .gn-eyebrow { font-size: 10px; padding: 5px 12px 5px 10px; }
+            .gn-stats { gap: 14px; justify-content: center; margin-top: 22px; padding-top: 16px; }
+            .gn-stat strong { font-size: 16px; }
+          }
+          @media (prefers-reduced-motion: reduce) {
+            .gn-eyebrow-dot,
+            .gn-eyebrow-spark,
+            .gn-particle,
+            .gn-compass svg,
+            .gn-stat-dot {
+              animation: none !important;
+            }
+          }
+
+          /* ─── Why Amoria SECTION-LEVEL spices ──────────────────────── */
+
+          /* Center backdrop crest — concentric dashed circles behind the
+             dashboard area. Slowly counter-rotate for a "platform pulse" */
+          .wa-crest {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 720px;
+            height: 720px;
+            margin: -360px 0 0 -360px;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.85;
+          }
+          .wa-crest-ring {
+            transform-origin: 300px 300px;
+            will-change: transform;
+          }
+          .wa-crest-ring--outer { animation: wa-crest-spin 60s linear infinite; }
+          .wa-crest-ring--mid   { animation: wa-crest-spin 80s linear infinite reverse; }
+          .wa-crest-ring--inner { animation: wa-crest-spin 50s linear infinite; }
+          @keyframes wa-crest-spin {
+            to { transform: rotate(360deg); }
+          }
+
+          /* Geometric corner ornaments — slowly rotate brand glyphs */
+          .wa-corner {
+            position: absolute;
+            width: 56px;
+            height: 56px;
+            opacity: 0.55;
+            pointer-events: none;
+            z-index: 1;
+            will-change: transform;
+          }
+          .wa-corner svg { width: 100%; height: 100%; display: block; }
+          .wa-corner--tl { top: 7%;    left: 4%;  animation: wa-corner-spin 24s linear infinite; }
+          .wa-corner--tr { top: 11%;   right: 4%; animation: wa-corner-spin 30s linear infinite reverse; }
+          .wa-corner--bl { bottom: 9%; left: 5%;  animation: wa-corner-spin 28s linear infinite; }
+          .wa-corner--br { bottom: 7%; right: 4%; animation: wa-corner-spin 26s linear infinite reverse; }
+          @keyframes wa-corner-spin {
+            to { transform: rotate(360deg); }
+          }
+
+          /* Promise marquee — continuous scroll of brand promises */
+          .wa-marquee {
+            position: relative;
+            margin-top: 100px;
+            padding: 16px 0;
+            overflow: hidden;
+            border-top: 1px solid rgba(8, 58, 133, 0.10);
+            border-bottom: 1px solid rgba(8, 58, 133, 0.10);
+            background: linear-gradient(180deg, rgba(8, 58, 133, 0.02) 0%, rgba(255, 255, 255, 0) 50%, rgba(8, 58, 133, 0.02) 100%);
+            mask-image: linear-gradient(90deg, transparent 0%, #000 8%, #000 92%, transparent 100%);
+            -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 8%, #000 92%, transparent 100%);
+            z-index: 2;
+          }
+          .wa-marquee-track {
+            display: flex;
+            align-items: center;
+            gap: 48px;
+            width: max-content;
+            animation: wa-marquee-slide 38s linear infinite;
+            will-change: transform;
+          }
+          @keyframes wa-marquee-slide {
+            from { transform: translate3d(0, 0, 0); }
+            to   { transform: translate3d(-50%, 0, 0); }
+          }
+          .wa-marquee-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            font-family: 'Pragati Narrow', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            color: #083A85;
+            white-space: nowrap;
+            letter-spacing: 0.02em;
+            flex-shrink: 0;
+          }
+          .wa-marquee-item i {
+            font-size: 16px;
+            color: #3b82f6;
+            background: linear-gradient(135deg, rgba(8, 58, 133, 0.10) 0%, rgba(59, 130, 246, 0.06) 100%);
+            border: 1px solid rgba(8, 58, 133, 0.18);
+            border-radius: 8px;
+            width: 28px;
+            height: 28px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 6px -2px rgba(8, 58, 133, 0.25);
+          }
+          /* Pause marquee on hover (lets users read items) */
+          .wa-marquee:hover .wa-marquee-track { animation-play-state: paused; }
+
+          @media (max-width: 768px) {
+            .wa-crest { width: 480px; height: 480px; margin: -240px 0 0 -240px; }
+            .wa-corner { width: 38px; height: 38px; }
+            .wa-marquee { margin-top: 60px; }
+            .wa-marquee-item { font-size: 12.5px; gap: 8px; }
+            .wa-marquee-item i { font-size: 14px; width: 24px; height: 24px; }
+            .wa-marquee-track { gap: 36px; }
+          }
+          @media (prefers-reduced-motion: reduce) {
+            .wa-crest-ring,
+            .wa-corner,
+            .wa-marquee-track {
+              animation: none !important;
+            }
+          }
+
+          /* ─── Why Amoria card enhancements ─────────────────────────── */
+          .why-amoria-card {
+            transform-origin: center;
+            position: absolute; /* preserve original positioning */
+            isolation: isolate;
+          }
+
+          /* Top-edge gradient accent stripe — different palette per card */
+          .why-amoria-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            border-radius: inherit;
+            background: linear-gradient(90deg, transparent 0%, #083A85 25%, #3b82f6 50%, #083A85 75%, transparent 100%);
+            opacity: 0;
+            transition: opacity 320ms ease;
+            z-index: 5;
+            pointer-events: none;
+          }
+          .why-amoria-card:hover::before { opacity: 1; }
+
+          /* Variant accent palettes per card (matches the connection-loop colors) */
+          .why-amoria-card-large::before {
+            background: linear-gradient(90deg, transparent 0%, #083A85 25%, #3b82f6 50%, #083A85 75%, transparent 100%);
+          }
+          .why-amoria-card-medium::before {
+            background: linear-gradient(90deg, transparent 0%, #1d4ed8 25%, #60a5fa 50%, #1d4ed8 75%, transparent 100%);
+          }
+          .why-amoria-card-small::before {
+            background: linear-gradient(90deg, transparent 0%, #dc2626 25%, #ef4444 50%, #dc2626 75%, transparent 100%);
+          }
+          .why-amoria-card-base::before {
+            background: linear-gradient(90deg, transparent 0%, #047857 25%, #10b981 50%, #047857 75%, transparent 100%);
+          }
+
+          /* Sparkle corner badge — appears on hover */
+          .why-amoria-card::after {
+            content: '✦';
+            position: absolute;
+            top: 12px;
+            right: 14px;
+            font-size: 16px;
+            line-height: 1;
+            color: #3b82f6;
+            opacity: 0;
+            transform: scale(0.5) rotate(-90deg);
+            transition: opacity 360ms cubic-bezier(0.34, 1.56, 0.64, 1),
+                        transform 360ms cubic-bezier(0.34, 1.56, 0.64, 1);
+            text-shadow: 0 0 8px rgba(59, 130, 246, 0.65);
+            pointer-events: none;
+            z-index: 6;
+          }
+          .why-amoria-card:hover::after {
+            opacity: 0.85;
+            transform: scale(1) rotate(0deg);
+          }
+          .why-amoria-card-small::after { color: #ef4444; text-shadow: 0 0 8px rgba(239, 68, 68, 0.65); }
+          .why-amoria-card-base::after  { color: #10b981; text-shadow: 0 0 8px rgba(16, 185, 129, 0.65); }
+
+          /* Hover lift + brand-blue glow */
+          .why-amoria-card:hover {
+            box-shadow:
+              0 32px 70px -16px rgba(8, 58, 133, 0.32),
+              0 0 0 1px rgba(96, 165, 250, 0.24),
+              0 0 60px -10px rgba(59, 130, 246, 0.30) !important;
+          }
+
+          /* Card images — subtle zoom on hover for depth */
+          .why-amoria-card img {
+            transition: transform 700ms cubic-bezier(0.22, 1, 0.36, 1), filter 320ms ease;
+            will-change: transform;
+          }
+          .why-amoria-card:hover img {
+            transform: scale(1.06);
+            filter: saturate(1.10) brightness(1.02);
+          }
+
+          /* Card titles — subtle gradient accent on hover */
+          .why-amoria-card h3 {
+            transition: background 280ms ease, color 280ms ease, transform 280ms ease;
+            background: linear-gradient(90deg, #083A85 0%, #083A85 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: #083A85;
+          }
+          .why-amoria-card:hover h3 {
+            background: linear-gradient(90deg, #083A85 0%, #3b82f6 50%, #7763FF 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            color: transparent;
+            transform: translateX(2px);
+          }
+
+          /* Image wrapper — soft gradient overlay reveal on hover */
+          .why-amoria-card img + div,
+          .why-amoria-card div[style*="overflow: hidden"] {
+            position: relative;
+          }
+          .why-amoria-card div[style*="overflow: hidden"]::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, transparent 60%, rgba(8, 58, 133, 0.22) 100%);
+            opacity: 0;
+            transition: opacity 320ms ease;
+            pointer-events: none;
+            z-index: 1;
+          }
+          .why-amoria-card:hover div[style*="overflow: hidden"]::after {
+            opacity: 1;
+          }
+
+          /* Reduced motion */
+          @media (prefers-reduced-motion: reduce) {
+            .why-amoria-card,
+            .why-amoria-card::before,
+            .why-amoria-card::after,
+            .why-amoria-card img,
+            .why-amoria-card h3 {
+              transition: none !important;
+            }
+          }
+
+          @media (prefers-reduced-motion: reduce) {
+            .wa-eyebrow-dot,
+            .wa-eyebrow-spark,
+            .wa-accent-line span,
+            .wa-halo,
+            .wa-particle {
+              animation: none !important;
+            }
           }
 
           /* Mobile mockup flowing text — scroll-driven horizontal flow per mockup */
@@ -500,14 +1283,16 @@ export default function Home() {
             }
 
             .hero-content { flex-direction: column !important; padding: 20px 15px 20px !important; min-height: auto !important; gap: 10px !important; max-width: 100% !important; }
-            .hero-left { width: 100% !important; max-width: 100% !important; text-align: center; padding: 0 15px !important; display: flex !important; flex-direction: column !important; }
-            .hero-left .hero-glow { order: 0; }
-            .hero-left .hero-title { order: 1; }
-            .hero-left .hero-description { order: 2; }
-            .hero-left .hero-buttons { order: 3; margin-bottom: 20px !important; }
-            .hero-left .hero-glass-card { order: 4 !important; }
+            .hero-left { width: 100% !important; max-width: 100% !important; text-align: center; padding: 0 15px !important; display: flex !important; flex-direction: column !important; align-items: center; }
+            .hero-left .hero-glow { order: 0 !important; }
+            .hero-left .hero-eyebrow { order: 1 !important; align-self: center; }
+            .hero-left .hero-glass-card { order: 2 !important; margin-bottom: 16px !important; }
+            .hero-left .hero-title { order: 3 !important; }
+            .hero-left .hero-buttons { order: 4 !important; justify-content: center !important; margin-bottom: 0 !important; }
+            .hero-left .hero-description { order: 5 !important; margin-top: 14px !important; }
+            .hero-left .hero-trust { order: 6 !important; align-self: stretch; }
             .hero-right { width: 100% !important; height: 525px !important; margin-top: 0 !important; position: relative !important; overflow: visible !important; transform: scale(0.52) !important; transform-origin: top center !important; margin-bottom: -220px !important; }
-            .hero-title { font-size: 32px !important; line-height: 1.1 !important; }
+            .hero-title { font-size: clamp(34px, 9vw, 44px) !important; line-height: 1.05 !important; letter-spacing: -0.02em !important; }
             .hero-description { max-width: 100% !important; font-size: 14px !important; padding: 0 5px !important; }
             .hero-buttons { justify-content: center !important; flex-direction: column !important; align-items: center !important; gap: 10px !important; }
             .hero-buttons button { width: 100% !important; max-width: 280px !important; }
@@ -631,6 +1416,17 @@ export default function Home() {
             overflow: 'hidden',
           }}
         >
+
+          {/* ── Decorative innovation layer ─────────────────────────────
+               Animated brand-blue & coral orbs floating in the background,
+               a subtle dot-grid pattern overlay, and a thin gradient hairline
+               framing the bottom edge. All purely visual — no layout shift,
+               no impact on existing content. */}
+          <div className="hero-deco-grid" aria-hidden="true" />
+          <div className="hero-orb hero-orb--blue" aria-hidden="true" />
+          <div className="hero-orb hero-orb--coral" aria-hidden="true" />
+          <div className="hero-orb hero-orb--cyan" aria-hidden="true" />
+          <div className="hero-edge-line" aria-hidden="true" />
           {/* Spotlight layer - blue glow that follows cursor */}
           <div style={{
             position: 'absolute',
@@ -645,25 +1441,31 @@ export default function Home() {
             transition: 'opacity 0.15s ease'
           }} />
 
-          {/* Hero Content Container */}
+          {/* Hero Content Container — tightened so the full layout
+              (eyebrow → title → description → CTAs → glass card → trust)
+              fits cleanly at 100% browser zoom on a 1366×768 viewport. */}
           <div className="hero-content" style={{
             position: 'relative',
             maxWidth: '1200px',
             margin: '0 auto',
-            padding: '40px 30px 95px',
+            padding: '24px 30px 40px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             gap: '40px',
-            minHeight: 'calc(80vh - 64px)'
+            minHeight: 'calc(100vh - 64px)'
           }}>
 
-            {/* Left Content */}
+            {/* Left Content — flex column with explicit order so the
+                hierarchy reads: eyebrow → title → description → CTAs →
+                glass card → trust strip. */}
             <div className="hero-left" style={{
               position: 'relative',
               width: '45%',
-              maxWidth: '420px',
-              zIndex: 10
+              maxWidth: '460px',
+              zIndex: 10,
+              display: 'flex',
+              flexDirection: 'column',
             }}>
               {/* Blue lighting bulb-like glow effect */}
               <div className="hero-glow" style={{
@@ -679,17 +1481,21 @@ export default function Home() {
                 pointerEvents: 'none'
               }} />
 
-              {/* Hero Feature Glass Card */}
+              {/* Hero Feature Glass Card — sits BELOW the eyebrow pill and
+                  ABOVE the headline, presenting EVENTS + AI SCAN as quick
+                  entry tiles before the user reads the headline. */}
               <div className="hero-glass-card" style={{
-                background: 'rgba(255, 255, 255, 0.65)',
-                backdropFilter: 'blur(12px)',
-                WebkitBackdropFilter: 'blur(12px)',
-                border: '1px solid rgba(8, 58, 133, 0.08)',
-                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08)',
-                borderRadius: '20px',
-                padding: '16px',
-                marginBottom: '24px',
+                background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.85) 0%, rgba(248, 250, 252, 0.75) 100%)',
+                backdropFilter: 'blur(20px) saturate(160%)',
+                WebkitBackdropFilter: 'blur(20px) saturate(160%)',
+                border: '1px solid rgba(8, 58, 133, 0.12)',
+                boxShadow: '0 18px 40px -16px rgba(8, 58, 133, 0.20), 0 1px 0 rgba(255, 255, 255, 0.95) inset',
+                borderRadius: '16px',
+                padding: '10px',
+                marginTop: '0',
+                marginBottom: '20px',
                 maxWidth: '440px',
+                order: 2,
               }}>
                 <div className="glass-sub-cards" style={{ display: 'flex', gap: '12px' }}>
                   {/* Events Sub-Card */}
@@ -698,12 +1504,12 @@ export default function Home() {
                     style={{
                       flex: 1,
                       position: 'relative',
-                      minHeight: '160px',
+                      minHeight: '128px',
                       borderRadius: '14px',
                       overflow: 'hidden',
                       cursor: 'pointer',
                       background: '#0a1628',
-                      border: hasLiveEvents ? '2px solid rgba(16, 185, 129, 0.6)' : '1px solid rgba(255, 255, 255, 0.1)',
+                      border: hasLiveEvents ? '2px solid rgba(220, 38, 38, 0.7)' : '1px solid rgba(255, 255, 255, 0.1)',
                       animation: hasLiveEvents ? 'hero-card-twinkle 1s ease-out infinite' : 'none',
                       transition: 'transform 0.3s ease, box-shadow 0.3s ease',
                     }}
@@ -733,10 +1539,10 @@ export default function Home() {
                     {/* Content */}
                     <div style={{ position: 'relative', zIndex: 2, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '12px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <i className="bi bi-camera-video-fill" style={{ fontSize: '14px', color: hasLiveEvents ? '#10b981' : '#fff' }}></i>
+                        <i className="bi bi-camera-video-fill" style={{ fontSize: '14px', color: hasLiveEvents ? '#ef4444' : '#fff' }}></i>
                         <span style={{ fontSize: '11px', fontWeight: 700, color: '#fff', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Events</span>
                         {hasLiveEvents && (
-                          <span style={{ fontSize: '9px', fontWeight: 700, color: '#10b981', background: 'rgba(16,185,129,0.15)', padding: '2px 6px', borderRadius: '8px' }}>LIVE</span>
+                          <span style={{ fontSize: '9px', fontWeight: 700, color: '#fca5a5', background: 'rgba(220,38,38,0.20)', padding: '2px 6px', borderRadius: '8px', border: '1px solid rgba(220,38,38,0.45)' }}>LIVE</span>
                         )}
                       </div>
                       <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)', margin: 0, lineHeight: 1.3 }}>
@@ -753,7 +1559,7 @@ export default function Home() {
                     style={{
                       flex: 1,
                       position: 'relative',
-                      minHeight: '160px',
+                      minHeight: '128px',
                       borderRadius: '14px',
                       overflow: 'hidden',
                       cursor: 'pointer',
@@ -799,22 +1605,46 @@ export default function Home() {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      gap: '5px',
-                      padding: '7px 12px',
+                      gap: '6px',
+                      padding: '8px 14px',
                       borderRadius: '10px',
-                      background: 'transparent',
-                      border: hasLiveEvents ? '1.5px solid rgba(16, 185, 129, 0.6)' : '1.5px solid #1a1a1a',
-                      color: hasLiveEvents ? '#059669' : '#1a1a1a',
-                      fontSize: '11.5px',
-                      fontWeight: 500,
+                      // Solid red gradient + white text when live (matches the
+                      // "LIVE NOW" pill language). Maximum readability against
+                      // the white parent card. Falls back to outlined dark
+                      // button when no live events.
+                      background: hasLiveEvents
+                        ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
+                        : 'transparent',
+                      border: hasLiveEvents ? '1.5px solid rgba(255,255,255,0.22)' : '1.5px solid #1a1a1a',
+                      color: hasLiveEvents ? '#ffffff' : '#1a1a1a',
+                      fontSize: '12px',
+                      fontWeight: hasLiveEvents ? 700 : 500,
+                      letterSpacing: hasLiveEvents ? '0.02em' : '0',
+                      textShadow: hasLiveEvents ? '0 1px 2px rgba(0,0,0,0.25)' : 'none',
                       cursor: 'pointer',
                       transition: 'all 0.3s ease',
                       animation: hasLiveEvents ? 'hero-card-twinkle 1s ease-out infinite' : 'none',
                     }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = hasLiveEvents ? 'rgba(16,185,129,0.08)' : 'rgba(0,0,0,0.05)'; e.currentTarget.style.borderColor = hasLiveEvents ? '#10b981' : '#000000'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = hasLiveEvents ? 'rgba(16,185,129,0.6)' : '#1a1a1a'; }}
+                    onMouseEnter={(e) => {
+                      if (hasLiveEvents) {
+                        e.currentTarget.style.background = 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)';
+                        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.35)';
+                      } else {
+                        e.currentTarget.style.background = 'rgba(0,0,0,0.05)';
+                        e.currentTarget.style.borderColor = '#000000';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (hasLiveEvents) {
+                        e.currentTarget.style.background = 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)';
+                        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.22)';
+                      } else {
+                        e.currentTarget.style.background = 'transparent';
+                        e.currentTarget.style.borderColor = '#1a1a1a';
+                      }
+                    }}
                   >
-                    <i className={hasLiveEvents ? 'bi bi-broadcast' : 'bi bi-compass'} style={{ fontSize: '12px' }}></i>
+                    <i className={hasLiveEvents ? 'bi bi-broadcast' : 'bi bi-compass'} style={{ fontSize: '13px' }}></i>
                     {hasLiveEvents ? 'Go Streaming' : 'Explore all'}
                   </button>
                   <button
@@ -845,15 +1675,43 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Main Heading */}
+              {/* Brand eyebrow pill — premium identity flag above the title */}
+              <div className="hero-eyebrow" aria-hidden="true" style={{ order: 1 }}>
+                <span className="hero-eyebrow-dot" />
+                <span className="hero-eyebrow-text">
+                  THE PHOTOGRAPHY PLATFORM
+                </span>
+                <span className="hero-eyebrow-sparkle">✨</span>
+              </div>
+
+              {/* Main Heading — sits AFTER the glass card, with CTAs
+                  directly underneath, then description, then trust. */}
               <h1 className="hero-title" style={{
-                fontSize: '57px',
-                fontWeight: 700,
-                lineHeight: '1.05',
-                marginBottom: '19.5px',
-                letterSpacing: '-0.02em'
+                fontSize: '56px',
+                fontWeight: 800,
+                lineHeight: '1.04',
+                marginBottom: '18px',
+                letterSpacing: '-0.025em',
+                order: 3,
               }}>
-                <div style={{ color: '#083A85', marginBottom: '3px' }}>
+                <div style={{
+                  color: '#083A85',
+                  marginBottom: '3px',
+                  // Cursive script flourish on the typing word — same
+                  // 'Alex Brush' treatment as the contact page's "connect"
+                  // word. The contact-page sizing (1.4em + descender
+                  // baseline) makes the strokes render thicker visually.
+                  fontFamily: "'Alex Brush', cursive",
+                  fontWeight: 400,
+                  fontSize: '1.4em',
+                  lineHeight: 1,
+                  letterSpacing: '0',
+                  paddingBottom: '8px',
+                  verticalAlign: '-0.05em',
+                  // 1px text-shadow in the same brand-blue reinforces
+                  // the strokes at this size without looking like a halo
+                  textShadow: '0.5px 0 0 #083A85, -0.5px 0 0 #083A85',
+                }}>
                   <TextType
                     text={['Connekyt', 'Meet', 'Work', 'Chat', 'Grow']}
                     typingSpeed={80}
@@ -863,63 +1721,100 @@ export default function Home() {
                     cursorCharacter="_"
                     cursorBlinkDuration={0.5}
                     loop
-                    style={{ display: 'inline' }}
+                    style={{ display: 'inline', fontFamily: "'Alex Brush', cursive", fontWeight: 400 }}
                   />
                 </div>
                 <div style={{ color: '#000', marginBottom: '3px' }}>{t('hero.title2')}</div>
                 <div style={{ color: '#000' }}>{t('hero.title3')}</div>
               </h1>
 
-              {/* Description */}
+              {/* Description — now sits AFTER the CTA buttons */}
               <p className="hero-description" style={{
-                fontSize: '15px',
+                fontSize: '14px',
                 color: '#1f1d1d',
-                lineHeight: '1.65',
-                marginBottom: '30px',
-                maxWidth: '390px'
+                lineHeight: '1.55',
+                marginTop: '16px',
+                marginBottom: '0',
+                maxWidth: '420px',
+                order: 5,
               }}>
                 {t('hero.description')}
               </p>
 
-              {/* CTA Buttons */}
-              <div className="hero-buttons" style={{ display: 'flex', gap: '13.5px', flexWrap: 'wrap' }}>
+              {/* CTA Buttons — positioned directly UNDER the heading */}
+              <div className="hero-buttons" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', order: 4 }}>
                 <button
+                  className="hero-cta hero-cta--primary"
                   onClick={() => window.location.href = '/user/photographers'}
-                  style={{
-                    backgroundColor: '#083A85',
-                    color: '#fff',
-                    padding: '11.25px 25.5px',
-                    borderRadius: '10px',
-                    border: 'none',
-                    fontSize: '15px',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    transition: 'all 0.3s ease',
-                    boxShadow: '0 3px 9px rgba(8, 58, 133, 0.2)'
-                  }}
-                  onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
                 >
-                  {t('hero.findPhotographer')}
+                  <span className="hero-cta-shimmer" aria-hidden="true" />
+                  <span className="hero-cta-content">
+                    {t('hero.findPhotographer')}
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                      <polyline points="12 5 19 12 12 19" />
+                    </svg>
+                  </span>
                 </button>
                 <button
+                  className="hero-cta hero-cta--ghost"
                   onClick={() => window.location.href = '/user/auth/signup?userType=Photographer'}
-                  style={{
-                  backgroundColor: 'transparent',
-                  color: '#083A85',
-                  padding: '11.25px 25.5px',
-                  borderRadius: '10px',
-                  border: '2px solid #083A85',
-                  fontSize: '15px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease'
-                }}
-                  onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
                 >
+                  <i className="bi bi-camera-fill" aria-hidden="true" />
                   {t('hero.joinPhotographer')}
                 </button>
+              </div>
+
+              {/* Trust strip — quick scan of platform credibility.
+                  Order 6 places it at the very bottom of the column. */}
+              <div className="hero-trust" aria-label="Platform highlights" style={{ order: 6 }}>
+                <div className="hero-trust-cell">
+                  <span className="hero-trust-icon hero-trust-icon--blue" aria-hidden="true">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                      <circle cx="12" cy="13" r="4" />
+                    </svg>
+                  </span>
+                  <div className="hero-trust-text">
+                    <strong>{fmtCount(stats.photographers)}</strong>
+                    <span>Photographers</span>
+                  </div>
+                </div>
+                <div className="hero-trust-cell">
+                  <span className="hero-trust-icon hero-trust-icon--red" aria-hidden="true">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M3 11l18-5v12L3 14v-3z" />
+                      <path d="M11.6 16.8a3 3 0 1 1-5.8-1.6" />
+                    </svg>
+                  </span>
+                  <div className="hero-trust-text">
+                    <strong>{fmtCount(stats.totalEvents)}</strong>
+                    <span>Events hosted</span>
+                  </div>
+                </div>
+                <div className="hero-trust-cell">
+                  <span className="hero-trust-icon hero-trust-icon--gold" aria-hidden="true">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 2l2.39 4.84 5.34.78-3.86 3.77.91 5.31L12 14.21l-4.78 2.49.91-5.31L4.27 7.62l5.34-.78z" />
+                    </svg>
+                  </span>
+                  <div className="hero-trust-text">
+                    <strong>{fmtRating(stats.avgRating)}</strong>
+                    <span>User rating</span>
+                  </div>
+                </div>
+                <div className="hero-trust-cell">
+                  <span className="hero-trust-icon hero-trust-icon--green" aria-hidden="true">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="10" />
+                      <polyline points="9 12 11 14 15 10" />
+                    </svg>
+                  </span>
+                  <div className="hero-trust-text">
+                    <strong>Verified</strong>
+                    <span>Pros only</span>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -1259,17 +2154,57 @@ export default function Home() {
                 margin: '0 auto',
                 padding: '0 20px'
               }}>
-                {/* Section Title */}
-                <h2 className="how-it-works-title" style={{
-              fontSize: 'clamp(28px, 6vw, 50px)',
-              fontWeight: 1000,
-              textAlign: 'center',
-              marginBottom: 'clamp(40px, 8vw, 100px)',
-              color: '#000',
-              letterSpacing: '-0.02em'
-            }}>
-              {t('howItWorks.title')}
-            </h2>
+                {/* Section Title group — eyebrow pill + title + accent line */}
+                <div className="hiw-title-group">
+                  <div className="hiw-eyebrow" aria-hidden="true">
+                    <span className="hiw-eyebrow-dot" />
+                    <span>OUR PROCESS · 3 SIMPLE STEPS</span>
+                    <span className="hiw-eyebrow-sparkle">✦</span>
+                  </div>
+                  <h2 className="how-it-works-title hiw-title" style={{
+                    fontSize: 'clamp(28px, 6vw, 50px)',
+                    fontWeight: 1000,
+                    textAlign: 'center',
+                    marginBottom: 'clamp(14px, 2vw, 22px)',
+                    color: '#000',
+                    letterSpacing: '-0.02em'
+                  }}>
+                    {/* Split the localized title and style the LAST word
+                        as bold italic with a brand-blue → violet gradient
+                        text fill (Sinc design system pattern). Other words
+                        keep the default bold black. */}
+                    {(() => {
+                      const words = t('howItWorks.title').split(/\s+/).filter(Boolean);
+                      const lastIdx = words.length - 1;
+                      return words.map((w, i) => (
+                        <span key={i} style={{ display: 'inline-block', marginRight: i === lastIdx ? 0 : '0.28em' }}>
+                          {i === lastIdx ? (
+                            <span style={{
+                              fontStyle: 'italic',
+                              fontWeight: 'inherit',
+                              background: 'linear-gradient(135deg, #083A85 0%, #3b82f6 55%, #7763FF 100%)',
+                              WebkitBackgroundClip: 'text',
+                              backgroundClip: 'text',
+                              WebkitTextFillColor: 'transparent',
+                              color: 'transparent',
+                              // Padding gives the italic slant + final
+                              // punctuation (?, !) room to render fully
+                              display: 'inline-block',
+                              paddingRight: '0.12em',
+                              paddingLeft: '0.04em',
+                            }}>{w}</span>
+                          ) : w}
+                        </span>
+                      ));
+                    })()}
+                  </h2>
+                  <div className="hiw-accent-line" aria-hidden="true">
+                    <span />
+                  </div>
+                  <p className="hiw-subtitle">
+                    From discovery to your first live moment, a clear path designed to feel effortless.
+                  </p>
+                </div>
 
             {/* Three Steps Container - Marquee Carousel on Mobile */}
             {/* Outer rectangular flowing-dot border around all steps */}
@@ -1634,14 +2569,15 @@ export default function Home() {
                   { img: '/ava3.png', alt: 'Go Live', titleKey: 'howItWorks.goLive.title', descKey: 'howItWorks.goLive.description' },
                 ];
                 return steps.map((s, i) => (
-                  <div key={i} style={{
+                  <div key={i} className="hiw-step" style={{
                     flex: 1,
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
                     textAlign: 'center',
                     position: 'relative',
-                    zIndex: 2
+                    zIndex: 2,
+                    animationDelay: `${i * 180}ms`,
                   }}>
                     {/* Zigzag connector linking this avatar to the outer rect (mobile only) */}
                     {isMobile && (
@@ -1682,10 +2618,101 @@ export default function Home() {
                         />
                       </svg>
                     )}
-                    {/* Avatar with rectangular flowing-dot border */}
-                    <div style={{ position: 'relative', width: isMobile ? (i === 0 ? '280px' : '280px') : 'clamp(140px, 22vw, 240px)', height: isMobile ? (i === 0 ? '250px' : '260px') : 'clamp(140px, 22vw, 240px)', marginBottom: isMobile ? '55px' : 'clamp(16px, 3vw, 24px)', left: isMobile ? (i === 0 ? '10px' : '10px') : undefined  }}>
+                    {/* Avatar with orbital motion design (inspired by the
+                        Sinc design system "Orbit" variant): counter-rotating
+                        dashed outer ring + rotating gradient inner ring +
+                        traveling orbital dot + shimmer ribbon sweep. */}
+                    <div className="hiw-avatar-wrap" style={{ position: 'relative', width: isMobile ? (i === 0 ? '280px' : '280px') : 'clamp(140px, 22vw, 240px)', height: isMobile ? (i === 0 ? '250px' : '260px') : 'clamp(140px, 22vw, 240px)', marginBottom: isMobile ? '55px' : 'clamp(16px, 3vw, 24px)', left: isMobile ? (i === 0 ? '10px' : '10px') : undefined  }}>
+                      {/* Soft brand-blue halo (kept) */}
+                      <span className="hiw-halo" aria-hidden="true" />
+
+                      {/* Outer dashed rounded-rect ring — counter-rotating
+                          (rounded rect to match the avatar card shape) */}
+                      <svg
+                        className="hiw-ring hiw-ring--outer"
+                        viewBox="0 0 200 200"
+                        preserveAspectRatio="none"
+                        aria-hidden="true"
+                      >
+                        <rect x="3" y="3" width="194" height="194" rx="22" ry="22"
+                          fill="none"
+                          stroke="#083A85" strokeWidth="1"
+                          strokeDasharray="2 7" strokeLinecap="round"
+                          vectorEffect="non-scaling-stroke" />
+                      </svg>
+
+                      {/* Inner gradient rounded-rect ring — rotating gradient
+                          gives the chasing-arc effect on a rectangular path */}
+                      <svg
+                        className="hiw-ring hiw-ring--inner"
+                        viewBox="0 0 200 200"
+                        preserveAspectRatio="none"
+                        aria-hidden="true"
+                      >
+                        <defs>
+                          <linearGradient id={`hiw-orbit-grad-${i}`} x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0%" stopColor="#3b82f6" stopOpacity="0">
+                              <animate attributeName="offset" values="0;1;0" dur="8s" repeatCount="indefinite" />
+                            </stop>
+                            <stop offset="50%" stopColor="#3b82f6" stopOpacity="0.85">
+                              <animate attributeName="offset" values="0.5;1.5;0.5" dur="8s" repeatCount="indefinite" />
+                            </stop>
+                            <stop offset="100%" stopColor="#3b82f6" stopOpacity="0">
+                              <animate attributeName="offset" values="1;2;1" dur="8s" repeatCount="indefinite" />
+                            </stop>
+                          </linearGradient>
+                        </defs>
+                        <rect x="9" y="9" width="182" height="182" rx="18" ry="18"
+                          fill="none"
+                          stroke={`url(#hiw-orbit-grad-${i})`}
+                          strokeWidth="2" strokeLinecap="round"
+                          vectorEffect="non-scaling-stroke" />
+                      </svg>
+
+                      {/* Orbital dot — travels along the rounded-rect ring path */}
+                      <svg
+                        className="hiw-orbital-dot-svg"
+                        viewBox="0 0 200 200"
+                        preserveAspectRatio="none"
+                        aria-hidden="true"
+                      >
+                        <defs>
+                          <path
+                            id={`hiw-orbit-path-${i}`}
+                            d="M 25 3 H 175 A 22 22 0 0 1 197 25 V 175 A 22 22 0 0 1 175 197 H 25 A 22 22 0 0 1 3 175 V 25 A 22 22 0 0 1 25 3 Z"
+                          />
+                        </defs>
+                        <circle r="6" fill="#3b82f6" stroke="#ffffff" strokeWidth="3"
+                          vectorEffect="non-scaling-stroke">
+                          <animateMotion
+                            dur="14s"
+                            repeatCount="indefinite"
+                            rotate="auto"
+                          >
+                            <mpath xlinkHref={`#hiw-orbit-path-${i}`} />
+                          </animateMotion>
+                        </circle>
+                        <circle r="12" fill="#3b82f6" opacity="0.20">
+                          <animateMotion
+                            dur="14s"
+                            repeatCount="indefinite"
+                          >
+                            <mpath xlinkHref={`#hiw-orbit-path-${i}`} />
+                          </animateMotion>
+                        </circle>
+                      </svg>
+
+                      {/* Step number badge — top-right corner */}
+                      <span className="hiw-step-badge" aria-hidden="true">
+                        <span className="hiw-step-badge-num">{String(i + 1).padStart(2, '0')}</span>
+                        <span className="hiw-step-badge-label">STEP</span>
+                      </span>
+
+                      {/* Shimmer ribbon — sweeps diagonally across the avatar */}
+                      <span className="hiw-shimmer-ribbon" aria-hidden="true" />
+
                       <img
-                        className="step-img"
+                        className="step-img hiw-step-img"
                         src={s.img}
                         alt={s.alt}
                         style={{
@@ -1693,7 +2720,7 @@ export default function Home() {
                           height: '100%',
                           objectFit: 'contain',
                           position: 'relative',
-                          zIndex: 1,
+                          zIndex: 2,
                           transform: isMobile ? 'scale(1.20)' : undefined,
                         }}
                       />
@@ -1758,127 +2785,80 @@ export default function Home() {
             </div>
 
 
-            {/* For Photographers Container */}
+            {/* For Photographers Container — modern brand-blue card with
+                motion design matching the steps section above. */}
             <div
               ref={forPhotographersRef}
-              className="photographer-container"
-              style={{
-                marginTop: '40px',
-                background: 'linear-gradient(90deg, #083A85 19%, #4675AA 100%)',
-                borderRadius: '24px',
-                padding: '25px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: '60px',
-                position: 'relative'
-              }}
+              className="photographer-container hiw-pro-card"
             >
+              {/* Decorative ambient layers */}
+              <div className="hiw-pro-mesh" aria-hidden="true" />
+              <div className="hiw-pro-grid" aria-hidden="true" />
+              <div className="hiw-pro-orb hiw-pro-orb--a" aria-hidden="true" />
+              <div className="hiw-pro-orb hiw-pro-orb--b" aria-hidden="true" />
+              <div className="hiw-pro-particle hiw-pro-particle--1" aria-hidden="true" />
+              <div className="hiw-pro-particle hiw-pro-particle--2" aria-hidden="true" />
+              <div className="hiw-pro-particle hiw-pro-particle--3" aria-hidden="true" />
+              <div className="hiw-pro-particle hiw-pro-particle--4" aria-hidden="true" />
+
               {/* Left Content */}
-              <div style={{
-                flex: 1,
-                color: '#fff',
-                maxWidth: '400px'
-              }}>
-                <h2 className="photographer-title" style={{
-                  position: 'absolute',
-                  top: '40px',
-                  fontSize: '48px',
-                  fontWeight: 700,
-                  color: '#FFFFFF',
-                  marginBottom: '20px',
-                  maxWidth: '350px',
-                  lineHeight: '1'
-                }}>
+              <div className="hiw-pro-left">
+                <div className="hiw-pro-eyebrow">
+                  <span className="hiw-pro-eyebrow-dot" />
+                  <span>FOR CREATORS</span>
+                  <span className="hiw-pro-eyebrow-spark">✦</span>
+                </div>
+                <h2 className="photographer-title hiw-pro-title">
                   {t('howItWorks.forPhotographers.title')}
                 </h2>
-                <p className="photographer-description" style={{
-                  position: 'inherit',
-                  top: '120px',
-                  fontSize: '18px',
-                  lineHeight: '1.5',
-                  marginBottom: '-50px',
-                  opacity: 0.95
-                }}>
+                <p className="photographer-description hiw-pro-desc">
                   {t('howItWorks.forPhotographers.description')}
                 </p>
+                <button
+                  className="photographer-button hiw-pro-cta"
+                  onClick={() => window.location.href = '/user/auth/signup?userType=Photographer'}
+                >
+                  <span className="hiw-pro-cta-shimmer" aria-hidden="true" />
+                  <span className="hiw-pro-cta-content">
+                    {t('howItWorks.forPhotographers.cta')}
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                      <polyline points="12 5 19 12 12 19" />
+                    </svg>
+                  </span>
+                </button>
+
+                {/* Inline trust pill */}
+                <div className="hiw-pro-trust" aria-hidden="true">
+                  <span className="hiw-pro-trust-avatars">
+                    <span /><span /><span />
+                  </span>
+                  <span className="hiw-pro-trust-text">
+                    Joined by <strong>{fmtCount(stats.photographers)}</strong> photographers
+                  </span>
+                </div>
               </div>
 
-              {/* Right Video Container */}
-              <div className="photographer-video-container" style={{
-                flex: 1,
-                maxWidth: '580px',
-                maxHeight: '1000px',
-                background: 'linear-gradient(90deg, #0104B9 0%, #0104B9 50%, #2213d1 10%, #013773 0%)',
-                borderRadius: '20px',
-                padding: '23px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <div style={{
-                  width: '100%',
-                  height: '270px',
-                  padding: '10px',
-                  backgroundColor: '#000',
-                  borderRadius: '12px',
-                  overflow: 'hidden',
-                  boxShadow: '0 8px 24px rgba(0,0,0,0.3)'
-                }}>
+              {/* Right Video Container — modern bezel with brand glow */}
+              <div className="photographer-video-container hiw-pro-video">
+                <div className="hiw-pro-video-frame">
+                  {/* Top-left LIVE-style indicator on the bezel */}
+                  <span className="hiw-pro-video-indicator" aria-hidden="true">
+                    <span className="hiw-pro-video-indicator-dot" />
+                    LIVE WORK
+                  </span>
                   <video
                     autoPlay
                     loop
                     muted
                     playsInline
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      display: 'block',
-                      objectFit: 'cover'
-                    }}
+                    className="hiw-pro-video-el"
                     controls={false}
                   >
                     <source src="/vid.mp4" type="video/mp4" />
                   </video>
                 </div>
               </div>
-
-              {/* Button - Now after video */}
-              <button
-                className="photographer-button"
-                onClick={() => window.location.href = '/user/auth/signup?userType=Photographer'}
-                style={{
-                  background: 'linear-gradient(90deg, #041DC0 0%, #FF6363 0%, #7763FF 100%)',
-                  color: '#000',
-                  position: 'absolute',
-                  left: '150px',
-                  top: '290px',
-                  fontSize: '17px',
-                  fontWeight: 600,
-                  padding: '8.25px 5.5px',
-                  width: '180px',
-                  height: '12%',
-                  borderRadius: '10px',
-                  border: 'none',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease',
-                  boxShadow: '0 4px 15px rgba(0,0,0,0.2)'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'scale(1.08) translateY(-2px)';
-                  e.currentTarget.style.background = 'linear-gradient(90deg, #FFFFFF 0%, #FFFFFF 100%)';
-                  e.currentTarget.style.color = '#083A85';
-                  e.currentTarget.style.boxShadow = '0 8px 25px rgba(255,255,255,0.4)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'scale(1) translateY(0)';
-                  e.currentTarget.style.background = 'linear-gradient(90deg, #041DC0 0%, #FF6363 0%, #7763FF 100%)';
-                  e.currentTarget.style.color = '#000';
-                  e.currentTarget.style.boxShadow = '0 4px 15px rgba(0,0,0,0.2)';
-                }}
-              >
-                {t('howItWorks.forPhotographers.cta')}
-              </button>
             </div>
           </div>
         </section>
@@ -1896,7 +2876,13 @@ export default function Home() {
             marginTop: '-100vh'
           }}
         >
-          {/* Inner container with #1c1c1c background - Stacked Peel Effect */}
+          {/* Inner container with #1c1c1c background - Stacked Peel Effect.
+              Innovations layered on top of existing peel logic:
+                • Soft brand-blue spotlight halo behind the active mockup
+                • Subtle drifting particles for ambient depth
+                • A thin progress bar at the very bottom that tracks
+                  pin progress (0→100% as the user scrolls)
+                • GPU-accelerated transform layers via willChange. */}
           <div
             ref={mockupsContainerRef}
             className="mockups-inner"
@@ -1909,6 +2895,17 @@ export default function Home() {
               position: 'relative'
             }}
           >
+            {/* Innovation layer 1: ambient brand-blue halo (gentle drift) */}
+            <div className="mockups-halo mockups-halo--a" aria-hidden="true" />
+            <div className="mockups-halo mockups-halo--b" aria-hidden="true" />
+            {/* Innovation layer 2: floating particles */}
+            <div className="mockups-particle mockups-particle--1" aria-hidden="true" />
+            <div className="mockups-particle mockups-particle--2" aria-hidden="true" />
+            <div className="mockups-particle mockups-particle--3" aria-hidden="true" />
+            <div className="mockups-particle mockups-particle--4" aria-hidden="true" />
+            <div className="mockups-particle mockups-particle--5" aria-hidden="true" />
+            {/* Innovation layer 3: subtle dot grid texture for depth */}
+            <div className="mockups-grid" aria-hidden="true" />
                 {/* Mobile-only scroll-driven flowing texts — one per mockup phase */}
                 <div ref={phoneMobileTextRef} className="mobile-mockup-text mobile-mockup-text--bottom" aria-hidden="true">
                   {t('devices.mockupHeadings.phone.line1')} {t('devices.mockupHeadings.phone.line2')}
@@ -2926,8 +3923,6 @@ export default function Home() {
         <section
           ref={whyAmoriaSectionRef}
           className="why-amoria-section"
-          onMouseMove={handleWhyAmoriaMouseMove}
-          onMouseLeave={handleWhyAmoriaMouseLeave}
           style={{
             backgroundColor: '#f8fafc',
             padding: '70px 0',
@@ -2998,34 +3993,70 @@ export default function Home() {
             </svg>
           </div>
 
-          {/* Dotted pattern background - base layer (dim) */}
-          <div className="why-amoria-dotted-bg" style={{
-            position: 'absolute',
-            inset: 0,
-            backgroundImage: 'radial-gradient(circle, #94a3b8 1px, transparent 1px)',
-            backgroundSize: '10px 10px',
-            opacity: 0.2,
-            zIndex: 0,
-            pointerEvents: 'none'
-          }} />
+          {/* Ambient brand halos — soft drifting blue glows */}
+          <div className="wa-halo wa-halo--a" aria-hidden="true" />
+          <div className="wa-halo wa-halo--b" aria-hidden="true" />
 
-          {/* Spotlight layer - reveals brighter dots where cursor is */}
-          <div className="why-amoria-dotted-spotlight" style={{
-            position: 'absolute',
-            inset: 0,
-            backgroundImage: 'radial-gradient(circle, #64748b 1.5px, transparent 0.5px)',
-            backgroundSize: '10px 10px',
-            opacity: whyAmoriaMousePos ? 0.7 : 0,
-            zIndex: 1,
-            pointerEvents: 'none',
-            maskImage: whyAmoriaMousePos
-              ? `radial-gradient(circle 70px at ${whyAmoriaMousePos.x}px ${whyAmoriaMousePos.y}px, black 0%, black 50%, transparent 80%)`
-              : 'none',
-            WebkitMaskImage: whyAmoriaMousePos
-              ? `radial-gradient(circle 70px at ${whyAmoriaMousePos.x}px ${whyAmoriaMousePos.y}px, black 0%, black 50%, transparent 80%)`
-              : 'none',
-            transition: 'opacity 0s ease'
-          }} />
+          {/* Floating sparkle particles for depth */}
+          <span className="wa-particle wa-particle--1" aria-hidden="true" />
+          <span className="wa-particle wa-particle--2" aria-hidden="true" />
+          <span className="wa-particle wa-particle--3" aria-hidden="true" />
+          <span className="wa-particle wa-particle--4" aria-hidden="true" />
+          <span className="wa-particle wa-particle--5" aria-hidden="true" />
+
+          {/* Decorative center backdrop crest — concentric dashed circles
+              that slowly counter-rotate, sitting behind the dashboard */}
+          <svg className="wa-crest" viewBox="0 0 600 600" aria-hidden="true">
+            <circle cx="300" cy="300" r="280" fill="none" stroke="#083A85" strokeWidth="1" strokeDasharray="2 8" opacity="0.18" className="wa-crest-ring wa-crest-ring--outer" />
+            <circle cx="300" cy="300" r="220" fill="none" stroke="#3b82f6" strokeWidth="1" strokeDasharray="3 6" opacity="0.20" className="wa-crest-ring wa-crest-ring--mid" />
+            <circle cx="300" cy="300" r="160" fill="none" stroke="#083A85" strokeWidth="1" strokeDasharray="2 4" opacity="0.14" className="wa-crest-ring wa-crest-ring--inner" />
+          </svg>
+
+          {/* Geometric corner ornaments — slowly rotating brand glyphs */}
+          <span className="wa-corner wa-corner--tl" aria-hidden="true">
+            <svg viewBox="0 0 60 60" fill="none">
+              <polygon points="30,4 56,30 30,56 4,30" stroke="#083A85" strokeWidth="1.5" />
+              <polygon points="30,16 44,30 30,44 16,30" stroke="#3b82f6" strokeWidth="1" />
+              <circle cx="30" cy="30" r="3" fill="#083A85" />
+            </svg>
+          </span>
+          <span className="wa-corner wa-corner--tr" aria-hidden="true">
+            <svg viewBox="0 0 60 60" fill="none">
+              <circle cx="30" cy="30" r="26" stroke="#7763FF" strokeWidth="1.5" strokeDasharray="3 4" />
+              <circle cx="30" cy="30" r="14" stroke="#083A85" strokeWidth="1" />
+              <circle cx="30" cy="30" r="3" fill="#7763FF" />
+            </svg>
+          </span>
+          <span className="wa-corner wa-corner--bl" aria-hidden="true">
+            <svg viewBox="0 0 60 60" fill="none">
+              <rect x="6" y="6" width="48" height="48" rx="8" stroke="#FF6363" strokeWidth="1.5" />
+              <rect x="18" y="18" width="24" height="24" rx="4" stroke="#3b82f6" strokeWidth="1" />
+              <circle cx="30" cy="30" r="3" fill="#FF6363" />
+            </svg>
+          </span>
+          <span className="wa-corner wa-corner--br" aria-hidden="true">
+            <svg viewBox="0 0 60 60" fill="none">
+              <path d="M 30 4 L 56 30 L 30 56 L 4 30 Z" stroke="#083A85" strokeWidth="1.5" strokeDasharray="3 5" />
+              <path d="M 30 14 L 46 30 L 30 46 L 14 30 Z" stroke="#3b82f6" strokeWidth="1" />
+              <circle cx="30" cy="30" r="3" fill="#083A85" />
+            </svg>
+          </span>
+
+          {/* Interactive DotGrid — 2px dots with 15px gap. Dim slate at rest → primary
+              brand-blue on cursor proximity, with GSAP InertiaPlugin push and click shockwave. */}
+          <div style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none' }} aria-hidden="true">
+            <DotGrid
+              dotSize={2}
+              gap={15}
+              baseColor="#CBD5E1"
+              activeColor="#083A85"
+              proximity={120}
+              shockRadius={180}
+              shockStrength={4}
+              resistance={750}
+              returnDuration={1.4}
+            />
+          </div>
 
           <div style={{
             maxWidth: '1200px',
@@ -3034,22 +4065,55 @@ export default function Home() {
             position: 'relative',
             zIndex: 1
           }}>
-            {/* Section Header */}
-            <div className="why-amoria-header" style={{
+            {/* Section Header — premium eyebrow + gradient italic last word */}
+            <div className="why-amoria-header wa-header" style={{
               maxWidth: '780px',
               margin: '0 auto 120px',
               textAlign: 'center'
             }}>
-              <h2 className="why-amoria-title" style={{
+              <div className="wa-eyebrow" aria-hidden="true">
+                <span className="wa-eyebrow-dot" />
+                <span>WHY CONNEKYT</span>
+                <span className="wa-eyebrow-spark">✦</span>
+              </div>
+              <h2 className="why-amoria-title wa-title" style={{
                 fontSize: '50px',
                 fontWeight: 1000,
                 marginBottom: '24px',
                 color: '#000',
                 letterSpacing: '-0.02em'
               }}>
-                  {t('whyAmoria.title')}
+                {(() => {
+                  const words = t('whyAmoria.title').split(/\s+/).filter(Boolean);
+                  const lastIdx = words.length - 1;
+                  return words.map((w, i) => (
+                    <span key={i} style={{ display: 'inline-block', marginRight: i === lastIdx ? 0 : '0.28em' }}>
+                      {i === lastIdx ? (
+                        <span style={{
+                          fontStyle: 'italic',
+                          fontWeight: 'inherit',
+                          background: 'linear-gradient(135deg, #083A85 0%, #3b82f6 55%, #7763FF 100%)',
+                          WebkitBackgroundClip: 'text',
+                          backgroundClip: 'text',
+                          WebkitTextFillColor: 'transparent',
+                          color: 'transparent',
+                          // Italic slant pushes the right edge of glyphs
+                          // (especially "?") past the inline-block clip
+                          // box. paddingRight gives the gradient text room
+                          // to render its full slanted right edge.
+                          display: 'inline-block',
+                          paddingRight: '0.12em',
+                          paddingLeft: '0.04em',
+                        }}>{w}</span>
+                      ) : w}
+                    </span>
+                  ));
+                })()}
               </h2>
-              <p className="why-amoria-subtitle" style={{
+              <div className="wa-accent-line" aria-hidden="true">
+                <span />
+              </div>
+              <p className="why-amoria-subtitle wa-subtitle" style={{
                 fontSize: '18px',
                 fontWeight: 500,
                 color: '#1f1d1d',
@@ -3109,6 +4173,26 @@ export default function Home() {
                 <path d="M 1090 590 Q 1090 630 1040 630" stroke="#083A85" strokeWidth="3" fill="none" strokeDasharray="10,8" strokeLinecap="round" opacity="1"/>
                 <path d="M 60 630 Q 10 630 10 590" stroke="#083A85" strokeWidth="3" fill="none" strokeDasharray="10,8" strokeLinecap="round" opacity="1"/>
                 <path d="M 10 60 Q 10 20 60 20" stroke="#083A85" strokeWidth="3" fill="none" strokeDasharray="10,8" strokeLinecap="round" opacity="1"/>
+
+                {/* Animated full-perimeter loop — invisible path used for
+                    the traveling pulse below. animateMotion follows it. */}
+                <path
+                  id="wa-connection-loop"
+                  d="M 60 20 L 1040 20 Q 1090 20 1090 60 L 1090 590 Q 1090 630 1040 630 L 60 630 Q 10 630 10 590 L 10 60 Q 10 20 60 20 Z"
+                  fill="none"
+                  stroke="none"
+                />
+                {/* Traveling glow pulse — circulates the perimeter every 12s */}
+                <circle r="6" fill="#3b82f6" opacity="0.95">
+                  <animateMotion dur="12s" repeatCount="indefinite" rotate="auto">
+                    <mpath xlinkHref="#wa-connection-loop" />
+                  </animateMotion>
+                </circle>
+                <circle r="14" fill="#3b82f6" opacity="0.20">
+                  <animateMotion dur="12s" repeatCount="indefinite">
+                    <mpath xlinkHref="#wa-connection-loop" />
+                  </animateMotion>
+                </circle>
               </svg>
 
               {/* LARGE CARD - Gallery - Center background */}
@@ -3448,6 +4532,38 @@ export default function Home() {
                 </div>
               </div>
             </div>
+
+            {/* Promise marquee — continuous scrolling strip of brand
+                promises below the dashboard. Doubles the content for a
+                seamless infinite loop. */}
+            <div className="wa-marquee" aria-label="Platform promises">
+              <div className="wa-marquee-track">
+                {[
+                  { i: 'bi-shield-check', t: 'Verified pros only' },
+                  { i: 'bi-cash-coin', t: 'Secure payments' },
+                  { i: 'bi-broadcast', t: '4K live streaming' },
+                  { i: 'bi-stars', t: '4.9 average rating' },
+                  { i: 'bi-camera-fill', t: 'AI photo finder' },
+                  { i: 'bi-globe2', t: 'Global coverage' },
+                  { i: 'bi-headset', t: '24/7 support' },
+                  { i: 'bi-lightning-charge-fill', t: 'Instant booking' },
+                ].concat([
+                  { i: 'bi-shield-check', t: 'Verified pros only' },
+                  { i: 'bi-cash-coin', t: 'Secure payments' },
+                  { i: 'bi-broadcast', t: '4K live streaming' },
+                  { i: 'bi-stars', t: '4.9 average rating' },
+                  { i: 'bi-camera-fill', t: 'AI photo finder' },
+                  { i: 'bi-globe2', t: 'Global coverage' },
+                  { i: 'bi-headset', t: '24/7 support' },
+                  { i: 'bi-lightning-charge-fill', t: 'Instant booking' },
+                ]).map((p, i) => (
+                  <span key={i} className="wa-marquee-item">
+                    <i className={`bi ${p.i}`} aria-hidden="true" />
+                    {p.t}
+                  </span>
+                ))}
+              </div>
+            </div>
           </div>
         </section>
 
@@ -3461,28 +4577,886 @@ export default function Home() {
             }
           }
 
+          /* ─── Hero CTA buttons — premium gradient + ghost variants ── */
+          .hero-cta {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            padding: 10px 18px;
+            border-radius: 11px;
+            font-family: 'Pragati Narrow', sans-serif;
+            font-size: 13.5px;
+            font-weight: 700;
+            letter-spacing: 0.01em;
+            cursor: pointer;
+            border: 1.5px solid transparent;
+            overflow: hidden;
+            isolation: isolate;
+            transition: transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1), filter 200ms ease, box-shadow 220ms ease;
+          }
+          .hero-cta--primary {
+            background: #083A85;
+            color: #ffffff;
+            box-shadow: 0 4px 12px rgba(8, 58, 133, 0.20);
+          }
+          .hero-cta--primary:hover {
+            transform: translateY(-2px);
+            background: #062d6b;
+            box-shadow: 0 8px 18px rgba(8, 58, 133, 0.30);
+          }
+          .hero-cta--primary:active { transform: translateY(0) scale(0.98); }
+          /* Shimmer kept as a no-op so existing JSX nodes don't break */
+          .hero-cta-shimmer { display: none; }
+          .hero-cta-content {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 1;
+          }
+          .hero-cta--ghost {
+            background: rgba(255, 255, 255, 0.55);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            color: #083A85;
+            border-color: rgba(8, 58, 133, 0.30);
+          }
+          .hero-cta--ghost:hover {
+            background: rgba(255, 255, 255, 0.85);
+            border-color: rgba(8, 58, 133, 0.55);
+            transform: translateY(-2px);
+          }
+          .hero-cta--ghost i { font-size: 14px; }
+
+          /* Hero title — subtle gradient sheen on the second + third lines */
+          .hero-title { text-shadow: 0 1px 2px rgba(255, 255, 255, 0.45); }
+
+          /* ─── Hero innovation layer ─────────────────────────────────
+             Decorative orbs, dot grid, eyebrow pill, and trust strip. */
+          .hero-deco-grid {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 1;
+            background-image:
+              radial-gradient(rgba(8, 58, 133, 0.10) 1px, transparent 1.5px);
+            background-size: 22px 22px;
+            mask-image: radial-gradient(ellipse 80% 70% at 50% 50%, #000 30%, transparent 80%);
+            -webkit-mask-image: radial-gradient(ellipse 80% 70% at 50% 50%, #000 30%, transparent 80%);
+            opacity: 0.55;
+          }
+          .hero-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(60px);
+            pointer-events: none;
+            z-index: 1;
+            mix-blend-mode: screen;
+            opacity: 0.55;
+            animation: hero-orb-drift 18s ease-in-out infinite;
+          }
+          .hero-orb--blue {
+            top: -120px;
+            right: -100px;
+            width: 360px;
+            height: 360px;
+            background: radial-gradient(circle, rgba(8, 58, 133, 0.55) 0%, rgba(31, 107, 255, 0.30) 50%, rgba(31, 107, 255, 0) 80%);
+            animation-duration: 16s;
+          }
+          .hero-orb--coral {
+            bottom: -80px;
+            left: -60px;
+            width: 280px;
+            height: 280px;
+            background: radial-gradient(circle, rgba(255, 99, 99, 0.45) 0%, rgba(244, 63, 94, 0.25) 50%, rgba(244, 63, 94, 0) 80%);
+            animation-duration: 22s;
+            animation-direction: reverse;
+            animation-delay: -4s;
+          }
+          .hero-orb--cyan {
+            top: 40%;
+            left: 38%;
+            width: 220px;
+            height: 220px;
+            background: radial-gradient(circle, rgba(96, 165, 250, 0.30) 0%, rgba(96, 165, 250, 0) 80%);
+            animation-duration: 26s;
+            animation-delay: -8s;
+            opacity: 0.40;
+          }
+          @keyframes hero-orb-drift {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33%      { transform: translate(40px, -30px) scale(1.08); }
+            66%      { transform: translate(-30px, 25px) scale(0.94); }
+          }
+          .hero-edge-line {
+            position: absolute;
+            left: 5%;
+            right: 5%;
+            bottom: 0;
+            height: 1px;
+            background: linear-gradient(90deg, rgba(8, 58, 133, 0) 0%, rgba(8, 58, 133, 0.30) 50%, rgba(8, 58, 133, 0) 100%);
+            pointer-events: none;
+            z-index: 1;
+          }
+
+          /* Eyebrow pill */
+          .hero-eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 5px 12px 5px 10px;
+            margin-bottom: 12px;
+            align-self: flex-start;
+            background: linear-gradient(135deg, rgba(8, 58, 133, 0.10) 0%, rgba(255, 99, 99, 0.08) 100%);
+            border: 1px solid rgba(8, 58, 133, 0.18);
+            border-radius: 999px;
+            font-family: 'Pragati Narrow', sans-serif;
+            font-size: 11px;
+            font-weight: 800;
+            color: #083A85;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            box-shadow: 0 4px 12px -4px rgba(8, 58, 133, 0.30);
+          }
+          .hero-eyebrow-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #083A85 0%, #FF6363 100%);
+            box-shadow: 0 0 10px rgba(8, 58, 133, 0.65);
+            animation: hero-eyebrow-pulse 1.6s ease-in-out infinite;
+          }
+          @keyframes hero-eyebrow-pulse {
+            0%, 100% { transform: scale(1); }
+            50%      { transform: scale(1.30); }
+          }
+          .hero-eyebrow-sparkle {
+            font-size: 12px;
+            line-height: 1;
+            animation: hero-eyebrow-twinkle 2.4s ease-in-out infinite;
+          }
+          @keyframes hero-eyebrow-twinkle {
+            0%, 100% { opacity: 0.55; transform: rotate(0deg); }
+            50%      { opacity: 1.00; transform: rotate(20deg); }
+          }
+
+          /* Trust strip — 4-cell credibility row below the buttons */
+          .hero-trust {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-top: 16px;
+            padding-top: 14px;
+            border-top: 1px dashed rgba(8, 58, 133, 0.18);
+            max-width: 460px;
+          }
+          .hero-trust-cell {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 0;
+          }
+          .hero-trust-icon {
+            width: 26px;
+            height: 26px;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            flex-shrink: 0;
+            box-shadow: 0 3px 8px -2px rgba(8, 58, 133, 0.20), inset 0 1px 0 rgba(255, 255, 255, 0.20);
+          }
+          .hero-trust-icon svg { width: 12px; height: 12px; }
+          .hero-trust-icon--blue { background: linear-gradient(135deg, #083A85 0%, #1f6bff 100%); }
+          .hero-trust-icon--red { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); }
+          .hero-trust-icon--gold { background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%); }
+          .hero-trust-icon--green { background: linear-gradient(135deg, #10b981 0%, #047857 100%); }
+          .hero-trust-text {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.10;
+            min-width: 0;
+          }
+          .hero-trust-text strong {
+            font-size: 14px;
+            font-weight: 800;
+            color: #0f172a;
+            letter-spacing: -0.005em;
+            font-family: 'Pragati Narrow', sans-serif;
+          }
+          .hero-trust-text span {
+            font-size: 10.5px;
+            font-weight: 600;
+            color: #64748b;
+            letter-spacing: 0.02em;
+            margin-top: 2px;
+          }
+          @media (max-width: 700px) {
+            .hero-trust {
+              grid-template-columns: repeat(2, 1fr);
+              gap: 12px;
+              margin-top: 22px;
+              padding-top: 18px;
+              max-width: 100%;
+            }
+            .hero-eyebrow { font-size: 10px; padding: 5px 12px 5px 10px; }
+            .hero-orb { opacity: 0.30; }
+          }
+          @media (prefers-reduced-motion: reduce) {
+            .hero-orb,
+            .hero-eyebrow-dot,
+            .hero-eyebrow-sparkle {
+              animation: none !important;
+            }
+          }
+
+          /* ─── How It Works — modern motion redesign ─────────────── */
+
+          /* Title group: eyebrow + title + accent line + subtitle */
+          .hiw-title-group {
+            text-align: center;
+            margin-bottom: clamp(40px, 8vw, 100px);
+          }
+          .hiw-eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 9px;
+            padding: 6px 14px 6px 11px;
+            margin-bottom: 18px;
+            background: linear-gradient(135deg, rgba(8, 58, 133, 0.08) 0%, rgba(96, 165, 250, 0.10) 100%);
+            border: 1px solid rgba(8, 58, 133, 0.20);
+            border-radius: 999px;
+            font-family: 'Pragati Narrow', sans-serif;
+            font-size: 11px;
+            font-weight: 800;
+            color: #083A85;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            box-shadow: 0 4px 12px -4px rgba(8, 58, 133, 0.25);
+            animation: hiw-eyebrow-rise 600ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+          }
+          .hiw-eyebrow-dot {
+            width: 7px; height: 7px; border-radius: 50%;
+            background: linear-gradient(135deg, #083A85 0%, #3b82f6 100%);
+            box-shadow: 0 0 8px rgba(8, 58, 133, 0.65);
+            animation: hiw-eyebrow-pulse 1.6s ease-in-out infinite;
+          }
+          .hiw-eyebrow-sparkle {
+            font-size: 11px;
+            color: #3b82f6;
+            animation: hiw-eyebrow-twinkle 2.4s ease-in-out infinite;
+          }
+          @keyframes hiw-eyebrow-rise {
+            from { opacity: 0; transform: translateY(10px); }
+            to   { opacity: 1; transform: translateY(0); }
+          }
+          @keyframes hiw-eyebrow-pulse {
+            0%, 100% { transform: scale(1); }
+            50%      { transform: scale(1.30); }
+          }
+          @keyframes hiw-eyebrow-twinkle {
+            0%, 100% { opacity: 0.55; transform: rotate(0deg) scale(0.9); }
+            50%      { opacity: 1.00; transform: rotate(180deg) scale(1.1); }
+          }
+          .hiw-title {
+            position: relative;
+            background: linear-gradient(135deg, #000000 0%, #0a1f4a 30%, #083A85 60%, #1d4ed8 100%);
+            -webkit-background-clip: text;
+                    background-clip: text;
+            -webkit-text-fill-color: transparent;
+            color: transparent;
+            animation: hiw-title-rise 700ms cubic-bezier(0.22, 1, 0.36, 1) 100ms backwards;
+          }
+          @keyframes hiw-title-rise {
+            from { opacity: 0; transform: translateY(14px); }
+            to   { opacity: 1; transform: translateY(0); }
+          }
+          /* Brand-blue accent line below the title */
+          .hiw-accent-line {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            margin: 0 auto 14px;
+            width: 100%;
+            max-width: 200px;
+            height: 4px;
+          }
+          .hiw-accent-line span {
+            display: block;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent 0%, #083A85 25%, #3b82f6 50%, #083A85 75%, transparent 100%);
+            border-radius: 999px;
+            background-size: 200% 100%;
+            animation: hiw-accent-shimmer 3s linear infinite;
+          }
+          @keyframes hiw-accent-shimmer {
+            from { background-position: 200% 0; }
+            to   { background-position: -200% 0; }
+          }
+          .hiw-subtitle {
+            font-size: 15px;
+            color: #475569;
+            max-width: 480px;
+            margin: 0 auto;
+            line-height: 1.55;
+            font-weight: 500;
+            animation: hiw-eyebrow-rise 700ms cubic-bezier(0.22, 1, 0.36, 1) 280ms backwards;
+          }
+
+          /* Step entry — stagger fade-up */
+          .hiw-step {
+            animation: hiw-step-rise 800ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+          }
+          @keyframes hiw-step-rise {
+            from { opacity: 0; transform: translateY(28px); }
+            to   { opacity: 1; transform: translateY(0); }
+          }
+
+          /* Avatar wrap — hover lift + 3D tilt feel */
+          .hiw-avatar-wrap {
+            transition: transform 480ms cubic-bezier(0.22, 1, 0.36, 1);
+          }
+          .hiw-avatar-wrap:hover {
+            transform: translateY(-6px) scale(1.02);
+          }
+
+          /* Avatar image — hover scale + softer drop shadow */
+          .hiw-step-img {
+            transition: transform 480ms cubic-bezier(0.22, 1, 0.36, 1), filter 320ms ease;
+            filter: drop-shadow(0 10px 24px rgba(8, 58, 133, 0.18));
+          }
+          .hiw-avatar-wrap:hover .hiw-step-img {
+            transform: scale(1.04);
+            filter: drop-shadow(0 18px 32px rgba(8, 58, 133, 0.32));
+          }
+
+          /* Brand-blue halo behind avatar — pulses gently */
+          .hiw-halo {
+            position: absolute;
+            inset: 8%;
+            border-radius: 50%;
+            background:
+              radial-gradient(circle at 50% 50%, rgba(96, 165, 250, 0.30) 0%, rgba(59, 130, 246, 0.18) 35%, rgba(8, 58, 133, 0) 70%);
+            filter: blur(20px);
+            z-index: 0;
+            pointer-events: none;
+            animation: hiw-halo-breathe 4s ease-in-out infinite;
+          }
+          .hiw-avatar-wrap:hover .hiw-halo {
+            background:
+              radial-gradient(circle at 50% 50%, rgba(96, 165, 250, 0.45) 0%, rgba(59, 130, 246, 0.28) 35%, rgba(8, 58, 133, 0) 70%);
+          }
+          @keyframes hiw-halo-breathe {
+            0%, 100% { transform: scale(1.00); opacity: 0.85; }
+            50%      { transform: scale(1.08); opacity: 1.00; }
+          }
+
+          /* ─── Orbital ring system — rounded-rect rings hugging the card ── */
+
+          /* SVG rings stretch to fit the rectangular avatar wrap exactly,
+             so the dashed strokes follow the card outline instead of
+             extending past its corners. */
+          .hiw-ring {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+          }
+          .hiw-ring--outer {
+            opacity: 0.55;
+            transition: opacity 400ms ease;
+          }
+          .hiw-avatar-wrap:hover .hiw-ring--outer { opacity: 1; }
+          .hiw-ring--inner {
+            opacity: 1;
+          }
+
+          /* Orbital dot — uses SVG animateMotion to travel along a rounded
+             rectangle path that traces the card outline. The mpath ensures
+             the dot follows the card shape regardless of aspect ratio. */
+          .hiw-orbital-dot-svg {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 3;
+            overflow: visible;
+          }
+
+          /* Shimmer ribbon — diagonal shine sweep across the avatar.
+             Clipped to the wrap's bounds to avoid bleeding past the card. */
+          .hiw-shimmer-ribbon {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+            border-radius: 24px;
+            pointer-events: none;
+            z-index: 2;
+          }
+          .hiw-shimmer-ribbon::before {
+            content: '';
+            position: absolute;
+            top: -25%;
+            left: -25%;
+            width: 150%;
+            height: 150%;
+            background: linear-gradient(110deg, transparent 40%, rgba(255, 255, 255, 0.45) 50%, transparent 60%);
+            animation: hiw-shimmer 10s linear infinite;
+            mix-blend-mode: screen;
+          }
+          @keyframes hiw-shimmer {
+            0%   { transform: translateX(-60%); }
+            100% { transform: translateX(60%); }
+          }
+
+          /* Step number badge — top-right corner of avatar */
+          .hiw-step-badge {
+            position: absolute;
+            top: -6px;
+            right: -10px;
+            z-index: 5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #083A85 0%, #1d4ed8 50%, #3b82f6 100%);
+            color: #ffffff;
+            box-shadow:
+              0 10px 24px -6px rgba(8, 58, 133, 0.55),
+              inset 0 1px 0 rgba(255, 255, 255, 0.20);
+            border: 2px solid #ffffff;
+            font-family: 'Pragati Narrow', sans-serif;
+            transform: rotate(0deg);
+            transition: transform 360ms cubic-bezier(0.34, 1.56, 0.64, 1);
+            animation: hiw-badge-pulse 2.4s ease-in-out infinite;
+          }
+          .hiw-step-badge-num {
+            font-size: 18px;
+            font-weight: 900;
+            line-height: 1;
+            letter-spacing: -0.02em;
+          }
+          .hiw-step-badge-label {
+            font-size: 7.5px;
+            font-weight: 800;
+            letter-spacing: 0.20em;
+            opacity: 0.85;
+            margin-top: 1px;
+          }
+          .hiw-avatar-wrap:hover .hiw-step-badge {
+            transform: rotate(-8deg) scale(1.06);
+          }
+          @keyframes hiw-badge-pulse {
+            0%, 100% { box-shadow: 0 10px 24px -6px rgba(8, 58, 133, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.20), 0 0 0 0 rgba(59, 130, 246, 0.55); }
+            50%      { box-shadow: 0 10px 24px -6px rgba(8, 58, 133, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.20), 0 0 0 12px rgba(59, 130, 246, 0); }
+          }
+
+          /* Mobile: smaller badge + simplified orbital system */
+          @media (max-width: 768px) {
+            .hiw-step-badge {
+              width: 48px;
+              height: 48px;
+              top: 4px;
+              right: 4px;
+            }
+            .hiw-step-badge-num { font-size: 15px; }
+            .hiw-step-badge-label { font-size: 6.5px; }
+            .hiw-particle { display: none; }
+          }
+
+          /* ─── For Creators card — modern brand-blue redesign ─────── */
+          .hiw-pro-card {
+            position: relative;
+            margin-top: 60px;
+            padding: 48px;
+            border-radius: 28px;
+            background:
+              radial-gradient(ellipse 80% 60% at 90% 10%, rgba(59, 130, 246, 0.30) 0%, rgba(59, 130, 246, 0) 60%),
+              radial-gradient(ellipse 60% 80% at 0% 100%, rgba(96, 165, 250, 0.20) 0%, rgba(96, 165, 250, 0) 65%),
+              linear-gradient(135deg, #052047 0%, #083A85 50%, #0a4da3 100%);
+            border: 1px solid rgba(96, 165, 250, 0.20);
+            box-shadow:
+              0 32px 80px -20px rgba(8, 58, 133, 0.55),
+              0 1px 0 rgba(255, 255, 255, 0.10) inset;
+            display: grid;
+            grid-template-columns: 1.1fr 1fr;
+            align-items: center;
+            gap: 48px;
+            overflow: hidden;
+            isolation: isolate;
+          }
+          /* Animated mesh gradient overlay */
+          .hiw-pro-mesh {
+            position: absolute;
+            inset: 0;
+            background:
+              radial-gradient(ellipse 50% 40% at 30% 30%, rgba(96, 165, 250, 0.20) 0%, rgba(96, 165, 250, 0) 60%),
+              radial-gradient(ellipse 40% 50% at 70% 80%, rgba(29, 78, 216, 0.25) 0%, rgba(29, 78, 216, 0) 60%);
+            pointer-events: none;
+            z-index: 0;
+            animation: hiw-pro-mesh-drift 14s ease-in-out infinite;
+          }
+          @keyframes hiw-pro-mesh-drift {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            50%      { transform: translate(20px, -10px) scale(1.06); }
+          }
+          /* Subtle dot grid texture */
+          .hiw-pro-grid {
+            position: absolute;
+            inset: 0;
+            background-image: radial-gradient(rgba(255, 255, 255, 0.10) 1px, transparent 1.5px);
+            background-size: 22px 22px;
+            mask-image: radial-gradient(ellipse 70% 70% at 50% 50%, #000 30%, transparent 80%);
+            -webkit-mask-image: radial-gradient(ellipse 70% 70% at 50% 50%, #000 30%, transparent 80%);
+            opacity: 0.35;
+            pointer-events: none;
+            z-index: 0;
+          }
+          /* Floating brand-blue orbs */
+          .hiw-pro-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(60px);
+            pointer-events: none;
+            z-index: 0;
+            mix-blend-mode: screen;
+            opacity: 0.55;
+            animation: hiw-pro-orb-drift 16s ease-in-out infinite;
+          }
+          .hiw-pro-orb--a {
+            top: -80px; right: -60px;
+            width: 280px; height: 280px;
+            background: radial-gradient(circle, rgba(96, 165, 250, 0.55) 0%, rgba(59, 130, 246, 0.30) 50%, rgba(59, 130, 246, 0) 80%);
+          }
+          .hiw-pro-orb--b {
+            bottom: -100px; left: -40px;
+            width: 240px; height: 240px;
+            background: radial-gradient(circle, rgba(147, 197, 253, 0.45) 0%, rgba(96, 165, 250, 0.25) 50%, rgba(96, 165, 250, 0) 80%);
+            animation-delay: -6s;
+            animation-duration: 20s;
+            animation-direction: reverse;
+          }
+          @keyframes hiw-pro-orb-drift {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            50%      { transform: translate(30px, -20px) scale(1.10); }
+          }
+          /* Floating sparkle particles */
+          .hiw-pro-particle {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #93c5fd 0%, #60a5fa 100%);
+            box-shadow: 0 0 10px rgba(96, 165, 250, 0.85);
+            pointer-events: none;
+            z-index: 1;
+            animation: hiw-pro-particle-float 5s ease-in-out infinite;
+          }
+          .hiw-pro-particle--1 { top: 18%; left: 42%; }
+          .hiw-pro-particle--2 { top: 38%; left: 8%; width: 4px; height: 4px; animation-delay: -1.5s; }
+          .hiw-pro-particle--3 { top: 70%; left: 52%; width: 5px; height: 5px; animation-delay: -3s; }
+          .hiw-pro-particle--4 { top: 28%; right: 38%; width: 4px; height: 4px; animation-delay: -2s; }
+          @keyframes hiw-pro-particle-float {
+            0%, 100% { transform: translate(0, 0); opacity: 0.55; }
+            50%      { transform: translate(-8px, -10px); opacity: 1.00; }
+          }
+
+          /* Left content column */
+          .hiw-pro-left {
+            position: relative;
+            z-index: 2;
+            color: #ffffff;
+          }
+          .hiw-pro-eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 9px;
+            padding: 6px 13px 6px 11px;
+            margin-bottom: 18px;
+            background: rgba(255, 255, 255, 0.10);
+            border: 1px solid rgba(255, 255, 255, 0.20);
+            border-radius: 999px;
+            font-family: 'Pragati Narrow', sans-serif;
+            font-size: 11px;
+            font-weight: 800;
+            color: #93c5fd;
+            letter-spacing: 0.16em;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+          }
+          .hiw-pro-eyebrow-dot {
+            width: 7px; height: 7px; border-radius: 50%;
+            background: linear-gradient(135deg, #60a5fa 0%, #1d4ed8 100%);
+            box-shadow: 0 0 8px rgba(96, 165, 250, 0.85);
+            animation: hiw-eyebrow-pulse 1.6s ease-in-out infinite;
+          }
+          .hiw-pro-eyebrow-spark {
+            color: #93c5fd;
+            animation: hiw-eyebrow-twinkle 2.4s ease-in-out infinite;
+          }
+
+          .hiw-pro-title {
+            font-size: clamp(28px, 4.5vw, 48px) !important;
+            font-weight: 800 !important;
+            line-height: 1.05 !important;
+            letter-spacing: -0.025em;
+            margin: 0 0 16px !important;
+            color: #ffffff !important;
+            position: static !important;
+            top: auto !important;
+            max-width: none !important;
+            text-shadow: 0 4px 24px rgba(0, 0, 0, 0.30);
+          }
+          .hiw-pro-desc {
+            font-size: 15.5px !important;
+            line-height: 1.65 !important;
+            color: rgba(255, 255, 255, 0.85) !important;
+            margin: 0 0 26px !important;
+            max-width: 460px;
+            position: static !important;
+            top: auto !important;
+            opacity: 1 !important;
+          }
+
+          /* CTA — refined brand-coherent design (was pink/purple) */
+          .hiw-pro-cta {
+            position: static !important;
+            top: auto !important;
+            left: auto !important;
+            display: inline-flex !important;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 13px 28px !important;
+            width: auto !important;
+            height: auto !important;
+            border-radius: 12px !important;
+            border: 1.5px solid rgba(255, 255, 255, 0.24) !important;
+            background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%) !important;
+            color: #083A85 !important;
+            font-size: 14.5px !important;
+            font-weight: 800 !important;
+            letter-spacing: 0.02em;
+            cursor: pointer;
+            overflow: hidden;
+            isolation: isolate;
+            box-shadow:
+              0 14px 28px -10px rgba(0, 0, 0, 0.40),
+              inset 0 1px 0 rgba(255, 255, 255, 0.45) !important;
+            transition: transform 240ms cubic-bezier(0.34, 1.56, 0.64, 1), filter 200ms ease, box-shadow 220ms ease !important;
+          }
+          .hiw-pro-cta:hover {
+            transform: translateY(-2px) !important;
+            filter: brightness(1.05);
+            box-shadow:
+              0 22px 40px -10px rgba(0, 0, 0, 0.55),
+              inset 0 1px 0 rgba(255, 255, 255, 0.55) !important;
+          }
+          .hiw-pro-cta:active { transform: translateY(0) scale(0.98) !important; }
+          .hiw-pro-cta-shimmer {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(110deg, transparent 35%, rgba(96, 165, 250, 0.30) 50%, transparent 65%);
+            transform: translateX(-100%);
+            transition: transform 700ms ease;
+            pointer-events: none;
+          }
+          .hiw-pro-cta:hover .hiw-pro-cta-shimmer { transform: translateX(100%); }
+          .hiw-pro-cta-content {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 1;
+          }
+
+          /* Trust pill below CTA */
+          .hiw-pro-trust {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 18px;
+            font-size: 12.5px;
+            color: rgba(255, 255, 255, 0.78);
+            font-family: 'Pragati Narrow', sans-serif;
+          }
+          .hiw-pro-trust-avatars {
+            display: inline-flex;
+          }
+          .hiw-pro-trust-avatars span {
+            display: block;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            border: 2px solid #083A85;
+            background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+            margin-right: -7px;
+          }
+          .hiw-pro-trust-avatars span:nth-child(2) {
+            background: linear-gradient(135deg, #93c5fd 0%, #1d4ed8 100%);
+          }
+          .hiw-pro-trust-avatars span:nth-child(3) {
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            margin-right: 0;
+          }
+          .hiw-pro-trust-text strong {
+            color: #ffffff;
+            font-weight: 800;
+          }
+
+          /* Right video — modern bezel with brand glow */
+          .hiw-pro-video {
+            position: relative !important;
+            z-index: 2;
+            background: none !important;
+            padding: 0 !important;
+            max-width: none !important;
+            max-height: none !important;
+            display: block !important;
+          }
+          .hiw-pro-video-frame {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 16 / 10;
+            border-radius: 20px;
+            background: #000;
+            overflow: hidden;
+            border: 1px solid rgba(96, 165, 250, 0.30);
+            box-shadow:
+              0 30px 70px -20px rgba(0, 0, 0, 0.65),
+              0 0 0 1px rgba(255, 255, 255, 0.06) inset,
+              0 0 60px -10px rgba(96, 165, 250, 0.40);
+          }
+          .hiw-pro-video-frame::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 20px;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, transparent 30%);
+            pointer-events: none;
+          }
+          .hiw-pro-video-el {
+            width: 100%;
+            height: 100%;
+            display: block;
+            object-fit: cover;
+          }
+          .hiw-pro-video-indicator {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            z-index: 3;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px 4px 8px;
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.85) 0%, rgba(8, 11, 19, 0.90) 100%);
+            border: 1px solid rgba(96, 165, 250, 0.30);
+            border-radius: 999px;
+            font-family: 'Pragati Narrow', sans-serif;
+            font-size: 9.5px;
+            font-weight: 800;
+            color: #93c5fd;
+            letter-spacing: 0.14em;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.40);
+          }
+          .hiw-pro-video-indicator-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #ef4444;
+            box-shadow: 0 0 8px rgba(239, 68, 68, 0.85);
+            animation: hiw-pro-live-dot 1.2s ease-in-out infinite;
+          }
+          @keyframes hiw-pro-live-dot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50%      { opacity: 0.40; transform: scale(0.85); }
+          }
+
+          /* Mobile */
+          @media (max-width: 900px) {
+            .hiw-pro-card {
+              grid-template-columns: 1fr;
+              padding: 28px;
+              gap: 28px;
+              border-radius: 22px;
+            }
+            .hiw-pro-particle { display: none; }
+          }
+          @media (max-width: 540px) {
+            .hiw-pro-card { padding: 22px; }
+            .hiw-pro-title { font-size: clamp(24px, 7vw, 32px) !important; }
+            .hiw-pro-desc { font-size: 14px !important; }
+            .hiw-pro-cta { width: 100% !important; padding: 12px 20px !important; }
+          }
+
+          /* Reduced motion — strip animations cleanly */
+          @media (prefers-reduced-motion: reduce) {
+            .hiw-eyebrow,
+            .hiw-eyebrow-dot,
+            .hiw-eyebrow-sparkle,
+            .hiw-title,
+            .hiw-accent-line span,
+            .hiw-subtitle,
+            .hiw-step,
+            .hiw-avatar-wrap,
+            .hiw-step-img,
+            .hiw-halo,
+            .hiw-particle,
+            .hiw-step-badge,
+            .hiw-ring,
+            .hiw-orbital-dot-svg,
+            .hiw-shimmer-ribbon,
+            .hiw-shimmer-ribbon::before,
+            .hiw-pro-mesh,
+            .hiw-pro-orb,
+            .hiw-pro-particle,
+            .hiw-pro-eyebrow-dot,
+            .hiw-pro-eyebrow-spark,
+            .hiw-pro-cta,
+            .hiw-pro-cta-shimmer,
+            .hiw-pro-video-indicator-dot {
+              animation: none !important;
+              transition: none !important;
+            }
+          }
+
           @keyframes hero-card-twinkle {
             0%, 100% {
-              border-color: rgba(16, 185, 129, 0.8);
-              box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.8),
-                          0 0 0 0 rgba(16, 185, 129, 0.6),
-                          0 0 12px rgba(16, 185, 129, 0.3);
+              border-color: rgba(220, 38, 38, 0.8);
+              box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.8),
+                          0 0 0 0 rgba(220, 38, 38, 0.6),
+                          0 0 12px rgba(220, 38, 38, 0.3);
             }
             25% {
-              box-shadow: 0 0 0 10px rgba(16, 185, 129, 0),
-                          0 0 0 20px rgba(16, 185, 129, 0),
-                          0 0 20px rgba(16, 185, 129, 0.15);
+              box-shadow: 0 0 0 10px rgba(220, 38, 38, 0),
+                          0 0 0 20px rgba(220, 38, 38, 0),
+                          0 0 20px rgba(220, 38, 38, 0.15);
             }
             50% {
-              border-color: rgba(52, 211, 153, 1);
-              box-shadow: 0 0 0 18px rgba(16, 185, 129, 0),
-                          0 0 0 32px rgba(16, 185, 129, 0),
-                          0 0 28px rgba(16, 185, 129, 0.2);
+              border-color: rgba(248, 113, 113, 1);
+              box-shadow: 0 0 0 18px rgba(220, 38, 38, 0),
+                          0 0 0 32px rgba(220, 38, 38, 0),
+                          0 0 28px rgba(220, 38, 38, 0.2);
             }
             75% {
-              box-shadow: 0 0 0 10px rgba(16, 185, 129, 0),
-                          0 0 0 20px rgba(16, 185, 129, 0),
-                          0 0 20px rgba(16, 185, 129, 0.15);
+              box-shadow: 0 0 0 10px rgba(220, 38, 38, 0),
+                          0 0 0 20px rgba(220, 38, 38, 0),
+                          0 0 20px rgba(220, 38, 38, 0.15);
             }
           }
           @keyframes hero-toss-in {
@@ -3528,8 +5502,6 @@ export default function Home() {
         <section
           ref={networkSectionRef}
           className="global-network-section"
-          onMouseMove={handleNetworkMouseMove}
-          onMouseLeave={handleNetworkMouseLeave}
           style={{
             background: 'linear-gradient(to right, #052047, #052047, #103E83)',
             padding: '100px 0',
@@ -3537,38 +5509,44 @@ export default function Home() {
             overflow: 'hidden'
           }}
         >
-          {/* Dotted pattern background - base layer (dim) */}
-          <div
-            style={{
-              position: 'absolute',
-              inset: 0,
-              backgroundImage: 'radial-gradient(circle, rgba(255, 255, 255, 0.3) 1px, transparent 1px)',
-              backgroundSize: '10px 10px',
-              opacity: 0.2,
-              zIndex: 0,
-              pointerEvents: 'none'
-            }}
-          />
+          {/* Interactive DotGrid — same brand-blue palette as the footer. 2px dots with 15px gap,
+              dim brand at rest → bright brand on cursor proximity, GSAP inertia push + click shock. */}
+          <div style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none' }} aria-hidden="true">
+            <DotGrid
+              dotSize={2}
+              gap={15}
+              baseColor="#1E3A78"
+              activeColor="#3B82F6"
+              proximity={120}
+              shockRadius={180}
+              shockStrength={4}
+              resistance={750}
+              returnDuration={1.4}
+            />
+          </div>
 
-          {/* Spotlight layer - reveals brighter dots where cursor is */}
-          <div
-            style={{
-              position: 'absolute',
-              inset: 0,
-              backgroundImage: 'radial-gradient(circle, rgba(255, 255, 255, 0.85) 1.5px, transparent 0.5px)',
-              backgroundSize: '10px 10px',
-              opacity: networkMousePos ? 0.5 : 0,
-              zIndex: 1,
-              pointerEvents: 'none',
-              maskImage: networkMousePos
-                ? `radial-gradient(circle 60px at ${networkMousePos.x}px ${networkMousePos.y}px, black 0%, black 50%, transparent 80%)`
-                : 'none',
-              WebkitMaskImage: networkMousePos
-                ? `radial-gradient(circle 60px at ${networkMousePos.x}px ${networkMousePos.y}px, black 0%, black 50%, transparent 80%)`
-                : 'none',
-              transition: 'opacity 0s ease'
-            }}
-          />
+          {/* Floating cyan particles — drift slowly across the section */}
+          <span className="gn-particle gn-particle--1" aria-hidden="true" />
+          <span className="gn-particle gn-particle--2" aria-hidden="true" />
+          <span className="gn-particle gn-particle--3" aria-hidden="true" />
+          <span className="gn-particle gn-particle--4" aria-hidden="true" />
+          <span className="gn-particle gn-particle--5" aria-hidden="true" />
+          <span className="gn-particle gn-particle--6" aria-hidden="true" />
+
+          {/* Decorative compass corner — coordinate ornament top-left */}
+          <span className="gn-compass" aria-hidden="true">
+            <svg viewBox="0 0 80 80" fill="none">
+              <circle cx="40" cy="40" r="36" stroke="#00E8FF" strokeWidth="1" strokeDasharray="2 4" opacity="0.45" />
+              <circle cx="40" cy="40" r="24" stroke="#00E8FF" strokeWidth="1" opacity="0.35" />
+              <circle cx="40" cy="40" r="3" fill="#00E8FF" opacity="0.85" />
+              {/* Cardinal marks */}
+              <line x1="40" y1="4"  x2="40" y2="14" stroke="#00E8FF" strokeWidth="1.5" opacity="0.6" />
+              <line x1="40" y1="76" x2="40" y2="66" stroke="#00E8FF" strokeWidth="1.5" opacity="0.6" />
+              <line x1="4"  y1="40" x2="14" y2="40" stroke="#00E8FF" strokeWidth="1.5" opacity="0.6" />
+              <line x1="76" y1="40" x2="66" y2="40" stroke="#00E8FF" strokeWidth="1.5" opacity="0.6" />
+              <text x="40" y="9" textAnchor="middle" fontSize="6" fill="#00E8FF" opacity="0.7" fontFamily="monospace">N</text>
+            </svg>
+          </span>
           <div className="global-network-content" style={{
             maxWidth: '1480px',
             margin: '0 auto',
@@ -3586,8 +5564,15 @@ export default function Home() {
               maxWidth: '550px',
               color: '#fff'
             }}>
-              {/* Title */}
-              <h2 className="global-network-title" style={{
+              {/* Eyebrow pill — same brand language as other sections */}
+              <div className="gn-eyebrow" aria-hidden="true">
+                <span className="gn-eyebrow-dot" />
+                <span>GLOBAL NETWORK · LIVE</span>
+                <span className="gn-eyebrow-spark">✦</span>
+              </div>
+
+              {/* Title — last word styled in italic gradient text fill */}
+              <h2 className="global-network-title gn-title" style={{
                 fontSize: '55px',
                 fontWeight: 1000,
                 lineHeight: '1.1',
@@ -3596,7 +5581,28 @@ export default function Home() {
                 color: '#fff',
                 letterSpacing: '-0.02em'
               }}>
-                {t('globalNetwork.title')}
+                {(() => {
+                  const words = t('globalNetwork.title').split(/\s+/).filter(Boolean);
+                  const lastIdx = words.length - 1;
+                  return words.map((w, i) => (
+                    <span key={i} style={{ display: 'inline-block', marginRight: i === lastIdx ? 0 : '0.28em' }}>
+                      {i === lastIdx ? (
+                        <span style={{
+                          fontStyle: 'italic',
+                          fontWeight: 'inherit',
+                          background: 'linear-gradient(135deg, #00E8FF 0%, #60a5fa 50%, #7763FF 100%)',
+                          WebkitBackgroundClip: 'text',
+                          backgroundClip: 'text',
+                          WebkitTextFillColor: 'transparent',
+                          color: 'transparent',
+                          display: 'inline-block',
+                          paddingRight: '0.12em',
+                          paddingLeft: '0.04em',
+                        }}>{w}</span>
+                      ) : w}
+                    </span>
+                  ));
+                })()}
               </h2>
 
               {/* Description */}
@@ -3651,8 +5657,33 @@ export default function Home() {
                 >
                   {t('globalNetwork.findEvents')}
                 </button>
-                </div>
+              </div>
 
+              {/* Live network stats — small chips reinforcing the
+                  "live, growing platform" idea below the CTAs */}
+              <div className="gn-stats" aria-label="Network reach">
+                <div className="gn-stat">
+                  <span className="gn-stat-dot" />
+                  <div>
+                    <strong>17</strong>
+                    <span>Cities</span>
+                  </div>
+                </div>
+                <div className="gn-stat">
+                  <span className="gn-stat-dot" />
+                  <div>
+                    <strong>6</strong>
+                    <span>Continents</span>
+                  </div>
+                </div>
+                <div className="gn-stat">
+                  <span className="gn-stat-dot" />
+                  <div>
+                    <strong>24/7</strong>
+                    <span>Live</span>
+                  </div>
+                </div>
+              </div>
             </div>
           
             {/* Right Content - for the network visualization */}

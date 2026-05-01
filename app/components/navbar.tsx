@@ -55,12 +55,61 @@ const getCategoryTranslationKey = (name: string): string => {
   return name.toLowerCase();
 };
 
+/**
+ * Humanize a raw category value/translation key into a display label.
+ * Used as the fallback when the i18n message file doesn't carry a
+ * translation for a backend-provided category (e.g. "baby shower"
+ * doesn't exist in `nav.eventCategories.*`, so we display "Baby Shower").
+ */
+const humanizeCategory = (raw: string): string => {
+  if (!raw) return '';
+  return raw
+    .replace(/[-_]+/g, ' ')
+    .trim()
+    .split(/\s+/)
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(' ');
+};
+
 const AmoriaKNavbar = () => {
   const { locale, setLocale } = useLanguage();
   const { user, isAuthenticated, logout } = useAuth();
   const t = useTranslations('nav');
   const router = useRouter();
   const pathname = usePathname();
+
+  /**
+   * Safe category label resolver. The i18n `nav.eventCategories.*` and
+   * `nav.photographerCategories.*` namespaces only carry entries for the
+   * curated default categories. Backend-provided categories (e.g. "baby
+   * shower") don't have a corresponding translation, which makes `t()`
+   * throw `MISSING_MESSAGE` and crash the page. This wrapper:
+   *   1. Prefers a `displayName` if the category provides one
+   *   2. Tries the i18n key, swallowing missing-message errors
+   *   3. Falls back to a Title-Cased humanized version of the raw value
+   */
+  const safeCatLabel = (
+    cat: { translationKey: string; displayName?: string; value?: string },
+    scope: 'eventCategories' | 'photographerCategories'
+  ): string => {
+    if (cat.displayName) return cat.displayName;
+    try {
+      return t(`${scope}.${cat.translationKey}` as never);
+    } catch {
+      return humanizeCategory(cat.value || cat.translationKey || '');
+    }
+  };
+
+  // Pages with a full-bleed dark cinematic hero — the navbar should sit
+  // transparent over the hero and switch to dark glass once the user scrolls
+  // past it (Prime Video / Plex pattern).
+  const DARK_HERO_ROUTES = [
+    '/user/events/view-event',
+    '/user/events/join-package',
+  ];
+  const isDarkHeroPage = pathname
+    ? DARK_HERO_ROUTES.some((p) => pathname.startsWith(p))
+    : false;
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
@@ -83,6 +132,11 @@ const AmoriaKNavbar = () => {
   const photographersDropdownRef = useRef<HTMLDivElement>(null);
   const eventsDropdownRef = useRef<HTMLDivElement>(null);
   const profileDropdownRef = useRef<HTMLDivElement>(null);
+  // Tracks the touchstart position on the mobile-menu backdrop so we can
+  // distinguish a "tap to close" from a scroll-gesture that happened to
+  // begin on the backdrop. Without this, iOS often dismisses the drawer
+  // when the user merely starts scrolling.
+  const backdropTouchStartRef = useRef<{ x: number; y: number } | null>(null);
 
   const languageFlags: Record<string, string> = {
     en: 'gb',
@@ -191,12 +245,14 @@ const AmoriaKNavbar = () => {
             catMap.set(raw, catMap.get(raw) ?? false);
           }
 
-          // Second pass: mark live — same logic as the event cards:
-          // ONGOING + hasLiveStream flag is sufficient; Cloudflare check adds any missed ones
+          // Second pass: mark live — ONGOING + (hasLiveStream OR streamStatus
+          // signaling live) is sufficient; Cloudflare check adds any missed ones
           let anyLive = false;
 
           for (const ev of ongoingEvents) {
-            if (ev.hasLiveStream === true) {
+            const ss = ((ev as Record<string, unknown>).streamStatus || '') as string;
+            const isLive = ev.hasLiveStream === true || ss === 'live' || ss === 'started' || ss === 'streaming';
+            if (isLive) {
               anyLive = true;
               const raw = (ev.eventCategory?.name || '').toLowerCase().trim();
               if (raw) catMap.set(raw, true);
@@ -260,33 +316,32 @@ const AmoriaKNavbar = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Effect to handle scroll events
+  // Effect to handle scroll events.
+  // Threshold is 8px so a 1-pixel browser jiggle doesn't toggle the
+  // background; threshold is 64px on dark-hero pages so the navbar stays
+  // glassy-transparent while the cinematic hero is in view.
   useEffect(() => {
     const handleScroll = () => {
-      if (window.scrollY > 0) {
-        setIsScrolled(true);
-      } else {
-        setIsScrolled(false);
-      }
+      const y = window.scrollY;
+      const threshold = isDarkHeroPage ? 64 : 8;
+      setIsScrolled(y > threshold);
     };
-
-    window.addEventListener('scroll', handleScroll);
+    handleScroll();
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
 
-  // Effect to handle clicks outside of the mobile menu, language dropdown, and profile dropdown
+  // Effect to handle clicks outside of the language dropdown and profile dropdown.
+  //
+  // NOTE: the mobile menu drawer is INTENTIONALLY excluded from this handler —
+  // it uses a dedicated backdrop overlay (rendered when `isMobileMenuOpen`) to
+  // catch tap-outside-to-close, plus the explicit X close button. Including
+  // the drawer here was closing it mid-scroll on touch devices because
+  // mobile browsers fire synthetic mousedown/click events during scroll
+  // gestures, falsely matching "tap outside the drawer".
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      // Close mobile menu (but not if clicking the menu button)
-      if (
-        mobileMenuRef.current &&
-        !mobileMenuRef.current.contains(event.target as Node) &&
-        mobileMenuButtonRef.current &&
-        !mobileMenuButtonRef.current.contains(event.target as Node)
-      ) {
-        setIsMobileMenuOpen(false);
-        document.body.style.overflow = '';
-      }
       // Close language dropdown
       if (langMenuRef.current && !langMenuRef.current.contains(event.target as Node)) {
         setIsLangMenuOpen(false);
@@ -307,6 +362,29 @@ const AmoriaKNavbar = () => {
       document.body.style.overflow = '';
     };
   }, []);
+
+  // Close the mobile menu only when an actual route change completes.
+  //
+  // Why: on mobile, a touch "scroll" gesture with minimal finger movement
+  // registers as a synthetic click on whatever Link the finger landed on.
+  // If we close the drawer on every Link onClick, scrolling-while-touching-
+  // a-link silently dismisses the menu. By tying close to pathname change,
+  // a same-page tap (which produces no navigation) leaves the menu open,
+  // while a real navigation away from the page closes it as expected.
+  const lastPathnameRef = useRef(pathname);
+  useEffect(() => {
+    if (pathname !== lastPathnameRef.current) {
+      lastPathnameRef.current = pathname;
+      if (isMobileMenuOpen) {
+        setIsMobileMenuOpen(false);
+        document.body.style.overflow = '';
+      }
+      setIsPhotographersDropdownOpen(false);
+      setIsEventsDropdownOpen(false);
+      setIsLangMenuOpen(false);
+      setIsProfileDropdownOpen(false);
+    }
+  }, [pathname, isMobileMenuOpen]);
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(prev => {
@@ -332,10 +410,12 @@ const AmoriaKNavbar = () => {
     setLocale(langCode as Locale);
   };
 
-  const handleLinkClick = () => {
-    setIsMobileMenuOpen(false);
-    document.body.style.overflow = '';
-  };
+  // Kept as a no-op so existing `onClick={handleLinkClick}` references in
+  // mobile drawer Links don't break, but we no longer close the drawer here.
+  // Closing now happens centrally via the pathname-change effect above —
+  // that prevents accidental closes when a touch "scroll" gesture inside
+  // the drawer registers as a synthetic click on a Link.
+  const handleLinkClick = () => { /* close handled by pathname effect */ };
 
   const { showBanner } = useToast();
 
@@ -358,14 +438,42 @@ const AmoriaKNavbar = () => {
     <>
     <nav
       className="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
+      data-theme={isDarkHeroPage ? (isScrolled ? 'dark-solid' : 'dark-transparent') : (isScrolled ? 'light-solid' : 'light-flat')}
       style={{
         fontFamily: "'Pragati Narrow', sans-serif",
-        backgroundColor: isScrolled ? 'rgba(255, 255, 255, 0.85)' : '#DBDBDB',
-        backdropFilter: isScrolled ? 'blur(16px)' : 'none',
-        WebkitBackdropFilter: isScrolled ? 'blur(16px)' : 'none',
-        boxShadow: isScrolled
-          ? '0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.04)'
-          : 'none',
+        // Background:
+        //  • dark-hero page over hero  → fully transparent (hero shows through)
+        //  • dark-hero page scrolled   → dark glass with brand-blue tint
+        //  • normal page top           → solid light gray
+        //  • normal page scrolled      → translucent white glass
+        backgroundColor: isDarkHeroPage
+          ? (isScrolled ? 'rgba(7, 8, 13, 0.78)' : 'transparent')
+          : (isScrolled ? 'rgba(255, 255, 255, 0.85)' : '#DBDBDB'),
+        backdropFilter: isDarkHeroPage
+          ? (isScrolled ? 'blur(20px) saturate(160%)' : 'none')
+          : (isScrolled ? 'blur(16px)' : 'none'),
+        WebkitBackdropFilter: isDarkHeroPage
+          ? (isScrolled ? 'blur(20px) saturate(160%)' : 'none')
+          : (isScrolled ? 'blur(16px)' : 'none'),
+        // Drop shadow + an inset bottom highlight (in place of a literal
+        // border-bottom). The inset shadow renders via the compositor and
+        // doesn't leave a fixed-pixel hairline that flashes during scroll
+        // re-renders — same fix philosophy as the event-card seam.
+        //
+        // IMPORTANT: do NOT add `transform`, `will-change: transform`, or
+        // any property that creates a CSS containing block here. Those
+        // would scope `position: fixed` descendants (like the mobile menu
+        // drawer at line ~1571) to the navbar's bounds instead of the
+        // viewport, making the drawer invisible. The flashing-line fix is
+        // handled entirely by removing the literal border-bottom and
+        // replacing it with the inset shadow below.
+        boxShadow: isDarkHeroPage
+          ? (isScrolled
+              ? '0 8px 32px rgba(0, 0, 0, 0.55), inset 0 -1px 0 rgba(255, 255, 255, 0.06)'
+              : 'none')
+          : (isScrolled
+              ? '0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.04), inset 0 -1px 0 rgba(0, 0, 0, 0.04)'
+              : 'none'),
       }}
     >
       {/* Live Animation Styles for Event Category Cards */}
@@ -441,22 +549,22 @@ const AmoriaKNavbar = () => {
 
         @keyframes nav-border-beep {
           0%, 100% {
-            border-color: rgba(16, 185, 129, 0.7);
-            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7),
-                        0 0 0 0 rgba(16, 185, 129, 0.5);
+            border-color: rgba(220, 38, 38, 0.7);
+            box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7),
+                        0 0 0 0 rgba(220, 38, 38, 0.5);
           }
           25% {
-            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0),
-                        0 0 0 8px rgba(16, 185, 129, 0);
+            box-shadow: 0 0 0 4px rgba(220, 38, 38, 0),
+                        0 0 0 8px rgba(220, 38, 38, 0);
           }
           50% {
-            border-color: rgba(52, 211, 153, 1);
-            box-shadow: 0 0 0 8px rgba(16, 185, 129, 0),
-                        0 0 0 16px rgba(16, 185, 129, 0);
+            border-color: rgba(248, 113, 113, 1);
+            box-shadow: 0 0 0 8px rgba(220, 38, 38, 0),
+                        0 0 0 16px rgba(220, 38, 38, 0);
           }
           75% {
-            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0),
-                        0 0 0 8px rgba(16, 185, 129, 0);
+            box-shadow: 0 0 0 4px rgba(220, 38, 38, 0),
+                        0 0 0 8px rgba(220, 38, 38, 0);
           }
         }
 
@@ -473,12 +581,12 @@ const AmoriaKNavbar = () => {
 
         .nav-live-card {
           animation: nav-border-beep 1s ease-out infinite;
-          border: 1.5px solid rgba(16, 185, 129, 0.7);
+          border: 1.5px solid rgba(220, 38, 38, 0.7);
         }
 
         .nav-live-card:hover {
           animation: none;
-          box-shadow: inset 0 0 0 1.5px rgba(16, 185, 129, 0.6);
+          box-shadow: inset 0 0 0 1.5px rgba(220, 38, 38, 0.6);
         }
 
         .nav-live-icon {
@@ -490,11 +598,11 @@ const AmoriaKNavbar = () => {
         }
 
         .nav-live-text {
-          color: #059669 !important;
+          color: #dc2626 !important;
         }
 
         .nav-live-card:hover .nav-live-text {
-          color: #03803f !important;
+          color: #b91c1c !important;
         }
 
         @keyframes nav-skeleton-pulse {
@@ -515,38 +623,38 @@ const AmoriaKNavbar = () => {
 
         @keyframes nav-events-border-vibrate {
           0%, 100% {
-            border-color: rgba(16, 185, 129, 0.7);
-            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7),
-                        0 0 0 0 rgba(16, 185, 129, 0.5);
+            border-color: rgba(220, 38, 38, 0.7);
+            box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7),
+                        0 0 0 0 rgba(220, 38, 38, 0.5);
           }
           25% {
-            box-shadow: 0 0 0 8px rgba(16, 185, 129, 0),
-                        0 0 0 16px rgba(16, 185, 129, 0);
+            box-shadow: 0 0 0 8px rgba(220, 38, 38, 0),
+                        0 0 0 16px rgba(220, 38, 38, 0);
           }
           50% {
-            border-color: rgba(52, 211, 153, 1);
-            box-shadow: 0 0 0 16px rgba(16, 185, 129, 0),
-                        0 0 0 28px rgba(16, 185, 129, 0);
+            border-color: rgba(248, 113, 113, 1);
+            box-shadow: 0 0 0 16px rgba(220, 38, 38, 0),
+                        0 0 0 28px rgba(220, 38, 38, 0);
           }
           75% {
-            box-shadow: 0 0 0 8px rgba(16, 185, 129, 0),
-                        0 0 0 16px rgba(16, 185, 129, 0);
+            box-shadow: 0 0 0 8px rgba(220, 38, 38, 0),
+                        0 0 0 16px rgba(220, 38, 38, 0);
           }
         }
 
         .nav-events-link {
-          color: #059669 !important;
-          border: 1px solid rgba(16, 185, 129, 0.7);
+          color: #dc2626 !important;
+          border: 1px solid rgba(220, 38, 38, 0.7);
           border-radius: 10px;
           padding: 6px 12px !important;
           animation: nav-events-border-vibrate 1s ease-out infinite;
         }
 
         .nav-events-link:hover {
-          color: #047857 !important;
+          color: #b91c1c !important;
           animation: none;
-          border-color: rgba(16, 185, 129, 1);
-          background-color: rgba(16, 185, 129, 0.08) !important;
+          border-color: rgba(220, 38, 38, 1);
+          background-color: rgba(220, 38, 38, 0.08) !important;
         }
 
         .nav-link-hover {
@@ -565,8 +673,8 @@ const AmoriaKNavbar = () => {
         }
 
         .nav-link-hover.nav-events-link:hover {
-          color: #047857 !important;
-          background-color: rgba(16, 185, 129, 0.08) !important;
+          color: #b91c1c !important;
+          background-color: rgba(220, 38, 38, 0.08) !important;
         }
 
         .nav-link-hover.nav-link-active {
@@ -688,6 +796,169 @@ const AmoriaKNavbar = () => {
           display: none;
         }
 
+        /* ── Dark theme overrides ──────────────────────────────────
+           When the navbar is on a dark-hero page (data-theme starts
+           with "dark") the logo, pill, links, language button, and
+           Log In button switch to white-on-glass styling. The Sign Up
+           button stays brand-blue (intentional accent on dark bg). */
+        nav[data-theme^="dark"] .nav-logo-text {
+          color: #ffffff !important;
+          text-shadow: 0 1px 12px rgba(0, 0, 0, 0.55);
+        }
+        nav[data-theme^="dark"] [data-navpill] {
+          background: rgba(7, 8, 13, 0.55) !important;
+          border-color: rgba(255, 255, 255, 0.14) !important;
+          backdrop-filter: blur(14px) saturate(160%) !important;
+          -webkit-backdrop-filter: blur(14px) saturate(160%) !important;
+        }
+        nav[data-theme^="dark"] [data-navpill] .nav-link-hover {
+          color: #f4f6fb !important;
+        }
+        nav[data-theme^="dark"] [data-navpill] .nav-link-hover:hover,
+        nav[data-theme^="dark"] [data-navpill] .nav-link-hover.nav-link-active {
+          color: #93c5fd !important;
+        }
+        nav[data-theme^="dark"] [data-navpill] .nav-link-hover::after {
+          background: #93c5fd !important;
+        }
+        nav[data-theme^="dark"] [data-langbtn] {
+          color: #f4f6fb !important;
+        }
+        nav[data-theme^="dark"] [data-langbtn]:hover {
+          background-color: rgba(255, 255, 255, 0.08) !important;
+          color: #ffffff !important;
+        }
+        nav[data-theme^="dark"] [data-loginbtn] {
+          color: #ffffff !important;
+          border-color: rgba(255, 255, 255, 0.45) !important;
+        }
+        nav[data-theme^="dark"] [data-loginbtn]:hover {
+          background-color: rgba(255, 255, 255, 0.10) !important;
+          border-color: rgba(255, 255, 255, 0.75) !important;
+        }
+        /* Mobile menu toggle (hamburger) — bars use currentColor */
+        nav[data-theme^="dark"] button[aria-label*="menu" i],
+        nav[data-theme^="dark"] button[aria-label*="navigation" i] {
+          color: #ffffff !important;
+        }
+
+        /* ── Dropdown panels (Photographers / Events / Language / Profile) ──
+           Convert the white panels to dark glass to match the navbar. The
+           coloured header strips inside each panel keep their brand
+           gradients — they read fine against either bg. */
+        nav[data-theme^="dark"] [data-navdropdown] {
+          background: rgba(7, 8, 13, 0.92) !important;
+          border: 1px solid rgba(255, 255, 255, 0.10) !important;
+          box-shadow:
+            0 24px 60px rgba(0, 0, 0, 0.55),
+            0 0 0 1px rgba(255, 255, 255, 0.04) !important;
+          backdrop-filter: blur(24px) saturate(160%);
+          -webkit-backdrop-filter: blur(24px) saturate(160%);
+        }
+        /* Default text inside the panel — light */
+        nav[data-theme^="dark"] [data-navdropdown] {
+          color: #f4f6fb;
+        }
+        /* "No items available" placeholder text */
+        nav[data-theme^="dark"] [data-navdropdown] p {
+          color: #9ca3af !important;
+        }
+        /* Skeleton placeholder shimmer — match dark panel */
+        nav[data-theme^="dark"] [data-navdropdown] [style*="nav-skeleton-pulse"],
+        nav[data-theme^="dark"] [data-navdropdown] div[style*="background: rgb(243, 244, 246)"] {
+          background: rgba(255, 255, 255, 0.06) !important;
+        }
+
+        /* Category chips inside dropdowns — dark glass with white text,
+           hover lifts to a brand-blue tinted glass. Live chips keep their
+           emerald accent but on a darker base. */
+        nav[data-theme^="dark"] [data-navchip] {
+          background: rgba(255, 255, 255, 0.05) !important;
+          color: #e5e7eb !important;
+          border-color: rgba(255, 255, 255, 0.10) !important;
+        }
+        nav[data-theme^="dark"] [data-navchip]:hover {
+          background: rgba(31, 107, 255, 0.28) !important;
+          color: #ffffff !important;
+          border-color: rgba(31, 107, 255, 0.65) !important;
+          box-shadow: 0 4px 14px rgba(31, 107, 255, 0.30) !important;
+        }
+        nav[data-theme^="dark"] [data-navchip].nav-live-card {
+          background: rgba(220, 38, 38, 0.12) !important;
+          color: #fca5a5 !important;
+          border-color: rgba(220, 38, 38, 0.40) !important;
+        }
+        nav[data-theme^="dark"] [data-navchip].nav-live-card:hover {
+          background: rgba(220, 38, 38, 0.32) !important;
+          color: #ffffff !important;
+          border-color: rgba(220, 38, 38, 0.75) !important;
+          box-shadow: 0 4px 14px rgba(220, 38, 38, 0.40) !important;
+        }
+
+        /* Language menu rows — flip light bg/text to dark glass + white */
+        nav[data-theme^="dark"] [data-navdropdown] a,
+        nav[data-theme^="dark"] [data-navdropdown] button {
+          color: #f4f6fb !important;
+        }
+        nav[data-theme^="dark"] [data-navdropdown] a:hover,
+        nav[data-theme^="dark"] [data-navdropdown] button:hover {
+          background-color: rgba(31, 107, 255, 0.18) !important;
+          color: #ffffff !important;
+        }
+        /* Selected language row keeps a brand-blue tint */
+        nav[data-theme^="dark"] [data-navdropdown] a[style*="rgba(8, 58, 133"] {
+          background-color: rgba(31, 107, 255, 0.22) !important;
+          color: #93c5fd !important;
+        }
+
+        /* ── Mobile drawer ──────────────────────────────────────────
+           Convert the slide-in mobile menu to dark glass too. Excludes
+           [data-navchip] elements via :not() so the chip-specific rules
+           still own the chip styling inside sub-dropdowns. */
+        nav[data-theme^="dark"] [data-mobiledrawer] {
+          background-color: rgba(7, 8, 13, 0.96) !important;
+          border-top-color: rgba(255, 255, 255, 0.10) !important;
+          box-shadow: 0 8px 30px rgba(0, 0, 0, 0.55) !important;
+        }
+        /* Top-level buttons (Photographers/Events/Lang triggers) and
+           links (About/Donate/Find My Photos/Login/Signup) — white text. */
+        nav[data-theme^="dark"] [data-mobiledrawer] button:not([data-navchip]),
+        nav[data-theme^="dark"] [data-mobiledrawer] a:not([data-navchip]) {
+          color: #f4f6fb !important;
+        }
+        nav[data-theme^="dark"] [data-mobiledrawer] button:not([data-navchip]):hover,
+        nav[data-theme^="dark"] [data-mobiledrawer] a:not([data-navchip]):hover {
+          background-color: rgba(255, 255, 255, 0.06) !important;
+          color: #ffffff !important;
+        }
+        /* Hamburger close icon when menu is open — keep visible */
+        nav[data-theme^="dark"] button[aria-label="Toggle menu"] {
+          color: #ffffff !important;
+        }
+        nav[data-theme^="dark"] button[aria-label="Toggle menu"]:hover {
+          background-color: rgba(255, 255, 255, 0.10) !important;
+        }
+        /* Divider rule between sections of the mobile drawer */
+        nav[data-theme^="dark"] [data-mobiledrawer] .border-gray-200 {
+          border-color: rgba(255, 255, 255, 0.10) !important;
+        }
+        /* Mobile sub-dropdown panels (Photographers/Events/Lang sub-list)
+           — these are the [data-navdropdown] containers nested inside the
+           drawer. The sub-panel itself uses an inline rgba(255,255,255,0.6)
+           background that needs to flip dark too. The [data-navdropdown]
+           rule above already handles this — the override below only
+           tightens the border that was a brand-blue tint. */
+        nav[data-theme^="dark"] [data-mobiledrawer] [data-navdropdown] {
+          border-color: rgba(255, 255, 255, 0.08) !important;
+        }
+        /* Mobile-drawer Sign Up button keeps brand-blue (intentional accent),
+           override its hover from #001f4d (dark navy that's invisible on dark
+           glass) to a brighter brand-blue. */
+        nav[data-theme^="dark"] [data-mobiledrawer] a.bg-\\[\\#002D72\\]:hover {
+          background-color: #1f6bff !important;
+          color: #ffffff !important;
+        }
+
       `}</style>
       {/* Main navbar container */}
       <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 2rem', overflow: 'visible', position: 'relative' }}>
@@ -709,7 +980,7 @@ const AmoriaKNavbar = () => {
           </Link>
 
           {/* Center: Navigation Links (Desktop) — glass pill, absolutely centered */}
-          <div ref={navPillRef} className="hidden md:flex items-center gap-1 absolute left-1/2 -translate-x-1/2" style={{
+          <div ref={navPillRef} data-navpill className="hidden md:flex items-center gap-1 absolute left-1/2 -translate-x-1/2" style={{
             overflow: 'visible',
             background: 'rgba(255, 255, 255, 0.85)',
             backdropFilter: 'blur(12px)',
@@ -738,6 +1009,7 @@ const AmoriaKNavbar = () => {
                   {/* Invisible hover bridge */}
                   <div style={{ position: 'absolute', top: '100%', left: '-20px', right: '-20px', height: '16px', zIndex: 9998 }} />
                   <div
+                    data-navdropdown
                     style={{
                       position: 'absolute',
                       top: 'calc(100% + 12px)',
@@ -816,6 +1088,7 @@ const AmoriaKNavbar = () => {
                               key={category.value}
                               href={getLocalePath(`/user/photographers?category=${category.value}`)}
                               onClick={() => setIsPhotographersDropdownOpen(false)}
+                              data-navchip
                               className="block cursor-pointer"
                               style={{
                                 padding: '6px 14px',
@@ -846,7 +1119,7 @@ const AmoriaKNavbar = () => {
                               }}
                             >
                               <i className={`bi ${category.icon}`} style={{ fontSize: '11px' }}></i>
-                              <span>{t(`photographerCategories.${category.translationKey}`)}</span>
+                              <span>{safeCatLabel(category, 'photographerCategories')}</span>
                             </Link>
                           ))}
                         </div>
@@ -877,6 +1150,7 @@ const AmoriaKNavbar = () => {
                   {/* Invisible hover bridge */}
                   <div style={{ position: 'absolute', top: '100%', left: '-20px', right: '-20px', height: '16px', zIndex: 9998 }} />
                   <div
+                    data-navdropdown
                     style={{
                       position: 'absolute',
                       top: 'calc(100% + 12px)',
@@ -895,7 +1169,7 @@ const AmoriaKNavbar = () => {
                     {/* Slim header bar */}
                     <div style={{
                       background: hasLiveEvents
-                        ? 'linear-gradient(135deg, #059669 0%, #047857 100%)'
+                        ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
                         : 'linear-gradient(135deg, #083A85 0%, #0a4da3 100%)',
                       padding: '0.75rem 1.25rem',
                       display: 'flex',
@@ -981,45 +1255,46 @@ const AmoriaKNavbar = () => {
                               key={category.value}
                               href={getLocalePath(`/user/events?category=${category.value}`)}
                               onClick={() => setIsEventsDropdownOpen(false)}
+                              data-navchip
                               className={`block cursor-pointer ${category.isLive ? 'nav-live-card' : ''}`}
                               style={{
                                 padding: '6px 14px',
                                 fontSize: '12.5px',
                                 fontWeight: category.isLive ? '600' : '500',
-                                color: category.isLive ? '#059669' : '#374151',
+                                color: category.isLive ? '#dc2626' : '#374151',
                                 borderRadius: '10px',
-                                border: category.isLive ? '1px solid rgba(16, 185, 129, 0.4)' : '1px solid #e5e7eb',
+                                border: category.isLive ? '1px solid rgba(220, 38, 38, 0.45)' : '1px solid #e5e7eb',
                                 transition: 'all 0.15s ease',
                                 display: 'inline-flex',
                                 alignItems: 'center',
                                 gap: '6px',
                                 textDecoration: 'none',
                                 whiteSpace: 'nowrap',
-                                background: category.isLive ? 'rgba(16, 185, 129, 0.06)' : '#ffffff'
+                                background: category.isLive ? 'rgba(220, 38, 38, 0.06)' : '#ffffff'
                               }}
                               onMouseEnter={(e) => {
                                 if (category.isLive) {
-                                  e.currentTarget.style.backgroundColor = '#059669';
+                                  e.currentTarget.style.backgroundColor = '#dc2626';
                                   e.currentTarget.style.color = '#ffffff';
-                                  e.currentTarget.style.borderColor = '#059669';
+                                  e.currentTarget.style.borderColor = '#dc2626';
                                 } else {
                                   e.currentTarget.style.backgroundColor = '#083A85';
                                   e.currentTarget.style.color = '#ffffff';
                                   e.currentTarget.style.borderColor = '#083A85';
                                 }
                                 e.currentTarget.style.boxShadow = category.isLive
-                                  ? '0 2px 8px rgba(5, 150, 105, 0.3)'
+                                  ? '0 2px 8px rgba(220, 38, 38, 0.32)'
                                   : '0 2px 8px rgba(8, 58, 133, 0.25)';
                               }}
                               onMouseLeave={(e) => {
-                                e.currentTarget.style.backgroundColor = category.isLive ? 'rgba(16, 185, 129, 0.06)' : '#ffffff';
-                                e.currentTarget.style.color = category.isLive ? '#059669' : '#374151';
-                                e.currentTarget.style.borderColor = category.isLive ? 'rgba(16, 185, 129, 0.4)' : '#e5e7eb';
+                                e.currentTarget.style.backgroundColor = category.isLive ? 'rgba(220, 38, 38, 0.06)' : '#ffffff';
+                                e.currentTarget.style.color = category.isLive ? '#dc2626' : '#374151';
+                                e.currentTarget.style.borderColor = category.isLive ? 'rgba(220, 38, 38, 0.45)' : '#e5e7eb';
                                 e.currentTarget.style.boxShadow = 'none';
                               }}
                             >
                               <i className={`bi ${category.icon} ${category.isLive ? 'nav-live-icon' : ''}`} style={{ fontSize: '11px' }}></i>
-                              <span>{t(`eventCategories.${category.translationKey}`)}</span>
+                              <span>{safeCatLabel(category, 'eventCategories')}</span>
                               {category.isLive && (
                                 <span style={{
                                   width: '5px',
@@ -1051,6 +1326,7 @@ const AmoriaKNavbar = () => {
             <div ref={langMenuRef} className="relative">
               <button
                 onClick={toggleLangMenu}
+                data-langbtn
                 className="flex items-center gap-1.5 font-medium transition-all duration-200 cursor-pointer"
                 style={{ color: '#6b7280', fontSize: '13.5px', padding: '6px 10px', borderRadius: '8px' }}
                 onMouseEnter={(e) => { e.currentTarget.style.color = '#083A85'; e.currentTarget.style.backgroundColor = 'rgba(8, 58, 133, 0.06)'; }}
@@ -1061,6 +1337,7 @@ const AmoriaKNavbar = () => {
               </button>
               {isLangMenuOpen && (
                 <div
+                  data-navdropdown
                   className="absolute right-0 w-44"
                   style={{
                     top: 'calc(100% + 12px)',
@@ -1146,6 +1423,7 @@ const AmoriaKNavbar = () => {
 
                 {isProfileDropdownOpen && (
                   <div
+                    data-navdropdown
                     className="absolute right-0 mt-2 w-56"
                     style={{
                       background: 'rgba(255, 255, 255, 0.98)',
@@ -1233,6 +1511,7 @@ const AmoriaKNavbar = () => {
               <>
                 <Link
                   href={`${getLocalePath('/user/auth/login')}?redirect=${encodeURIComponent(pathname)}`}
+                  data-loginbtn
                   className="font-semibold transition-all duration-200 whitespace-nowrap cursor-pointer"
                   style={{
                     color: '#083A85',
@@ -1294,9 +1573,37 @@ const AmoriaKNavbar = () => {
       {/* Mobile Menu */}
       {isMobileMenuOpen && (
         <>
-          {/* Backdrop overlay */}
+          {/* Backdrop overlay — closes the drawer ONLY on a real tap, not
+              when a scroll gesture happens to start on the backdrop area.
+              We track the touchstart position and compare against touchend;
+              if the finger moved more than ~8px in any direction, it's a
+              swipe/scroll and we ignore it. Prevents accidental dismissal
+              while the user is just trying to scroll the drawer. */}
           <div
-            onClick={() => {
+            onTouchStart={(e) => {
+              const t = e.touches[0];
+              backdropTouchStartRef.current = { x: t.clientX, y: t.clientY };
+            }}
+            onTouchEnd={(e) => {
+              const start = backdropTouchStartRef.current;
+              backdropTouchStartRef.current = null;
+              if (!start) return;
+              const t = e.changedTouches[0];
+              const dx = Math.abs(t.clientX - start.x);
+              const dy = Math.abs(t.clientY - start.y);
+              // Only treat as a tap if the finger barely moved.
+              // Otherwise it's a scroll gesture — leave the drawer open.
+              if (dx < 8 && dy < 8) {
+                e.preventDefault(); // prevent the synthetic click that follows
+                setIsMobileMenuOpen(false);
+                document.body.style.overflow = '';
+              }
+            }}
+            onClick={(e) => {
+              // For pure mouse clicks (no touch involved), the touchstart
+              // ref will be null. If a touch was just processed (handled in
+              // onTouchEnd), this onClick is the synthetic follow-up — skip.
+              if (e.nativeEvent && (e.nativeEvent as PointerEvent).pointerType === 'touch') return;
               setIsMobileMenuOpen(false);
               document.body.style.overflow = '';
             }}
@@ -1308,12 +1615,14 @@ const AmoriaKNavbar = () => {
               bottom: 0,
               backgroundColor: 'rgba(0, 0, 0, 0.3)',
               zIndex: 40,
+              touchAction: 'manipulation',
             }}
           />
         </>
       )}
       <div
         ref={mobileMenuRef}
+        data-mobiledrawer
         className="md:hidden"
         style={{
           position: 'fixed',
@@ -1328,6 +1637,11 @@ const AmoriaKNavbar = () => {
           boxShadow: '0 8px 30px rgba(0, 0, 0, 0.12)',
           zIndex: 45,
           overflowY: 'auto',
+          /* Prevent overscroll from bleeding to body and stop elastic
+             scroll on iOS from triggering events on the backdrop */
+          overscrollBehavior: 'contain',
+          WebkitOverflowScrolling: 'touch',
+          touchAction: 'pan-y',
           transform: isMobileMenuOpen ? 'translateX(0)' : 'translateX(100%)',
           transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           pointerEvents: isMobileMenuOpen ? 'auto' : 'none',
@@ -1346,6 +1660,7 @@ const AmoriaKNavbar = () => {
               </button>
               {isPhotographersDropdownOpen && (
                 <div
+                  data-navdropdown
                   style={{
                     padding: isMobile ? '6px' : '8px',
                     background: 'rgba(255, 255, 255, 0.6)',
@@ -1357,6 +1672,19 @@ const AmoriaKNavbar = () => {
                     marginTop: '0.5rem'
                   }}
                 >
+                  {categoriesLoading && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', padding: '4px' }}>
+                      {[...Array(4)].map((_, i) => (
+                        <div key={i} style={{
+                          height: isMobile ? '32px' : '36px',
+                          borderRadius: isMobile ? '6px' : '8px',
+                          background: '#f3f4f6',
+                          animation: 'nav-skeleton-pulse 1.5s ease-in-out infinite',
+                          animationDelay: `${i * 0.08}s`,
+                        }} />
+                      ))}
+                    </div>
+                  )}
                   {!categoriesLoading && photographerCategories.length === 0 && (
                     <p style={{ padding: '8px 10px', color: '#9ca3af', fontSize: isMobile ? '0.8125rem' : '0.875rem' }}>
                       No photographers available right now.
@@ -1394,7 +1722,7 @@ const AmoriaKNavbar = () => {
                       }}
                     >
                       <i className={`bi ${category.icon}`} style={{ fontSize: isMobile ? '0.8125rem' : '0.875rem' }}></i>
-                      <span>{t(`photographerCategories.${category.translationKey}`)}</span>
+                      <span>{safeCatLabel(category, 'photographerCategories')}</span>
                     </Link>
                   ))}
                 </div>
@@ -1413,6 +1741,7 @@ const AmoriaKNavbar = () => {
               </button>
               {isEventsDropdownOpen && (
                 <div
+                  data-navdropdown
                   style={{
                     padding: isMobile ? '6px' : '8px',
                     background: 'rgba(255, 255, 255, 0.6)',
@@ -1424,7 +1753,25 @@ const AmoriaKNavbar = () => {
                     marginTop: '0.5rem'
                   }}
                 >
-                  {eventCategories.map((category) => (
+                  {eventCategoriesLoading && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', padding: '4px' }}>
+                      {[...Array(4)].map((_, i) => (
+                        <div key={i} style={{
+                          height: isMobile ? '32px' : '36px',
+                          borderRadius: isMobile ? '6px' : '8px',
+                          background: '#f3f4f6',
+                          animation: 'nav-skeleton-pulse 1.5s ease-in-out infinite',
+                          animationDelay: `${i * 0.08}s`,
+                        }} />
+                      ))}
+                    </div>
+                  )}
+                  {!eventCategoriesLoading && eventCategories.length === 0 && (
+                    <p style={{ padding: '8px 10px', color: '#9ca3af', fontSize: isMobile ? '0.8125rem' : '0.875rem' }}>
+                      No events available right now.
+                    </p>
+                  )}
+                  {!eventCategoriesLoading && eventCategories.map((category) => (
                     <Link
                       key={category.value}
                       href={getLocalePath(`/user/events?category=${category.value}`)}
@@ -1438,8 +1785,8 @@ const AmoriaKNavbar = () => {
                         borderRadius: isMobile ? '6px' : '8px',
                         fontSize: isMobile ? '0.8125rem' : '0.875rem',
                         fontWeight: '500',
-                        color: category.isLive ? '#059669' : '#374151',
-                        backgroundColor: category.isLive ? 'rgba(240, 253, 244, 0.8)' : 'transparent',
+                        color: category.isLive ? '#dc2626' : '#374151',
+                        backgroundColor: category.isLive ? 'rgba(254, 226, 226, 0.8)' : 'transparent',
                         transition: 'all 0.2s ease',
                         marginBottom: isMobile ? '2px' : '4px',
                         display: 'flex',
@@ -1447,23 +1794,23 @@ const AmoriaKNavbar = () => {
                         gap: isMobile ? '6px' : '8px'
                       }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = category.isLive ? 'rgba(220, 252, 231, 0.9)' : 'rgba(8, 58, 133, 0.1)';
-                        e.currentTarget.style.color = category.isLive ? '#047857' : '#083A85';
+                        e.currentTarget.style.backgroundColor = category.isLive ? 'rgba(254, 202, 202, 0.9)' : 'rgba(8, 58, 133, 0.1)';
+                        e.currentTarget.style.color = category.isLive ? '#b91c1c' : '#083A85';
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = category.isLive ? 'rgba(240, 253, 244, 0.8)' : 'transparent';
-                        e.currentTarget.style.color = category.isLive ? '#059669' : '#374151';
+                        e.currentTarget.style.backgroundColor = category.isLive ? 'rgba(254, 226, 226, 0.8)' : 'transparent';
+                        e.currentTarget.style.color = category.isLive ? '#dc2626' : '#374151';
                       }}
                     >
-                      <i className={`bi ${category.icon}`} style={{ fontSize: isMobile ? '0.8125rem' : '0.875rem', color: category.isLive ? '#10b981' : 'inherit' }}></i>
-                      <span>{category.displayName ?? t(`eventCategories.${category.translationKey}`)}</span>
+                      <i className={`bi ${category.icon}`} style={{ fontSize: isMobile ? '0.8125rem' : '0.875rem', color: category.isLive ? '#ef4444' : 'inherit' }}></i>
+                      <span>{safeCatLabel(category, 'eventCategories')}</span>
                       {category.isLive && (
                         <span style={{
                           marginLeft: 'auto',
                           width: '8px',
                           height: '8px',
                           borderRadius: '50%',
-                          backgroundColor: '#10b981',
+                          backgroundColor: '#ef4444',
                           animation: 'nav-icon-pulse 1.2s ease-in-out infinite'
                         }}></span>
                       )}
