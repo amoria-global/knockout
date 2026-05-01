@@ -334,6 +334,7 @@ function JoinPackageContent(): React.JSX.Element {
   const peopleCount = typeof numberOfPeople === 'number' ? numberOfPeople : 0;
   const totalGroupFee = discountedFeePerPerson * peopleCount;
   const totalSavings = (individualFee * peopleCount) - totalGroupFee;
+  const currencyLabel = selectedEvent?.streamFeeCurrencyAbbreviation || 'RWF';
 
   const packages = [
     {
@@ -343,7 +344,7 @@ function JoinPackageContent(): React.JSX.Element {
       badgeColor: '#22D3EE',
       badgeGradient: 'linear-gradient(135deg, #22D3EE 0%, #3B82F6 100%)',
       description: 'Stream the event alone on your personal device',
-      price: `${individualFee.toLocaleString()} RWF`,
+      price: `${individualFee.toLocaleString()} ${currencyLabel}`,
       priceNote: 'One-time access fee',
       features: [
         { text: 'Personal stream access', available: true },
@@ -1223,15 +1224,15 @@ function JoinPackageContent(): React.JSX.Element {
                           }}
                         >
                           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                            <span style={{ fontSize: '12px', color: '#374151' }}>Original ({peopleCount} x {individualFee.toLocaleString()} RWF)</span>
+                            <span style={{ fontSize: '12px', color: '#374151' }}>Original ({peopleCount} x {individualFee.toLocaleString()} {currencyLabel})</span>
                             <span style={{ fontSize: '12px', color: '#374151', textDecoration: 'line-through' }}>
-                              {(individualFee * peopleCount).toLocaleString()} RWF
+                              {(individualFee * peopleCount).toLocaleString()} {currencyLabel}
                             </span>
                           </div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
                             <span style={{ fontSize: '12px', color: '#0a4da3', fontWeight: '600' }}>{discountPercentage}% Group Discount</span>
                             <span style={{ fontSize: '12px', color: '#0a4da3', fontWeight: '600' }}>
-                              -{totalSavings.toLocaleString()} RWF
+                              -{totalSavings.toLocaleString()} {currencyLabel}
                             </span>
                           </div>
                           <div
@@ -1244,7 +1245,7 @@ function JoinPackageContent(): React.JSX.Element {
                           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                             <span style={{ fontSize: '13px', color: '#083A85', fontWeight: '700' }}>Total to Pay</span>
                             <span style={{ fontSize: '14px', color: '#083A85', fontWeight: '800' }}>
-                              {totalGroupFee.toLocaleString()} RWF
+                              {totalGroupFee.toLocaleString()} {currencyLabel}
                             </span>
                           </div>
                         </div>
