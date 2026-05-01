@@ -32,7 +32,7 @@ function formatTime12h(t: string): string {
 
 // Map API PublicEvent to local EventItem
 function mapPublicEvent(e: PublicEvent): EventItem {
-  const price = e.price && e.price > 0 ? `${e.price.toLocaleString()} RWF` : 'Free';
+  const price = e.price && e.price > 0 ? `${e.price.toLocaleString()} ${e.streamFeeCurrencyAbbreviation || 'RWF'}` : 'Free';
   const start = e.startTime ? formatTime12h(e.startTime) : null;
   const end = e.endTime ? formatTime12h(e.endTime) : null;
   const time = start ? (end ? `${start} - ${end}` : start) : 'TBD';

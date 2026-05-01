@@ -114,9 +114,9 @@ function getCountdownParts(ms: number) {
 /**
  * Format price for display
  */
-function formatPrice(price?: number): string {
+function formatPrice(price?: number, currencyAbbr?: string | null): string {
   if (!price || price <= 0) return 'Free';
-  return `${price.toLocaleString()} RWF`;
+  return `${price.toLocaleString()} ${currencyAbbr || 'RWF'}`;
 }
 
 /**
@@ -1091,7 +1091,7 @@ function ViewEventContent(): React.JSX.Element {
                 <i className="bi bi-check-circle-fill" style={{ fontSize: 36, color: 'rgba(16,185,129,0.6)' }}></i>
               </div>
             ) : null}
-            <div style={{ fontSize: 26, fontWeight: 800, color: isCompleted ? 'rgba(246,173,85,0.5)' : hasPurchasedAccess ? 'rgba(16,185,129,0.9)' : '#f5652c', lineHeight: 1 }}>{(selectedEvent.price || 0).toLocaleString()} RWF</div>
+            <div style={{ fontSize: 26, fontWeight: 800, color: isCompleted ? 'rgba(246,173,85,0.5)' : hasPurchasedAccess ? 'rgba(16,185,129,0.9)' : '#f5652c', lineHeight: 1 }}>{(selectedEvent.price || 0).toLocaleString()} {selectedEvent.streamFeeCurrencyAbbreviation || 'RWF'}</div>
             <div style={{ fontSize: 12, color: isCompleted ? 'rgba(160,174,192,0.5)' : hasPurchasedAccess ? '#10b981' : '#a0aec0', marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{isCompleted ? 'Event ended' : hasPurchasedAccess ? 'Spot reserved' : 'Stream Access Fee'}</div>
           </div>
         )}
@@ -1119,7 +1119,7 @@ function ViewEventContent(): React.JSX.Element {
             <span style={{ color: '#9ca3af', fontSize: 15 }}>{formatDate(selectedEvent.eventDate)}</span>
             {isPaid && <>
               <span style={{ color: '#4b5563', fontSize: 15 }}>•</span>
-              <span style={{ color: '#f5652c', fontSize: 15, fontWeight: 700 }}>{formatPrice(selectedEvent.price)}</span>
+              <span style={{ color: '#f5652c', fontSize: 15, fontWeight: 700 }}>{formatPrice(selectedEvent.price, selectedEvent.streamFeeCurrencyAbbreviation)}</span>
             </>}
           </div>
 
