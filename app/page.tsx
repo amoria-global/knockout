@@ -1375,8 +1375,8 @@ export default function Home() {
           }
 
           @media (min-width: 769px) and (max-width: 1024px) {
-            .hero-title { font-size: 48px !important; }
-            .hero-content { padding: 30px 20px 80px !important; }
+            .hero-title { font-size: 46px !important; margin-bottom: 14px !important; }
+            .hero-content { padding: 22px 20px 28px !important; }
             .mockups-section { padding: 80px 40px !important; }
             .mockups-container { height: 450px !important; }
             .mockup-heading-text h2 { font-size: 38px !important; }
@@ -1384,6 +1384,16 @@ export default function Home() {
             .how-it-works-title { font-size: 45px !important; }
             .why-amoria-title { font-size: 45px !important; }
             .global-network-title { font-size: 45px !important; }
+          }
+
+          /* Short viewports (laptops < 720px tall) — apply a *light* trim so
+             the CTAs land at the bottom of the section instead of overflowing.
+             Everything stays at near-default sizes; only padding + a couple of
+             marginals shrink. */
+          @media (min-width: 769px) and (max-height: 720px) {
+            .hero-content { padding: 14px 30px 18px !important; }
+            .hero-title { font-size: 48px !important; margin-bottom: 14px !important; }
+            .hero-glass-card { margin-bottom: 14px !important; }
           }
 
           .how-it-works-mobile-line {
@@ -1448,12 +1458,12 @@ export default function Home() {
             position: 'relative',
             maxWidth: '1200px',
             margin: '0 auto',
-            padding: '24px 30px 40px',
+            padding: '20px 30px 28px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             gap: '40px',
-            minHeight: 'calc(100vh - 64px)'
+            minHeight: 'calc(100vh - 72px)'
           }}>
 
             {/* Left Content — flex column with explicit order so the
@@ -1493,7 +1503,7 @@ export default function Home() {
                 borderRadius: '16px',
                 padding: '10px',
                 marginTop: '0',
-                marginBottom: '20px',
+                marginBottom: '18px',
                 maxWidth: '440px',
                 order: 2,
               }}>
@@ -1504,7 +1514,7 @@ export default function Home() {
                     style={{
                       flex: 1,
                       position: 'relative',
-                      minHeight: '128px',
+                      minHeight: '120px',
                       borderRadius: '14px',
                       overflow: 'hidden',
                       cursor: 'pointer',
@@ -1559,7 +1569,7 @@ export default function Home() {
                     style={{
                       flex: 1,
                       position: 'relative',
-                      minHeight: '128px',
+                      minHeight: '120px',
                       borderRadius: '14px',
                       overflow: 'hidden',
                       cursor: 'pointer',
@@ -1679,7 +1689,7 @@ export default function Home() {
               <div className="hero-eyebrow" aria-hidden="true" style={{ order: 1 }}>
                 <span className="hero-eyebrow-dot" />
                 <span className="hero-eyebrow-text">
-                  THE PHOTOGRAPHY PLATFORM
+                  THE MULTI CREATIVE PLATFORM
                 </span>
                 <span className="hero-eyebrow-sparkle">✨</span>
               </div>
@@ -1687,10 +1697,10 @@ export default function Home() {
               {/* Main Heading — sits AFTER the glass card, with CTAs
                   directly underneath, then description, then trust. */}
               <h1 className="hero-title" style={{
-                fontSize: '56px',
+                fontSize: '28px',
                 fontWeight: 800,
                 lineHeight: '1.04',
-                marginBottom: '18px',
+                marginBottom: '16px',
                 letterSpacing: '-0.025em',
                 order: 3,
               }}>
@@ -1733,7 +1743,7 @@ export default function Home() {
                 fontSize: '14px',
                 color: '#1f1d1d',
                 lineHeight: '1.55',
-                marginTop: '16px',
+                marginTop: '14px',
                 marginBottom: '0',
                 maxWidth: '420px',
                 order: 5,
@@ -4749,8 +4759,8 @@ export default function Home() {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             gap: 10px;
-            margin-top: 16px;
-            padding-top: 14px;
+            margin-top: 14px;
+            padding-top: 12px;
             border-top: 1px dashed rgba(8, 58, 133, 0.18);
             max-width: 460px;
           }
