@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Navbar from '../components/navbar';
+import DotGrid from '../components/DotGrid';
 import XentriPayModal from '../components/XentriPayModal';
 import { getAlbumByCode, type AlbumPhoto } from '@/lib/APIs/public/get-album/route';
 import { uploadSelfieForRecognition, type MatchedPhoto } from '@/lib/APIs/customer/facial-recognition/route';
@@ -1037,19 +1038,185 @@ const FindMyPhotos = () => {
     }, 'image/jpeg', 0.9);
   };
 
+  // ─── Phase navigation ─────────────────────────────────────────────
+  // Three logical phases the user moves through. The stepper below makes the
+  // current phase visible AND lets the user click prior phases to navigate back.
+  const phases: { id: string; label: string; sub: string; icon: string }[] = [
+    { id: 'phase-connect',  label: 'Connect',  sub: 'Code or selfie',     icon: 'bi-key-fill' },
+    { id: 'phase-discover', label: 'Discover', sub: 'Browse your photos', icon: 'bi-images' },
+    { id: 'phase-checkout', label: 'Checkout', sub: 'Save & download',    icon: 'bi-cloud-arrow-down-fill' },
+  ];
+  const currentPhaseId =
+    freeAlbumFlow !== 'idle'
+      ? 'phase-connect'
+      : !isCodeSubmitted
+        ? 'phase-connect'
+        : selectedPhotoIds.size > 0 || pendingPurchase
+          ? 'phase-checkout'
+          : 'phase-discover';
+  const currentPhaseIndex = phases.findIndex((p) => p.id === currentPhaseId);
+
+  const goToPhase = (id: string) => {
+    if (id === 'phase-connect') {
+      // Step back to invite/scan — reset the photo-grid state.
+      setIsCodeSubmitted(false);
+      setIsFiltered(false);
+      setSelectedPhotoIds(new Set());
+      setUploadedPreview(null);
+      setScanError(null);
+      // Smooth scroll to the connect phase (after the conditional flips next render)
+      window.setTimeout(() => {
+        document.getElementById('phase-connect')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 0);
+    } else if (id === 'phase-discover') {
+      // From checkout state → clear selections to return to browse mode
+      setSelectedPhotoIds(new Set());
+      window.setTimeout(() => {
+        document.getElementById('phase-discover')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 0);
+    } else if (id === 'phase-checkout') {
+      // Forward jump only valid if photos are selected
+      window.setTimeout(() => {
+        document.getElementById('phase-checkout')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 0);
+    }
+  };
+
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#052047' }}>
+      <style>{`
+        /* ── Phase stepper (floating, glassmorphism) ── */
+        .fmp-stepper {
+          position: sticky;
+          top: 76px;
+          z-index: 30;
+          padding: 14px 16px 0;
+          display: flex;
+          justify-content: center;
+          pointer-events: none;
+        }
+        .fmp-stepper-inner {
+          pointer-events: auto;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 8px 12px;
+          background: rgba(8,12,28,0.55);
+          border: 1px solid rgba(255,255,255,0.10);
+          border-radius: 999px;
+          backdrop-filter: blur(14px);
+          -webkit-backdrop-filter: blur(14px);
+          box-shadow: 0 14px 30px -14px rgba(0,0,0,0.55), 0 4px 10px -2px rgba(0,0,0,0.25);
+        }
+        .fmp-step {
+          appearance: none; background: transparent; border: 0; cursor: pointer;
+          color: rgba(255,255,255,0.55);
+          padding: 6px 10px;
+          border-radius: 999px;
+          display: inline-flex; align-items: center; gap: 8px;
+          transition: all 0.3s ease;
+          font-family: inherit;
+        }
+        .fmp-step:hover:not(:disabled) {
+          color: rgba(255,255,255,0.92);
+          background: rgba(255,255,255,0.06);
+        }
+        .fmp-step:disabled {
+          cursor: not-allowed;
+          opacity: 0.55;
+        }
+        .fmp-step-num {
+          width: 28px; height: 28px; border-radius: 50%;
+          background: rgba(255,255,255,0.08);
+          color: rgba(255,255,255,0.6);
+          display: inline-flex; align-items: center; justify-content: center;
+          font-size: 13px; font-weight: 700;
+          transition: all 0.3s ease;
+          flex-shrink: 0;
+        }
+        .fmp-step-text {
+          display: flex; flex-direction: column; align-items: flex-start;
+          line-height: 1.1;
+        }
+        .fmp-step-label { font-size: 12.5px; font-weight: 700; letter-spacing: 0.02em; }
+        .fmp-step-sub { font-size: 9.5px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; opacity: 0.6; margin-top: 1.5px; }
+        .fmp-step.is-active {
+          background: linear-gradient(135deg, rgba(168,85,247,0.18), rgba(236,72,153,0.18));
+          color: #fff;
+          box-shadow: 0 0 0 1px rgba(255,255,255,0.18) inset;
+        }
+        .fmp-step.is-active .fmp-step-num {
+          background: linear-gradient(135deg, #C084FC, #EC4899);
+          color: #fff;
+          box-shadow: 0 0 0 4px rgba(192,132,252,0.18), 0 6px 14px -4px rgba(236,72,153,0.55);
+          transform: scale(1.06);
+        }
+        .fmp-step.is-completed .fmp-step-num {
+          background: #10b981; color: #fff;
+        }
+        .fmp-step.is-completed { color: rgba(255,255,255,0.85); }
+        .fmp-step-divider {
+          width: 16px; height: 1px;
+          background: linear-gradient(90deg, rgba(255,255,255,0.10), rgba(255,255,255,0.30), rgba(255,255,255,0.10));
+          flex-shrink: 0;
+        }
+        .fmp-step-divider.is-past {
+          background: linear-gradient(90deg, rgba(192,132,252,0.45), rgba(236,72,153,0.55));
+        }
+        @media (max-width: 720px) {
+          .fmp-stepper { top: 72px; padding: 10px 8px 0; }
+          .fmp-step { padding: 4px 6px; gap: 6px; }
+          .fmp-step-text { display: none; }
+          .fmp-step.is-active .fmp-step-text { display: flex; }
+          .fmp-step-divider { width: 10px; }
+        }
+      `}</style>
+
       <Navbar />
+
+      {/* ── Phase Stepper — visible across all phases, click to navigate back ── */}
+      <div className="fmp-stepper" aria-label="Phase navigation">
+        <nav className="fmp-stepper-inner">
+          {phases.map((p, i) => {
+            const isActive = i === currentPhaseIndex;
+            const isCompleted = i < currentPhaseIndex;
+            const canNavigate = i <= currentPhaseIndex; // can go to current or back; not forward
+            return (
+              <React.Fragment key={p.id}>
+                <button
+                  type="button"
+                  className={`fmp-step ${isActive ? 'is-active' : ''} ${isCompleted ? 'is-completed' : ''}`}
+                  onClick={() => canNavigate && goToPhase(p.id)}
+                  disabled={!canNavigate}
+                  aria-current={isActive ? 'step' : undefined}
+                >
+                  <span className="fmp-step-num">
+                    {isCompleted ? <i className="bi bi-check2" style={{ fontSize: 14 }} /> : <i className={`bi ${p.icon}`} style={{ fontSize: 12 }} />}
+                  </span>
+                  <span className="fmp-step-text">
+                    <span className="fmp-step-label">{p.label}</span>
+                    <span className="fmp-step-sub">{p.sub}</span>
+                  </span>
+                </button>
+                {i < phases.length - 1 && (
+                  <span className={`fmp-step-divider ${i < currentPhaseIndex ? 'is-past' : ''}`} aria-hidden="true" />
+                )}
+              </React.Fragment>
+            );
+          })}
+        </nav>
+      </div>
 
       {freeAlbumFlow !== 'idle' ? (
         /* ── Free Album Flow ── */
-        <div style={{
+        <div id="phase-connect" style={{
           minHeight: '100vh',
           background: 'linear-gradient(135deg, #052047 0%, #103E83 100%)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           padding: isMobile ? '100px 20px 40px' : '80px 20px 40px',
+          scrollMarginTop: '120px',
         }}>
           {freeAlbumFlow === 'email' && (
             <div style={{
@@ -1320,8 +1487,9 @@ const FindMyPhotos = () => {
           )}
         </div>
       ) : !isCodeSubmitted ? (
-        /* ── Phase 1: Hero + Invite Code ── */
+        /* ── Phase 1: Connect — Hero + Invite Code ── */
         <div
+          id="phase-connect"
           ref={heroSectionRef}
           onMouseMove={handleMouseMove(heroSectionRef, setHeroMousePos)}
           onMouseLeave={() => setHeroMousePos(null)}
@@ -1334,35 +1502,24 @@ const FindMyPhotos = () => {
             position: 'relative',
             overflow: 'hidden',
             padding: isMobile ? '100px 20px 40px' : '80px 20px 40px',
+            scrollMarginTop: '120px',
           }}
         >
-          {/* Dotted pattern background - base layer (dim) */}
-          <div style={{
-            position: 'absolute',
-            inset: 0,
-            backgroundImage: 'radial-gradient(circle, rgba(255, 255, 255, 0.3) 1px, transparent 1px)',
-            backgroundSize: '10px 10px',
-            opacity: 0.2,
-            zIndex: 0,
-            pointerEvents: 'none',
-          }} />
-          {/* Spotlight layer - reveals brighter dots where cursor is */}
-          <div style={{
-            position: 'absolute',
-            inset: 0,
-            backgroundImage: 'radial-gradient(circle, rgba(255, 255, 255, 0.85) 1.5px, transparent 0.5px)',
-            backgroundSize: '10px 10px',
-            opacity: heroMousePos ? 0.5 : 0,
-            zIndex: 1,
-            pointerEvents: 'none',
-            maskImage: heroMousePos
-              ? `radial-gradient(circle 60px at ${heroMousePos.x}px ${heroMousePos.y}px, black 0%, black 50%, transparent 80%)`
-              : 'none',
-            WebkitMaskImage: heroMousePos
-              ? `radial-gradient(circle 60px at ${heroMousePos.x}px ${heroMousePos.y}px, black 0%, black 50%, transparent 80%)`
-              : 'none',
-            transition: 'opacity 0s ease',
-          }} />
+          {/* Interactive DotGrid — same brand-blue palette + sizing as the footer.
+              Replaces the old static dot pattern + manual mouse-spotlight overlay. */}
+          <div style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none' }} aria-hidden="true">
+            <DotGrid
+              dotSize={2}
+              gap={15}
+              baseColor="#1E3A78"
+              activeColor="#3B82F6"
+              proximity={120}
+              shockRadius={180}
+              shockStrength={4}
+              resistance={750}
+              returnDuration={1.4}
+            />
+          </div>
 
           <div style={{
             maxWidth: '720px',
@@ -1840,8 +1997,8 @@ const FindMyPhotos = () => {
           </div>
         </div>
       ) : (
-        /* ── Phase 2: Photo Grid + Scan ── */
-        <div>
+        /* ── Phase 2: Discover — Photo Grid + Scan ── */
+        <div id="phase-discover" style={{ scrollMarginTop: '120px' }}>
           {/* Header */}
           <div
             ref={headerSectionRef}
@@ -1855,33 +2012,59 @@ const FindMyPhotos = () => {
               overflow: 'hidden',
             }}
           >
-            {/* Dotted pattern background - base layer (dim) */}
-            <div style={{
-              position: 'absolute',
-              inset: 0,
-              backgroundImage: 'radial-gradient(circle, rgba(255, 255, 255, 0.3) 1px, transparent 1px)',
-              backgroundSize: '10px 10px',
-              opacity: 0.3,
-              zIndex: 0,
-              pointerEvents: 'none',
-            }} />
-            {/* Spotlight layer - reveals brighter dots where cursor is */}
-            <div style={{
-              position: 'absolute',
-              inset: 0,
-              backgroundImage: 'radial-gradient(circle, rgba(255, 255, 255, 0.85) 1.5px, transparent 0.5px)',
-              backgroundSize: '10px 10px',
-              opacity: headerMousePos ? 0.7 : 0,
-              zIndex: 1,
-              pointerEvents: 'none',
-              maskImage: headerMousePos
-                ? `radial-gradient(circle 80px at ${headerMousePos.x}px ${headerMousePos.y}px, black 0%, black 50%, transparent 80%)`
-                : 'none',
-              WebkitMaskImage: headerMousePos
-                ? `radial-gradient(circle 80px at ${headerMousePos.x}px ${headerMousePos.y}px, black 0%, black 50%, transparent 80%)`
-                : 'none',
-              transition: 'opacity 0s ease',
-            }} />
+            {/* Back-to-Connect button — top-left corner */}
+            <button
+              type="button"
+              onClick={() => goToPhase('phase-connect')}
+              aria-label="Back to invite code"
+              style={{
+                position: 'absolute',
+                top: isMobile ? 14 : 20,
+                left: isMobile ? 14 : 24,
+                zIndex: 4,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '8px 14px',
+                borderRadius: 999,
+                background: 'rgba(255,255,255,0.06)',
+                border: '1px solid rgba(255,255,255,0.16)',
+                backdropFilter: 'blur(10px)',
+                color: 'rgba(255,255,255,0.85)',
+                fontSize: 12,
+                fontWeight: 700,
+                letterSpacing: '0.08em',
+                cursor: 'pointer',
+                transition: 'all 0.25s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(255,255,255,0.12)';
+                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.32)';
+                e.currentTarget.style.transform = 'translateX(-2px)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
+                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.16)';
+                e.currentTarget.style.transform = 'translateX(0)';
+              }}
+            >
+              <i className="bi bi-arrow-left" style={{ fontSize: 13 }} />
+              Back to Connect
+            </button>
+            {/* Interactive DotGrid — matches the footer's pattern */}
+            <div style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none' }} aria-hidden="true">
+              <DotGrid
+                dotSize={2}
+                gap={15}
+                baseColor="#1E3A78"
+                activeColor="#3B82F6"
+                proximity={120}
+                shockRadius={180}
+                shockStrength={4}
+                resistance={750}
+                returnDuration={1.4}
+              />
+            </div>
 
             <div style={{
               position: 'relative',
@@ -1965,8 +2148,9 @@ const FindMyPhotos = () => {
             </div>
           </div>
 
-          {/* Photo Grid */}
+          {/* Photo Grid — also acts as the checkout anchor when items are selected */}
           <div
+            id="phase-checkout"
             ref={gridSectionRef}
             onMouseMove={handleMouseMove(gridSectionRef, setGridMousePos)}
             onMouseLeave={() => setGridMousePos(null)}
@@ -1976,35 +2160,23 @@ const FindMyPhotos = () => {
               minHeight: '400px',
               position: 'relative',
               overflow: 'hidden',
+              scrollMarginTop: '120px',
             }}
           >
-            {/* Dotted pattern background - base layer (dim) */}
-            <div style={{
-              position: 'absolute',
-              inset: 0,
-              backgroundImage: 'radial-gradient(circle, rgba(255, 255, 255, 0.3) 1px, transparent 1px)',
-              backgroundSize: '10px 10px',
-              opacity: 0.3,
-              zIndex: 0,
-              pointerEvents: 'none',
-            }} />
-            {/* Spotlight layer - reveals brighter dots where cursor is */}
-            <div style={{
-              position: 'absolute',
-              inset: 0,
-              backgroundImage: 'radial-gradient(circle, rgba(255, 255, 255, 0.85) 1.5px, transparent 0.5px)',
-              backgroundSize: '10px 10px',
-              opacity: gridMousePos ? 0.7 : 0,
-              zIndex: 1,
-              pointerEvents: 'none',
-              maskImage: gridMousePos
-                ? `radial-gradient(circle 80px at ${gridMousePos.x}px ${gridMousePos.y}px, black 0%, black 50%, transparent 80%)`
-                : 'none',
-              WebkitMaskImage: gridMousePos
-                ? `radial-gradient(circle 80px at ${gridMousePos.x}px ${gridMousePos.y}px, black 0%, black 50%, transparent 80%)`
-                : 'none',
-              transition: 'opacity 0s ease',
-            }} />
+            {/* Interactive DotGrid — matches the footer's pattern */}
+            <div style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none' }} aria-hidden="true">
+              <DotGrid
+                dotSize={2}
+                gap={15}
+                baseColor="#1E3A78"
+                activeColor="#3B82F6"
+                proximity={120}
+                shockRadius={180}
+                shockStrength={4}
+                resistance={750}
+                returnDuration={1.4}
+              />
+            </div>
 
           <div style={{
             maxWidth: '1200px',

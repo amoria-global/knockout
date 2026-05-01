@@ -505,6 +505,26 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes pulseHighlight { 0%,100% { border-color: #e2e8f0; } 50% { border-color: #083A85; } }
         @keyframes fadeInDown { from { opacity:0; transform: translateX(-50%) translateY(-1rem); } to { opacity:1; transform: translateX(-50%) translateY(0); } }
+
+        /* Auth overlay panel ambient effects */
+        @keyframes authOrbDriftA {
+          0%,100% { transform: translate(0,0) scale(1); }
+          50%     { transform: translate(20px,-14px) scale(1.05); }
+        }
+        @keyframes authOrbDriftB {
+          0%,100% { transform: translate(0,0) scale(1); }
+          50%     { transform: translate(-18px,12px) scale(1.04); }
+        }
+        @keyframes authStarTwinkle {
+          0%,100% { opacity: 0.35; }
+          50%     { opacity: 1; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          [style*="authOrbDriftA"], [style*="authOrbDriftB"], [style*="authStarTwinkle"] {
+            animation: none !important;
+          }
+        }
+
         @supports (padding: env(safe-area-inset-top)) {
           .auth-mobile-safe { padding-top: max(1.5rem, env(safe-area-inset-top)) !important; padding-bottom: max(1.5rem, env(safe-area-inset-bottom)) !important; }
         }
@@ -565,16 +585,53 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
           <div style={{
             position: 'absolute', top: 0, left: 0,
             width: '50%', height: '100%',
-            background: 'linear-gradient(160deg, #052047 0%, #083A85 40%, #0a4da3 70%, #052047 100%)',
+            background: 'linear-gradient(160deg, #03152F 0%, #052047 30%, #083A85 60%, #0F4FB6 100%)',
             borderRadius: isLogin ? '0 20px 20px 0' : '20px 0 0 20px',
             transform: isLogin ? 'translateX(0)' : 'translateX(100%)',
             transition: 'transform 0.6s cubic-bezier(0.65, 0, 0.35, 1), border-radius 0.6s ease',
             zIndex: 10, overflow: 'hidden'
           }}>
-            {/* Decorative patterns */}
-            <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.15) 1px, transparent 1px)', backgroundSize: '20px 20px', opacity: 0.4, pointerEvents: 'none' }} />
-            <div style={{ position: 'absolute', top: '10%', left: '10%', width: '200px', height: '200px', background: 'radial-gradient(circle, rgba(139,92,246,0.15) 0%, transparent 70%)', borderRadius: '50%', filter: 'blur(40px)', pointerEvents: 'none' }} />
-            <div style={{ position: 'absolute', bottom: '10%', right: '10%', width: '250px', height: '250px', background: 'radial-gradient(circle, rgba(255,107,107,0.1) 0%, transparent 70%)', borderRadius: '50%', filter: 'blur(40px)', pointerEvents: 'none' }} />
+            {/* Top brand stripe */}
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: 'linear-gradient(90deg, transparent 0%, rgba(125,211,252,0) 8%, rgba(125,211,252,0.65) 38%, rgba(255,255,255,0.95) 50%, rgba(184,58,182,0.85) 62%, rgba(125,211,252,0) 92%, transparent 100%)', opacity: 0.85, zIndex: 5, pointerEvents: 'none' }} />
+
+            {/* Dot pattern */}
+            <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.12) 1px, transparent 1px)', backgroundSize: '20px 20px', opacity: 0.5, pointerEvents: 'none' }} />
+
+            {/* Soft brand orbs */}
+            <div style={{ position: 'absolute', top: '8%', left: '8%', width: '260px', height: '260px', background: 'radial-gradient(circle, rgba(96,165,250,0.28) 0%, transparent 70%)', borderRadius: '50%', filter: 'blur(48px)', pointerEvents: 'none', animation: 'authOrbDriftA 14s ease-in-out infinite' }} />
+            <div style={{ position: 'absolute', bottom: '8%', right: '8%', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(184,58,182,0.22) 0%, transparent 70%)', borderRadius: '50%', filter: 'blur(50px)', pointerEvents: 'none', animation: 'authOrbDriftB 16s ease-in-out infinite' }} />
+            <div style={{ position: 'absolute', top: '40%', right: '20%', width: '180px', height: '180px', background: 'radial-gradient(circle, rgba(236,72,153,0.16) 0%, transparent 70%)', borderRadius: '50%', filter: 'blur(36px)', pointerEvents: 'none', animation: 'authOrbDriftA 18s ease-in-out infinite', animationDelay: '-4s' }} />
+
+            {/* Ambient stars */}
+            {[
+              { t: '12%', l: '24%', d: 0,   big: false },
+              { t: '18%', l: '62%', d: 1.4, big: true  },
+              { t: '32%', l: '14%', d: 2.6, big: false },
+              { t: '46%', l: '78%', d: 0.8, big: false },
+              { t: '60%', l: '32%', d: 3.1, big: true  },
+              { t: '70%', l: '64%', d: 1.7, big: false },
+              { t: '82%', l: '18%', d: 2.3, big: false },
+              { t: '88%', l: '50%', d: 0.4, big: false },
+            ].map((s, i) => (
+              <span
+                key={i}
+                aria-hidden="true"
+                style={{
+                  position: 'absolute',
+                  top: s.t,
+                  left: s.l,
+                  width: s.big ? 3 : 2,
+                  height: s.big ? 3 : 2,
+                  borderRadius: '50%',
+                  background: '#fff',
+                  boxShadow: s.big ? '0 0 8px rgba(255,255,255,0.95)' : '0 0 4px rgba(255,255,255,0.85)',
+                  opacity: 0.6,
+                  pointerEvents: 'none',
+                  animation: `authStarTwinkle 4.5s ease-in-out ${s.d}s infinite`,
+                  zIndex: 1,
+                }}
+              />
+            ))}
 
             <OverlayPanel isLogin={isLogin} onToggle={toggleView} userType={selectedUserType} />
           </div>

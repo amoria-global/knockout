@@ -177,41 +177,96 @@ function InnerGlow({ radius }: { radius: number }) {
   );
 }
 
-// ── Location dot markers ──
-function LocationDots({ radius, progress }: { radius: number; progress: number }) {
+// ── Location dot markers — opacity updated per-frame via ref (no React re-renders) ──
+// Each marker has 3 layers: a soft outer halo (additive glow), a thin ring, and a bright
+// center dot. Rwanda gets a continuously pulsing halo to mark the company's home base.
+function LocationDots({ radius, progressRef }: { radius: number; progressRef: React.MutableRefObject<number> }) {
   const dotsData = useMemo(() => {
     return LOCATIONS.map(([lon, lat], i) => ({
       position: latLonToVec3(lat, lon, radius * 1.005),
       phase: 0.1 + (i / LOCATIONS.length) * 0.7,
+      isRwanda: i === 0,
     }));
   }, [radius]);
+
+  // Material refs — written each frame, no React re-renders
+  const haloMatRefs = useRef<(THREE.MeshBasicMaterial | null)[]>([]);
+  const ringMatRefs = useRef<(THREE.MeshBasicMaterial | null)[]>([]);
+  const dotMatRefs = useRef<(THREE.MeshBasicMaterial | null)[]>([]);
+  const haloMeshRefs = useRef<(THREE.Mesh | null)[]>([]);
+
+  useFrame(({ clock }) => {
+    const p = Math.min(1, Math.max(0, progressRef.current));
+    const t = clock.elapsedTime;
+    for (let i = 0; i < dotsData.length; i++) {
+      const dot = dotsData[i];
+      const fadeIn = Math.min(1, Math.max(0, (p - dot.phase) / 0.15));
+      // Pulse modulates each marker's halo for "live" feel — Rwanda pulses harder
+      const pulse = 0.5 + 0.5 * Math.sin(t * (dot.isRwanda ? 3.2 : 1.6) + i * 0.5);
+      const haloMat = haloMatRefs.current[i];
+      const ringMat = ringMatRefs.current[i];
+      const dotMat = dotMatRefs.current[i];
+      const haloMesh = haloMeshRefs.current[i];
+      if (haloMat) haloMat.opacity = fadeIn * (dot.isRwanda ? 0.55 + 0.35 * pulse : 0.32 + 0.18 * pulse);
+      if (ringMat) ringMat.opacity = fadeIn * 0.95;
+      if (dotMat) dotMat.opacity = fadeIn;
+      if (haloMesh) {
+        const baseScale = dot.isRwanda ? 1.0 : 0.85;
+        const breathe = baseScale + (dot.isRwanda ? 0.35 : 0.18) * pulse;
+        haloMesh.scale.set(breathe, breathe, breathe);
+      }
+    }
+  });
 
   return (
     <group>
       {dotsData.map((dot, i) => {
-        if (progress < dot.phase) return null;
-        const fadeIn = Math.min(1, (progress - dot.phase) / 0.15);
-        const isRwanda = i === 0;
+        const ringInner = dot.isRwanda ? 0.026 : 0.014;
+        const ringOuter = dot.isRwanda ? 0.038 : 0.024;
+        const coreRadius = dot.isRwanda ? 0.018 : 0.011;
+        const haloRadius = dot.isRwanda ? 0.07 : 0.05;
+        const color = dot.isRwanda ? '#FF6B6B' : '#FFFFFF';
+        const haloColor = dot.isRwanda ? '#FF8C8C' : '#7DD3FC';
         return (
           <group key={i} position={dot.position}>
-            <mesh>
-              <ringGeometry args={[isRwanda ? 0.018 : 0.01, isRwanda ? 0.025 : 0.016, 32]} />
+            {/* Outer additive halo — gives the marker a glowing presence */}
+            <mesh ref={(m) => { haloMeshRefs.current[i] = m; }}>
+              <circleGeometry args={[haloRadius, 32]} />
               <meshBasicMaterial
-                color={isRwanda ? "#FF6B6B" : "#ffffff"}
+                ref={(m) => { haloMatRefs.current[i] = m; }}
+                color={haloColor}
                 transparent
-                opacity={fadeIn * 0.5}
+                opacity={0}
+                blending={THREE.AdditiveBlending}
                 side={THREE.DoubleSide}
                 depthWrite={false}
+                toneMapped={false}
               />
             </mesh>
+            {/* Crisp ring */}
             <mesh>
-              <circleGeometry args={[isRwanda ? 0.012 : 0.007, 16]} />
+              <ringGeometry args={[ringInner, ringOuter, 32]} />
               <meshBasicMaterial
-                color={isRwanda ? "#FF6B6B" : "#ffffff"}
+                ref={(m) => { ringMatRefs.current[i] = m; }}
+                color={color}
                 transparent
-                opacity={fadeIn * 0.9}
+                opacity={0}
                 side={THREE.DoubleSide}
                 depthWrite={false}
+                toneMapped={false}
+              />
+            </mesh>
+            {/* Bright solid center dot */}
+            <mesh>
+              <circleGeometry args={[coreRadius, 24]} />
+              <meshBasicMaterial
+                ref={(m) => { dotMatRefs.current[i] = m; }}
+                color={color}
+                transparent
+                opacity={0}
+                side={THREE.DoubleSide}
+                depthWrite={false}
+                toneMapped={false}
               />
             </mesh>
           </group>
@@ -222,8 +277,8 @@ function LocationDots({ radius, progress }: { radius: number; progress: number }
 }
 
 // ── Main Earth globe with textures ──
-function TexturedEarth({ scrollProgress, radius, textures }: {
-  scrollProgress: number;
+function TexturedEarth({ progressRef, radius, textures }: {
+  progressRef: React.MutableRefObject<number>;
   radius: number;
   textures: { day: THREE.Texture | null; night: THREE.Texture | null; bump: THREE.Texture | null; water: THREE.Texture | null };
 }) {
@@ -300,11 +355,14 @@ function TexturedEarth({ scrollProgress, radius, textures }: {
 
   useFrame((_, delta) => {
     if (!groupRef.current) return;
-    const p = Math.min(1, Math.max(0, scrollProgress));
+    // Read fresh scroll progress from ref each frame — no React re-renders required
+    const p = Math.min(1, Math.max(0, progressRef.current));
     const targetRotationY = -1.6 + p * 1.0;
     const targetTiltX = 0.3 - p * 0.1;
-    groupRef.current.rotation.y += (targetRotationY - groupRef.current.rotation.y) * 0.08;
-    groupRef.current.rotation.x += (targetTiltX - groupRef.current.rotation.x) * 0.08;
+    // Frame-rate-independent smoothing — feels identical regardless of FPS
+    const lerpFactor = 1 - Math.exp(-delta * 9);
+    groupRef.current.rotation.y += (targetRotationY - groupRef.current.rotation.y) * lerpFactor;
+    groupRef.current.rotation.x += (targetTiltX - groupRef.current.rotation.x) * lerpFactor;
 
     if (cloudRef.current) {
       cloudRef.current.rotation.y += delta * 0.008;
@@ -326,13 +384,13 @@ function TexturedEarth({ scrollProgress, radius, textures }: {
       )}
 
       <InnerGlow radius={radius} />
-      <LocationDots radius={radius} progress={scrollProgress} />
+      <LocationDots radius={radius} progressRef={progressRef} />
     </group>
   );
 }
 
 // ── Scene — loads textures inside the Canvas context ──
-function EarthScene({ scrollProgress }: { scrollProgress: number }) {
+function EarthScene({ progressRef }: { progressRef: React.MutableRefObject<number> }) {
   const RADIUS = 2;
   const { textures, loaded } = useTextures();
 
@@ -350,7 +408,7 @@ function EarthScene({ scrollProgress }: { scrollProgress: number }) {
       <directionalLight position={[5, 3, 5]} intensity={1.5} color="#ffffff" />
       <pointLight position={[-5, -3, -5]} intensity={0.3} color="#4488ff" />
 
-      <TexturedEarth scrollProgress={scrollProgress} radius={RADIUS} textures={textures} />
+      <TexturedEarth progressRef={progressRef} radius={RADIUS} textures={textures} />
       <Atmosphere radius={RADIUS} />
     </>
   );
@@ -362,13 +420,25 @@ interface HalfEarthProps {
   height?: number;
   tilt?: number;
   initialRotation?: number;
+  /** Live scroll progress (0..1). Pass a ref to avoid React re-renders during scroll. */
+  progressRef?: React.MutableRefObject<number>;
+  /** Backward-compat: state-based progress. Internally written into a ref. */
   scrollProgress?: number;
 }
 
 const HalfEarth: React.FC<HalfEarthProps> = ({
   height = 700,
+  progressRef,
   scrollProgress = 0,
 }) => {
+  // Internal ref — used directly by useFrame so changing it triggers no re-renders
+  const internalRef = useRef<number>(0);
+  // If the caller passes a ref, use it; otherwise sync from the state-based prop into our ref
+  const usedRef = progressRef ?? internalRef;
+  if (!progressRef) {
+    // Keep ref synced with the legacy state-based scrollProgress prop
+    internalRef.current = scrollProgress;
+  }
   const [mounted, setMounted] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -434,7 +504,7 @@ const HalfEarth: React.FC<HalfEarthProps> = ({
         }}
         dpr={isMobile ? [1, 1.5] : [1, 2]}
       >
-        <EarthScene scrollProgress={scrollProgress} />
+        <EarthScene progressRef={usedRef} />
       </Canvas>
     </div>
   );

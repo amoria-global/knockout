@@ -22,6 +22,8 @@ import { checkAnonymousAccessStatus, anonymousDeviceCheck, anonymousHeartbeat, d
 import ViewerInfoModal from '../../components/ViewerInfoModal';
 import type { ViewerInfoData } from '../../components/ViewerInfoModal';
 import DeviceSwitchModal from '../../components/DeviceSwitchModal';
+import DonationPromptModal from '../../components/DonationPromptModal';
+import AppreciationModal from '../../components/AppreciationModal';
 import { initiateAnonymousStreamingPayment, checkAnonymousPaymentStatus } from '@/lib/APIs/payments/xentripay';
 import { contactUs } from '@/lib/APIs/public/contact-us/route';
 import { apiClient } from '@/lib/api/client';
@@ -74,6 +76,10 @@ interface Message {
   avatar: string;
   videoUrl?: string;
   apiMessageId?: string; // tracks the backend ID for deduplication
+  // Raw ISO timestamp preserved from the backend so we can filter out
+  // pre-event "wish" messages that were sent while the event was still
+  // upcoming (those are private to the host and shouldn't appear in chat).
+  createdAt?: string;
   replyTo?: {
     id: number | string;
     sender: string;
@@ -204,6 +210,28 @@ const App = () => {
   const [anonymousViewerId, setAnonymousViewerId] = useState<string | null>(null);
   const [isAnonymousViewer, setIsAnonymousViewer] = useState(false);
   const [anonymousViewerName, setAnonymousViewerName] = useState('');
+
+  // ── Welcome splash ──
+  // Replaces the generic preloader with a cinematic "you're in" message
+  // for viewers redirected here. Dismisses on a timer (default 2.6s) or on
+  // user interaction. The splash also hides early when the video element
+  // signals it's ready to play, so users with fast streams skip it.
+  const [showWelcomeSplash, setShowWelcomeSplash] = useState(true);
+  const [welcomeSplashFadingOut, setWelcomeSplashFadingOut] = useState(false);
+  const dismissWelcomeSplash = useCallback(() => {
+    setWelcomeSplashFadingOut(true);
+    window.setTimeout(() => setShowWelcomeSplash(false), 320);
+  }, []);
+  useEffect(() => {
+    if (!showWelcomeSplash) return;
+    // Auto-dismiss after 2.6s — long enough to read "Welcome, you're in!"
+    // but short enough not to delay the actual stream meaningfully.
+    const t = window.setTimeout(() => {
+      setWelcomeSplashFadingOut(true);
+      window.setTimeout(() => setShowWelcomeSplash(false), 320);
+    }, 2600);
+    return () => window.clearTimeout(t);
+  }, [showWelcomeSplash]);
   const [showViewerInfoModal, setShowViewerInfoModal] = useState(false);
   const [viewerInfoLoading, setViewerInfoLoading] = useState(false);
   const [viewerInfoError, setViewerInfoError] = useState('');
@@ -1002,11 +1030,14 @@ const App = () => {
               const convertedMessages: Message[] = newApiMessages.map(m => {
                 const sender = (m.viewerUsername || m.sender || 'Unknown') as string;
                 const msgText = (m.message || m.content || '') as string;
+                // Capture the raw ISO timestamp from the backend so we can
+                // filter pre-event wish messages out of the live chat.
+                const rawCreatedAt = (m.createdAt || m.timestamp || m.created_at || '') as string;
                 // Use backend's pre-formatted time, fall back to parsing timestamp
                 const timeStr = m.time
                   ? String(m.time)
-                  : m.timestamp
-                    ? new Date(String(m.timestamp)).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                  : rawCreatedAt
+                    ? new Date(rawCreatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                     : '';
 
                 return {
@@ -1019,6 +1050,7 @@ const App = () => {
                   delivered: true,
                   avatar: (m.viewerAvatar || m.avatar || '') as string || DEFAULT_USER_AVATAR,
                   videoUrl: (m.videoUrl as string) || undefined,
+                  createdAt: rawCreatedAt || undefined,
                 };
               });
 
@@ -1369,6 +1401,18 @@ const App = () => {
   const [showDonationPrompt, setShowDonationPrompt] = useState(false);
   const [includeDonation, setIncludeDonation] = useState(false);
   const [donationAmount, setDonationAmount] = useState("");
+  // Drives the standalone DonationPromptModal that pops over the gift modal
+  // when the user clicks "Send Gift". Replaces the old inline donation toggle.
+  const [showGiftDonationOverlay, setShowGiftDonationOverlay] = useState(false);
+  // Drives the celebratory AppreciationModal shown after a gift OR a donation
+  // payment completes successfully. Type switches the visual theme.
+  const [appreciation, setAppreciation] = useState<{
+    open: boolean;
+    type: 'gift' | 'donation';
+    amount: number;
+    currency: string;
+    recipient?: string;
+  }>({ open: false, type: 'gift', amount: 0, currency: 'RWF' });
   // Payment details state
   const [paymentPhone, setPaymentPhone] = useState("");
   // API currencies & gift/donation loading state
@@ -1479,7 +1523,7 @@ const App = () => {
   };
 
   // Handle sending gift - call API directly, no XentriPayModal
-  const handleSendGift = async () => {
+  const handleSendGift = async (donationOverride?: number) => {
     if (!canInteract) {
       requireInteraction(() => {});
       return;
@@ -1504,7 +1548,9 @@ const App = () => {
       || streamCurrencies.find(c => c.code === 'RWF')?.id
       || (streamCurrencies.length > 0 ? streamCurrencies[0].id : '');
 
-    const donAmt = parseInt(donationAmount) || 0;
+    // Donation: prefer the explicit override (from DonationPromptModal),
+    // fall back to the state-driven value for any legacy callers.
+    const donAmt = donationOverride !== undefined ? donationOverride : (parseInt(donationAmount) || 0);
     const redirectUrl = isCard
       ? (window.location.href.startsWith('http://') ? 'https://connekyt.com' : window.location.href)
       : undefined;
@@ -1571,8 +1617,38 @@ const App = () => {
         data.refid,
         {
           onSuccess: (_data: XentriPayStatusResponse) => {
+            // Capture gift + donation totals BEFORE resetting modal state
+            const sentGift = parseInt(giftAmount) || 0;
+            const sentDonation = donAmt;
+            const sentCurrency = mainEvent?.streamFeeCurrencyAbbreviation || 'RWF';
+            const sentRecipient = targetEvent.photographer || mainEvent?.photographer;
+
             setGiftStep('success');
-            setTimeout(() => resetGiftModal(), 2500);
+            // Close the gift modal quickly, then show the appreciation overlay
+            setTimeout(() => {
+              resetGiftModal();
+              // Show GIFT appreciation first
+              setAppreciation({
+                open: true,
+                type: 'gift',
+                amount: sentGift,
+                currency: sentCurrency,
+                recipient: sentRecipient,
+              });
+              // If a donation was added, queue the donation appreciation right
+              // after the gift appreciation closes
+              if (sentDonation > 0) {
+                const flipDelayMs = 8200;
+                window.setTimeout(() => {
+                  setAppreciation({
+                    open: true,
+                    type: 'donation',
+                    amount: sentDonation,
+                    currency: sentCurrency,
+                  });
+                }, flipDelayMs);
+              }
+            }, 800);
           },
           onFailure: (_data: XentriPayStatusResponse) => {
             setGiftStep('failed');
@@ -2390,27 +2466,38 @@ const App = () => {
 
   // Handle leaving/removing an event
   const [showLeaveConfirmModal, setShowLeaveConfirmModal] = useState(false);
+  // Cinematic goodbye splash shown after the user confirms leaving.
+  // Plays for ~2.4s, then the existing leave logic runs (history.back or
+  // event removal). Pure UI state — no backend interaction.
+  const [showGoodbyeSplash, setShowGoodbyeSplash] = useState(false);
 
   const confirmLeaveStream = () => {
     setShowLeaveConfirmModal(false);
-    if (events.length === 1) {
-      // Last event, go back
-      window.history.back();
-    } else {
-      // Remove main event
-      const updatedEvents = events.filter((_, idx) => idx !== mainEventIndex);
-      setEvents(updatedEvents);
 
-      // Delete playback state for removed event
-      setPlaybackState(prev => {
-        const newState = { ...prev };
-        delete newState[mainEvent.id];
-        return newState;
-      });
+    // Capture the leave action so we run it AFTER the splash plays.
+    const performLeave = () => {
+      if (events.length === 1) {
+        // Last event — go back. The destination page replaces this one,
+        // so the splash naturally disappears with the navigation.
+        window.history.back();
+      } else {
+        // Remove the current main event from the list and let the
+        // viewer continue watching the remaining ones.
+        const updatedEvents = events.filter((_, idx) => idx !== mainEventIndex);
+        setEvents(updatedEvents);
+        setPlaybackState(prev => {
+          const newState = { ...prev };
+          delete newState[mainEvent.id];
+          return newState;
+        });
+        setMainEventIndex(0);
+        // We're staying on the page — hide the splash so the UI returns.
+        setShowGoodbyeSplash(false);
+      }
+    };
 
-      // Set first remaining event as main
-      setMainEventIndex(0);
-    }
+    setShowGoodbyeSplash(true);
+    window.setTimeout(performLeave, 2400);
   };
 
   const handleLeaveStream = () => {
@@ -2916,6 +3003,2196 @@ const App = () => {
   // Main component render
   return (
     <>
+      {/* ── WELCOME SPLASH ──
+          Cinematic "you're in" message that replaces the preloader for
+          users redirected from view-event after payment. Auto-dismisses
+          after 2.6 s OR on tap; fades out smoothly. The blurred event
+          poster behind the message ties the visual back to view-event so
+          it feels like a continuation, not a new page. */}
+      {showWelcomeSplash && (
+        <div
+          className={`ls-welcome ${welcomeSplashFadingOut ? 'is-leaving' : ''}`}
+          role="status"
+          aria-live="polite"
+          onClick={dismissWelcomeSplash}
+        >
+          <div className="ls-welcome-veil" aria-hidden="true" />
+          <div className="ls-welcome-grain" aria-hidden="true" />
+          <div className="ls-welcome-content">
+            {/* Animated check icon */}
+            <div className="ls-welcome-check" aria-hidden="true">
+              <svg viewBox="0 0 52 52" width="64" height="64">
+                <circle className="ls-welcome-check-circle" cx="26" cy="26" r="24" fill="none" stroke="#6ee7b7" strokeWidth="2.5" />
+                <path className="ls-welcome-check-tick" d="M14 27 l8 8 l16-16" fill="none" stroke="#6ee7b7" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+
+            {/* Status pill */}
+            <span className="ls-welcome-tag">
+              <span className="ls-welcome-pulse" aria-hidden="true" />
+              LIVE STREAM READY
+            </span>
+
+            <h1 className="ls-welcome-title">You&apos;re in!</h1>
+            <p className="ls-welcome-sub">
+              {mainEvent?.title && mainEvent.title !== 'Loading...'
+                ? <>Connecting you to <strong>{mainEvent.title}</strong>…</>
+                : <>Connecting you to the live stream…</>}
+            </p>
+
+            <div className="ls-welcome-progress" aria-hidden="true">
+              <span />
+            </div>
+
+            <button
+              type="button"
+              className="ls-welcome-skip"
+              onClick={(e) => { e.stopPropagation(); dismissWelcomeSplash(); }}
+              aria-label="Skip welcome and go to stream"
+            >
+              Skip <i className="bi bi-arrow-right" aria-hidden="true" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          GOODBYE SPLASH — appears for ~2.4s after the user confirms leaving.
+          Cinematic farewell with a heartbeat icon, message, and progress
+          bar. Mirrors the welcome splash visual language so the entry/exit
+          experiences feel like bookends. */}
+      {showGoodbyeSplash && (
+        <div className="ls-goodbye" role="dialog" aria-live="polite" aria-label="Leaving stream">
+          <div className="ls-goodbye-veil" aria-hidden="true" />
+          <div className="ls-goodbye-grain" aria-hidden="true" />
+          <div className="ls-goodbye-content">
+            <div className="ls-goodbye-icon" aria-hidden="true">
+              <span className="ls-goodbye-icon-ring" />
+              <span className="ls-goodbye-icon-ring ls-goodbye-icon-ring--2" />
+              <i className="bi bi-heart-fill" />
+            </div>
+            <span className="ls-goodbye-tag">
+              <span className="ls-goodbye-pulse" aria-hidden="true" />
+              SEE YOU SOON
+            </span>
+            <h1 className="ls-goodbye-title">Thanks for watching!</h1>
+            <p className="ls-goodbye-sub">
+              Hope you enjoyed{' '}
+              <strong>{mainEvent?.title || 'the stream'}</strong>.
+              <br />
+              We&apos;ll save your spot for the next one.
+            </p>
+            <div className="ls-goodbye-progress" aria-hidden="true">
+              <span />
+            </div>
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        /* ── Welcome splash styles ─────────────────────────────────── */
+        .ls-welcome {
+          position: fixed;
+          inset: 0;
+          z-index: 99999;
+          background:
+            radial-gradient(80% 60% at 50% 0%, rgba(8,58,133,0.30) 0%, rgba(8,58,133,0) 60%),
+            linear-gradient(180deg, #07080d 0%, #0c0e15 60%, #11141d 100%);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 24px;
+          font-family: 'Pragati Narrow', system-ui, -apple-system, 'Segoe UI', sans-serif;
+          color: #f4f6fb;
+          overflow: hidden;
+          cursor: pointer;
+          animation: ls-welcome-in 320ms ease-out;
+        }
+        .ls-welcome.is-leaving { animation: ls-welcome-out 320ms ease-in forwards; }
+        @keyframes ls-welcome-in {
+          from { opacity: 0; transform: scale(1.04); }
+          to   { opacity: 1; transform: scale(1); }
+        }
+        @keyframes ls-welcome-out {
+          from { opacity: 1; transform: scale(1); }
+          to   { opacity: 0; transform: scale(1.06); }
+        }
+        .ls-welcome-veil {
+          position: absolute; inset: 0; z-index: 1;
+          background:
+            radial-gradient(90% 70% at 50% 50%, rgba(7,8,13,0.55) 0%, rgba(7,8,13,0.92) 100%),
+            radial-gradient(70% 50% at 50% 100%, rgba(220,38,38,0.18) 0%, rgba(220,38,38,0) 60%),
+            radial-gradient(60% 40% at 50% 0%, rgba(31,107,255,0.22) 0%, rgba(31,107,255,0) 60%);
+        }
+        .ls-welcome-grain {
+          position: absolute; inset: 0; z-index: 2;
+          opacity: 0.16;
+          mix-blend-mode: overlay;
+          pointer-events: none;
+          background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.6'/></svg>");
+        }
+        .ls-welcome-content {
+          position: relative; z-index: 3;
+          text-align: center;
+          max-width: 460px;
+          width: 100%;
+        }
+        /* Animated check inside an emerald glass disc */
+        .ls-welcome-check {
+          width: 100px; height: 100px;
+          border-radius: 50%;
+          background: rgba(16,185,129,0.10);
+          border: 2px solid rgba(16,185,129,0.45);
+          display: inline-flex; align-items: center; justify-content: center;
+          margin-bottom: 22px;
+          box-shadow:
+            0 18px 50px -8px rgba(16,185,129,0.45),
+            0 0 0 6px rgba(16,185,129,0.05),
+            inset 0 1px 0 rgba(255,255,255,0.10);
+          animation: ls-welcome-check-pop 540ms cubic-bezier(0.34, 1.56, 0.64, 1) 80ms backwards;
+        }
+        @keyframes ls-welcome-check-pop {
+          from { opacity: 0; transform: scale(0.5) rotate(-20deg); }
+          to   { opacity: 1; transform: scale(1) rotate(0deg); }
+        }
+        /* SVG check stroke draw-on animation */
+        .ls-welcome-check-circle {
+          stroke-dasharray: 151;
+          stroke-dashoffset: 151;
+          animation: ls-welcome-circle-draw 700ms ease-out 280ms forwards;
+        }
+        .ls-welcome-check-tick {
+          stroke-dasharray: 50;
+          stroke-dashoffset: 50;
+          animation: ls-welcome-tick-draw 380ms ease-out 720ms forwards;
+        }
+        @keyframes ls-welcome-circle-draw { to { stroke-dashoffset: 0; } }
+        @keyframes ls-welcome-tick-draw   { to { stroke-dashoffset: 0; } }
+
+        .ls-welcome-tag {
+          display: inline-flex; align-items: center; gap: 8px;
+          padding: 6px 14px;
+          margin-bottom: 14px;
+          border-radius: 999px;
+          background: linear-gradient(135deg, rgba(239,68,68,0.92) 0%, rgba(220,38,38,0.92) 100%);
+          color: #fff;
+          font-size: 11px;
+          font-weight: 900;
+          letter-spacing: 0.16em;
+          text-transform: uppercase;
+          border: 1px solid rgba(255,255,255,0.22);
+          box-shadow: 0 10px 24px -6px rgba(220,38,38,0.55), inset 0 1px 0 rgba(255,255,255,0.20);
+          text-shadow: 0 1px 2px rgba(0,0,0,0.30);
+          animation: ls-welcome-tag-fade 600ms ease-out 1100ms backwards;
+        }
+        @keyframes ls-welcome-tag-fade {
+          from { opacity: 0; transform: translateY(-6px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .ls-welcome-pulse {
+          width: 8px; height: 8px;
+          border-radius: 50%;
+          background: #fff;
+          box-shadow: 0 0 0 0 rgba(255,255,255,0.7);
+          animation: ls-welcome-pulse 1.4s ease-out infinite;
+        }
+        @keyframes ls-welcome-pulse {
+          0%   { box-shadow: 0 0 0 0 rgba(255,255,255,0.7); }
+          70%  { box-shadow: 0 0 0 8px rgba(255,255,255,0); }
+          100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); }
+        }
+        .ls-welcome-title {
+          font-size: clamp(36px, 6vw, 56px);
+          font-weight: 800;
+          line-height: 1.05;
+          letter-spacing: -0.025em;
+          margin: 0 0 10px;
+          color: #ffffff;
+          text-shadow: 0 8px 36px rgba(0,0,0,0.55);
+          animation: ls-welcome-title-fade 600ms ease-out 1200ms backwards;
+        }
+        @keyframes ls-welcome-title-fade {
+          from { opacity: 0; transform: translateY(8px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .ls-welcome-sub {
+          font-size: clamp(14px, 1.6vw, 17px);
+          color: #b8bdca;
+          line-height: 1.5;
+          margin: 0 auto 26px;
+          max-width: 380px;
+          animation: ls-welcome-title-fade 600ms ease-out 1320ms backwards;
+        }
+        .ls-welcome-sub strong { color: #f4f6fb; font-weight: 700; }
+
+        /* Indeterminate progress bar — slides a brand-blue chunk across */
+        .ls-welcome-progress {
+          width: 200px;
+          height: 4px;
+          margin: 0 auto;
+          border-radius: 999px;
+          background: rgba(255,255,255,0.08);
+          overflow: hidden;
+          position: relative;
+        }
+        .ls-welcome-progress span {
+          position: absolute;
+          top: 0; left: 0;
+          height: 100%;
+          width: 50%;
+          border-radius: 999px;
+          background: linear-gradient(90deg, rgba(31,107,255,0) 0%, #1f6bff 30%, #1f6bff 70%, rgba(31,107,255,0) 100%);
+          animation: ls-welcome-progress 1.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+        }
+        @keyframes ls-welcome-progress {
+          0%   { left: -50%; }
+          100% { left: 100%; }
+        }
+
+        .ls-welcome-skip {
+          position: absolute;
+          top: max(16px, env(safe-area-inset-top, 0px));
+          right: 16px;
+          z-index: 4;
+          display: inline-flex; align-items: center; gap: 6px;
+          padding: 8px 14px;
+          border-radius: 999px;
+          background: rgba(255,255,255,0.06);
+          border: 1px solid rgba(255,255,255,0.18);
+          color: #b8bdca;
+          font-family: inherit;
+          font-size: 12.5px;
+          font-weight: 700;
+          letter-spacing: 0.04em;
+          cursor: pointer;
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
+          transition: background 160ms ease, color 160ms ease, border-color 160ms ease;
+        }
+        .ls-welcome-skip:hover {
+          background: rgba(255,255,255,0.12);
+          color: #ffffff;
+          border-color: rgba(255,255,255,0.34);
+        }
+        .ls-welcome-skip i { font-size: 12px; }
+
+        @media (max-width: 540px) {
+          .ls-welcome-check { width: 84px; height: 84px; margin-bottom: 18px; }
+          .ls-welcome-check svg { width: 52px; height: 52px; }
+          .ls-welcome-title { font-size: 34px; }
+          .ls-welcome-sub { font-size: 14px; max-width: 320px; }
+          .ls-welcome-progress { width: 160px; }
+          .ls-welcome-skip { font-size: 11.5px; padding: 7px 12px; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .ls-welcome,
+          .ls-welcome-check,
+          .ls-welcome-check-circle,
+          .ls-welcome-check-tick,
+          .ls-welcome-tag,
+          .ls-welcome-pulse,
+          .ls-welcome-title,
+          .ls-welcome-sub,
+          .ls-welcome-progress span {
+            animation: none !important;
+          }
+          .ls-welcome-check-circle, .ls-welcome-check-tick { stroke-dashoffset: 0; }
+        }
+
+        /* ── Goodbye splash styles ─────────────────────────────────── */
+        .ls-goodbye {
+          position: fixed;
+          inset: 0;
+          z-index: 99999;
+          background:
+            radial-gradient(80% 60% at 50% 0%, rgba(8, 58, 133, 0.30) 0%, rgba(8, 58, 133, 0) 60%),
+            radial-gradient(60% 50% at 50% 100%, rgba(220, 38, 38, 0.12) 0%, rgba(220, 38, 38, 0) 60%),
+            linear-gradient(180deg, #04050a 0%, #0a0d18 50%, #04050a 100%);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #f4f6fb;
+          padding: 24px;
+          isolation: isolate;
+          animation: ls-goodbye-in 320ms ease-out;
+        }
+        @keyframes ls-goodbye-in {
+          0%   { opacity: 0; }
+          100% { opacity: 1; }
+        }
+        .ls-goodbye-veil {
+          position: absolute;
+          inset: 0;
+          background: radial-gradient(circle at 50% 35%, rgba(31, 107, 255, 0.10) 0%, transparent 55%);
+          pointer-events: none;
+          z-index: 0;
+        }
+        .ls-goodbye-grain {
+          position: absolute;
+          inset: 0;
+          opacity: 0.10;
+          mix-blend-mode: overlay;
+          background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.7'/></svg>");
+          pointer-events: none;
+          z-index: 0;
+        }
+        .ls-goodbye-content {
+          position: relative;
+          z-index: 1;
+          text-align: center;
+          max-width: 460px;
+        }
+        .ls-goodbye-icon {
+          position: relative;
+          width: 96px;
+          height: 96px;
+          margin: 0 auto 22px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 50%;
+          background: radial-gradient(circle at 35% 30%, rgba(252, 165, 165, 0.40) 0%, rgba(220, 38, 38, 0.30) 50%, rgba(8, 58, 133, 0.25) 100%);
+          box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.20),
+            0 18px 38px -8px rgba(220, 38, 38, 0.55),
+            0 0 0 1px rgba(252, 165, 165, 0.30);
+          animation: ls-goodbye-icon-pop 540ms cubic-bezier(0.34, 1.56, 0.64, 1) 80ms backwards;
+        }
+        @keyframes ls-goodbye-icon-pop {
+          0%   { opacity: 0; transform: scale(0.5); }
+          100% { opacity: 1; transform: scale(1); }
+        }
+        .ls-goodbye-icon i {
+          font-size: 38px;
+          color: #ffffff;
+          filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.55));
+          animation: ls-goodbye-heartbeat 1.2s ease-in-out infinite;
+        }
+        @keyframes ls-goodbye-heartbeat {
+          0%, 100% { transform: scale(1); }
+          25%      { transform: scale(1.18); }
+          50%      { transform: scale(1.00); }
+          75%      { transform: scale(1.10); }
+        }
+        .ls-goodbye-icon-ring {
+          position: absolute;
+          inset: -6px;
+          border-radius: 50%;
+          border: 2px solid rgba(252, 165, 165, 0.55);
+          animation: ls-goodbye-ring 2.2s ease-out infinite;
+        }
+        .ls-goodbye-icon-ring--2 { animation-delay: 1.1s; }
+        @keyframes ls-goodbye-ring {
+          0%   { transform: scale(0.85); opacity: 0.85; }
+          100% { transform: scale(1.55); opacity: 0; }
+        }
+        .ls-goodbye-tag {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 6px 14px 6px 12px;
+          border-radius: 999px;
+          background: rgba(8, 58, 133, 0.32);
+          border: 1px solid rgba(96, 165, 250, 0.45);
+          color: #93c5fd;
+          font-family: 'Pragati Narrow', sans-serif;
+          font-size: 11px;
+          font-weight: 800;
+          letter-spacing: 0.18em;
+          text-transform: uppercase;
+          margin-bottom: 14px;
+          animation: ls-goodbye-fade 600ms ease-out 360ms backwards;
+        }
+        @keyframes ls-goodbye-fade {
+          0%   { opacity: 0; transform: translateY(8px); }
+          100% { opacity: 1; transform: translateY(0); }
+        }
+        .ls-goodbye-pulse {
+          width: 7px; height: 7px;
+          border-radius: 50%;
+          background: #60a5fa;
+          box-shadow: 0 0 10px rgba(96, 165, 250, 0.85);
+          animation: ls-goodbye-pulse 1.4s ease-out infinite;
+        }
+        @keyframes ls-goodbye-pulse {
+          0%, 100% { opacity: 1; }
+          50%      { opacity: 0.30; }
+        }
+        .ls-goodbye-title {
+          margin: 0 0 10px;
+          font-family: 'Pragati Narrow', sans-serif;
+          font-size: clamp(28px, 5vw, 40px);
+          font-weight: 800;
+          letter-spacing: -0.01em;
+          color: #ffffff;
+          text-shadow: 0 4px 24px rgba(31, 107, 255, 0.45);
+          animation: ls-goodbye-fade 600ms ease-out 480ms backwards;
+        }
+        .ls-goodbye-sub {
+          margin: 0 auto;
+          max-width: 420px;
+          font-size: 14.5px;
+          color: rgba(244, 246, 251, 0.72);
+          line-height: 1.6;
+          animation: ls-goodbye-fade 600ms ease-out 600ms backwards;
+        }
+        .ls-goodbye-sub strong {
+          color: #ffffff;
+          font-weight: 700;
+        }
+        .ls-goodbye-progress {
+          width: 200px;
+          height: 3px;
+          margin: 22px auto 0;
+          border-radius: 999px;
+          background: rgba(255, 255, 255, 0.10);
+          overflow: hidden;
+          position: relative;
+        }
+        .ls-goodbye-progress span {
+          display: block;
+          height: 100%;
+          width: 100%;
+          background: linear-gradient(90deg, #1f6bff 0%, #60a5fa 50%, #ef4444 100%);
+          transform-origin: left center;
+          animation: ls-goodbye-progress 2.4s linear forwards;
+        }
+        @keyframes ls-goodbye-progress {
+          0%   { transform: scaleX(0); }
+          100% { transform: scaleX(1); }
+        }
+        @media (max-width: 540px) {
+          .ls-goodbye-icon { width: 80px; height: 80px; margin-bottom: 18px; }
+          .ls-goodbye-icon i { font-size: 32px; }
+          .ls-goodbye-title { font-size: clamp(24px, 7vw, 30px); }
+          .ls-goodbye-sub { font-size: 13px; max-width: 320px; }
+          .ls-goodbye-progress { width: 160px; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .ls-goodbye,
+          .ls-goodbye-icon,
+          .ls-goodbye-icon i,
+          .ls-goodbye-icon-ring,
+          .ls-goodbye-tag,
+          .ls-goodbye-pulse,
+          .ls-goodbye-title,
+          .ls-goodbye-sub,
+          .ls-goodbye-progress span {
+            animation: none !important;
+          }
+          .ls-goodbye-progress span { transform: scaleX(1); }
+        }
+      `}</style>
+
+      {/* ═══════════════════════════════════════════════════════════════════════════
+          SPOTLIGHT CINEMA — Live-stream theater redesign
+          ═══════════════════════════════════════════════════════════════════════════
+          Design vision: the page is a private theater. The video is the STAGE,
+          spotlit by ambient brand-blue lighting that breathes overhead. Everything
+          else (chat, info bar, controls, reactions, mini players) floats around the
+          stage as glass surfaces — backdrop-filtered, brand-blue rim-lit, with
+          subtle inner gleams. Heavy use of layered radial lighting + film grain +
+          micro-animations to make the page feel ALIVE without being noisy.
+
+            • Theater backdrop:  midnight gradient + dual blue/red spotlights + grain
+            • Stage halo:        pulsing blue spotlight behind the video
+            • Floating chrome:   glass surfaces with rim glow + inner gleam
+            • Live label:        pulsing red wave with rotating shimmer
+            • Action chrome:     pill controls with brand-blue ring on hover
+            • Theater curtains:  subtle wipe-in animations on first paint
+            • Reduced motion:    everything calms down respectfully
+          ═══════════════════════════════════════════════════════════════════════════ */}
+      <style jsx global>{`
+        /* ─── Design tokens (scoped) ─────────────────────────────────────── */
+        body { background: #04050a; }
+
+        /* ─── Theater backdrop ───────────────────────────────────────────────
+           Midnight base + 3 spotlights:
+             ① massive cool brand-blue spotlight from top-center
+             ② warm crimson rim-light at bottom (the "audience side")
+             ③ deep navy wash from the left (depth illusion)
+           The grain layer adds tactile film-stock texture so the glass surfaces
+           have something to refract. */
+        .main-container {
+          background:
+            radial-gradient(ellipse 130% 70% at 50% -8%, rgba(31, 107, 255, 0.36) 0%, rgba(31, 107, 255, 0) 55%),
+            radial-gradient(ellipse 110% 55% at 50% 108%, rgba(220, 38, 38, 0.20) 0%, rgba(220, 38, 38, 0) 60%),
+            radial-gradient(ellipse 75% 60% at -5% 50%, rgba(8, 58, 133, 0.28) 0%, rgba(8, 58, 133, 0) 65%),
+            radial-gradient(ellipse 75% 60% at 105% 50%, rgba(8, 58, 133, 0.18) 0%, rgba(8, 58, 133, 0) 65%),
+            linear-gradient(180deg, #04050a 0%, #070b18 35%, #050810 70%, #04050a 100%) !important;
+          font-family: 'Pragati Narrow', system-ui, -apple-system, 'Segoe UI', sans-serif !important;
+          position: relative;
+          color: #f4f6fb;
+        }
+        /* Film grain — fixed so it doesn't move on scroll. Mix-blend overlay
+           makes it whisper into the glass surfaces below. */
+        .main-container::before {
+          content: '';
+          position: fixed;
+          inset: 0;
+          z-index: 0;
+          pointer-events: none;
+          opacity: 0.085;
+          mix-blend-mode: overlay;
+          background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.7'/></svg>");
+        }
+        /* Overhead spotlight removed — was lightening the video area too much.
+           The page now relies purely on the static edge gradients above. */
+        .layout-wrapper { position: relative; z-index: 1; }
+
+        /* Theater-curtain wipe — runs once on first mount */
+        .layout-wrapper {
+          animation: ls-curtain-rise 800ms cubic-bezier(0.22, 1, 0.36, 1) 80ms backwards;
+        }
+        @keyframes ls-curtain-rise {
+          0%   { opacity: 0; transform: translateY(14px); }
+          100% { opacity: 1; transform: translateY(0); }
+        }
+
+        .main-container ::selection {
+          background: rgba(31, 107, 255, 0.55);
+          color: #ffffff;
+        }
+
+        /* ─── Video section (the stage) ────────────────────────────────── */
+        .video-section {
+          background: transparent !important;
+          padding-left: clamp(16px, 2vw, 36px) !important;
+          padding-top: clamp(18px, 2.4vw, 28px) !important;
+          padding-right: clamp(12px, 1.6vw, 22px) !important;
+          padding-bottom: clamp(14px, 2vw, 22px) !important;
+          position: relative;
+        }
+        /* Stage halo removed — was lightening the area above the player. */
+
+        /* ─── The Stage: video player container ─────────────────────────── */
+        .video-player-container {
+          border-radius: 22px !important;
+          position: relative !important;
+          overflow: hidden !important;
+          /* Pure dark stage. Outer shadow is just depth (no brand-blue
+             bleed). 1px hairline border defines the edge cleanly. */
+          box-shadow:
+            0 28px 64px -22px rgba(0, 0, 0, 0.92),
+            0 0 0 1px rgba(255, 255, 255, 0.06) !important;
+          transition: box-shadow 320ms ease, transform 320ms cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+          z-index: 1 !important;
+        }
+        .video-player-container:hover {
+          transform: translateY(-1px) !important;
+          box-shadow:
+            0 36px 80px -20px rgba(0, 0, 0, 0.95),
+            0 0 0 1px rgba(96, 165, 250, 0.20) !important;
+        }
+        /* Conic rim removed — the previous brand-blue rotating halo lit up
+           the player edge. Plain hairline border (in box-shadow above) keeps
+           the player feeling like a real screen, not a glowing toy. */
+        .video-player-container::after { display: none !important; }
+        /* Top-edge gleam removed — was lightening the inside of the player.
+           The video stage now stays pure black throughout. */
+        .video-player-container::before { display: none !important; }
+
+        /* ─── Chat: theater audience panel ──────────────────────────────── */
+        .chat-section {
+          background:
+            linear-gradient(180deg, rgba(10, 13, 22, 0.72) 0%, rgba(5, 7, 14, 0.82) 100%) !important;
+          backdrop-filter: blur(34px) saturate(190%);
+          -webkit-backdrop-filter: blur(34px) saturate(190%);
+          border-left: 1px solid rgba(255, 255, 255, 0.08) !important;
+          box-shadow:
+            inset 1px 0 0 rgba(255, 255, 255, 0.06),
+            inset 0 1px 0 rgba(255, 255, 255, 0.04),
+            -24px 0 60px -20px rgba(0, 0, 0, 0.65) !important;
+          position: relative;
+        }
+        /* Top-edge horizontal gleam (polished glass)*/
+        .chat-section::before {
+          content: '';
+          position: absolute;
+          top: 0; left: 16px; right: 16px;
+          height: 1px;
+          background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(96, 165, 250, 0.45) 50%, rgba(255, 255, 255, 0) 100%);
+          pointer-events: none;
+          z-index: 2;
+        }
+        /* Diagonal brand-blue ambient sweep, subtle */
+        .chat-section::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: radial-gradient(ellipse 140% 50% at 100% 0%, rgba(31, 107, 255, 0.10) 0%, rgba(31, 107, 255, 0) 55%);
+          pointer-events: none;
+          z-index: 0;
+        }
+        .chat-section > * { position: relative; z-index: 1; }
+
+        /* Sticky chat header */
+        .chat-section > div:first-child {
+          background:
+            linear-gradient(180deg, rgba(18, 22, 32, 0.98) 0%, rgba(12, 15, 23, 0.92) 100%) !important;
+          backdrop-filter: blur(22px) !important;
+          -webkit-backdrop-filter: blur(22px) !important;
+          border-bottom: 1px solid rgba(96, 165, 250, 0.16) !important;
+          box-shadow: 0 6px 18px -8px rgba(0, 0, 0, 0.55) !important;
+        }
+        .chat-section h3 {
+          font-family: 'Pragati Narrow', sans-serif !important;
+          letter-spacing: 0.10em !important;
+          text-transform: uppercase !important;
+        }
+
+        /* Chat input — frosted floor */
+        .chat-section input[type="text"],
+        .chat-section textarea {
+          background: rgba(255, 255, 255, 0.05) !important;
+          border: 1px solid rgba(255, 255, 255, 0.12) !important;
+          border-radius: 12px !important;
+          color: #f4f6fb !important;
+          font-family: 'Pragati Narrow', sans-serif !important;
+          transition: border-color 180ms ease, background 180ms ease, box-shadow 180ms ease !important;
+        }
+        .chat-section input[type="text"]:focus,
+        .chat-section textarea:focus {
+          border-color: rgba(96, 165, 250, 0.65) !important;
+          background: rgba(255, 255, 255, 0.07) !important;
+          box-shadow: 0 0 0 4px rgba(31, 107, 255, 0.20), inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+          outline: none !important;
+        }
+        .chat-section input[type="text"]::placeholder,
+        .chat-section textarea::placeholder {
+          color: rgba(244, 246, 251, 0.42) !important;
+        }
+
+        /* ─── Stream info area — transparent, no container chrome.
+              Each child below the player floats independently on the page. */
+        .stream-info-section {
+          background: transparent !important;
+          backdrop-filter: none !important;
+          -webkit-backdrop-filter: none !important;
+          border: none !important;
+          border-radius: 0 !important;
+          margin-top: 12px !important;
+          padding: 0 !important;
+          box-shadow: none !important;
+          overflow: visible !important;
+        }
+        .stream-info-section::before,
+        .stream-info-section::after { display: none !important; }
+        .stream-title {
+          font-family: 'Pragati Narrow', sans-serif !important;
+          letter-spacing: -0.01em !important;
+          text-shadow: 0 2px 8px rgba(0, 0, 0, 0.40) !important;
+        }
+        .photographer-name {
+          color: #93c5fd !important;
+          font-weight: 600 !important;
+        }
+
+        /* ─── Action button chrome ──────────────────────────────────────── */
+        .stream-action-btn,
+        .gift-btn-main {
+          background: rgba(255, 255, 255, 0.06) !important;
+          border: 1px solid rgba(255, 255, 255, 0.13) !important;
+          backdrop-filter: blur(14px) saturate(140%) !important;
+          -webkit-backdrop-filter: blur(14px) saturate(140%) !important;
+          color: #f4f6fb !important;
+          border-radius: 12px !important;
+          font-family: 'Pragati Narrow', sans-serif !important;
+          letter-spacing: 0.01em !important;
+          position: relative !important;
+          overflow: hidden !important;
+          transition:
+            background 180ms ease,
+            border-color 180ms ease,
+            transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1),
+            box-shadow 180ms ease !important;
+        }
+        .stream-action-btn:hover,
+        .gift-btn-main:hover {
+          background: rgba(31, 107, 255, 0.18) !important;
+          border-color: rgba(96, 165, 250, 0.55) !important;
+          transform: translateY(-2px) !important;
+          box-shadow:
+            0 12px 28px -10px rgba(31, 107, 255, 0.55),
+            inset 0 1px 0 rgba(255, 255, 255, 0.10) !important;
+        }
+        .stream-action-btn:active,
+        .gift-btn-main:active { transform: translateY(0) scale(0.98) !important; }
+
+        /* Gift button — gold-to-crimson sunrise gradient */
+        .gift-btn-main {
+          background: linear-gradient(135deg, rgba(245, 158, 11, 0.30) 0%, rgba(220, 39, 67, 0.24) 100%) !important;
+          border-color: rgba(252, 211, 77, 0.55) !important;
+          box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.14),
+            0 6px 18px -8px rgba(245, 158, 11, 0.40) !important;
+        }
+        .gift-btn-main::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(110deg, transparent 35%, rgba(255, 255, 255, 0.18) 50%, transparent 65%);
+          transform: translateX(-100%);
+          transition: transform 600ms ease;
+          pointer-events: none;
+        }
+        .gift-btn-main:hover {
+          background: linear-gradient(135deg, rgba(245, 158, 11, 0.42) 0%, rgba(220, 39, 67, 0.36) 100%) !important;
+          border-color: rgba(252, 211, 77, 0.85) !important;
+          box-shadow:
+            0 14px 32px -8px rgba(245, 158, 11, 0.65),
+            inset 0 1px 0 rgba(255, 255, 255, 0.22) !important;
+        }
+        .gift-btn-main:hover::before { transform: translateX(100%); }
+
+        /* Stat items — independent, no wrapper backgrounds */
+        .stat-item {
+          background: transparent !important;
+          border: none !important;
+          border-radius: 0 !important;
+          backdrop-filter: none !important;
+          -webkit-backdrop-filter: none !important;
+          box-shadow: none !important;
+          padding: 0 !important;
+        }
+
+        /* ─── Mini players strip — independent, no container chrome ────── */
+        .mini-players-container {
+          margin-top: 12px !important;
+          padding: 0 !important;
+          border-radius: 0 !important;
+          background: transparent !important;
+          backdrop-filter: none !important;
+          -webkit-backdrop-filter: none !important;
+          border: none !important;
+          box-shadow: none !important;
+          position: relative !important;
+        }
+
+        /* ─── Video.js controls — precision instrument panel.
+              The base CSS sets gap: 2px (and 0 on mobile!) on the rows —
+              we override with proper breathing room so buttons don't crush
+              into each other. */
+        .vjs-buttons-row {
+          background:
+            linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.55) 50%, rgba(0, 0, 0, 0.85) 100%) !important;
+          padding: 22px 18px 16px !important;
+          gap: 10px !important;
+          backdrop-filter: blur(2px);
+          -webkit-backdrop-filter: blur(2px);
+        }
+        .vjs-buttons-row--right {
+          gap: 10px !important;
+        }
+        @media (max-width: 720px) {
+          .vjs-buttons-row,
+          .vjs-buttons-row--right {
+            gap: 8px !important;
+          }
+          .vjs-buttons-row {
+            padding: 18px 14px 12px !important;
+          }
+        }
+        @media (max-width: 380px) {
+          .vjs-buttons-row,
+          .vjs-buttons-row--right {
+            gap: 6px !important;
+          }
+        }
+        .vjs-btn {
+          background: rgba(255, 255, 255, 0.08) !important;
+          border: 1px solid rgba(255, 255, 255, 0.10) !important;
+          color: #ffffff !important;
+          border-radius: 10px !important;
+          backdrop-filter: blur(8px) !important;
+          -webkit-backdrop-filter: blur(8px) !important;
+          transition:
+            background 160ms ease,
+            border-color 160ms ease,
+            transform 160ms cubic-bezier(0.34, 1.56, 0.64, 1),
+            box-shadow 160ms ease !important;
+        }
+        .vjs-btn:hover {
+          background: rgba(31, 107, 255, 0.36) !important;
+          border-color: rgba(96, 165, 250, 0.60) !important;
+          transform: scale(1.08) !important;
+          box-shadow: 0 6px 14px -4px rgba(31, 107, 255, 0.45) !important;
+        }
+        .vjs-btn:active { transform: scale(0.94) !important; }
+        .vjs-progress-row {
+          background: rgba(255, 255, 255, 0.12) !important;
+          border-radius: 999px !important;
+          height: 6px !important;
+          overflow: hidden !important;
+          box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.45) !important;
+        }
+        .vjs-progress-fill {
+          background: linear-gradient(90deg, #1f6bff 0%, #60a5fa 50%, #ef4444 100%) !important;
+          box-shadow: 0 0 14px rgba(31, 107, 255, 0.65) !important;
+        }
+        .vjs-progress-thumb {
+          background: #ffffff !important;
+          width: 14px !important;
+          height: 14px !important;
+          box-shadow:
+            0 0 0 4px rgba(31, 107, 255, 0.30),
+            0 0 16px rgba(31, 107, 255, 0.65),
+            0 2px 6px rgba(0, 0, 0, 0.50) !important;
+        }
+        .vjs-volume-slider-fill {
+          background: linear-gradient(90deg, #1f6bff 0%, #60a5fa 100%) !important;
+        }
+        .vjs-volume-slider-thumb {
+          background: #ffffff !important;
+          box-shadow: 0 0 0 3px rgba(31, 107, 255, 0.35), 0 2px 6px rgba(0, 0, 0, 0.50) !important;
+        }
+
+        /* ─── Live label — pulsing red beacon, pinned top-right of player.
+              The high-specificity selector + !important on the position
+              properties beats the external app/styles/live-stream-player.css
+              rule that puts it at top-left by default. */
+        .video-player-container .vjs-live-label,
+        .vjs-live-label {
+          background: linear-gradient(135deg, #ef4444 0%, #dc2626 60%, #b91c1c 100%) !important;
+          color: #ffffff !important;
+          font-family: 'Pragati Narrow', sans-serif !important;
+          font-weight: 800 !important;
+          letter-spacing: 0.12em !important;
+          padding: 6px 14px !important;
+          border-radius: 7px !important;
+          border: 1px solid rgba(255, 255, 255, 0.28) !important;
+          box-shadow:
+            0 6px 16px -2px rgba(220, 38, 38, 0.65),
+            inset 0 1px 0 rgba(255, 255, 255, 0.28) !important;
+          text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45) !important;
+          animation: ls-live-label-pulse 1.6s ease-out infinite !important;
+          position: absolute !important;
+          top: 16px !important;
+          right: 16px !important;
+          left: auto !important;
+          bottom: auto !important;
+          z-index: 10 !important;
+        }
+        @media (max-width: 720px) {
+          .video-player-container .vjs-live-label,
+          .vjs-live-label {
+            top: 12px !important;
+            right: 12px !important;
+            left: auto !important;
+          }
+        }
+        @keyframes ls-live-label-pulse {
+          0%, 100% {
+            box-shadow:
+              0 6px 16px -2px rgba(220, 38, 38, 0.65),
+              inset 0 1px 0 rgba(255, 255, 255, 0.28),
+              0 0 0 0 rgba(220, 38, 38, 0.55);
+          }
+          50% {
+            box-shadow:
+              0 6px 16px -2px rgba(220, 38, 38, 0.80),
+              inset 0 1px 0 rgba(255, 255, 255, 0.32),
+              0 0 0 10px rgba(220, 38, 38, 0);
+          }
+        }
+
+        /* ─── Big play overlay — first-touch invitation ─────────────────── */
+        .vjs-play-overlay {
+          background:
+            radial-gradient(closest-side, rgba(31, 107, 255, 0.95) 0%, rgba(8, 58, 133, 0.92) 60%, rgba(8, 58, 133, 0.78) 100%) !important;
+          border: 2px solid rgba(255, 255, 255, 0.40) !important;
+          box-shadow:
+            0 18px 48px -8px rgba(31, 107, 255, 0.75),
+            0 0 60px -10px rgba(31, 107, 255, 0.55),
+            inset 0 1px 0 rgba(255, 255, 255, 0.35) !important;
+          transition: transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 220ms ease !important;
+          animation: ls-play-pulse 2.4s ease-in-out infinite !important;
+        }
+        @keyframes ls-play-pulse {
+          0%, 100% { transform: scale(1); }
+          50%      { transform: scale(1.04); }
+        }
+        .vjs-play-overlay:hover {
+          transform: scale(1.10) !important;
+          animation: none !important;
+          box-shadow:
+            0 26px 60px -6px rgba(31, 107, 255, 0.90),
+            0 0 90px -8px rgba(31, 107, 255, 0.70),
+            inset 0 1px 0 rgba(255, 255, 255, 0.45) !important;
+        }
+
+        /* ─── Cinematic dialogs (dark glass) — gift modal handled separately
+              below with a clean light treatment for better viewer UX. */
+        .rating-modal,
+        .auth-stream-modal,
+        .participants-modal {
+          background:
+            linear-gradient(180deg, rgba(18, 22, 32, 0.96) 0%, rgba(8, 11, 19, 0.98) 100%) !important;
+          backdrop-filter: blur(36px) saturate(190%) !important;
+          -webkit-backdrop-filter: blur(36px) saturate(190%) !important;
+          border: 1px solid rgba(255, 255, 255, 0.10) !important;
+          border-radius: 26px !important;
+          box-shadow:
+            0 40px 100px rgba(0, 0, 0, 0.75),
+            0 0 0 1px rgba(31, 107, 255, 0.12),
+            0 0 100px -10px rgba(31, 107, 255, 0.30) !important;
+          position: relative !important;
+        }
+        /* Top brand-blue accent ribbon on dark modals */
+        .rating-modal::before,
+        .auth-stream-modal::before,
+        .participants-modal::before {
+          content: '';
+          position: absolute;
+          top: 0; left: 0; right: 0;
+          height: 4px;
+          border-radius: 26px 26px 0 0;
+          background: linear-gradient(90deg, rgba(8, 58, 133, 0) 0%, #1f6bff 22%, #60a5fa 50%, #1f6bff 78%, rgba(8, 58, 133, 0) 100%);
+          opacity: 0.95;
+          pointer-events: none;
+          z-index: 1;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════════════
+           SEND GIFT MODAL — distinctly festive "gifting" aesthetic, NOT a
+           generic payment modal. Champagne-gold palette, amber title, gold
+           amount stripe, animated gift-ribbon corner, soft sparkle pattern.
+           Payment methods stay brand-blue (those ARE the actual payment) so
+           the gift feels celebratory while the transaction stays trustworthy.
+           ═══════════════════════════════════════════════════════════════════════ */
+        .gift-modal {
+          background:
+            radial-gradient(circle at 90% 10%, rgba(52, 211, 153, 0.10) 0%, rgba(52, 211, 153, 0) 40%),
+            radial-gradient(circle at 10% 95%, rgba(110, 231, 183, 0.08) 0%, rgba(110, 231, 183, 0) 40%),
+            #ecfdf5 !important;
+          backdrop-filter: none !important;
+          -webkit-backdrop-filter: none !important;
+          border: 1px solid rgba(16, 185, 129, 0.22) !important;
+          border-radius: 22px !important;
+          box-shadow:
+            0 40px 100px -20px rgba(16, 185, 129, 0.30),
+            0 18px 40px -12px rgba(4, 120, 87, 0.18),
+            0 1px 0 rgba(255, 255, 255, 0.95) inset !important;
+          position: relative !important;
+          max-width: 440px !important;
+          padding: 0 !important;
+          overflow: hidden !important;
+          isolation: isolate;
+        }
+        /* Top emerald-green accent ribbon — celebration, not transaction */
+        .gift-modal::before {
+          content: '';
+          position: absolute;
+          top: 0; left: 0; right: 0;
+          height: 4px;
+          background: linear-gradient(90deg, rgba(16, 185, 129, 0) 0%, #10b981 18%, #34d399 40%, #6ee7b7 60%, #34d399 80%, rgba(16, 185, 129, 0) 100%);
+          opacity: 0.98;
+          pointer-events: none;
+          z-index: 1;
+        }
+        /* Soft emerald glow in the top-right corner */
+        .gift-modal::after {
+          content: '';
+          position: absolute;
+          top: -90px;
+          right: -90px;
+          width: 240px;
+          height: 240px;
+          border-radius: 50%;
+          background: radial-gradient(circle at center, rgba(16, 185, 129, 0.18) 0%, rgba(52, 211, 153, 0.10) 40%, transparent 70%);
+          pointer-events: none;
+          z-index: 0;
+        }
+        /* Inner content layer — handles padding + scroll, sits above the
+           decorative ::before / ::after pseudo-elements via z-index. */
+        .gift-modal > * {
+          position: relative;
+          z-index: 2;
+        }
+        /* Padding — matches XentriPayModal exactly */
+        .gift-modal {
+          padding-top: clamp(26px, 4.5vw, 38px) !important;
+          padding-left: clamp(22px, 4vw, 34px) !important;
+          padding-right: clamp(22px, 4vw, 34px) !important;
+          padding-bottom: clamp(22px, 4vw, 34px) !important;
+        }
+
+        /* Decorative diagonal "GIFT" ribbon in the top-left corner — green */
+        .gift-ribbon-corner {
+          position: absolute;
+          top: 18px;
+          left: -38px;
+          width: 140px;
+          padding: 4px 0;
+          background: linear-gradient(135deg, #34d399 0%, #10b981 50%, #047857 100%);
+          color: #ffffff;
+          font-family: 'Pragati Narrow', sans-serif;
+          font-size: 10px;
+          font-weight: 900;
+          letter-spacing: 0.18em;
+          text-align: center;
+          transform: rotate(-35deg);
+          transform-origin: center;
+          pointer-events: none;
+          z-index: 4;
+          box-shadow: 0 4px 10px -2px rgba(4, 120, 87, 0.55);
+          text-shadow: 0 1px 2px rgba(6, 78, 59, 0.40);
+        }
+        .gift-ribbon-text {
+          display: inline-block;
+        }
+        .gift-ribbon-text::before { content: '✦ '; opacity: 0.85; }
+        .gift-ribbon-text::after  { content: ' ✦'; opacity: 0.85; }
+
+        /* Subtle emerald sparkle accents floating around the modal corners */
+        .gift-modal-sparkle {
+          position: absolute;
+          color: #10b981;
+          font-size: 14px;
+          pointer-events: none;
+          z-index: 1;
+          opacity: 0.45;
+          animation: gift-sparkle-twinkle 3.2s ease-in-out infinite;
+        }
+        .gift-modal-sparkle--1 {
+          top: 76px;
+          right: 28px;
+          font-size: 16px;
+          animation-delay: 0s;
+        }
+        .gift-modal-sparkle--2 {
+          top: 140px;
+          right: 46px;
+          font-size: 11px;
+          animation-delay: 1.1s;
+        }
+        .gift-modal-sparkle--3 {
+          top: 44px;
+          right: 70px;
+          font-size: 12px;
+          animation-delay: 2.0s;
+          color: #34d399;
+        }
+        @keyframes gift-sparkle-twinkle {
+          0%, 100% { opacity: 0.20; transform: scale(0.85) rotate(0deg); }
+          50%      { opacity: 0.85; transform: scale(1.15) rotate(180deg); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .gift-modal-sparkle { animation: none !important; opacity: 0.40; }
+        }
+
+        /* Eyebrow pill — emerald-mint for "gifting" mood */
+        .gift-modal-eyebrow {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 5px 11px 5px 9px;
+          background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+          border: 1px solid rgba(4, 120, 87, 0.30);
+          border-radius: 999px;
+          margin-bottom: 10px;
+          font-size: 10.5px;
+          font-weight: 800;
+          color: #065f46;
+          letter-spacing: 0.10em;
+          text-transform: uppercase;
+          font-family: 'Pragati Narrow', sans-serif;
+          box-shadow: 0 2px 6px -2px rgba(16, 185, 129, 0.40);
+        }
+        .gift-modal-eyebrow svg { color: #047857 !important; stroke: #047857 !important; }
+
+        /* Title — deep forest green, celebratory */
+        .gift-modal-title {
+          margin: 0 0 4px;
+          font-size: clamp(20px, 4.5vw, 24px);
+          font-weight: 800;
+          color: #065f46;
+          line-height: 1.20;
+          letter-spacing: -0.01em;
+          font-family: 'Pragati Narrow', sans-serif;
+          text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+        }
+        /* Subtitle — soft slate */
+        .gift-modal-sub {
+          margin: 0 0 16px;
+          font-size: 13.5px;
+          color: #64748b;
+          line-height: 1.55;
+        }
+        .gift-modal-sub strong {
+          color: #065f46;
+          font-weight: 700;
+        }
+
+        /* Amount Panel — emerald-tinted card with green stripe */
+        .gift-modal-amount-panel {
+          position: relative;
+          background: linear-gradient(135deg, #ecfdf5 0%, #ffffff 60%, #d1fae5 100%);
+          border: 1px solid rgba(16, 185, 129, 0.28);
+          border-radius: 16px;
+          padding: 14px 16px;
+          margin-bottom: 18px;
+          box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.95),
+            0 1px 2px rgba(4, 120, 87, 0.06);
+        }
+        .gift-modal-amount-stripe {
+          position: absolute;
+          top: 10px;
+          bottom: 10px;
+          left: 0;
+          width: 3px;
+          border-radius: 0 3px 3px 0;
+          background: linear-gradient(180deg, #10b981 0%, #047857 100%);
+          box-shadow: 0 0 8px rgba(16, 185, 129, 0.50);
+        }
+        .gift-modal-amount-label {
+          display: block;
+          font-size: 10.5px;
+          font-weight: 800;
+          color: #065f46;
+          letter-spacing: 0.10em;
+          text-transform: uppercase;
+          font-family: 'Pragati Narrow', sans-serif;
+          margin-bottom: 8px;
+        }
+        /* Gift amount input — white interior with emerald border */
+        .gift-modal-amount-input {
+          width: 100%;
+          padding: 13px 16px;
+          background-color: #ffffff;
+          border: 1.5px solid rgba(16, 185, 129, 0.32);
+          border-radius: 12px;
+          color: #0f172a;
+          font-size: 15px;
+          font-weight: 600;
+          outline: none;
+          transition: border-color 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
+          box-sizing: border-box;
+          font-family: 'Pragati Narrow', sans-serif;
+        }
+        .gift-modal-amount-input:focus {
+          border-color: #047857;
+          background-color: #ffffff;
+          box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.18);
+        }
+        .gift-modal-amount-input::placeholder {
+          color: #cbd5e1;
+          font-weight: 500;
+        }
+        .gift-modal-tiers {
+          display: flex;
+          gap: 6px;
+          flex-wrap: wrap;
+          margin-top: 10px;
+        }
+        .gift-modal-tiers .gift-tier-btn {
+          flex: 1 1 calc(25% - 6px);
+          min-width: 60px;
+          padding: 9px 10px;
+          font-size: 12px;
+          font-weight: 700;
+          font-family: 'Pragati Narrow', sans-serif;
+          background: #ffffff;
+          color: #475569;
+          border: 1.5px solid rgba(16, 185, 129, 0.28);
+          border-radius: 10px;
+          cursor: pointer;
+          transition: all 180ms ease;
+        }
+        .gift-modal-tiers .gift-tier-btn:hover {
+          border-color: rgba(4, 120, 87, 0.55);
+          color: #065f46;
+        }
+        .gift-modal-tiers .gift-tier-btn.is-selected {
+          background: linear-gradient(135deg, #34d399 0%, #10b981 50%, #047857 100%);
+          border-color: #047857;
+          color: #ffffff;
+          box-shadow: 0 6px 14px -4px rgba(16, 185, 129, 0.55);
+        }
+
+        /* ─── Payment method tiles — emerald-accented selected state */
+        .gift-modal-payment-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 10px;
+          margin-bottom: 18px;
+        }
+        .gift-modal-payment-tile {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 8px;
+          padding: 16px 8px 14px;
+          background: #ffffff;
+          border: 1.5px solid rgba(16, 185, 129, 0.22);
+          border-radius: 14px;
+          cursor: pointer;
+          transition:
+            transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1),
+            border-color 180ms ease,
+            box-shadow 200ms ease,
+            background 200ms ease;
+          position: relative;
+          width: 100%;
+          font-family: 'Pragati Narrow', sans-serif;
+          box-shadow: 0 1px 0 rgba(255, 255, 255, 0.9) inset, 0 1px 2px rgba(4, 120, 87, 0.04);
+        }
+        .gift-modal-payment-tile:hover {
+          border-color: rgba(4, 120, 87, 0.45);
+          transform: translateY(-2px);
+          box-shadow: 0 6px 16px -6px rgba(16, 185, 129, 0.25), 0 1px 0 rgba(255, 255, 255, 0.9) inset;
+        }
+        .gift-modal-payment-tile.is-selected {
+          background: linear-gradient(160deg, #ecfdf5 0%, #ffffff 100%);
+          border: 2px solid #047857;
+          box-shadow:
+            0 8px 22px -8px rgba(16, 185, 129, 0.40),
+            0 1px 0 rgba(255, 255, 255, 0.9) inset;
+        }
+        .gift-modal-payment-tile-logo {
+          width: 44px;
+          height: 44px;
+          border-radius: 12px;
+          overflow: hidden;
+          flex-shrink: 0;
+          background: #ffffff;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border: 1px solid rgba(16, 185, 129, 0.18);
+          box-shadow: 0 1px 2px rgba(4, 120, 87, 0.08);
+        }
+        .gift-modal-payment-tile-logo img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+        .gift-modal-payment-tile-label {
+          font-size: 11px;
+          font-weight: 600;
+          text-align: center;
+          line-height: 1.25;
+          color: #475569;
+          letter-spacing: 0.01em;
+        }
+        .gift-modal-payment-tile.is-selected .gift-modal-payment-tile-label {
+          color: #065f46;
+          font-weight: 800;
+        }
+        .gift-modal-payment-tile-check {
+          position: absolute;
+          top: 8px;
+          right: 8px;
+          width: 18px;
+          height: 18px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #34d399 0%, #10b981 50%, #047857 100%);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 2px 6px rgba(16, 185, 129, 0.45);
+          border: 1.5px solid #ffffff;
+          color: #ffffff;
+        }
+        /* Tighten the donation toggle area — compact pill, not a big card */
+        .gift-modal-donation {
+          margin-bottom: 16px !important;
+          padding: 12px 14px !important;
+          background: rgba(8, 58, 133, 0.04) !important;
+          border: 1px solid rgba(8, 58, 133, 0.10) !important;
+          border-radius: 12px !important;
+          transition: all 200ms ease !important;
+        }
+        .gift-modal-donation.is-active {
+          background: rgba(8, 58, 133, 0.06) !important;
+          border-color: rgba(31, 107, 255, 0.30) !important;
+        }
+        /* Convert the donation section's amber/orange highlights to brand blue
+           so the modal reads as a single coherent palette (was a clash). */
+        .gift-modal-donation label {
+          color: #083A85 !important;
+        }
+        .gift-modal-donation .gift-modal-donation-icon {
+          color: #1f6bff !important;
+        }
+        .gift-modal-donation .gift-modal-donation-toggle {
+          background: #083A85 !important;
+          border-color: #083A85 !important;
+          color: #ffffff !important;
+        }
+        .gift-modal-donation .gift-modal-donation-toggle.is-off {
+          background: transparent !important;
+          border-color: rgba(8, 58, 133, 0.25) !important;
+          color: #6b7280 !important;
+        }
+        .gift-modal-donation input[type="number"] {
+          border-color: rgba(8, 58, 133, 0.20) !important;
+          background-color: #ffffff !important;
+        }
+        .gift-modal-donation input[type="number"]:focus {
+          border-color: #083A85 !important;
+        }
+        .gift-modal-donation .gift-tier-btn {
+          background: #ffffff !important;
+          border-color: rgba(8, 58, 133, 0.18) !important;
+          color: #475569 !important;
+        }
+        .gift-modal-donation .gift-tier-btn.is-selected {
+          background: #083A85 !important;
+          border-color: #083A85 !important;
+          color: #ffffff !important;
+        }
+
+        /* Settings popover */
+        .settings-menu {
+          background:
+            linear-gradient(180deg, rgba(20, 24, 34, 0.96) 0%, rgba(10, 13, 22, 0.98) 100%) !important;
+          backdrop-filter: blur(28px) saturate(180%) !important;
+          -webkit-backdrop-filter: blur(28px) saturate(180%) !important;
+          border: 1px solid rgba(255, 255, 255, 0.10) !important;
+          border-radius: 14px !important;
+          box-shadow:
+            0 24px 56px -8px rgba(0, 0, 0, 0.70),
+            inset 0 1px 0 rgba(255, 255, 255, 0.07) !important;
+        }
+
+        /* Emoji picker bar */
+        .emoji-picker-bar {
+          background:
+            linear-gradient(180deg, rgba(20, 24, 34, 0.96) 0%, rgba(10, 13, 22, 0.98) 100%) !important;
+          backdrop-filter: blur(22px) !important;
+          -webkit-backdrop-filter: blur(22px) !important;
+          border: 1px solid rgba(255, 255, 255, 0.10) !important;
+          border-radius: 18px !important;
+          box-shadow:
+            0 18px 44px -10px rgba(0, 0, 0, 0.65),
+            inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+        }
+        .emoji-button {
+          transition: transform 140ms cubic-bezier(0.34, 1.56, 0.64, 1), background 140ms ease !important;
+        }
+        .emoji-button:hover {
+          transform: scale(1.30) translateY(-2px) !important;
+          background: rgba(31, 107, 255, 0.22) !important;
+        }
+
+        /* Mobile chat close fab */
+        .mobile-chat-close {
+          background: rgba(8, 11, 19, 0.85) !important;
+          border: 1px solid rgba(96, 165, 250, 0.30) !important;
+          backdrop-filter: blur(16px) saturate(160%) !important;
+          -webkit-backdrop-filter: blur(16px) saturate(160%) !important;
+          border-radius: 14px !important;
+          color: #f4f6fb !important;
+          box-shadow:
+            0 8px 22px -6px rgba(0, 0, 0, 0.65),
+            0 0 24px -4px rgba(31, 107, 255, 0.30) !important;
+        }
+
+        /* ─── Custom scrollbars ─────────────────────────────────────────── */
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(96, 165, 250, 0.20);
+          border-radius: 999px;
+          transition: background 160ms ease;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: rgba(31, 107, 255, 0.65);
+        }
+        .custom-scrollbar { scrollbar-width: thin; scrollbar-color: rgba(96, 165, 250, 0.20) transparent; }
+
+        /* ─── Reduced motion ───────────────────────────────────────────── */
+        @media (prefers-reduced-motion: reduce) {
+          .layout-wrapper,
+          .vjs-live-label,
+          .vjs-play-overlay,
+          .video-player-container,
+          .video-player-container::after,
+          .video-section::before,
+          .main-container::after,
+          .stream-action-btn,
+          .gift-btn-main,
+          .gift-btn-main::before,
+          .vjs-btn,
+          .emoji-button {
+            animation: none !important;
+            transition: none !important;
+          }
+        }
+
+        /* ─── Focus rings (a11y) ───────────────────────────────────────── */
+        .stream-action-btn:focus-visible,
+        .gift-btn-main:focus-visible,
+        .vjs-btn:focus-visible,
+        .emoji-button:focus-visible,
+        .mobile-chat-close:focus-visible {
+          outline: 2px solid #60a5fa !important;
+          outline-offset: 3px !important;
+          box-shadow: 0 0 0 5px rgba(31, 107, 255, 0.25) !important;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════════════
+           CINEMA HERO STRIP — the new event identity surface above the player.
+           Glass plate with brand-blue ambient glow + gradient bottom rim. Holds
+           the live pill, title, organizer row, and the prominent gift CTA.
+           ═══════════════════════════════════════════════════════════════════════ */
+        .ls-hero {
+          position: relative;
+          margin: 0 0 12px 0;
+          padding: 8px 14px;
+          border-radius: 14px;
+          background:
+            linear-gradient(135deg, rgba(8, 58, 133, 0.22) 0%, rgba(11, 14, 21, 0.78) 60%),
+            linear-gradient(180deg, rgba(15, 19, 30, 0.85) 0%, rgba(8, 11, 19, 0.92) 100%);
+          backdrop-filter: blur(20px) saturate(170%);
+          -webkit-backdrop-filter: blur(20px) saturate(170%);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          box-shadow:
+            0 12px 28px -12px rgba(0, 0, 0, 0.55),
+            0 0 0 1px rgba(31, 107, 255, 0.08);
+          isolation: isolate;
+          animation: ls-hero-rise 500ms cubic-bezier(0.22, 1, 0.36, 1) 100ms backwards;
+        }
+        @keyframes ls-hero-rise {
+          0%   { opacity: 0; transform: translateY(-12px); }
+          100% { opacity: 1; transform: translateY(0); }
+        }
+        /* Subtle radial brand glow behind the meta column. Clipped via
+           border-radius on the parent (no overflow:hidden needed because
+           the decoration covers inset:0 inside the rounded box). */
+        .ls-hero-veil {
+          position: absolute;
+          inset: 0;
+          background:
+            radial-gradient(ellipse 70% 100% at 0% 50%, rgba(31, 107, 255, 0.14) 0%, rgba(31, 107, 255, 0) 60%);
+          pointer-events: none;
+          z-index: 0;
+          border-radius: 14px;
+        }
+        /* Gradient hairline along the bottom edge */
+        .ls-hero-glow {
+          position: absolute;
+          left: 14px;
+          right: 14px;
+          bottom: 0;
+          height: 1px;
+          background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(96, 165, 250, 0.40) 50%, rgba(255,255,255,0) 100%);
+          pointer-events: none;
+          z-index: 1;
+        }
+        /* Top eyebrow row — status pill + stats, all unified.
+           Tight spacing now that the "STARTING SOON" pill is gone — the
+           eyebrow only appears as a slim metadata strip. Empty rows
+           (no LIVE pill, no stats) collapse to zero height. */
+        .ls-hero-eyebrow {
+          position: relative;
+          z-index: 2;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          flex-wrap: wrap;
+          margin-bottom: 6px;
+          padding-bottom: 0;
+          border-bottom: none;
+        }
+        .ls-hero-eyebrow:empty {
+          display: none;
+        }
+        /* Body row — avatar + title block + gift button */
+        .ls-hero-row {
+          position: relative;
+          z-index: 2;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          flex-wrap: wrap;
+        }
+        .ls-hero-meta {
+          display: flex;
+          flex-direction: column;
+          gap: 3px;
+          min-width: 0;
+          flex: 1 1 200px;
+        }
+        .ls-hero-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          padding: 3px 9px 3px 7px;
+          border-radius: 999px;
+          font-family: 'Pragati Narrow', sans-serif;
+          font-size: 10px;
+          font-weight: 800;
+          letter-spacing: 0.10em;
+          line-height: 1;
+          border: 1px solid rgba(255, 255, 255, 0.18);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          white-space: nowrap;
+          flex-shrink: 0;
+        }
+        .ls-hero-pill--live {
+          background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+          border-color: rgba(255, 255, 255, 0.28);
+          color: #ffffff;
+          box-shadow: 0 6px 16px -4px rgba(220, 38, 38, 0.55);
+          animation: ls-hero-live-breathe 1.6s ease-in-out infinite;
+        }
+        @keyframes ls-hero-live-breathe {
+          0%, 100% { box-shadow: 0 6px 16px -4px rgba(220, 38, 38, 0.55), 0 0 0 0 rgba(220, 38, 38, 0.55); }
+          50%      { box-shadow: 0 6px 16px -4px rgba(220, 38, 38, 0.65), 0 0 0 8px rgba(220, 38, 38, 0); }
+        }
+        .ls-hero-pill-dot {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: #ffffff;
+          box-shadow: 0 0 8px rgba(255, 255, 255, 0.85);
+          animation: ls-hero-dot-blink 1.2s ease-in-out infinite;
+        }
+        @keyframes ls-hero-dot-blink {
+          0%, 100% { opacity: 1; }
+          50%      { opacity: 0.40; }
+        }
+        .ls-hero-pill--soon {
+          background: rgba(31, 107, 255, 0.18);
+          border-color: rgba(96, 165, 250, 0.45);
+          color: #93c5fd;
+        }
+        .ls-hero-pill--soon i { font-size: 10px; }
+        .ls-hero-stat {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          padding: 0;
+          color: rgba(147, 197, 253, 0.85);
+          font-size: 11.5px;
+          font-weight: 600;
+          font-family: 'Pragati Narrow', sans-serif;
+          letter-spacing: 0.01em;
+          font-variant-numeric: tabular-nums;
+          flex-shrink: 0;
+        }
+        .ls-hero-stat svg { opacity: 0.85; }
+        /* Subtle middle-dot separator between stats */
+        .ls-hero-stat + .ls-hero-stat::before {
+          content: '·';
+          margin-right: 6px;
+          color: rgba(147, 197, 253, 0.45);
+          font-weight: 800;
+        }
+        /* Title — bigger, bolder, gradient sheen for premium feel */
+        .ls-hero-title {
+          margin: 0;
+          padding: 0;
+          font-family: 'Pragati Narrow', sans-serif;
+          font-weight: 800;
+          font-size: clamp(18px, 2.4vw, 24px);
+          line-height: 1.18;
+          letter-spacing: -0.01em;
+          background: linear-gradient(135deg, #ffffff 0%, #dbeafe 60%, #93c5fd 100%);
+          -webkit-background-clip: text;
+                  background-clip: text;
+          color: transparent;
+          -webkit-text-fill-color: transparent;
+          text-shadow: 0 1px 8px rgba(0, 0, 0, 0.40);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          min-width: 0;
+        }
+        /* Avatar wrap — holds the avatar + a "live" pulse dot badge */
+        .ls-hero-avatar-wrap {
+          position: relative;
+          flex-shrink: 0;
+        }
+        .ls-hero-avatar {
+          width: 46px;
+          height: 46px;
+          border-radius: 50%;
+          object-fit: cover;
+          display: block;
+          border: 2px solid rgba(96, 165, 250, 0.55);
+          box-shadow:
+            0 4px 14px -3px rgba(31, 107, 255, 0.55),
+            0 0 0 3px rgba(8, 58, 133, 0.25);
+          background: #1a2030;
+        }
+        .ls-hero-avatar--fallback {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          color: #93c5fd;
+          font-size: 18px;
+        }
+        /* Tiny pulsing red dot pinned to the avatar bottom-right when live */
+        .ls-hero-avatar-badge {
+          position: absolute;
+          bottom: -1px;
+          right: -1px;
+          width: 12px;
+          height: 12px;
+          border-radius: 50%;
+          background: #ef4444;
+          border: 2px solid #0d1220;
+          box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+          animation: ls-hero-avatar-pulse 1.6s ease-out infinite;
+        }
+        @keyframes ls-hero-avatar-pulse {
+          0%   { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6); }
+          70%  { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+          100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+
+        /* Host row — refined "Hosted by · Name · ✓ verified" */
+        .ls-hero-host {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          font-family: 'Pragati Narrow', sans-serif;
+          min-width: 0;
+        }
+        .ls-hero-host-label {
+          font-size: 10.5px;
+          font-weight: 700;
+          color: rgba(147, 197, 253, 0.65);
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+          flex-shrink: 0;
+        }
+        .ls-hero-host-name {
+          font-size: 13.5px;
+          font-weight: 700;
+          color: #f4f6fb;
+          letter-spacing: 0.005em;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          max-width: 200px;
+        }
+        .ls-hero-verified {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          color: #60a5fa;
+          flex-shrink: 0;
+          filter: drop-shadow(0 0 3px rgba(31, 107, 255, 0.55));
+          line-height: 0;
+        }
+        /* Gift CTA — emerald-green pill with shimmer (was gold/crimson) */
+        .ls-hero-gift {
+          position: relative;
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 9px 16px;
+          border: 1.5px solid rgba(110, 231, 183, 0.60);
+          border-radius: 11px;
+          background: linear-gradient(135deg, #34d399 0%, #10b981 50%, #047857 100%);
+          color: #ffffff;
+          font-family: 'Pragati Narrow', sans-serif;
+          font-size: 12.5px;
+          font-weight: 800;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+          cursor: pointer;
+          overflow: hidden;
+          isolation: isolate;
+          flex-shrink: 0;
+          box-shadow:
+            0 8px 18px -6px rgba(16, 185, 129, 0.55),
+            inset 0 1px 0 rgba(255, 255, 255, 0.28);
+          text-shadow: 0 1px 2px rgba(0, 0, 0, 0.30);
+          transition:
+            transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1),
+            box-shadow 220ms ease,
+            filter 220ms ease;
+        }
+        .ls-hero-gift i { font-size: 14px; }
+        .ls-hero-gift-shimmer {
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, 0.35) 50%, transparent 70%);
+          transform: translateX(-100%);
+          z-index: 0;
+          pointer-events: none;
+          transition: transform 700ms ease;
+        }
+        .ls-hero-gift > i,
+        .ls-hero-gift > span:not(.ls-hero-gift-shimmer) { position: relative; z-index: 1; }
+        .ls-hero-gift:hover {
+          transform: translateY(-2px);
+          filter: brightness(1.08);
+          box-shadow:
+            0 14px 28px -8px rgba(16, 185, 129, 0.70),
+            inset 0 1px 0 rgba(255, 255, 255, 0.40);
+        }
+        .ls-hero-gift:hover .ls-hero-gift-shimmer { transform: translateX(100%); }
+        .ls-hero-gift:active { transform: translateY(0) scale(0.98); }
+        .ls-hero-gift:focus-visible {
+          outline: 2px solid #fcd34d;
+          outline-offset: 3px;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════════════
+           HIDE REDUNDANT CHROME — the new hero replaces these.
+           ═══════════════════════════════════════════════════════════════════════ */
+        /* Original standalone Send Gift below the player → now in hero */
+        .video-section > div > .gift-btn-main { display: none !important; }
+        /* The wrapping div that contains it */
+        .video-section > div:has(> .gift-btn-main) { display: none !important; }
+
+        /* ═══════════════════════════════════════════════════════════════════════
+           VIDEO STAGE — pure dark, no ambient lighting INSIDE the player.
+           The brand-blue rim (conic-gradient ::after defined earlier) and the
+           outer shadow halo still wrap around the player from outside. The
+           interior stays a deep neutral black so playback content is the
+           hero, not the chrome.
+           ═══════════════════════════════════════════════════════════════════════ */
+        .video-player-container {
+          background-color: #000000 !important;
+          background-image: none !important;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════════════
+           LEAVE STREAM BUTTON — ghost idle, deep red on hover.
+           Wins against the generic .stream-action-btn:hover (which paints
+           brand-blue) by using a more-specific selector + !important.
+           ═══════════════════════════════════════════════════════════════════════ */
+        .stream-action-btn.ls-leave-btn,
+        .ls-leave-btn {
+          background: transparent !important;
+          color: rgba(255, 255, 255, 0.85) !important;
+          border: 1.5px solid rgba(239, 68, 68, 0.40) !important;
+          backdrop-filter: none !important;
+          -webkit-backdrop-filter: none !important;
+          box-shadow: none !important;
+          transform: none !important;
+          transition:
+            background-color 200ms ease,
+            border-color 200ms ease,
+            color 200ms ease,
+            box-shadow 200ms ease,
+            transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+        }
+        .stream-action-btn.ls-leave-btn:hover,
+        .ls-leave-btn:hover {
+          /* Soft translucent red gradient — mirrors the smoothness of the
+             brand-blue hover on the Rate button, just in red tones. */
+          background: linear-gradient(135deg, rgba(239, 68, 68, 0.18) 0%, rgba(220, 38, 38, 0.28) 100%) !important;
+          background-color: transparent !important;
+          border-color: rgba(252, 165, 165, 0.55) !important;
+          color: #fef2f2 !important;
+          transform: translateY(-2px) !important;
+          box-shadow:
+            0 12px 28px -10px rgba(220, 38, 38, 0.55),
+            inset 0 1px 0 rgba(255, 255, 255, 0.10) !important;
+        }
+        .stream-action-btn.ls-leave-btn:active,
+        .ls-leave-btn:active {
+          transform: translateY(0) scale(0.98) !important;
+        }
+        .stream-action-btn.ls-leave-btn:focus-visible,
+        .ls-leave-btn:focus-visible {
+          outline: 2px solid #ef4444 !important;
+          outline-offset: 3px !important;
+          box-shadow: 0 0 0 5px rgba(220, 38, 38, 0.25) !important;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════════════
+           DEDUPLICATE — hide ONLY the title/organizer pieces the hero already
+           shows. The action buttons (Rate / Add / Leave) keep their original
+           position in the bottom row, but the row gets generous bottom padding
+           so the buttons don't read as floating in an empty strip.
+           ═══════════════════════════════════════════════════════════════════════ */
+        /* In-video "N watching" badge — duplicates the hero stat */
+        .video-player-container .ls-hide-overlay-watching { display: none !important; }
+        /* Hide just the photographer eyebrow + avatar + name in the original
+           bottom row. The action buttons (Rate / Add / Leave) stay visible. */
+        .ls-org-row > span:first-child,
+        .ls-org-row > img,
+        .ls-org-row > .photographer-name { display: none !important; }
+        /* The fallback avatar (a div without buttons inside) — also hidden */
+        .ls-org-row > div:not(:has(button)) { display: none !important; }
+        /* Action buttons row — right-aligned on its own line. Stats row
+           below is lifted up via negative margin so the two share a single
+           visual row (stats on left, buttons on right) — no extra scroll. */
+        .ls-org-row {
+          justify-content: flex-end !important;
+          margin: 14px 0 0 !important;
+          padding: 0 !important;
+          background: transparent !important;
+          border: none !important;
+          border-radius: 0 !important;
+          position: relative;
+          z-index: 1;
+        }
+        /* Stats row — pull it up so it occupies the same vertical space as
+           the action buttons row. Right-padding clears the buttons (which
+           are floating right) so the stats text never collides. */
+        .ls-stats-row {
+          margin-top: -44px !important;
+          position: relative;
+          z-index: 0;
+          min-height: 40px;
+          padding-right: 380px !important;
+        }
+        /* Tablet — labels still fit but with less right clearance */
+        @media (max-width: 1100px) and (min-width: 721px) {
+          .ls-stats-row { padding-right: 320px !important; }
+        }
+        /* Mobile — keep stats + buttons on a single row by collapsing the
+           action buttons to icon-only (40px circles). Stats stay text. */
+        @media (max-width: 720px) {
+          /* Hide the verbose button text by zeroing the button's font-size
+             then re-enable the icon's size. Padding shrinks to a tight
+             40×40 circle; gaps tighten. There are now only 2 actions
+             (Rate / Leave) so right-clearance is tighter. */
+          .ls-org-row .stream-action-btn {
+            font-size: 0 !important;
+            padding: 0 !important;
+            min-width: 40px !important;
+            width: 40px !important;
+            height: 40px !important;
+            min-height: 40px !important;
+            border-radius: 50% !important;
+            justify-content: center !important;
+            gap: 0 !important;
+            overflow: hidden;
+          }
+          .ls-org-row .stream-action-btn i {
+            font-size: 16px !important;
+            line-height: 1 !important;
+          }
+          .ls-org-row { gap: 8px !important; }
+          /* Stats row keeps the lift; right-clearance fits 2 × 40px circles
+             + gaps (~95px). Stats text smaller for narrow viewports. */
+          .ls-stats-row {
+            margin-top: -48px !important;
+            padding-right: clamp(95px, 28vw, 120px) !important;
+            font-size: 11px;
+            gap: clamp(6px, 2vw, 10px) !important;
+            min-height: 40px;
+          }
+          .ls-stats-row .stat-item {
+            font-size: 11px !important;
+          }
+          .ls-stats-row .stat-item i {
+            font-size: 12px !important;
+          }
+        }
+        /* Very small phones — drop to stacked layout. Negative-margin
+           overlap is too tight on <380px screens. */
+        @media (max-width: 380px) {
+          .ls-stats-row {
+            margin-top: 10px !important;
+            padding-right: 0 !important;
+            min-height: 0 !important;
+          }
+          .ls-stats-row .stat-item { font-size: 10.5px !important; }
+        }
+        /* Duplicate event title (stream-title) below the old row — hidden */
+        .stream-info-section .stream-title { display: none !important; }
+
+        /* ═══════════════════════════════════════════════════════════════════════
+           CHAT INPUT — single unified rounded pill containing the input and
+           the brand-blue send button. Pill background is a subtle dark glass
+           that brightens on focus-within with a brand-blue rim glow.
+           ═══════════════════════════════════════════════════════════════════════ */
+        .ls-chat-input-row {
+          background: rgba(255, 255, 255, 0.05) !important;
+          border: 1px solid rgba(255, 255, 255, 0.10) !important;
+          border-radius: 999px !important;
+          padding: 4px 4px 4px 18px !important;
+          margin-top: 6px;
+          gap: 8px !important;
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          transition: border-color 180ms ease, background 180ms ease, box-shadow 180ms ease !important;
+        }
+        .ls-chat-input-row:focus-within {
+          background: rgba(255, 255, 255, 0.07) !important;
+          border-color: rgba(96, 165, 250, 0.55) !important;
+          box-shadow:
+            0 0 0 4px rgba(31, 107, 255, 0.16),
+            inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+        }
+        .ls-chat-input-row input[type="text"] {
+          padding: 10px 0 !important;
+          background: transparent !important;
+          border: none !important;
+          border-radius: 0 !important;
+          font-size: 14px !important;
+          color: #f4f6fb !important;
+          line-height: 1.2 !important;
+        }
+        .ls-chat-input-row input[type="text"]:focus {
+          background: transparent !important;
+          box-shadow: none !important;
+          outline: none !important;
+        }
+        .ls-chat-input-row input[type="text"]::placeholder {
+          color: rgba(244, 246, 251, 0.42) !important;
+        }
+        /* Send button — circular brand-blue icon nested inside the pill */
+        .ls-chat-input-row > button {
+          width: 38px;
+          height: 38px;
+          min-width: 38px;
+          border-radius: 50% !important;
+          background: linear-gradient(135deg, #083A85 0%, #1f6bff 100%) !important;
+          color: #ffffff !important;
+          flex-shrink: 0;
+          font-size: 15px !important;
+          padding: 0 !important;
+          border: none !important;
+          display: inline-flex !important;
+          align-items: center;
+          justify-content: center;
+          box-shadow:
+            0 4px 12px -4px rgba(31, 107, 255, 0.55),
+            inset 0 1px 0 rgba(255, 255, 255, 0.22);
+          transition: transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1), filter 180ms ease, opacity 180ms ease;
+        }
+        .ls-chat-input-row > button[disabled],
+        .ls-chat-input-row > button:disabled {
+          opacity: 0.40;
+          cursor: default;
+          filter: none;
+          box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.10);
+        }
+        .ls-chat-input-row > button:not(:disabled):hover {
+          transform: scale(1.06);
+          filter: brightness(1.10);
+          box-shadow:
+            0 6px 18px -4px rgba(31, 107, 255, 0.70),
+            inset 0 1px 0 rgba(255, 255, 255, 0.28);
+        }
+        .ls-chat-input-row > button:not(:disabled):active {
+          transform: scale(0.94);
+        }
+
+        /* ═══════════════════════════════════════════════════════════════════════
+           SEND 1-MIN VIDEO MESSAGE — convert from green to brand-blue gradient
+           ═══════════════════════════════════════════════════════════════════════ */
+        .ls-video-msg-cta {
+          background: linear-gradient(135deg, #083A85 0%, #0a4da3 50%, #1f6bff 100%) !important;
+          background-color: transparent !important;
+          border: 1.5px solid rgba(96, 165, 250, 0.55) !important;
+          box-shadow:
+            0 14px 28px -10px rgba(31, 107, 255, 0.55),
+            inset 0 1px 0 rgba(255, 255, 255, 0.20) !important;
+          transition: transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 220ms ease, filter 220ms ease !important;
+        }
+        .ls-video-msg-cta:hover {
+          filter: brightness(1.08);
+          transform: translateY(-2px) !important;
+          box-shadow:
+            0 20px 36px -10px rgba(31, 107, 255, 0.70),
+            inset 0 1px 0 rgba(255, 255, 255, 0.24) !important;
+        }
+        .ls-video-msg-cta:active { transform: translateY(0) scale(0.98) !important; }
+
+        /* ═══════════════════════════════════════════════════════════════════════
+           CHAT EMPTY STATE — animated orb + bubble teasers
+           ═══════════════════════════════════════════════════════════════════════ */
+        .ls-chat-empty {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 14px;
+          padding: 32px 18px;
+          text-align: center;
+          animation: ls-chat-empty-fade 700ms ease-out 200ms backwards;
+        }
+        @keyframes ls-chat-empty-fade {
+          0%   { opacity: 0; transform: translateY(8px); }
+          100% { opacity: 1; transform: translateY(0); }
+        }
+        .ls-chat-empty-orb {
+          position: relative;
+          width: 76px;
+          height: 76px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: radial-gradient(circle at 35% 30%, rgba(96, 165, 250, 0.45) 0%, rgba(31, 107, 255, 0.20) 50%, rgba(8, 58, 133, 0.20) 100%);
+          border-radius: 50%;
+          box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.20),
+            0 12px 28px -8px rgba(31, 107, 255, 0.55),
+            0 0 0 1px rgba(96, 165, 250, 0.30);
+        }
+        .ls-chat-empty-orb i {
+          font-size: 32px;
+          color: #f4f6fb;
+          filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.55));
+          animation: ls-chat-empty-icon 2.4s ease-in-out infinite;
+        }
+        @keyframes ls-chat-empty-icon {
+          0%, 100% { transform: scale(1) rotate(-2deg); }
+          50%      { transform: scale(1.06) rotate(2deg); }
+        }
+        .ls-chat-empty-orb-ring {
+          position: absolute;
+          inset: -6px;
+          border-radius: 50%;
+          border: 2px solid rgba(96, 165, 250, 0.45);
+          animation: ls-chat-empty-ring 2.6s ease-out infinite;
+        }
+        .ls-chat-empty-orb-ring--2 { animation-delay: 1.3s; }
+        @keyframes ls-chat-empty-ring {
+          0%   { transform: scale(0.85); opacity: 0.85; }
+          100% { transform: scale(1.45); opacity: 0; }
+        }
+        .ls-chat-empty-title {
+          margin: 0;
+          font-family: 'Pragati Narrow', sans-serif;
+          font-size: 17px;
+          font-weight: 800;
+          color: #f4f6fb;
+          letter-spacing: 0.01em;
+        }
+        .ls-chat-empty-sub {
+          margin: 0;
+          font-size: 12.5px;
+          color: rgba(244, 246, 251, 0.65);
+          line-height: 1.5;
+          max-width: 220px;
+        }
+        .ls-chat-empty-bubbles {
+          display: flex;
+          gap: 6px;
+          margin-top: 4px;
+        }
+        .ls-chat-empty-bubbles span {
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
+          background: rgba(96, 165, 250, 0.55);
+          animation: ls-chat-empty-bubble 1.4s ease-in-out infinite;
+        }
+        .ls-chat-empty-bubbles span:nth-child(2) { animation-delay: 0.20s; }
+        .ls-chat-empty-bubbles span:nth-child(3) { animation-delay: 0.40s; }
+        @keyframes ls-chat-empty-bubble {
+          0%, 80%, 100% { transform: translateY(0); opacity: 0.55; }
+          40%           { transform: translateY(-6px); opacity: 1; }
+        }
+
+        /* ═══════════════════════════════════════════════════════════════════════
+           CHAT — refined header pill + brand-blue Send-Video-Message CTA
+           ═══════════════════════════════════════════════════════════════════════ */
+        /* Make the top message-count pill brand-blue (was teal) */
+        .chat-section h3 > span:not(.mobile-chat-close) {
+          background: linear-gradient(135deg, rgba(31, 107, 255, 0.30) 0%, rgba(8, 58, 133, 0.30) 100%) !important;
+          color: #93c5fd !important;
+          border: 1px solid rgba(96, 165, 250, 0.30);
+        }
+
+        /* Convert the green "Send 1 Min Video Message" button to brand-blue
+           gradient — keeps the camera icon but matches our palette. */
+        .chat-section button[aria-label="Send video message"],
+        .chat-section button[aria-label="Send video message"]:hover {
+          background: linear-gradient(135deg, #083A85 0%, #0a4da3 50%, #1f6bff 100%) !important;
+          border-color: rgba(96, 165, 250, 0.55) !important;
+          box-shadow:
+            0 14px 28px -10px rgba(31, 107, 255, 0.55),
+            inset 0 1px 0 rgba(255, 255, 255, 0.20) !important;
+        }
+        .chat-section button[aria-label="Send video message"]:hover {
+          filter: brightness(1.08);
+          transform: translateY(-2px) !important;
+          box-shadow:
+            0 20px 36px -10px rgba(31, 107, 255, 0.70),
+            inset 0 1px 0 rgba(255, 255, 255, 0.24) !important;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════════════
+           Mobile adjustments for the new hero
+           ═══════════════════════════════════════════════════════════════════════ */
+        @media (max-width: 1024px) {
+          .ls-hero {
+            margin: 10px 12px 12px;
+            border-radius: 12px;
+            padding: 9px 12px;
+          }
+          .ls-hero-title { font-size: clamp(15px, 4vw, 18px); }
+          .ls-hero-avatar { width: 34px; height: 34px; }
+          .ls-hero-gift {
+            padding: 8px 14px;
+            font-size: 11.5px;
+          }
+          .ls-hero-gift i { font-size: 13px; }
+        }
+        @media (max-width: 540px) {
+          .ls-hero-row { gap: 10px; }
+          .ls-hero-eyebrow {
+            gap: 6px;
+            margin-bottom: 6px;
+            padding-bottom: 0;
+            border-bottom: none;
+          }
+          .ls-hero-meta { flex: 1 1 0; min-width: 0; }
+          .ls-hero-title {
+            font-size: clamp(15px, 4.6vw, 18px);
+            white-space: normal;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            display: -webkit-box;
+            line-height: 1.25;
+          }
+          .ls-hero-gift {
+            width: auto;
+            padding: 8px 12px;
+            font-size: 11px;
+          }
+          .ls-hero-gift i { font-size: 12px; }
+          .ls-hero-gift > span:not(.ls-hero-gift-shimmer) {
+            /* Keep "Send Gift" visible but compact */
+            white-space: nowrap;
+          }
+          .ls-hero-host-name { max-width: 120px; font-size: 12px; }
+          .ls-hero-host-label { font-size: 9.5px; }
+          .ls-hero-avatar { width: 38px; height: 38px; }
+          .ls-hero-avatar-badge { width: 10px; height: 10px; }
+          .ls-hero-stat { font-size: 10.5px; }
+          .ls-hero-stat svg { width: 10px; height: 10px; }
+        }
+        /* Tiny phones — collapse the gift CTA to icon-only */
+        @media (max-width: 380px) {
+          .ls-hero-gift > span:not(.ls-hero-gift-shimmer) {
+            display: none;
+          }
+          .ls-hero-gift {
+            padding: 9px;
+            min-width: 38px;
+            justify-content: center;
+          }
+          .ls-hero-host-name { max-width: 90px; }
+        }
+
+        /* Reduced motion */
+        @media (prefers-reduced-motion: reduce) {
+          .ls-hero,
+          .ls-hero-pill--live,
+          .ls-hero-pill-dot,
+          .ls-hero-avatar-badge,
+          .ls-hero-gift,
+          .ls-hero-gift-shimmer,
+          .ls-chat-empty,
+          .ls-chat-empty-orb i,
+          .ls-chat-empty-orb-ring,
+          .ls-chat-empty-bubbles span {
+            animation: none !important;
+            transition: none !important;
+          }
+        }
+      `}</style>
+
       <style>{`
         * {
           -webkit-tap-highlight-color: transparent;
@@ -3920,6 +6197,27 @@ const App = () => {
           .video-player-container {
             border-radius: 0 !important;
           }
+          /* Stream info section needs side padding on mobile so its content
+             (mini players + actions + stats) doesn't hit the edges */
+          .stream-info-section {
+            padding-left: 12px !important;
+            padding-right: 12px !important;
+            padding-bottom: clamp(20px, 4vw, 28px) !important;
+          }
+          /* Prevent any horizontal overflow on the page */
+          .main-container,
+          .layout-wrapper,
+          .video-section {
+            max-width: 100vw !important;
+            overflow-x: hidden !important;
+          }
+          /* Mini players: horizontal scroll lane on mobile */
+          .mini-players-container {
+            overflow-x: auto !important;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+          }
+          .mini-players-container::-webkit-scrollbar { display: none; }
         }
 
         /* Desktop-specific styles (maintain unchanged) */
@@ -3984,12 +6282,17 @@ const App = () => {
           }
         }
 
-        /* Modal responsive improvements */
+        /* Modal responsive improvements.
+           NOTE: .gift-modal removed from this group — it has its own
+           tighter max-width (380px) defined in the polish layer above. */
         .modal-content,
         .add-event-modal,
-        .participants-modal,
-        .gift-modal {
+        .participants-modal {
           max-width: 90vw !important;
+          max-height: 90vh !important;
+          overflow-y: auto !important;
+        }
+        .gift-modal {
           max-height: 90vh !important;
           overflow-y: auto !important;
         }
@@ -4001,14 +6304,95 @@ const App = () => {
         @media (max-width: 640px) {
           .modal-content,
           .add-event-modal,
-          .rating-modal,
-          .gift-modal {
+          .rating-modal {
             width: calc(100vw - 24px) !important;
             max-width: calc(100vw - 24px) !important;
             margin: 12px !important;
             padding: 16px !important;
             padding-top: 40px !important;
             border-radius: 14px !important;
+          }
+
+          /* Gift modal — own mobile sizing (tighter than the generic rule).
+             The decorative ribbon + sparkles are downsized/hidden, the
+             payment grid stays 3-col but gets tighter padding, and the
+             eyebrow gets out of the close button's way. */
+          .gift-modal {
+            width: calc(100vw - 24px) !important;
+            max-width: 420px !important;
+            margin: 12px !important;
+            border-radius: 16px !important;
+            padding-top: clamp(22px, 6vw, 28px) !important;
+            padding-left: 16px !important;
+            padding-right: 16px !important;
+            padding-bottom: 18px !important;
+          }
+          /* Ribbon corner — smaller, repositioned so it doesn't crowd the
+             eyebrow text on narrow screens */
+          .gift-ribbon-corner {
+            top: 14px;
+            left: -42px;
+            width: 120px;
+            font-size: 9px;
+            padding: 3px 0;
+          }
+          /* Sparkles — hidden on mobile to avoid overlapping the close
+             button + eyebrow on tight viewports */
+          .gift-modal-sparkle { display: none !important; }
+          /* Eyebrow + title + sub — slightly tighter */
+          .gift-modal-eyebrow {
+            font-size: 9.5px !important;
+            padding: 4px 9px 4px 7px !important;
+            margin-bottom: 8px !important;
+          }
+          .gift-modal-title {
+            font-size: clamp(17px, 5vw, 20px) !important;
+          }
+          .gift-modal-sub {
+            font-size: 12.5px !important;
+            margin-bottom: 14px !important;
+          }
+          /* Amount panel — tighter padding */
+          .gift-modal-amount-panel {
+            padding: 12px 14px !important;
+            margin-bottom: 14px !important;
+          }
+          .gift-modal-amount-input {
+            padding: 11px 14px !important;
+            font-size: 14px !important;
+          }
+          /* Tier buttons — tighter gap, smaller padding */
+          .gift-modal-tiers {
+            gap: 5px !important;
+            margin-top: 8px !important;
+          }
+          .gift-modal-tiers .gift-tier-btn {
+            padding: 8px 6px !important;
+            font-size: 11px !important;
+            min-width: 50px !important;
+          }
+          /* Payment grid — tighter on mobile */
+          .gift-modal-payment-grid {
+            gap: 6px !important;
+            margin-bottom: 14px !important;
+          }
+          .gift-modal-payment-tile {
+            padding: 12px 4px 10px !important;
+            border-radius: 12px !important;
+          }
+          .gift-modal-payment-tile-logo {
+            width: 38px !important;
+            height: 38px !important;
+            border-radius: 10px !important;
+          }
+          .gift-modal-payment-tile-label {
+            font-size: 9.5px !important;
+          }
+          .gift-modal-payment-tile-check {
+            width: 16px !important;
+            height: 16px !important;
+            top: 6px !important;
+            right: 6px !important;
           }
 
           .modal-content h2,
@@ -4044,6 +6428,24 @@ const App = () => {
           .auth-stream-modal input {
             font-size: 16px !important;
           }
+        }
+
+        /* Tiny phones — additional gift modal compaction (≤380px wide) */
+        @media (max-width: 380px) {
+          .gift-modal {
+            padding-left: 14px !important;
+            padding-right: 14px !important;
+          }
+          .gift-modal-payment-grid { gap: 5px !important; }
+          .gift-modal-payment-tile { padding: 10px 3px 8px !important; }
+          .gift-modal-payment-tile-logo { width: 34px !important; height: 34px !important; }
+          .gift-modal-payment-tile-label { font-size: 9px !important; }
+          .gift-modal-tiers .gift-tier-btn {
+            padding: 7px 4px !important;
+            font-size: 10.5px !important;
+            min-width: 44px !important;
+          }
+          .gift-ribbon-corner { display: none; }
         }
 
         /* Safe area insets for modals on notched devices */
@@ -4146,6 +6548,95 @@ const App = () => {
             paddingTop: '20px',
             paddingRight: '20px',
           }}>
+
+            {/* ═══════════════════════════════════════════════════════════════
+                CINEMA HERO — event identity strip above the stage.
+                Pure presentation: pulls from the existing mainEvent state,
+                no new backend calls. Sits at the top of the video-section so
+                viewers see what they're watching the moment the page paints. */}
+            {mainEvent && mainEvent.title && mainEvent.title !== 'Loading...' && (
+              <div className="ls-hero" aria-label="Event details">
+                <div className="ls-hero-veil" aria-hidden="true" />
+                <div className="ls-hero-glow" aria-hidden="true" />
+
+                {/* Eyebrow row — LIVE pill (when ongoing only) + stats. The
+                    "STARTING SOON" banner has been removed per design req. */}
+                <div className="ls-hero-eyebrow">
+                  {mainEvent.eventStatus === 'ONGOING' && (
+                    <span className="ls-hero-pill ls-hero-pill--live">
+                      <span className="ls-hero-pill-dot" aria-hidden="true" />
+                      LIVE NOW
+                    </span>
+                  )}
+                  {typeof mainEvent.viewers === 'number' && mainEvent.viewers > 0 && (
+                    <span className="ls-hero-stat">
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </svg>
+                      {mainEvent.viewers.toLocaleString()} watching
+                    </span>
+                  )}
+                  {mainEvent.startTime && (
+                    <span className="ls-hero-stat">
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <circle cx="12" cy="12" r="10" />
+                        <polyline points="12 6 12 12 16 14" />
+                      </svg>
+                      {mainEvent.startTime}
+                    </span>
+                  )}
+                </div>
+
+                {/* Body row — avatar, title + host, gift button */}
+                <div className="ls-hero-row">
+                  <div className="ls-hero-avatar-wrap">
+                    {mainEvent.photographerAvatar ? (
+                      <img
+                        src={mainEvent.photographerAvatar}
+                        alt={mainEvent.photographer || 'Organizer'}
+                        className="ls-hero-avatar"
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                      />
+                    ) : (
+                      <span className="ls-hero-avatar ls-hero-avatar--fallback" aria-hidden="true">
+                        <i className="bi bi-person-fill" />
+                      </span>
+                    )}
+                    {mainEvent.eventStatus === 'ONGOING' && (
+                      <span className="ls-hero-avatar-badge" aria-hidden="true" />
+                    )}
+                  </div>
+
+                  <div className="ls-hero-meta">
+                    <h1 className="ls-hero-title">{mainEvent.title}</h1>
+                    <div className="ls-hero-host">
+                      <span className="ls-hero-host-label">Hosted by</span>
+                      <span className="ls-hero-host-name">{mainEvent.photographer || 'Organizer'}</span>
+                      <span className="ls-hero-verified" aria-label="Verified host" title="Verified host">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                          <path d="M12 2l2.39 4.84L20 7.61l-3.85 3.75.91 5.32L12 14.14 6.94 16.68l.91-5.32L4 7.61l5.61-.77L12 2z" opacity="0" />
+                          <path d="M22.5 12c0-1.5-1-2.8-2.4-3.3.4-1.4 0-3-1-4-1-1-2.6-1.4-4-1C14.5 2.5 13.3 1.5 12 1.5s-2.5 1-3 2.4c-1.4-.4-3 0-4 1-1 1-1.4 2.6-1 4C2.5 9.5 1.5 10.7 1.5 12s1 2.5 2.4 3c-.4 1.4 0 3 1 4 1 1 2.6 1.4 4 1 .5 1.4 1.7 2.4 3 2.4s2.5-1 3-2.4c1.4.4 3 0 4-1 1-1 1.4-2.6 1-4 1.5-.5 2.5-1.7 2.5-3z M10.5 16l-3.5-3.5 1.4-1.4 2.1 2.1 5.1-5.1 1.4 1.4z" />
+                        </svg>
+                      </span>
+                    </div>
+                  </div>
+
+                  {isGiftableEvent && events.length === 1 && (
+                    <button
+                      onClick={() => openGiftModal(mainEvent)}
+                      className="ls-hero-gift"
+                      type="button"
+                      aria-label="Send a gift to the organizer"
+                    >
+                      <span className="ls-hero-gift-shimmer" aria-hidden="true" />
+                      <i className="bi bi-gift-fill" aria-hidden="true" />
+                      <span>Send Gift</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Main Video Player Container */}
             <div
@@ -4545,9 +7036,12 @@ const App = () => {
                 </div>
               )}
 
-              {/* Viewer Count — clickable to open participants panel */}
+              {/* Viewer Count — clickable to open participants panel.
+                  Note: hidden via CSS (.ls-hide-overlay-watching) when the
+                  Cinema Hero above already shows the watcher count. */}
               {mainEvent.viewers > 0 && (
                 <div
+                  className="ls-hide-overlay-watching"
                   onClick={(e) => { e.stopPropagation(); setShowParticipants(true); }}
                   style={{
                     position: 'absolute',
@@ -4575,13 +7069,17 @@ const App = () => {
                 </div>
               )}
 
-              {/* Live Badge */}
+              {/* Live Badge — pinned to top-right corner of the video */}
               <div
                 className="vjs-live-label"
                 onClick={(e) => e.stopPropagation()}
                 style={{
-                  left: 'auto',
+                  position: 'absolute',
+                  top: '16px',
                   right: '16px',
+                  left: 'auto',
+                  bottom: 'auto',
+                  zIndex: 10,
                   opacity: showControls ? 1 : 0,
                   transform: showControls ? 'translateY(0)' : 'translateY(-20px)',
                 }}
@@ -5462,8 +7960,11 @@ const App = () => {
                 </div>
               )}
 
-              {/* Streaming Photographer + Buttons */}
-              <div style={{
+              {/* Streaming Photographer + Buttons.
+                  Note: the photographer eyebrow + avatar + name are hidden via
+                  CSS (.ls-org-row) since the Cinema Hero already shows them.
+                  The action buttons (Rate / Add Event / Leave) stay visible. */}
+              <div className="ls-org-row" style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: 'clamp(8px, 2vw, 10px)',
@@ -5539,46 +8040,22 @@ const App = () => {
                     {userHasRated ? 'Rated' : 'Rate this Live'}
                   </button>
 
-                  {/* Add Event Button */}
-                  {events.length < 3 && (
-                    <button
-                      className="stream-action-btn"
-                      onClick={() => setShowAddEventModal(true)}
-                      style={{
-                        backgroundColor: 'transparent',
-                        color: '#fff',
-                        fontWeight: '600',
-                        padding: '10px 24px',
-                        borderRadius: '16px',
-                        fontSize: 'clamp(12px, 2.5vw, 13px)',
-                        border: '1.5px solid rgba(255,255,255,0.25)',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        minHeight: '40px',
-                        whiteSpace: 'nowrap'
-                      }}
-                      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.5)'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)'; }}
-                    >
-                      <i className="bi bi-plus-circle-fill" style={{ fontSize: 'clamp(12px, 2.5vw, 14px)' }}></i>
-                      Add Event
-                    </button>
-                  )}
+                  {/* Add Event button removed per design requirements.
+                      The state (showAddEventModal) and modal JSX below are
+                      kept so existing references compile, but the button
+                      that triggered it no longer renders. */}
 
-                  {/* Leave Stream Button */}
+                  {/* Leave Stream Button — ghost by default, deep red on hover.
+                      The .ls-leave-btn class carries the red-on-hover styles
+                      (with !important) so they beat the generic
+                      .stream-action-btn:hover brand-blue rule. */}
                   <button
-                    className="stream-action-btn"
+                    className="stream-action-btn ls-leave-btn"
                     style={{
-                      backgroundColor: '#e61220',
-                      color: '#fff',
                       fontWeight: '600',
                       padding: '10px 24px',
                       borderRadius: '16px',
                       fontSize: 'clamp(12px, 2.5vw, 13px)',
-                      border: 'none',
                       cursor: 'pointer',
                       transition: 'all 0.2s',
                       display: 'flex',
@@ -5587,8 +8064,6 @@ const App = () => {
                       minHeight: '40px',
                       whiteSpace: 'nowrap'
                     }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#dc2626'}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#e61220'}
                     onClick={handleLeaveStream}
                   >
                     <i className="bi bi-box-arrow-left" style={{ fontSize: 'clamp(12px, 2.5vw, 14px)' }}></i>
@@ -5606,8 +8081,10 @@ const App = () => {
                 lineHeight: '1.4'
               }}>{mainEvent.title}</h2>
 
-              {/* Stats Row */}
-              <div style={{
+              {/* Stats Row — pulled inline with the action buttons row above
+                  via CSS (.ls-stats-row class). Stats float on the left, the
+                  action buttons stay on the right of the same visual line. */}
+              <div className="ls-stats-row" style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: 'clamp(8px, 3vw, 16px)',
@@ -5754,7 +8231,50 @@ const App = () => {
               flexDirection: 'column',
               gap: '8px'
             }}>
-              {mainEvent.messages.map((message) => (
+              {/* Filter out pre-event "wish" messages — those were sent while
+                  the event was still upcoming and are meant as private notes
+                  to the host, not for the live chat. We compare each
+                  message's createdAt against the event's scheduled start,
+                  hiding anything older. Optimistic local messages (no
+                  createdAt) and messages from the user themselves always show. */}
+              {(() => {
+                // Resolve the event's go-live reference time. Prefer
+                // eventStartTime, fall back to eventDate. If neither is
+                // available, no filtering is applied.
+                const startRef = mainEvent.eventStartTime || mainEvent.eventDate;
+                const goLiveTime = startRef ? new Date(startRef).getTime() : 0;
+
+                const visibleMessages = mainEvent.messages.filter((m) => {
+                  // Keep optimistic local messages (no createdAt yet) and
+                  // anything sent without a known timestamp.
+                  if (!m.createdAt) return true;
+                  if (!goLiveTime) return true;
+                  const sentAt = new Date(m.createdAt).getTime();
+                  if (Number.isNaN(sentAt)) return true;
+                  // Hide messages older than the event's scheduled start
+                  return sentAt >= goLiveTime;
+                });
+
+                return (
+                  <>
+                    {/* Empty-state — when no public chat messages yet */}
+                    {visibleMessages.length === 0 && (
+                      <div className="ls-chat-empty" role="status" aria-live="polite">
+                        <div className="ls-chat-empty-orb" aria-hidden="true">
+                          <span className="ls-chat-empty-orb-ring" />
+                          <span className="ls-chat-empty-orb-ring ls-chat-empty-orb-ring--2" />
+                          <i className="bi bi-chat-square-heart-fill" />
+                        </div>
+                        <h4 className="ls-chat-empty-title">No messages yet</h4>
+                        <p className="ls-chat-empty-sub">
+                          Be the first to share a moment with the room.
+                        </p>
+                        <div className="ls-chat-empty-bubbles" aria-hidden="true">
+                          <span /><span /><span />
+                        </div>
+                      </div>
+                    )}
+                    {visibleMessages.map((message) => (
                 <div key={message.id} style={{
                   display: 'flex',
                   gap: '8px',
@@ -6041,6 +8561,9 @@ const App = () => {
                   </div>
                 </div>
               ))}
+                  </>
+                );
+              })()}
             </div>
 
             {/* Chat Input */}
@@ -6113,7 +8636,7 @@ const App = () => {
               )}
 
               {canInteract ? (
-                <div style={{
+                <div className="ls-chat-input-row" style={{
                   display: 'flex',
                   alignItems: 'center',
                   backgroundColor: '#2f2f35',
@@ -6176,9 +8699,11 @@ const App = () => {
                 </button>
               )}
 
-              {/* Send Video Message Button */}
+              {/* Send Video Message Button — restyled to brand-blue gradient
+                  via the .ls-video-msg-cta class (overrides inline green). */}
               <button
                 onClick={() => canInteract ? setShowVideoMessageRecorder(true) : requireInteraction(() => {})}
+                className="ls-video-msg-cta"
                 style={{
                   width: '100%',
                   marginTop: '12px',
@@ -6199,14 +8724,14 @@ const App = () => {
                   letterSpacing: '0.5px'
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#15803d';
+                  e.currentTarget.style.backgroundColor = '';
                   e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(22, 163, 74, 0.3)';
+                  e.currentTarget.style.boxShadow = '';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = '#16a34a';
+                  e.currentTarget.style.backgroundColor = '';
                   e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = 'none';
+                  e.currentTarget.style.boxShadow = '';
                 }}
               >
                 <i className="bi bi-camera-video-fill" style={{ fontSize: '16px' }}></i>
@@ -6226,137 +8751,46 @@ const App = () => {
         </div>
       </div>
 
-      {/* Add Event Modal */}
-      {showAddEventModal && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 2000,
-            backdropFilter: 'blur(4px)',
-            padding: '16px',
-            overflowY: 'auto'
-          }}
-          onMouseDown={(e) => {
-            // Only close if clicking directly on backdrop
-            if (e.target === e.currentTarget) {
-              setShowAddEventModal(false);
-            }
-          }}
-        >
-          <div className="modal-content add-event-modal" style={{
-            backgroundColor: '#18181b',
-            borderRadius: '20px',
-            padding: 'clamp(20px, 5vw, 32px)',
-            maxWidth: '320px',
-            width: 'auto',
-            maxHeight: '90vh',
-            overflowY: 'auto',
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            margin: 'auto',
-            pointerEvents: 'auto'
-          }} onMouseDown={(e) => e.stopPropagation()}>
-            <h2 style={{
-              fontSize: 'clamp(18px, 4.5vw, 20px)',
-              fontWeight: '600',
-              color: '#efeff1',
-              marginBottom: '8px',
-              marginTop: 0,
-              lineHeight: '1.3'
-            }}>Add Another Event</h2>
-            <p style={{
-              fontSize: 'clamp(12px, 3vw, 13px)',
-              color: '#adadb8',
-              marginBottom: 'clamp(16px, 4vw, 24px)',
-              lineHeight: '1.5'
-            }}>Enter the event ID or host ID to join another live stream (maximum 3 events).</p>
-            <input
-              type="text"
-              value={newEventId}
-              onChange={(e) => setNewEventId(e.target.value)}
-              placeholder="Enter Event Link or Host ID"
-              style={{
-                width: '100%',
-                padding: 'clamp(10px, 3vw, 12px)',
-                border: '1px solid rgba(255, 255, 255, 0.2)',
-                borderRadius: '14px',
-                fontSize: '16px',
-                marginBottom: 'clamp(16px, 4vw, 24px)',
-                outline: 'none',
-                boxSizing: 'border-box',
-                backgroundColor: '#2f2f35',
-                color: '#efeff1',
-                minHeight: '44px'
-              }}
-              onKeyDown={(e) => e.key === 'Enter' && handleAddEvent()}
-            />
-            <div style={{
-              display: 'flex',
-              gap: 'clamp(8px, 2vw, 12px)',
-              justifyContent: 'flex-end',
-              flexWrap: 'wrap'
-            }}>
-              <button
-                onClick={() => setShowAddEventModal(false)}
-                style={{
-                  padding: '9px 18px',
-                  borderRadius: '10px',
-                  border: '1.5px solid rgba(8,58,133,0.15)',
-                  backgroundColor: 'transparent',
-                  color: '#374151',
-                  fontSize: '13px',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  minHeight: '38px',
-                  minWidth: '90px',
-                  flex: '1',
-                  maxWidth: '130px'
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#f8fafc'; e.currentTarget.style.borderColor = 'rgba(8,58,133,0.3)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.borderColor = 'rgba(8,58,133,0.15)'; }}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleAddEvent}
-                disabled={!newEventId.trim()}
-                style={{
-                  padding: '12px 24px',
-                  borderRadius: '14px',
-                  border: 'none',
-                  backgroundColor: newEventId.trim() ? '#1890ff' : '#4b5563',
-                  color: '#fff',
-                  fontSize: 'clamp(13px, 3vw, 14px)',
-                  fontWeight: '600',
-                  cursor: newEventId.trim() ? 'pointer' : 'not-allowed',
-                  transition: 'all 0.2s',
-                  minHeight: '44px',
-                  minWidth: '100px',
-                  flex: '1',
-                  maxWidth: '150px'
-                }}
-                onMouseEnter={(e) => {
-                  if (newEventId.trim()) e.currentTarget.style.backgroundColor = '#1570d3';
-                }}
-                onMouseLeave={(e) => {
-                  if (newEventId.trim()) e.currentTarget.style.backgroundColor = '#1890ff';
-                }}
-              >
-                Add Event
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Add Event modal removed per design requirements.
+          The showAddEventModal state and related refs remain in the file so
+          unrelated references (e.g. global modal-open detection in escape
+          handlers) keep compiling, but the modal itself never renders. */}
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          Standalone DonationPromptModal — pops over the gift modal AFTER
+          the user clicks "Send Gift". Handles both the skip path (no
+          donation) and the add path (donation amount), then triggers
+          handleSendGift to actually process the gift payment. */}
+      <DonationPromptModal
+        isOpen={showGiftDonationOverlay}
+        currencyCode={mainEvent?.streamFeeCurrencyAbbreviation || 'RWF'}
+        paymentAmount={parseInt(giftAmount) || 0}
+        onSkip={() => {
+          setShowGiftDonationOverlay(false);
+          setDonationAmount('');
+          // Pass 0 explicitly so we don't depend on async state flush
+          handleSendGift(0);
+        }}
+        onDonate={(amt) => {
+          setShowGiftDonationOverlay(false);
+          setDonationAmount(String(amt));
+          handleSendGift(amt);
+        }}
+      />
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          AppreciationModal — celebratory overlay shown after a gift OR a
+          donation payment completes. Same component, different theme based
+          on `type`. When a viewer gives BOTH (gift + donation in one flow),
+          we show the gift appreciation first, then the donation one. */}
+      <AppreciationModal
+        isOpen={appreciation.open}
+        type={appreciation.type}
+        amount={appreciation.amount}
+        currencyCode={appreciation.currency}
+        recipientName={appreciation.recipient}
+        onClose={() => setAppreciation((prev) => ({ ...prev, open: false }))}
+      />
 
       {/* Leave Stream Confirmation Modal */}
       {showLeaveConfirmModal && (
@@ -6903,36 +9337,45 @@ const App = () => {
               <i className="bi bi-x-lg"></i>
             </button>
 
+            {/* ── Decorative gift ribbon corner — distinguishes this from
+                  payment modals at first glance. Diagonal "GIFT" banner in
+                  the top-left with sparkle accents floating on the page. */}
+            <span className="gift-ribbon-corner" aria-hidden="true">
+              <span className="gift-ribbon-text">GIFT</span>
+            </span>
+            <span className="gift-modal-sparkle gift-modal-sparkle--1" aria-hidden="true">✦</span>
+            <span className="gift-modal-sparkle gift-modal-sparkle--2" aria-hidden="true">✦</span>
+            <span className="gift-modal-sparkle gift-modal-sparkle--3" aria-hidden="true">✧</span>
+
             {/* ── STEP: Form ── */}
             {giftStep === 'form' && (<>
-            <h2 style={{
-              fontSize: 'clamp(18px, 5vw, 24px)',
-              fontWeight: '700',
-              color: '#083A85',
-              marginBottom: '8px',
-              marginTop: 0,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 'clamp(6px, 2vw, 10px)',
-              flexWrap: 'wrap',
-              lineHeight: '1.3'
-            }}>
-              <i className="bi bi-gift-fill" style={{ color: '#083A85', fontSize: 'clamp(20px, 5vw, 28px)' }}></i>
-              Send a Gift
+            {/* Eyebrow pill — gift-themed gold badge */}
+            <div className="gift-modal-eyebrow">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <polyline points="20 12 20 22 4 22 4 12" />
+                <rect x="2" y="7" width="20" height="5" />
+                <line x1="12" y1="22" x2="12" y2="7" />
+                <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z" />
+                <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" />
+              </svg>
+              SEND A GIFT
+            </div>
+            <h2 className="gift-modal-title">
+              Show your appreciation
             </h2>
-            <p style={{
-              fontSize: 'clamp(12px, 3vw, 14px)',
-              color: '#6b7280',
-              marginBottom: 'clamp(16px, 4vw, 24px)',
-              lineHeight: '1.5'
-            }}>Show your appreciation to {giftTargetEvent?.photographer || mainEvent.photographer}</p>
+            <p className="gift-modal-sub">
+              Send a gift to <strong>{giftTargetEvent?.photographer || mainEvent.photographer}</strong>
+            </p>
 
-            {/* Donation Section — toggle to include a charitable donation */}
-            <div style={{
-              marginBottom: '20px',
-              padding: '14px',
-              backgroundColor: includeDonation ? 'rgba(245, 158, 11, 0.08)' : '#f9fafb',
-              border: `1px solid ${includeDonation ? 'rgba(245, 158, 11, 0.25)' : '#e5e7eb'}`,
+            {/* Donation Section — REMOVED from inline. Donation is now
+                surfaced via the standalone DonationPromptModal that pops up
+                AFTER the user clicks "Send Gift" (see overlay below). The
+                false-gate keeps the JSX block harmless if any legacy code
+                still references its variables. */}
+            {false && (
+            <div className={`gift-modal-donation ${includeDonation ? 'is-active' : ''}`} style={{
+              marginBottom: '16px',
+              padding: '12px 14px',
               borderRadius: '12px',
               transition: 'all 0.2s',
             }}>
@@ -6949,19 +9392,24 @@ const App = () => {
                   gap: '8px',
                   fontSize: '13px',
                   fontWeight: '600',
-                  color: includeDonation ? '#f59e0b' : '#6b7280',
                   cursor: 'pointer',
                 }} onClick={() => { setIncludeDonation(!includeDonation); if (includeDonation) setDonationAmount(''); }}>
-                  <i className="bi bi-heart-fill" style={{ color: includeDonation ? '#ef4444' : '#9ca3af' }}></i>
+                  <i className="bi bi-heart-fill gift-modal-donation-icon"></i>
                   Support a Cause
                 </label>
-                <button onClick={() => { setIncludeDonation(!includeDonation); if (includeDonation) setDonationAmount(''); }} style={{
-                  padding: '2px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: 600, cursor: 'pointer',
-                  border: `1px solid ${includeDonation ? '#f59e0b' : '#d1d5db'}`,
-                  background: includeDonation ? '#f59e0b' : 'transparent',
-                  color: includeDonation ? '#fff' : '#6b7280',
-                  transition: 'all 0.2s',
-                }}>
+                <button
+                  onClick={() => { setIncludeDonation(!includeDonation); if (includeDonation) setDonationAmount(''); }}
+                  className={`gift-modal-donation-toggle ${!includeDonation ? 'is-off' : ''}`}
+                  style={{
+                    padding: '3px 12px',
+                    borderRadius: '12px',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    border: '1px solid',
+                    transition: 'all 0.2s',
+                  }}
+                >
                   {includeDonation ? 'Added' : 'Add'}
                 </button>
               </div>
@@ -6971,7 +9419,6 @@ const App = () => {
                   display: 'block',
                   fontSize: '12px',
                   fontWeight: '600',
-                  color: '#f59e0b',
                   marginBottom: '8px'
                 }}>
                   Amount ({mainEvent?.streamFeeCurrencyAbbreviation || 'RWF'})
@@ -6983,39 +9430,34 @@ const App = () => {
                   placeholder="Enter donation amount"
                   style={{
                     width: '100%',
-                    padding: '12px 16px',
-                    backgroundColor: '#f9fafb',
-                    border: '1px solid rgba(245, 158, 11, 0.3)',
+                    padding: '10px 14px',
+                    border: '1px solid',
                     borderRadius: '10px',
-                    color: '#374151',
+                    color: '#0f172a',
                     fontSize: '14px',
                     outline: 'none',
                     transition: 'border-color 0.2s',
                     boxSizing: 'border-box'
                   }}
-                  onFocus={(e) => e.currentTarget.style.borderColor = '#f59e0b'}
-                  onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(245, 158, 11, 0.3)'}
                 />
                 <div style={{
                   display: 'flex',
-                  gap: '8px',
+                  gap: '6px',
                   flexWrap: 'wrap',
-                  marginTop: '10px',
+                  marginTop: '8px',
                 }}>
                   {['10000', '20000', '50000', '100000'].map((amt) => (
                     <button
                       key={amt}
                       onClick={() => setDonationAmount(amt)}
+                      className={`gift-tier-btn ${donationAmount === amt ? 'is-selected' : ''}`}
                       style={{
                         flex: '1 1 calc(25% - 6px)',
                         minWidth: '60px',
-                        padding: '8px 10px',
+                        padding: '7px 10px',
                         fontSize: '12px',
                         fontWeight: '600',
-                        backgroundColor: donationAmount === amt ? '#f59e0b' : '#fff',
-                        color: donationAmount === amt ? '#000' : '#374151',
                         border: '1px solid',
-                        borderColor: donationAmount === amt ? '#f59e0b' : 'rgba(245, 158, 11, 0.25)',
                         borderRadius: '8px',
                         cursor: 'pointer',
                         transition: 'all 0.2s ease',
@@ -7025,165 +9467,72 @@ const App = () => {
                     </button>
                   ))}
                 </div>
-                <p style={{ fontSize: '11px', color: '#9ca3af', marginTop: '8px', marginBottom: 0 }}>
-                  Supports families in need, medical bills, school requirements, and food for children
+                <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: '8px', marginBottom: 0, lineHeight: 1.4 }}>
+                  Supports families, medical bills, and school needs.
                 </p>
               </>
             )}
             </div>
+            )}{/* end of disabled inline donation section */}
 
-            {/* Gift Amount Input */}
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{
-                display: 'block',
-                fontSize: '13px',
-                fontWeight: '600',
-                color: '#374151',
-                marginBottom: '8px'
-              }}>Gift Amount ({mainEvent?.streamFeeCurrencyAbbreviation || 'RWF'})</label>
+            {/* Gift Amount Panel — wraps the input + tier buttons in a single
+                brand-blue tinted card, matching the XentriPayModal Amount
+                Panel design language (gradient bg + left accent stripe). */}
+            <div className="gift-modal-amount-panel">
+              <span className="gift-modal-amount-stripe" aria-hidden="true" />
+              <label className="gift-modal-amount-label">
+                Gift Amount ({mainEvent?.streamFeeCurrencyAbbreviation || 'RWF'})
+              </label>
               <input
                 type="number"
                 value={giftAmount}
                 onChange={(e) => setGiftAmount(e.target.value)}
                 placeholder="Enter amount"
-                style={{
-                  width: '100%',
-                  padding: '12px 16px',
-                  backgroundColor: '#f9fafb',
-                  border: '1.5px solid rgba(8,58,133,0.15)',
-                  borderRadius: '12px',
-                  color: '#0f172a',
-                  fontSize: '14px',
-                  outline: 'none',
-                  transition: 'border-color 0.2s',
-                  boxSizing: 'border-box'
-                }}
-                onFocus={(e) => { e.currentTarget.style.borderColor = '#083A85'; e.currentTarget.style.backgroundColor = '#fff'; }}
-                onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(8,58,133,0.15)'; e.currentTarget.style.backgroundColor = '#f9fafb'; }}
+                className="gift-modal-amount-input"
               />
+              <div className="gift-modal-tiers">
+                {['10000', '20000', '50000', '100000'].map((amount) => (
+                  <button
+                    key={amount}
+                    onClick={() => setGiftAmount(amount)}
+                    className={`gift-tier-btn ${giftAmount === amount ? 'is-selected' : ''}`}
+                    type="button"
+                  >
+                    {parseInt(amount).toLocaleString()}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            {/* Quick Amount Buttons */}
-            <div style={{
-              display: 'flex',
-              gap: '8px',
-              flexWrap: 'wrap',
-              marginBottom: '20px'
-            }}>
-              {['10000', '20000', '50000', '100000'].map((amount) => (
-                <button
-                  key={amount}
-                  onClick={() => setGiftAmount(amount)}
-                  style={{
-                    flex: '1 1 calc(25% - 6px)',
-                    minWidth: '70px',
-                    padding: '10px 12px',
-                    backgroundColor: giftAmount === amount ? '#083A85' : '#f9fafb',
-                    border: '1.5px solid',
-                    borderColor: giftAmount === amount ? '#083A85' : 'rgba(8,58,133,0.15)',
-                    borderRadius: '10px',
-                    color: giftAmount === amount ? '#fff' : '#374151',
-                    fontSize: '12px',
-                    fontWeight: '600',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s'
-                  }}
-                  onMouseEnter={(e) => {
-                    if (giftAmount !== amount) {
-                      e.currentTarget.style.borderColor = '#083A85';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (giftAmount !== amount) {
-                      e.currentTarget.style.borderColor = 'rgba(8,58,133,0.15)';
-                    }
-                  }}
-                >
-                  {parseInt(amount).toLocaleString()}
-                </button>
-              ))}
-            </div>
-
-            {/* Payment Method Selection */}
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{
-                display: 'block',
-                fontSize: '13px',
-                fontWeight: '600',
-                color: '#374151',
-                marginBottom: '12px'
-              }}>Select Payment Method</label>
-              <div style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '10px'
-              }}>
+            {/* Payment Method Selection — 3-column grid mirrors XentriPayModal */}
+            <div style={{ marginBottom: '14px' }}>
+              <label className="gift-modal-amount-label" style={{ marginBottom: '8px' }}>
+                Select Payment Method
+              </label>
+              <div className="gift-modal-payment-grid">
                 {paymentMethods.map((method) => {
                   const isSelected = selectedPaymentMethod === method.id;
                   return (
-                  <button
-                    key={method.id}
-                    onClick={() => setSelectedPaymentMethod(method.id)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '12px',
-                      padding: '12px 16px',
-                      backgroundColor: isSelected ? 'rgba(8,58,133,0.06)' : '#f9fafb',
-                      border: '2px solid',
-                      borderColor: isSelected ? '#083A85' : 'rgba(8,58,133,0.12)',
-                      borderRadius: '12px',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
-                      width: '100%',
-                      textAlign: 'left'
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!isSelected) {
-                        e.currentTarget.style.borderColor = 'rgba(8,58,133,0.4)';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!isSelected) {
-                        e.currentTarget.style.borderColor = 'rgba(8,58,133,0.12)';
-                      }
-                    }}
-                  >
-                    <div style={{
-                      width: '44px',
-                      height: '44px',
-                      borderRadius: '10px',
-                      overflow: 'hidden',
-                      flexShrink: 0,
-                      backgroundColor: '#fff',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      border: '1px solid rgba(8,58,133,0.08)',
-                    }}>
-                      <img
-                        src={method.image}
-                        alt={method.name}
-                        style={{
-                          width: '100%',
-                          height: '100%',
-                          objectFit: 'cover'
-                        }}
-                      />
-                    </div>
-                    <span style={{
-                      color: isSelected ? '#083A85' : '#374151',
-                      fontSize: '14px',
-                      fontWeight: isSelected ? '700' : '500'
-                    }}>{method.name}</span>
-                    {isSelected && (
-                      <i className="bi bi-check-circle-fill" style={{
-                        marginLeft: 'auto',
-                        color: '#083A85',
-                        fontSize: '20px'
-                      }}></i>
-                    )}
-                  </button>
+                    <button
+                      key={method.id}
+                      type="button"
+                      onClick={() => setSelectedPaymentMethod(method.id)}
+                      className={`gift-modal-payment-tile ${isSelected ? 'is-selected' : ''}`}
+                    >
+                      {isSelected && (
+                        <span className="gift-modal-payment-tile-check" aria-hidden="true">
+                          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        </span>
+                      )}
+                      <span className="gift-modal-payment-tile-logo">
+                        <img src={method.image} alt={method.name} />
+                      </span>
+                      <span className="gift-modal-payment-tile-label">
+                        {method.name}
+                      </span>
+                    </button>
                   );
                 })}
               </div>
@@ -7320,9 +9669,21 @@ const App = () => {
               </div>
             )}
 
-            {/* Send Gift Button */}
+            {/* Send Gift Button — opens the standalone DonationPromptModal
+                first so the viewer can optionally add a donation. The modal
+                calls back into handleSendGift with the chosen donation
+                amount (0 if skipped). */}
             <button
-              onClick={handleSendGift}
+              onClick={() => {
+                if (!canInteract) { requireInteraction(() => {}); return; }
+                if (!giftAmount || parseInt(giftAmount) <= 0) {
+                  alert('Please enter a gift amount');
+                  return;
+                }
+                // Reset any previous donation selection then open the prompt
+                setDonationAmount('');
+                setShowGiftDonationOverlay(true);
+              }}
               disabled={!isPaymentDetailsValid() || giftLoading}
               style={{
                 width: '100%',

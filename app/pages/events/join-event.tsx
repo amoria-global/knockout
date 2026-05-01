@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Navbar from '../../components/navbar';
+import ErrorPopup, { type PopupSeverity } from '../../components/ErrorPopup';
 import PaymentCurrencyPreview, { type CurrencyCode, useLiveRates } from '../../components/PaymentCurrencyPreview';
 import { getPublicEvents, getPublicEventById, type PublicEvent } from '@/lib/APIs/public';
 import { joinEvent } from '@/lib/APIs/events/join-event/route';
@@ -111,6 +112,21 @@ export default function JoinEvent() {
   const [packageType, setPackageType] = useState<string | null>(null);
   const [numberOfPeople, setNumberOfPeople] = useState(1);
   const [paymentError, setPaymentError] = useState('');
+
+  // Designed error popup state (replaces inline error banners)
+  const [errorPopup, setErrorPopup] = useState<{
+    open: boolean;
+    severity: PopupSeverity;
+    title?: string;
+    message: string;
+    hint?: string;
+    primaryAction?: { label: string; onClick: () => void; icon?: string };
+    secondaryAction?: { label: string; onClick: () => void; icon?: string };
+  }>({ open: false, severity: 'error', message: '' });
+  const closeErrorPopup = useCallback(() => setErrorPopup(p => ({ ...p, open: false })), []);
+  const showErrorPopup = useCallback((cfg: Omit<typeof errorPopup, 'open'>) => {
+    setErrorPopup({ ...cfg, open: true });
+  }, []);
 
   // Display currency for every amount shown on this page. Defaults to USD;
   // controlled by the PaymentCurrencyPreview panel's selector below.
@@ -337,17 +353,43 @@ export default function JoinEvent() {
       } else if (response.statusCode === 402) {
         const fee = response.data?.data?.streamFee;
         const symbol = response.data?.data?.streamFeeCurrencySymbol || response.data?.data?.streamFeeCurrencyAbbreviation || '';
-        setPaymentError(
-          fee
-            ? `Stream access requires a fee of ${fee.toLocaleString()} ${symbol}. Please contact the event organizer.`
-            : (response.data?.message || response.error || 'Additional payment required for stream access.')
-        );
+        const msg = fee
+          ? `Stream access requires a fee of ${fee.toLocaleString()} ${symbol}. Please contact the event organizer.`
+          : (response.data?.message || response.error || 'Additional payment required for stream access.');
+        setPaymentError(msg);
+        showErrorPopup({
+          severity: 'warning',
+          title: 'Additional payment required',
+          message: msg,
+          primaryAction: { label: 'Got it', icon: 'bi-check2', onClick: closeErrorPopup },
+        });
       } else {
-        setPaymentError(response.error || 'Payment failed. Please try again.');
+        const msg = response.error || 'Payment failed. Please try again.';
+        setPaymentError(msg);
+        showErrorPopup({
+          severity: 'error',
+          title: 'Payment failed',
+          message: msg,
+          hint: 'Your card or mobile money was not charged. You can try again with the same or a different method.',
+          primaryAction: {
+            label: 'Try again',
+            icon: 'bi-arrow-clockwise',
+            onClick: () => { closeErrorPopup(); handlePayment(); },
+          },
+        });
       }
     } catch {
       setIsProcessing(false);
-      alert('Payment failed. Please try again.');
+      showErrorPopup({
+        severity: 'error',
+        title: 'Payment failed',
+        message: 'Something went wrong while processing your payment. Please check your connection and try again.',
+        primaryAction: {
+          label: 'Try again',
+          icon: 'bi-arrow-clockwise',
+          onClick: () => { closeErrorPopup(); handlePayment(); },
+        },
+      });
     }
   };
 
@@ -845,6 +887,50 @@ export default function JoinEvent() {
                     Pay {fmtFee(detectedEvent.fee)} {packageType === 'group' ? `for ${numberOfPeople} People` : '& Join'}
                   </button>
 
+                  {/* Already paid? — equal-weight verify-access CTA. Routes the user
+                      back to view-event with ?verify=true so the verify modal opens
+                      automatically. Visible on every page in the path to live-stream. */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const eventIdQ = searchParams.get('id') || detectedEvent?.id || '';
+                      router.push(`/user/events/view-event?id=${encodeURIComponent(eventIdQ)}&verify=true`);
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '13px',
+                      fontSize: '14px',
+                      fontWeight: 700,
+                      color: '#ECFDF5',
+                      background: 'linear-gradient(135deg, rgba(16,185,129,0.12) 0%, rgba(8,58,133,0.18) 50%, rgba(184,58,182,0.12) 100%)',
+                      border: '1px solid rgba(110,231,183,0.45)',
+                      borderRadius: '12px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '10px',
+                      transition: 'all 0.3s ease',
+                      boxShadow: '0 8px 24px -10px rgba(16,185,129,0.40)',
+                      marginBottom: '12px',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-2px)';
+                      e.currentTarget.style.borderColor = 'rgba(110,231,183,0.85)';
+                      e.currentTarget.style.background = 'linear-gradient(135deg, rgba(16,185,129,0.20) 0%, rgba(8,58,133,0.28) 50%, rgba(184,58,182,0.20) 100%)';
+                      e.currentTarget.style.boxShadow = '0 14px 32px -10px rgba(16,185,129,0.55)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.borderColor = 'rgba(110,231,183,0.45)';
+                      e.currentTarget.style.background = 'linear-gradient(135deg, rgba(16,185,129,0.12) 0%, rgba(8,58,133,0.18) 50%, rgba(184,58,182,0.12) 100%)';
+                      e.currentTarget.style.boxShadow = '0 8px 24px -10px rgba(16,185,129,0.40)';
+                    }}
+                  >
+                    <i className="bi bi-shield-fill-check" style={{ fontSize: '15px', color: '#6EE7B7', filter: 'drop-shadow(0 0 6px rgba(110,231,183,0.55))' }}></i>
+                    Already paid? Verify access
+                  </button>
+
                   {/* Payment error */}
                   {paymentError && (
                     <div style={{
@@ -1108,6 +1194,18 @@ export default function JoinEvent() {
           transform-origin: center center;
         }
       `}</style>
+
+      {/* Designed error popup */}
+      <ErrorPopup
+        open={errorPopup.open}
+        onClose={closeErrorPopup}
+        severity={errorPopup.severity}
+        title={errorPopup.title}
+        message={errorPopup.message}
+        hint={errorPopup.hint}
+        primaryAction={errorPopup.primaryAction}
+        secondaryAction={errorPopup.secondaryAction}
+      />
     </div>
   );
 }

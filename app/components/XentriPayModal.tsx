@@ -17,6 +17,7 @@ import {
   type XentriPayStatusResponse,
 } from '@/lib/APIs/payments/xentripay';
 import { useGeoPaymentStatus } from '@/app/hooks/useGeoPaymentStatus';
+import DonationPromptModal from './DonationPromptModal';
 
 // ==================== Types ====================
 
@@ -55,6 +56,10 @@ export interface XentriPayModalProps {
   showDonationPrompt?: boolean;
   // Callback when donation amount changes (from internal donation step)
   onDonationAmountChange?: (amount: number) => void;
+  // Skip the per-event IP geo-check entirely (always treat as allowed).
+  // Used for live events: spot-reservation geo-restrictions only apply to
+  // upcoming events — once the event is live, anyone who paid can join.
+  skipEventGeoCheck?: boolean;
 }
 
 type PaymentStep = 'method' | 'donation' | 'processing' | 'success' | 'failed';
@@ -94,6 +99,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
   darkMode = false,
   showDonationPrompt = false,
   onDonationAmountChange,
+  skipEventGeoCheck = false,
 }) => {
   // State
   const [step, setStep] = useState<PaymentStep>('method');
@@ -105,13 +111,21 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
   const stopPollingRef = useRef<(() => void) | null>(null);
 
-  // Internal donation state (used when showDonationPrompt is true)
+  // Internal donation state (used when showDonationPrompt is true).
+  // The donation tiers/exchange-rate state below is now legacy — the
+  // standalone DonationPromptModal owns that fetch/state internally. We
+  // keep `internalDonationAmount` so the chosen donation flows back into
+  // handlePay and the existing donation-tracking analytics.
   const [internalDonationAmount, setInternalDonationAmount] = useState(0);
   const [donationTiers, setDonationTiers] = useState<number[]>(FALLBACK_DONATION_TIERS);
   const [selectedDonationTier, setSelectedDonationTier] = useState<number | null>(null);
   const [customDonationAmount, setCustomDonationAmount] = useState('');
   const [isCustomDonation, setIsCustomDonation] = useState(false);
   const [donationExchangeRate, setDonationExchangeRate] = useState(1);
+
+  // Controls the standalone DonationPromptModal overlay — opened when the
+  // user clicks "Continue" on the method step (if showDonationPrompt is on).
+  const [showDonationOverlay, setShowDonationOverlay] = useState(false);
 
   // Effective donation amount: internal (from donation step) or external prop
   const donationAmount = showDonationPrompt ? internalDonationAmount : donationAmountProp;
@@ -175,11 +189,14 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
     };
   }, [isOpen]);
 
-  // Automatic event geo-check based on IP address (only when modal opens)
+  // Automatic event geo-check based on IP address (only when modal opens).
+  // Skipped entirely when skipEventGeoCheck is true — live events allow
+  // anyone who has paid to join, regardless of country. Geo-restriction
+  // only enforces for spot reservers on upcoming events.
   useEffect(() => {
     if (!isOpen) return;
 
-    if (!eventId) {
+    if (skipEventGeoCheck || !eventId) {
       setEventGeoCheck({ allowed: true });
       setGeoCheckLoading(false);
       return;
@@ -210,7 +227,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
       .finally(() => {
         setGeoCheckLoading(false);
       });
-  }, [isOpen, eventId]);
+  }, [isOpen, eventId, skipEventGeoCheck]);
 
   // Close modal when session expires so auth modal can take over
   useEffect(() => {
@@ -481,9 +498,21 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
     onClose();
   };
 
-  // Display currency for the whole modal (must be before early return to
-  // satisfy React's Rules of Hooks — hooks cannot be called conditionally).
-  const [displayCurrency, setDisplayCurrency] = React.useState<CurrencyCode>('USD');
+  // Display currency for the whole modal. Defaults to USD (safe universal
+  // default) and is controlled by the PaymentCurrencyPreview panel's
+  // selector below — picking a new currency there re-renders every amount
+  // in the modal (header, summaries, inputs, fee lines, success page).
+  // The submit wire still carries the original `amount` + `currencyCode`
+  // props unchanged — this is purely presentation.
+  //
+  // IMPORTANT: these hooks must sit ABOVE the `!isOpen` early return so the
+  // hook order stays stable between open/closed renders (Rules of Hooks).
+  // Default the display ("VIEW IN") currency to the event's own currency
+  // so users see prices in the event's native unit first, not USD. They can
+  // still flip to USD/EUR/etc. via the dropdown.
+  const [displayCurrency, setDisplayCurrency] = React.useState<CurrencyCode>(
+    () => ((currencyCode || 'RWF') as CurrencyCode)
+  );
   const { format: formatLive } = useLiveRates();
 
   if (!isOpen) return null;
@@ -530,53 +559,129 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
     >
       <div
         style={{
+          // Outer panel: clips the decorative ribbon/glow with border-radius.
+          // Scroll happens on the inner content layer instead.
           background: '#ffffff',
-          borderRadius: '20px',
-          padding: 'clamp(20px, 4vw, 32px)',
-          paddingTop: 'clamp(20px, 4vw, 32px)',
-          maxWidth: '420px',
+          borderRadius: '22px',
+          maxWidth: '440px',
           width: '100%',
-          maxHeight: '90vh',
-          overflowY: 'auto',
-          boxShadow: '0 32px 80px rgba(0,0,0,0.2)',
-          border: '1px solid rgba(8,58,133,0.06)',
+          maxHeight: '92vh',
+          // Layered shadow: deep ambient + brand-blue tinted bloom + thin inner highlight
+          boxShadow:
+            '0 40px 100px -20px rgba(8,58,133,0.35), 0 18px 40px -12px rgba(8,58,133,0.18), 0 1px 0 rgba(255,255,255,0.9) inset',
+          border: '1px solid rgba(8,58,133,0.08)',
           position: 'relative',
           margin: 'auto',
+          overflow: 'hidden',
+          isolation: 'isolate',
+          display: 'flex',
+          flexDirection: 'column',
         }}
         onMouseDown={(e) => e.stopPropagation()}
       >
-        {/* Close button - hidden during processing and when geo-blocked */}
+        {/* Top brand-blue accent ribbon — subtle gradient that hints at the
+            brand without overwhelming the white surface. */}
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: '4px',
+            background:
+              'linear-gradient(90deg, rgba(8,58,133,0) 0%, #083A85 22%, #1f6bff 50%, #083A85 78%, rgba(8,58,133,0) 100%)',
+            opacity: 0.95,
+            zIndex: 1,
+            pointerEvents: 'none',
+          }}
+        />
+        {/* Soft brand glow in the top-right corner */}
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            top: '-90px',
+            right: '-90px',
+            width: '240px',
+            height: '240px',
+            borderRadius: '50%',
+            background:
+              'radial-gradient(circle at center, rgba(8,58,133,0.10) 0%, rgba(31,107,255,0.06) 40%, transparent 70%)',
+            pointerEvents: 'none',
+            zIndex: 0,
+          }}
+        />
+        {/* Decorative dot grid in the bottom-left — barely-there texture */}
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            bottom: '-20px',
+            left: '-20px',
+            width: '160px',
+            height: '160px',
+            backgroundImage:
+              'radial-gradient(circle, rgba(8,58,133,0.10) 1px, transparent 1.5px)',
+            backgroundSize: '14px 14px',
+            opacity: 0.45,
+            pointerEvents: 'none',
+            zIndex: 0,
+            maskImage: 'radial-gradient(circle at bottom left, #000 0%, transparent 70%)',
+            WebkitMaskImage: 'radial-gradient(circle at bottom left, #000 0%, transparent 70%)',
+          }}
+        />
+        {/* Scrollable content layer */}
+        <div style={{
+          position: 'relative',
+          zIndex: 2,
+          padding: 'clamp(22px, 4vw, 34px)',
+          paddingTop: 'clamp(26px, 4.5vw, 38px)',
+          overflowY: 'auto',
+          flex: 1,
+          minHeight: 0,
+        }}>
+        {/* Close button - hidden during processing and when geo-blocked.
+            Sits absolutely above the scroll layer (zIndex 3) so it doesn't
+            scroll away with content. */}
         {step !== 'processing' && !(eventId && !geoCheckLoading && eventGeoCheck && !eventGeoCheck.allowed) && (
           <button
             onClick={handleClose}
+            aria-label="Close"
             style={{
               position: 'absolute',
-              top: 'clamp(12px, 3vw, 20px)',
-              right: 'clamp(12px, 3vw, 20px)',
-              background: 'rgba(8,58,133,0.04)',
-              border: 'none',
-              color: '#6b7280',
+              top: 'clamp(14px, 3vw, 20px)',
+              right: 'clamp(14px, 3vw, 20px)',
+              background: 'rgba(8,58,133,0.06)',
+              border: '1px solid rgba(8,58,133,0.10)',
+              color: '#475569',
               cursor: 'pointer',
-              fontSize: '18px',
-              padding: '10px',
-              transition: 'all 0.2s',
+              padding: '0',
+              transition: 'transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1), background-color 180ms ease, border-color 180ms ease, color 180ms ease',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              width: '40px',
-              height: '40px',
+              width: '36px',
+              height: '36px',
               borderRadius: '50%',
+              zIndex: 3,
+              backdropFilter: 'blur(4px)',
+              WebkitBackdropFilter: 'blur(4px)',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(8,58,133,0.08)';
-              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.backgroundColor = 'rgba(8,58,133,0.12)';
+              e.currentTarget.style.borderColor = 'rgba(8,58,133,0.22)';
+              e.currentTarget.style.color = '#083A85';
+              e.currentTarget.style.transform = 'rotate(90deg) scale(1.05)';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(8,58,133,0.04)';
-              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.backgroundColor = 'rgba(8,58,133,0.06)';
+              e.currentTarget.style.borderColor = 'rgba(8,58,133,0.10)';
+              e.currentTarget.style.color = '#475569';
+              e.currentTarget.style.transform = 'rotate(0deg) scale(1)';
             }}
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />
             </svg>
@@ -717,72 +822,171 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
 
             {/* Normal payment form — only when allowed */}
             {(!eventId || (!geoCheckLoading && eventGeoCheck?.allowed !== false)) && (<>
-            {/* Header */}
+            {/* Header — eyebrow pill + title + subtitle. Currency preview is
+                pulled out into its own dedicated "Amount panel" below the
+                header so it reads as a first-class element, not an island. */}
             <div style={{ marginBottom: '16px' }}>
+              {/* Brand eyebrow pill — communicates "this is a payment", builds trust */}
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '5px 11px 5px 9px',
+                background: 'linear-gradient(135deg, rgba(8,58,133,0.10) 0%, rgba(31,107,255,0.06) 100%)',
+                border: '1px solid rgba(8,58,133,0.18)',
+                borderRadius: '999px',
+                marginBottom: '10px',
+              }}>
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#083A85" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+                <span style={{
+                  fontSize: '10.5px',
+                  fontWeight: 800,
+                  color: '#083A85',
+                  letterSpacing: '0.10em',
+                  textTransform: 'uppercase',
+                  fontFamily: "'Pragati Narrow', sans-serif",
+                }}>
+                  Secure Payment
+                </span>
+              </div>
               <h2 style={{
-                fontSize: 'clamp(18px, 4vw, 22px)',
+                fontSize: 'clamp(20px, 4.5vw, 24px)',
                 fontWeight: 800,
                 color: '#083A85',
                 marginBottom: '4px',
                 marginTop: 0,
                 fontFamily: "'Pragati Narrow', sans-serif",
+                lineHeight: 1.2,
+                letterSpacing: '-0.01em',
               }}>
                 {title || defaultTitle}
               </h2>
               {subtitle ? (
-                <p style={{ fontSize: '14px', color: '#6b7280', margin: 0 }}>{subtitle}</p>
-              ) : hasDonation ? (
-                <div style={{ fontSize: '14px', color: '#6b7280', margin: 0 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                    <span>Gift:</span>
-                    <strong style={{ color: '#0f172a' }}>{formatAmount(amount)}</strong>
+                <p style={{ fontSize: '13.5px', color: '#64748b', margin: 0, lineHeight: 1.5 }}>{subtitle}</p>
+              ) : !hasDonation ? (
+                <p style={{ fontSize: '13.5px', color: '#64748b', margin: 0 }}>
+                  Choose how you&apos;d like to pay
+                </p>
+              ) : null}
+            </div>
+
+            {/* Amount Panel — the financial heart of the modal. White-on-blue-tint
+                gradient card with the headline amount on the left and the currency
+                converter on the right. Replaces the previous "floating box" feel.
+                NB: overflow stays VISIBLE so the currency dropdown menu can open
+                downward without being clipped by the panel's bottom edge. The
+                accent stripe is inset 10px from top/bottom so the rounded corners
+                still look clean without needing overflow:hidden. */}
+            <div style={{
+              position: 'relative',
+              background: 'linear-gradient(135deg, #f0f5ff 0%, #ffffff 60%, #fafbff 100%)',
+              border: '1px solid rgba(8,58,133,0.12)',
+              borderRadius: '16px',
+              padding: '14px 16px',
+              marginBottom: '18px',
+              boxShadow:
+                'inset 0 1px 0 rgba(255,255,255,0.9), 0 1px 2px rgba(8,58,133,0.04)',
+            }}>
+              {/* Subtle accent stripe on the left */}
+              <span aria-hidden="true" style={{
+                position: 'absolute',
+                top: 10,
+                bottom: 10,
+                left: 0,
+                width: '3px',
+                borderRadius: '0 3px 3px 0',
+                background: 'linear-gradient(180deg, #083A85 0%, #1f6bff 100%)',
+              }} />
+              {hasDonation ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px', color: '#64748b' }}>
+                    <span>Gift</span>
+                    <strong style={{ color: '#0f172a', fontWeight: 700 }}>{formatAmount(amount)}</strong>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                    <span>Donation:</span>
-                    <strong style={{ color: '#0a4da3' }}>{formatAmount(donationAmount!)}</strong>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px', color: '#64748b' }}>
+                    <span>Donation</span>
+                    <strong style={{ color: '#0a4da3', fontWeight: 700 }}>{formatAmount(donationAmount!)}</strong>
                   </div>
-                  <div style={{ borderTop: '1px solid rgba(8,58,133,0.08)', paddingTop: '6px', display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ fontWeight: 600 }}>Total:</span>
-                    <strong style={{ color: '#083A85' }}>{formatAmount(totalAmount)}</strong>
+                  <div style={{
+                    borderTop: '1px dashed rgba(8,58,133,0.18)',
+                    paddingTop: '8px',
+                    marginTop: '2px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'baseline',
+                  }}>
+                    <span style={{
+                      fontSize: '10.5px',
+                      fontWeight: 800,
+                      color: '#083A85',
+                      letterSpacing: '0.10em',
+                      textTransform: 'uppercase',
+                      fontFamily: "'Pragati Narrow', sans-serif",
+                    }}>Total</span>
+                    <strong style={{
+                      color: '#083A85',
+                      fontSize: '20px',
+                      fontWeight: 800,
+                      fontFamily: "'Pragati Narrow', sans-serif",
+                    }}>{formatAmount(totalAmount)}</strong>
                   </div>
                 </div>
               ) : (
-                <p style={{ fontSize: '14px', color: '#6b7280', margin: 0 }}>
-                  Amount: <strong style={{ color: '#083A85' }}>{formatAmount(amount)}</strong>
-                </p>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                    <span style={{
+                      fontSize: '10.5px',
+                      fontWeight: 800,
+                      color: '#083A85',
+                      letterSpacing: '0.10em',
+                      textTransform: 'uppercase',
+                      fontFamily: "'Pragati Narrow', sans-serif",
+                    }}>Amount to Pay</span>
+                    <strong style={{
+                      color: '#083A85',
+                      fontSize: 'clamp(20px, 5vw, 26px)',
+                      fontWeight: 800,
+                      fontFamily: "'Pragati Narrow', sans-serif",
+                      lineHeight: 1.15,
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}>{formatAmount(amount)}</strong>
+                  </div>
+                  <div style={{ flexShrink: 0 }}>
+                    {/*
+                      NOTE: intentionally NOT forwarding the XentriPayModal
+                      `darkMode` prop to the panel. The modal's body renders
+                      in light theme regardless of that prop, so passing
+                      darkMode=true would render the panel with white text
+                      that disappears on the modal's white backdrop.
+                    */}
+                    <PaymentCurrencyPreview
+                      fromCurrency={(currencyCode || 'RWF') as CurrencyCode}
+                      defaultCurrency={displayCurrency}
+                      onCurrencyChange={setDisplayCurrency}
+                      amounts={[{ label: 'Amount', amount }]}
+                    />
+                  </div>
+                </div>
               )}
-
-              {/* Currency preview — lets the user see what the payment amount
-                  (and donation + total, if present) is in their preferred
-                  currency before confirming. Display-only; the submit still
-                  goes out as the original currencyCode / amount, and the
-                  backend converts to USD canonically before XentriPay. */}
-              <div style={{ marginTop: '12px', display: 'flex', justifyContent: 'flex-end' }}>
-                {/*
-                  NOTE: intentionally NOT forwarding the XentriPayModal
-                  `darkMode` prop to the panel. The modal's body renders
-                  in light theme regardless of that prop (the prop is
-                  historical and doesn't actually switch the modal's own
-                  surfaces today), so passing darkMode=true here would
-                  render the panel with white text that disappears on the
-                  modal's white backdrop. If a truly dark XentriPayModal
-                  skin is ever added, re-forward the prop at that point.
-                */}
-                <PaymentCurrencyPreview
-                  fromCurrency={(currencyCode || 'RWF') as CurrencyCode}
-                  defaultCurrency={displayCurrency}
-                  onCurrencyChange={setDisplayCurrency}
-                  amounts={
-                    hasDonation
-                      ? [
-                          { label: 'Gift', amount },
-                          { label: 'Donation', amount: donationAmount || 0 },
-                          { label: 'Total', amount: totalAmount },
-                        ]
-                      : [{ label: 'Amount', amount }]
-                  }
-                />
-              </div>
+              {hasDonation && (
+                <div style={{ marginTop: '12px', display: 'flex', justifyContent: 'flex-end' }}>
+                  <PaymentCurrencyPreview
+                    fromCurrency={(currencyCode || 'RWF') as CurrencyCode}
+                    defaultCurrency={displayCurrency}
+                    onCurrencyChange={setDisplayCurrency}
+                    amounts={[
+                      { label: 'Gift', amount },
+                      { label: 'Donation', amount: donationAmount || 0 },
+                      { label: 'Total', amount: totalAmount },
+                    ]}
+                  />
+                </div>
+              )}
             </div>
 
             {/* Geo-restriction Warning */}
@@ -849,17 +1053,20 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
               </div>
             )}
 
-            {/* Payment Method Selection */}
+            {/* Payment Method Selection — uppercase eyebrow label, premium tiles
+                with brand-blue ring on selected, hover lift, check badge. */}
             <div style={{ marginBottom: '20px' }}>
               <label style={{
                 display: 'block',
-                fontSize: '12px',
-                fontWeight: 600,
-                color: '#64748b',
+                fontSize: '10.5px',
+                fontWeight: 800,
+                color: '#083A85',
                 marginBottom: '10px',
-                letterSpacing: '0.5px',
+                letterSpacing: '0.10em',
+                textTransform: 'uppercase',
+                fontFamily: "'Pragati Narrow', sans-serif",
               }}>Select Payment Method</label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
                 {paymentMethods
                   .filter((method) => {
                     // Filter by per-country allowed payment methods from geo-check
@@ -883,42 +1090,86 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
                         flexDirection: 'column',
                         alignItems: 'center',
                         gap: '8px',
-                        padding: '14px 8px',
-                        backgroundColor: isSelected ? 'rgba(8, 58, 133, 0.06)' : (isDisabled ? '#f9fafb' : '#fff'),
-                        border: isSelected ? '2px solid #083A85' : (isDisabled ? '1.5px solid #e5e7eb' : '1.5px solid rgba(8,58,133,0.1)'),
-                        borderRadius: '12px',
+                        padding: '16px 8px 14px',
+                        background: isSelected
+                          ? 'linear-gradient(160deg, #f0f5ff 0%, #ffffff 100%)'
+                          : (isDisabled ? '#f9fafb' : '#ffffff'),
+                        border: isSelected
+                          ? '2px solid #083A85'
+                          : (isDisabled ? '1.5px solid #e5e7eb' : '1.5px solid rgba(8,58,133,0.14)'),
+                        borderRadius: '14px',
                         cursor: isDisabled ? 'not-allowed' : 'pointer',
-                        transition: 'all 0.2s',
+                        transition: 'transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1), border-color 180ms ease, box-shadow 200ms ease, background 200ms ease',
                         position: 'relative',
                         opacity: isDisabled ? 0.5 : 1,
+                        boxShadow: isSelected
+                          ? '0 8px 22px -8px rgba(8,58,133,0.35), 0 1px 0 rgba(255,255,255,0.9) inset'
+                          : '0 1px 0 rgba(255,255,255,0.9) inset, 0 1px 2px rgba(8,58,133,0.04)',
+                        transform: isSelected ? 'translateY(-1px)' : 'translateY(0)',
                       }}
-                      onMouseEnter={(e) => { if (!isSelected && !isDisabled) e.currentTarget.style.borderColor = 'rgba(8,58,133,0.25)'; }}
-                      onMouseLeave={(e) => { if (!isSelected && !isDisabled) e.currentTarget.style.borderColor = 'rgba(8,58,133,0.1)'; }}
+                      onMouseEnter={(e) => {
+                        if (!isSelected && !isDisabled) {
+                          e.currentTarget.style.borderColor = 'rgba(8,58,133,0.30)';
+                          e.currentTarget.style.transform = 'translateY(-2px)';
+                          e.currentTarget.style.boxShadow = '0 6px 16px -6px rgba(8,58,133,0.20), 0 1px 0 rgba(255,255,255,0.9) inset';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isSelected && !isDisabled) {
+                          e.currentTarget.style.borderColor = 'rgba(8,58,133,0.14)';
+                          e.currentTarget.style.transform = 'translateY(0)';
+                          e.currentTarget.style.boxShadow = '0 1px 0 rgba(255,255,255,0.9) inset, 0 1px 2px rgba(8,58,133,0.04)';
+                        }
+                      }}
                     >
                       {isSelected && (
-                        <div style={{ position: 'absolute', top: 6, right: 6, width: 16, height: 16, borderRadius: '50%', background: '#083A85', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <i className="bi bi-check" style={{ color: '#fff', fontSize: 10, fontWeight: 900 }}></i>
+                        <div style={{
+                          position: 'absolute',
+                          top: 8,
+                          right: 8,
+                          width: 18,
+                          height: 18,
+                          borderRadius: '50%',
+                          background: 'linear-gradient(135deg, #083A85 0%, #1f6bff 100%)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          boxShadow: '0 2px 6px rgba(8,58,133,0.40)',
+                          border: '1.5px solid #ffffff',
+                        }}>
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
                         </div>
                       )}
                       <div style={{
-                        width: '40px',
-                        height: '40px',
-                        borderRadius: '10px',
+                        width: '44px',
+                        height: '44px',
+                        borderRadius: '12px',
                         overflow: 'hidden',
                         flexShrink: 0,
                         backgroundColor: '#fff',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        border: '1px solid rgba(8,58,133,0.08)',
+                        border: '1px solid rgba(8,58,133,0.10)',
+                        boxShadow: '0 1px 2px rgba(8,58,133,0.06)',
                       }}>
                         <img src={method.image} alt={method.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       </div>
-                      <span style={{ color: isSelected ? '#083A85' : (isDisabled ? '#9ca3af' : '#374151'), fontSize: '11px', fontWeight: isSelected ? 700 : 500, textAlign: 'center', lineHeight: 1.2 }}>
+                      <span style={{
+                        color: isSelected ? '#083A85' : (isDisabled ? '#9ca3af' : '#475569'),
+                        fontSize: '11px',
+                        fontWeight: isSelected ? 800 : 600,
+                        textAlign: 'center',
+                        lineHeight: 1.25,
+                        fontFamily: "'Pragati Narrow', sans-serif",
+                        letterSpacing: '0.01em',
+                      }}>
                         {isDisabled ? (
                           <>
                             {method.name}
-                            <div style={{ fontSize: '9px', color: '#ef4444', marginTop: '2px', fontWeight: 600 }}>Unavailable</div>
+                            <div style={{ fontSize: '9px', color: '#ef4444', marginTop: '2px', fontWeight: 700 }}>Unavailable</div>
                           </>
                         ) : method.name}
                       </span>
@@ -935,11 +1186,20 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
                   display: 'flex',
                   alignItems: 'center',
                   gap: '6px',
-                  fontSize: '12px',
-                  fontWeight: 600,
-                  color: '#64748b',
-                  marginBottom: '6px',
-                }}><i className="bi bi-phone" style={{ fontSize: 12 }}></i> Phone Number <span style={{ color: '#ef4444' }}>*</span></label>
+                  fontSize: '10.5px',
+                  fontWeight: 800,
+                  color: '#083A85',
+                  marginBottom: '8px',
+                  letterSpacing: '0.10em',
+                  textTransform: 'uppercase',
+                  fontFamily: "'Pragati Narrow', sans-serif",
+                }}>
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
+                    <line x1="12" y1="18" x2="12" y2="18" />
+                  </svg>
+                  Phone Number <span style={{ color: '#ef4444', letterSpacing: 0 }}>*</span>
+                </label>
                 <input
                   type="tel"
                   value={phone}
@@ -947,20 +1207,44 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
                   placeholder={selectedMethod === 'mtn' ? '078XXXXXXX' : '073XXXXXXX'}
                   style={{
                     width: '100%',
-                    padding: '11px 14px',
+                    padding: '13px 16px',
                     backgroundColor: '#f8fafc',
-                    border: '1.5px solid rgba(8,58,133,0.1)',
-                    borderRadius: '10px',
+                    border: '1.5px solid rgba(8,58,133,0.14)',
+                    borderRadius: '12px',
                     color: '#0f172a',
-                    fontSize: '14px',
+                    fontSize: '15px',
+                    fontWeight: 600,
                     outline: 'none',
-                    transition: 'border-color 0.2s',
+                    transition: 'border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease',
                     boxSizing: 'border-box' as const,
+                    fontFamily: "'Pragati Narrow', sans-serif",
+                    letterSpacing: '0.02em',
                   }}
-                  onFocus={(e) => { e.currentTarget.style.borderColor = '#083A85'; }}
-                  onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(8,58,133,0.1)'; }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = '#083A85';
+                    e.currentTarget.style.backgroundColor = '#ffffff';
+                    e.currentTarget.style.boxShadow = '0 0 0 4px rgba(8,58,133,0.12)';
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = 'rgba(8,58,133,0.14)';
+                    e.currentTarget.style.backgroundColor = '#f8fafc';
+                    e.currentTarget.style.boxShadow = 'none';
+                  }}
                 />
-                <p style={{ fontSize: '12px', color: '#6b7280', marginTop: '6px', marginBottom: 0 }}>
+                <p style={{
+                  fontSize: '12px',
+                  color: '#64748b',
+                  marginTop: '8px',
+                  marginBottom: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#083A85" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="16" x2="12" y2="12" />
+                    <line x1="12" y1="8" x2="12.01" y2="8" />
+                  </svg>
                   You will receive a payment prompt on this number
                 </p>
               </div>
@@ -996,11 +1280,16 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
               </div>
             )}
 
-            {/* Pay Button */}
+            {/* Pay Button — gradient brand-blue with brand-blue glow when active.
+                Disabled state uses a brand-blue tinted soft surface (not pure
+                gray) so it still feels like part of the brand system. */}
             <button
               onClick={() => {
+                // If donation prompt is enabled, open the standalone overlay
+                // (DonationPromptModal) — not the internal step. Skipping or
+                // confirming on that overlay continues to handlePay below.
                 if (showDonationPrompt && paymentType !== 'donation') {
-                  setStep('donation');
+                  setShowDonationOverlay(true);
                 } else {
                   handlePay();
                 }
@@ -1008,21 +1297,38 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
               disabled={!isValid() || loading}
               style={{
                 width: '100%',
-                padding: '13px 20px',
+                padding: '15px 22px',
                 background: (!isValid() || loading)
-                  ? ('#d1d5db')
-                  : ('linear-gradient(135deg, #083A85, #0a4da3)'),
+                  ? 'linear-gradient(135deg, #e5edf9 0%, #f1f5fb 100%)'
+                  : 'linear-gradient(135deg, #083A85 0%, #0a4da3 50%, #1f6bff 100%)',
                 border: 'none',
                 borderRadius: '14px',
-                color: (!isValid() || loading) ? '#999' : '#fff',
-                fontSize: '16px',
-                fontWeight: 600,
+                color: (!isValid() || loading) ? '#94a3b8' : '#fff',
+                fontSize: '15.5px',
+                fontWeight: 700,
+                fontFamily: "'Pragati Narrow', sans-serif",
+                letterSpacing: '0.01em',
                 cursor: (!isValid() || loading) ? 'not-allowed' : 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '10px',
-                transition: 'all 0.3s ease',
+                transition: 'transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 220ms ease, filter 220ms ease',
+                boxShadow: (!isValid() || loading)
+                  ? 'inset 0 0 0 1px rgba(8,58,133,0.10)'
+                  : '0 14px 28px -10px rgba(8,58,133,0.55), 0 4px 10px -2px rgba(8,58,133,0.30), inset 0 1px 0 rgba(255,255,255,0.18)',
+              }}
+              onMouseEnter={(e) => {
+                if (!isValid() || loading) return;
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = '0 20px 36px -10px rgba(8,58,133,0.65), 0 6px 14px -2px rgba(8,58,133,0.40), inset 0 1px 0 rgba(255,255,255,0.22)';
+                e.currentTarget.style.filter = 'brightness(1.05)';
+              }}
+              onMouseLeave={(e) => {
+                if (!isValid() || loading) return;
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 14px 28px -10px rgba(8,58,133,0.55), 0 4px 10px -2px rgba(8,58,133,0.30), inset 0 1px 0 rgba(255,255,255,0.18)';
+                e.currentTarget.style.filter = 'brightness(1)';
               }}
             >
               {loading ? (
@@ -1039,16 +1345,32 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
                 </>
               ) : (
                 <>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    {selectedMethod === 'card' ? (
-                      <><rect x="1" y="4" width="22" height="16" rx="2" ry="2" /><line x1="1" y1="10" x2="23" y2="10" /></>
-                    ) : (
-                      <><rect x="1" y="4" width="22" height="16" rx="2" ry="2" /><line x1="1" y1="10" x2="23" y2="10" /></>
-                    )}
-                  </svg>
+                  {(!isValid()) ? (
+                    /* Disabled: small lock icon → "select a method first" feel */
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                    </svg>
+                  ) : selectedMethod === 'card' ? (
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+                      <line x1="1" y1="10" x2="23" y2="10" />
+                    </svg>
+                  ) : (
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
+                      <line x1="12" y1="18" x2="12" y2="18" />
+                    </svg>
+                  )}
                   {showDonationPrompt && paymentType !== 'donation'
-                    ? `Continue ${formatAmount(totalAmount)}`
-                    : selectedMethod === 'card' ? `Proceed to Pay ${formatAmount(totalAmount)}` : `Pay ${formatAmount(totalAmount)}`}
+                    ? `Continue · ${formatAmount(totalAmount)}`
+                    : selectedMethod === 'card' ? `Proceed to Pay · ${formatAmount(totalAmount)}` : `Pay · ${formatAmount(totalAmount)}`}
+                  {isValid() && (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ marginLeft: 2 }}>
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                      <polyline points="12 5 19 12 12 19" />
+                    </svg>
+                  )}
                 </>
               )}
             </button>
@@ -1263,19 +1585,64 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
 
         {/* ==================== STEP: Processing ==================== */}
         {step === 'processing' && (
-          <div style={{ textAlign: 'center', padding: '20px 0' }}>
-            {/* Spinner */}
-            <div style={{
-              width: '80px',
-              height: '80px',
-              margin: '0 auto 24px',
-              border: '4px solid #e0e0e0',
-              borderTopColor: '#083A85',
+          <div style={{ textAlign: 'center', padding: '20px 0', position: 'relative' }}>
+            {/* Brand-blue ambient halo behind the spinner */}
+            <div aria-hidden="true" style={{
+              position: 'absolute',
+              top: '-20px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: '200px',
+              height: '200px',
               borderRadius: '50%',
-              animation: 'spin 1s linear infinite',
+              background: 'radial-gradient(circle, rgba(8,58,133,0.14) 0%, rgba(31,107,255,0.06) 40%, transparent 70%)',
+              pointerEvents: 'none',
+              zIndex: 0,
             }} />
+            {/* Dual-ring spinner — outer thin track + brand-blue gradient arc */}
+            <div style={{
+              width: '92px',
+              height: '92px',
+              margin: '0 auto 24px',
+              position: 'relative',
+              zIndex: 1,
+            }}>
+              <div style={{
+                position: 'absolute',
+                inset: 0,
+                border: '3px solid rgba(8,58,133,0.10)',
+                borderRadius: '50%',
+              }} />
+              <div style={{
+                position: 'absolute',
+                inset: 0,
+                border: '3px solid transparent',
+                borderTopColor: '#083A85',
+                borderRightColor: '#1f6bff',
+                borderRadius: '50%',
+                animation: 'spin 0.9s linear infinite',
+                boxShadow: '0 6px 20px -6px rgba(8,58,133,0.40)',
+              }} />
+              {/* Inner pulse dot */}
+              <div style={{
+                position: 'absolute',
+                inset: '36px',
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, #083A85 0%, #1f6bff 100%)',
+                boxShadow: '0 4px 12px rgba(8,58,133,0.45)',
+              }} />
+            </div>
 
-            <h3 style={{ fontSize: '22px', fontWeight: 700, color: '#083A85', marginBottom: '12px' }}>
+            <h3 style={{
+              fontSize: 'clamp(20px, 4.5vw, 24px)',
+              fontWeight: 800,
+              color: '#083A85',
+              marginBottom: '12px',
+              marginTop: 0,
+              fontFamily: "'Pragati Narrow', sans-serif",
+              position: 'relative',
+              zIndex: 1,
+            }}>
               {selectedMethod === 'card' ? 'Complete Payment' : 'Payment Initiated'}
             </h3>
 
@@ -1325,28 +1692,55 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
 
         {/* ==================== STEP: Success ==================== */}
         {step === 'success' && (
-          <div style={{ textAlign: 'center', padding: '20px 0' }}>
-            {/* Checkmark */}
+          <div style={{ textAlign: 'center', padding: '20px 0', position: 'relative' }}>
+            {/* Brand-tinted halo behind the green check — keeps the page in
+                the brand system while preserving green's success semantics. */}
+            <div aria-hidden="true" style={{
+              position: 'absolute',
+              top: '-20px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: '180px',
+              height: '180px',
+              borderRadius: '50%',
+              background: 'radial-gradient(circle, rgba(8,58,133,0.10) 0%, rgba(34,197,94,0.06) 35%, transparent 70%)',
+              pointerEvents: 'none',
+              zIndex: 0,
+            }} />
+            {/* Checkmark with success-green core + brand-blue rim */}
             <div style={{
-              width: '80px',
-              height: '80px',
-              margin: '0 auto 24px',
-              backgroundColor: '#F0FDF4',
+              width: '88px',
+              height: '88px',
+              margin: '0 auto 22px',
+              background: 'linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%)',
               borderRadius: '50%',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
+              position: 'relative',
+              zIndex: 1,
+              border: '2px solid #bbf7d0',
+              boxShadow: '0 12px 30px -10px rgba(34,197,94,0.45), 0 0 0 6px rgba(8,58,133,0.04)',
             }}>
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="3">
+              <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             </div>
 
-            <h3 style={{ fontSize: '22px', fontWeight: 700, color: '#16A34A', marginBottom: '8px' }}>
-              Payment Successful!
+            <h3 style={{
+              fontSize: 'clamp(22px, 5vw, 26px)',
+              fontWeight: 800,
+              color: '#083A85',
+              marginBottom: '8px',
+              marginTop: 0,
+              fontFamily: "'Pragati Narrow', sans-serif",
+              position: 'relative',
+              zIndex: 1,
+            }}>
+              Payment Successful
             </h3>
-            <p style={{ fontSize: '15px', color: '#6b7280', margin: 0 }}>
-              Your payment of <strong>{formatAmount(totalAmount)}</strong> has been completed.
+            <p style={{ fontSize: '15px', color: '#475569', margin: 0, lineHeight: 1.6, position: 'relative', zIndex: 1 }}>
+              Your payment of <strong style={{ color: '#083A85' }}>{formatAmount(totalAmount)}</strong> has been completed.
             </p>
           </div>
         )}
@@ -1356,55 +1750,94 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
           <div style={{ textAlign: 'center', padding: '20px 0' }}>
             {/* X mark */}
             <div style={{
-              width: '80px',
-              height: '80px',
-              margin: '0 auto 24px',
-              backgroundColor: '#FEF2F2',
+              width: '88px',
+              height: '88px',
+              margin: '0 auto 22px',
+              background: 'linear-gradient(135deg, #fef2f2 0%, #fff5f5 100%)',
               borderRadius: '50%',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
+              border: '2px solid #fecaca',
+              boxShadow: '0 12px 30px -10px rgba(239,68,68,0.40), 0 0 0 6px rgba(8,58,133,0.04)',
             }}>
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="3">
+              <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="18" y1="6" x2="6" y2="18" />
                 <line x1="6" y1="6" x2="18" y2="18" />
               </svg>
             </div>
 
-            <h3 style={{ fontSize: '22px', fontWeight: 700, color: '#EF4444', marginBottom: '8px' }}>
+            <h3 style={{
+              fontSize: 'clamp(22px, 5vw, 26px)',
+              fontWeight: 800,
+              color: '#083A85',
+              marginBottom: '8px',
+              marginTop: 0,
+              fontFamily: "'Pragati Narrow', sans-serif",
+            }}>
               Payment Failed
             </h3>
-            <p style={{ fontSize: '15px', color: '#6b7280', marginBottom: '24px' }}>
+            <p style={{ fontSize: '15px', color: '#475569', marginBottom: '24px', lineHeight: 1.6 }}>
               {error || 'The payment could not be completed. Please try again.'}
             </p>
 
-            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
               <button
                 onClick={handleRetry}
                 style={{
-                  padding: '12px 24px',
-                  background: 'linear-gradient(135deg, #083A85, #0a4da3)',
+                  padding: '13px 26px',
+                  background: 'linear-gradient(135deg, #083A85 0%, #0a4da3 50%, #1f6bff 100%)',
                   border: 'none',
                   borderRadius: '12px',
                   color: '#fff',
                   fontSize: '15px',
-                  fontWeight: 600,
+                  fontWeight: 700,
+                  fontFamily: "'Pragati Narrow', sans-serif",
                   cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  boxShadow: '0 12px 24px -10px rgba(8,58,133,0.55), inset 0 1px 0 rgba(255,255,255,0.18)',
+                  transition: 'transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 200ms ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 18px 30px -10px rgba(8,58,133,0.65), inset 0 1px 0 rgba(255,255,255,0.22)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 12px 24px -10px rgba(8,58,133,0.55), inset 0 1px 0 rgba(255,255,255,0.18)';
                 }}
               >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <polyline points="23 4 23 10 17 10" />
+                  <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+                </svg>
                 Try Again
               </button>
               <button
                 onClick={handleClose}
                 style={{
-                  padding: '12px 24px',
-                  backgroundColor: 'rgba(8,58,133,0.04)',
-                  border: 'none',
+                  padding: '13px 26px',
+                  backgroundColor: '#ffffff',
+                  border: '1.5px solid rgba(8,58,133,0.16)',
                   borderRadius: '12px',
-                  color: '#6b7280',
+                  color: '#475569',
                   fontSize: '15px',
-                  fontWeight: 500,
+                  fontWeight: 600,
+                  fontFamily: "'Pragati Narrow', sans-serif",
                   cursor: 'pointer',
+                  transition: 'border-color 180ms ease, background-color 180ms ease, color 180ms ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = 'rgba(8,58,133,0.30)';
+                  e.currentTarget.style.backgroundColor = '#f8fafc';
+                  e.currentTarget.style.color = '#083A85';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = 'rgba(8,58,133,0.16)';
+                  e.currentTarget.style.backgroundColor = '#ffffff';
+                  e.currentTarget.style.color = '#475569';
                 }}
               >
                 Close
@@ -1412,6 +1845,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
             </div>
           </div>
         )}
+        </div>{/* end scrollable content layer */}
       </div>
 
       {/* Spinner animation */}
@@ -1420,6 +1854,30 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
           to { transform: rotate(360deg); }
         }
       `}</style>
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          DonationPromptModal — pops over this payment modal AFTER the user
+          clicks "Continue". Visually distinct (rose-coral palette) so the
+          viewer immediately sees this is an OPTIONAL ask, not part of the
+          payment progression. Either action below closes the overlay and
+          calls handlePay() with the appropriate donation amount. */}
+      <DonationPromptModal
+        isOpen={showDonationOverlay}
+        currencyCode={currencyCode}
+        paymentAmount={amount}
+        onSkip={() => {
+          setShowDonationOverlay(false);
+          setInternalDonationAmount(0);
+          onDonationAmountChange?.(0);
+          handlePay(0);
+        }}
+        onDonate={(amt) => {
+          setShowDonationOverlay(false);
+          setInternalDonationAmount(amt);
+          onDonationAmountChange?.(amt);
+          handlePay(amt);
+        }}
+      />
     </div>
   );
 };
