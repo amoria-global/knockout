@@ -3,6 +3,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import Navbar from '../components/navbar';
 import Footer from '../components/footer';
+import DotGrid from '../components/DotGrid';
 import { useRouter } from 'next/navigation';
 import { contactUs } from '@/lib/APIs/public/contact-us/route';
 import { getFAQs as fetchFAQsFromApi } from '@/lib/APIs/public/get-faqs/route';
@@ -29,51 +30,75 @@ const categories = [
     name: 'My Account',
     icon: 'bi-person-circle',
     articles: 12,
-    description: 'Manage your account settings'
+    description: 'Manage your account settings',
+    gradient: 'linear-gradient(135deg, #083A85 0%, #0F4FB6 50%, #3B82F6 100%)',
+    glow: 'rgba(59,130,246,0.45)',
+    tint: '#3B82F6',
+    tagline: 'Profile & Identity',
   },
   {
     id: 'payment',
     name: 'Payment',
     icon: 'bi-credit-card',
     articles: 8,
-    description: 'Payment and billing information'
+    description: 'Payment and billing information',
+    gradient: 'linear-gradient(135deg, #047857 0%, #10B981 60%, #34D399 100%)',
+    glow: 'rgba(16,185,129,0.45)',
+    tint: '#10B981',
+    tagline: 'Billing & Earnings',
   },
   {
     id: 'security',
     name: 'Security',
     icon: 'bi-shield-check',
     articles: 6,
-    description: 'Keep your account secure'
+    description: 'Keep your account secure',
+    gradient: 'linear-gradient(135deg, #7C2D12 0%, #DC2626 60%, #EF4444 100%)',
+    glow: 'rgba(239,68,68,0.45)',
+    tint: '#EF4444',
+    tagline: 'Trust & Safety',
   },
   {
     id: 'payment-methods',
     name: 'Payment Methods',
     icon: 'bi-wallet2',
     articles: 5,
-    description: 'Available payment options'
+    description: 'Available payment options',
+    gradient: 'linear-gradient(135deg, #B45309 0%, #F59E0B 60%, #FBBF24 100%)',
+    glow: 'rgba(245,158,11,0.45)',
+    tint: '#F59E0B',
+    tagline: 'Wallets & Cards',
   },
   {
     id: 'booking',
     name: 'Booking',
     icon: 'bi-calendar-check',
     articles: 10,
-    description: 'Book and manage photographers'
+    description: 'Book and manage photographers',
+    gradient: 'linear-gradient(135deg, #6B21A8 0%, #B83AB6 50%, #EC4899 100%)',
+    glow: 'rgba(184,58,182,0.45)',
+    tint: '#B83AB6',
+    tagline: 'Sessions & Events',
   },
   {
     id: 'technical',
     name: 'Technical Support',
     icon: 'bi-gear',
     articles: 7,
-    description: 'Technical help and support'
-  }
+    description: 'Technical help and support',
+    gradient: 'linear-gradient(135deg, #1E3A8A 0%, #4F46E5 60%, #818CF8 100%)',
+    glow: 'rgba(99,102,241,0.45)',
+    tint: '#6366F1',
+    tagline: 'Bugs & Performance',
+  },
 ];
 
 
 const HelpSupportCenter: React.FC = () => {
   const router = useRouter();
 
-  // Mouse spotlight state
-  const [heroMousePos, setHeroMousePos] = useState<{ x: number; y: number } | null>(null);
+  // Hero ref kept for any future scroll/measure use; mouse-spotlight state removed
+  // since the new DotGrid component handles cursor tracking internally.
   const heroRef = React.useRef<HTMLDivElement>(null);
 
   // States
@@ -277,16 +302,20 @@ const HelpSupportCenter: React.FC = () => {
     <div className="min-h-screen" style={{ background: '#f8fafc' }}>
       <Navbar />
 
-      {/* Hero Section with Search */}
+      {/* Hero Section with Search — premium redesign */}
+      <style>{`
+        @keyframes hcStarTwinkle { 0%,100% { opacity: 0.3; } 50% { opacity: 1; } }
+        @keyframes hcDotPulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.55; transform: scale(0.85); } }
+        @keyframes hcAuroraDrift {
+          0%,100% { transform: translateX(0) skewX(-6deg); opacity: 0.7; }
+          50%     { transform: translateX(20px) skewX(-3deg); opacity: 1; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .hc-star, .hc-aurora, .hc-dot-pulse { animation: none !important; }
+        }
+      `}</style>
       <div
         ref={heroRef}
-        onMouseMove={(e) => {
-          if (heroRef.current) {
-            const rect = heroRef.current.getBoundingClientRect();
-            setHeroMousePos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
-          }
-        }}
-        onMouseLeave={() => setHeroMousePos(null)}
         style={{
           position: 'relative',
           paddingTop: isMobile ? 'clamp(5rem, 12vw, 7rem)' : '7rem',
@@ -294,53 +323,70 @@ const HelpSupportCenter: React.FC = () => {
           paddingLeft: isMobile ? 'clamp(1rem, 4vw, 1.5rem)' : '1rem',
           paddingRight: isMobile ? 'clamp(1rem, 4vw, 1.5rem)' : '1rem',
           overflow: 'hidden',
-          background: 'linear-gradient(160deg, #052047 0%, #083A85 40%, #0a4da3 70%, #103E83 100%)',
+          background: 'linear-gradient(160deg, #03152F 0%, #052047 30%, #083A85 70%, #0F4FB6 100%)',
         }}
       >
-        {/* Parallax dot pattern */}
-        <div style={{
+        {/* Interactive DotGrid — same brand pattern as the rest of the site */}
+        <div style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none' }} aria-hidden="true">
+          <DotGrid
+            dotSize={2}
+            gap={15}
+            baseColor="#1E3A78"
+            activeColor="#3B82F6"
+            proximity={120}
+            shockRadius={180}
+            shockStrength={4}
+            resistance={750}
+            returnDuration={1.4}
+          />
+        </div>
+
+        {/* Aurora ribbon */}
+        <div className="hc-aurora" aria-hidden="true" style={{
           position: 'absolute',
-          inset: '-80px',
-          backgroundImage: 'radial-gradient(rgba(255,255,255,0.05) 1.5px, transparent 1.5px)',
-          backgroundSize: '32px 32px',
-          pointerEvents: 'none',
+          top: '20%', left: '-10%', right: '-10%', height: '14%',
+          background: 'linear-gradient(90deg, transparent 0%, rgba(125,211,252,0.18) 25%, rgba(168,85,247,0.20) 50%, rgba(236,72,153,0.18) 75%, transparent 100%)',
+          filter: 'blur(40px)',
+          pointerEvents: 'none', zIndex: 1,
+          animation: 'hcAuroraDrift 18s ease-in-out infinite',
         }} />
 
-        {/* Parallax glow */}
-        <div style={{
-          position: 'absolute',
-          inset: '-100px',
-          background: 'radial-gradient(ellipse at 20% 15%, rgba(100,180,255,0.08) 0%, transparent 50%), radial-gradient(ellipse at 80% 85%, rgba(100,140,255,0.06) 0%, transparent 50%)',
-          pointerEvents: 'none',
-        }} />
+        {/* Soft brand orbs */}
+        <div aria-hidden="true" style={{ position: 'absolute', top: '8%', left: '6%', width: 280, height: 280, background: 'radial-gradient(circle, rgba(96,165,250,0.22) 0%, transparent 70%)', borderRadius: '50%', filter: 'blur(48px)', pointerEvents: 'none' }} />
+        <div aria-hidden="true" style={{ position: 'absolute', bottom: '8%', right: '6%', width: 320, height: 320, background: 'radial-gradient(circle, rgba(168,85,247,0.18) 0%, transparent 70%)', borderRadius: '50%', filter: 'blur(50px)', pointerEvents: 'none' }} />
 
-        {/* Ring decoration */}
-        <div style={{
-          position: 'absolute',
-          width: 'clamp(350px, 45vw, 600px)',
-          height: 'clamp(350px, 45vw, 600px)',
-          borderRadius: '50%',
-          border: '1.5px solid rgba(255,255,255,0.04)',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          pointerEvents: 'none',
-        }} />
-
-        {/* Mouse spotlight effect */}
-        {heroMousePos && !isMobile && (
-          <div style={{
-            position: 'absolute',
-            left: heroMousePos.x - 150,
-            top: heroMousePos.y - 150,
-            width: '300px',
-            height: '300px',
-            borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)',
-            pointerEvents: 'none',
-            zIndex: 1,
-          }} />
-        )}
+        {/* Twinkling stars */}
+        {[
+          { l: '12%', t: '14%', d: 0,    big: false },
+          { l: '32%', t: '8%',  d: 1.2,  big: true  },
+          { l: '58%', t: '18%', d: 2.4,  big: false },
+          { l: '78%', t: '12%', d: 0.8,  big: true  },
+          { l: '20%', t: '34%', d: 1.6,  big: false },
+          { l: '82%', t: '38%', d: 2.8,  big: false },
+          { l: '8%',  t: '60%', d: 0.4,  big: false },
+          { l: '46%', t: '76%', d: 1.1,  big: true  },
+          { l: '64%', t: '88%', d: 2.6,  big: false },
+          { l: '94%', t: '60%', d: 1.9,  big: false },
+        ].map((s, i) => (
+          <span
+            key={i}
+            className={`hc-star${s.big ? ' lg' : ''}`}
+            aria-hidden="true"
+            style={{
+              position: 'absolute',
+              left: s.l, top: s.t,
+              width: s.big ? 3 : 2,
+              height: s.big ? 3 : 2,
+              borderRadius: '50%',
+              background: '#fff',
+              boxShadow: s.big ? '0 0 8px rgba(255,255,255,0.95)' : '0 0 4px rgba(255,255,255,0.85)',
+              opacity: 0.5,
+              animation: `hcStarTwinkle 4.2s ease-in-out ${s.d}s infinite`,
+              pointerEvents: 'none',
+              zIndex: 1,
+            }}
+          />
+        ))}
 
         <div style={{
           position: 'relative',
@@ -350,22 +396,57 @@ const HelpSupportCenter: React.FC = () => {
           textAlign: 'center',
           zIndex: 2,
         }}>
-          <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', border: '2px solid rgba(255,255,255,0.1)' }}>
-            <i className="bi bi-question-circle" style={{ fontSize: 26, color: '#fff' }}></i>
-          </div>
-          <h1 style={{
-            fontSize: isMobile ? 'clamp(1.5rem, 7vw, 2.5rem)' : 'clamp(2rem, 5vw, 3.2rem)',
-            fontWeight: 800,
-            color: 'white',
-            marginBottom: '8px',
-            lineHeight: '1.1',
-            fontFamily: "'Pragati Narrow', sans-serif",
-            letterSpacing: '-0.02em',
+          {/* Eyebrow pill */}
+          <div style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 10,
+            padding: '7px 16px',
+            background: 'rgba(255,255,255,0.06)',
+            border: '1px solid rgba(255,255,255,0.18)',
+            borderRadius: 999,
+            backdropFilter: 'blur(12px)',
+            marginBottom: 18,
           }}>
-            How can we help you?
+            <span className="hc-dot-pulse" style={{
+              width: 7, height: 7, borderRadius: '50%',
+              background: 'linear-gradient(135deg, #C084FC, #EC4899)',
+              boxShadow: '0 0 10px rgba(236,72,153,0.7)',
+              animation: 'hcDotPulse 1.6s ease-in-out infinite',
+            }} />
+            <span style={{ color: '#F5EBFF', fontSize: 11, fontWeight: 700, letterSpacing: '0.32em', textTransform: 'uppercase' }}>
+              Connekyt Help Center
+            </span>
+            <span style={{ color: '#EC4899', fontSize: 12 }}>✦</span>
+          </div>
+
+          <h1 style={{
+            fontSize: isMobile ? 'clamp(1.75rem, 7vw, 2.6rem)' : 'clamp(2.4rem, 5.4vw, 3.6rem)',
+            fontWeight: 300,
+            color: 'white',
+            marginBottom: '10px',
+            lineHeight: '1.05',
+            fontFamily: "'Georgia', 'Times New Roman', serif",
+            letterSpacing: '-0.02em',
+            textShadow: '0 4px 30px rgba(0,0,0,0.45), 0 0 40px rgba(168,85,247,0.20)',
+          }}>
+            How can we{' '}
+            <span style={{
+              fontWeight: 600, fontStyle: 'italic',
+              background: 'linear-gradient(90deg, #ffffff 0%, #C084FC 55%, #EC4899 100%)',
+              WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
+              paddingRight: '0.12em',
+            }}>help you</span> today?
           </h1>
-          <p style={{ fontSize: 'clamp(13px, 1.3vw, 16px)', color: 'rgba(255,255,255,0.4)', marginBottom: isMobile ? 'clamp(1.25rem, 5vw, 2rem)' : '2rem' }}>
-            Amoria Connekyt Help Center
+          <p style={{
+            fontSize: 'clamp(13px, 1.3vw, 16px)',
+            color: 'rgba(255,255,255,0.65)',
+            marginBottom: isMobile ? 'clamp(1.25rem, 5vw, 2rem)' : '2rem',
+            maxWidth: 540,
+            margin: isMobile ? '0 auto clamp(1.25rem, 5vw, 2rem)' : '0 auto 2rem',
+            lineHeight: 1.7,
+          }}>
+            Search 50+ articles, get answers from our team, or jump straight into a live conversation.
           </p>
 
           {/* Search Bar */}
@@ -501,6 +582,44 @@ const HelpSupportCenter: React.FC = () => {
               )}
             </div>
           </form>
+
+          {/* Quick stats strip — adds credibility under the search */}
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            flexWrap: 'wrap',
+            gap: isMobile ? '14px' : '32px',
+            marginTop: isMobile ? '20px' : '28px',
+            padding: isMobile ? '12px 14px' : '14px 22px',
+            background: 'rgba(255,255,255,0.05)',
+            border: '1px solid rgba(255,255,255,0.12)',
+            borderRadius: 14,
+            backdropFilter: 'blur(12px)',
+            maxWidth: 580,
+            margin: isMobile ? '20px auto 0' : '28px auto 0',
+          }}>
+            {[
+              { num: '48', sup: '+', label: 'Articles', icon: 'bi-journal-text', tint: '#93C5FD' },
+              { num: '24', sup: '/7', label: 'Live Support', icon: 'bi-headset', tint: '#86EFAC' },
+              { num: '< 2', sup: 'h', label: 'Avg Response', icon: 'bi-lightning-charge-fill', tint: '#FBBF24' },
+              { num: '98', sup: '%', label: 'Resolved', icon: 'bi-patch-check-fill', tint: '#F472B6' },
+            ].map((s, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 96 }}>
+                <i className={`bi ${s.icon}`} style={{ fontSize: 18, color: s.tint, filter: `drop-shadow(0 0 6px ${s.tint}66)` }} />
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                  <span style={{
+                    fontFamily: "'Georgia', serif",
+                    fontSize: 18, fontWeight: 700, color: '#fff', lineHeight: 1,
+                  }}>
+                    {s.num}<sup style={{ fontSize: '0.55em', color: s.tint, verticalAlign: 'super', marginLeft: 1 }}>{s.sup}</sup>
+                  </span>
+                  <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', marginTop: 3 }}>
+                    {s.label}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -538,76 +657,128 @@ const HelpSupportCenter: React.FC = () => {
               key={category.id}
               onClick={() => handleCategoryClick(category.id)}
               style={{
-                background: 'rgba(255, 255, 255, 0.98)',
-                backdropFilter: 'blur(12px)',
-                WebkitBackdropFilter: 'blur(12px)',
-                borderRadius: isMobile ? '16px' : '20px',
-                boxShadow: '0 6px 24px rgba(8, 58, 133, 0.08), 0 2px 8px rgba(0, 0, 0, 0.05)',
-                border: '1px solid rgba(8, 58, 133, 0.1)',
-                padding: isMobile ? '1.5rem 1rem' : '2rem',
-                textAlign: 'center',
+                background: '#ffffff',
+                borderRadius: isMobile ? '18px' : '22px',
+                boxShadow: `0 4px 16px ${category.glow.replace('0.45', '0.10')}, 0 1px 3px rgba(0,0,0,0.04)`,
+                border: `1px solid ${category.tint}1F`,
+                padding: isMobile ? '1.5rem 1.25rem' : '2rem 1.75rem',
+                textAlign: 'left',
                 cursor: 'pointer',
-                minHeight: isMobile ? 'auto' : '240px',
+                minHeight: isMobile ? 'auto' : '230px',
                 display: 'flex',
                 flexDirection: 'column',
-                justifyContent: 'center',
-                alignItems: 'center',
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                gap: '14px',
+                transition: 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
                 position: 'relative',
-                overflow: 'hidden'
+                overflow: 'hidden',
               }}
-              className="group"
               onMouseEnter={(e) => {
                 if (!isMobile) {
                   e.currentTarget.style.transform = 'translateY(-8px)';
-                  e.currentTarget.style.boxShadow = '0 20px 40px rgba(8, 58, 133, 0.2), 0 8px 16px rgba(0, 0, 0, 0.1)';
-                  e.currentTarget.style.borderColor = 'rgba(8, 58, 133, 0.3)';
+                  e.currentTarget.style.boxShadow = `0 24px 44px -12px ${category.glow}, 0 8px 18px -6px rgba(15,23,42,0.08)`;
+                  e.currentTarget.style.borderColor = `${category.tint}66`;
                 }
               }}
               onMouseLeave={(e) => {
                 if (!isMobile) {
                   e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 6px 24px rgba(8, 58, 133, 0.08), 0 2px 8px rgba(0, 0, 0, 0.05)';
-                  e.currentTarget.style.borderColor = 'rgba(8, 58, 133, 0.1)';
+                  e.currentTarget.style.boxShadow = `0 4px 16px ${category.glow.replace('0.45', '0.10')}, 0 1px 3px rgba(0,0,0,0.04)`;
+                  e.currentTarget.style.borderColor = `${category.tint}1F`;
                 }
               }}
             >
-              <div
-                style={{
+              {/* Top accent stripe */}
+              <div aria-hidden="true" style={{
+                position: 'absolute', top: 0, left: '15%', right: '15%', height: 3,
+                borderRadius: '0 0 3px 3px',
+                background: `linear-gradient(90deg, transparent, ${category.tint}, transparent)`,
+                opacity: 0.85,
+              }} />
+              {/* Background bloom */}
+              <div aria-hidden="true" style={{
+                position: 'absolute', top: -30, right: -30, width: 160, height: 160,
+                background: `radial-gradient(circle, ${category.tint}15 0%, transparent 70%)`,
+                pointerEvents: 'none',
+              }} />
+
+              {/* Tagline + icon row */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative', zIndex: 2 }}>
+                <span style={{
+                  fontSize: 9.5,
+                  fontWeight: 700,
+                  letterSpacing: '0.22em',
+                  textTransform: 'uppercase',
+                  color: category.tint,
+                }}>
+                  {category.tagline}
+                </span>
+                <div style={{
+                  width: isMobile ? 48 : 56,
+                  height: isMobile ? 48 : 56,
+                  borderRadius: 14,
+                  background: category.gradient,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  width: isMobile ? '56px' : '72px',
-                  height: isMobile ? '56px' : '72px',
-                  borderRadius: isMobile ? '14px' : '18px',
-                  marginBottom: isMobile ? '1rem' : '1.5rem',
-                  background: 'linear-gradient(135deg, rgba(8, 58, 133, 0.1) 0%, rgba(8, 58, 133, 0.05) 100%)',
-                  color: '#083A85',
-                  transition: 'all 0.3s ease'
-                }}
-                className="group-hover:bg-gradient-to-br group-hover:from-[#083A85] group-hover:to-[#062d65] group-hover:text-white group-hover:shadow-lg"
-              >
-                <i className={`${category.icon}`} style={{ fontSize: isMobile ? '1.75rem' : '1.875rem' }}></i>
+                  boxShadow: `0 8px 18px -6px ${category.glow}, inset 0 1px 0 rgba(255,255,255,0.18)`,
+                  flexShrink: 0,
+                }}>
+                  <i className={category.icon} style={{ fontSize: isMobile ? 22 : 26, color: '#fff' }}></i>
+                </div>
               </div>
-              <h3 className="font-bold text-gray-900 mb-2" style={{ letterSpacing: '-0.01em', fontSize: isMobile ? '1rem' : '1.25rem' }}>
-                {category.name}
-              </h3>
-              <p className="text-gray-600 mb-3 leading-relaxed" style={{ fontSize: isMobile ? '0.8125rem' : '0.875rem' }}>
-                {category.description}
-              </p>
-              <p
-                style={{
-                  fontSize: isMobile ? '0.8125rem' : '0.875rem',
-                  color: '#083A85',
-                  fontWeight: '600',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px'
-                }}
-              >
-                {category.articles} articles
-                <i className="bi bi-arrow-right" style={{ transition: 'transform 0.3s ease', fontSize: isMobile ? '0.75rem' : '0.875rem' }}></i>
-              </p>
+
+              {/* Title + description */}
+              <div style={{ position: 'relative', zIndex: 2 }}>
+                <h3 style={{
+                  fontFamily: "'Georgia', 'Times New Roman', serif",
+                  fontSize: isMobile ? 20 : 24,
+                  fontWeight: 600,
+                  color: '#0f172a',
+                  margin: 0,
+                  lineHeight: 1.15,
+                  letterSpacing: '-0.005em',
+                }}>
+                  {category.name}
+                </h3>
+                <p style={{
+                  fontSize: isMobile ? 13 : 14,
+                  color: '#64748b',
+                  margin: '8px 0 0',
+                  lineHeight: 1.55,
+                }}>
+                  {category.description}
+                </p>
+              </div>
+
+              {/* Footer: article count + arrow */}
+              <div style={{
+                marginTop: 'auto',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingTop: 12,
+                borderTop: `1px dashed ${category.tint}33`,
+                position: 'relative', zIndex: 2,
+              }}>
+                <span style={{
+                  fontSize: 12,
+                  fontWeight: 700,
+                  color: category.tint,
+                  letterSpacing: '0.04em',
+                }}>
+                  {category.articles} articles
+                </span>
+                <span style={{
+                  width: 28, height: 28, borderRadius: '50%',
+                  background: `${category.tint}14`,
+                  color: category.tint,
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                  transition: 'all 0.3s ease',
+                  flexShrink: 0,
+                }}>
+                  <i className="bi bi-arrow-right" style={{ fontSize: 12 }}></i>
+                </span>
+              </div>
             </div>
           ))}
         </div>
