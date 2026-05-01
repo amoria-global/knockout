@@ -1037,7 +1037,7 @@ function ViewEventContent(): React.JSX.Element {
       )}
 
       {/* ── FULL-VIEWPORT CINEMA SHELL ── */}
-      <div className="ve-cinema" style={{ position: 'relative', height: 'calc(100dvh - 64px)', overflow: 'hidden', backgroundColor: '#0e0e10' }}>
+      <div className="ve-cinema" style={{ position: 'relative', minHeight: 'calc(100dvh - 64px)', backgroundColor: '#0e0e10' }}>
 
         {/* Background image — fills right */}
         <div style={{ position: 'absolute', inset: 0, backgroundImage: `url(${eventImage})`, backgroundSize: 'cover', backgroundPosition: 'center right' }} />
@@ -1097,10 +1097,10 @@ function ViewEventContent(): React.JSX.Element {
         )}
 
         {/* ── LEFT CONTENT PANEL ── */}
-        <div className="ve-left-panel" style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: '68%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', padding: 'clamp(50px, 6vh, 70px) clamp(20px, 4vw, 48px) clamp(20px, 3vh, 40px)', zIndex: 10 }}>
+        <div className="ve-left-panel" style={{ position: 'relative', width: '68%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', padding: 'clamp(50px, 6vh, 70px) clamp(20px, 4vw, 48px) clamp(40px, 5vh, 60px)', zIndex: 10 }}>
 
-          {/* TOP block — natural spacing, last child pushed to bottom via auto margin */}
-          <div className="ve-top-block" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 25, minHeight: 0 }}>
+          {/* TOP block — event info */}
+          <div className="ve-top-block" style={{ display: 'flex', flexDirection: 'column', gap: 18, minHeight: 0 }}>
           {/* Back button + meta — same row */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6, flexWrap: 'wrap' }}>
             <button
@@ -1270,7 +1270,7 @@ function ViewEventContent(): React.JSX.Element {
 
           {/* Tags — pushed to bottom of TOP block */}
           {tags.length > 0 && (
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 'auto', maxWidth: '100%' }}>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', maxWidth: '100%' }}>
               {tags.slice(0, 5).map((tag, i) => (
                 <span
                   key={i}
@@ -1287,7 +1287,7 @@ function ViewEventContent(): React.JSX.Element {
           </div>
 
           {/* BOTTOM block — CTA + wishes */}
-          <div className="ve-bottom-block" style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', paddingTop: '16px', flexShrink: 0 }}>
+          <div className="ve-bottom-block" style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', paddingTop: '28px', marginTop: '20px', borderTop: '1px solid rgba(255,255,255,0.08)', flexShrink: 0 }}>
           <div>
           {/* ── CTA ── */}
           <div className="ve-cta-bar" style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: 8, maxWidth: '420px' }}>
