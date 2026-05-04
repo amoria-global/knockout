@@ -194,7 +194,22 @@ export default function Home() {
     gsap.ticker.add(tick);
     gsap.ticker.lagSmoothing(0);
 
+    // Pause Lenis whenever a scroll-lock is active (mobile menu, modal,
+    // etc. set body.style.overflow = 'hidden'). With syncTouch on, Lenis
+    // transforms the page on touch — that transform turns the body into
+    // a containing block for position:fixed children, which makes the
+    // mobile drawer drift away with the page on touch-scroll. Pausing
+    // Lenis while the lock is active restores the normal fixed-anchoring.
+    const syncLockState = () => {
+      if (document.body.style.overflow === 'hidden') lenis.stop();
+      else lenis.start();
+    };
+    syncLockState();
+    const lockObserver = new MutationObserver(syncLockState);
+    lockObserver.observe(document.body, { attributes: true, attributeFilter: ['style'] });
+
     return () => {
+      lockObserver.disconnect();
       gsap.ticker.remove(tick);
       lenis.destroy();
     };
@@ -1348,11 +1363,46 @@ export default function Home() {
             .why-amoria-header { margin-bottom: 40px !important; }
             .why-amoria-title { font-size: 28px !important; text-align: center !important; line-height: 1.15 !important; margin-bottom: 16px !important; }
             .why-amoria-subtitle { font-size: 14px !important; text-align: center !important; padding: 0 10px !important; }
-            .why-amoria-content { flex-direction: column !important; gap: 30px !important; align-items: center !important; }
-            .why-amoria-cards { width: 100% !important; max-width: 100% !important; }
-            .why-amoria-image-container { position: relative !important; width: 100% !important; max-width: 370px !important; height: 400px !important; margin: 30px auto 0 !important; flex: none !important; }
-            .why-amoria-image-container > div:first-child { width: 100% !important; height: 380px !important; right: 0 !important; }
-            .why-amoria-image-container > div:last-child { width: 100% !important; height: 380px !important; right: 0 !important; top: 10px !important; }
+
+            /* Stack the dashboard cards vertically on mobile so every card —
+               including the Facial Recognition accent card — gets its own
+               row instead of overlapping/clipping inside the absolute layout. */
+            .why-amoria-dashboard {
+              height: auto !important;
+              display: flex !important;
+              flex-direction: column !important;
+              gap: 18px !important;
+              max-width: 100% !important;
+              padding: 0 !important;
+            }
+            .why-amoria-dashboard .why-amoria-card,
+            .why-amoria-dashboard .why-amoria-card-accent {
+              position: static !important;
+              top: auto !important;
+              left: auto !important;
+              right: auto !important;
+              bottom: auto !important;
+              width: 100% !important;
+              max-width: 100% !important;
+              transform: none !important;
+              scale: 1 !important;
+              margin: 0 !important;
+              z-index: 1 !important;
+            }
+            /* Image-only "Full Event Gallery" card adds no extra info on
+               mobile — hide it to reduce vertical scroll and keep focus on
+               the four content cards. */
+            .why-amoria-dashboard .why-amoria-card-large { display: none !important; }
+            /* Reorder cards for a logical mobile reading order:
+               Rated Photographers → Live Streaming → Facial Recognition → Secure Payments */
+            .why-amoria-dashboard .why-amoria-card-medium { order: 1 !important; }
+            .why-amoria-dashboard .why-amoria-card-small  { order: 2 !important; }
+            .why-amoria-dashboard .why-amoria-card-accent { order: 3 !important; }
+            .why-amoria-dashboard .why-amoria-card-base   { order: 4 !important; }
+            /* Decorative connection lines need the absolute layout to make
+               sense — drop them on mobile. */
+            .why-amoria-connections { display: none !important; }
+
             .why-amoria-card-title { font-size: 16px !important; }
             .why-amoria-card-description { font-size: 13px !important; }
 
@@ -1375,7 +1425,7 @@ export default function Home() {
           }
 
           @media (min-width: 769px) and (max-width: 1024px) {
-            .hero-title { font-size: 46px !important; margin-bottom: 14px !important; }
+            .hero-title { font-size: 56px !important; margin-bottom: 14px !important; }
             .hero-content { padding: 22px 20px 28px !important; }
             .mockups-section { padding: 80px 40px !important; }
             .mockups-container { height: 450px !important; }
@@ -1392,7 +1442,7 @@ export default function Home() {
              marginals shrink. */
           @media (min-width: 769px) and (max-height: 720px) {
             .hero-content { padding: 14px 30px 18px !important; }
-            .hero-title { font-size: 48px !important; margin-bottom: 14px !important; }
+            .hero-title { font-size: 58px !important; margin-bottom: 14px !important; }
             .hero-glass-card { margin-bottom: 14px !important; }
           }
 
@@ -1697,7 +1747,7 @@ export default function Home() {
               {/* Main Heading — sits AFTER the glass card, with CTAs
                   directly underneath, then description, then trust. */}
               <h1 className="hero-title" style={{
-                fontSize: '28px',
+                fontSize: '56px',
                 fontWeight: 800,
                 lineHeight: '1.04',
                 marginBottom: '16px',
