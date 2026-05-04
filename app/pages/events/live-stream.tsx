@@ -1668,7 +1668,7 @@ const App = () => {
       const lower = raw.toLowerCase();
       let msg: string;
       if (lower.includes('minimum amount')) {
-        msg = 'The minimum gift amount is 100 RWF. Please enter a higher amount.';
+        msg = `The minimum gift amount is 100 ${mainEvent?.streamFeeCurrencyAbbreviation || 'RWF'}. Please enter a higher amount.`;
       } else if (lower.includes('maximum amount') || lower.includes('exceeds')) {
         msg = 'The gift amount exceeds the allowed limit. Please enter a smaller amount.';
       } else if (lower.includes('insufficient') || lower.includes('balance')) {
