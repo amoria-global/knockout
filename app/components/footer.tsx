@@ -349,7 +349,7 @@ export default function Footer() {
             <div className="footer-brand" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
               <div>
                 <Link href="/" className="footer-logo">
-                  <img src="/log.png" alt="Connekyt Logo" style={{ width: isMobile ? '39px' : '49px', height: isMobile ? '39px' : '49px', objectFit: 'contain', position: 'relative', top: '-1px', left: '-15px', filter: 'drop-shadow(0 0 12px rgba(15,79,182,0.4))' }} />
+                  <img src="/logo.png" alt="Connekyt Logo" style={{ width: isMobile ? '39px' : '49px', height: isMobile ? '39px' : '49px', objectFit: 'contain', position: 'relative', top: '-1px', left: '-15px', filter: 'drop-shadow(0 0 12px rgba(15,79,182,0.4))' }} />
                   <span style={{ fontWeight: 700, color: '#fff', fontSize: isMobile ? '1.25rem' : '1.3rem', marginLeft: '-20px', letterSpacing: '0.3px' }}>Connekyt</span>
                 </Link>
                 <p className="footer-tagline">The Smart Way to Capture Life</p>
