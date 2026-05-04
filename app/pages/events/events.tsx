@@ -2294,14 +2294,16 @@ const Events: React.FC = () => {
                   : null;
                 const orgInitial = (organizerLabel.charAt(0) || '?').toUpperCase();
 
-                // Inline price — "From RWF X,XXX" or "Free"
+                // Inline price — "From RWF X,XXX" or "Free". Use the same
+                // currency-resolution rule as the view-event page so the
+                // listing card and the detail page stay in sync.
                 const priceText = (() => {
+                  const code = event.streamFeeCurrencyAbbreviation || 'RWF';
                   if (event.streamFee && event.streamFee > 0) {
-                    const code = event.streamFeeCurrencyAbbreviation || event.streamFeeCurrencySymbol || 'RWF';
                     return { label: 'From', amount: `${code} ${event.streamFee.toLocaleString()}` };
                   }
                   if (event.price && event.price > 0) {
-                    return { label: 'From', amount: `RWF ${event.price.toLocaleString()}` };
+                    return { label: 'From', amount: `${code} ${event.price.toLocaleString()}` };
                   }
                   return { label: '', amount: 'Free' };
                 })();

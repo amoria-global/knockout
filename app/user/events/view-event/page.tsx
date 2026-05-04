@@ -2092,14 +2092,14 @@ function ViewEventContent(): React.JSX.Element {
               }
               .ve-hero-fade { position: absolute; left: 0; right: 0; bottom: 0; height: 30%; background: linear-gradient(180deg, rgba(7,8,13,0) 0%, var(--ve-bg) 92%); z-index: 4; pointer-events: none; }
 
-              .ve-hero-top { position: relative; z-index: 6; display: flex; align-items: center; gap: 10px; padding: clamp(76px, 7vh, 88px) clamp(20px, 4vw, 48px) 0; }
+              .ve-hero-top { position: relative; z-index: 6; display: flex; align-items: center; gap: 10px; padding: clamp(20px, 2.5vh, 32px) clamp(20px, 4vw, 48px) 0; }
               .ve-hero-top-spacer { flex: 1; }
               .ve-glass-btn { width: 44px; height: 44px; border-radius: 14px; background: rgba(7,8,13,0.55); backdrop-filter: blur(14px) saturate(140%); -webkit-backdrop-filter: blur(14px) saturate(140%); border: 1px solid var(--ve-line-strong); color: var(--ve-text); font-size: 17px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: background 160ms ease, transform 160ms ease; }
               .ve-glass-btn:hover { background: rgba(7,8,13,0.78); transform: translateY(-1px); }
               .ve-glass-btn.is-saved { color: var(--ve-amber); border-color: rgba(245,158,11,0.55); background: rgba(245,158,11,0.10); }
               .ve-glass-btn.is-confirmed { color: var(--ve-live); border-color: rgba(16,185,129,0.55); background: rgba(16,185,129,0.10); }
 
-              .ve-hero-body { position: relative; z-index: 6; margin-top: auto; padding: 0 clamp(20px, 4vw, 48px) clamp(48px, 6vh, 72px); max-width: 1240px; width: 100%; align-self: center; will-change: opacity, transform; }
+              .ve-hero-body { position: relative; z-index: 6; margin-top: auto; padding: 0 clamp(20px, 4vw, 48px) clamp(32px, 4vh, 44px); max-width: 1240px; width: 100%; align-self: center; will-change: opacity, transform; }
               .ve-hero-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: clamp(12px, 1.5vw, 16px); }
               .ve-status-pill { display: inline-flex; align-items: center; gap: 7px; padding: 7px 14px; border-radius: 999px; font-size: 12px; font-weight: 800; letter-spacing: 0.10em; text-transform: uppercase; background: rgba(7,8,13,0.78); backdrop-filter: blur(14px) saturate(160%); -webkit-backdrop-filter: blur(14px) saturate(160%); border: 1px solid rgba(255,255,255,0.22); color: #ffffff; box-shadow: 0 4px 16px -4px rgba(0,0,0,0.55); }
               .ve-status-pill--live { background: linear-gradient(135deg, rgba(239,68,68,0.92) 0%, rgba(220,38,38,0.92) 100%); border-color: rgba(255,255,255,0.30); color: #ffffff; box-shadow: 0 6px 18px -4px rgba(220,38,38,0.55); }
@@ -2118,7 +2118,7 @@ function ViewEventContent(): React.JSX.Element {
                  clarity. */
               .ve-hero-countdown {
                 position: absolute;
-                top: clamp(80px, 9vh, 96px);
+                top: clamp(24px, 3vh, 36px);
                 left: 50%;
                 transform: translateX(-50%);
                 z-index: 7;
@@ -2187,7 +2187,7 @@ function ViewEventContent(): React.JSX.Element {
                 .ve-hero-countdown {
                   padding: 10px 14px 12px;
                   gap: 6px;
-                  top: clamp(140px, 18vh, 168px);
+                  top: clamp(80px, 10vh, 100px);
                 }
                 .ve-hero-countdown-grid { grid-auto-columns: minmax(48px, 1fr); gap: 6px; }
                 .ve-hero-countdown-cell { padding: 6px 4px 4px; min-width: 46px; }
@@ -2206,7 +2206,7 @@ function ViewEventContent(): React.JSX.Element {
               .ve-scroll-cue { position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 6; font-size: 11px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ve-text-mute); display: flex; flex-direction: column; align-items: center; gap: 6px; animation: veFloat 2.6s ease-in-out infinite; pointer-events: none; }
               .ve-scroll-cue i { font-size: 18px; }
               @keyframes veFloat { 0%,100% { transform: translate(-50%, 0); } 50% { transform: translate(-50%, 6px); } }
-              @media (max-width: 700px) { .ve-hero { min-height: 88vh; } .ve-hero-top { padding-top: 84px; } .ve-hero-body { padding-bottom: 110px; } .ve-scroll-cue { display: none; } }
+              @media (max-width: 700px) { .ve-hero { min-height: 88vh; } .ve-hero-top { padding-top: 28px; } .ve-hero-body { padding-bottom: 110px; } .ve-scroll-cue { display: none; } }
 
               /* Buttons */
               .ve-btn { display: inline-flex; align-items: center; justify-content: center; gap: 9px; font-family: inherit; font-weight: 700; letter-spacing: 0.01em; border-radius: 14px; border: 1px solid transparent; cursor: pointer; transition: transform 140ms ease, background 160ms ease, border-color 160ms ease, box-shadow 160ms ease; white-space: nowrap; }
