@@ -987,8 +987,19 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
     (TIER_ORDER[a.packageName] || 99) - (TIER_ORDER[b.packageName] || 99)
   );
 
+  // Per-tier gradient backdrops for the package badges. CSS `background`
+  // accepts gradient strings, so the same lookup site works as before — the
+  // returned string just renders as a metallic gradient instead of a solid
+  // colour. Silver = brushed-steel grey, Gold = amber/honey, Diamond = an
+  // iridescent cyan-purple-blue. Old tier names kept as synonyms in case any
+  // legacy package row still has them.
   const tierColors: Record<string, string> = {
-    Essential: '#22D3EE', Custom: '#FBBF24', Premium: '#8B5CF6',
+    Silver:    'linear-gradient(135deg, #94A3B8 0%, #CBD5E1 45%, #64748B 100%)',
+    Gold:      'linear-gradient(135deg, #F59E0B 0%, #FBBF24 50%, #D97706 100%)',
+    Diamond:   'linear-gradient(135deg, #06B6D4 0%, #A78BFA 55%, #3B82F6 100%)',
+    Essential: 'linear-gradient(135deg, #94A3B8 0%, #CBD5E1 45%, #64748B 100%)',
+    Custom:    'linear-gradient(135deg, #F59E0B 0%, #FBBF24 50%, #D97706 100%)',
+    Premium:   'linear-gradient(135deg, #06B6D4 0%, #A78BFA 55%, #3B82F6 100%)',
   };
 
   const handleSelectPackage = (id: string) => {

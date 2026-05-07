@@ -170,18 +170,20 @@ function BookNowContent(): React.JSX.Element {
     return c?.symbol || '';
   };
 
-  // Tier ordering and config
+  // Tier ordering and config. Gradients are name-keyed (not index-keyed) so
+  // each tier always carries its own metallic identity regardless of sort.
   const TIER_ORDER: Record<string, number> = { Silver: 1, Gold: 2, Diamond: 3 };
-  const badgePresets = [
-    { badgeGradient: 'linear-gradient(135deg, #22D3EE 0%, #3B82F6 100%)' },
-    { badgeGradient: 'linear-gradient(135deg, #FDE047 0%, #FBBF24 50%, #F59E0B 100%)' },
-    { badgeGradient: 'linear-gradient(135deg, #C084FC 0%, #A855F7 50%, #7C3AED 100%)' },
-  ];
-  const TIER_BORDER: Record<string, string> = {
-    Silver: '#22D3EE',
-    Gold: '#FBBF24',
-    Diamond: '#8B5CF6',
+  const TIER_GRADIENT: Record<string, string> = {
+    Silver:  'linear-gradient(135deg, #94A3B8 0%, #CBD5E1 45%, #64748B 100%)',
+    Gold:    'linear-gradient(135deg, #F59E0B 0%, #FBBF24 50%, #D97706 100%)',
+    Diamond: 'linear-gradient(135deg, #06B6D4 0%, #A78BFA 55%, #3B82F6 100%)',
   };
+  const TIER_BORDER: Record<string, string> = {
+    Silver:  '#64748B',
+    Gold:    '#D97706',
+    Diamond: '#3B82F6',
+  };
+  const FALLBACK_GRADIENT = 'linear-gradient(135deg, #083A85 0%, #062a63 100%)';
 
   // Calculate total price for a package including extras
   const getPackageTotal = (pkgId: string, basePrice: number) => {
@@ -218,7 +220,7 @@ function BookNowContent(): React.JSX.Element {
   // Use real API packages only, sorted Silver → Gold → Diamond
   const packages = [...apiPackages]
     .sort((a, b) => (TIER_ORDER[a.packageName] ?? 99) - (TIER_ORDER[b.packageName] ?? 99))
-    .map((pkg, index) => {
+    .map((pkg) => {
       const isDiamond = pkg.packageName === 'Diamond';
       return {
         id: pkg.id,
@@ -234,7 +236,7 @@ function BookNowContent(): React.JSX.Element {
         period: pkg.priceUnit || 'per event',
         durationHours: pkg.durationHours || 0,
         badge: pkg.packageName,
-        badgeGradient: badgePresets[index % badgePresets.length].badgeGradient,
+        badgeGradient: TIER_GRADIENT[pkg.packageName] ?? FALLBACK_GRADIENT,
         tierBorderColor: TIER_BORDER[pkg.packageName] ?? '#3B82F6',
         isDiamond,
         hasLiveStream: pkg.hasLiveStream || false,
