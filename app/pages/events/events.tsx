@@ -334,22 +334,17 @@ const Events: React.FC = () => {
             }
           });
         }
-        // Hide completed events older than 2 days (preserved)
-        const twoDaysAgo = Date.now() - 2 * 24 * 60 * 60 * 1000;
-        const filtered = events.filter(ev => {
-          const isEnded = (ev.eventStatus || '').toUpperCase() === 'COMPLETED' || ev.streamStatus === 'ended';
-          if (!isEnded) return true;
-          const dateStr = ev.updatedAt || ev.eventDate;
-          if (!dateStr) return true;
-          const ts = new Date(dateStr).getTime();
-          if (isNaN(ts)) return true;
-          return ts > twoDaysAgo;
-        });
-        setEventsData(filtered);
+        // Visibility for ended events is now driven by admin-controlled flags
+        // on the backend (featured_in_recently_ended_tab / featured_in_all_events_tab).
+        // The previous client-side "hide completed events older than 2 days"
+        // filter contradicted that — it stripped out events the admin had
+        // explicitly flagged for display. Backend's response is the source of
+        // truth: if it returned the event, render it.
+        setEventsData(events);
         setLiveStreamIds(trulyLiveIds);
         setApiTotalPages(response.data.totalPages);
         let changed = false;
-        for (const ev of filtered) {
+        for (const ev of events) {
           const cat = ev.eventCategory?.name?.trim();
           if (cat && !seenCategoriesRef.current.has(cat)) {
             seenCategoriesRef.current.add(cat);
