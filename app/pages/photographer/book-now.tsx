@@ -171,16 +171,16 @@ function BookNowContent(): React.JSX.Element {
   };
 
   // Tier ordering and config
-  const TIER_ORDER: Record<string, number> = { Essential: 1, Custom: 2, Premium: 3 };
+  const TIER_ORDER: Record<string, number> = { Silver: 1, Gold: 2, Diamond: 3 };
   const badgePresets = [
     { badgeGradient: 'linear-gradient(135deg, #22D3EE 0%, #3B82F6 100%)' },
     { badgeGradient: 'linear-gradient(135deg, #FDE047 0%, #FBBF24 50%, #F59E0B 100%)' },
     { badgeGradient: 'linear-gradient(135deg, #C084FC 0%, #A855F7 50%, #7C3AED 100%)' },
   ];
   const TIER_BORDER: Record<string, string> = {
-    Essential: '#22D3EE',
-    Custom: '#FBBF24',
-    Premium: '#8B5CF6',
+    Silver: '#22D3EE',
+    Gold: '#FBBF24',
+    Diamond: '#8B5CF6',
   };
 
   // Calculate total price for a package including extras
@@ -215,11 +215,11 @@ function BookNowContent(): React.JSX.Element {
     }));
   };
 
-  // Use real API packages only, sorted Essential → Custom → Premium
+  // Use real API packages only, sorted Silver → Gold → Diamond
   const packages = [...apiPackages]
     .sort((a, b) => (TIER_ORDER[a.packageName] ?? 99) - (TIER_ORDER[b.packageName] ?? 99))
     .map((pkg, index) => {
-      const isPremium = pkg.packageName === 'Premium';
+      const isDiamond = pkg.packageName === 'Diamond';
       return {
         id: pkg.id,
         name: pkg.packageName,
@@ -236,7 +236,7 @@ function BookNowContent(): React.JSX.Element {
         badge: pkg.packageName,
         badgeGradient: badgePresets[index % badgePresets.length].badgeGradient,
         tierBorderColor: TIER_BORDER[pkg.packageName] ?? '#3B82F6',
-        isPremium,
+        isDiamond,
         hasLiveStream: pkg.hasLiveStream || false,
         photobookPhotos: pkg.photobookPhotos,
         description: pkg.description || '',
@@ -605,10 +605,10 @@ function BookNowContent(): React.JSX.Element {
                   transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
                   boxShadow: selectedPackage === pkg.id
                     ? '0 25px 50px rgba(0, 191, 255, 0.35), 0 0 0 1px rgba(0, 191, 255, 0.1)'
-                    : pkg.isPremium
+                    : pkg.isDiamond
                       ? '0 10px 35px rgba(139, 92, 246, 0.25)'
                       : '0 10px 30px rgba(0, 0, 0, 0.2)',
-                  transform: selectedPackage === pkg.id ? 'translateY(-12px) scale(1.03)' : pkg.isPremium ? 'translateY(-4px) scale(1.01)' : 'translateY(0) scale(1)',
+                  transform: selectedPackage === pkg.id ? 'translateY(-12px) scale(1.03)' : pkg.isDiamond ? 'translateY(-4px) scale(1.01)' : 'translateY(0) scale(1)',
                 }}
                 onMouseEnter={(e) => {
                   if (selectedPackage !== pkg.id) {
@@ -646,7 +646,7 @@ function BookNowContent(): React.JSX.Element {
                 )}
 
                 {/* Best value pill — Premium only */}
-                {pkg.isPremium && selectedPackage !== pkg.id && (
+                {pkg.isDiamond && selectedPackage !== pkg.id && (
                   <div style={{
                     position: 'absolute', top: '12px', left: '50%', transform: 'translateX(-50%)',
                     backgroundColor: '#8B5CF6', color: '#fff',
@@ -662,7 +662,7 @@ function BookNowContent(): React.JSX.Element {
                 <div style={{
                   display: 'flex',
                   justifyContent: 'center',
-                  paddingTop: pkg.isPremium && selectedPackage !== pkg.id ? '36px' : selectedPackage === pkg.id ? '24px' : '20px',
+                  paddingTop: pkg.isDiamond && selectedPackage !== pkg.id ? '36px' : selectedPackage === pkg.id ? '24px' : '20px',
                   marginBottom: '-24px',
                   position: 'relative',
                   zIndex: 2,
@@ -735,7 +735,7 @@ function BookNowContent(): React.JSX.Element {
                     fontSize: '13px',
                     fontWeight: '600',
                     marginBottom: '10px',
-                    color: pkg.isPremium ? '#7C3AED' : '#374151',
+                    color: pkg.isDiamond ? '#7C3AED' : '#374151',
                   }}>
                     {(() => {
                       const parts = [];
@@ -794,8 +794,8 @@ function BookNowContent(): React.JSX.Element {
                     {[
                       // Combined photos & videos line
                       ...(() => {
-                        const hasPhotos = pkg.isPremium || (pkg.includedPhotos ?? 0) > 0;
-                        const hasVideos = pkg.isPremium || (pkg.includedVideos ?? 0) > 0;
+                        const hasPhotos = pkg.isDiamond || (pkg.includedPhotos ?? 0) > 0;
+                        const hasVideos = pkg.isDiamond || (pkg.includedVideos ?? 0) > 0;
                         if (!hasPhotos && !hasVideos) return [];
                         const photoPart = pkg.includedPhotos ? `${pkg.includedPhotos} photos` : '';
                         const videoPart = pkg.includedVideos ? `${pkg.includedVideos} videos` : '';
@@ -873,7 +873,7 @@ function BookNowContent(): React.JSX.Element {
                   </div>
 
                   {/* Extra Photos & Videos Input - Only shows when selected and package supports extras */}
-                  {selectedPackage === pkg.id && (pkg.isPremium || (pkg.includedPhotos ?? 0) > 0 || (pkg.includedVideos ?? 0) > 0 || pkg.extraPhotoPrice > 0 || pkg.extraVideoPrice > 0) && (
+                  {selectedPackage === pkg.id && (pkg.isDiamond || (pkg.includedPhotos ?? 0) > 0 || (pkg.includedVideos ?? 0) > 0 || pkg.extraPhotoPrice > 0 || pkg.extraVideoPrice > 0) && (
                     <div
                       style={{
                         marginTop: '20px',
@@ -934,7 +934,7 @@ function BookNowContent(): React.JSX.Element {
                             type="text"
                             inputMode="numeric"
                             pattern="[0-9]*"
-                            placeholder={pkg.isPremium ? 'e.g. 50 extra photos' : `e.g. 50 → you'll get ${(pkg.includedPhotos ?? 0) + 50} total photos`}
+                            placeholder={pkg.isDiamond ? 'e.g. 50 extra photos' : `e.g. 50 → you'll get ${(pkg.includedPhotos ?? 0) + 50} total photos`}
                             value={extraPhotos[pkg.id]}
                             onChange={(e) => handleExtraChange(pkg.id, 'photos', e.target.value)}
                             onClick={(e) => e.stopPropagation()}
@@ -977,7 +977,7 @@ function BookNowContent(): React.JSX.Element {
                         </div>
                         {typeof extraPhotos[pkg.id] === 'number' && (extraPhotos[pkg.id] as number) > 0 && (
                           <p style={{ fontSize: '12px', color: '#10b981', marginTop: '4px', fontWeight: '600', textAlign: 'center' }}>
-                            {pkg.isPremium ? <>Extra: <strong>{extraPhotos[pkg.id]} photos</strong></> : <>Total: {pkg.includedPhotos} included + {extraPhotos[pkg.id]} extra = <strong>{(pkg.includedPhotos ?? 0) + (extraPhotos[pkg.id] as number)} photos</strong></>}
+                            {pkg.isDiamond ? <>Extra: <strong>{extraPhotos[pkg.id]} photos</strong></> : <>Total: {pkg.includedPhotos} included + {extraPhotos[pkg.id]} extra = <strong>{(pkg.includedPhotos ?? 0) + (extraPhotos[pkg.id] as number)} photos</strong></>}
                           </p>
                         )}
                       </div>
@@ -1002,7 +1002,7 @@ function BookNowContent(): React.JSX.Element {
                             type="text"
                             inputMode="numeric"
                             pattern="[0-9]*"
-                            placeholder={pkg.isPremium ? 'e.g. 10 extra videos' : `e.g. 10 → you'll get ${(pkg.includedVideos ?? 0) + 10} total videos`}
+                            placeholder={pkg.isDiamond ? 'e.g. 10 extra videos' : `e.g. 10 → you'll get ${(pkg.includedVideos ?? 0) + 10} total videos`}
                             value={extraVideos[pkg.id]}
                             onChange={(e) => handleExtraChange(pkg.id, 'videos', e.target.value)}
                             onClick={(e) => e.stopPropagation()}
@@ -1045,7 +1045,7 @@ function BookNowContent(): React.JSX.Element {
                         </div>
                         {typeof extraVideos[pkg.id] === 'number' && (extraVideos[pkg.id] as number) > 0 && (
                           <p style={{ fontSize: '12px', color: '#10b981', marginTop: '4px', fontWeight: '600', textAlign: 'center' }}>
-                            {pkg.isPremium ? <>Extra: <strong>{extraVideos[pkg.id]} videos</strong></> : <>Total: {pkg.includedVideos} included + {extraVideos[pkg.id]} extra = <strong>{(pkg.includedVideos ?? 0) + (extraVideos[pkg.id] as number)} videos</strong></>}
+                            {pkg.isDiamond ? <>Extra: <strong>{extraVideos[pkg.id]} videos</strong></> : <>Total: {pkg.includedVideos} included + {extraVideos[pkg.id]} extra = <strong>{(pkg.includedVideos ?? 0) + (extraVideos[pkg.id] as number)} videos</strong></>}
                           </p>
                         )}
                       </div>
