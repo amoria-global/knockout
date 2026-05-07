@@ -63,9 +63,9 @@ const btnPrimary: React.CSSProperties = {
 };
 
 const TIER_PRESETS: Record<string, { price: number; duration: number; photos: number; videos: number; delivery: number; features: string[] }> = {
-  Essential: { price: 50000, duration: 2, photos: 50, videos: 0, delivery: 7, features: ['Online gallery storage', 'Professional editing', 'Same-day preview', 'Custom branding'] },
-  Custom: { price: 100000, duration: 4, photos: 100, videos: 1, delivery: 5, features: ['Online gallery storage', 'Professional editing', 'Same-day preview', 'Custom branding', 'Fast processing', 'Outdoor photography', 'Event coverage'] },
-  Premium: { price: 200000, duration: 8, photos: 200, videos: 3, delivery: 3, features: ['Online gallery storage', 'Professional editing', 'Same-day preview', 'Custom branding', 'Fast processing', 'Outdoor photography', 'Event coverage', 'Live-streaming', 'Unlimited photos & videos'] },
+  Silver: { price: 50000, duration: 2, photos: 50, videos: 0, delivery: 7, features: ['Online gallery storage', 'Professional editing', 'Same-day preview', 'Custom branding'] },
+  Gold: { price: 100000, duration: 4, photos: 100, videos: 1, delivery: 5, features: ['Online gallery storage', 'Professional editing', 'Same-day preview', 'Custom branding', 'Fast processing', 'Outdoor photography', 'Event coverage'] },
+  Diamond: { price: 200000, duration: 8, photos: 200, videos: 3, delivery: 3, features: ['Online gallery storage', 'Professional editing', 'Same-day preview', 'Custom branding', 'Fast processing', 'Outdoor photography', 'Event coverage', 'Live-streaming', 'Unlimited photos & videos'] },
 };
 
 // ─── Component ───
@@ -97,7 +97,7 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
   const coverInputRef = useRef<HTMLInputElement>(null);
 
   // ── Slide 3: Package ──
-  const [pkgTier, setPkgTier] = useState<'Essential' | 'Custom' | 'Premium'>('Essential');
+  const [pkgTier, setPkgTier] = useState<'Silver' | 'Gold' | 'Diamond'>('Silver');
   const [pkgPrice, setPkgPrice] = useState(50000);
   const [pkgCurrencyId, setPkgCurrencyId] = useState('');
   const [pkgDuration, setPkgDuration] = useState(2);
@@ -233,7 +233,7 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
       durationHours: pkgDuration,
       description: pkgDescription || `${pkgTier} photography package`,
       isActive: true,
-      hasLiveStream: pkgTier === 'Premium',
+      hasLiveStream: pkgTier === 'Diamond',
       includedPhotos: pkgPhotos,
       includedVideos: pkgVideos,
       extraPhotoPrice: 0,
@@ -470,9 +470,9 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
                   <div>
                     <label style={{ display: 'block', color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Package Tier</label>
                     <div style={{ display: 'flex', gap: 8 }}>
-                      {(['Essential', 'Custom', 'Premium'] as const).map(tier => {
+                      {(['Silver', 'Gold', 'Diamond'] as const).map(tier => {
                         const sel = pkgTier === tier;
-                        const colors: Record<string, string> = { Essential: '#22D3EE', Custom: '#FBBF24', Premium: '#8B5CF6' };
+                        const colors: Record<string, string> = { Silver: '#22D3EE', Gold: '#FBBF24', Diamond: '#8B5CF6' };
                         return (
                           <button key={tier} onClick={() => setPkgTier(tier)} style={{
                             flex: 1, padding: '10px 8px', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer',
