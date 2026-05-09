@@ -120,6 +120,7 @@ export const API_ENDPOINTS = {
     EVENT_BY_ID: (id: string) => `/api/remote/public/events/${id}`,
     FACE_SEARCH: '/api/remote/public/face-search',
     IDENTIFY_BUYER: (albumId: string) => `/api/remote/public/albums/${albumId}/identify-buyer`,
+    UNLOCK_ALBUM_PHOTOS: (albumId: string) => `/api/remote/public/albums/${albumId}/unlock-photos`,
     FREE_ALBUM_GET: (code: string) => `/api/remote/public/albums/free/${code}`,
     FREE_ALBUM_REQUEST_ACCESS: '/api/remote/public/albums/free/request-access',
     FREE_ALBUM_VERIFY_ACCESS: '/api/remote/public/albums/free/verify-access',
@@ -186,6 +187,11 @@ export const API_ENDPOINTS = {
     XENTRIPAY_INITIATE_DONATION: '/api/remote/public/payments/xentripay/initiate-donation',
     XENTRIPAY_INITIATE_PHOTO_PURCHASE: '/api/remote/payments/xentripay/initiate-photo-purchase',
     XENTRIPAY_INITIATE_ALBUM_PURCHASE: '/api/remote/public/payments/xentripay/initiate-album-purchase',
+    // Cross-photographer purchase: a face-scan can match photos across N paid
+    // albums. Frontend groups by albumId and posts one item per gallery; one
+    // XentriPay collection covers the total. Each photographer gets the
+    // correct slice of revenue (one AlbumPurchase row per gallery).
+    XENTRIPAY_INITIATE_MULTI_ALBUM_PURCHASE: '/api/remote/public/payments/xentripay/initiate-multi-album-purchase',
     RECORD_ALBUM_PURCHASE: '/api/remote/public/payments/record-album-purchase',
     XENTRIPAY_STATUS: (refid: string) => `/api/remote/payments/xentripay/status/${refid}`,
     XENTRIPAY_PUBLIC_STATUS: (refid: string) => `/api/remote/public/payments/xentripay/status/${refid}`,

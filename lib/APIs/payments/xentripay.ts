@@ -191,15 +191,67 @@ export async function initiateXentriPayAlbumPurchase(
  * Record a successful album purchase (public, no auth required)
  * Triggers photographer earnings, receipt email, and marks photos as purchased.
  * Pass buyerId to late-bind the purchase to a persistent buyer identity.
+ *
+ * Backend now returns an `unlockCode` the buyer can use to re-download
+ * these photos later from any device without re-entering details.
  */
+export interface RecordAlbumPurchaseResponse {
+  refid?: string;
+  status?: string;
+  photographerEarning?: number | string;
+  platformFee?: number | string;
+  unlockCode?: string;
+}
+
 export async function recordAlbumPurchase(
   refid: string,
   buyerId?: string
-): Promise<ApiResponse<{ message: string }>> {
-  return apiClient.post<{ message: string }>(
+): Promise<ApiResponse<RecordAlbumPurchaseResponse>> {
+  return apiClient.post<RecordAlbumPurchaseResponse>(
     API_ENDPOINTS.PAYMENTS.RECORD_ALBUM_PURCHASE,
     buyerId ? { refid, buyerId } : { refid },
     { skipAuth: true, retries: 1 }
+  );
+}
+
+/**
+ * One slice of a multi-album purchase: photos from a single gallery, with
+ * the FE-computed amount + currency for that slice. The buyer pays one
+ * combined total via XentriPay; the backend persists N AlbumPurchase rows
+ * sharing one refid (one per gallery) so each photographer gets the
+ * correct revenue split. Use this when a face-scan match spans multiple
+ * photographers' albums; for single-album buys, prefer the existing
+ * initiate-album-purchase endpoint.
+ */
+export interface MultiAlbumPurchaseItem {
+  albumId: string;
+  photoIds: string[];
+  amount: number;
+  currencyId: string;
+}
+
+export interface InitiateMultiAlbumResponse {
+  refid: string;
+  paymentUrl?: string;
+  totalAmountRwf: number;
+  itemCount: number;
+}
+
+export async function initiateMultiAlbumPurchase(
+  data: {
+    items: MultiAlbumPurchaseItem[];
+    buyerId?: string;
+    phone: string;
+    telecomProvider?: string;
+    paymentMethod: 'MOBILE_MONEY' | 'CARD';
+    viewerEmail?: string;
+    redirectUrl?: string;
+  }
+): Promise<ApiResponse<InitiateMultiAlbumResponse>> {
+  return apiClient.post<InitiateMultiAlbumResponse>(
+    API_ENDPOINTS.PAYMENTS.XENTRIPAY_INITIATE_MULTI_ALBUM_PURCHASE,
+    data,
+    { skipAuth: true, retries: 0 }
   );
 }
 
