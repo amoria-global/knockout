@@ -21,7 +21,7 @@ import DonationPromptModal from './DonationPromptModal';
 
 // ==================== Types ====================
 
-export type PaymentType = 'booking' | 'tip' | 'streaming' | 'donation' | 'photo_purchase' | 'album_purchase';
+export type PaymentType = 'booking' | 'tip' | 'streaming' | 'donation' | 'photo_purchase' | 'album_purchase' | 'multi_album_purchase';
 
 export interface XentriPayModalProps {
   isOpen: boolean;
@@ -50,6 +50,11 @@ export interface XentriPayModalProps {
   albumId?: string;
   photoIds?: string[];
   buyerId?: string;
+  // For multi_album_purchase — face-scan that matched photos across multiple
+  // photographers' albums. One item per gallery; backend creates N
+  // AlbumPurchase rows sharing one refid so each photographer gets their
+  // correct slice of revenue.
+  multiAlbumItems?: import('@/lib/APIs/payments/xentripay').MultiAlbumPurchaseItem[];
   // Dark theme to match viewer auth modal
   darkMode?: boolean;
   // Show donation prompt after payment method selection
@@ -95,6 +100,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
   albumId,
   photoIds,
   buyerId,
+  multiAlbumItems,
   donationAmount: donationAmountProp = 0,
   darkMode = false,
   showDonationPrompt = false,
@@ -431,6 +437,20 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
           paymentMethod: paymentMethodType,
           redirectUrl,
         });
+      } else if (paymentType === 'multi_album_purchase' && multiAlbumItems && multiAlbumItems.length > 0) {
+        // Cross-photographer purchase. The backend creates N PENDING
+        // AlbumPurchase rows sharing one refid; one XentriPay collection
+        // covers the total. Each photographer settles independently on
+        // SUCCESS so per-album revenue is correct end-to-end.
+        const { initiateMultiAlbumPurchase } = await import('@/lib/APIs/payments/xentripay');
+        response = await initiateMultiAlbumPurchase({
+          items: multiAlbumItems,
+          ...(buyerId ? { buyerId } : {}),
+          phone,
+          ...(isCard ? {} : { telecomProvider: method.provider }),
+          paymentMethod: paymentMethodType,
+          redirectUrl,
+        }) as typeof response;
       } else {
         throw new Error('Invalid payment configuration');
       }
