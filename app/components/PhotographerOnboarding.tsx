@@ -63,9 +63,9 @@ const btnPrimary: React.CSSProperties = {
 };
 
 const TIER_PRESETS: Record<string, { price: number; duration: number; photos: number; videos: number; delivery: number; features: string[] }> = {
-  Silver: { price: 50000, duration: 2, photos: 50, videos: 0, delivery: 7, features: ['Online gallery storage', 'Professional editing', 'Same-day preview', 'Custom branding'] },
-  Gold: { price: 100000, duration: 4, photos: 100, videos: 1, delivery: 5, features: ['Online gallery storage', 'Professional editing', 'Same-day preview', 'Custom branding', 'Fast processing', 'Outdoor photography', 'Event coverage'] },
-  Diamond: { price: 200000, duration: 8, photos: 200, videos: 3, delivery: 3, features: ['Online gallery storage', 'Professional editing', 'Same-day preview', 'Custom branding', 'Fast processing', 'Outdoor photography', 'Event coverage', 'Live-streaming', 'Unlimited photos & videos'] },
+  Silver: { price: 50000, duration: 2, photos: 50, videos: 0, delivery: 7, features: ['Online gallery storage', 'Digital Memory Sharing Experience', 'Same-day preview', 'Custom branding'] },
+  Gold: { price: 100000, duration: 4, photos: 100, videos: 1, delivery: 5, features: ['Online gallery storage', 'Digital Memory Sharing Experience', 'Same-day preview', 'Custom branding', 'Fast processing', 'Outdoor photography', 'Event coverage'] },
+  Diamond: { price: 200000, duration: 8, photos: 200, videos: 3, delivery: 3, features: ['Online gallery storage', 'Digital Memory Sharing Experience', 'Same-day preview', 'Custom branding', 'Fast processing', 'Outdoor photography', 'Event coverage', 'Live-streaming', 'Unlimited photos & videos'] },
 };
 
 // ─── Component ───
