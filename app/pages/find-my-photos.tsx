@@ -8,6 +8,7 @@ import XentriPayModal from '../components/XentriPayModal';
 import { getAlbumByCode, type AlbumPhoto } from '@/lib/APIs/public/get-album/route';
 import { uploadSelfieForRecognition, type MatchedPhoto } from '@/lib/APIs/customer/facial-recognition/route';
 import { getCurrencies, type Currency } from '@/lib/APIs/public';
+import { getCurrencyRates, type CurrencyRate } from '@/lib/APIs/public/get-currency-rates/route';
 import { recordStreamingPayment } from '@/lib/APIs/payments/route';
 import { recordAlbumPurchase } from '@/lib/APIs/payments/xentripay';
 import { identifyAlbumBuyer } from '@/lib/APIs/public/identify-buyer/route';
@@ -177,6 +178,10 @@ const FindMyPhotos = () => {
   const [albumCurrencyId, setAlbumCurrencyId] = useState('');
   const [albumCurrencySymbol, setAlbumCurrencySymbol] = useState('');
   const [currencies, setCurrencies] = useState<Currency[]>([]);
+  // Live "1 USD = X local" rates, keyed by both currency id and abbreviation
+  // so any photo field shape can resolve. Loaded once on mount; used to
+  // normalize multi-album totals to USD when slices span different currencies.
+  const [currencyRates, setCurrencyRates] = useState<Record<string, CurrencyRate>>({});
 
   // Download payment modal (legacy single-photo path kept for non-album flows)
   const [showDownloadModal, setShowDownloadModal] = useState(false);
@@ -585,6 +590,21 @@ const FindMyPhotos = () => {
     }).catch(() => {});
   }, []);
 
+  // Load live rateToUsd for every currency so multi-album totals can be
+  // normalized to USD when a face-scan match spans photographers pricing
+  // in different currencies.
+  useEffect(() => {
+    getCurrencyRates().then(res => {
+      if (!res.success || !res.data) return;
+      const map: Record<string, CurrencyRate> = {};
+      for (const r of Object.values(res.data)) {
+        if (r.id) map[r.id] = r;
+        if (r.abbreviation) map[r.abbreviation.toUpperCase()] = r;
+      }
+      setCurrencyRates(map);
+    }).catch(() => {});
+  }, []);
+
   // When the window loses focus (user alt-tabs, opens Snipping Tool, switches
   // apps) or the tab becomes hidden, instantly blank every preview image on the
   // page. Restored on focus/visibility. This catches casual snipping-tool usage
@@ -839,8 +859,53 @@ const FindMyPhotos = () => {
       photoAlbumMap[p.id] = albumId;
     }
     const items = Array.from(groups.values());
-    const totalAmount = items.reduce((s, i) => s + i.amount, 0);
     const firstItemPhoto = payable.find(p => p.albumId === items[0].albumId)!;
+    const firstCurrencyCode = firstItemPhoto.currencyAbbreviation || albumCurrencySymbol || 'RF';
+
+    // If slices span multiple currencies, summing native amounts is
+    // meaningless ("8000 RF" when 5000 was UGX and 3000 was RWF). Convert
+    // each slice to USD via rateToUsd ("1 USD = X local") and display the
+    // USD total. Backend still receives native per-slice amounts in items[]
+    // and converts each to RWF server-side for the gateway.
+    const slicesSpanCurrencies = new Set(items.map(i => i.currencyId)).size > 1;
+    let displayAmount: number;
+    let displayCurrencyCode: string;
+    let displayCurrencyId: string;
+
+    if (slicesSpanCurrencies) {
+      const sliceUsd = (item: { amount: number; currencyId: string }, abbr: string | undefined) => {
+        const rate = currencyRates[item.currencyId] || (abbr ? currencyRates[abbr.toUpperCase()] : undefined);
+        if (rate?.rateToUsd && rate.rateToUsd > 0) return item.amount / rate.rateToUsd;
+        return null;
+      };
+      let usdSum = 0;
+      let allConverted = true;
+      for (const it of items) {
+        const itAbbr = payable.find(p => p.albumId === it.albumId)?.currencyAbbreviation;
+        const usd = sliceUsd(it, itAbbr);
+        if (usd === null) { allConverted = false; break; }
+        usdSum += usd;
+      }
+      if (allConverted) {
+        displayAmount = Math.round(usdSum * 100) / 100;
+        displayCurrencyCode = 'USD';
+        // Use the first slice's currencyId so XentriPayModal still has a
+        // valid id to pass through; the actual gateway charge is computed
+        // per-slice on the backend regardless.
+        displayCurrencyId = items[0].currencyId;
+      } else {
+        // Rates not yet loaded or one currency lacks a rate — fall back to
+        // the native sum so the user still sees *some* total. Backend math
+        // is unaffected.
+        displayAmount = items.reduce((s, i) => s + i.amount, 0);
+        displayCurrencyCode = firstCurrencyCode;
+        displayCurrencyId = items[0].currencyId;
+      }
+    } else {
+      displayAmount = items.reduce((s, i) => s + i.amount, 0);
+      displayCurrencyCode = firstCurrencyCode;
+      displayCurrencyId = items[0].currencyId;
+    }
 
     setPendingPurchase({
       // For multi-album buys, the top-level albumId is just the first slice's
@@ -849,9 +914,9 @@ const FindMyPhotos = () => {
       // initiate API uses the items[] breakdown.
       albumId: items[0].albumId,
       photoIds: items.flatMap(i => i.photoIds),
-      amount: totalAmount,
-      currencyId: items[0].currencyId,
-      currencyCode: firstItemPhoto.currencyAbbreviation || albumCurrencySymbol || 'RF',
+      amount: displayAmount,
+      currencyId: displayCurrencyId,
+      currencyCode: displayCurrencyCode,
       multiAlbumItems: items.length > 1 ? items : undefined,
       photoAlbumMap,
     });
