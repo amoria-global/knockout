@@ -410,7 +410,22 @@ const About = () => {
     gsap.ticker.add(tick);
     gsap.ticker.lagSmoothing(0);
 
+    // Pause Lenis whenever a scroll-lock is active (mobile menu, modal,
+    // etc. set body.style.overflow = 'hidden'). With syncTouch on, Lenis
+    // transforms the page on touch — that transform turns the body into
+    // a containing block for position:fixed children, which makes the
+    // mobile drawer drift away with the page on touch-scroll. Pausing
+    // Lenis while the lock is active restores the normal fixed-anchoring.
+    const syncLockState = () => {
+      if (document.body.style.overflow === 'hidden') lenis.stop();
+      else lenis.start();
+    };
+    syncLockState();
+    const lockObserver = new MutationObserver(syncLockState);
+    lockObserver.observe(document.body, { attributes: true, attributeFilter: ['style'] });
+
     return () => {
+      lockObserver.disconnect();
       gsap.ticker.remove(tick);
       lenis.destroy();
     };
