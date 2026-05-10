@@ -18,6 +18,7 @@ export interface Photographer {
   userId: string;
   firstName: string;
   lastName: string;
+  preferredUsername?: string | null;
   email: string;
   phone?: string;
   profileImage?: string;
