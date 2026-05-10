@@ -46,6 +46,13 @@ export interface XentriPayModalProps {
   donationAmount?: number;
   // Anonymous viewer ID — triggers public payment flow (no auth required)
   viewerId?: string;
+  /**
+   * For streaming group-access purchases. The backend re-computes
+   * streamFee × viewerCount × (1 − groupDiscount/100) server-side, so
+   * passing this through is what makes group pricing actually charge
+   * the right amount instead of falling back to per-viewer.
+   */
+  viewerCount?: number;
   // For album_purchase — paid face-search photos
   albumId?: string;
   photoIds?: string[];
@@ -97,6 +104,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
   eventId,
   donationId,
   viewerId,
+  viewerCount,
   albumId,
   photoIds,
   buyerId,
@@ -392,6 +400,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
             amount,
             currencyId,
             ...(hasEffectiveDonation ? { donationAmount: effectiveDonation } : {}),
+            ...(viewerCount && viewerCount > 1 ? { viewerCount } : {}),
             ...(isCard ? {} : { phone, telecomProvider: method.provider }),
             paymentMethod: paymentMethodType,
             redirectUrl,
