@@ -26,6 +26,7 @@ export interface Photographer {
   id: string;
   firstName: string;
   lastName: string;
+  preferredUsername?: string | null;
   email?: string;
   phone?: string;
   customerType?: string;
