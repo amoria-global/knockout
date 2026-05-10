@@ -126,8 +126,12 @@ export interface Equipment {
 
 export interface Education {
   id?: string;
-  institution: string;
-  degree: string;
+  // After V248 the educationLevels array carries both Education and
+  // Certification rows merged under one umbrella. Education contributes
+  // institution + degree; Certification contributes title/name/issuer/year.
+  // Anything specific to one shape is optional so the merged list type-checks.
+  institution?: string;
+  degree?: string;
   fieldOfStudy?: string;
   // Spec uses string dates, legacy uses numbers
   startDate?: string;
@@ -135,6 +139,13 @@ export interface Education {
   startYear?: number;
   endYear?: number;
   description?: string;
+  // Certification-shaped fields
+  title?: string;
+  name?: string;
+  issuer?: string;
+  issuingOrganization?: string;
+  year?: string;
+  yearObtained?: string;
 }
 
 export interface Certification {
