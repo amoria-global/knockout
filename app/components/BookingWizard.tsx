@@ -756,9 +756,22 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
   // ── Fetch currencies + event types on mount ──
   useEffect(() => {
     if (!isOpen) return;
-    getCurrencies().then(r => { if (r.success && Array.isArray(r.data)) setCurrencies(r.data); }).catch(() => {});
+    getCurrencies().then(r => {
+      if (r.success && Array.isArray(r.data)) {
+        setCurrencies(r.data);
+        // Default the stream-fee currency to RWF (or first listed) so
+        // submitting without explicitly opening the select still ships
+        // a valid currency id with the booking. Otherwise the event
+        // ends up with NULL stream_fee_currency_id even when the
+        // coordinator clearly wanted to charge for the stream.
+        if (!evtStreamFeeCurrencyId) {
+          const rwf = r.data.find(c => (c.code || '').toUpperCase() === 'RWF');
+          setEvtStreamFeeCurrencyId(rwf?.id || r.data[0]?.id || '');
+        }
+      }
+    }).catch(() => {});
     getEventTypes().then(r => { if (r.success && Array.isArray(r.data)) setEventTypes(r.data); }).catch(() => {});
-  }, [isOpen]);
+  }, [isOpen, evtStreamFeeCurrencyId]);
 
   // ── Draft restoration ──
   useEffect(() => {
@@ -1097,13 +1110,22 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
         // Coordinator-specific fields
         ...(details.organizer ? { eventOrganizer: details.organizer } : {}),
         ...(details.tags.length > 0 ? { eventTags: details.tags.join(',') } : {}),
-        ...(details.groupDiscount > 0 ? { groupDiscountPercentage: details.groupDiscount } : {}),
+        // Always send the discount when we're in coordinator mode so an
+        // explicit 0 (or "user cleared the field") persists; otherwise the
+        // backend leaves the previous value untouched and the dashboard
+        // never reflects the change.
+        ...(isCoordinator ? { groupDiscountPercentage: details.groupDiscount } : {}),
         // Stream fee is the per-viewer charge the coordinator sets, NOT the
-        // photographer's package price (which previously leaked in here and
-        // made every stream effectively free because the field was being
-        // overwritten with the wrong number on the backend).
+        // photographer's package price. When a fee is set, ALWAYS send a
+        // currency id alongside — fall back to the RWF row from the
+        // currencies catalog so we never store a fee with no currency.
         ...(typeof details.streamFee === 'number' && details.streamFee > 0
-            ? { streamFee: details.streamFee, streamFeeCurrencyId: details.streamFeeCurrencyId }
+            ? {
+                streamFee: details.streamFee,
+                streamFeeCurrencyId: details.streamFeeCurrencyId
+                    || currencies.find(c => (c.code || '').toUpperCase() === 'RWF')?.id
+                    || (currencies.length > 0 ? currencies[0].id : undefined),
+              }
             : {}),
         eventVisibility: 'PUBLIC',
         // Escrow percentage from milestone selection
@@ -2204,7 +2226,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                             onChange={e => setEvtStreamFeeCurrencyId(e.target.value)}
                             style={{ ...inputStyle, appearance: 'auto' as const, flex: '0 0 110px' }}
                           >
-                            <option value="">RWF</option>
+                            {currencies.length === 0 && <option value="">RWF</option>}
                             {currencies.map(c => (
                               <option key={c.id} value={c.id}>{c.code || c.symbol || c.name}</option>
                             ))}
