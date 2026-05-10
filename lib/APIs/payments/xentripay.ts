@@ -265,6 +265,12 @@ export async function initiateAnonymousStreamingPayment(
     amount: number;
     currencyId: string;
     donationAmount?: number;
+    /**
+     * Number of viewers being purchased for. When > 1 the backend
+     * server-side computes streamFee × viewerCount × (1 − groupDiscount/100)
+     * — the FE-passed `amount` is informational only.
+     */
+    viewerCount?: number;
     phone?: string;
     telecomProvider?: string;
     paymentMethod: string;

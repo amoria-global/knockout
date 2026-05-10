@@ -56,6 +56,10 @@ interface EventDetails {
   tags: string[];
   groupDiscount: number;
   venueName: string;
+  /** Per-viewer stream fee the coordinator charges (0 / undefined = free). */
+  streamFee?: number;
+  /** Currency id for the stream fee (must reference a row in currencies). */
+  streamFeeCurrencyId?: string;
 }
 
 interface MilestoneConfig {
@@ -649,6 +653,10 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
   const [evtTagInput, setEvtTagInput] = useState('');
   const [evtGroupDiscount, setEvtGroupDiscount] = useState<number | ''>('');
   const [evtVenueName, setEvtVenueName] = useState('');
+  // Stream-fee per viewer that the coordinator charges; empty = free.
+  // Currency defaults to RWF; set from the currencies catalog when loaded.
+  const [evtStreamFee, setEvtStreamFee] = useState<number | ''>('');
+  const [evtStreamFeeCurrencyId, setEvtStreamFeeCurrencyId] = useState<string>('');
 
   // ── Payment modal state ──
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -1047,6 +1055,8 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
       tags: evtTags,
       groupDiscount: typeof evtGroupDiscount === 'number' ? evtGroupDiscount : 0,
       venueName: evtVenueName.trim(),
+      streamFee: typeof evtStreamFee === 'number' && evtStreamFee > 0 ? evtStreamFee : undefined,
+      streamFeeCurrencyId: evtStreamFeeCurrencyId || undefined,
     };
     dispatch({ type: 'SET_EVENT_DETAILS', data: details });
     await submitBooking(details);
@@ -1088,7 +1098,13 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
         ...(details.organizer ? { eventOrganizer: details.organizer } : {}),
         ...(details.tags.length > 0 ? { eventTags: details.tags.join(',') } : {}),
         ...(details.groupDiscount > 0 ? { groupDiscountPercentage: details.groupDiscount } : {}),
-        ...(totalPrice ? { streamFee: totalPrice } : {}),
+        // Stream fee is the per-viewer charge the coordinator sets, NOT the
+        // photographer's package price (which previously leaked in here and
+        // made every stream effectively free because the field was being
+        // overwritten with the wrong number on the backend).
+        ...(typeof details.streamFee === 'number' && details.streamFee > 0
+            ? { streamFee: details.streamFee, streamFeeCurrencyId: details.streamFeeCurrencyId }
+            : {}),
         eventVisibility: 'PUBLIC',
         // Escrow percentage from milestone selection
         ...(state.paymentMilestone ? {
@@ -2121,10 +2137,6 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                     <label style={{ display: 'block', color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Venue Name</label>
                     <input type="text" value={evtVenueName} onChange={e => setEvtVenueName(e.target.value)} placeholder="e.g. Kigali Convention Centre" style={inputStyle} />
                   </div>
-                  <div>
-                    <label style={{ display: 'block', color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Special Requirements</label>
-                    <textarea value={evtNotes} onChange={e => setEvtNotes(e.target.value)} placeholder="Any special requests or notes..." rows={2} style={{ ...inputStyle, resize: 'vertical' as const }} />
-                  </div>
 
                   {/* Coordinator-specific fields */}
                   {isCoordinator && (
@@ -2141,7 +2153,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                       <div>
                         <label style={{ display: 'block', color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Tags</label>
                         <div style={{ display: 'flex', gap: 8 }}>
-                          <input type="text" value={evtTagInput} onChange={e => setEvtTagInput(e.target.value)} placeholder="Add a tag and press Enter" style={{ ...inputStyle, flex: 1 }}
+                          <input type="text" value={evtTagInput} onChange={e => setEvtTagInput(e.target.value)} placeholder="Type a tag (e.g. wedding) then click Add" style={{ ...inputStyle, flex: 1 }}
                             onKeyDown={e => {
                               if (e.key === 'Enter' && evtTagInput.trim()) {
                                 e.preventDefault();
@@ -2152,6 +2164,24 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                               }
                             }}
                           />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const v = evtTagInput.trim();
+                              if (!v) return;
+                              if (!evtTags.includes(v)) setEvtTags(prev => [...prev, v]);
+                              setEvtTagInput('');
+                            }}
+                            disabled={!evtTagInput.trim()}
+                            style={{
+                              padding: '0 16px', borderRadius: 8, border: 'none',
+                              background: evtTagInput.trim() ? ACCENT : '#cbd5e1',
+                              color: '#ffffff', fontSize: 13, fontWeight: 600,
+                              cursor: evtTagInput.trim() ? 'pointer' : 'not-allowed',
+                            }}
+                          >
+                            Add
+                          </button>
                         </div>
                         {evtTags.length > 0 && (
                           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
@@ -2165,6 +2195,30 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                             ))}
                           </div>
                         )}
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Stream Fee (per viewer)</label>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                          <select
+                            value={evtStreamFeeCurrencyId}
+                            onChange={e => setEvtStreamFeeCurrencyId(e.target.value)}
+                            style={{ ...inputStyle, appearance: 'auto' as const, flex: '0 0 110px' }}
+                          >
+                            <option value="">RWF</option>
+                            {currencies.map(c => (
+                              <option key={c.id} value={c.id}>{c.code || c.symbol || c.name}</option>
+                            ))}
+                          </select>
+                          <input
+                            type="number"
+                            min={0}
+                            value={evtStreamFee}
+                            onChange={e => setEvtStreamFee(parseInt(e.target.value) || '')}
+                            placeholder="Leave blank or 0 for free streaming"
+                            style={{ ...inputStyle, flex: 1 }}
+                          />
+                        </div>
+                        <p style={{ color: TEXT_MUTED, fontSize: 11, margin: '4px 0 0' }}>Charged to each anonymous viewer who joins the live stream.</p>
                       </div>
                       <div>
                         <label style={{ display: 'block', color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Group Stream Discount (%)</label>

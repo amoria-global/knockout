@@ -1582,6 +1582,7 @@ const App = () => {
             deviceFingerprint: fingerprint,
             amount: parseInt(giftAmount),
             currencyId,
+            ...(donAmt > 0 ? { donationAmount: donAmt } : {}),
             ...(isCard ? {} : { phone: paymentPhone, telecomProvider: providerMap[selectedPaymentMethod!] }),
             paymentMethod: paymentMethodType,
             ...(isCard ? { redirectUrl } : {}),

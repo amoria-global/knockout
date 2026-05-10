@@ -1821,6 +1821,7 @@ function JoinPackageContent(): React.JSX.Element {
         paymentType="streaming"
         eventId={selectedEvent?.id || ''}
         viewerId={!isAuthenticated ? (pendingViewerId || undefined) : undefined}
+        viewerCount={selectedPackage === 'group' && typeof numberOfPeople === 'number' && numberOfPeople > 1 ? numberOfPeople : undefined}
         donationAmount={pendingDonationAmount > 0 ? pendingDonationAmount : undefined}
         showDonationPrompt
         onDonationAmountChange={(amt) => setPendingDonationAmount(amt)}
