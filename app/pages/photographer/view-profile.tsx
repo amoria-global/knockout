@@ -203,7 +203,10 @@ function ViewProfileContent(): React.JSX.Element {
 
   // ----- Photographer display data (preserved 1:1) -----
   const photographerData = {
-    name: photographer ? `${photographer.firstName} ${photographer.lastName}` : '',
+    name: photographer
+      ? (photographer.preferredUsername
+          || `${photographer.firstName ?? ''} ${photographer.lastName ?? ''}`.trim())
+      : '',
     location: (() => {
       if (!photographer) return '';
       if (photographer.address && cities.length > 0) {
@@ -222,74 +225,37 @@ function ViewProfileContent(): React.JSX.Element {
     rating: photographer?.rating || 0,
     profileImage: getProfileImage(photographer),
     backgroundImage: getCoverImage(photographer),
-    about: photographer?.about || photographer?.professionalPhilosophy || '',
     specialties: (photographer?.specialties || []).map((s: string | { id: string; name: string }) =>
       typeof s === 'string' ? s : s.name
     ),
-    equipments: photographer?.equipments?.map((eq) => eq.name) || [],
     portfolio: {
-      beliefs: photographer?.professionalPhilosophy || '',
-      skills:
-        photographer?.professionalSkills?.map((skill, index) => ({
-          name: skill.name,
-          level: skill.proficiencyLevel || skill.skillPercentage || Math.max(70, 95 - index * 5),
-        })) || [],
-      qualifications:
-        photographer?.certifications?.map((cert, index) => ({
-          id: index + 1,
-          title: cert.title || cert.name || 'Untitled',
-          issuer: cert.issuer || cert.institution || cert.issuingOrganization || '',
-          year: (() => {
-            if (cert.year) return cert.year;
-            if (cert.yearObtained) return cert.yearObtained;
-            if (cert.issueDate) {
-              try {
-                return new Date(cert.issueDate).getFullYear().toString();
-              } catch {
-                return '';
-              }
-            }
-            return '';
-          })(),
-          description:
-            cert.description ||
-            `Certification from ${
-              cert.issuer || cert.institution || cert.issuingOrganization || 'Unknown'
-            }`,
-        })) || [],
-      education:
-        photographer?.educationLevels?.map((edu, index) => ({
-          id: index + 1,
-          degree: edu.degree,
-          institution: edu.institution,
+      // Education and Certifications now live under one section. The backend
+      // already returns both types via educationLevels (Education + Certification);
+      // we still merge any standalone certifications field as a defensive belt.
+      education: [
+        ...(photographer?.educationLevels?.map((edu, index) => ({
+          id: `edu-${index + 1}`,
+          degree: edu.degree || edu.title || edu.name || 'Untitled',
+          institution: edu.institution || edu.issuer || '',
           year: (() => {
             if (edu.startYear) return `${edu.startYear}${edu.endYear ? ` - ${edu.endYear}` : ''}`;
             if (edu.startDate) return `${edu.startDate}${edu.endDate ? ` - ${edu.endDate}` : ''}`;
+            if (edu.year) return edu.year;
+            if (edu.yearObtained) return edu.yearObtained;
             return '';
           })(),
-          description: edu.description || edu.fieldOfStudy || `Studied at ${edu.institution}`,
-        })) || [],
-      training:
-        photographer?.trainings?.map((training, index) => ({
-          id: index + 1,
-          title: training.title || training.name || 'Untitled',
-          institution: training.institution || training.provider || '',
-          year: (() => {
-            if (training.year) return training.year;
-            if (training.yearObtained) return training.yearObtained;
-            if (training.completionDate) {
-              try {
-                return new Date(training.completionDate).getFullYear().toString();
-              } catch {
-                return '';
-              }
-            }
-            return '';
-          })(),
-          description:
-            training.description ||
-            `Training completed at ${training.institution || training.provider || 'Unknown'}`,
-        })) || [],
+          description: edu.description || edu.fieldOfStudy || (edu.institution ? `Studied at ${edu.institution}` : ''),
+        })) || []),
+        ...((photographer?.certifications || [])
+          .filter((c) => !photographer?.educationLevels?.some((e) => e.id === c.id))
+          .map((cert, index) => ({
+            id: `cert-${index + 1}`,
+            degree: cert.title || cert.name || 'Certification',
+            institution: cert.issuer || cert.institution || cert.issuingOrganization || '',
+            year: cert.year || cert.yearObtained || '',
+            description: cert.description || '',
+          }))),
+      ],
       projects:
         photographer?.projects?.map((project, index) => ({
           id: index + 1,
@@ -330,7 +296,7 @@ function ViewProfileContent(): React.JSX.Element {
               location: photographer.address || '',
               startDate: photographer.joinedFrom ? formatJoinDate(photographer.joinedFrom) : '',
               endDate: 'Present',
-              description: photographer.about || '',
+              description: '',
             },
           ]
         : [],
@@ -591,125 +557,50 @@ function ViewProfileContent(): React.JSX.Element {
           <div className="vp-main">
             {/* OVERVIEW TAB */}
             {activeTab === 'overview' &&
-              (!photographerData.about &&
-              !photographerData.specialties.length &&
-              !photographerData.equipments.length ? (
+              (!photographerData.specialties.length ? (
                 <div className="vp-empty">
                   <span className="vp-empty-icon" aria-hidden="true">
                     <i className="bi bi-person-vcard" />
                   </span>
                   <h3>No profile details yet</h3>
                   <p>
-                    {photographerData.name} hasn&apos;t shared their about,
-                    specialties, or equipment yet. Check back soon.
+                    {photographerData.name} hasn&apos;t shared their specialties yet.
+                    Check back soon.
                   </p>
                 </div>
               ) : (
-                <>
-                  {photographerData.about && (
-                    <section className="vp-section">
-                      <h2 className="vp-section-title">
-                        <i className="bi bi-person-lines-fill" aria-hidden="true" />
-                        {t('overview.about')}
-                      </h2>
-                      <p className="vp-prose">{photographerData.about}</p>
-                    </section>
-                  )}
-
-                  {photographerData.specialties.length > 0 && (
-                    <section className="vp-section">
-                      <h2 className="vp-section-title">
-                        <i className="bi bi-stars" aria-hidden="true" />
-                        {t('overview.specialties')}
-                      </h2>
-                      <div className="vp-chips">
-                        {photographerData.specialties.map((s, i) => (
-                          <span className="vp-chip" key={i}>
-                            {s}
-                          </span>
-                        ))}
-                      </div>
-                    </section>
-                  )}
-
-                  <section className="vp-section">
-                    <h2 className="vp-section-title">
-                      <i className="bi bi-camera2" aria-hidden="true" />
-                      {t('overview.equipment')}
-                    </h2>
-                    {photographerData.equipments.length > 0 ? (
-                      <div className="vp-equip-grid">
-                        {photographerData.equipments.map((e, i) => (
-                          <div className="vp-equip-card" key={i}>
-                            <span className="vp-equip-icon" aria-hidden="true">
-                              <i className="bi bi-camera2" />
-                            </span>
-                            <span className="vp-equip-name">{e}</span>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="vp-empty-text">{t('overview.noEquipment')}</p>
-                    )}
-                  </section>
-                </>
+                <section className="vp-section">
+                  <h2 className="vp-section-title">
+                    <i className="bi bi-stars" aria-hidden="true" />
+                    {t('overview.specialties')}
+                  </h2>
+                  <div className="vp-chips">
+                    {photographerData.specialties.map((s, i) => (
+                      <span className="vp-chip" key={i}>
+                        {s}
+                      </span>
+                    ))}
+                  </div>
+                </section>
               ))}
 
             {/* PORTFOLIO TAB */}
             {activeTab === 'portfolio' &&
-              (!photographerData.portfolio.beliefs &&
-              !photographerData.portfolio.skills.length &&
-              !photographerData.portfolio.projects.length &&
-              !photographerData.portfolio.education.length &&
-              !photographerData.portfolio.qualifications.length &&
-              !photographerData.portfolio.training.length ? (
+              (!photographerData.portfolio.projects.length &&
+              !photographerData.portfolio.education.length ? (
                 <div className="vp-empty">
                   <span className="vp-empty-icon" aria-hidden="true">
                     <i className="bi bi-images" />
                   </span>
                   <h3>No portfolio yet</h3>
                   <p>
-                    {photographerData.name} hasn&apos;t published projects, skills,
-                    or credentials yet. Their work history will appear here once
+                    {photographerData.name} hasn&apos;t published projects or
+                    credentials yet. Their work history will appear here once
                     added.
                   </p>
                 </div>
               ) : (
               <>
-                {photographerData.portfolio.beliefs && (
-                  <section className="vp-section vp-section--quote">
-                    <i className="bi bi-quote vp-quote-mark" aria-hidden="true" />
-                    <blockquote className="vp-quote-text">
-                      {photographerData.portfolio.beliefs}
-                    </blockquote>
-                  </section>
-                )}
-
-                {photographerData.portfolio.skills.length > 0 && (
-                  <section className="vp-section">
-                    <h2 className="vp-section-title">
-                      <i className="bi bi-bar-chart-fill" aria-hidden="true" />
-                      {t('portfolio.professionalSkills')}
-                    </h2>
-                    <div className="vp-skills">
-                      {photographerData.portfolio.skills.map((s, i) => (
-                        <div className="vp-skill" key={i}>
-                          <div className="vp-skill-row">
-                            <span className="vp-skill-name">{s.name}</span>
-                            <span className="vp-skill-pct">{Math.round(s.level)}%</span>
-                          </div>
-                          <div className="vp-skill-bar" aria-hidden="true">
-                            <div
-                              className="vp-skill-fill"
-                              style={{ width: `${Math.min(100, Math.max(0, s.level))}%` }}
-                            />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </section>
-                )}
-
                 {photographerData.portfolio.projects.length > 0 && (
                   <section className="vp-section">
                     <h2 className="vp-section-title">
@@ -741,7 +632,7 @@ function ViewProfileContent(): React.JSX.Element {
                   <section className="vp-section">
                     <h2 className="vp-section-title">
                       <i className="bi bi-mortarboard-fill" aria-hidden="true" />
-                      {t('portfolio.education')}
+                      Education &amp; Certifications
                     </h2>
                     <div className="vp-timeline">
                       {photographerData.portfolio.education.map((e) => (
@@ -758,50 +649,6 @@ function ViewProfileContent(): React.JSX.Element {
                             )}
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  </section>
-                )}
-
-                {photographerData.portfolio.qualifications.length > 0 && (
-                  <section className="vp-section">
-                    <h2 className="vp-section-title">
-                      <i className="bi bi-award-fill" aria-hidden="true" />
-                      {t('portfolio.qualifications')}
-                    </h2>
-                    <div className="vp-cred-grid">
-                      {photographerData.portfolio.qualifications.map((q) => (
-                        <article className="vp-cred-card" key={q.id}>
-                          <div className="vp-cred-icon" aria-hidden="true">
-                            <i className="bi bi-patch-check-fill" />
-                          </div>
-                          <h3 className="vp-cred-title">{q.title}</h3>
-                          <p className="vp-cred-issuer">{q.issuer}</p>
-                          {q.year && <span className="vp-cred-year">{q.year}</span>}
-                          {q.description && <p className="vp-cred-desc">{q.description}</p>}
-                        </article>
-                      ))}
-                    </div>
-                  </section>
-                )}
-
-                {photographerData.portfolio.training.length > 0 && (
-                  <section className="vp-section">
-                    <h2 className="vp-section-title">
-                      <i className="bi bi-bookmark-star-fill" aria-hidden="true" />
-                      Training
-                    </h2>
-                    <div className="vp-cred-grid">
-                      {photographerData.portfolio.training.map((tr) => (
-                        <article className="vp-cred-card" key={tr.id}>
-                          <div className="vp-cred-icon" aria-hidden="true">
-                            <i className="bi bi-bookmark-star-fill" />
-                          </div>
-                          <h3 className="vp-cred-title">{tr.title}</h3>
-                          <p className="vp-cred-issuer">{tr.institution}</p>
-                          {tr.year && <span className="vp-cred-year">{tr.year}</span>}
-                          {tr.description && <p className="vp-cred-desc">{tr.description}</p>}
-                        </article>
                       ))}
                     </div>
                   </section>
