@@ -966,15 +966,54 @@ const FindMyPhotos = () => {
     setPurchaseRefid(refid);
     setPurchaseNotice('Payment confirmed! Recording purchase…');
 
-    // Record the purchase (credits photographer, sends receipt, marks photos purchased)
+    // record-album-purchase has to win before the downloads can succeed:
+    // it's what flips each AlbumPurchase row to COMPLETED, links the buyer,
+    // and emits the unlock code. The backend confirms the payment via
+    // XentriPay inline, and XentriPay's webhook + status endpoint can lag
+    // a few seconds behind the user's "I just paid" callback — so we
+    // retry with a short backoff before giving up. Without this retry,
+    // a fast-clicking buyer hits a race where record-album-purchase 400s
+    // ("Purchase not found" / "Payment not successful"), the buyer→photo
+    // link never lands, and every subsequent /download call 403s.
     let unlockCodeFromServer: string | null = null;
-    try {
-      const recordRes = await recordAlbumPurchase(refid, buyerId || undefined);
-      if (recordRes.success && recordRes.data?.unlockCode) {
-        unlockCodeFromServer = recordRes.data.unlockCode;
+    let recordOk = false;
+    let recordError: string | null = null;
+    const delaysMs = [0, 2000, 4000, 6000, 10000];
+    for (let i = 0; i < delaysMs.length; i++) {
+      if (delaysMs[i] > 0) {
+        setPurchaseNotice('Confirming payment with the gateway…');
+        // eslint-disable-next-line no-await-in-loop
+        await new Promise(r => setTimeout(r, delaysMs[i]));
       }
-    } catch {
-      // non-fatal — downloads below still work with buyerId/refid
+      // eslint-disable-next-line no-await-in-loop
+      const recordRes = await recordAlbumPurchase(refid, buyerId || undefined);
+      if (recordRes.success) {
+        recordOk = true;
+        if (recordRes.data?.unlockCode) unlockCodeFromServer = recordRes.data.unlockCode;
+        break;
+      }
+      recordError = recordRes.error || null;
+      // If the backend definitively says it can't find the refid AND the
+      // gateway already reported success once, keep retrying — the
+      // initiate-purchase webhook may still be in flight. Permanent
+      // errors (anything else) bail early.
+      const transient = (recordError || '').toLowerCase();
+      const looksTransient = transient.includes('not successful')
+        || transient.includes('not found')
+        || transient.includes('pending')
+        || transient.includes('processing');
+      if (!looksTransient) break;
+    }
+
+    if (!recordOk) {
+      // Surface the real reason so the buyer knows what happened — silent
+      // failure here previously left them staring at a frozen "Buy" button
+      // with .jpg downloads that 403'd.
+      setPurchaseNotice(recordError
+        ? `Couldn't finalise purchase: ${recordError}. Your payment is safe — refresh or contact support if this persists.`
+        : 'Could not finalise the purchase. Please refresh and try again.');
+      setTimeout(() => setPurchaseNotice(null), 9000);
+      return;
     }
 
     // Mark photos as purchased in local state
