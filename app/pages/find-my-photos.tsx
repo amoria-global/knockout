@@ -978,10 +978,14 @@ const FindMyPhotos = () => {
     let unlockCodeFromServer: string | null = null;
     let recordOk = false;
     let recordError: string | null = null;
-    const delaysMs = [0, 2000, 4000, 6000, 10000];
+    // Polling window extended to ~120s. Most attempts are cheap (the backend
+    // serves them from its status cache + AlbumPurchase row read once the
+    // XentriPay webhook lands), so the long tail is fine. Every 5s polls keep
+    // bandwidth low while still snapping to SUCCESS quickly.
+    const delaysMs = [0, 3000, 5000, 5000, 5000, 10000, 10000, 15000, 15000, 20000, 20000, 20000];
     for (let i = 0; i < delaysMs.length; i++) {
       if (delaysMs[i] > 0) {
-        setPurchaseNotice('Confirming payment with the gateway…');
+        setPurchaseNotice('Waiting for the gateway to confirm your payment — this can take up to a minute…');
         // eslint-disable-next-line no-await-in-loop
         await new Promise(r => setTimeout(r, delaysMs[i]));
       }
