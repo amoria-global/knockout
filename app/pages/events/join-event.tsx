@@ -591,7 +591,7 @@ export default function JoinEvent() {
                     Processing Payment...
                   </p>
                   <p style={{ color: '#9ca3af', fontSize: '13px', marginTop: '8px' }}>
-                    Please wait while we verify your payment
+                    Waiting for the gateway to confirm your payment — this can take up to a minute.
                   </p>
                 </div>
               )}
