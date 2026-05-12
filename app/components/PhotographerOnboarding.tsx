@@ -2,15 +2,55 @@
 
 import React, { useState, useEffect, useReducer, useRef } from 'react';
 import { getCurrencies, type Currency } from '@/lib/APIs/public';
-import { updateImportantDetails, updateProfilePicture, updateCoverPhoto, submitProfile } from '@/lib/APIs/photographers/update-profile/route';
 import { apiClient } from '@/lib/api/client';
 
 // ─── Types ───
+
+export interface OnboardingPayload {
+  // Slide 0
+  address: string;
+  about: string;
+  businessType: 'Freelancer' | 'Registered Company';
+  companyName: string;
+  tin: string;
+  // Slide 1
+  specialtyIds: string[];
+  // Slide 2
+  profileFile: File;
+  coverFile: File | null;
+  // Slide 3
+  projTitle: string;
+  projYear: number;
+  projDescription: string;
+  projFile: File | null;
+  // Slide 4
+  expPosition: string;
+  expCompany: string;
+  expLocation: string;
+  expStartDate: string;
+  expEndDate: string;
+  expDescription: string;
+  // Slide 5
+  pkgTier: 'Silver' | 'Gold' | 'Diamond';
+  pkgPrice: number;
+  pkgCurrencyId: string;
+  pkgDuration: number;
+  pkgPhotos: number;
+  pkgVideos: number;
+  pkgDelivery: number;
+  pkgDescription: string;
+  pkgFeatures: { featureName: string; isIncluded: boolean; displayOrder: number }[];
+}
 
 interface PhotographerOnboardingProps {
   isOpen: boolean;
   onClose: () => void;
   onComplete: () => void;
+  // Called when the user finishes every slide. Parent runs the real
+  // signup() + all profile API saves here. Resolving means the customer
+  // record is created and OTP is sent; rejecting means nothing was
+  // stored and the wizard surfaces the error so the user can retry.
+  onFinalize: (payload: OnboardingPayload) => Promise<void>;
   firstName: string;
   lastName: string;
   phone: string;
@@ -68,8 +108,12 @@ const TIER_PRESETS: Record<string, { price: number; duration: number; photos: nu
 // ─── Component ───
 
 const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
-  isOpen, onClose, onComplete, firstName, lastName, phone,
+  isOpen, onClose, onComplete, onFinalize, firstName, lastName, phone,
 }) => {
+  // firstName / lastName / phone are kept on props so the parent can pass
+  // them back through onFinalize alongside its own credentials state, but
+  // the wizard itself doesn't need to read them during the slides.
+  void firstName; void lastName; void phone;
   const [state, dispatch] = useReducer(reducer, initialState);
 
   // ── Shared state across slides ──
@@ -181,13 +225,9 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
     }
     setSlideError('');
     dispatch({ type: 'SET_SLIDE', slide: 1 });
-    // Save in background (best-effort)
-    updateImportantDetails({
-      firstName, lastName, phone, about: about.trim(), address: address.trim(),
-      specialtyIds: [],
-      businessType,
-      ...(businessType === 'Registered Company' ? { organizationName: companyName.trim(), taxId: tin.trim() } : {}),
-    }).catch(() => {});
+    // No backend save here — the customer record doesn't exist yet. Every
+    // field is buffered in component state and posted at the final
+    // "Continue to Dashboard" step via onFinalize.
   };
 
   // ─── SLIDE 1: Specialties ───
@@ -196,11 +236,6 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
     if (selectedSpecialtyIds.length < 2) { setSlideError('Please select at least two specialties'); return; }
     setSlideError('');
     dispatch({ type: 'SET_SLIDE', slide: 2 });
-    // Save in background (best-effort)
-    updateImportantDetails({
-      firstName, lastName, phone, about: about.trim(), address: address.trim(),
-      specialtyIds: selectedSpecialtyIds,
-    }).catch(() => {});
   };
 
   // ─── SLIDE 2: Photos ───
@@ -221,9 +256,6 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
     if (!profileFile) { setSlideError('Please upload a profile photo'); return; }
     setSlideError('');
     dispatch({ type: 'SET_SLIDE', slide: 3 });
-    // Upload in background (best-effort)
-    if (profileFile) updateProfilePicture(profileFile).catch(() => {});
-    if (coverFile) updateCoverPhoto(coverFile).catch(() => {});
   };
 
   // ─── SLIDE 3: First featured project ───
@@ -236,17 +268,6 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
     }
     setSlideError('');
     dispatch({ type: 'SET_SLIDE', slide: 4 });
-    // Send in background. Backend wants requestDTO as a JSON multipart part;
-    // projectImage is optional. Match the dashboard's add-project-portfolio
-    // payload shape exactly.
-    const formData = new FormData();
-    formData.append('requestDTO', new Blob([JSON.stringify({
-      title: projTitle.trim(),
-      description: projDescription.trim(),
-      year: parseInt(projYear, 10) || new Date().getFullYear(),
-    })], { type: 'application/json' }));
-    if (projFile) formData.append('projectImage', projFile);
-    apiClient.post('/api/remote/photographer/add-project-portfolio', formData, { retries: 1 }).catch(() => {});
   };
 
   // ─── SLIDE 4: First work experience ───
@@ -260,49 +281,60 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
     }
     setSlideError('');
     dispatch({ type: 'SET_SLIDE', slide: 5 });
-    apiClient.post('/api/remote/photographer/add-work-experience', {
-      position: expPosition.trim(),
-      company: expCompany.trim(),
-      location: expLocation.trim(),
-      startDate: expStartDate.trim(),
-      endDate: expIsCurrent ? '' : expEndDate.trim(),
-      description: expDescription.trim(),
-    }, { retries: 1 }).catch(() => {});
   };
 
   // ─── SLIDE 5: Package ───
 
-  const handleCreatePackage = () => {
+  const handleCreatePackage = async () => {
     if (!pkgPrice || pkgPrice <= 0) { setSlideError('Please enter a valid price'); return; }
     if (!pkgCurrencyId) { setSlideError('Please select a currency'); return; }
+    if (!profileFile) { setSlideError('Profile photo is missing — go back to the Photos step'); return; }
     setSlideError('');
-    dispatch({ type: 'SET_SLIDE', slide: 6 });
 
-    // Create package + submit profile in background (best-effort)
     const preset = TIER_PRESETS[pkgTier];
     const features = (preset?.features || []).map((f, i) => ({
       featureName: f, isIncluded: true, displayOrder: i,
     }));
 
-    apiClient.post('/api/remote/photographer/packages', {
-      packageName: pkgTier,
-      price: pkgPrice,
-      currencyId: pkgCurrencyId,
-      priceUnit: 'per session',
-      durationHours: pkgDuration,
-      description: pkgDescription || `${pkgTier} photography package`,
-      isActive: true,
-      hasLiveStream: pkgTier === 'Diamond',
-      includedPhotos: pkgPhotos,
-      includedVideos: pkgVideos,
-      extraPhotoPrice: 0,
-      extraVideoPrice: 0,
-      photobookPhotos: 0,
-      deliveryDays: pkgDelivery,
-      features,
-    }, { retries: 2 }).then(() => {
-      submitProfile().catch(() => {});
-    }).catch(() => {});
+    const payload: OnboardingPayload = {
+      address: address.trim(),
+      about: about.trim(),
+      businessType,
+      companyName: companyName.trim(),
+      tin: tin.trim(),
+      specialtyIds: selectedSpecialtyIds,
+      profileFile,
+      coverFile,
+      projTitle: projTitle.trim(),
+      projYear: parseInt(projYear, 10) || new Date().getFullYear(),
+      projDescription: projDescription.trim(),
+      projFile,
+      expPosition: expPosition.trim(),
+      expCompany: expCompany.trim(),
+      expLocation: expLocation.trim(),
+      expStartDate: expStartDate.trim(),
+      expEndDate: expIsCurrent ? '' : expEndDate.trim(),
+      expDescription: expDescription.trim(),
+      pkgTier,
+      pkgPrice,
+      pkgCurrencyId,
+      pkgDuration,
+      pkgPhotos,
+      pkgVideos,
+      pkgDelivery,
+      pkgDescription,
+      pkgFeatures: features,
+    };
+
+    dispatch({ type: 'SET_SUBMITTING', value: true });
+    try {
+      await onFinalize(payload);
+      dispatch({ type: 'SET_SLIDE', slide: 6 });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Could not finalise your profile. Please try again.';
+      setSlideError(msg);
+      dispatch({ type: 'SET_SUBMITTING', value: false });
+    }
   };
 
   if (!isOpen) return null;
