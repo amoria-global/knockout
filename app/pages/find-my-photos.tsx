@@ -720,6 +720,14 @@ const FindMyPhotos = () => {
   const triggerPhotoDownload = async (url: string, filename: string) => {
     try {
       const res = await fetch(url);
+      // If the server returned a non-OK status, OR a JSON/HTML body instead
+      // of an image, don't save it as a .jpg — that's how we ended up with
+      // a 403 JSON blob being written to disk with a .jpg extension.
+      const contentType = res.headers.get('content-type') || '';
+      if (!res.ok || !contentType.startsWith('image/')) {
+        window.open(url, '_blank');
+        return;
+      }
       const blob = await res.blob();
       const objectUrl = URL.createObjectURL(blob);
       const a = document.createElement('a');

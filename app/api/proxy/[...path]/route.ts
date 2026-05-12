@@ -24,6 +24,10 @@ const ALLOWED_ORIGINS = new Set<string>([
 const ALLOWED_PATH_PREFIXES = [
   'api/remote/',
   'uploads/',
+  // Face-scan / Find-My-Photos download path. /api/photos/{id}/original is
+  // served as raw JPEG bytes by the backend; without this entry the proxy
+  // would 403-with-JSON and the JSON would get saved as a .jpg.
+  'api/photos/',
 ];
 
 const REQUEST_TIMEOUT_MS = 30_000;
