@@ -337,7 +337,7 @@ export default function ContactUsPage(): React.JSX.Element {
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginTop: 6, flexWrap: 'wrap' }}>
                     <p style={{ fontSize: '0.74rem', color: '#64748b', margin: 0, maxWidth: 320 }}>
                       <i className="bi bi-shield-lock" style={{ marginRight: 6, color: BRAND }} />
-                      Your details are kept private — see our{' '}
+                      Your details are kept private. See our{' '}
                       <a href="/user/privacy-policy" style={{ color: BRAND, fontWeight: 600 }}>privacy policy</a>.
                     </p>
 

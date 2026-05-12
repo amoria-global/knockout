@@ -932,7 +932,7 @@ function JoinPackageContent(): React.JSX.Element {
         {/* ─── Page heading ─── */}
         <div className="jp-heading">
           <h2>Choose your stream package</h2>
-          <p>Pick how you want to watch — pay once, watch live in HD.</p>
+          <p>Pick how you want to watch. Pay once, watch live in HD.</p>
         </div>
 
         {/* View My Code button — shown when viewer has a saved group code */}
@@ -1043,7 +1043,7 @@ function JoinPackageContent(): React.JSX.Element {
                     ) : (
                       <p id="jp-people-hint" className="jp-msg jp-msg--hint">
                         <i className="bi bi-info-circle" aria-hidden="true"></i>
-                        Including yourself — minimum 2 people
+                        Including yourself. Minimum 2 people.
                       </p>
                     )}
 
@@ -1825,7 +1825,7 @@ function JoinPackageContent(): React.JSX.Element {
         donationAmount={pendingDonationAmount > 0 ? pendingDonationAmount : undefined}
         showDonationPrompt
         onDonationAmountChange={(amt) => setPendingDonationAmount(amt)}
-        title={`Stream Access — ${selectedEvent?.title || 'Event'}`}
+        title={`Stream Access · ${selectedEvent?.title || 'Event'}`}
         subtitle={`${selectedPackage === 'group' ? `Group (${typeof numberOfPeople === 'number' ? numberOfPeople : 1} people)` : 'Individual'} · ${getPaymentFee().toLocaleString()} ${selectedEvent?.streamFeeCurrencyAbbreviation || selectedEvent?.streamFeeCurrencySymbol || (currencies.length > 0 ? currencies[0].code : 'RWF')}`}
         darkMode
         // Geo-restriction is for spot reservers (upcoming events) only.
@@ -1897,7 +1897,7 @@ function JoinPackageContent(): React.JSX.Element {
                 onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)'; }}
                 onMouseLeave={e => { e.currentTarget.style.color = '#9ca3af'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'; }}
               >
-                Skip — Watch Now <i className="bi bi-arrow-right" style={{ marginLeft: 4 }}></i>
+                Skip, Watch Now <i className="bi bi-arrow-right" style={{ marginLeft: 4 }}></i>
               </button>
             </div>
 
@@ -2039,7 +2039,7 @@ function JoinPackageContent(): React.JSX.Element {
                     style={{ flex: 1, padding: '12px', background: 'linear-gradient(135deg, #083A85, #0a4da3)', border: 'none', borderRadius: 10, color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
                   >
                     <i className={isLiveNow ? 'bi bi-play-circle' : 'bi bi-check-circle-fill'}></i>
-                    {isLiveNow ? 'Watch Now' : 'Done — back to event'}
+                    {isLiveNow ? 'Watch Now' : 'Done, back to event'}
                   </button>
                 );
               })()}

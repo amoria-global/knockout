@@ -2258,7 +2258,7 @@ const Events: React.FC = () => {
             </h3>
             <p>
               {activeTab === 'live'
-                ? 'Check back soon — live shows are added throughout the day.'
+                ? 'Check back soon. Live shows are added throughout the day.'
                 : activeTab === 'completed'
                 ? 'Recent events from the past 2 days will appear here.'
                 : 'Try widening your search or clearing filters.'}

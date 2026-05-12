@@ -289,7 +289,7 @@ export default function UserTypeModal({
                 lineHeight: 1.5,
               }}
             >
-              Pick the one that fits you best — you can change it later.
+              Pick the one that fits you best. You can change it later.
             </p>
           </div>
 

@@ -19,22 +19,19 @@ interface PhotographerOnboardingProps {
 interface OnboardingState {
   currentSlide: number;
   isSubmitting: boolean;
-  showSkipWarning: boolean;
 }
 
 type OnboardingAction =
   | { type: 'SET_SLIDE'; slide: number }
   | { type: 'SET_SUBMITTING'; value: boolean }
-  | { type: 'SHOW_SKIP_WARNING'; value: boolean }
   | { type: 'RESET' };
 
-const initialState: OnboardingState = { currentSlide: 0, isSubmitting: false, showSkipWarning: false };
+const initialState: OnboardingState = { currentSlide: 0, isSubmitting: false };
 
 function reducer(state: OnboardingState, action: OnboardingAction): OnboardingState {
   switch (action.type) {
     case 'SET_SLIDE': return { ...state, currentSlide: action.slide, isSubmitting: false };
     case 'SET_SUBMITTING': return { ...state, isSubmitting: action.value };
-    case 'SHOW_SKIP_WARNING': return { ...state, showSkipWarning: action.value };
     case 'RESET': return initialState;
     default: return state;
   }
@@ -170,9 +167,9 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
     }
   }, [pkgTier]);
 
-  const handleClose = () => {
-    dispatch({ type: 'SHOW_SKIP_WARNING', value: true });
-  };
+  // No skip path — photographers must finish every slide before they reach
+  // the OTP / dashboard. onClose stays on the props for type-compat with
+  // the parent, but the wizard never calls it.
 
   // ─── SLIDE 0: Location & About ───
 
@@ -323,41 +320,14 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
           boxShadow: '0 24px 60px rgba(0,0,0,0.15)', position: 'relative',
           display: 'flex', flexDirection: 'column', overflow: 'hidden',
         }}>
-          {/* Close button */}
-          <button onClick={handleClose} style={{
-            position: 'absolute', top: 14, right: 14, zIndex: 10, width: 36, height: 36,
-            borderRadius: '50%', background: '#f3f4f6', border: '1px solid #e5e7eb',
-            color: '#6b7280', fontSize: 16, cursor: 'pointer', display: 'flex',
-            alignItems: 'center', justifyContent: 'center',
-          }}>
-            <i className="bi bi-x-lg"></i>
-          </button>
+          {/* No close button — photographers must finish onboarding before they
+              can leave. The flow only exits via slide 6's "Continue to
+              Dashboard" button, which fires onComplete and triggers OTP. */}
 
           {/* Content */}
           <div style={{ flex: 1, overflowY: 'auto', padding: '28px 24px 24px' }}>
 
-            {/* ── Skip Warning ── */}
-            {state.showSkipWarning ? (
-              <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-                <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#fef3c7', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-                  <i className="bi bi-exclamation-triangle" style={{ fontSize: 24, color: '#d97706' }}></i>
-                </div>
-                <h3 style={{ color: TEXT_PRIMARY, fontSize: 18, fontWeight: 700, margin: '0 0 8px' }}>Skip Setup?</h3>
-                <p style={{ color: TEXT_MUTED, fontSize: 14, margin: '0 0 24px', lineHeight: 1.5 }}>
-                  Your profile won&apos;t be 100% until you finish every step — location, specialties, photos, your first project, work experience, and a package. You can finish later from your dashboard, but new clients can&apos;t book you until it&apos;s complete.
-                </p>
-                <div style={{ display: 'flex', gap: 10 }}>
-                  <button onClick={() => dispatch({ type: 'SHOW_SKIP_WARNING', value: false })} style={{ flex: 1, padding: '12px', background: '#ffffff', border: '1px solid #bab8b8', borderRadius: 10, color: TEXT_SECONDARY, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
-                    Continue Setup
-                  </button>
-                  <button onClick={onClose} style={{ flex: 1, padding: '12px', background: '#f3f4f6', border: '1px solid #e5e7eb', borderRadius: 10, color: TEXT_MUTED, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
-                    Skip for Now
-                  </button>
-                </div>
-              </div>
-
-            /* ── SLIDE 0: Location & About ── */
-            ) : state.currentSlide === 0 ? (
+            {state.currentSlide === 0 ? (
               <div>
                 <div style={{ textAlign: 'center', marginBottom: 20 }}>
                   <div style={{ width: 52, height: 52, borderRadius: '50%', background: `linear-gradient(135deg, ${ACCENT}, ${ACCENT_DARK})`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>

@@ -197,7 +197,7 @@ function ViewProfileContent(): React.JSX.Element {
       await navigator.clipboard.writeText(url);
       toast.success('Link copied to clipboard');
     } catch {
-      toast.error('Could not share — try copying the URL manually');
+      toast.error('Could not share. Try copying the URL manually.');
     }
   };
 
@@ -779,7 +779,7 @@ function ViewProfileContent(): React.JSX.Element {
                             <h3 className="vp-timeline-title">{exp.position}</h3>
                             <span className="vp-timeline-meta">
                               {exp.startDate}
-                              {exp.endDate ? ` — ${exp.endDate}` : ''}
+                              {exp.endDate ? ` – ${exp.endDate}` : ''}
                             </span>
                           </div>
                           <p className="vp-timeline-sub">
@@ -2127,7 +2127,7 @@ function MiniCalendar({
             .filter(Boolean)
             .join(' ');
           return (
-            <div key={i} className={cls} aria-label={booked ? `${dateStr} — booked` : `${dateStr} — available`}>
+            <div key={i} className={cls} aria-label={booked ? `${dateStr}, booked` : `${dateStr}, available`}>
               {day}
             </div>
           );

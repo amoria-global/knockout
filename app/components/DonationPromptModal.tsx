@@ -196,7 +196,7 @@ const DonationPromptModal: React.FC<DonationPromptModalProps> = ({
           </div>
           <div className="dp-header-text">
             <h2 id="dp-title" className="dp-title">Care to give back?</h2>
-            <p className="dp-sub">{cause} — entirely optional</p>
+            <p className="dp-sub">{cause} · entirely optional</p>
           </div>
         </div>
 

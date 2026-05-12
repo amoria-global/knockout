@@ -1037,7 +1037,7 @@ export default function JoinEvent() {
                 <p style={{ marginBottom: '4px' }}>
                   Stream Your Event In Real-Time And Let Remote Guests Celebrate With You
                 </p>
-                <p>Through Reactions, Wishes, And Gifts — No Matter Where They Are.</p>
+                <p>Through Reactions, Wishes, And Gifts, No Matter Where They Are.</p>
               </div>
 
               {/* Join section */}

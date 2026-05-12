@@ -937,7 +937,7 @@ const FindMyPhotos = () => {
   const openPurchaseModal = (photos: PhotoItem[]) => {
     const ctx = getPurchaseContext(photos);
     if (!ctx) {
-      setPurchaseNotice('Missing album info — please rescan your photos.');
+      setPurchaseNotice('Missing album info. Please rescan your photos.');
       setTimeout(() => setPurchaseNotice(null), 4000);
       return;
     }
@@ -1038,7 +1038,7 @@ const FindMyPhotos = () => {
     }
 
     // Retry initiate with only the remaining photoIds
-    setPurchaseNotice(`${alreadyIds.length} already owned — retrying payment for ${remaining.length} remaining…`);
+    setPurchaseNotice(`${alreadyIds.length} already owned. Retrying payment for ${remaining.length} remaining…`);
     const remainingPhotos = displayedPhotos.filter(p => remaining.includes(p.id));
     const amount = remainingPhotos.reduce((s, p) => s + (p.price ?? 0), 0);
     setPendingPurchase({
@@ -1060,7 +1060,7 @@ const FindMyPhotos = () => {
 
     const photos = pendingBuyRef.current || [];
     const ctx = getPurchaseContext(photos);
-    if (!ctx) { setDetailsError('Missing album info — please rescan.'); return; }
+    if (!ctx) { setDetailsError('Missing album info. Please rescan.'); return; }
 
     setDetailsLoading(true);
     try {
@@ -2777,7 +2777,7 @@ const FindMyPhotos = () => {
                         pointerEvents: 'none',
                       }}
                     >
-                      🔒 PREVIEW — BUY TO UNLOCK
+                      🔒 PREVIEW · BUY TO UNLOCK
                     </div>
                   </>
                 )}

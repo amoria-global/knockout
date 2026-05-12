@@ -645,8 +645,9 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
       <PhotographerOnboarding
         isOpen={showPhotographerOnboarding}
         onClose={() => {
-          setShowPhotographerOnboarding(false);
-          if (pendingOtpRedirectUrl) router.push(pendingOtpRedirectUrl);
+          // Wizard no longer exposes a Skip option, so this should be
+          // unreachable. Kept as a no-op so accidental future callers
+          // can't bypass profile completion and reach the OTP page.
         }}
         onComplete={() => {
           setShowPhotographerOnboarding(false);

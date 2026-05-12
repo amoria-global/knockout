@@ -75,7 +75,7 @@ const TermsAndConditionsPage = () => {
     {
       id: 'terms-of-use',
       title: 'Terms and Conditions',
-      content: `These Terms and Conditions represent the legally binding agreement governing your access to and use of the Amoria Connekyt platform — including our website, mobile applications, event management tools, and streaming services.
+      content: `These Terms and Conditions represent the legally binding agreement governing your access to and use of the Amoria Connekyt platform, including our website, mobile applications, event management tools, and streaming services.
 
 By creating an account, providing or booking creative services, or interacting with any feature of Amoria Connekyt, you agree to these Terms in full.
 
@@ -111,14 +111,14 @@ By empowering people to capture, share, and relive meaningful moments, Amoria Co
       content: `Creating an account on Amoria Connekyt is your gateway to connecting with creative professionals or showcasing your photography and videography talents. Account registration comes with important responsibilities and requirements designed to protect all users and maintain platform integrity.
 
 1. Registration Requirements
-To create an account on Amoria Connekyt, you must be at least 18 years old. This age requirement is not arbitrary—it's mandated by legal regulations protecting minors and ensuring that all users can enter into legally binding agreements. During registration, you must provide accurate, complete, and up-to-date information including your full legal name, valid email address, phone number, and location.
+To create an account on Amoria Connekyt, you must be at least 18 years old. This age requirement is not arbitrary. It's mandated by legal regulations protecting minors and ensuring that all users can enter into legally binding agreements. During registration, you must provide accurate, complete, and up-to-date information including your full legal name, valid email address, phone number, and location.
 
-You must maintain a valid, actively monitored email address as this is our primary channel for important communications including booking confirmations, payment notifications, security alerts, and policy updates. For users who wish to engage in financial transactions—whether receiving payments as a creator or booking services as a client—you must complete our Know Your Customer (KYC) identity verification process.
+You must maintain a valid, actively monitored email address as this is our primary channel for important communications including booking confirmations, payment notifications, security alerts, and policy updates. For users who wish to engage in financial transactions, whether receiving payments as a creator or booking services as a client, you must complete our Know Your Customer (KYC) identity verification process.
 
 2. Account Responsibility
 When you create an account on Amoria Connekyt, you accept full responsibility for all activities conducted under that account. You must maintain the security of your login credentials by choosing strong, unique passwords that combine letters, numbers, and special characters.
 
-Never share your account credentials with others. If you suspect unauthorized access—perhaps you notice unfamiliar login locations, unexpected bookings, or changes you didn't make—notify us immediately through our support channels.
+Never share your account credentials with others. If you suspect unauthorized access (perhaps you notice unfamiliar login locations, unexpected bookings, or changes you didn't make), notify us immediately through our support channels.
 
 3. Account Suspension
 Amoria Connekyt reserves the right to suspend accounts when we detect activities that violate our terms of service or pose risks to other users. Suspension may occur for fraudulent activities, misuse of platform features, harassment, discrimination, or attempts to bypass platform fees.

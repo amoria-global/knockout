@@ -2260,7 +2260,7 @@ const About = () => {
                   Built for the <span className="wws-title-em">people behind every memory</span>
                 </h2>
                 <p className="wws-lede">
-                  Three audiences, one platform. Whether you create, organize, or treasure — Connekyt was designed
+                  Three audiences, one platform. Whether you create, organize, or treasure, Connekyt was designed
                   to put real, human moments into trusted hands.
                 </p>
               </header>
@@ -2457,7 +2457,7 @@ const About = () => {
               Our <span style={{ fontStyle: 'italic', background: 'linear-gradient(90deg, #083A85 0%, #3B82F6 55%, #0F4FB6 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', paddingRight: '0.12em' }}>Core Values</span>
             </h2>
             <p style={{ color: '#64748b', fontSize: 'clamp(13px, 1.2vw, 15px)', maxWidth: 520, margin: 0, lineHeight: 1.65 }}>
-              Scroll to turn the pages — or drag a corner to flip manually.
+              Scroll to turn the pages, or drag a corner to flip manually.
             </p>
           </div>
 
@@ -2517,7 +2517,7 @@ const About = () => {
                 <h2 className="journey-title">
                   Journey of Progress <span className="journey-title-em">&amp; Possibility</span>
                 </h2>
-                <p className="journey-subtitle">Five stories, one mission. Tap a marker — or use the arrows — to navigate the timeline.</p>
+                <p className="journey-subtitle">Five stories, one mission. Tap a marker, or use the arrows, to navigate the timeline.</p>
               </div>
             }
           >
@@ -3073,7 +3073,7 @@ const About = () => {
               lineHeight: 1.7,
               padding: '0 clamp(8px, 2vw, 16px)',
             }}>
-              Connecting photographers and creatives across continents. From local talent to global stages — one platform, limitless reach.
+              Connecting photographers and creatives across continents. From local talent to global stages, one platform, limitless reach.
             </p>
 
             {/* Live network stats row */}
