@@ -9762,7 +9762,7 @@ const App = () => {
                     A payment prompt has been sent to your phone. Please check and confirm.
                   </p>
                 )}
-                <p style={{ fontSize: '12px', color: '#9ca3af' }}>Waiting for confirmation...</p>
+                <p style={{ fontSize: '12px', color: '#9ca3af' }}>Waiting for the gateway to confirm your payment — this can take up to a minute.</p>
                 <button onClick={resetGiftModal} style={{
                   marginTop: '16px', padding: '10px 24px', backgroundColor: 'transparent',
                   border: '1px solid #e5e7eb', borderRadius: '10px', color: '#6b7280', fontSize: '14px', cursor: 'pointer',

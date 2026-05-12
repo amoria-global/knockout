@@ -1710,7 +1710,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
             )}
 
             <p style={{ fontSize: '13px', color: '#6b7280' }}>
-              Waiting for confirmation... This may take a moment.
+              Waiting for the gateway to confirm your payment — this can take up to a minute.
             </p>
 
             <p style={{ fontSize: '13px', color: '#ef4444', marginTop: '12px', lineHeight: 1.5 }}>
