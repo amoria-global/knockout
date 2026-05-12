@@ -507,7 +507,7 @@ function ViewEventContent(): React.JSX.Element {
         setTimeout(() => setWishSuccess(null), 5000);
       } else {
         const msg = data.message || '';
-        if (msg.includes('only allowed before')) setWishError('The event is now live — please join the stream to send messages.');
+        if (msg.includes('only allowed before')) setWishError('The event is now live. Please join the stream to send messages.');
         else if (msg.includes('rate') || msg.includes('limit')) setWishError('You\u2019re sending wishes too quickly. Please wait a moment.');
         else if (msg.includes('restricted') || msg.includes('blocked')) setWishError('Your message contains restricted content (emails, phone numbers, or links).');
         else setWishError(msg || 'Could not send your wish. Please try again.');
@@ -552,7 +552,7 @@ function ViewEventContent(): React.JSX.Element {
         setTimeout(() => setWishSuccess(null), 5000);
       } else {
         const msg = data.message || '';
-        if (msg.includes('only allowed before')) setWishError('The event is now live — please join the stream to send messages.');
+        if (msg.includes('only allowed before')) setWishError('The event is now live. Please join the stream to send messages.');
         else if (msg.includes('rate') || msg.includes('limit')) setWishError('You\u2019re sending wishes too quickly. Please wait a moment.');
         else if (msg.includes('size') || msg.includes('large')) setWishError('Video is too large. Maximum size is 10 MB.');
         else setWishError(msg || 'Could not send your video wish. Please try again.');
@@ -1593,7 +1593,7 @@ function ViewEventContent(): React.JSX.Element {
                     <div className="ve-livenow-text">
                       <strong className="ve-livenow-headline">
                         <span className="ve-livenow-tag">LIVE NOW</span>
-                        <span>The event is happening — you&apos;re in!</span>
+                        <span>The event is happening. You&apos;re in!</span>
                       </strong>
                       {autoJoinSeconds !== null && !autoJoinDismissed ? (
                         <small className="ve-livenow-sub">
@@ -1601,7 +1601,7 @@ function ViewEventContent(): React.JSX.Element {
                         </small>
                       ) : (
                         <small className="ve-livenow-sub">
-                          Tap <strong>Join now</strong> when you&apos;re ready — your access is confirmed.
+                          Tap <strong>Join now</strong> when you&apos;re ready. Your access is confirmed.
                         </small>
                       )}
                     </div>
@@ -1644,7 +1644,7 @@ function ViewEventContent(): React.JSX.Element {
                         {selectedEvent.description ? (
                           <p className="ve-about-text">{selectedEvent.description}</p>
                         ) : (
-                          <p className="ve-about-text ve-about-text--placeholder">No description provided yet — check back soon.</p>
+                          <p className="ve-about-text ve-about-text--placeholder">No description provided yet. Check back soon.</p>
                         )}
                         {selectedEvent.description && selectedEvent.description.length > 320 && (
                           <button type="button" className="ve-readmore" onClick={() => setDescExpanded(v => !v)}>
@@ -1676,7 +1676,7 @@ function ViewEventContent(): React.JSX.Element {
                       <div className="ve-highlight">
                         <span className="ve-highlight-ico"><i className="bi bi-arrow-counterclockwise" aria-hidden="true" /></span>
                         <strong>48-hour replay</strong>
-                        <small>Re-watch the full event for two days after it ends — no extra charge.</small>
+                        <small>Re-watch the full event for two days after it ends, no extra charge.</small>
                       </div>
                     </div>
 
@@ -1723,7 +1723,7 @@ function ViewEventContent(): React.JSX.Element {
                               <i className="bi bi-chat-heart-fill ve-wishes-ico" aria-hidden="true" />
                               Send a wish to the organizer
                             </h2>
-                            <p className="ve-wishes-sub">Your message — typed or recorded — will appear on screen during the event.</p>
+                            <p className="ve-wishes-sub">Your message, typed or recorded, will appear on screen during the event.</p>
                           </div>
                         </header>
                         <div className="ve-wishes-grid">
@@ -1968,7 +1968,7 @@ function ViewEventContent(): React.JSX.Element {
               </div>
 
               <footer className="ve-foot">
-                <p>© {new Date().getFullYear()} Connekyt — Stream what matters.</p>
+                <p>© {new Date().getFullYear()} Connekyt · Stream what matters.</p>
               </footer>
             </main>
 
@@ -1991,7 +1991,7 @@ function ViewEventContent(): React.JSX.Element {
             {shareCopied && (
               <div className="ve-toast" role="status">
                 <i className="bi bi-check-circle-fill" aria-hidden="true" />
-                Link copied — share it anywhere
+                Link copied. Share it anywhere.
               </div>
             )}
 
@@ -2780,7 +2780,7 @@ function ViewEventContent(): React.JSX.Element {
                 <strong style={{ color: '#6ee7b7', fontWeight: 800 }}>You&apos;ll get an email the moment this event goes live.</strong>
                 {' '}
                 <span style={{ color: '#b8bdca' }}>
-                  Your access is already confirmed — just open the email and you&apos;ll go straight to the stream.
+                  Your access is already confirmed. Just open the email and you&apos;ll go straight to the stream.
                 </span>
               </div>
             </div>

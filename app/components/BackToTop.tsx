@@ -55,7 +55,7 @@ export default function BackToTop(): React.JSX.Element {
         onFocus={() => setIsHovered(true)}
         onBlur={() => setIsHovered(false)}
         className={`btt ${isVisible ? 'is-on' : ''} ${isHovered ? 'is-hover' : ''} ${isPressed ? 'is-pressed' : ''}`}
-        aria-label={`Back to top — ${Math.round(progress * 100)}% scrolled`}
+        aria-label={`Back to top, ${Math.round(progress * 100)}% scrolled`}
         title="Back to top"
       >
         {/* Progress ring */}

@@ -122,7 +122,7 @@ const SecurityHelp: React.FC = () => {
                   <h4 style={{ fontSize: '1.1rem', fontWeight: '600', color: '#083A85', marginBottom: '1.25rem' }}>Password Guidelines:</h4>
                   <ul style={{ paddingLeft: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                     <li style={{ fontSize: '1.05rem', lineHeight: '1.7', color: '#374151' }}>
-                      <strong>Length:</strong> Use at least 8 characters (our required minimum). Longer passwords — 12 or more — are exponentially harder to crack.
+                      <strong>Length:</strong> Use at least 8 characters (our required minimum). Longer passwords, 12 or more, are exponentially harder to crack.
                     </li>
                     <li style={{ fontSize: '1.05rem', lineHeight: '1.7', color: '#374151' }}>
                       <strong>Complexity:</strong> Combine uppercase letters, lowercase letters, numbers, and special symbols (@, #, $, %, etc.).

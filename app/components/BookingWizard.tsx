@@ -1491,7 +1491,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                 </div>
 
                 <p style={{ color: TEXT_SECONDARY, fontSize: 13.5, lineHeight: 1.55, margin: '0 0 14px' }}>
-                  Pick the day <strong>{photographerDisplayName}</strong> will photograph your event. The days highlighted below are already taken by other bookings — choose any available (green) day to continue.
+                  Pick the day <strong>{photographerDisplayName}</strong> will photograph your event. The days highlighted below are already taken by other bookings, so choose any available (green) day to continue.
                 </p>
 
                 {/* Calendar */}
@@ -1567,7 +1567,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                           shadow = '0 0 0 3px rgba(16,185,129,0.40), 0 4px 12px rgba(5,150,105,0.45)';
                         }
                         let title: string | undefined;
-                        if (isFullEvent) title = 'Booked — event day';
+                        if (isFullEvent) title = 'Booked. Event day';
                         else if (isPartialEvent) title = 'Partial event booking';
                         else if (reason === 'preparation') title = `Prep day (event on ${booked?.eventDate})`;
                         else if (reason === 'delivery' && booked?.deliveryDayIndex && booked?.deliveryDaysTotal) title = `Delivery day ${booked.deliveryDayIndex} of ${booked.deliveryDaysTotal}`;
@@ -1598,10 +1598,10 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                     })()}
                   </div>
                   <div style={{ display: 'flex', gap: 10, marginTop: 10, paddingTop: 8, borderTop: '1px solid #f1f5f9', fontSize: 10.5, color: '#475569', flexWrap: 'wrap' }}>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }} title="Photographer is free — click to select"><span style={{ width: 10, height: 10, background: '#10b981', borderRadius: 3 }} />Available</span>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }} title="Day before an event — photographer is preparing"><span style={{ width: 10, height: 10, background: '#94a3b8', borderRadius: 3 }} />Prep day</span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }} title="Photographer is free. Click to select"><span style={{ width: 10, height: 10, background: '#10b981', borderRadius: 3 }} />Available</span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }} title="Day before an event. Photographer is preparing"><span style={{ width: 10, height: 10, background: '#94a3b8', borderRadius: 3 }} />Prep day</span>
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }} title="Photographer is shooting an event that day"><span style={{ width: 10, height: 10, background: '#ef4444', borderRadius: 3 }} />Event day</span>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }} title="Time-boxed event — a portion of the day is booked"><span style={{ width: 10, height: 10, background: '#f59e0b', borderRadius: 3 }} />Partial</span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }} title="Time-boxed event. A portion of the day is booked"><span style={{ width: 10, height: 10, background: '#f59e0b', borderRadius: 3 }} />Partial</span>
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }} title="Photographer is editing & delivering a recent shoot"><span style={{ width: 10, height: 10, background: '#6366f1', borderRadius: 3 }} />Delivery</span>
                   </div>
                 </div>
@@ -1957,7 +1957,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                       <div style={{ background: '#f9fafb', border: `1px solid ${INPUT_BORDER}`, borderRadius: 14, padding: 16 }}>
                         <p style={{ color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, margin: '0 0 4px' }}>Add Extras</p>
                         <p style={{ color: TEXT_MUTED, fontSize: 12, margin: '0 0 10px' }}>
-                          Need more photos or videos than what the package includes? Add them here — optional.
+                          Need more photos or videos than what the package includes? Add them here. Optional.
                         </p>
                         {(selectedPkg.extraPhotoPrice || selectedPkg.extraVideoPrice) ? (
                           <div style={{ display: 'flex', gap: 12 }}>

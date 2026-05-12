@@ -6973,7 +6973,7 @@ const App = () => {
                     Stream paused
                   </p>
                   <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '13px', margin: 0 }}>
-                    The stream will resume shortly — stay on this page
+                    The stream will resume shortly. Stay on this page.
                   </p>
                 </div>
               )}
@@ -7032,7 +7032,7 @@ const App = () => {
                     </div>
                   )}
                   <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '13px', margin: 0 }}>
-                    The stream will start automatically — stay on this page
+                    The stream will start automatically. Stay on this page.
                   </p>
                 </div>
               )}

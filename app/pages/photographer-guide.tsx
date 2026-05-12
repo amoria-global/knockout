@@ -29,14 +29,14 @@ const steps = [
   {
     num: 4,
     title: "Upload Your Portfolio",
-    desc: "Showcase your best work by uploading high-quality photos and videos. Your portfolio is the first thing clients see — make it count.",
+    desc: "Showcase your best work by uploading high-quality photos and videos. Your portfolio is the first thing clients see, so make it count.",
     icon: "bi-images",
     color: "#0a4da3",
   },
   {
     num: 5,
     title: "Set Your Pricing",
-    desc: "Define your packages, hourly rates, and service pricing. Be transparent — clients appreciate clear pricing with no hidden fees.",
+    desc: "Define your packages, hourly rates, and service pricing. Be transparent. Clients appreciate clear pricing with no hidden fees.",
     icon: "bi-tag",
     color: "#083A85",
   },
@@ -221,7 +221,7 @@ const PhotographerGuide = () => {
             Turn Your Passion Into Income
           </h1>
           <p style={{ fontSize: "clamp(14px, 1.3vw, 16px)", color: "rgba(255,255,255,0.45)", margin: "0 0 24px", lineHeight: 1.6, maxWidth: "500px", marginLeft: "auto", marginRight: "auto" }}>
-            Set up your profile, showcase your work, and start earning — all in 6 simple steps.
+            Set up your profile, showcase your work, and start earning, all in 6 simple steps.
           </p>
         </div>
 
