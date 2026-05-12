@@ -570,9 +570,11 @@ const FindMyPhotos = () => {
   };
 
   const handleFreePhotoDownload = async (photo: FreeAlbumPhoto) => {
-    // Free-album photos: pull the clean original from the streaming endpoint
-    // instead of the preview URL (which would be watermarked).
-    await triggerPhotoDownload(apiUrl(`/api/photos/${photo.id}/original`), `photo-${photo.id}.jpg`);
+    // Free-album photos are served directly from the backend's /uploads/
+    // static path — photo.url is already the clean full-res JPEG, no
+    // separate "/original" endpoint exists. Hitting that path returned a
+    // 404 JSON which then got saved as photo-<id>.jpg and refused to open.
+    await triggerPhotoDownload(photo.url, `photo-${photo.id}.jpg`);
   };
 
   const handleFreeDownloadAll = async () => {
@@ -1223,10 +1225,11 @@ const FindMyPhotos = () => {
       setShowDownloadModal(true);
       return;
     }
-    // Free photo → download the original via the streaming endpoint.
-    // photo.url now points at /api/photos/{id}/preview (watermarked), so we
-    // swap to /api/photos/{id}/original to fetch the clean full-res file.
-    triggerPhotoDownload(apiUrl(`/api/photos/${photo.id}/original`), `photo-${photo.id}.jpg`);
+    // Free photo → photo.url is already the direct backend image URL
+    // (/uploads/event_media/... or /uploads/gallery_images/...). No
+    // separate /api/photos/{id}/original endpoint exists.
+    if (!photo.url) return;
+    triggerPhotoDownload(photo.url, `photo-${photo.id}.jpg`);
   };
 
   const startCamera = async () => {
