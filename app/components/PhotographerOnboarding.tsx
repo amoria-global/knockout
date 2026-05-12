@@ -320,9 +320,17 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
           boxShadow: '0 24px 60px rgba(0,0,0,0.15)', position: 'relative',
           display: 'flex', flexDirection: 'column', overflow: 'hidden',
         }}>
-          {/* No close button — photographers must finish onboarding before they
-              can leave. The flow only exits via slide 6's "Continue to
-              Dashboard" button, which fires onComplete and triggers OTP. */}
+          {/* Close button — dismisses the wizard but does NOT advance to OTP.
+              Only slide 6's "Continue to Dashboard" button (onComplete) is
+              allowed to push the user toward the verify-OTP page. */}
+          <button onClick={onClose} aria-label="Close" style={{
+            position: 'absolute', top: 14, right: 14, zIndex: 10, width: 36, height: 36,
+            borderRadius: '50%', background: '#f3f4f6', border: '1px solid #e5e7eb',
+            color: '#6b7280', fontSize: 16, cursor: 'pointer', display: 'flex',
+            alignItems: 'center', justifyContent: 'center',
+          }}>
+            <i className="bi bi-x-lg"></i>
+          </button>
 
           {/* Content */}
           <div style={{ flex: 1, overflowY: 'auto', padding: '28px 24px 24px' }}>
