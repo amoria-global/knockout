@@ -645,9 +645,10 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
       <PhotographerOnboarding
         isOpen={showPhotographerOnboarding}
         onClose={() => {
-          // Wizard no longer exposes a Skip option, so this should be
-          // unreachable. Kept as a no-op so accidental future callers
-          // can't bypass profile completion and reach the OTP page.
+          // Dismiss the wizard without granting OTP — the user stays on the
+          // signup screen with their session ungated. Only onComplete is
+          // allowed to push them to the verify-OTP page.
+          setShowPhotographerOnboarding(false);
         }}
         onComplete={() => {
           setShowPhotographerOnboarding(false);
