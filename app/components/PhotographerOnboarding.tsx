@@ -96,7 +96,24 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
   const profileInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
 
-  // ── Slide 3: Package ──
+  // ── Slide 3: First featured project ──
+  const [projTitle, setProjTitle] = useState('');
+  const [projYear, setProjYear] = useState<string>(String(new Date().getFullYear()));
+  const [projDescription, setProjDescription] = useState('');
+  const [projFile, setProjFile] = useState<File | null>(null);
+  const [projPreview, setProjPreview] = useState('');
+  const projInputRef = useRef<HTMLInputElement>(null);
+
+  // ── Slide 4: First work experience ──
+  const [expPosition, setExpPosition] = useState('');
+  const [expCompany, setExpCompany] = useState('');
+  const [expLocation, setExpLocation] = useState('');
+  const [expStartDate, setExpStartDate] = useState('');
+  const [expEndDate, setExpEndDate] = useState('');
+  const [expIsCurrent, setExpIsCurrent] = useState(false);
+  const [expDescription, setExpDescription] = useState('');
+
+  // ── Slide 5: Package ──
   const [pkgTier, setPkgTier] = useState<'Silver' | 'Gold' | 'Diamond'>('Silver');
   const [pkgPrice, setPkgPrice] = useState(50000);
   const [pkgCurrencyId, setPkgCurrencyId] = useState('');
@@ -179,7 +196,7 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
   // ─── SLIDE 1: Specialties ───
 
   const handleSpecialtiesNext = () => {
-    if (selectedSpecialtyIds.length === 0) { setSlideError('Please select at least one specialty'); return; }
+    if (selectedSpecialtyIds.length < 2) { setSlideError('Please select at least two specialties'); return; }
     setSlideError('');
     dispatch({ type: 'SET_SLIDE', slide: 2 });
     // Save in background (best-effort)
@@ -191,7 +208,7 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
 
   // ─── SLIDE 2: Photos ───
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>, type: 'profile' | 'cover') => {
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>, type: 'profile' | 'cover' | 'project') => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) { setSlideError('File must be under 5MB'); return; }
@@ -199,7 +216,8 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
     setSlideError('');
     const preview = URL.createObjectURL(file);
     if (type === 'profile') { setProfileFile(file); setProfilePreview(preview); }
-    else { setCoverFile(file); setCoverPreview(preview); }
+    else if (type === 'cover') { setCoverFile(file); setCoverPreview(preview); }
+    else { setProjFile(file); setProjPreview(preview); }
   };
 
   const handlePhotosNext = () => {
@@ -211,13 +229,57 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
     if (coverFile) updateCoverPhoto(coverFile).catch(() => {});
   };
 
-  // ─── SLIDE 3: Package ───
+  // ─── SLIDE 3: First featured project ───
+
+  const handleProjectNext = () => {
+    if (!projTitle.trim()) { setSlideError('Please enter a project title'); return; }
+    if (!projDescription.trim() || projDescription.trim().length < 10) {
+      setSlideError('Please write a short description of the project');
+      return;
+    }
+    setSlideError('');
+    dispatch({ type: 'SET_SLIDE', slide: 4 });
+    // Send in background. Backend wants requestDTO as a JSON multipart part;
+    // projectImage is optional. Match the dashboard's add-project-portfolio
+    // payload shape exactly.
+    const formData = new FormData();
+    formData.append('requestDTO', new Blob([JSON.stringify({
+      title: projTitle.trim(),
+      description: projDescription.trim(),
+      year: parseInt(projYear, 10) || new Date().getFullYear(),
+    })], { type: 'application/json' }));
+    if (projFile) formData.append('projectImage', projFile);
+    apiClient.post('/api/remote/photographer/add-project-portfolio', formData, { retries: 1 }).catch(() => {});
+  };
+
+  // ─── SLIDE 4: First work experience ───
+
+  const handleExperienceNext = () => {
+    if (!expPosition.trim()) { setSlideError('Please enter your role / position'); return; }
+    if (!expCompany.trim()) { setSlideError('Please enter the company or studio name'); return; }
+    if (expDescription.trim().length < 50) {
+      setSlideError('Please write at least a short paragraph (50+ chars) about this role');
+      return;
+    }
+    setSlideError('');
+    dispatch({ type: 'SET_SLIDE', slide: 5 });
+    apiClient.post('/api/remote/photographer/add-work-experience', {
+      position: expPosition.trim(),
+      company: expCompany.trim(),
+      location: expLocation.trim(),
+      startDate: expStartDate.trim(),
+      endDate: expIsCurrent ? '' : expEndDate.trim(),
+      description: expDescription.trim(),
+    }, { retries: 1 }).catch(() => {});
+  };
+
+  // ─── SLIDE 5: Package ───
 
   const handleCreatePackage = () => {
     if (!pkgPrice || pkgPrice <= 0) { setSlideError('Please enter a valid price'); return; }
     if (!pkgCurrencyId) { setSlideError('Please select a currency'); return; }
     setSlideError('');
-    dispatch({ type: 'SET_SLIDE', slide: 4 });
+    dispatch({ type: 'SET_SLIDE', slide: 6 });
 
     // Create package + submit profile in background (best-effort)
     const preset = TIER_PRESETS[pkgTier];
@@ -282,7 +344,7 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
                 </div>
                 <h3 style={{ color: TEXT_PRIMARY, fontSize: 18, fontWeight: 700, margin: '0 0 8px' }}>Skip Setup?</h3>
                 <p style={{ color: TEXT_MUTED, fontSize: 14, margin: '0 0 24px', lineHeight: 1.5 }}>
-                  Your profile won&apos;t be listed publicly until you complete at least your location and one package. You can finish later from your dashboard.
+                  Your profile won&apos;t be 100% until you finish every step — location, specialties, photos, your first project, work experience, and a package. You can finish later from your dashboard, but new clients can&apos;t book you until it&apos;s complete.
                 </p>
                 <div style={{ display: 'flex', gap: 10 }}>
                   <button onClick={() => dispatch({ type: 'SHOW_SKIP_WARNING', value: false })} style={{ flex: 1, padding: '12px', background: '#ffffff', border: '1px solid #bab8b8', borderRadius: 10, color: TEXT_SECONDARY, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
@@ -450,11 +512,116 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
                 </button>
               </div>
 
-            /* ── SLIDE 3: Package ── */
+            /* ── SLIDE 3: First featured project ── */
             ) : state.currentSlide === 3 ? (
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
                   <button onClick={() => dispatch({ type: 'SET_SLIDE', slide: 2 })} style={{ padding: '6px 12px', background: '#ffffff', border: '1px solid #bab8b8', borderRadius: 10, color: TEXT_SECONDARY, fontSize: 13, cursor: 'pointer' }}>
+                    <i className="bi bi-arrow-left"></i>
+                  </button>
+                  <div>
+                    <h3 style={{ color: TEXT_PRIMARY, fontSize: 18, fontWeight: 700, margin: 0 }}>Your First Project</h3>
+                    <p style={{ color: TEXT_MUTED, fontSize: 12, margin: 0 }}>Add a recent project clients can browse</p>
+                  </div>
+                </div>
+
+                {slideError && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '10px 14px', marginBottom: 14, color: '#dc2626', fontSize: 13 }}>{slideError}</div>}
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 20 }}>
+                  <div>
+                    <label style={{ display: 'block', color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Project Title *</label>
+                    <input type="text" value={projTitle} onChange={e => setProjTitle(e.target.value)} placeholder="e.g. Bella & Eric's Wedding" style={inputStyle} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Year *</label>
+                    <input type="number" min="1990" max={String(new Date().getFullYear())} value={projYear} onChange={e => setProjYear(e.target.value)} style={inputStyle} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Description *</label>
+                    <textarea value={projDescription} onChange={e => setProjDescription(e.target.value)} placeholder="What was the brief? Where was it? What made it memorable?" rows={3} style={{ ...inputStyle, resize: 'vertical' as const }} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Cover Image (optional)</label>
+                    <input type="file" ref={projInputRef} accept="image/*" onChange={e => handleFileSelect(e, 'project')} style={{ display: 'none' }} />
+                    <div onClick={() => projInputRef.current?.click()} style={{
+                      width: '100%', height: 120, borderRadius: 12, border: `2px dashed ${projPreview ? ACCENT : INPUT_BORDER}`,
+                      background: projPreview ? `url(${projPreview}) center/cover` : INPUT_BG,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden',
+                    }}>
+                      {!projPreview && (
+                        <div style={{ textAlign: 'center' }}>
+                          <i className="bi bi-image" style={{ fontSize: 24, color: TEXT_MUTED }}></i>
+                          <p style={{ color: TEXT_MUTED, fontSize: 12, margin: '4px 0 0' }}>Click to upload a hero image</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <button onClick={handleProjectNext} disabled={state.isSubmitting} style={{ ...btnPrimary, opacity: state.isSubmitting ? 0.6 : 1 }}>
+                  {state.isSubmitting ? 'Saving...' : <>Continue <i className="bi bi-arrow-right"></i></>}
+                </button>
+              </div>
+
+            /* ── SLIDE 4: First work experience ── */
+            ) : state.currentSlide === 4 ? (
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+                  <button onClick={() => dispatch({ type: 'SET_SLIDE', slide: 3 })} style={{ padding: '6px 12px', background: '#ffffff', border: '1px solid #bab8b8', borderRadius: 10, color: TEXT_SECONDARY, fontSize: 13, cursor: 'pointer' }}>
+                    <i className="bi bi-arrow-left"></i>
+                  </button>
+                  <div>
+                    <h3 style={{ color: TEXT_PRIMARY, fontSize: 18, fontWeight: 700, margin: 0 }}>Work Experience</h3>
+                    <p style={{ color: TEXT_MUTED, fontSize: 12, margin: 0 }}>Tell clients where you&apos;ve shot before</p>
+                  </div>
+                </div>
+
+                {slideError && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '10px 14px', marginBottom: 14, color: '#dc2626', fontSize: 13 }}>{slideError}</div>}
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 20 }}>
+                  <div>
+                    <label style={{ display: 'block', color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Role / Position *</label>
+                    <input type="text" value={expPosition} onChange={e => setExpPosition(e.target.value)} placeholder="e.g. Lead Photographer" style={inputStyle} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Company / Studio *</label>
+                    <input type="text" value={expCompany} onChange={e => setExpCompany(e.target.value)} placeholder="e.g. Studio Kigali" style={inputStyle} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Location</label>
+                    <input type="text" value={expLocation} onChange={e => setExpLocation(e.target.value)} placeholder="e.g. Kigali, Rwanda" style={inputStyle} />
+                  </div>
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    <div style={{ flex: 1 }}>
+                      <label style={{ display: 'block', color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Start date</label>
+                      <input type="month" value={expStartDate} onChange={e => setExpStartDate(e.target.value)} style={inputStyle} />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <label style={{ display: 'block', color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, marginBottom: 6 }}>End date</label>
+                      <input type="month" value={expEndDate} onChange={e => setExpEndDate(e.target.value)} disabled={expIsCurrent} style={{ ...inputStyle, opacity: expIsCurrent ? 0.5 : 1 }} />
+                    </div>
+                  </div>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, color: TEXT_SECONDARY, fontSize: 13, cursor: 'pointer' }}>
+                    <input type="checkbox" checked={expIsCurrent} onChange={e => setExpIsCurrent(e.target.checked)} />
+                    I currently work here
+                  </label>
+                  <div>
+                    <label style={{ display: 'block', color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, marginBottom: 6 }}>What did you do? *</label>
+                    <textarea value={expDescription} onChange={e => setExpDescription(e.target.value)} placeholder="Describe the work, kinds of shoots, scale, results... (50+ characters)" rows={4} style={{ ...inputStyle, resize: 'vertical' as const }} />
+                    <p style={{ color: TEXT_MUTED, fontSize: 11, margin: '4px 0 0' }}>{expDescription.length} / 50 minimum</p>
+                  </div>
+                </div>
+
+                <button onClick={handleExperienceNext} disabled={state.isSubmitting} style={{ ...btnPrimary, opacity: state.isSubmitting ? 0.6 : 1 }}>
+                  {state.isSubmitting ? 'Saving...' : <>Continue <i className="bi bi-arrow-right"></i></>}
+                </button>
+              </div>
+
+            /* ── SLIDE 5: Package ── */
+            ) : state.currentSlide === 5 ? (
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+                  <button onClick={() => dispatch({ type: 'SET_SLIDE', slide: 4 })} style={{ padding: '6px 12px', background: '#ffffff', border: '1px solid #bab8b8', borderRadius: 10, color: TEXT_SECONDARY, fontSize: 13, cursor: 'pointer' }}>
                     <i className="bi bi-arrow-left"></i>
                   </button>
                   <div>
@@ -542,8 +709,8 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
                 </div>
               </div>
 
-            /* ── SLIDE 4: Success ── */
-            ) : state.currentSlide === 4 ? (
+            /* ── SLIDE 6: Success ── */
+            ) : state.currentSlide === 6 ? (
               <div style={{ textAlign: 'center', padding: '50px 20px' }}>
                 <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'linear-gradient(135deg, #10b981, #059669)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
                   <i className="bi bi-check-lg" style={{ fontSize: 32, color: '#fff' }}></i>
