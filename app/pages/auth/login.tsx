@@ -461,6 +461,14 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
     setSignupErrors(newErrors);
     if (!isOnline) { showWarning('You are offline.'); return; }
     if (Object.keys(newErrors).length === 0) {
+      // Photographers: open the wizard with credentials buffered locally.
+      // Nothing hits the backend yet — signup() only fires after the user
+      // finishes every required slide. If they close the wizard with X,
+      // their email/phone stay free for a fresh signup attempt.
+      if (signupUserType.toLowerCase() === 'photographer') {
+        setShowPhotographerOnboarding(true);
+        return;
+      }
       setSignupLoading(true);
       try {
         const response = await signup({ firstName, lastName, email: signupEmail, phone: `${countryCode}${phoneNumber}`, customerType: signupUserType, password: signupPassword });
@@ -468,20 +476,98 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
           const customerId = response.data.customerId;
           if (!customerId) { setSignupErrors({ email: 'Missing customer ID.' }); showError('Missing customer ID.'); setSignupLoading(false); return; }
           showSuccess('Account created!');
-          // Build OTP redirect URL
           const otpUrl = `/user/auth/verify-otp?applicantId=${encodeURIComponent(String(customerId))}&email=${encodeURIComponent(signupEmail)}&customerType=${encodeURIComponent(signupUserType)}&firstName=${encodeURIComponent(firstName)}&lastName=${encodeURIComponent(lastName)}&phone=${encodeURIComponent(`${countryCode}${phoneNumber}`)}${redirectUrl ? `&redirect=${encodeURIComponent(redirectUrl)}` : ''}`;
-          // Photographer: show onboarding wizard first, then OTP
-          if (signupUserType.toLowerCase() === 'photographer') {
-            setPendingOtpRedirectUrl(otpUrl);
-            setShowPhotographerOnboarding(true);
-          } else {
-            showInfo('Check your phone for the SMS code.');
-            router.push(otpUrl);
-          }
+          showInfo('Check your phone for the SMS code.');
+          router.push(otpUrl);
         } else { const msg = response.error || 'Signup failed.'; setSignupErrors({ email: msg }); showError(msg); }
       } catch (err) { const msg = err instanceof Error ? err.message : 'An error occurred.'; setSignupErrors({ email: msg }); showError(msg); }
       finally { setSignupLoading(false); }
     }
+  };
+
+  // Photographer onboarding finaliser — only runs when the user clicks the
+  // "Continue to Dashboard" button on the last wizard slide. THIS is the
+  // first time we write anything to the backend for this signup. If the
+  // wizard is closed before reaching this point, no customer record is
+  // ever created and the email/phone can be used for a fresh signup.
+  const handlePhotographerFinalize = async (payload: import('@/app/components/PhotographerOnboarding').OnboardingPayload) => {
+    const response = await signup({
+      firstName, lastName, email: signupEmail,
+      phone: `${countryCode}${phoneNumber}`,
+      customerType: signupUserType, password: signupPassword,
+    });
+    if (!response.success || !response.data) {
+      throw new Error(response.error || 'Signup failed. Please try again.');
+    }
+    const customerId = response.data.customerId;
+    if (!customerId) throw new Error('Signup succeeded but no customer ID was returned.');
+
+    // From here on we have a customer record. The remaining calls are
+    // best-effort: a failed individual save shouldn't block the OTP
+    // step, but we run them sequentially so the user lands on the
+    // dashboard at 100% completion.
+    const { updateImportantDetails, updateProfilePicture, updateCoverPhoto, submitProfile } =
+      await import('@/lib/APIs/photographers/update-profile/route');
+    const { apiClient } = await import('@/lib/api/client');
+
+    await updateImportantDetails({
+      firstName, lastName,
+      phone: `${countryCode}${phoneNumber}`,
+      about: payload.about,
+      address: payload.address,
+      specialtyIds: payload.specialtyIds,
+      businessType: payload.businessType,
+      ...(payload.businessType === 'Registered Company'
+        ? { organizationName: payload.companyName, taxId: payload.tin }
+        : {}),
+    }).catch(() => {});
+
+    await updateProfilePicture(payload.profileFile).catch(() => {});
+    if (payload.coverFile) await updateCoverPhoto(payload.coverFile).catch(() => {});
+
+    try {
+      const formData = new FormData();
+      formData.append('requestDTO', new Blob([JSON.stringify({
+        title: payload.projTitle,
+        description: payload.projDescription,
+        year: payload.projYear,
+      })], { type: 'application/json' }));
+      if (payload.projFile) formData.append('projectImage', payload.projFile);
+      await apiClient.post('/api/remote/photographer/add-project-portfolio', formData, { retries: 1 });
+    } catch { /* best-effort */ }
+
+    await apiClient.post('/api/remote/photographer/add-work-experience', {
+      position: payload.expPosition,
+      company: payload.expCompany,
+      location: payload.expLocation,
+      startDate: payload.expStartDate,
+      endDate: payload.expEndDate,
+      description: payload.expDescription,
+    }, { retries: 1 }).catch(() => {});
+
+    await apiClient.post('/api/remote/photographer/packages', {
+      packageName: payload.pkgTier,
+      price: payload.pkgPrice,
+      currencyId: payload.pkgCurrencyId,
+      priceUnit: 'per session',
+      durationHours: payload.pkgDuration,
+      description: payload.pkgDescription || `${payload.pkgTier} photography package`,
+      isActive: true,
+      hasLiveStream: payload.pkgTier === 'Diamond',
+      includedPhotos: payload.pkgPhotos,
+      includedVideos: payload.pkgVideos,
+      extraPhotoPrice: 0,
+      extraVideoPrice: 0,
+      photobookPhotos: 0,
+      deliveryDays: payload.pkgDelivery,
+      features: payload.pkgFeatures,
+    }, { retries: 2 }).catch(() => {});
+
+    await submitProfile().catch(() => {});
+
+    // Now wire up the OTP redirect — onComplete handler will push to it.
+    const otpUrl = `/user/auth/verify-otp?applicantId=${encodeURIComponent(String(customerId))}&email=${encodeURIComponent(signupEmail)}&customerType=${encodeURIComponent(signupUserType)}&firstName=${encodeURIComponent(firstName)}&lastName=${encodeURIComponent(lastName)}&phone=${encodeURIComponent(`${countryCode}${phoneNumber}`)}${redirectUrl ? `&redirect=${encodeURIComponent(redirectUrl)}` : ''}`;
+    setPendingOtpRedirectUrl(otpUrl);
   };
 
   const handleUserTypeSelect = (type: string) => { setSelectedUserType(type); setShowUserTypeModal(false); };
@@ -645,11 +731,12 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
       <PhotographerOnboarding
         isOpen={showPhotographerOnboarding}
         onClose={() => {
-          // Dismiss the wizard without granting OTP — the user stays on the
-          // signup screen with their session ungated. Only onComplete is
-          // allowed to push them to the verify-OTP page.
+          // Dismiss without finalising — nothing has been written to the
+          // backend yet, so the user is free to retry signup with the
+          // same email/phone.
           setShowPhotographerOnboarding(false);
         }}
+        onFinalize={handlePhotographerFinalize}
         onComplete={() => {
           setShowPhotographerOnboarding(false);
           if (pendingOtpRedirectUrl) router.push(pendingOtpRedirectUrl);
