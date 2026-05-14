@@ -2060,43 +2060,112 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                     */}
                     {(() => {
                       const currencyAbbr = packages[0]?.currencyAbbreviation || 'RWF';
+                      const PINK = '#F20C8F';
+                      const fieldLabelStyle: React.CSSProperties = {
+                        display: 'block',
+                        color: PINK,
+                        fontSize: 11,
+                        fontWeight: 700,
+                        letterSpacing: '0.08em',
+                        textTransform: 'uppercase',
+                        marginBottom: 7,
+                      };
+                      const customInputStyle: React.CSSProperties = {
+                        ...inputStyle,
+                        background: '#fff',
+                        border: `1.5px solid ${INPUT_BORDER}`,
+                        borderRadius: 11,
+                        padding: '11px 14px',
+                        transition: 'border-color 0.15s, box-shadow 0.15s',
+                      };
+                      const focusOn = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+                        e.currentTarget.style.borderColor = PINK;
+                        e.currentTarget.style.boxShadow = '0 0 0 3px rgba(242,12,143,0.12)';
+                      };
+                      const focusOff = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+                        e.currentTarget.style.borderColor = INPUT_BORDER;
+                        e.currentTarget.style.boxShadow = 'none';
+                      };
                       return (
                         <div style={{
-                          background: customOpen ? '#fff7ed' : '#f9fafb',
-                          border: `1px dashed ${customOpen ? '#fdba74' : INPUT_BORDER}`,
+                          position: 'relative',
+                          background: customOpen
+                            ? 'linear-gradient(135deg, rgba(8,58,133,0.04) 0%, rgba(242,12,143,0.05) 100%)'
+                            : '#ffffff',
+                          border: customOpen
+                            ? `1.5px solid ${PINK}`
+                            : `1.5px solid ${INPUT_BORDER}`,
                           borderRadius: 14,
                           padding: 18,
-                          transition: 'all 0.2s',
+                          overflow: 'hidden',
+                          boxShadow: customOpen
+                            ? '0 10px 28px -10px rgba(242,12,143,0.30)'
+                            : 'none',
+                          transition: 'border-color 0.18s, background 0.18s, box-shadow 0.18s',
                         }}>
+                          {/* Brand top stripe (only when open) */}
+                          {customOpen && (
+                            <span aria-hidden style={{
+                              position: 'absolute', top: 0, left: 0, right: 0, height: 2,
+                              background: 'linear-gradient(90deg, #083A85 0%, #F20C8F 100%)',
+                            }} />
+                          )}
+
                           <button
                             type="button"
                             onClick={() => setCustomOpen(o => !o)}
+                            aria-expanded={customOpen}
                             style={{
                               width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                               gap: 12, background: 'transparent', border: 'none', cursor: 'pointer', padding: 0,
                               textAlign: 'left',
                             }}
                           >
-                            <div>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                                <span style={{ padding: '3px 10px', borderRadius: 12, fontSize: 11, fontWeight: 700, color: '#fff', background: ACCENT }}>
-                                  Custom
-                                </span>
-                                <span style={{ color: TEXT_PRIMARY, fontSize: 15, fontWeight: 700 }}>
-                                  None of these fit? Propose your own package
-                                </span>
+                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, flex: 1, minWidth: 0 }}>
+                              {/* Gradient-ring icon tile */}
+                              <div style={{
+                                flexShrink: 0,
+                                width: 38, height: 38,
+                                borderRadius: 11,
+                                padding: 2,
+                                background: 'linear-gradient(135deg, #083A85 0%, #F20C8F 130%)',
+                                boxShadow: '0 6px 14px -4px rgba(242,12,143,0.28)',
+                              }}>
+                                <div style={{
+                                  width: '100%', height: '100%',
+                                  borderRadius: 9,
+                                  background: '#fff',
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                }}>
+                                  <i className="bi bi-sliders" style={{ fontSize: 16, color: PINK }} />
+                                </div>
                               </div>
-                              <p style={{ color: TEXT_MUTED, fontSize: 12, margin: 0 }}>
-                                Tell the photographer your budget and what you need — you&apos;ll continue the conversation in your inbox.
-                              </p>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{
+                                  fontSize: 10.5, fontWeight: 700,
+                                  color: PINK, letterSpacing: '0.08em', textTransform: 'uppercase',
+                                  marginBottom: 2,
+                                }}>Custom Package</div>
+                                <div style={{ color: TEXT_PRIMARY, fontSize: 15.5, fontWeight: 800, letterSpacing: '-0.01em', marginBottom: 4 }}>
+                                  None of these fit? Propose your own.
+                                </div>
+                                <p style={{ color: TEXT_MUTED, fontSize: 12.5, margin: 0, lineHeight: 1.45 }}>
+                                  Tell the photographer your budget and what you need &mdash; you&apos;ll continue the conversation in your inbox.
+                                </p>
+                              </div>
                             </div>
-                            <i className={`bi bi-chevron-${customOpen ? 'up' : 'down'}`} style={{ color: TEXT_SECONDARY, fontSize: 16 }} />
+                            <i className={`bi bi-chevron-${customOpen ? 'up' : 'down'}`} style={{
+                              color: customOpen ? PINK : TEXT_SECONDARY,
+                              fontSize: 16,
+                              flexShrink: 0,
+                              transition: 'transform 0.2s, color 0.2s',
+                            }} />
                           </button>
 
                           {customOpen && (
-                            <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                            <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
                               <div>
-                                <label style={{ color: TEXT_MUTED, fontSize: 12, display: 'block', marginBottom: 4 }}>
+                                <label style={fieldLabelStyle}>
                                   Your proposed budget ({currencyAbbr})
                                 </label>
                                 <input
@@ -2105,12 +2174,14 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                                   value={customPrice || ''}
                                   onChange={e => setCustomPrice(parseInt(e.target.value) || 0)}
                                   placeholder="e.g. 4500000"
-                                  style={inputStyle}
+                                  style={customInputStyle}
+                                  onFocus={focusOn}
+                                  onBlur={focusOff}
                                 />
                               </div>
                               <div style={{ display: 'flex', gap: 12 }}>
                                 <div style={{ flex: 1 }}>
-                                  <label style={{ color: TEXT_MUTED, fontSize: 12, display: 'block', marginBottom: 4 }}>
+                                  <label style={fieldLabelStyle}>
                                     Photos
                                   </label>
                                   <input
@@ -2119,11 +2190,13 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                                     value={customPhotos || ''}
                                     onChange={e => setCustomPhotos(parseInt(e.target.value) || 0)}
                                     placeholder="e.g. 150"
-                                    style={inputStyle}
+                                    style={customInputStyle}
+                                    onFocus={focusOn}
+                                    onBlur={focusOff}
                                   />
                                 </div>
                                 <div style={{ flex: 1 }}>
-                                  <label style={{ color: TEXT_MUTED, fontSize: 12, display: 'block', marginBottom: 4 }}>
+                                  <label style={fieldLabelStyle}>
                                     Videos
                                   </label>
                                   <input
@@ -2132,12 +2205,14 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                                     value={customVideos || ''}
                                     onChange={e => setCustomVideos(parseInt(e.target.value) || 0)}
                                     placeholder="e.g. 50"
-                                    style={inputStyle}
+                                    style={customInputStyle}
+                                    onFocus={focusOn}
+                                    onBlur={focusOff}
                                   />
                                 </div>
                               </div>
                               <div>
-                                <label style={{ color: TEXT_MUTED, fontSize: 12, display: 'block', marginBottom: 4 }}>
+                                <label style={fieldLabelStyle}>
                                   Notes (optional)
                                 </label>
                                 <textarea
@@ -2145,11 +2220,24 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                                   value={customNotes}
                                   onChange={e => setCustomNotes(e.target.value)}
                                   placeholder="Wedding date, location, anything else the photographer should know…"
-                                  style={{ ...inputStyle, resize: 'vertical', minHeight: 72, fontFamily: 'inherit' }}
+                                  style={{ ...customInputStyle, resize: 'vertical', minHeight: 78, fontFamily: 'inherit', lineHeight: 1.5 }}
+                                  onFocus={focusOn}
+                                  onBlur={focusOff}
                                 />
                               </div>
                               {customError && (
-                                <p style={{ color: '#dc2626', fontSize: 12, margin: 0 }}>{customError}</p>
+                                <div style={{
+                                  display: 'flex', alignItems: 'flex-start', gap: 8,
+                                  padding: '8px 12px',
+                                  background: '#FEF2F2',
+                                  border: '1px solid #FECACA',
+                                  borderRadius: 10,
+                                  color: '#DC2626',
+                                  fontSize: 12.5,
+                                }}>
+                                  <i className="bi bi-exclamation-circle-fill" style={{ fontSize: 13, marginTop: 1, flexShrink: 0 }} />
+                                  <span>{customError}</span>
+                                </div>
                               )}
                               <button
                                 type="button"
@@ -2157,16 +2245,50 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                                 onClick={handleCustomPackageSubmit}
                                 style={{
                                   ...btnPrimary,
-                                  marginTop: 4,
+                                  marginTop: 6,
+                                  background: 'linear-gradient(135deg, #083A85 0%, #F20C8F 130%)',
+                                  boxShadow: customSubmitting ? 'none' : '0 8px 22px -6px rgba(242,12,143,0.42)',
                                   opacity: customSubmitting ? 0.7 : 1,
                                   cursor: customSubmitting ? 'wait' : 'pointer',
+                                  border: 'none',
+                                  borderRadius: 12,
+                                  padding: '12px 16px',
+                                  fontSize: 14.5,
+                                  fontWeight: 700,
+                                  letterSpacing: '-0.005em',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  gap: 8,
+                                  transition: 'transform 0.15s, box-shadow 0.15s',
+                                }}
+                                onMouseEnter={(e) => {
+                                  if (!customSubmitting) {
+                                    e.currentTarget.style.transform = 'translateY(-1px)';
+                                    e.currentTarget.style.boxShadow = '0 12px 28px -6px rgba(242,12,143,0.55)';
+                                  }
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.transform = 'translateY(0)';
+                                  e.currentTarget.style.boxShadow = customSubmitting ? 'none' : '0 8px 22px -6px rgba(242,12,143,0.42)';
                                 }}
                               >
-                                {customSubmitting
-                                  ? 'Sending…'
-                                  : (<>Start negotiation with photographer <i className="bi bi-arrow-right"></i></>)}
+                                {customSubmitting ? (
+                                  <>Sending&hellip;</>
+                                ) : (
+                                  <>
+                                    <i className="bi bi-chat-quote-fill"></i>
+                                    Start negotiation with photographer
+                                    <i className="bi bi-arrow-right"></i>
+                                  </>
+                                )}
                               </button>
-                              <p style={{ color: TEXT_MUTED, fontSize: 11, margin: '4px 0 0', textAlign: 'center' }}>
+                              <p style={{
+                                color: TEXT_MUTED, fontSize: 11.5, margin: '4px 0 0',
+                                textAlign: 'center',
+                                display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+                              }}>
+                                <i className="bi bi-info-circle-fill" style={{ fontSize: 10, color: PINK }} />
                                 You&apos;ll be signed in if you aren&apos;t already, then redirected to your inbox.
                               </p>
                             </div>
