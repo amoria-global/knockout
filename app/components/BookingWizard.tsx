@@ -17,6 +17,7 @@ import {
   type BookedDate,
 } from '@/lib/APIs/public';
 import { getPublicPhotographerPackages, type PublicPackage } from '@/lib/APIs/packages/get-packages/route';
+import { sendCustomPackageRequest } from '@/lib/APIs/messages/custom-package-request/route';
 import { createEvent, type CreateEventResponse } from '@/lib/APIs/events/create-event/route';
 import { revokeUnpaidEvent } from '@/lib/APIs/events/revoke-unpaid/route';
 import XentriPayModal from './XentriPayModal';
@@ -633,6 +634,25 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
   const [extraPhotos, setExtraPhotos] = useState(0);
   const [extraVideos, setExtraVideos] = useState(0);
 
+  // Custom-package form (the negotiation path that lives below the
+  // pre-defined Gold/Diamond/etc. cards). Form values stay in local state —
+  // they don't go into the wizard reducer because the custom flow short-
+  // circuits the rest of the wizard and exits straight to the dashboard
+  // inbox, so the values never need to be persisted as part of a booking
+  // draft.
+  const [customOpen, setCustomOpen] = useState(false);
+  const [customPrice, setCustomPrice] = useState<number>(0);
+  const [customPhotos, setCustomPhotos] = useState<number>(0);
+  const [customVideos, setCustomVideos] = useState<number>(0);
+  const [customNotes, setCustomNotes] = useState<string>('');
+  const [customSubmitting, setCustomSubmitting] = useState(false);
+  const [customError, setCustomError] = useState<string>('');
+  // When the client clicks "Start negotiation" while signed out, we set
+  // this so the wizard knows to fire the request automatically after they
+  // finish the inline auth flow instead of making them click the button
+  // again.
+  const [customPendingAfterAuth, setCustomPendingAfterAuth] = useState(false);
+
   // ── Slide 4 milestone ──
   const [milestoneOption, setMilestoneOption] = useState<'full' | 'half' | 'thirty'>('half');
 
@@ -1035,6 +1055,82 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
     if (!state.selectedPackageId) return;
     dispatch({ type: 'SET_SLIDE', slide: 3 });
   };
+
+  // ─── Custom package (negotiation) submit ───
+  //
+  // Short-circuits the rest of the wizard: instead of moving forward to
+  // payment, we seed a chat conversation with the photographer and ship
+  // the client to the dashboard inbox to negotiate. Same auth gate the
+  // milestone step uses — if the client isn't logged in yet we flip
+  // SHOW_AUTH and remember that the request needs to fire once they
+  // come back authenticated.
+  const submitCustomPackageRequest = useCallback(async () => {
+    if (!state.selectedPhotographerId) {
+      setCustomError('Pick a photographer first.');
+      return;
+    }
+    if (!customPrice || customPrice <= 0) {
+      setCustomError('Enter your proposed budget.');
+      return;
+    }
+    if (customPhotos < 0 || customVideos < 0) {
+      setCustomError('Photo and video counts must be zero or more.');
+      return;
+    }
+    if (customPhotos === 0 && customVideos === 0) {
+      setCustomError('Ask for at least one photo or video.');
+      return;
+    }
+    setCustomError('');
+    setCustomSubmitting(true);
+    try {
+      const photographerPkg = packages[0];
+      const res = await sendCustomPackageRequest({
+        photographerId: state.selectedPhotographerId,
+        proposedPrice: customPrice,
+        currencyCode: photographerPkg?.currencyAbbreviation || 'RWF',
+        photoCount: customPhotos,
+        videoCount: customVideos,
+        notes: customNotes?.trim() || undefined,
+      });
+      if (res.success && res.data?.action === 1) {
+        // Hop to the dashboard inbox with the photographer pre-selected.
+        const dashboardBase = process.env.NEXT_PUBLIC_DASHBOARD_URL || 'https://dashboard.connekyt.com';
+        const target = `${dashboardBase.replace(/\/$/, '')}/user/client/inbox?photographerId=${state.selectedPhotographerId}`;
+        if (typeof window !== 'undefined') {
+          window.location.href = target;
+        }
+        return;
+      }
+      setCustomError(res.data?.message || res.error || 'Could not send your request. Please try again.');
+    } catch {
+      setCustomError('Connection error. Please try again.');
+    } finally {
+      setCustomSubmitting(false);
+    }
+  }, [state.selectedPhotographerId, customPrice, customPhotos, customVideos, customNotes, packages]);
+
+  const handleCustomPackageSubmit = () => {
+    if (!isAuthenticated) {
+      // Same pattern as handleMilestoneNext — pop the inline auth flow.
+      // We also flag that, once auth closes, the wizard should auto-fire
+      // the request on the user's behalf so they don't have to click
+      // "Start negotiation" a second time.
+      setCustomPendingAfterAuth(true);
+      dispatch({ type: 'SHOW_AUTH', value: true });
+      return;
+    }
+    submitCustomPackageRequest();
+  };
+
+  // Auth just closed AND we were mid-custom-request — fire it now.
+  useEffect(() => {
+    if (!customPendingAfterAuth) return;
+    if (!isAuthenticated) return;
+    if (state.showAuthInline) return;
+    setCustomPendingAfterAuth(false);
+    submitCustomPackageRequest();
+  }, [customPendingAfterAuth, isAuthenticated, state.showAuthInline, submitCustomPackageRequest]);
 
   // ─── SLIDE 4: Payment Milestone ───
 
@@ -1951,6 +2047,133 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                         </div>
                       );
                     })}
+
+                    {/*
+                      Custom Package — escape hatch for clients whose ask
+                      doesn't fit any of the pre-defined tiers. Filling and
+                      submitting bypasses the rest of the wizard and ships
+                      the client to the dashboard inbox to negotiate with
+                      the photographer directly. Auth is gated the same way
+                      the milestone step gates: SHOW_AUTH flips, the inline
+                      auth flow takes over, and once it closes we auto-fire
+                      the request via customPendingAfterAuth.
+                    */}
+                    {(() => {
+                      const currencyAbbr = packages[0]?.currencyAbbreviation || 'RWF';
+                      return (
+                        <div style={{
+                          background: customOpen ? '#fff7ed' : '#f9fafb',
+                          border: `1px dashed ${customOpen ? '#fdba74' : INPUT_BORDER}`,
+                          borderRadius: 14,
+                          padding: 18,
+                          transition: 'all 0.2s',
+                        }}>
+                          <button
+                            type="button"
+                            onClick={() => setCustomOpen(o => !o)}
+                            style={{
+                              width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                              gap: 12, background: 'transparent', border: 'none', cursor: 'pointer', padding: 0,
+                              textAlign: 'left',
+                            }}
+                          >
+                            <div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                                <span style={{ padding: '3px 10px', borderRadius: 12, fontSize: 11, fontWeight: 700, color: '#fff', background: '#F59E0B' }}>
+                                  Custom
+                                </span>
+                                <span style={{ color: TEXT_PRIMARY, fontSize: 15, fontWeight: 700 }}>
+                                  None of these fit? Propose your own package
+                                </span>
+                              </div>
+                              <p style={{ color: TEXT_MUTED, fontSize: 12, margin: 0 }}>
+                                Tell the photographer your budget and what you need — you&apos;ll continue the conversation in your inbox.
+                              </p>
+                            </div>
+                            <i className={`bi bi-chevron-${customOpen ? 'up' : 'down'}`} style={{ color: TEXT_SECONDARY, fontSize: 16 }} />
+                          </button>
+
+                          {customOpen && (
+                            <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                              <div>
+                                <label style={{ color: TEXT_MUTED, fontSize: 12, display: 'block', marginBottom: 4 }}>
+                                  Your proposed budget ({currencyAbbr})
+                                </label>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  value={customPrice || ''}
+                                  onChange={e => setCustomPrice(parseInt(e.target.value) || 0)}
+                                  placeholder="e.g. 4500000"
+                                  style={inputStyle}
+                                />
+                              </div>
+                              <div style={{ display: 'flex', gap: 12 }}>
+                                <div style={{ flex: 1 }}>
+                                  <label style={{ color: TEXT_MUTED, fontSize: 12, display: 'block', marginBottom: 4 }}>
+                                    Photos
+                                  </label>
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    value={customPhotos || ''}
+                                    onChange={e => setCustomPhotos(parseInt(e.target.value) || 0)}
+                                    placeholder="e.g. 150"
+                                    style={inputStyle}
+                                  />
+                                </div>
+                                <div style={{ flex: 1 }}>
+                                  <label style={{ color: TEXT_MUTED, fontSize: 12, display: 'block', marginBottom: 4 }}>
+                                    Videos
+                                  </label>
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    value={customVideos || ''}
+                                    onChange={e => setCustomVideos(parseInt(e.target.value) || 0)}
+                                    placeholder="e.g. 50"
+                                    style={inputStyle}
+                                  />
+                                </div>
+                              </div>
+                              <div>
+                                <label style={{ color: TEXT_MUTED, fontSize: 12, display: 'block', marginBottom: 4 }}>
+                                  Notes (optional)
+                                </label>
+                                <textarea
+                                  rows={3}
+                                  value={customNotes}
+                                  onChange={e => setCustomNotes(e.target.value)}
+                                  placeholder="Wedding date, location, anything else the photographer should know…"
+                                  style={{ ...inputStyle, resize: 'vertical', minHeight: 72, fontFamily: 'inherit' }}
+                                />
+                              </div>
+                              {customError && (
+                                <p style={{ color: '#dc2626', fontSize: 12, margin: 0 }}>{customError}</p>
+                              )}
+                              <button
+                                type="button"
+                                disabled={customSubmitting}
+                                onClick={handleCustomPackageSubmit}
+                                style={{
+                                  ...btnPrimary,
+                                  marginTop: 4,
+                                  opacity: customSubmitting ? 0.7 : 1,
+                                  cursor: customSubmitting ? 'wait' : 'pointer',
+                                }}
+                              >
+                                {customSubmitting
+                                  ? 'Sending…'
+                                  : (<>Start negotiation with photographer <i className="bi bi-arrow-right"></i></>)}
+                              </button>
+                              <p style={{ color: TEXT_MUTED, fontSize: 11, margin: '4px 0 0', textAlign: 'center' }}>
+                                You&apos;ll be signed in if you aren&apos;t already, then redirected to your inbox.
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
 
                     {/* Extras — revealed once a package is picked, so users can add media before continuing */}
                     {state.selectedPackageId && selectedPkg && (

@@ -234,6 +234,7 @@ export const API_ENDPOINTS = {
     DELETE_MESSAGE: (id: string) => `/api/remote/chat/messages/${id}`,
     MARK_READ: (id: string) => `/api/remote/chat/messages/${id}/read`,
     UNREAD_COUNT: '/api/remote/chat/unread-count',
+    CUSTOM_PACKAGE_REQUEST: '/api/remote/chat/custom-package-request',
   },
 
   // Legacy endpoint paths (for backward compatibility)
