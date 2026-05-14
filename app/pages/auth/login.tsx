@@ -419,7 +419,53 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
   const [pendingOtpRedirectUrl, setPendingOtpRedirectUrl] = useState('');
 
   const filteredCountries = countries.filter(c => c.name.toLowerCase().includes(countrySearch.toLowerCase()) || c.code.includes(countrySearch));
-  const signupIsDisabled = !firstName || !lastName || !signupEmail || phoneNumber.length < 7 || !signupPassword || !confirmPassword;
+  // Strength model. The four "required" checks line up with the backend's
+  // PasswordPolicyService rules — we surface each one so the user can see
+  // what's still missing as they type. The bonus checks (length tiers,
+  // case mixing) only feed the visual strength bar; they don't block
+  // submission. The bar climbs through five steps:
+  //   0 (none) → 1 weak → 2 fair → 3 good → 4 strong
+  // and submission is allowed at level 3+ (i.e. all four required checks
+  // pass AND we've earned at least one bonus). This stops obvious garbage
+  // like "abcd1234@" while still allowing real-but-not-paranoid passwords.
+  const passwordChecks = React.useMemo(() => {
+    const pwd = signupPassword || '';
+    const lengthOk = pwd.length >= 8;
+    const hasLetter = /[a-zA-Z]/.test(pwd);
+    const hasDigit = /\d/.test(pwd);
+    const hasSpecial = /[@!#$%^&*=+]/.test(pwd);
+    const required = [lengthOk, hasLetter, hasDigit, hasSpecial];
+    const requiredScore = required.filter(Boolean).length; // 0..4
+
+    // Bonus signals — these don't block, just push the strength bar higher.
+    const longer = pwd.length >= 12;
+    const mixedCase = /[a-z]/.test(pwd) && /[A-Z]/.test(pwd);
+    const bonusScore = (longer ? 1 : 0) + (mixedCase ? 1 : 0);
+
+    // Compose final 0..4 score. Required gates the floor; bonus tops it off.
+    let score = 0;
+    if (pwd.length === 0) score = 0;
+    else if (requiredScore < 4) score = Math.min(2, requiredScore);
+    else score = Math.min(4, 2 + bonusScore);
+
+    const allRequiredMet = requiredScore === 4;
+    const strongEnough = allRequiredMet && score >= 3;
+
+    return { lengthOk, hasLetter, hasDigit, hasSpecial, longer, mixedCase, score, allRequiredMet, strongEnough };
+  }, [signupPassword]);
+
+  const strengthLabel = ['', 'Too weak', 'Fair', 'Good', 'Strong'][passwordChecks.score];
+  const strengthColor = ['#e5e7eb', '#dc2626', '#f59e0b', '#3b82f6', '#10b981'][passwordChecks.score];
+
+  // Block submission on the same criteria the strength meter exposes — no
+  // point letting the user click "Create account" with a password the
+  // backend will reject. Confirm-match is also required (handled here
+  // rather than only at submit so the button reflects reality as they type).
+  const passwordMatches = signupPassword.length > 0 && signupPassword === confirmPassword;
+  const signupIsDisabled = !firstName || !lastName || !signupEmail || phoneNumber.length < 7
+    || !signupPassword || !confirmPassword
+    || !passwordChecks.strongEnough
+    || !passwordMatches;
 
   useEffect(() => { if (!isCountryOpen) return; const h = (e: MouseEvent) => { if (!(e.target as HTMLElement).closest('[data-country-selector]')) setIsCountryOpen(false); }; document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h); }, [isCountryOpen]);
 
@@ -915,7 +961,59 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
                   <i className={`bi ${showSignupPassword ? 'bi-eye-slash' : 'bi-eye'}`} style={{ fontSize: '16px' }} />
                 </button>
               </div>
-              <p style={{ fontSize: '11px', color: '#6b7280', marginTop: '3px', lineHeight: '1.4' }}>{tSignup('passwordHelper')}</p>
+              {/*
+                Strength meter — replaces the static "Must contain at least 8
+                characters..." paragraph. The 4-segment bar fills with the
+                password's score (red→amber→blue→green), and each required
+                criterion lights up with a ✓ as it's met. The submit button is
+                gated on score >= 3 so the user can't click Create account
+                with a password the backend will reject anyway.
+              */}
+              {signupPassword.length > 0 && (
+                <div style={{ marginTop: 8 }}>
+                  <div style={{ display: 'flex', gap: 4, marginBottom: 6 }}>
+                    {[1, 2, 3, 4].map(seg => (
+                      <span
+                        key={seg}
+                        style={{
+                          flex: 1,
+                          height: 4,
+                          borderRadius: 2,
+                          background: passwordChecks.score >= seg ? strengthColor : '#e5e7eb',
+                          transition: 'background 0.2s',
+                        }}
+                      />
+                    ))}
+                  </div>
+                  <div style={{ fontSize: 11, color: strengthColor, fontWeight: 600, marginBottom: 6 }}>
+                    {strengthLabel}
+                  </div>
+                  <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: 3 }}>
+                    {[
+                      { ok: passwordChecks.lengthOk, label: 'At least 8 characters' },
+                      { ok: passwordChecks.hasLetter, label: 'Contains a letter' },
+                      { ok: passwordChecks.hasDigit, label: 'Contains a number' },
+                      { ok: passwordChecks.hasSpecial, label: 'Contains a special character (@!#$%^&*=+)' },
+                      { ok: passwordChecks.longer || passwordChecks.mixedCase, label: '12+ characters or mixed case (recommended)', bonus: true },
+                    ].map((c, idx) => (
+                      <li key={idx} style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        fontSize: 11,
+                        color: c.ok ? '#10b981' : (c.bonus ? '#9ca3af' : '#6b7280'),
+                        opacity: c.bonus && !c.ok ? 0.75 : 1,
+                      }}>
+                        <i className={`bi ${c.ok ? 'bi-check-circle-fill' : 'bi-circle'}`} style={{ fontSize: 12 }} />
+                        <span>{c.label}{c.bonus && !c.ok ? '' : ''}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {signupPassword.length === 0 && (
+                <p style={{ fontSize: '11px', color: '#6b7280', marginTop: '3px', lineHeight: '1.4' }}>{tSignup('passwordHelper')}</p>
+              )}
               {signupErrors.password && <p style={errorStyle}>{signupErrors.password}</p>}
             </div>
 
@@ -928,6 +1026,20 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
                   <i className={`bi ${showConfirmPassword ? 'bi-eye-slash' : 'bi-eye'}`} style={{ fontSize: '16px' }} />
                 </button>
               </div>
+              {/* Live mismatch — surfaces as the user types so they don't have
+                  to wait for the submit-time validator to catch it. */}
+              {confirmPassword.length > 0 && !passwordMatches && (
+                <p style={{ fontSize: 11, color: '#dc2626', marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <i className="bi bi-exclamation-circle-fill" style={{ fontSize: 12 }} />
+                  Passwords don&apos;t match yet
+                </p>
+              )}
+              {confirmPassword.length > 0 && passwordMatches && passwordChecks.strongEnough && (
+                <p style={{ fontSize: 11, color: '#10b981', marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <i className="bi bi-check-circle-fill" style={{ fontSize: 12 }} />
+                  Passwords match
+                </p>
+              )}
               {signupErrors.confirmPassword && <p style={errorStyle}>{signupErrors.confirmPassword}</p>}
             </div>
           </div>
