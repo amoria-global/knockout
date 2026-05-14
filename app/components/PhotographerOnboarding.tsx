@@ -79,8 +79,10 @@ function reducer(state: OnboardingState, action: OnboardingAction): OnboardingSt
 
 // ─── Styles ───
 
-const ACCENT = '#083A85';
-const ACCENT_DARK = '#0a4da3';
+const PINK = '#F20C8F';
+const BRAND_GRADIENT = 'linear-gradient(135deg, #083A85 0%, #F20C8F 130%)';
+const BRAND_STRIPE = 'linear-gradient(90deg, #083A85 0%, #F20C8F 100%)';
+const BRAND_SHADOW = '0 8px 22px -6px rgba(242,12,143,0.42)';
 const INPUT_BG = '#f9fafb';
 const INPUT_BORDER = '#e5e7eb';
 const TEXT_PRIMARY = '#111827';
@@ -89,14 +91,41 @@ const TEXT_MUTED = '#6b7280';
 
 const inputStyle: React.CSSProperties = {
   width: '100%', padding: '11px 14px', background: INPUT_BG,
-  border: `1px solid ${INPUT_BORDER}`, borderRadius: 9, color: TEXT_PRIMARY,
+  border: `1.5px solid ${INPUT_BORDER}`, borderRadius: 11, color: TEXT_PRIMARY,
   fontSize: 14, outline: 'none', boxSizing: 'border-box',
+  transition: 'border-color 0.15s, box-shadow 0.15s',
+};
+
+const labelStyle: React.CSSProperties = {
+  display: 'block', color: PINK, fontSize: 11, fontWeight: 700,
+  letterSpacing: '0.08em', textTransform: 'uppercase',
+  marginBottom: 7,
 };
 
 const btnPrimary: React.CSSProperties = {
-  width: '100%', padding: '13px', background: `linear-gradient(135deg, ${ACCENT}, ${ACCENT_DARK})`,
-  border: 'none', borderRadius: 10, color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer',
+  width: '100%', padding: '13px',
+  background: BRAND_GRADIENT,
+  border: 'none', borderRadius: 12, color: '#fff',
+  fontSize: 15, fontWeight: 700, letterSpacing: '-0.005em',
+  cursor: 'pointer',
   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+  boxShadow: BRAND_SHADOW,
+  transition: 'transform 0.15s, box-shadow 0.15s',
+};
+
+const backBtnStyle: React.CSSProperties = {
+  padding: '7px 13px', background: '#ffffff',
+  border: `1.5px solid ${INPUT_BORDER}`, borderRadius: 10,
+  color: TEXT_SECONDARY, fontSize: 13, cursor: 'pointer',
+  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+  transition: 'border-color 0.15s, color 0.15s',
+};
+
+const errorBoxStyle: React.CSSProperties = {
+  background: '#FEF2F2', border: '1px solid #FECACA',
+  borderRadius: 10, padding: '10px 14px', marginBottom: 14,
+  color: '#DC2626', fontSize: 13,
+  display: 'flex', alignItems: 'flex-start', gap: 8,
 };
 
 const TIER_PRESETS: Record<string, { price: number; duration: number; photos: number; videos: number; delivery: number; features: string[] }> = {
@@ -343,70 +372,196 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
 
   // ─── RENDER ───
 
+  // Total slides (0–5; 6 = success). Used for the progress strip.
+  const TOTAL_INPUT_SLIDES = 6;
+  const isSuccessSlide = state.currentSlide === 6;
+  const progressPct = isSuccessSlide
+    ? 100
+    : Math.min(100, Math.round(((state.currentSlide + 1) / TOTAL_INPUT_SLIDES) * 100));
+
   return (
     <>
-      <div style={{ position: 'fixed', inset: 0, zIndex: 9998, background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+      <style>{`
+        @keyframes ck-onboarding-fade-in {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes ck-onboarding-card-in {
+          from { opacity: 0; transform: translateY(10px) scale(0.985); }
+          to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+      `}</style>
+      <div style={{
+        position: 'fixed', inset: 0, zIndex: 9998,
+        background: 'rgba(0,0,0,0.50)',
+        backdropFilter: 'blur(6px)',
+        WebkitBackdropFilter: 'blur(6px)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: 16,
+        animation: 'ck-onboarding-fade-in 0.25s ease-out',
+      }}>
         <div style={{
-          width: '100%', maxWidth: 580, maxHeight: '92vh', background: '#ffffff',
-          border: '1px solid #e5e7eb', borderRadius: 20,
-          boxShadow: '0 24px 60px rgba(0,0,0,0.15)', position: 'relative',
+          width: '100%', maxWidth: 600, maxHeight: '92vh',
+          background: '#ffffff',
+          border: '1px solid rgba(8,58,133,0.10)',
+          borderRadius: 20,
+          boxShadow: '0 25px 60px -12px rgba(8,58,133,0.32), 0 12px 28px -8px rgba(242,12,143,0.18)',
+          position: 'relative',
           display: 'flex', flexDirection: 'column', overflow: 'hidden',
+          animation: 'ck-onboarding-card-in 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
         }}>
+          {/* Brand top stripe */}
+          <span aria-hidden style={{
+            position: 'absolute', top: 0, left: 0, right: 0, height: 3,
+            background: BRAND_STRIPE,
+            zIndex: 5,
+          }} />
+
+          {/* Slide progress strip (under the top stripe) */}
+          <div style={{
+            position: 'absolute', top: 3, left: 0, right: 0, height: 3,
+            background: 'rgba(8,58,133,0.06)',
+            zIndex: 4,
+          }}>
+            <div style={{
+              height: '100%',
+              width: `${progressPct}%`,
+              background: BRAND_STRIPE,
+              boxShadow: '0 0 10px rgba(242,12,143,0.45)',
+              transition: 'width 0.4s ease',
+            }} />
+          </div>
+
           {/* Close button — dismisses the wizard but does NOT advance to OTP.
               Only slide 6's "Continue to Dashboard" button (onComplete) is
               allowed to push the user toward the verify-OTP page. */}
-          <button onClick={onClose} aria-label="Close" style={{
-            position: 'absolute', top: 14, right: 14, zIndex: 10, width: 36, height: 36,
-            borderRadius: '50%', background: '#f3f4f6', border: '1px solid #e5e7eb',
-            color: '#6b7280', fontSize: 16, cursor: 'pointer', display: 'flex',
-            alignItems: 'center', justifyContent: 'center',
-          }}>
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            style={{
+              position: 'absolute', top: 16, right: 16, zIndex: 10,
+              width: 34, height: 34, borderRadius: '50%',
+              background: '#ffffff',
+              border: '1px solid rgba(8,58,133,0.18)',
+              color: PINK, fontSize: 13, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 4px 10px -2px rgba(8,58,133,0.18)',
+              transition: 'transform 0.15s',
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.08)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+          >
             <i className="bi bi-x-lg"></i>
           </button>
 
           {/* Content */}
-          <div style={{ flex: 1, overflowY: 'auto', padding: '28px 24px 24px' }}>
+          <div style={{ flex: 1, overflowY: 'auto', padding: '34px 24px 24px' }}>
 
             {state.currentSlide === 0 ? (
               <div>
-                <div style={{ textAlign: 'center', marginBottom: 20 }}>
-                  <div style={{ width: 52, height: 52, borderRadius: '50%', background: `linear-gradient(135deg, ${ACCENT}, ${ACCENT_DARK})`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
-                    <i className="bi bi-geo-alt-fill" style={{ fontSize: 22, color: '#fff' }}></i>
+                <div style={{ textAlign: 'center', marginBottom: 22 }}>
+                  {/* Gradient-ring icon tile */}
+                  <div style={{
+                    width: 60, height: 60,
+                    borderRadius: 18,
+                    padding: 2.5,
+                    background: BRAND_GRADIENT,
+                    margin: '0 auto 14px',
+                    boxShadow: '0 12px 26px -6px rgba(242,12,143,0.34)',
+                  }}>
+                    <div style={{
+                      width: '100%', height: '100%',
+                      borderRadius: 15,
+                      background: 'linear-gradient(135deg, #083A85 0%, #1e4fb8 100%)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      <i className="bi bi-geo-alt-fill" style={{ fontSize: 22, color: '#fff' }} />
+                    </div>
                   </div>
-                  <h3 style={{ color: TEXT_PRIMARY, fontSize: 20, fontWeight: 700, margin: '0 0 4px' }}>Welcome, {firstName}!</h3>
-                  <p style={{ color: TEXT_MUTED, fontSize: 13, margin: 0 }}>Let&apos;s set up your profile so clients can find you</p>
+                  <div style={{
+                    fontSize: '0.66rem', fontWeight: 700,
+                    color: PINK, letterSpacing: '0.08em', textTransform: 'uppercase',
+                    marginBottom: 4,
+                  }}>Step 1 of 6 · Basics</div>
+                  <h3 style={{
+                    color: TEXT_PRIMARY, fontSize: 22, fontWeight: 800,
+                    margin: '0 0 6px', letterSpacing: '-0.015em',
+                  }}>Welcome, {firstName}!</h3>
+                  <p style={{ color: TEXT_MUTED, fontSize: 13.5, margin: 0, lineHeight: 1.5 }}>
+                    Let&rsquo;s set up your profile so clients can find you.
+                  </p>
                 </div>
 
-                {slideError && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '10px 14px', marginBottom: 14, color: '#dc2626', fontSize: 13 }}>{slideError}</div>}
+                {slideError && (
+                  <div style={errorBoxStyle}>
+                    <i className="bi bi-exclamation-circle-fill" style={{ fontSize: 14, marginTop: 1, flexShrink: 0 }} />
+                    <span>{slideError}</span>
+                  </div>
+                )}
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                   <div>
-                    <label style={{ display: 'block', color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Working Area / Location *</label>
-                    <input type="text" value={address} onChange={e => setAddress(e.target.value)} placeholder="e.g. Kigali, Rwanda" style={inputStyle} />
+                    <label style={labelStyle}>Working Area / Location <span style={{ color: '#DC2626' }}>*</span></label>
+                    <input
+                      type="text" value={address}
+                      onChange={e => setAddress(e.target.value)}
+                      placeholder="e.g. Kigali, Rwanda"
+                      style={inputStyle}
+                      onFocus={(e) => { e.currentTarget.style.borderColor = PINK; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(242,12,143,0.12)'; }}
+                      onBlur={(e) => { e.currentTarget.style.borderColor = INPUT_BORDER; e.currentTarget.style.boxShadow = 'none'; }}
+                    />
                   </div>
                   <div>
-                    <label style={{ display: 'block', color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, marginBottom: 6 }}>About You</label>
-                    <textarea value={about} onChange={e => setAbout(e.target.value)} placeholder="Tell clients about your experience and style..." rows={3} style={{ ...inputStyle, resize: 'vertical' as const }} />
+                    <label style={labelStyle}>About You</label>
+                    <textarea
+                      value={about}
+                      onChange={e => setAbout(e.target.value)}
+                      placeholder="Tell clients about your experience and style…"
+                      rows={3}
+                      style={{ ...inputStyle, resize: 'vertical' as const, fontFamily: 'inherit', lineHeight: 1.5 }}
+                      onFocus={(e) => { e.currentTarget.style.borderColor = PINK; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(242,12,143,0.12)'; }}
+                      onBlur={(e) => { e.currentTarget.style.borderColor = INPUT_BORDER; e.currentTarget.style.boxShadow = 'none'; }}
+                    />
                   </div>
 
                   {/* Business Type */}
                   <div>
-                    <label style={{ display: 'block', color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Business Type *</label>
+                    <label style={labelStyle}>Business Type <span style={{ color: '#DC2626' }}>*</span></label>
                     <div style={{ display: 'flex', gap: 8 }}>
                       {(['Freelancer', 'Registered Company'] as const).map(type => {
                         const sel = businessType === type;
+                        const icon = type === 'Freelancer' ? 'bi-person-fill' : 'bi-building-fill';
                         return (
-                          <button key={type} type="button" onClick={() => setBusinessType(type)} style={{
-                            flex: 1, padding: '10px 8px', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                            background: sel ? `linear-gradient(135deg, ${ACCENT}, ${ACCENT_DARK})` : '#f9fafb',
-                            border: sel ? 'none' : `1px solid ${INPUT_BORDER}`, color: sel ? '#fff' : TEXT_SECONDARY,
-                            transition: 'all 0.2s',
-                          }}>
-                            {type === 'Freelancer' ? (
-                              <><i className="bi bi-person" style={{ marginRight: 6 }}></i>{type}</>
-                            ) : (
-                              <><i className="bi bi-building" style={{ marginRight: 6 }}></i>{type}</>
+                          <button
+                            key={type}
+                            type="button"
+                            onClick={() => setBusinessType(type)}
+                            style={{
+                              position: 'relative',
+                              flex: 1, padding: '12px 8px',
+                              borderRadius: 12,
+                              fontSize: 13.5, fontWeight: 700,
+                              letterSpacing: '-0.005em',
+                              cursor: 'pointer',
+                              background: sel
+                                ? 'linear-gradient(135deg, rgba(8,58,133,0.06) 0%, rgba(242,12,143,0.05) 100%)'
+                                : '#f9fafb',
+                              border: sel ? `1.5px solid ${PINK}` : `1.5px solid ${INPUT_BORDER}`,
+                              color: sel ? PINK : TEXT_SECONDARY,
+                              boxShadow: sel ? '0 6px 16px -6px rgba(242,12,143,0.30)' : 'none',
+                              overflow: 'hidden',
+                              transition: 'all 0.15s',
+                              display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7,
+                            }}
+                          >
+                            {sel && (
+                              <span aria-hidden style={{
+                                position: 'absolute', top: 0, left: 0, right: 0, height: 2,
+                                background: BRAND_STRIPE,
+                              }} />
                             )}
+                            <i className={`bi ${icon}`} style={{ fontSize: 14, color: sel ? PINK : TEXT_SECONDARY }} />
+                            {type}
                           </button>
                         );
                       })}
@@ -416,18 +571,38 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
                   {businessType === 'Registered Company' && (
                     <>
                       <div>
-                        <label style={{ display: 'block', color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Company Name *</label>
-                        <input type="text" value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="e.g. Studio Kigali Ltd" style={inputStyle} />
+                        <label style={labelStyle}>Company Name <span style={{ color: '#DC2626' }}>*</span></label>
+                        <input
+                          type="text" value={companyName}
+                          onChange={e => setCompanyName(e.target.value)}
+                          placeholder="e.g. Studio Kigali Ltd"
+                          style={inputStyle}
+                          onFocus={(e) => { e.currentTarget.style.borderColor = PINK; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(242,12,143,0.12)'; }}
+                          onBlur={(e) => { e.currentTarget.style.borderColor = INPUT_BORDER; e.currentTarget.style.boxShadow = 'none'; }}
+                        />
                       </div>
                       <div>
-                        <label style={{ display: 'block', color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, marginBottom: 6 }}>TIN (Tax Identification Number) *</label>
-                        <input type="text" value={tin} onChange={e => setTin(e.target.value)} placeholder="e.g. 123456789" style={inputStyle} />
+                        <label style={labelStyle}>TIN (Tax Identification Number) <span style={{ color: '#DC2626' }}>*</span></label>
+                        <input
+                          type="text" value={tin}
+                          onChange={e => setTin(e.target.value)}
+                          placeholder="e.g. 123456789"
+                          style={inputStyle}
+                          onFocus={(e) => { e.currentTarget.style.borderColor = PINK; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(242,12,143,0.12)'; }}
+                          onBlur={(e) => { e.currentTarget.style.borderColor = INPUT_BORDER; e.currentTarget.style.boxShadow = 'none'; }}
+                        />
                       </div>
                     </>
                   )}
 
-                  <button onClick={handleLocationNext} disabled={state.isSubmitting} style={{ ...btnPrimary, marginTop: 8, opacity: state.isSubmitting ? 0.6 : 1 }}>
-                    {state.isSubmitting ? 'Saving...' : <>Continue <i className="bi bi-arrow-right"></i></>}
+                  <button
+                    onClick={handleLocationNext}
+                    disabled={state.isSubmitting}
+                    style={{ ...btnPrimary, marginTop: 8, opacity: state.isSubmitting ? 0.7 : 1, cursor: state.isSubmitting ? 'not-allowed' : 'pointer' }}
+                    onMouseEnter={(e) => { if (!state.isSubmitting) { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 12px 28px -6px rgba(242,12,143,0.55)'; }}}
+                    onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = BRAND_SHADOW; }}
+                  >
+                    {state.isSubmitting ? 'Saving…' : <>Continue <i className="bi bi-arrow-right"></i></>}
                   </button>
                 </div>
               </div>
@@ -436,35 +611,54 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
             ) : state.currentSlide === 1 ? (
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-                  <button onClick={() => dispatch({ type: 'SET_SLIDE', slide: 0 })} style={{ padding: '6px 12px', background: '#ffffff', border: '1px solid #bab8b8', borderRadius: 10, color: TEXT_SECONDARY, fontSize: 13, cursor: 'pointer' }}>
+                  <button onClick={() => dispatch({ type: 'SET_SLIDE', slide: 0 })} style={backBtnStyle}
+                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = PINK; e.currentTarget.style.color = PINK; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = INPUT_BORDER; e.currentTarget.style.color = TEXT_SECONDARY; }}>
                     <i className="bi bi-arrow-left"></i>
                   </button>
                   <div>
-                    <h3 style={{ color: TEXT_PRIMARY, fontSize: 18, fontWeight: 700, margin: 0 }}>Your Specialties</h3>
+                    <h3 style={{ color: TEXT_PRIMARY, fontSize: 19, fontWeight: 800, margin: 0, letterSpacing: '-0.015em' }}>Your Specialties</h3>
                     <p style={{ color: TEXT_MUTED, fontSize: 12, margin: 0 }}>Select what you specialize in</p>
                   </div>
                 </div>
 
-                {slideError && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '10px 14px', marginBottom: 14, color: '#dc2626', fontSize: 13 }}>{slideError}</div>}
+                {slideError && (
+                  <div style={errorBoxStyle}>
+                    <i className="bi bi-exclamation-circle-fill" style={{ fontSize: 14, marginTop: 1, flexShrink: 0 }} />
+                    <span>{slideError}</span>
+                  </div>
+                )}
 
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
                   {categories.map(cat => {
                     const sel = selectedSpecialtyIds.includes(cat.id);
                     return (
-                      <button key={cat.id} onClick={() => setSelectedSpecialtyIds(prev => sel ? prev.filter(id => id !== cat.id) : [...prev, cat.id])} style={{
-                        padding: '10px 16px', borderRadius: 20, fontSize: 13, fontWeight: 500, cursor: 'pointer',
-                        background: sel ? `linear-gradient(135deg, ${ACCENT}, ${ACCENT_DARK})` : '#f9fafb',
-                        border: sel ? 'none' : `1px solid ${INPUT_BORDER}`, color: sel ? '#fff' : TEXT_SECONDARY,
-                        transition: 'all 0.2s',
-                      }}>
+                      <button
+                        key={cat.id}
+                        onClick={() => setSelectedSpecialtyIds(prev => sel ? prev.filter(id => id !== cat.id) : [...prev, cat.id])}
+                        style={{
+                          padding: '8px 14px', borderRadius: 999,
+                          fontSize: 13, fontWeight: 700, letterSpacing: '-0.005em',
+                          cursor: 'pointer',
+                          background: sel ? BRAND_GRADIENT : '#f9fafb',
+                          border: sel ? 'none' : `1.5px solid ${INPUT_BORDER}`,
+                          color: sel ? '#fff' : TEXT_SECONDARY,
+                          boxShadow: sel ? '0 6px 14px -4px rgba(242,12,143,0.36)' : 'none',
+                          transition: 'all 0.15s',
+                          display: 'inline-flex', alignItems: 'center', gap: 5,
+                        }}
+                      >
+                        {sel && <i className="bi bi-check-circle-fill" style={{ fontSize: 12 }} />}
                         {cat.name}
                       </button>
                     );
                   })}
-                  {categories.length === 0 && <p style={{ color: TEXT_MUTED, fontSize: 13 }}>Loading specialties...</p>}
+                  {categories.length === 0 && <p style={{ color: TEXT_MUTED, fontSize: 13 }}>Loading specialties…</p>}
                 </div>
 
-                <button onClick={handleSpecialtiesNext} disabled={state.isSubmitting} style={{ ...btnPrimary, opacity: state.isSubmitting ? 0.6 : 1 }}>
+                <button onClick={handleSpecialtiesNext} disabled={state.isSubmitting} style={{ ...btnPrimary, opacity: state.isSubmitting ? 0.7 : 1, cursor: state.isSubmitting ? 'not-allowed' : 'pointer' }}
+                  onMouseEnter={(e) => { if (!state.isSubmitting) { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 12px 28px -6px rgba(242,12,143,0.55)'; }}}
+                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = BRAND_SHADOW; }}>
                   {state.isSubmitting ? 'Saving...' : <>Continue <i className="bi bi-arrow-right"></i></>}
                 </button>
               </div>
@@ -473,24 +667,31 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
             ) : state.currentSlide === 2 ? (
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-                  <button onClick={() => dispatch({ type: 'SET_SLIDE', slide: 1 })} style={{ padding: '6px 12px', background: '#ffffff', border: '1px solid #bab8b8', borderRadius: 10, color: TEXT_SECONDARY, fontSize: 13, cursor: 'pointer' }}>
+                  <button onClick={() => dispatch({ type: 'SET_SLIDE', slide: 1 })} style={backBtnStyle}
+                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = PINK; e.currentTarget.style.color = PINK; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = INPUT_BORDER; e.currentTarget.style.color = TEXT_SECONDARY; }}>
                     <i className="bi bi-arrow-left"></i>
                   </button>
                   <div>
-                    <h3 style={{ color: TEXT_PRIMARY, fontSize: 18, fontWeight: 700, margin: 0 }}>Profile Photos</h3>
+                    <h3 style={{ color: TEXT_PRIMARY, fontSize: 19, fontWeight: 800, margin: 0, letterSpacing: '-0.015em' }}>Profile Photos</h3>
                     <p style={{ color: TEXT_MUTED, fontSize: 12, margin: 0 }}>Add photos to make your profile stand out</p>
                   </div>
                 </div>
 
-                {slideError && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '10px 14px', marginBottom: 14, color: '#dc2626', fontSize: 13 }}>{slideError}</div>}
+                {slideError && (
+                  <div style={errorBoxStyle}>
+                    <i className="bi bi-exclamation-circle-fill" style={{ fontSize: 14, marginTop: 1, flexShrink: 0 }} />
+                    <span>{slideError}</span>
+                  </div>
+                )}
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 20 }}>
                   {/* Profile Photo */}
                   <div>
-                    <label style={{ display: 'block', color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Profile Photo</label>
+                    <label style={labelStyle}>Profile Photo</label>
                     <input type="file" ref={profileInputRef} accept="image/*" onChange={e => handleFileSelect(e, 'profile')} style={{ display: 'none' }} />
                     <div onClick={() => profileInputRef.current?.click()} style={{
-                      width: 100, height: 100, borderRadius: '50%', border: `2px dashed ${profilePreview ? ACCENT : INPUT_BORDER}`,
+                      width: 100, height: 100, borderRadius: '50%', border: `1.5px dashed ${profilePreview ? PINK : 'rgba(8,58,133,0.32)'}`,
                       background: profilePreview ? `url(${profilePreview}) center/cover` : INPUT_BG,
                       display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden',
                     }}>
@@ -500,10 +701,10 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
 
                   {/* Cover Photo */}
                   <div>
-                    <label style={{ display: 'block', color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Cover Photo</label>
+                    <label style={labelStyle}>Cover Photo</label>
                     <input type="file" ref={coverInputRef} accept="image/*" onChange={e => handleFileSelect(e, 'cover')} style={{ display: 'none' }} />
                     <div onClick={() => coverInputRef.current?.click()} style={{
-                      width: '100%', height: 140, borderRadius: 12, border: `2px dashed ${coverPreview ? ACCENT : INPUT_BORDER}`,
+                      width: '100%', height: 140, borderRadius: 12, border: `1.5px dashed ${coverPreview ? PINK : 'rgba(8,58,133,0.32)'}`,
                       background: coverPreview ? `url(${coverPreview}) center/cover` : INPUT_BG,
                       display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden',
                     }}>
@@ -517,7 +718,9 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
                   </div>
                 </div>
 
-                <button onClick={handlePhotosNext} disabled={state.isSubmitting} style={{ ...btnPrimary, opacity: state.isSubmitting ? 0.6 : 1 }}>
+                <button onClick={handlePhotosNext} disabled={state.isSubmitting} style={{ ...btnPrimary, opacity: state.isSubmitting ? 0.7 : 1, cursor: state.isSubmitting ? 'not-allowed' : 'pointer' }}
+                  onMouseEnter={(e) => { if (!state.isSubmitting) { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 12px 28px -6px rgba(242,12,143,0.55)'; }}}
+                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = BRAND_SHADOW; }}>
                   {state.isSubmitting ? 'Uploading...' : <>Continue <i className="bi bi-arrow-right"></i></>}
                 </button>
               </div>
@@ -526,35 +729,42 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
             ) : state.currentSlide === 3 ? (
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-                  <button onClick={() => dispatch({ type: 'SET_SLIDE', slide: 2 })} style={{ padding: '6px 12px', background: '#ffffff', border: '1px solid #bab8b8', borderRadius: 10, color: TEXT_SECONDARY, fontSize: 13, cursor: 'pointer' }}>
+                  <button onClick={() => dispatch({ type: 'SET_SLIDE', slide: 2 })} style={backBtnStyle}
+                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = PINK; e.currentTarget.style.color = PINK; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = INPUT_BORDER; e.currentTarget.style.color = TEXT_SECONDARY; }}>
                     <i className="bi bi-arrow-left"></i>
                   </button>
                   <div>
-                    <h3 style={{ color: TEXT_PRIMARY, fontSize: 18, fontWeight: 700, margin: 0 }}>Your First Project</h3>
+                    <h3 style={{ color: TEXT_PRIMARY, fontSize: 19, fontWeight: 800, margin: 0, letterSpacing: '-0.015em' }}>Your First Project</h3>
                     <p style={{ color: TEXT_MUTED, fontSize: 12, margin: 0 }}>Add a recent project clients can browse</p>
                   </div>
                 </div>
 
-                {slideError && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '10px 14px', marginBottom: 14, color: '#dc2626', fontSize: 13 }}>{slideError}</div>}
+                {slideError && (
+                  <div style={errorBoxStyle}>
+                    <i className="bi bi-exclamation-circle-fill" style={{ fontSize: 14, marginTop: 1, flexShrink: 0 }} />
+                    <span>{slideError}</span>
+                  </div>
+                )}
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 20 }}>
                   <div>
-                    <label style={{ display: 'block', color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Project Title *</label>
+                    <label style={labelStyle}>Project Title *</label>
                     <input type="text" value={projTitle} onChange={e => setProjTitle(e.target.value)} placeholder="e.g. Bella & Eric's Wedding" style={inputStyle} />
                   </div>
                   <div>
-                    <label style={{ display: 'block', color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Year *</label>
+                    <label style={labelStyle}>Year *</label>
                     <input type="number" min="1990" max={String(new Date().getFullYear())} value={projYear} onChange={e => setProjYear(e.target.value)} style={inputStyle} />
                   </div>
                   <div>
-                    <label style={{ display: 'block', color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Description *</label>
+                    <label style={labelStyle}>Description *</label>
                     <textarea value={projDescription} onChange={e => setProjDescription(e.target.value)} placeholder="What was the brief? Where was it? What made it memorable?" rows={3} style={{ ...inputStyle, resize: 'vertical' as const }} />
                   </div>
                   <div>
-                    <label style={{ display: 'block', color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Cover Image (optional)</label>
+                    <label style={labelStyle}>Cover Image (optional)</label>
                     <input type="file" ref={projInputRef} accept="image/*" onChange={e => handleFileSelect(e, 'project')} style={{ display: 'none' }} />
                     <div onClick={() => projInputRef.current?.click()} style={{
-                      width: '100%', height: 120, borderRadius: 12, border: `2px dashed ${projPreview ? ACCENT : INPUT_BORDER}`,
+                      width: '100%', height: 120, borderRadius: 12, border: `1.5px dashed ${projPreview ? PINK : 'rgba(8,58,133,0.32)'}`,
                       background: projPreview ? `url(${projPreview}) center/cover` : INPUT_BG,
                       display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden',
                     }}>
@@ -568,7 +778,9 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
                   </div>
                 </div>
 
-                <button onClick={handleProjectNext} disabled={state.isSubmitting} style={{ ...btnPrimary, opacity: state.isSubmitting ? 0.6 : 1 }}>
+                <button onClick={handleProjectNext} disabled={state.isSubmitting} style={{ ...btnPrimary, opacity: state.isSubmitting ? 0.7 : 1, cursor: state.isSubmitting ? 'not-allowed' : 'pointer' }}
+                  onMouseEnter={(e) => { if (!state.isSubmitting) { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 12px 28px -6px rgba(242,12,143,0.55)'; }}}
+                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = BRAND_SHADOW; }}>
                   {state.isSubmitting ? 'Saving...' : <>Continue <i className="bi bi-arrow-right"></i></>}
                 </button>
               </div>
@@ -577,37 +789,44 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
             ) : state.currentSlide === 4 ? (
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-                  <button onClick={() => dispatch({ type: 'SET_SLIDE', slide: 3 })} style={{ padding: '6px 12px', background: '#ffffff', border: '1px solid #bab8b8', borderRadius: 10, color: TEXT_SECONDARY, fontSize: 13, cursor: 'pointer' }}>
+                  <button onClick={() => dispatch({ type: 'SET_SLIDE', slide: 3 })} style={backBtnStyle}
+                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = PINK; e.currentTarget.style.color = PINK; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = INPUT_BORDER; e.currentTarget.style.color = TEXT_SECONDARY; }}>
                     <i className="bi bi-arrow-left"></i>
                   </button>
                   <div>
-                    <h3 style={{ color: TEXT_PRIMARY, fontSize: 18, fontWeight: 700, margin: 0 }}>Work Experience</h3>
+                    <h3 style={{ color: TEXT_PRIMARY, fontSize: 19, fontWeight: 800, margin: 0, letterSpacing: '-0.015em' }}>Work Experience</h3>
                     <p style={{ color: TEXT_MUTED, fontSize: 12, margin: 0 }}>Tell clients where you&apos;ve shot before</p>
                   </div>
                 </div>
 
-                {slideError && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '10px 14px', marginBottom: 14, color: '#dc2626', fontSize: 13 }}>{slideError}</div>}
+                {slideError && (
+                  <div style={errorBoxStyle}>
+                    <i className="bi bi-exclamation-circle-fill" style={{ fontSize: 14, marginTop: 1, flexShrink: 0 }} />
+                    <span>{slideError}</span>
+                  </div>
+                )}
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 20 }}>
                   <div>
-                    <label style={{ display: 'block', color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Role / Position *</label>
+                    <label style={labelStyle}>Role / Position *</label>
                     <input type="text" value={expPosition} onChange={e => setExpPosition(e.target.value)} placeholder="e.g. Lead Photographer" style={inputStyle} />
                   </div>
                   <div>
-                    <label style={{ display: 'block', color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Company / Studio *</label>
+                    <label style={labelStyle}>Company / Studio *</label>
                     <input type="text" value={expCompany} onChange={e => setExpCompany(e.target.value)} placeholder="e.g. Studio Kigali" style={inputStyle} />
                   </div>
                   <div>
-                    <label style={{ display: 'block', color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Location</label>
+                    <label style={labelStyle}>Location</label>
                     <input type="text" value={expLocation} onChange={e => setExpLocation(e.target.value)} placeholder="e.g. Kigali, Rwanda" style={inputStyle} />
                   </div>
                   <div style={{ display: 'flex', gap: 10 }}>
                     <div style={{ flex: 1 }}>
-                      <label style={{ display: 'block', color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Start date</label>
+                      <label style={labelStyle}>Start date</label>
                       <input type="month" value={expStartDate} onChange={e => setExpStartDate(e.target.value)} style={inputStyle} />
                     </div>
                     <div style={{ flex: 1 }}>
-                      <label style={{ display: 'block', color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, marginBottom: 6 }}>End date</label>
+                      <label style={labelStyle}>End date</label>
                       <input type="month" value={expEndDate} onChange={e => setExpEndDate(e.target.value)} disabled={expIsCurrent} style={{ ...inputStyle, opacity: expIsCurrent ? 0.5 : 1 }} />
                     </div>
                   </div>
@@ -616,13 +835,15 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
                     I currently work here
                   </label>
                   <div>
-                    <label style={{ display: 'block', color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, marginBottom: 6 }}>What did you do? *</label>
+                    <label style={labelStyle}>What did you do? *</label>
                     <textarea value={expDescription} onChange={e => setExpDescription(e.target.value)} placeholder="Describe the work, kinds of shoots, scale, results... (50+ characters)" rows={4} style={{ ...inputStyle, resize: 'vertical' as const }} />
                     <p style={{ color: TEXT_MUTED, fontSize: 11, margin: '4px 0 0' }}>{expDescription.length} / 50 minimum</p>
                   </div>
                 </div>
 
-                <button onClick={handleExperienceNext} disabled={state.isSubmitting} style={{ ...btnPrimary, opacity: state.isSubmitting ? 0.6 : 1 }}>
+                <button onClick={handleExperienceNext} disabled={state.isSubmitting} style={{ ...btnPrimary, opacity: state.isSubmitting ? 0.7 : 1, cursor: state.isSubmitting ? 'not-allowed' : 'pointer' }}
+                  onMouseEnter={(e) => { if (!state.isSubmitting) { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 12px 28px -6px rgba(242,12,143,0.55)'; }}}
+                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = BRAND_SHADOW; }}>
                   {state.isSubmitting ? 'Saving...' : <>Continue <i className="bi bi-arrow-right"></i></>}
                 </button>
               </div>
@@ -631,21 +852,28 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
             ) : state.currentSlide === 5 ? (
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-                  <button onClick={() => dispatch({ type: 'SET_SLIDE', slide: 4 })} style={{ padding: '6px 12px', background: '#ffffff', border: '1px solid #bab8b8', borderRadius: 10, color: TEXT_SECONDARY, fontSize: 13, cursor: 'pointer' }}>
+                  <button onClick={() => dispatch({ type: 'SET_SLIDE', slide: 4 })} style={backBtnStyle}
+                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = PINK; e.currentTarget.style.color = PINK; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = INPUT_BORDER; e.currentTarget.style.color = TEXT_SECONDARY; }}>
                     <i className="bi bi-arrow-left"></i>
                   </button>
                   <div>
-                    <h3 style={{ color: TEXT_PRIMARY, fontSize: 18, fontWeight: 700, margin: 0 }}>Create a Package</h3>
+                    <h3 style={{ color: TEXT_PRIMARY, fontSize: 19, fontWeight: 800, margin: 0, letterSpacing: '-0.015em' }}>Create a Package</h3>
                     <p style={{ color: TEXT_MUTED, fontSize: 12, margin: 0 }}>Set your first pricing package</p>
                   </div>
                 </div>
 
-                {slideError && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '10px 14px', marginBottom: 14, color: '#dc2626', fontSize: 13 }}>{slideError}</div>}
+                {slideError && (
+                  <div style={errorBoxStyle}>
+                    <i className="bi bi-exclamation-circle-fill" style={{ fontSize: 14, marginTop: 1, flexShrink: 0 }} />
+                    <span>{slideError}</span>
+                  </div>
+                )}
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                   {/* Tier selector */}
                   <div>
-                    <label style={{ display: 'block', color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Package Tier</label>
+                    <label style={labelStyle}>Package Tier</label>
                     <div style={{ display: 'flex', gap: 8 }}>
                       {(['Silver', 'Gold', 'Diamond'] as const).map(tier => {
                         const sel = pkgTier === tier;
@@ -665,7 +893,7 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
 
                   {/* Price + Currency */}
                   <div>
-                    <label style={{ display: 'block', color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Price *</label>
+                    <label style={labelStyle}>Price *</label>
                     <div style={{ display: 'flex', gap: 8 }}>
                       <select value={pkgCurrencyId} onChange={e => setPkgCurrencyId(e.target.value)} style={{ ...inputStyle, width: 'auto', minWidth: 90, flex: '0 0 auto', appearance: 'auto' as const }}>
                         {currencies.map(c => <option key={c.id} value={c.id}>{c.code}</option>)}
@@ -676,28 +904,28 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
 
                   <div style={{ display: 'flex', gap: 10 }}>
                     <div style={{ flex: 1 }}>
-                      <label style={{ display: 'block', color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Duration (hours)</label>
+                      <label style={labelStyle}>Duration (hours)</label>
                       <input type="number" value={pkgDuration || ''} onChange={e => setPkgDuration(parseInt(e.target.value) || 0)} style={inputStyle} />
                     </div>
                     <div style={{ flex: 1 }}>
-                      <label style={{ display: 'block', color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Delivery (days)</label>
+                      <label style={labelStyle}>Delivery (days)</label>
                       <input type="number" value={pkgDelivery || ''} onChange={e => setPkgDelivery(parseInt(e.target.value) || 0)} style={inputStyle} />
                     </div>
                   </div>
 
                   <div style={{ display: 'flex', gap: 10 }}>
                     <div style={{ flex: 1 }}>
-                      <label style={{ display: 'block', color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Included Photos</label>
+                      <label style={labelStyle}>Included Photos</label>
                       <input type="number" value={pkgPhotos || ''} onChange={e => setPkgPhotos(parseInt(e.target.value) || 0)} style={inputStyle} />
                     </div>
                     <div style={{ flex: 1 }}>
-                      <label style={{ display: 'block', color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Included Videos</label>
+                      <label style={labelStyle}>Included Videos</label>
                       <input type="number" value={pkgVideos || ''} onChange={e => setPkgVideos(parseInt(e.target.value) || 0)} style={inputStyle} />
                     </div>
                   </div>
 
                   <div>
-                    <label style={{ display: 'block', color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Description</label>
+                    <label style={labelStyle}>Description</label>
                     <textarea value={pkgDescription} onChange={e => setPkgDescription(e.target.value)} placeholder={`${pkgTier} photography package`} rows={2} style={{ ...inputStyle, resize: 'vertical' as const }} />
                   </div>
 
@@ -721,18 +949,44 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
 
             /* ── SLIDE 6: Success ── */
             ) : state.currentSlide === 6 ? (
-              <div style={{ textAlign: 'center', padding: '50px 20px' }}>
-                <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'linear-gradient(135deg, #10b981, #059669)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
-                  <i className="bi bi-check-lg" style={{ fontSize: 32, color: '#fff' }}></i>
+              <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+                <div style={{
+                  width: 72, height: 72, borderRadius: 22,
+                  padding: 3,
+                  background: 'linear-gradient(135deg, #10b981 0%, #F20C8F 130%)',
+                  margin: '0 auto 20px',
+                  boxShadow: '0 14px 30px -6px rgba(16,185,129,0.36)',
+                }}>
+                  <div style={{
+                    width: '100%', height: '100%',
+                    borderRadius: 19,
+                    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    <i className="bi bi-check-lg" style={{ fontSize: 34, color: '#fff' }} />
+                  </div>
                 </div>
-                <h2 style={{ color: TEXT_PRIMARY, fontSize: 22, fontWeight: 700, margin: '0 0 8px' }}>Profile Submitted!</h2>
-                <p style={{ color: TEXT_SECONDARY, fontSize: 14, margin: '0 0 8px' }}>
-                  Your {pkgTier} package at {currencyCode} {pkgPrice.toLocaleString()} has been created.
+                <div style={{
+                  fontSize: '0.66rem', fontWeight: 700,
+                  color: '#10b981', letterSpacing: '0.08em', textTransform: 'uppercase',
+                  marginBottom: 4,
+                }}>All done</div>
+                <h2 style={{
+                  color: TEXT_PRIMARY, fontSize: 24, fontWeight: 800,
+                  margin: '0 0 10px', letterSpacing: '-0.015em',
+                }}>Profile Submitted!</h2>
+                <p style={{ color: TEXT_SECONDARY, fontSize: 14, margin: '0 0 6px', lineHeight: 1.5 }}>
+                  Your <strong>{pkgTier}</strong> package at <strong>{currencyCode} {pkgPrice.toLocaleString()}</strong> has been created.
                 </p>
-                <p style={{ color: TEXT_MUTED, fontSize: 13, margin: '0 0 24px' }}>
+                <p style={{ color: TEXT_MUTED, fontSize: 13, margin: '0 auto 24px', lineHeight: 1.55, maxWidth: 360 }}>
                   Your profile is now under review. Once approved, clients will be able to find and book you.
                 </p>
-                <button onClick={onComplete} style={btnPrimary}>
+                <button
+                  onClick={onComplete}
+                  style={btnPrimary}
+                  onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 12px 28px -6px rgba(242,12,143,0.55)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = BRAND_SHADOW; }}
+                >
                   Continue to Dashboard <i className="bi bi-arrow-right"></i>
                 </button>
               </div>
