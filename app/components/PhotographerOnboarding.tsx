@@ -850,16 +850,44 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
 
             /* ── SLIDE 5: Package ── */
             ) : state.currentSlide === 5 ? (
+              (() => {
+                // Tier gradients matched 1:1 with the connekyt booking wizard
+                // package step so the badges look consistent across the
+                // photographer onboarding flow and the client booking flow.
+                const TIER_GRADIENTS: Record<'Silver' | 'Gold' | 'Diamond', { gradient: string; glow: string; icon: string }> = {
+                  Silver: {
+                    gradient: 'linear-gradient(135deg, #94A3B8 0%, #CBD5E1 45%, #64748B 100%)',
+                    glow: 'rgba(100,116,139,0.32)',
+                    icon: 'bi-gem',
+                  },
+                  Gold: {
+                    gradient: 'linear-gradient(135deg, #F59E0B 0%, #FBBF24 50%, #D97706 100%)',
+                    glow: 'rgba(245,158,11,0.36)',
+                    icon: 'bi-award-fill',
+                  },
+                  Diamond: {
+                    gradient: 'linear-gradient(135deg, #06B6D4 0%, #A78BFA 55%, #3B82F6 100%)',
+                    glow: 'rgba(59,130,246,0.36)',
+                    icon: 'bi-stars',
+                  },
+                };
+                const activeTier = TIER_GRADIENTS[pkgTier];
+                return (
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
                   <button onClick={() => dispatch({ type: 'SET_SLIDE', slide: 4 })} style={backBtnStyle}
                     onMouseEnter={(e) => { e.currentTarget.style.borderColor = PINK; e.currentTarget.style.color = PINK; }}
                     onMouseLeave={(e) => { e.currentTarget.style.borderColor = INPUT_BORDER; e.currentTarget.style.color = TEXT_SECONDARY; }}>
                     <i className="bi bi-arrow-left"></i>
                   </button>
                   <div>
+                    <div style={{
+                      fontSize: 10.5, fontWeight: 700,
+                      color: PINK, letterSpacing: '0.08em', textTransform: 'uppercase',
+                      marginBottom: 2,
+                    }}>Step 6 of 6 · Pricing</div>
                     <h3 style={{ color: TEXT_PRIMARY, fontSize: 19, fontWeight: 800, margin: 0, letterSpacing: '-0.015em' }}>Create a Package</h3>
-                    <p style={{ color: TEXT_MUTED, fontSize: 12, margin: 0 }}>Set your first pricing package</p>
+                    <p style={{ color: TEXT_MUTED, fontSize: 12.5, margin: '2px 0 0' }}>Set your first pricing package &mdash; you can edit or add more later.</p>
                   </div>
                 </div>
 
@@ -871,19 +899,35 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
                 )}
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                  {/* Tier selector */}
+                  {/* Tier selector — matches Connekyt booking wizard gradients */}
                   <div>
                     <label style={labelStyle}>Package Tier</label>
                     <div style={{ display: 'flex', gap: 8 }}>
                       {(['Silver', 'Gold', 'Diamond'] as const).map(tier => {
                         const sel = pkgTier === tier;
-                        const colors: Record<string, string> = { Silver: '#22D3EE', Gold: '#FBBF24', Diamond: '#8B5CF6' };
+                        const t = TIER_GRADIENTS[tier];
                         return (
-                          <button key={tier} onClick={() => setPkgTier(tier)} style={{
-                            flex: 1, padding: '10px 8px', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                            background: sel ? colors[tier] : '#f9fafb', border: sel ? 'none' : `1px solid ${INPUT_BORDER}`,
-                            color: sel ? '#fff' : TEXT_SECONDARY, transition: 'all 0.2s',
-                          }}>
+                          <button
+                            key={tier}
+                            onClick={() => setPkgTier(tier)}
+                            style={{
+                              flex: 1,
+                              padding: '12px 8px',
+                              borderRadius: 12,
+                              fontSize: 13.5,
+                              fontWeight: 800,
+                              letterSpacing: '-0.005em',
+                              cursor: 'pointer',
+                              background: sel ? t.gradient : '#f9fafb',
+                              border: sel ? 'none' : `1.5px solid ${INPUT_BORDER}`,
+                              color: sel ? '#fff' : TEXT_SECONDARY,
+                              boxShadow: sel ? `0 8px 20px -6px ${t.glow}` : 'none',
+                              textShadow: sel ? '0 1px 2px rgba(0,0,0,0.18)' : 'none',
+                              transition: 'all 0.2s',
+                              display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                            }}
+                          >
+                            <i className={`bi ${t.icon}`} style={{ fontSize: 13 }} />
                             {tier}
                           </button>
                         );
@@ -891,61 +935,157 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
                     </div>
                   </div>
 
+                  {/* Active tier preview card — mirrors the booking wizard tier card */}
+                  <div style={{
+                    position: 'relative',
+                    borderRadius: 14,
+                    padding: '12px 14px',
+                    background: 'linear-gradient(135deg, rgba(8,58,133,0.04) 0%, rgba(242,12,143,0.04) 100%)',
+                    border: `1.5px solid ${INPUT_BORDER}`,
+                    overflow: 'hidden',
+                    display: 'flex', alignItems: 'center', gap: 12,
+                  }}>
+                    <span aria-hidden style={{
+                      position: 'absolute', top: 0, left: 0, right: 0, height: 2,
+                      background: activeTier.gradient,
+                    }} />
+                    <div style={{
+                      width: 38, height: 38, borderRadius: 10,
+                      background: activeTier.gradient,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      flexShrink: 0,
+                      boxShadow: `0 6px 14px -4px ${activeTier.glow}`,
+                    }}>
+                      <i className={`bi ${activeTier.icon}`} style={{ fontSize: 18, color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,0.18)' }} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 10, fontWeight: 700, color: PINK, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Selected tier</div>
+                      <div style={{ fontSize: 15, fontWeight: 800, color: TEXT_PRIMARY, letterSpacing: '-0.01em' }}>{pkgTier} package</div>
+                    </div>
+                  </div>
+
                   {/* Price + Currency */}
                   <div>
-                    <label style={labelStyle}>Price *</label>
+                    <label style={labelStyle}>Price <span style={{ color: '#DC2626' }}>*</span></label>
                     <div style={{ display: 'flex', gap: 8 }}>
-                      <select value={pkgCurrencyId} onChange={e => setPkgCurrencyId(e.target.value)} style={{ ...inputStyle, width: 'auto', minWidth: 90, flex: '0 0 auto', appearance: 'auto' as const }}>
-                        {currencies.map(c => <option key={c.id} value={c.id}>{c.code}</option>)}
+                      <select value={pkgCurrencyId} onChange={e => setPkgCurrencyId(e.target.value)} style={{ ...inputStyle, width: 'auto', minWidth: 96, flex: '0 0 auto', appearance: 'auto' as const, fontWeight: 700, color: PINK }}>
+                        {currencies.map(c => <option key={c.id} value={c.id} style={{ color: TEXT_PRIMARY }}>{c.code}</option>)}
                       </select>
-                      <input type="number" value={pkgPrice || ''} onChange={e => setPkgPrice(parseInt(e.target.value) || 0)} placeholder="Price" style={{ ...inputStyle, flex: 1 }} />
+                      <input type="number" value={pkgPrice || ''} onChange={e => setPkgPrice(parseInt(e.target.value) || 0)} placeholder="Price"
+                        style={{ ...inputStyle, flex: 1, fontWeight: 700, fontSize: 15 }}
+                        onFocus={(e) => { e.currentTarget.style.borderColor = PINK; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(242,12,143,0.12)'; }}
+                        onBlur={(e) => { e.currentTarget.style.borderColor = INPUT_BORDER; e.currentTarget.style.boxShadow = 'none'; }}
+                      />
                     </div>
                   </div>
 
                   <div style={{ display: 'flex', gap: 10 }}>
                     <div style={{ flex: 1 }}>
-                      <label style={labelStyle}>Duration (hours)</label>
-                      <input type="number" value={pkgDuration || ''} onChange={e => setPkgDuration(parseInt(e.target.value) || 0)} style={inputStyle} />
+                      <label style={labelStyle}>
+                        <i className="bi bi-clock-fill" style={{ fontSize: 10, marginRight: 4 }} />
+                        Duration (hours)
+                      </label>
+                      <input type="number" value={pkgDuration || ''} onChange={e => setPkgDuration(parseInt(e.target.value) || 0)} style={inputStyle}
+                        onFocus={(e) => { e.currentTarget.style.borderColor = PINK; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(242,12,143,0.12)'; }}
+                        onBlur={(e) => { e.currentTarget.style.borderColor = INPUT_BORDER; e.currentTarget.style.boxShadow = 'none'; }}
+                      />
                     </div>
                     <div style={{ flex: 1 }}>
-                      <label style={labelStyle}>Delivery (days)</label>
-                      <input type="number" value={pkgDelivery || ''} onChange={e => setPkgDelivery(parseInt(e.target.value) || 0)} style={inputStyle} />
+                      <label style={labelStyle}>
+                        <i className="bi bi-truck" style={{ fontSize: 10, marginRight: 4 }} />
+                        Delivery (days)
+                      </label>
+                      <input type="number" value={pkgDelivery || ''} onChange={e => setPkgDelivery(parseInt(e.target.value) || 0)} style={inputStyle}
+                        onFocus={(e) => { e.currentTarget.style.borderColor = PINK; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(242,12,143,0.12)'; }}
+                        onBlur={(e) => { e.currentTarget.style.borderColor = INPUT_BORDER; e.currentTarget.style.boxShadow = 'none'; }}
+                      />
                     </div>
                   </div>
 
                   <div style={{ display: 'flex', gap: 10 }}>
                     <div style={{ flex: 1 }}>
-                      <label style={labelStyle}>Included Photos</label>
-                      <input type="number" value={pkgPhotos || ''} onChange={e => setPkgPhotos(parseInt(e.target.value) || 0)} style={inputStyle} />
+                      <label style={labelStyle}>
+                        <i className="bi bi-camera-fill" style={{ fontSize: 10, marginRight: 4 }} />
+                        Included Photos
+                      </label>
+                      <input type="number" value={pkgPhotos || ''} onChange={e => setPkgPhotos(parseInt(e.target.value) || 0)} style={inputStyle}
+                        onFocus={(e) => { e.currentTarget.style.borderColor = PINK; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(242,12,143,0.12)'; }}
+                        onBlur={(e) => { e.currentTarget.style.borderColor = INPUT_BORDER; e.currentTarget.style.boxShadow = 'none'; }}
+                      />
                     </div>
                     <div style={{ flex: 1 }}>
-                      <label style={labelStyle}>Included Videos</label>
-                      <input type="number" value={pkgVideos || ''} onChange={e => setPkgVideos(parseInt(e.target.value) || 0)} style={inputStyle} />
+                      <label style={labelStyle}>
+                        <i className="bi bi-camera-reels-fill" style={{ fontSize: 10, marginRight: 4 }} />
+                        Included Videos
+                      </label>
+                      <input type="number" value={pkgVideos || ''} onChange={e => setPkgVideos(parseInt(e.target.value) || 0)} style={inputStyle}
+                        onFocus={(e) => { e.currentTarget.style.borderColor = PINK; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(242,12,143,0.12)'; }}
+                        onBlur={(e) => { e.currentTarget.style.borderColor = INPUT_BORDER; e.currentTarget.style.boxShadow = 'none'; }}
+                      />
                     </div>
                   </div>
 
                   <div>
                     <label style={labelStyle}>Description</label>
-                    <textarea value={pkgDescription} onChange={e => setPkgDescription(e.target.value)} placeholder={`${pkgTier} photography package`} rows={2} style={{ ...inputStyle, resize: 'vertical' as const }} />
+                    <textarea value={pkgDescription} onChange={e => setPkgDescription(e.target.value)} placeholder={`${pkgTier} photography package`} rows={2}
+                      style={{ ...inputStyle, resize: 'vertical' as const, fontFamily: 'inherit', lineHeight: 1.5 }}
+                      onFocus={(e) => { e.currentTarget.style.borderColor = PINK; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(242,12,143,0.12)'; }}
+                      onBlur={(e) => { e.currentTarget.style.borderColor = INPUT_BORDER; e.currentTarget.style.boxShadow = 'none'; }}
+                    />
                   </div>
 
-                  {/* Features preview */}
-                  <div style={{ background: '#f9fafb', border: `1px solid ${INPUT_BORDER}`, borderRadius: 10, padding: 12 }}>
-                    <p style={{ color: TEXT_SECONDARY, fontSize: 12, fontWeight: 600, margin: '0 0 8px' }}>Included Features</p>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 12px' }}>
+                  {/* Features preview — branded */}
+                  <div style={{
+                    position: 'relative',
+                    background: 'linear-gradient(135deg, rgba(8,58,133,0.04) 0%, rgba(242,12,143,0.04) 100%)',
+                    border: `1.5px solid rgba(8,58,133,0.12)`,
+                    borderRadius: 12,
+                    padding: '12px 14px',
+                    overflow: 'hidden',
+                  }}>
+                    <span aria-hidden style={{
+                      position: 'absolute', top: 0, left: 0, right: 0, height: 2,
+                      background: 'linear-gradient(90deg, #083A85 0%, #F20C8F 100%)',
+                    }} />
+                    <div style={{
+                      fontSize: 10.5, fontWeight: 700,
+                      color: PINK, letterSpacing: '0.08em', textTransform: 'uppercase',
+                      marginBottom: 8,
+                      display: 'inline-flex', alignItems: 'center', gap: 5,
+                    }}>
+                      <i className="bi bi-stars" style={{ fontSize: 11 }} />
+                      Included Features
+                    </div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 14px' }}>
                       {(TIER_PRESETS[pkgTier]?.features || []).map((f, i) => (
-                        <span key={i} style={{ color: '#10b981', fontSize: 12 }}>
-                          <i className="bi bi-check" style={{ marginRight: 3 }}></i>{f}
+                        <span key={i} style={{ color: '#10b981', fontSize: 12.5, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                          <i className="bi bi-check-circle-fill" style={{ fontSize: 12 }} />
+                          {f}
                         </span>
                       ))}
                     </div>
                   </div>
 
-                  <button onClick={handleCreatePackage} disabled={state.isSubmitting} style={{ ...btnPrimary, marginTop: 4, opacity: state.isSubmitting ? 0.6 : 1 }}>
-                    {state.isSubmitting ? 'Creating Package...' : <><i className="bi bi-check-circle-fill"></i> Create Package & Submit Profile</>}
+                  <button
+                    onClick={handleCreatePackage}
+                    disabled={state.isSubmitting}
+                    style={{ ...btnPrimary, marginTop: 4, opacity: state.isSubmitting ? 0.7 : 1, cursor: state.isSubmitting ? 'not-allowed' : 'pointer' }}
+                    onMouseEnter={(e) => { if (!state.isSubmitting) { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 12px 28px -6px rgba(242,12,143,0.55)'; }}}
+                    onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = BRAND_SHADOW; }}
+                  >
+                    {state.isSubmitting ? (
+                      <>Creating Package&hellip;</>
+                    ) : (
+                      <>
+                        <i className="bi bi-check-circle-fill"></i>
+                        Create Package &amp; Submit Profile
+                      </>
+                    )}
                   </button>
                 </div>
               </div>
+                );
+              })()
 
             /* ── SLIDE 6: Success ── */
             ) : state.currentSlide === 6 ? (
