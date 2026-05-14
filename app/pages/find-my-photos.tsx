@@ -107,6 +107,11 @@ const FindMyPhotos = () => {
 
   // Multi-select album purchase state
   const [selectedPhotoIds, setSelectedPhotoIds] = useState<Set<string>>(new Set());
+  // Multi-select state for the verified-free-album view (separate from the
+  // main photo grid above because that flow uses a different data shape:
+  // FreeAlbumPhoto[] vs PhotoItem[]). Both flows share the same bottom
+  // action-bar pattern via inline render checks.
+  const [selectedFreePhotoIds, setSelectedFreePhotoIds] = useState<Set<string>>(new Set());
   const [purchaseRefid, setPurchaseRefid] = useState<string | null>(null);
   const [xentriModalOpen, setXentriModalOpen] = useState(false);
   const [pendingPurchase, setPendingPurchase] = useState<{
@@ -583,6 +588,31 @@ const FindMyPhotos = () => {
     }
   };
 
+  /**
+   * Bulk-download every photo the user has selected in the verified-free-album
+   * grid. Iterates through selectedFreePhotoIds and routes each one through
+   * the SAME single-photo handler (handleFreePhotoDownload) so the backend
+   * call path is identical to clicking a download button on a single card —
+   * we're just sequencing them. Small stagger keeps the browser from
+   * collapsing the parallel <a download> clicks into one save dialog.
+   */
+  const handleBulkFreeDownload = async () => {
+    const chosen = freeAlbumPhotos.filter(p => selectedFreePhotoIds.has(p.id));
+    if (chosen.length === 0) return;
+    for (const photo of chosen) {
+      await handleFreePhotoDownload(photo);
+      await new Promise(r => setTimeout(r, 120));
+    }
+  };
+
+  const toggleFreePhotoSelected = (photoId: string) => {
+    setSelectedFreePhotoIds(prev => {
+      const next = new Set(prev);
+      if (next.has(photoId)) next.delete(photoId); else next.add(photoId);
+      return next;
+    });
+  };
+
   // Load currencies for payment
   useEffect(() => {
     getCurrencies().then(res => {
@@ -955,6 +985,24 @@ const FindMyPhotos = () => {
     const chosen = displayedPhotos.filter(p => selectedPhotoIds.has(p.id) && (p.price ?? 0) > 0 && !p.isPurchased);
     if (chosen.length === 0) return;
     openPurchaseModal(chosen);
+  };
+
+  /**
+   * Bulk-download every selected photo that's either already purchased OR
+   * free (no price). Paid-unpurchased photos in the selection are skipped
+   * here — they're handled by handleBulkBuy via a separate button in the
+   * action bar. This routes each photo through the SAME handleDownloadClick
+   * used by the per-card download button, so the backend selection logic
+   * (purchased-via-backend vs free-direct-URL) stays untouched; we're just
+   * looping the existing single-photo entrypoint.
+   */
+  const handleBulkDownload = async () => {
+    const chosen = displayedPhotos.filter(p => selectedPhotoIds.has(p.id) && (!!p.isPurchased || (p.price ?? 0) === 0));
+    if (chosen.length === 0) return;
+    for (const photo of chosen) {
+      handleDownloadClick(photo);
+      await new Promise(r => setTimeout(r, 150));
+    }
   };
 
   const handleSingleBuy = (photo: PhotoItem) => {
@@ -1655,39 +1703,98 @@ const FindMyPhotos = () => {
           )}
 
           {freeAlbumFlow === 'verified' && (
-            <div style={{ width: '100%', maxWidth: '1200px', margin: '0 auto' }}>
+            <div style={{ width: '100%', maxWidth: '1200px', margin: '0 auto', paddingBottom: selectedFreePhotoIds.size > 0 ? 100 : 0 }}>
               {/* Album header */}
               <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-                <h2 style={{ color: '#fff', fontSize: isMobile ? '24px' : '32px', fontWeight: 700, marginBottom: '6px' }}>{freeAlbumTitle}</h2>
-                {freeAlbumPhotographer && <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px', marginBottom: '8px' }}>by {freeAlbumPhotographer}</p>}
+                {/* Pink uppercase eyebrow */}
+                <div style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                  marginBottom: 10,
+                  padding: '5px 12px',
+                  borderRadius: 999,
+                  background: 'rgba(242,12,143,0.14)',
+                  border: '1px solid rgba(242,12,143,0.36)',
+                  color: '#F20C8F',
+                  fontSize: 11, fontWeight: 700,
+                  letterSpacing: '0.08em', textTransform: 'uppercase',
+                }}>
+                  <i className="bi bi-camera-fill" style={{ fontSize: 11 }} />
+                  Free Album
+                </div>
+                <h2 style={{ color: '#fff', fontSize: isMobile ? '26px' : '34px', fontWeight: 800, marginBottom: '6px', letterSpacing: '-0.02em' }}>{freeAlbumTitle}</h2>
+                {freeAlbumPhotographer && (
+                  <p style={{ color: 'rgba(255,255,255,0.72)', fontSize: '14px', marginBottom: '8px' }}>
+                    by <strong style={{ color: '#fff' }}>{freeAlbumPhotographer}</strong>
+                  </p>
+                )}
                 {freeAlbumExpiresAt && (() => {
                   const daysLeft = Math.ceil((new Date(freeAlbumExpiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-                  if (daysLeft <= 0) return <p style={{ color: '#ef4444', fontSize: '13px' }}>This album has expired and is no longer available</p>;
-                  if (daysLeft <= 7) return <p style={{ color: '#f59e0b', fontSize: '13px' }}>⚠ Expires in {daysLeft} day{daysLeft !== 1 ? 's' : ''}</p>;
+                  if (daysLeft <= 0) return (
+                    <p style={{ color: '#ef4444', fontSize: '13px', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                      <i className="bi bi-x-octagon-fill" style={{ fontSize: 12 }} />
+                      This album has expired and is no longer available
+                    </p>
+                  );
+                  if (daysLeft <= 7) return (
+                    <p style={{ color: '#f59e0b', fontSize: '13px', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                      <i className="bi bi-clock-history" style={{ fontSize: 12 }} />
+                      Expires in {daysLeft} day{daysLeft !== 1 ? 's' : ''}
+                    </p>
+                  );
                   return null;
                 })()}
-                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px', marginTop: '8px' }}>{freeAlbumPhotos.length} photo{freeAlbumPhotos.length !== 1 ? 's' : ''}</p>
+                <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '13px', marginTop: '8px' }}>
+                  <i className="bi bi-images" style={{ marginRight: 5, color: '#F20C8F' }} />
+                  {freeAlbumPhotos.length} photo{freeAlbumPhotos.length !== 1 ? 's' : ''}
+                </p>
                 {freeAlbumPhotos.length > 1 && (
-                  <button
-                    onClick={handleFreeDownloadAll}
-                    style={{
-                      marginTop: '16px',
-                      padding: '10px 24px',
-                      borderRadius: '10px',
-                      border: '1px solid rgba(255,255,255,0.2)',
-                      background: 'rgba(255,255,255,0.06)',
-                      color: '#fff',
-                      fontSize: '14px',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease',
-                    }}
-                    onMouseEnter={(e) => { (e.target as HTMLButtonElement).style.background = 'rgba(255,255,255,0.12)'; }}
-                    onMouseLeave={(e) => { (e.target as HTMLButtonElement).style.background = 'rgba(255,255,255,0.06)'; }}
-                  >
-                    <i className="bi bi-download" style={{ marginRight: '6px' }}></i>
-                    Download All
-                  </button>
+                  <div style={{ display: 'inline-flex', gap: 10, marginTop: 16, flexWrap: 'wrap', justifyContent: 'center' }}>
+                    <button
+                      onClick={handleFreeDownloadAll}
+                      style={{
+                        padding: '11px 22px',
+                        borderRadius: 11,
+                        border: 'none',
+                        background: 'linear-gradient(135deg, #083A85 0%, #F20C8F 130%)',
+                        color: '#fff',
+                        fontSize: 14,
+                        fontWeight: 700,
+                        letterSpacing: '-0.005em',
+                        cursor: 'pointer',
+                        display: 'inline-flex', alignItems: 'center', gap: 8,
+                        boxShadow: '0 8px 22px -6px rgba(242,12,143,0.45)',
+                        transition: 'transform 0.15s, box-shadow 0.15s',
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 12px 28px -6px rgba(242,12,143,0.55)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 22px -6px rgba(242,12,143,0.45)'; }}
+                    >
+                      <i className="bi bi-download" style={{ fontSize: 14 }} />
+                      Download All
+                    </button>
+                    {selectedFreePhotoIds.size < freeAlbumPhotos.length && (
+                      <button
+                        onClick={() => setSelectedFreePhotoIds(new Set(freeAlbumPhotos.map(p => p.id)))}
+                        style={{
+                          padding: '11px 18px',
+                          borderRadius: 11,
+                          border: '1.5px solid rgba(255,255,255,0.22)',
+                          background: 'rgba(255,255,255,0.06)',
+                          color: '#fff',
+                          fontSize: 13.5,
+                          fontWeight: 700,
+                          letterSpacing: '-0.005em',
+                          cursor: 'pointer',
+                          display: 'inline-flex', alignItems: 'center', gap: 7,
+                          transition: 'background 0.15s, border-color 0.15s',
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(242,12,143,0.12)'; e.currentTarget.style.borderColor = 'rgba(242,12,143,0.42)'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.22)'; }}
+                      >
+                        <i className="bi bi-check2-square" style={{ fontSize: 13 }} />
+                        Select all
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
 
@@ -1697,7 +1804,9 @@ const FindMyPhotos = () => {
                 gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(auto-fill, minmax(240px, 1fr))',
                 gap: '12px',
               }}>
-                {freeAlbumPhotos.map((photo) => (
+                {freeAlbumPhotos.map((photo) => {
+                  const isSelected = selectedFreePhotoIds.has(photo.id);
+                  return (
                   <div
                     key={photo.id}
                     style={{
@@ -1706,7 +1815,11 @@ const FindMyPhotos = () => {
                       overflow: 'hidden',
                       aspectRatio: '1',
                       cursor: 'pointer',
-                      border: '1px solid rgba(255,255,255,0.08)',
+                      border: isSelected ? '1px solid rgba(242,12,143,0.45)' : '1px solid rgba(255,255,255,0.08)',
+                      boxShadow: isSelected
+                        ? '0 0 0 3px #F20C8F, 0 8px 22px -6px rgba(242,12,143,0.42)'
+                        : 'none',
+                      transition: 'box-shadow 0.18s, border-color 0.18s',
                     }}
                     onClick={() => setSelectedPhoto({
                       id: photo.id,
@@ -1732,9 +1845,47 @@ const FindMyPhotos = () => {
                         transition: 'filter 0.1s linear',
                       }}
                     />
+                    {/* Add-to-cart toggle */}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); toggleFreePhotoSelected(photo.id); }}
+                      aria-label={isSelected ? 'Remove from cart' : 'Add to cart'}
+                      title={isSelected ? 'Remove from cart' : 'Add to cart'}
+                      style={{
+                        position: 'absolute',
+                        top: '8px',
+                        left: '8px',
+                        width: '30px',
+                        height: '30px',
+                        borderRadius: '9px',
+                        background: isSelected ? '#F20C8F' : 'rgba(255,255,255,0.95)',
+                        border: isSelected ? '2px solid #F20C8F' : '2px solid rgba(255,255,255,0.6)',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 3,
+                        padding: 0,
+                        boxShadow: isSelected
+                          ? '0 4px 12px -2px rgba(242,12,143,0.50)'
+                          : '0 2px 6px rgba(0,0,0,0.30)',
+                        transition: 'transform 0.15s, background 0.15s, box-shadow 0.15s',
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.08)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+                    >
+                      {isSelected ? (
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                      ) : (
+                        <i className="bi bi-plus" style={{ fontSize: '16px', color: '#F20C8F', fontWeight: 700, lineHeight: 1 }} />
+                      )}
+                    </button>
                     {/* Download button */}
                     <button
                       onClick={(e) => { e.stopPropagation(); handleFreePhotoDownload(photo); }}
+                      aria-label="Download photo"
+                      title="Download photo"
                       style={{
                         position: 'absolute',
                         bottom: '8px',
@@ -1742,21 +1893,123 @@ const FindMyPhotos = () => {
                         width: '34px',
                         height: '34px',
                         borderRadius: '10px',
-                        border: 'none',
-                        background: 'rgba(0,0,0,0.5)',
+                        border: '1px solid rgba(255,255,255,0.18)',
+                        background: 'rgba(0,0,0,0.55)',
                         color: '#fff',
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         backdropFilter: 'blur(4px)',
+                        transition: 'background 0.15s, transform 0.15s',
                       }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = '#F20C8F'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(0,0,0,0.55)'; e.currentTarget.style.transform = 'translateY(0)'; }}
                     >
                       <i className="bi bi-download" style={{ fontSize: '14px' }}></i>
                     </button>
                   </div>
-                ))}
+                  );
+                })}
               </div>
+
+              {/* ── Free-album Cart Action Bar ── */}
+              {selectedFreePhotoIds.size > 0 && (
+                <div style={{
+                  position: 'fixed',
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  background: 'rgba(15,15,20,0.97)',
+                  backdropFilter: 'blur(12px)',
+                  WebkitBackdropFilter: 'blur(12px)',
+                  borderTop: '1px solid rgba(255,255,255,0.08)',
+                  padding: isMobile ? '14px 16px' : '16px 24px',
+                  zIndex: 1500,
+                  boxShadow: '0 -12px 32px rgba(0,0,0,0.40)',
+                }}>
+                  {/* Brand top stripe */}
+                  <span aria-hidden style={{
+                    position: 'absolute', top: 0, left: 0, right: 0, height: 2,
+                    background: 'linear-gradient(90deg, #083A85 0%, #F20C8F 100%)',
+                  }} />
+                  <div style={{
+                    maxWidth: 1200,
+                    margin: '0 auto',
+                    display: 'flex',
+                    flexDirection: isMobile ? 'column' : 'row',
+                    alignItems: isMobile ? 'stretch' : 'center',
+                    gap: 12,
+                  }}>
+                    <div style={{ flex: isMobile ? 'initial' : 1, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                      <div style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 7,
+                        padding: '6px 12px 6px 8px',
+                        borderRadius: 999,
+                        background: 'linear-gradient(135deg, #083A85 0%, #F20C8F 130%)',
+                        color: '#fff', fontSize: 13, fontWeight: 700, letterSpacing: '-0.005em',
+                        boxShadow: '0 6px 14px -4px rgba(242,12,143,0.36)',
+                      }}>
+                        <span style={{
+                          width: 22, height: 22, borderRadius: '50%',
+                          background: 'rgba(255,255,255,0.22)',
+                          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                        }}>
+                          <i className="bi bi-bag-check-fill" style={{ fontSize: 11 }} />
+                        </span>
+                        {selectedFreePhotoIds.size} in cart
+                      </div>
+                      <span style={{ color: 'rgba(255,255,255,0.78)', fontSize: 12.5, fontWeight: 500, display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                        <i className="bi bi-download" style={{ fontSize: 11, color: '#F20C8F' }} />
+                        Ready to download
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => setSelectedFreePhotoIds(new Set())}
+                      style={{
+                        padding: '10px 16px',
+                        borderRadius: 11,
+                        background: 'transparent',
+                        border: '1.5px solid rgba(255,255,255,0.20)',
+                        color: 'rgba(255,255,255,0.82)',
+                        fontSize: 13.5,
+                        fontWeight: 700,
+                        letterSpacing: '-0.005em',
+                        cursor: 'pointer',
+                        display: 'inline-flex', alignItems: 'center', gap: 6,
+                        transition: 'border-color 0.15s, color 0.15s',
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#F20C8F'; e.currentTarget.style.color = '#F20C8F'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.20)'; e.currentTarget.style.color = 'rgba(255,255,255,0.82)'; }}
+                    >
+                      <i className="bi bi-x-circle" style={{ fontSize: 13 }} />
+                      Clear
+                    </button>
+                    <button
+                      onClick={handleBulkFreeDownload}
+                      style={{
+                        padding: '11px 18px',
+                        borderRadius: 11,
+                        background: 'linear-gradient(135deg, #083A85 0%, #F20C8F 130%)',
+                        border: 'none',
+                        color: '#fff',
+                        fontSize: 13.5,
+                        fontWeight: 700,
+                        letterSpacing: '-0.005em',
+                        cursor: 'pointer',
+                        display: 'inline-flex', alignItems: 'center', gap: 7,
+                        boxShadow: '0 8px 22px -6px rgba(242,12,143,0.45)',
+                        transition: 'transform 0.15s, box-shadow 0.15s',
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 12px 28px -6px rgba(242,12,143,0.55)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 22px -6px rgba(242,12,143,0.45)'; }}
+                    >
+                      <i className="bi bi-download" style={{ fontSize: 13 }} />
+                      Download {selectedFreePhotoIds.size} photo{selectedFreePhotoIds.size !== 1 ? 's' : ''}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -2490,8 +2743,20 @@ const FindMyPhotos = () => {
               {displayedPhotos.map((photo) => {
                 const isPaid = (photo.price ?? 0) > 0;
                 const isPurchased = !!photo.isPurchased;
-                const isSelectable = isPaid && !isPurchased && !!photo.albumId;
+                // Any photo the user can act on (download or buy) is now
+                // selectable — that unlocks the unified "cart" UX in the
+                // bottom action bar. The downstream actions still filter
+                // by type: handleBulkBuy only sends paid-unpurchased, and
+                // handleBulkDownload only sends free/purchased.
+                const isFree = !isPaid;
+                const isSelectable = isPurchased || isFree || (isPaid && !!photo.albumId);
                 const isSelected = selectedPhotoIds.has(photo.id);
+                // Visual identity for the checkbox: free / already-purchased
+                // photos show a brand-pink check (these go to the download
+                // path), unpurchased-paid photos show a teal check (these go
+                // to the buy path — teal is the existing platform purchase
+                // colour, preserved per request).
+                const selectAccent = (isPurchased || isFree) ? '#F20C8F' : '#03969c';
                 const currencyLabel = photo.currencyAbbreviation || albumCurrencySymbol || 'RF';
                 const btnLabel = isPurchased
                   ? 'Download'
@@ -2506,7 +2771,9 @@ const FindMyPhotos = () => {
                     borderRadius: '20px',
                     overflow: 'hidden',
                     cursor: 'pointer',
-                    boxShadow: isSelected ? '0 0 0 3px #03969c, 0 4px 20px rgba(0,0,0,0.08)' : '0 4px 20px rgba(0,0,0,0.08)',
+                    boxShadow: isSelected
+                      ? `0 0 0 3px ${selectAccent}, 0 4px 20px rgba(0,0,0,0.08)`
+                      : '0 4px 20px rgba(0,0,0,0.08)',
                     transition: 'all 0.3s ease',
                     background: '#ffffff',
                     position: 'relative',
@@ -2559,32 +2826,44 @@ const FindMyPhotos = () => {
                       />
                     )}
                   </div>
-                  {/* Selection checkbox (only for purchasable paid photos) */}
+                  {/* Selection checkbox — appears on every actionable photo
+                      so the bottom action bar can build a unified cart of
+                      free downloads + paid buys. Accent color reflects the
+                      intent (pink = download, teal = buy). */}
                   {isSelectable && (
                     <button
                       onClick={(e) => { e.stopPropagation(); togglePhotoSelected(photo.id); }}
-                      aria-label={isSelected ? 'Deselect photo' : 'Select photo'}
+                      aria-label={isSelected ? 'Remove from cart' : 'Add to cart'}
+                      title={isSelected ? 'Remove from cart' : 'Add to cart'}
                       style={{
                         position: 'absolute',
                         top: '10px',
                         left: '10px',
-                        width: '26px',
-                        height: '26px',
-                        borderRadius: '6px',
-                        background: isSelected ? '#03969c' : 'rgba(255,255,255,0.9)',
-                        border: isSelected ? '2px solid #03969c' : '2px solid rgba(0,0,0,0.2)',
+                        width: '28px',
+                        height: '28px',
+                        borderRadius: '8px',
+                        background: isSelected ? selectAccent : 'rgba(255,255,255,0.95)',
+                        border: isSelected ? `2px solid ${selectAccent}` : '2px solid rgba(255,255,255,0.6)',
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         zIndex: 3,
                         padding: 0,
+                        boxShadow: isSelected
+                          ? `0 4px 12px -2px ${selectAccent === '#F20C8F' ? 'rgba(242,12,143,0.42)' : 'rgba(3,150,156,0.42)'}`
+                          : '0 2px 6px rgba(0,0,0,0.18)',
+                        transition: 'transform 0.15s, background 0.15s, box-shadow 0.15s',
                       }}
+                      onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.08)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
                     >
-                      {isSelected && (
+                      {isSelected ? (
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                           <polyline points="20 6 9 17 4 12"/>
                         </svg>
+                      ) : (
+                        <i className="bi bi-plus" style={{ fontSize: '16px', color: selectAccent, fontWeight: 700, lineHeight: 1 }} />
                       )}
                     </button>
                   )}
@@ -3493,26 +3772,40 @@ const FindMyPhotos = () => {
         }
       `}</style>
 
-      {/* ── Multi-select Purchase Action Bar ── */}
+      {/* ── Cart Action Bar — unified multi-select for downloads + buys ── */}
       {(() => {
         const selectedCount = selectedPhotoIds.size;
         if (selectedCount === 0 && !purchaseNotice) return null;
         const selectedItems = displayedPhotos.filter(p => selectedPhotoIds.has(p.id));
-        const total = selectedItems.reduce((s, p) => s + (p.price ?? 0), 0);
-        const curLabel = selectedItems[0]?.currencyAbbreviation || albumCurrencySymbol || 'RF';
+        // Split the selection by intent. Paid-unpurchased flow through the
+        // existing handleBulkBuy → XentriPay modal; free or already-purchased
+        // photos flow through handleBulkDownload, which reuses the same
+        // single-photo download path. Both filters mirror what those
+        // handlers do internally, so the action bar can't drift out of sync
+        // with the actual backend selection logic.
+        const paidItems = selectedItems.filter(p => (p.price ?? 0) > 0 && !p.isPurchased);
+        const downloadItems = selectedItems.filter(p => !!p.isPurchased || (p.price ?? 0) === 0);
+        const total = paidItems.reduce((s, p) => s + (p.price ?? 0), 0);
+        const curLabel = paidItems[0]?.currencyAbbreviation || albumCurrencySymbol || 'RF';
         return (
           <div style={{
             position: 'fixed',
             bottom: 0,
             left: 0,
             right: 0,
-            background: 'rgba(20,20,24,0.97)',
+            background: 'rgba(15,15,20,0.97)',
             backdropFilter: 'blur(12px)',
-            borderTop: '1px solid rgba(255,255,255,0.1)',
-            padding: isMobile ? '12px 16px' : '16px 24px',
+            WebkitBackdropFilter: 'blur(12px)',
+            borderTop: '1px solid rgba(255,255,255,0.08)',
+            padding: isMobile ? '14px 16px' : '16px 24px',
             zIndex: 1500,
-            boxShadow: '0 -8px 24px rgba(0,0,0,0.3)',
+            boxShadow: '0 -12px 32px rgba(0,0,0,0.40)',
           }}>
+            {/* Brand top stripe */}
+            <span aria-hidden style={{
+              position: 'absolute', top: 0, left: 0, right: 0, height: 2,
+              background: 'linear-gradient(90deg, #083A85 0%, #F20C8F 100%)',
+            }} />
             <div style={{
               maxWidth: '1200px',
               margin: '0 auto',
@@ -3521,7 +3814,16 @@ const FindMyPhotos = () => {
               gap: '10px',
             }}>
               {purchaseNotice && (
-                <div style={{ color: '#fff', fontSize: '13px', fontWeight: 500 }}>
+                <div style={{
+                  color: '#fff', fontSize: '13px', fontWeight: 500,
+                  display: 'inline-flex', alignItems: 'center', gap: 8,
+                  padding: '6px 10px',
+                  background: 'rgba(242,12,143,0.14)',
+                  border: '1px solid rgba(242,12,143,0.32)',
+                  borderRadius: 8,
+                  alignSelf: 'flex-start',
+                }}>
+                  <i className="bi bi-info-circle-fill" style={{ fontSize: 13, color: '#F20C8F' }} />
                   {purchaseNotice}
                 </div>
               )}
@@ -3532,39 +3834,109 @@ const FindMyPhotos = () => {
                 alignItems: isMobile ? 'stretch' : 'center',
                 gap: '12px',
               }}>
-                  <div style={{ color: '#fff', fontSize: '14px', flex: isMobile ? 'initial' : 1 }}>
-                    <strong>{selectedCount}</strong> photo{selectedCount > 1 ? 's' : ''} selected · Total: <strong>{curLabel} {total.toLocaleString()}</strong>
+                  {/* Cart summary with breakdown chip */}
+                  <div style={{ flex: isMobile ? 'initial' : 1, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                    <div style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 7,
+                      padding: '6px 12px 6px 8px',
+                      borderRadius: 999,
+                      background: 'linear-gradient(135deg, #083A85 0%, #F20C8F 130%)',
+                      color: '#fff', fontSize: 13, fontWeight: 700, letterSpacing: '-0.005em',
+                      boxShadow: '0 6px 14px -4px rgba(242,12,143,0.36)',
+                    }}>
+                      <span style={{
+                        width: 22, height: 22, borderRadius: '50%',
+                        background: 'rgba(255,255,255,0.22)',
+                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                      }}>
+                        <i className="bi bi-bag-check-fill" style={{ fontSize: 11 }} />
+                      </span>
+                      {selectedCount} in cart
+                    </div>
+                    <div style={{ color: 'rgba(255,255,255,0.78)', fontSize: 12.5, fontWeight: 500 }}>
+                      {downloadItems.length > 0 && (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginRight: 12 }}>
+                          <i className="bi bi-download" style={{ fontSize: 11, color: '#F20C8F' }} />
+                          <span><strong style={{ color: '#fff' }}>{downloadItems.length}</strong> to download</span>
+                        </span>
+                      )}
+                      {paidItems.length > 0 && (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                          <i className="bi bi-cart-fill" style={{ fontSize: 11, color: '#03969c' }} />
+                          <span><strong style={{ color: '#fff' }}>{paidItems.length}</strong> to buy · <strong style={{ color: '#fff' }}>{curLabel} {total.toLocaleString()}</strong></span>
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <button
                     onClick={() => setSelectedPhotoIds(new Set())}
                     style={{
                       padding: '10px 16px',
-                      borderRadius: '10px',
+                      borderRadius: 11,
                       background: 'transparent',
-                      border: '1px solid rgba(255,255,255,0.2)',
-                      color: '#adadb8',
-                      fontSize: '14px',
-                      fontWeight: 500,
+                      border: '1.5px solid rgba(255,255,255,0.20)',
+                      color: 'rgba(255,255,255,0.82)',
+                      fontSize: 13.5,
+                      fontWeight: 700,
+                      letterSpacing: '-0.005em',
                       cursor: 'pointer',
+                      transition: 'border-color 0.15s, color 0.15s',
+                      display: 'inline-flex', alignItems: 'center', gap: 6,
                     }}
+                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#F20C8F'; e.currentTarget.style.color = '#F20C8F'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.20)'; e.currentTarget.style.color = 'rgba(255,255,255,0.82)'; }}
                   >
+                    <i className="bi bi-x-circle" style={{ fontSize: 13 }} />
                     Clear
                   </button>
-                  <button
-                    onClick={handleBulkBuy}
-                    style={{
-                      padding: '10px 20px',
-                      borderRadius: '10px',
-                      background: 'linear-gradient(135deg, #03969c, #027a7f)',
-                      border: 'none',
-                      color: '#fff',
-                      fontSize: '14px',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    Buy {selectedCount} photo{selectedCount > 1 ? 's' : ''} ({curLabel} {total.toLocaleString()})
-                  </button>
+                  {downloadItems.length > 0 && (
+                    <button
+                      onClick={handleBulkDownload}
+                      style={{
+                        padding: '11px 18px',
+                        borderRadius: 11,
+                        background: 'linear-gradient(135deg, #083A85 0%, #F20C8F 130%)',
+                        border: 'none',
+                        color: '#fff',
+                        fontSize: 13.5,
+                        fontWeight: 700,
+                        letterSpacing: '-0.005em',
+                        cursor: 'pointer',
+                        display: 'inline-flex', alignItems: 'center', gap: 7,
+                        boxShadow: '0 8px 22px -6px rgba(242,12,143,0.45)',
+                        transition: 'transform 0.15s, box-shadow 0.15s',
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 12px 28px -6px rgba(242,12,143,0.55)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 22px -6px rgba(242,12,143,0.45)'; }}
+                    >
+                      <i className="bi bi-download" style={{ fontSize: 13 }} />
+                      Download {downloadItems.length}
+                    </button>
+                  )}
+                  {paidItems.length > 0 && (
+                    <button
+                      onClick={handleBulkBuy}
+                      style={{
+                        padding: '11px 18px',
+                        borderRadius: 11,
+                        background: 'linear-gradient(135deg, #03969c 0%, #027a7f 100%)',
+                        border: 'none',
+                        color: '#fff',
+                        fontSize: 13.5,
+                        fontWeight: 700,
+                        letterSpacing: '-0.005em',
+                        cursor: 'pointer',
+                        display: 'inline-flex', alignItems: 'center', gap: 7,
+                        boxShadow: '0 8px 22px -6px rgba(3,150,156,0.45)',
+                        transition: 'transform 0.15s, box-shadow 0.15s',
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 12px 28px -6px rgba(3,150,156,0.55)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 22px -6px rgba(3,150,156,0.45)'; }}
+                    >
+                      <i className="bi bi-cart-fill" style={{ fontSize: 13 }} />
+                      Buy {paidItems.length} · {curLabel} {total.toLocaleString()}
+                    </button>
+                  )}
               </div>
               )}
             </div>
