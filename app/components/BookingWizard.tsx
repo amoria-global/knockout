@@ -2079,7 +2079,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                           >
                             <div>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                                <span style={{ padding: '3px 10px', borderRadius: 12, fontSize: 11, fontWeight: 700, color: '#fff', background: '#F59E0B' }}>
+                                <span style={{ padding: '3px 10px', borderRadius: 12, fontSize: 11, fontWeight: 700, color: '#fff', background: ACCENT }}>
                                   Custom
                                 </span>
                                 <span style={{ color: TEXT_PRIMARY, fontSize: 15, fontWeight: 700 }}>
