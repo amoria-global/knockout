@@ -517,8 +517,12 @@ const Photographers: React.FC = () => {
         case 'newest':
         default: {
           // Last come, first out — most recently created photographer first.
-          const at = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-          const bt = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          // The landing Photographer type carries the registration timestamp
+          // as `joinedFrom` (backend maps it from Customer.getCreatedAt());
+          // there is no `createdAt` on this type, which is what failed
+          // c40d514's build with "Property 'createdAt' does not exist".
+          const at = a.joinedFrom ? new Date(a.joinedFrom).getTime() : 0;
+          const bt = b.joinedFrom ? new Date(b.joinedFrom).getTime() : 0;
           return bt - at;
         }
       }
