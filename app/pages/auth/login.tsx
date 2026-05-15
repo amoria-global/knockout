@@ -574,15 +574,30 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
     const customerId = response.data.customerId;
     if (!customerId) throw new Error('Signup succeeded but no customer ID was returned.');
 
-    // From here on we have a customer record. The remaining calls are
-    // best-effort: a failed individual save shouldn't block the OTP
-    // step, but we run them sequentially so the user lands on the
-    // dashboard at 100% completion.
+    // CRITICAL: signup now returns a token (OTP not yet verified, but the
+    // backend mints one so the wizard can persist the profile right away).
+    // Set it BEFORE any /api/remote/photographer/* call — those endpoints
+    // resolve the photographer purely from the JWT principal. Without this
+    // the entire profile payload was 401ing and being silently dropped,
+    // leaving brand-new photographers stuck under 100% with nothing to do
+    // in the dashboard.
+    if (response.data.token) {
+      setAuthToken(response.data.token);
+    } else {
+      // No token => the profile calls below cannot authenticate. Fail loudly
+      // instead of silently creating an empty profile.
+      throw new Error('Signup did not return a session token — profile could not be saved. Please try again.');
+    }
+
     const { updateImportantDetails, updateProfilePicture, updateCoverPhoto, submitProfile } =
       await import('@/lib/APIs/photographers/update-profile/route');
     const { apiClient } = await import('@/lib/api/client');
 
-    await updateImportantDetails({
+    // Completion-driving saves — these MUST land for the profile to be
+    // submitted-on-signup (the user's requirement). A failure throws so the
+    // onboarding wizard surfaces a real error and the user can retry, rather
+    // than landing in the dashboard with a half-saved profile.
+    const r1 = await updateImportantDetails({
       firstName, lastName,
       phone: `${countryCode}${phoneNumber}`,
       about: payload.about,
@@ -592,32 +607,35 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
       ...(payload.businessType === 'Registered Company'
         ? { organizationName: payload.companyName, taxId: payload.tin }
         : {}),
-    }).catch(() => {});
+    });
+    if (!r1.success) throw new Error(r1.error || 'Could not save your basic details & specialties.');
 
+    // Media uploads stay best-effort: the most flake-prone step, and a
+    // missing image shouldn't block account submission.
     await updateProfilePicture(payload.profileFile).catch(() => {});
     if (payload.coverFile) await updateCoverPhoto(payload.coverFile).catch(() => {});
 
-    try {
-      const formData = new FormData();
-      formData.append('requestDTO', new Blob([JSON.stringify({
-        title: payload.projTitle,
-        description: payload.projDescription,
-        year: payload.projYear,
-      })], { type: 'application/json' }));
-      if (payload.projFile) formData.append('projectImage', payload.projFile);
-      await apiClient.post('/api/remote/photographer/add-project-portfolio', formData, { retries: 1 });
-    } catch { /* best-effort */ }
+    const fd = new FormData();
+    fd.append('requestDTO', new Blob([JSON.stringify({
+      title: payload.projTitle,
+      description: payload.projDescription,
+      year: payload.projYear,
+    })], { type: 'application/json' }));
+    if (payload.projFile) fd.append('projectImage', payload.projFile);
+    const rPortfolio = await apiClient.post('/api/remote/photographer/add-project-portfolio', fd, { retries: 1 });
+    if (!rPortfolio.success) throw new Error(rPortfolio.error || 'Could not save your portfolio project.');
 
-    await apiClient.post('/api/remote/photographer/add-work-experience', {
+    const rExp = await apiClient.post('/api/remote/photographer/add-work-experience', {
       position: payload.expPosition,
       company: payload.expCompany,
       location: payload.expLocation,
       startDate: payload.expStartDate,
       endDate: payload.expEndDate,
       description: payload.expDescription,
-    }, { retries: 1 }).catch(() => {});
+    }, { retries: 1 });
+    if (!rExp.success) throw new Error(rExp.error || 'Could not save your work experience.');
 
-    await apiClient.post('/api/remote/photographer/packages', {
+    const rPkg = await apiClient.post('/api/remote/photographer/packages', {
       packageName: payload.pkgTier,
       price: payload.pkgPrice,
       currencyId: payload.pkgCurrencyId,
@@ -633,8 +651,10 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
       photobookPhotos: 0,
       deliveryDays: payload.pkgDelivery,
       features: payload.pkgFeatures,
-    }, { retries: 2 }).catch(() => {});
+    }, { retries: 2 });
+    if (!rPkg.success) throw new Error(rPkg.error || 'Could not save your package.');
 
+    // Marks the profile submitted/ready for admin review.
     await submitProfile().catch(() => {});
 
     // Now wire up the OTP redirect — onComplete handler will push to it.
