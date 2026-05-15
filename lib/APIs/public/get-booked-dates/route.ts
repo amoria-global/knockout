@@ -7,18 +7,24 @@ import { apiClient } from '@/lib/api/client';
 import { API_ENDPOINTS } from '@/lib/api/config';
 import type { ApiResponse } from '@/lib/api/types';
 
-export type BookedDateReason = 'preparation' | 'event' | 'delivery';
+// Post capacity-rework there is exactly one block reason: the photographer
+// is fully booked for that day (client bookings hit their per-day capacity)
+// or they manually marked the date unavailable. The legacy
+// preparation/event/delivery split is gone. Optional legacy fields are kept
+// so any cached client code keeps deserialising; the backend no longer
+// sends them.
+export type BookedDateReason = 'booked';
 
 export interface BookedDate {
   date: string;                 // "YYYY-MM-DD" — the blocked calendar day
-  isFullDay: boolean;
-  reason: BookedDateReason;     // why this day is blocked
-  bookingId: string;            // source booking id
-  eventDate: string;            // "YYYY-MM-DD" — event date of the source booking
+  isFullDay: boolean;           // always true now
+  reason: BookedDateReason;     // always 'booked'
+  bookingId?: string;           // no longer sent
+  eventDate: string;            // "YYYY-MM-DD" — mirrors `date`
   startTime?: { hour: number; minute: number } | null;
   endTime?: { hour: number; minute: number } | null;
-  deliveryDaysTotal?: number;   // present only when reason === 'delivery'
-  deliveryDayIndex?: number;    // 1..deliveryDaysTotal, only when reason === 'delivery'
+  deliveryDaysTotal?: number;
+  deliveryDayIndex?: number;
 }
 
 export interface GetBookedDatesRequest {
