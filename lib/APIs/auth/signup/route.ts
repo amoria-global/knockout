@@ -32,6 +32,11 @@ export interface SignupResponse {
   customerId?: string;
   customer_id?: string;
   expr?: string;
+  // Issued on successful signup so the onboarding wizard can persist the
+  // photographer's profile immediately (before OTP). Optional: older
+  // backends won't return it.
+  token?: string;
+  token_expiry?: string;
 }
 
 /**
