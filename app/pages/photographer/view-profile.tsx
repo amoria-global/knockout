@@ -38,6 +38,54 @@ const getCoverImage = (photographer: Photographer | null): string | null => {
   return null;
 };
 
+/**
+ * Same slide-in/slide-out cover carousel used on the photographer listing
+ * cards (photographers.tsx::CoverCarousel) — re-implemented here so the
+ * profile hero rotates the photographer's cover, profile photo, and
+ * featured project images on the same 3s cadence. Each slide enters from
+ * the right, holds, and exits to the left. Pure CSS transform transitions
+ * via three position classes; no motion library.
+ *
+ * On the hero this sits as the lowest layer inside .vp-hero-cover, behind
+ * the tint / dot-pattern / toolbar / identity strip (all of which have a
+ * higher z-index), so the existing overlays keep working unchanged.
+ */
+const VP_COVER_SLIDE_INTERVAL_MS = 3000;
+
+const HeroCoverCarousel: React.FC<{ images: string[]; alt: string }> = ({ images, alt }) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const total = images.length;
+
+  useEffect(() => {
+    if (total <= 1) return;
+    const id = setInterval(() => {
+      setCurrentIndex(i => (i + 1) % total);
+    }, VP_COVER_SLIDE_INTERVAL_MS);
+    return () => clearInterval(id);
+  }, [total]);
+
+  return (
+    <div className="vp-hero-slider" aria-hidden="true">
+      {images.map((src, i) => {
+        let position: 'left' | 'active' | 'right';
+        if (i === currentIndex) position = 'active';
+        else if ((i + 1) % total === currentIndex) position = 'left';
+        else position = 'right';
+        return (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            key={i}
+            src={src}
+            alt={alt}
+            loading="lazy"
+            className={`vp-hero-slide vp-hero-slide--${position}`}
+          />
+        );
+      })}
+    </div>
+  );
+};
+
 const formatJoinDate = (dateString: string): string => {
   try {
     const date = new Date(dateString);
@@ -167,7 +215,13 @@ function ViewProfileContent(): React.JSX.Element {
   const handleBookNowClick = () => setShowWizard(true);
 
   const openImageViewer = (type: 'profile' | 'cover') => {
-    const img = type === 'profile' ? photographerData?.profileImage : photographerData?.backgroundImage;
+    // Cover viewer falls back to the first carousel frame when the
+    // photographer has no dedicated cover photo (e.g. only a profile or
+    // project image) — otherwise clicking the rotating hero would open
+    // nothing.
+    const img = type === 'profile'
+      ? photographerData?.profileImage
+      : (photographerData?.backgroundImage || photographerData?.coverCarouselImages?.[0]);
     if (!img) return;
     setCurrentImageType(type);
     setImageViewerOpen(true);
@@ -225,6 +279,17 @@ function ViewProfileContent(): React.JSX.Element {
     rating: photographer?.rating || 0,
     profileImage: getProfileImage(photographer),
     backgroundImage: getCoverImage(photographer),
+    // Cover-hero carousel frames: cover photo first, then profile photo,
+    // then featured project images. Same composition + de-dupe + null-
+    // scrub the listing card uses, so the hero and the card rotate the
+    // exact same set for a given photographer.
+    coverCarouselImages: Array.from(new Set(
+      [
+        photographer?.coverPicture,
+        photographer?.profilePicture,
+        ...((photographer?.projects ?? []).map(p => p.projectImage || p.images?.[0])),
+      ].filter((u): u is string => typeof u === 'string' && !!u && !u.includes('/null'))
+    )),
     specialties: (photographer?.specialties || []).map((s: string | { id: string; name: string }) =>
       typeof s === 'string' ? s : s.name
     ),
@@ -378,19 +443,14 @@ function ViewProfileContent(): React.JSX.Element {
       <main className="vp-root">
         {/* ===========  HERO  =========== */}
         <section
-          className={`vp-hero${photographerData.backgroundImage ? '' : ' vp-hero--no-cover'}`}
+          className={`vp-hero${photographerData.coverCarouselImages.length > 0 ? '' : ' vp-hero--no-cover'}`}
           aria-labelledby="vp-name"
-          style={
-            photographerData.backgroundImage
-              ? { backgroundImage: `url("${photographerData.backgroundImage}")` }
-              : undefined
-          }
         >
           <div
             className="vp-hero-cover"
-            role={photographerData.backgroundImage ? 'button' : undefined}
-            tabIndex={photographerData.backgroundImage ? 0 : -1}
-            aria-label={photographerData.backgroundImage ? 'View cover image' : 'No cover image'}
+            role={photographerData.coverCarouselImages.length > 0 ? 'button' : undefined}
+            tabIndex={photographerData.coverCarouselImages.length > 0 ? 0 : -1}
+            aria-label={photographerData.coverCarouselImages.length > 0 ? 'View cover image' : 'No cover image'}
             onClick={() => openImageViewer('cover')}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
@@ -399,12 +459,21 @@ function ViewProfileContent(): React.JSX.Element {
               }
             }}
           >
+            {/* Slide-in/out carousel — lowest layer, behind tint/pattern/content */}
+            {photographerData.coverCarouselImages.length > 0 && (
+              <HeroCoverCarousel
+                images={photographerData.coverCarouselImages}
+                alt={`${photographerData.name}'s photos`}
+              />
+            )}
+
             {/* Brand-blue overlay + dot pattern for readability + brand identity */}
             <div className="vp-hero-cover-tint" aria-hidden="true" />
             <div className="vp-hero-cover-pattern" aria-hidden="true" />
 
-            {/* Empty-state placeholder — shown when the photographer has no cover image */}
-            {!photographerData.backgroundImage && (
+            {/* Empty-state placeholder — shown only when the photographer has
+                no usable image at all (no cover, profile, or project images) */}
+            {photographerData.coverCarouselImages.length === 0 && (
               <div className="vp-hero-cover-empty" aria-hidden="true">
                 <i className="bi bi-image" />
               </div>
@@ -1000,10 +1069,10 @@ function ViewProfileContent(): React.JSX.Element {
               onClick={(e) => e.stopPropagation()}
             />
           )}
-          {currentImageType === 'cover' && photographerData.backgroundImage && (
+          {currentImageType === 'cover' && (photographerData.backgroundImage || photographerData.coverCarouselImages[0]) && (
             /* eslint-disable-next-line @next/next/no-img-element */
             <img
-              src={photographerData.backgroundImage}
+              src={photographerData.backgroundImage || photographerData.coverCarouselImages[0]}
               alt="Cover"
               onClick={(e) => e.stopPropagation()}
             />
@@ -1056,6 +1125,35 @@ function ViewProfileContent(): React.JSX.Element {
           overflow: hidden;
         }
         .vp-hero--no-cover .vp-hero-cover { cursor: default; }
+        /* Cover carousel — lowest layer inside the hero. Tint (no z-index),
+           pattern, toolbar (z-index 3) and content (z-index 2) all paint on
+           top, so the existing readability overlays keep working untouched. */
+        .vp-hero-slider {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          overflow: hidden;
+          z-index: 0;
+        }
+        .vp-hero-slide {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          object-position: center;
+          display: block;
+          will-change: transform;
+          transition: transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .vp-hero-slide--active { transform: translateX(0); }
+        .vp-hero-slide--left   { transform: translateX(-100%); }
+        .vp-hero-slide--right  { transform: translateX(100%); }
+        @media (prefers-reduced-motion: reduce) {
+          .vp-hero-slide { transition: opacity 0.3s ease; transform: none !important; opacity: 0; }
+          .vp-hero-slide--active { opacity: 1; }
+        }
         /* No tint over a real cover image — let the photo show in its own
            colors. The bottom .vp-hero-content black gradient handles text
            contrast for the identity strip. */
