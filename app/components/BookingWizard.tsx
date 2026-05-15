@@ -197,20 +197,11 @@ function findDateConflict(dateStr: string, bookedDates: BookedDate[]): BookedDat
   return bookedDates.find(b => b.date === dateStr) || null;
 }
 
-// Helper: human-readable reason for a blocked date
+// Helper: human-readable reason for a blocked date. There's only one kind
+// of block now — the photographer is fully booked (client bookings reached
+// their per-day capacity) or has marked the day unavailable themselves.
 function describeConflict(b: BookedDate): string {
-  if (b.reason === 'event') {
-    return b.isFullDay
-      ? `Photographer is already booked for an event on ${b.date}.`
-      : `Photographer has a partial booking on ${b.date}.`;
-  }
-  if (b.reason === 'preparation') {
-    return `Photographer is preparing for an event on ${b.eventDate} the next day.`;
-  }
-  if (b.reason === 'delivery') {
-    return `Photographer is delivering work for the ${b.eventDate} event (day ${b.deliveryDayIndex} of ${b.deliveryDaysTotal}).`;
-  }
-  return 'This date is unavailable.';
+  return `The photographer is fully booked on ${b.date}.`;
 }
 
 // Currency code → ISO 3166-1 alpha-2 country code, used to fetch flag PNGs
@@ -1261,14 +1252,13 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
         const rawData = res.data as unknown as Record<string, unknown> | undefined;
         const errorCode = (rawData?.error ?? rawData?.code) as string | undefined;
         if (res.statusCode === 409 || errorCode === 'DATE_UNAVAILABLE') {
-          const reason = rawData?.reason as BookedDate['reason'] | undefined;
           const conflictingEventDate = rawData?.conflictingEventDate as string | undefined;
           const bookingId = rawData?.conflictingBookingId as string | undefined;
           const synthetic: BookedDate = {
             date: eventDateStr,
             isFullDay: true,
-            reason: reason || 'event',
-            bookingId: bookingId || 'unknown',
+            reason: 'booked',
+            bookingId: bookingId || undefined,
             eventDate: conflictingEventDate || eventDateStr,
           };
           setSubmitError(describeConflict(synthetic) + ' Please choose another date.');
@@ -1627,12 +1617,9 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                       const daysInMonth = new Date(year, month + 1, 0).getDate();
                       const today = new Date();
                       today.setHours(0, 0, 0, 0);
-                      const priority = { event: 3, preparation: 2, delivery: 1 } as const;
+                      // One entry per date now — no reason priority to resolve.
                       const bookedSet = new Map<string, BookedDate>();
-                      selectedPhotoBookedDates.forEach(b => {
-                        const existing = bookedSet.get(b.date);
-                        if (!existing || priority[b.reason] > priority[existing.reason]) bookedSet.set(b.date, b);
-                      });
+                      selectedPhotoBookedDates.forEach(b => { bookedSet.set(b.date, b); });
                       const cells: React.ReactNode[] = [];
                       for (let i = 0; i < firstDay; i++) cells.push(<div key={`e-${i}`}></div>);
                       for (let day = 1; day <= daysInMonth; day++) {
@@ -1641,21 +1628,15 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                         const isPast = dateObj < today;
                         const booked = bookedSet.get(dateStr);
                         const isSelected = dateStr === gateDate;
-                        const reason = booked?.reason;
-                        const isFullEvent = reason === 'event' && booked?.isFullDay === true;
-                        const isPartialEvent = reason === 'event' && booked?.isFullDay === false;
+                        // One booked state now: any entry = the photographer is
+                        // fully booked / unavailable that day. Red, not pickable.
                         const disabled = isPast || !!booked;
-                        // Solid colored chips so each status reads at a glance.
                         let bg: string, fg = '#fff', border = '1px solid transparent';
                         let shadow = '';
                         if (isPast) { bg = 'transparent'; fg = '#cbd5e1'; }
-                        else if (isFullEvent)        { bg = '#ef4444'; border = '1px solid #dc2626'; shadow = '0 1px 4px rgba(239,68,68,0.30)'; }
-                        else if (isPartialEvent)     { bg = '#f59e0b'; border = '1px solid #d97706'; shadow = '0 1px 4px rgba(245,158,11,0.30)'; }
-                        else if (reason === 'preparation') { bg = '#94a3b8'; border = '1px solid #64748b'; shadow = '0 1px 4px rgba(148,163,184,0.25)'; }
-                        else if (reason === 'delivery')    { bg = '#6366f1'; border = '1px solid #4f46e5'; shadow = '0 1px 4px rgba(99,102,241,0.30)'; }
-                        else                          { bg = '#10b981'; border = '1px solid #059669'; shadow = '0 1px 4px rgba(16,185,129,0.25)'; }
-                        // Selected: keep the green theme, deepen the border + add a green
-                        // halo ring + lift shadow so the chosen day clearly stands out.
+                        else if (booked) { bg = '#ef4444'; border = '1px solid #dc2626'; shadow = '0 1px 4px rgba(239,68,68,0.30)'; }
+                        else { bg = '#10b981'; border = '1px solid #059669'; shadow = '0 1px 4px rgba(16,185,129,0.25)'; }
+                        // Selected: deepen the green + halo ring so the chosen day stands out.
                         if (isSelected && !disabled) {
                           bg = '#059669';
                           fg = '#fff';
@@ -1663,10 +1644,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                           shadow = '0 0 0 3px rgba(16,185,129,0.40), 0 4px 12px rgba(5,150,105,0.45)';
                         }
                         let title: string | undefined;
-                        if (isFullEvent) title = 'Booked. Event day';
-                        else if (isPartialEvent) title = 'Partial event booking';
-                        else if (reason === 'preparation') title = `Prep day (event on ${booked?.eventDate})`;
-                        else if (reason === 'delivery' && booked?.deliveryDayIndex && booked?.deliveryDaysTotal) title = `Delivery day ${booked.deliveryDayIndex} of ${booked.deliveryDaysTotal}`;
+                        if (booked) title = 'Photographer is fully booked';
                         else if (!isPast) title = 'Available';
                         cells.push(
                           <button
@@ -1693,12 +1671,9 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                       return cells;
                     })()}
                   </div>
-                  <div style={{ display: 'flex', gap: 10, marginTop: 10, paddingTop: 8, borderTop: '1px solid #f1f5f9', fontSize: 10.5, color: '#475569', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', gap: 14, marginTop: 10, paddingTop: 8, borderTop: '1px solid #f1f5f9', fontSize: 10.5, color: '#475569', flexWrap: 'wrap' }}>
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }} title="Photographer is free. Click to select"><span style={{ width: 10, height: 10, background: '#10b981', borderRadius: 3 }} />Available</span>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }} title="Day before an event. Photographer is preparing"><span style={{ width: 10, height: 10, background: '#94a3b8', borderRadius: 3 }} />Prep day</span>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }} title="Photographer is shooting an event that day"><span style={{ width: 10, height: 10, background: '#ef4444', borderRadius: 3 }} />Event day</span>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }} title="Time-boxed event. A portion of the day is booked"><span style={{ width: 10, height: 10, background: '#f59e0b', borderRadius: 3 }} />Partial</span>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }} title="Photographer is editing & delivering a recent shoot"><span style={{ width: 10, height: 10, background: '#6366f1', borderRadius: 3 }} />Delivery</span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }} title="Photographer is fully booked or unavailable that day"><span style={{ width: 10, height: 10, background: '#ef4444', borderRadius: 3 }} />Booked</span>
                   </div>
                 </div>
 
