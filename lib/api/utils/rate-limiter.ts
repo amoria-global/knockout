@@ -145,10 +145,19 @@ export const generalRateLimiter = new RateLimiter({
 });
 
 /**
- * Strict rate limiter for authentication endpoints
+ * Rate limiter for authentication endpoints.
+ *
+ * NOTE: this is a *client-side* limiter (per browser, per endpoint key) and
+ * is only a courtesy throttle — real brute-force / spam protection lives on
+ * the backend (account lockout + failed-attempt counter + OTP gate). The old
+ * limit of 5/min blocked legitimate users: the photographer signup is a long
+ * multi-step wizard and any retry after a validation fix (very common during
+ * a demo) tripped it, surfacing as a misleading generic
+ * "An error occurred during registration." 30/min still stops a runaway loop
+ * without ever blocking a real human.
  */
 export const authRateLimiter = new RateLimiter({
-  maxRequests: 5,
+  maxRequests: 30,
   windowMs: 60000, // 1 minute
 });
 
