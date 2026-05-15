@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { useGoogleLogin } from '@react-oauth/google';
 import { login } from '@/lib/APIs/auth/login/route';
 import { signup } from '@/lib/APIs/auth/signup/route';
+import { validatePassword as validatePasswordRemote } from '@/lib/APIs/auth/validate-password/route';
 import { googleAuth } from '@/lib/APIs/auth/google/route';
 import { setAuthToken, getAuthToken, getRefreshToken } from '@/lib/api/client';
 import { useToast } from '@/lib/notifications/ToastProvider';
@@ -511,7 +512,32 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
       // Nothing hits the backend yet — signup() only fires after the user
       // finishes every required slide. If they close the wizard with X,
       // their email/phone stay free for a fresh signup attempt.
+      //
+      // BUT: pre-check the password against the backend's full policy
+      // (including the HaveIBeenPwned breach corpus, which the client-side
+      // strength meter can't see) BEFORE opening the wizard. Without this a
+      // photographer with a breached password fills out all 6 wizard steps
+      // and only then gets rejected at the deferred signup() call, with no
+      // way to fix the password from inside the wizard. validate-password
+      // creates nothing — it just runs the rules and returns the reason.
       if (signupUserType.toLowerCase() === 'photographer') {
+        setSignupLoading(true);
+        try {
+          const pwCheck = await validatePasswordRemote(signupPassword);
+          if (pwCheck.data && pwCheck.data.action === 0) {
+            const msg = pwCheck.data.message || 'Please choose a stronger password.';
+            setSignupErrors({ password: msg });
+            showError(msg);
+            setSignupLoading(false);
+            return;
+          }
+          // Network/parse failure on the pre-check shouldn't trap the user
+          // out of signing up — the real signup() at the end still enforces
+          // the policy server-side, so fall through and open the wizard.
+        } catch {
+          // swallow — proceed; signup() remains the source of truth.
+        }
+        setSignupLoading(false);
         setShowPhotographerOnboarding(true);
         return;
       }
