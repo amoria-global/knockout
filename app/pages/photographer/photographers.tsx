@@ -197,6 +197,64 @@ function FilterSelect({
   );
 }
 
+/**
+ * Slide-in/Slide-out carousel for the photographer card's cover area.
+ *
+ * Cycles through a list of image URLs every 3 seconds. Each image enters
+ * from the right edge of the cover, holds in the middle, then exits to
+ * the left as the next image enters. Implemented with absolutely
+ * positioned siblings and a 3-position CSS transition (left / active /
+ * right) so we don't need a motion library and the animation stays smooth
+ * even under React's reconciliation.
+ *
+ * If there's only one image the interval is skipped — no animation, just
+ * a static cover. If there are zero images the parent renders its own
+ * empty-state, so this component is rendered conditionally on
+ * images.length > 0.
+ */
+const COVER_SLIDE_INTERVAL_MS = 3000;
+
+const CoverCarousel: React.FC<{ images: string[]; alt: string }> = ({ images, alt }) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const total = images.length;
+
+  useEffect(() => {
+    if (total <= 1) return;
+    const id = setInterval(() => {
+      setCurrentIndex(i => (i + 1) % total);
+    }, COVER_SLIDE_INTERVAL_MS);
+    return () => clearInterval(id);
+  }, [total]);
+
+  // Each image gets one of three positions relative to the current index:
+  //   active  → on-screen, transform: translateX(0)
+  //   left    → just exited (transform: translateX(-100%))
+  //   right   → queued for next entry (transform: translateX(100%))
+  // The "previous" image (current - 1) is the one in "left" position.
+  // Everything else queued goes to "right". This keeps exits and entries
+  // in lockstep so they cross-fade through the cover frame.
+  return (
+    <div className="ph-cover-slider">
+      {images.map((src, i) => {
+        let position: 'left' | 'active' | 'right';
+        if (i === currentIndex) position = 'active';
+        else if ((i + 1) % total === currentIndex) position = 'left';
+        else position = 'right';
+        return (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            key={i}
+            src={src}
+            alt={alt}
+            loading="lazy"
+            className={`ph-cover-slide ph-cover-slide--${position}`}
+          />
+        );
+      })}
+    </div>
+  );
+};
+
 const Photographers: React.FC = () => {
   const t = useTranslations('photographers');
   const searchParams = useSearchParams();
@@ -855,6 +913,37 @@ const Photographers: React.FC = () => {
           object-fit: cover; object-position: center;
           display: block;
         }
+        /* Cover carousel — stack a few images in the same frame and slide
+           through them every 3s. Each slide is absolutely positioned so the
+           three positions (left / active / right) line up regardless of the
+           image's natural size. */
+        .ph-cover-slider {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          overflow: hidden;
+        }
+        .ph-cover-slide {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          object-position: center;
+          display: block;
+          will-change: transform;
+          transition: transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .ph-cover-slide--active { transform: translateX(0); }
+        .ph-cover-slide--left   { transform: translateX(-100%); }
+        .ph-cover-slide--right  { transform: translateX(100%); }
+        /* Respect reduced-motion preferences — we still cycle the image, just
+           without the slide animation. */
+        @media (prefers-reduced-motion: reduce) {
+          .ph-cover-slide { transition: opacity 0.3s ease; transform: none !important; opacity: 0; }
+          .ph-cover-slide--active { opacity: 1; }
+        }
         .ph-card-cover-empty {
           position: absolute; inset: 0;
           display: flex; align-items: center; justify-content: center;
@@ -1449,6 +1538,20 @@ const Photographers: React.FC = () => {
               const displayName   = getPhotographerDisplayName(photographer);
               const profileImage  = getProfileImage(photographer);
               const coverImage    = getCoverImage(photographer);
+              // Stack everything the photographer has uploaded for the cover
+              // carousel: their cover photo first, profile photo next, then
+              // any featured portfolio project images. Filter out blanks /
+              // legacy "null" string artefacts so the carousel never holds an
+              // empty frame. De-dupe so the same image doesn't loop twice if
+              // they used the same upload for cover + a project.
+              const carouselImages = Array.from(new Set(
+                [
+                  photographer.coverPicture,
+                  photographer.profilePicture,
+                  ...((photographer.projects ?? []).map(p => p.projectImage)),
+                ]
+                  .filter((u): u is string => typeof u === 'string' && !!u && !u.includes('/null'))
+              ));
               const location      = getPhotographerLocation(photographer);
               const cheapest      = getStartingPrice(photographer);
               const specialties   = (photographer.specialties ?? []).map(s =>
@@ -1466,9 +1569,8 @@ const Photographers: React.FC = () => {
                 <article className="ph-card" key={photographer.id}>
                   {/* COVER */}
                   <div className="ph-card-cover">
-                    {coverImage ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={coverImage} alt={`${displayName}'s portfolio cover`} loading="lazy" />
+                    {carouselImages.length > 0 ? (
+                      <CoverCarousel images={carouselImages} alt={`${displayName}'s photos`} />
                     ) : (
                       <div className="ph-card-cover-empty" aria-hidden="true">
                         <i className="bi bi-image" />
