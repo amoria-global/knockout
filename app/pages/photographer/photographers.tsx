@@ -285,8 +285,8 @@ const Photographers: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showBanner, setShowBanner] = useState(true);
 
-  // Sort state — new in redesign (client-side; doesn't change API contract)
-  const [sortBy, setSortBy] = useState<SortKey>('top_rated');
+  // Sort state — default to newest-first (last come, first out).
+  const [sortBy, setSortBy] = useState<SortKey>('newest');
 
   // Booking wizard state
   const [showWizard, setShowWizard] = useState(false);
@@ -353,7 +353,7 @@ const Photographers: React.FC = () => {
         page: currentPage,
         size: itemsPerPage,
         sortColumn: 'createdAt',
-        sortDirection: 'asc',
+        sortDirection: 'desc', // newest registrations first (last come, first out)
         category: selectedCategory !== 'all' ? selectedCategory : undefined,
         location: selectedLocation !== 'all' ? selectedLocation : undefined,
         search: searchTerm || undefined,
@@ -515,8 +515,12 @@ const Photographers: React.FC = () => {
           return bp - ap;
         }
         case 'newest':
-        default:
-          return 0;
+        default: {
+          // Last come, first out — most recently created photographer first.
+          const at = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const bt = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          return bt - at;
+        }
       }
     });
     return sorted;
