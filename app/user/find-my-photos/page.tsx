@@ -20,6 +20,8 @@ type AlbumMeta = {
     title?: string;
     description?: string;
     photographerName?: string;
+    photographerRating?: number;
+    photographerReviewCount?: number;
     imageUrl?: string;
 };
 
@@ -68,9 +70,21 @@ export async function generateMetadata({ searchParams }: { searchParams: SearchP
     const title = meta.title
         ? `${meta.title} — Connekyt`
         : DEFAULT_TITLE;
+
+    // Compose a "Photos by <name> ★ <rating> (<reviews>)" prefix so the
+    // recipient recognises the photographer in their messenger preview
+    // before they click. Falls back gracefully if the backend didn't
+    // return rating / review fields.
+    const photographerLine = meta.photographerName
+        ? (typeof meta.photographerRating === "number"
+            ? `Photos by ${meta.photographerName} ★ ${meta.photographerRating.toFixed(1)}${typeof meta.photographerReviewCount === "number" ? ` (${meta.photographerReviewCount} review${meta.photographerReviewCount === 1 ? "" : "s"})` : ""}.`
+            : `Photos by ${meta.photographerName}.`)
+        : null;
+
     const description = meta.description
-        || (meta.photographerName
-            ? `Photos by ${meta.photographerName}. Open the link to find your photos.`
+        ? (photographerLine ? `${photographerLine} ${meta.description}` : meta.description)
+        : (photographerLine
+            ? `${photographerLine} Open the link to find your photos.`
             : "Open the link to find your photos.");
     const images = meta.imageUrl ? [{ url: meta.imageUrl }] : undefined;
 
