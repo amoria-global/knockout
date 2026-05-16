@@ -94,27 +94,29 @@ export async function persistPhotographerProfile(
     if (!rExp.success) throw new Error(rExp.error || 'Could not save your work experience.');
   }
 
-  // POST /packages is create-only (there's even a /packages/debug/duplicates
-  // endpoint) — skip if the photographer already has a package.
-  if (!payload.existing?.pkg) {
+  // All three tiers are pushed every time. POST /packages now upserts by
+  // name on the backend (create-or-update), so this is idempotent — no
+  // duplicates, and re-finalising just refreshes them. Not gated by
+  // `existing` for that reason.
+  for (const pkg of payload.packages) {
     const rPkg = await apiClient.post('/api/remote/photographer/packages', {
-      packageName: payload.pkgTier,
-      price: payload.pkgPrice,
+      packageName: pkg.tier,
+      price: pkg.price,
       currencyId: payload.pkgCurrencyId,
       priceUnit: 'per session',
-      durationHours: payload.pkgDuration,
-      description: payload.pkgDescription || `${payload.pkgTier} photography package`,
+      durationHours: pkg.duration,
+      description: pkg.description || `${pkg.tier} photography package`,
       isActive: true,
-      hasLiveStream: payload.pkgTier === 'Diamond',
-      includedPhotos: payload.pkgPhotos,
-      includedVideos: payload.pkgVideos,
+      hasLiveStream: pkg.tier === 'Diamond',
+      includedPhotos: pkg.photos,
+      includedVideos: pkg.videos,
       extraPhotoPrice: 0,
       extraVideoPrice: 0,
       photobookPhotos: 0,
-      deliveryDays: payload.pkgDelivery,
-      features: payload.pkgFeatures,
+      deliveryDays: pkg.delivery,
+      features: pkg.features,
     }, { retries: 2 });
-    if (!rPkg.success) throw new Error(rPkg.error || 'Could not save your package.');
+    if (!rPkg.success) throw new Error(rPkg.error || `Could not save your ${pkg.tier} package.`);
   }
 
   // Marks the profile submitted / ready for admin review.

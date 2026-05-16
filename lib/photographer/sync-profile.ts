@@ -41,8 +41,9 @@ export interface SyncState {
   uploadedCoverFile: File | null;
   uploadedProjFile: File | null;
   // Per-section signatures of the last successfully-synced values, so we
-  // only hit an endpoint when that section actually changed.
-  sigs: { important?: string; project?: string; workExp?: string; pkg?: string };
+  // only hit an endpoint when that section actually changed. `pkgs` is
+  // keyed by tier name (Silver/Gold/Diamond) — each upserts independently.
+  sigs: { important?: string; project?: string; workExp?: string; pkgs?: Record<string, string> };
 }
 
 export function initialSyncState(): SyncState {
@@ -110,8 +111,7 @@ export async function syncPhotographerProfile(
         if (proj?.id) { s.ids.projectId = proj.id; s.created.project = true; presence.project = true; }
         const exp = p.workExperiences?.[0];
         if (exp?.id) { s.ids.workExpId = exp.id; s.created.workExp = true; presence.workExp = true; }
-        const pkg = p.packages?.[0];
-        if (pkg?.id) { s.ids.pkgId = pkg.id; s.created.pkg = true; presence.pkg = true; }
+        if ((p.packages?.length ?? 0) > 0) { s.created.pkg = true; presence.pkg = true; }
       }
     } catch { /* offline — use sticky state below */ }
 
@@ -229,39 +229,39 @@ export async function syncPhotographerProfile(
       }
     }
 
-    // ── 5. Package (POST create, PUT update-by-id) ──
-    if (payload.pkgPrice > 0 && payload.pkgCurrencyId) {
-      const sig = JSON.stringify([
-        payload.pkgTier, payload.pkgPrice, payload.pkgCurrencyId,
-        payload.pkgDuration, payload.pkgPhotos, payload.pkgVideos,
-        payload.pkgDelivery, payload.pkgDescription,
-      ]);
-      if (sig !== s.sigs.pkg) {
-        const body = {
-          packageName: payload.pkgTier,
-          price: payload.pkgPrice,
+    // ── 5. Packages — all three tiers, each upserted by name ──
+    // POST /packages is now an upsert (create-or-update by name) on the
+    // backend, so there's no id tracking and no PUT race: just POST each
+    // changed tier. A per-tier signature avoids needless calls.
+    if (payload.pkgCurrencyId) {
+      const sigs = s.sigs.pkgs || {};
+      for (const pk of payload.packages) {
+        if (!pk.price || pk.price <= 0) continue;
+        const sig = JSON.stringify([
+          pk.tier, pk.price, payload.pkgCurrencyId, pk.duration,
+          pk.photos, pk.videos, pk.delivery, pk.description,
+        ]);
+        if (sig === sigs[pk.tier]) continue;
+        const r = await apiClient.post(`${BASE}/packages`, {
+          packageName: pk.tier,
+          price: pk.price,
           currencyId: payload.pkgCurrencyId,
           priceUnit: 'per session',
-          durationHours: payload.pkgDuration,
-          description: payload.pkgDescription || `${payload.pkgTier} photography package`,
+          durationHours: pk.duration,
+          description: pk.description || `${pk.tier} photography package`,
           isActive: true,
-          hasLiveStream: payload.pkgTier === 'Diamond',
-          includedPhotos: payload.pkgPhotos,
-          includedVideos: payload.pkgVideos,
+          hasLiveStream: pk.tier === 'Diamond',
+          includedPhotos: pk.photos,
+          includedVideos: pk.videos,
           extraPhotoPrice: 0,
           extraVideoPrice: 0,
           photobookPhotos: 0,
-          deliveryDays: payload.pkgDelivery,
-          features: payload.pkgFeatures,
-        };
-        if (s.created.pkg && s.ids.pkgId) {
-          const r = await apiClient.put(`${BASE}/packages/${s.ids.pkgId}`, body, { retries: 1 });
-          if (r.success) s.sigs.pkg = sig;
-        } else if (!s.created.pkg) {
-          const r = await apiClient.post(`${BASE}/packages`, body, { retries: 2 });
-          if (r.success) { s.created.pkg = true; presence.pkg = true; s.sigs.pkg = sig; }
-        }
+          deliveryDays: pk.delivery,
+          features: pk.features,
+        }, { retries: 2 });
+        if (r.success) { sigs[pk.tier] = sig; s.created.pkg = true; presence.pkg = true; }
       }
+      s.sigs.pkgs = sigs;
     }
   } catch {
     // Whole tick failed (offline / import error). Return the state unchanged
