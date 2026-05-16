@@ -881,6 +881,7 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
           firstName={completionCtx.firstName}
           lastName={completionCtx.lastName}
           phone={completionCtx.phone}
+          prefillFromServer
         />
       )}
     </>
