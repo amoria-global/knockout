@@ -13,7 +13,7 @@ const PaymentHelp: React.FC = () => {
     <div className="min-h-screen" style={{ background: 'linear-gradient(to bottom, #f9fafb 0%, #f3f4f6 50%, #e5e7eb 100%)' }}>
       <Navbar />
 
-      {/* Hero Section — compact */}
+      {/* Hero Section - compact */}
       <div style={{
         position: 'relative',
         paddingTop: 'clamp(5rem, 8vw, 6rem)',

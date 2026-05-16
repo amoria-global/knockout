@@ -10,7 +10,7 @@
  * IMPORTANT: This component is rendered through a React Portal directly to
  * `document.body`, so it escapes any transformed ancestor (which would otherwise
  * pin `position: fixed` inside that ancestor instead of the viewport). Styles are
- * applied INLINE for the same reason — styled-jsx scoping does not always reach
+ * applied INLINE for the same reason - styled-jsx scoping does not always reach
  * portaled DOM in Next.js, which causes button/text styles to silently drop.
  */
 

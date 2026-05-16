@@ -49,7 +49,7 @@ const formatNumber = (num: number): string => {
   return num.toLocaleString();
 };
 
-// Currency type — accepts any string code from the API
+// Currency type - accepts any string code from the API
 type Currency = string;
 
 // Static fallback used before the API responds
@@ -99,7 +99,7 @@ const ImpactCounter = ({
     onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-8px)'; e.currentTarget.style.boxShadow = `0 22px 44px -12px ${color}45, 0 6px 14px -4px rgba(0,0,0,0.08)`; e.currentTarget.style.borderColor = `${color}60`; }}
     onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = `0 4px 16px rgba(0,0,0,0.04), 0 1px 2px ${color}10`; e.currentTarget.style.borderColor = `${color}1F`; }}
     >
-      {/* Top accent stripe — fades in on hover via the card transition */}
+      {/* Top accent stripe - fades in on hover via the card transition */}
       <div style={{ position: 'absolute', top: 0, left: '15%', right: '15%', height: 3, borderRadius: '0 0 3px 3px', background: `linear-gradient(90deg, transparent, ${color}, transparent)`, opacity: 0.85, pointerEvents: 'none' }} />
 
       {/* Background glow */}
@@ -122,7 +122,7 @@ const ImpactCounter = ({
         <i className={icon} style={{ fontSize: '24px', color: '#fff' }} />
       </div>
 
-      {/* Number — uses each card's own brand color in the gradient */}
+      {/* Number - uses each card's own brand color in the gradient */}
       <div style={{
         fontFamily: "'Georgia', 'Times New Roman', serif",
         fontSize: '46px',
@@ -154,7 +154,7 @@ const ImpactCounter = ({
         {label}
       </div>
 
-      {/* Mini progress bar — visualizes the "growing impact" feel */}
+      {/* Mini progress bar - visualizes the "growing impact" feel */}
       <div style={{
         width: '60%', maxWidth: 120,
         height: 3,
@@ -608,7 +608,7 @@ const Donations = () => {
           box-shadow: 0 20px 50px rgba(0,0,0,0.1) !important;
         }
 
-        /* ── Donation hero — cinematic ambient effects ── */
+        /* ── Donation hero - cinematic ambient effects ── */
         @keyframes donHeartFloat {
           0%, 100% { transform: translateY(0) rotate(0); opacity: 0.5; }
           50%      { transform: translateY(-22px) rotate(-8deg); opacity: 1; }
@@ -773,7 +773,7 @@ const Donations = () => {
         </div>
       )}
 
-      {/* ━━━ Hero Section — cinematic redesign ━━━ */}
+      {/* ━━━ Hero Section - cinematic redesign ━━━ */}
       <section
         ref={heroSectionRef}
         className="don-hero"
@@ -806,7 +806,7 @@ const Donations = () => {
           }} />
         </div>
 
-        {/* Floating heart particles — subtle generosity motif */}
+        {/* Floating heart particles - subtle generosity motif */}
         {[
           { l: '8%',  t: '14%', d: 0,    s: 16, op: 0.18 },
           { l: '92%', t: '22%', d: 1.8,  s: 22, op: 0.20 },
@@ -885,7 +885,7 @@ const Donations = () => {
         <div aria-hidden="true" style={{ position: 'absolute', top: '12%', left: '6%', width: 280, height: 280, background: 'radial-gradient(circle, rgba(168,85,247,0.22) 0%, transparent 70%)', borderRadius: '50%', filter: 'blur(48px)', pointerEvents: 'none' }} />
         <div aria-hidden="true" style={{ position: 'absolute', bottom: '8%', right: '6%', width: 320, height: 320, background: 'radial-gradient(circle, rgba(236,72,153,0.18) 0%, transparent 70%)', borderRadius: '50%', filter: 'blur(50px)', pointerEvents: 'none' }} />
 
-        {/* Rotating Globe — center, larger and richer */}
+        {/* Rotating Globe - center, larger and richer */}
         <div style={{
           position: 'absolute',
           top: '50%',
@@ -976,7 +976,7 @@ const Donations = () => {
             educates children, feeds the hungry, and empowers those with disabilities.
           </p>
 
-          {/* Live impact counter mini-strip — directly under the lede */}
+          {/* Live impact counter mini-strip - directly under the lede */}
           <div className="don-hero-counter" style={{
             display: 'inline-flex',
             alignItems: 'center',
@@ -1041,7 +1041,7 @@ const Donations = () => {
             </button>
           </div>
 
-          {/* Impact preview row — quick stats anchoring the hero */}
+          {/* Impact preview row - quick stats anchoring the hero */}
           <div className="don-hero-stats" style={{
             display: 'flex',
             flexWrap: 'wrap',

@@ -6,7 +6,7 @@
  * Runs the backend's PasswordPolicyService rules (length / char-class /
  * HaveIBeenPwned breach corpus) WITHOUT creating an account. Used to gate
  * the photographer onboarding wizard: the password is entered on the signup
- * form, but the real signup() call is deferred to the wizard's last step —
+ * form, but the real signup() call is deferred to the wizard's last step -
  * so we check it here first and refuse to open the wizard with a password
  * the backend would reject six steps later.
  *

@@ -237,7 +237,7 @@ const GlobalNetwork: React.FC = () => {
             <stop offset="100%" style={{ stopColor: '#0088FF', stopOpacity: 0.2 }} />
           </radialGradient>
 
-          {/* Soft fade gradient for the traveling pulse — both ends fade
+          {/* Soft fade gradient for the traveling pulse - both ends fade
               to transparent so the comet head & tail blend in smoothly */}
           <linearGradient id="pulseGradient" x1="0%" y1="0%" x2="100%" y2="0%">
             <stop offset="0%" stopColor="#00E8FF" stopOpacity="0" />
@@ -312,7 +312,7 @@ const GlobalNetwork: React.FC = () => {
 
           return (
             <g key={`conn-${conn.id}`} style={{ pointerEvents: 'none' }}>
-              {/* Static base line — gradient stroke fading at both ends */}
+              {/* Static base line - gradient stroke fading at both ends */}
               <path
                 d={pathData}
                 stroke="url(#lineGradient)"
@@ -322,7 +322,7 @@ const GlobalNetwork: React.FC = () => {
                 strokeLinecap="round"
                 filter="url(#lineGlow)"
               />
-              {/* Comet pulse — long soft tail (60u) traveling slowly with
+              {/* Comet pulse - long soft tail (60u) traveling slowly with
                   ease-in-out so it accelerates toward the center then
                   decelerates at the destination. Feels alive, not robotic. */}
               <path
@@ -339,7 +339,7 @@ const GlobalNetwork: React.FC = () => {
                   willChange: 'stroke-dashoffset',
                 }}
               />
-              {/* Bright core dot — short bright leading head that follows
+              {/* Bright core dot - short bright leading head that follows
                   the comet tail, offset slightly so it appears ahead */}
               <path
                 d={pathData}
@@ -367,7 +367,7 @@ const GlobalNetwork: React.FC = () => {
           if (node.type === 'solid') {
             return (
               <g key={`node-${node.id}`} style={{ pointerEvents: 'none' }}>
-                {/* Radar pulse — expanding ring fading out */}
+                {/* Radar pulse - expanding ring fading out */}
                 <circle
                   cx={pos[0]}
                   cy={pos[1]}
@@ -435,19 +435,19 @@ const GlobalNetwork: React.FC = () => {
       </svg>
 
       <style jsx>{`
-        /* Tail traveling animation — large dasharray (60 540 = 600u total)
+        /* Tail traveling animation - large dasharray (60 540 = 600u total)
            gives one comet per cycle, smoothly cycled through the path. */
         @keyframes flowLine {
           0%   { stroke-dashoffset: 600; }
           100% { stroke-dashoffset: -600; }
         }
-        /* Head animation — slightly faster start so the bright leading
+        /* Head animation - slightly faster start so the bright leading
            dot stays ahead of the soft tail throughout the journey. */
         @keyframes flowLineHead {
           0%   { stroke-dashoffset: 600; }
           100% { stroke-dashoffset: -600; }
         }
-        /* Radar pulse — expands and fades out from each solid node */
+        /* Radar pulse - expands and fades out from each solid node */
         @keyframes nodeRadar {
           0%   { transform: scale(1);   opacity: 0.85; }
           70%  { transform: scale(3.2); opacity: 0; }

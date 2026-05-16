@@ -3,13 +3,13 @@
 import React, { useEffect, useMemo } from 'react';
 
 /**
- * AppreciationModal — celebratory pop-up shown after a viewer completes
+ * AppreciationModal - celebratory pop-up shown after a viewer completes
  * a gift or donation payment. Reusable across the platform anywhere a
  * viewer's generosity should be acknowledged.
  *
  * Two themed variants:
- *   • type="gift"     — emerald green palette, gift icon, "Thank you for the gift!"
- *   • type="donation" — rose-coral palette, heart icon, "Thank you for giving back!"
+ *   • type="gift"     - emerald green palette, gift icon, "Thank you for the gift!"
+ *   • type="donation" - rose-coral palette, heart icon, "Thank you for giving back!"
  *
  * Visual highlights:
  *   • Full-screen blurred backdrop so the celebration owns the screen
@@ -180,7 +180,7 @@ const AppreciationModal: React.FC<AppreciationModalProps> = ({
           {eyebrowText}
         </div>
 
-        {/* Hero icon — gift box for gifts, heart for donations */}
+        {/* Hero icon - gift box for gifts, heart for donations */}
         <div className="ap-hero" aria-hidden="true">
           <span className="ap-hero-ring ap-hero-ring--1" />
           <span className="ap-hero-ring ap-hero-ring--2" />
@@ -204,7 +204,7 @@ const AppreciationModal: React.FC<AppreciationModalProps> = ({
         <h2 id="ap-title" className="ap-title">{titleText}</h2>
         <p className="ap-sub">{subText}</p>
 
-        {/* Amount card — what they sent */}
+        {/* Amount card - what they sent */}
         <div className="ap-amount-card">
           <span className="ap-amount-label">
             {isGift ? 'You sent' : 'You donated'}
@@ -212,7 +212,7 @@ const AppreciationModal: React.FC<AppreciationModalProps> = ({
           <strong className="ap-amount-value">{fmt}</strong>
         </div>
 
-        {/* Donation cause line — only when applicable */}
+        {/* Donation cause line - only when applicable */}
         {!isGift && cause && (
           <p className="ap-cause">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -263,7 +263,7 @@ const AppreciationModal: React.FC<AppreciationModalProps> = ({
           to   { opacity: 1; }
         }
 
-        /* Confetti — 14 particles dropping from above with rotation */
+        /* Confetti - 14 particles dropping from above with rotation */
         .ap-confetti {
           position: absolute;
           inset: 0;

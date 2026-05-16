@@ -71,7 +71,7 @@ export async function saveDraft(draft: BookingDraft): Promise<void> {
     });
     db.close();
   } catch {
-    // Silent — draft persistence is best-effort
+    // Silent - draft persistence is best-effort
   }
 }
 

@@ -59,7 +59,7 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
 
 function corsHeadersFor(origin: string | null): Record<string, string> {
   // Echo back the specific Origin if allowed; never wildcard. If the origin is
-  // not in the allow-list, return no CORS headers — browser will reject the response.
+  // not in the allow-list, return no CORS headers - browser will reject the response.
   if (origin && ALLOWED_ORIGINS.has(origin)) {
     return {
       'Access-Control-Allow-Origin': origin,
@@ -141,8 +141,8 @@ async function proxyRequest(
         // Stream the raw multipart body straight through and forward the
         // ORIGINAL Content-Type (which carries the exact boundary). Re-parsing
         // via request.formData() and re-sending strips the per-part
-        // Content-Type — notably the `application/json` on Blob parts like
-        // `requestDTO` — so Spring's @RequestPart binding fails with a 400
+        // Content-Type - notably the `application/json` on Blob parts like
+        // `requestDTO` - so Spring's @RequestPart binding fails with a 400
         // ("Bad request") on portfolio / profile-photo / cover uploads.
         fetchOptions.body = request.body;
         headers['Content-Type'] = incomingContentType;
@@ -153,7 +153,7 @@ async function proxyRequest(
           const body = await request.json();
           fetchOptions.body = JSON.stringify(body);
         } catch {
-          // No body or invalid JSON — continue without body
+          // No body or invalid JSON - continue without body
         }
       }
     }
@@ -166,12 +166,12 @@ async function proxyRequest(
     // lifecycle lands in the browser. In production the backend sends
     // Domain=.connekyt.com so the cookie is shared across connekyt.com,
     // dashboard.connekyt.com, and backend.connekyt.com.
-    // In local dev the proxy host is localhost — a Domain=.connekyt.com
+    // In local dev the proxy host is localhost - a Domain=.connekyt.com
     // attribute would get rejected by the browser as a cross-domain cookie.
     // Strip Domain in that case so the cookie becomes host-only on
     // `localhost`. Host-only cookies match by hostname (not port), so a
     // cookie set during login on localhost:3000 will also be sent to
-    // localhost:3001 — bridging landing → dashboard locally without any
+    // localhost:3001 - bridging landing → dashboard locally without any
     // SameSite/Lax cross-site headache.
     const proxyHost = (request.headers.get('host') || '').toLowerCase();
     const isLocalhost = proxyHost.startsWith('localhost') || proxyHost.startsWith('127.0.0.1');

@@ -177,7 +177,7 @@ function InnerGlow({ radius }: { radius: number }) {
   );
 }
 
-// ── Location dot markers — opacity updated per-frame via ref (no React re-renders) ──
+// ── Location dot markers - opacity updated per-frame via ref (no React re-renders) ──
 // Each marker has 3 layers: a soft outer halo (additive glow), a thin ring, and a bright
 // center dot. Rwanda gets a continuously pulsing halo to mark the company's home base.
 function LocationDots({ radius, progressRef }: { radius: number; progressRef: React.MutableRefObject<number> }) {
@@ -189,7 +189,7 @@ function LocationDots({ radius, progressRef }: { radius: number; progressRef: Re
     }));
   }, [radius]);
 
-  // Material refs — written each frame, no React re-renders
+  // Material refs - written each frame, no React re-renders
   const haloMatRefs = useRef<(THREE.MeshBasicMaterial | null)[]>([]);
   const ringMatRefs = useRef<(THREE.MeshBasicMaterial | null)[]>([]);
   const dotMatRefs = useRef<(THREE.MeshBasicMaterial | null)[]>([]);
@@ -201,7 +201,7 @@ function LocationDots({ radius, progressRef }: { radius: number; progressRef: Re
     for (let i = 0; i < dotsData.length; i++) {
       const dot = dotsData[i];
       const fadeIn = Math.min(1, Math.max(0, (p - dot.phase) / 0.15));
-      // Pulse modulates each marker's halo for "live" feel — Rwanda pulses harder
+      // Pulse modulates each marker's halo for "live" feel - Rwanda pulses harder
       const pulse = 0.5 + 0.5 * Math.sin(t * (dot.isRwanda ? 3.2 : 1.6) + i * 0.5);
       const haloMat = haloMatRefs.current[i];
       const ringMat = ringMatRefs.current[i];
@@ -229,7 +229,7 @@ function LocationDots({ radius, progressRef }: { radius: number; progressRef: Re
         const haloColor = dot.isRwanda ? '#FF8C8C' : '#7DD3FC';
         return (
           <group key={i} position={dot.position}>
-            {/* Outer additive halo — gives the marker a glowing presence */}
+            {/* Outer additive halo - gives the marker a glowing presence */}
             <mesh ref={(m) => { haloMeshRefs.current[i] = m; }}>
               <circleGeometry args={[haloRadius, 32]} />
               <meshBasicMaterial
@@ -355,11 +355,11 @@ function TexturedEarth({ progressRef, radius, textures }: {
 
   useFrame((_, delta) => {
     if (!groupRef.current) return;
-    // Read fresh scroll progress from ref each frame — no React re-renders required
+    // Read fresh scroll progress from ref each frame - no React re-renders required
     const p = Math.min(1, Math.max(0, progressRef.current));
     const targetRotationY = -1.6 + p * 1.0;
     const targetTiltX = 0.3 - p * 0.1;
-    // Frame-rate-independent smoothing — feels identical regardless of FPS
+    // Frame-rate-independent smoothing - feels identical regardless of FPS
     const lerpFactor = 1 - Math.exp(-delta * 9);
     groupRef.current.rotation.y += (targetRotationY - groupRef.current.rotation.y) * lerpFactor;
     groupRef.current.rotation.x += (targetTiltX - groupRef.current.rotation.x) * lerpFactor;
@@ -389,7 +389,7 @@ function TexturedEarth({ progressRef, radius, textures }: {
   );
 }
 
-// ── Scene — loads textures inside the Canvas context ──
+// ── Scene - loads textures inside the Canvas context ──
 function EarthScene({ progressRef }: { progressRef: React.MutableRefObject<number> }) {
   const RADIUS = 2;
   const { textures, loaded } = useTextures();
@@ -431,7 +431,7 @@ const HalfEarth: React.FC<HalfEarthProps> = ({
   progressRef,
   scrollProgress = 0,
 }) => {
-  // Internal ref — used directly by useFrame so changing it triggers no re-renders
+  // Internal ref - used directly by useFrame so changing it triggers no re-renders
   const internalRef = useRef<number>(0);
   // If the caller passes a ref, use it; otherwise sync from the state-based prop into our ref
   const usedRef = progressRef ?? internalRef;

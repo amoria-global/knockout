@@ -1,9 +1,9 @@
 'use client';
 
-// Lamp — conic-gradient light beam projecting downward into a dark section.
+// Lamp - conic-gradient light beam projecting downward into a dark section.
 // Inspired by Aceternity's Lamp Effect. Ported from Tailwind-classes JSX into a
 // self-contained component with inline styles so it drops into any section.
-// Positioned absolutely at the top of its parent — the parent should have
+// Positioned absolutely at the top of its parent - the parent should have
 // position:relative and a dark background for the light to read against.
 
 import React from 'react';
@@ -77,7 +77,7 @@ const Lamp: React.FC<LampProps> = ({
             backgroundImage: `conic-gradient(from 70deg at center top, ${beamColor}, transparent, transparent)`,
           }}
         >
-          {/* Bottom fade — masks the cone into the section bg */}
+          {/* Bottom fade - masks the cone into the section bg */}
           <div
             style={{
               position: 'absolute',
@@ -91,7 +91,7 @@ const Lamp: React.FC<LampProps> = ({
               WebkitMaskImage: 'linear-gradient(to top, white, transparent)',
             }}
           />
-          {/* Inside-edge fade — keeps the cone shape clean */}
+          {/* Inside-edge fade - keeps the cone shape clean */}
           <div
             style={{
               position: 'absolute',
@@ -150,7 +150,7 @@ const Lamp: React.FC<LampProps> = ({
           />
         </motion.div>
 
-        {/* Stretched bg-color blur — softens the beam onto the section */}
+        {/* Stretched bg-color blur - softens the beam onto the section */}
         <div
           style={{
             position: 'absolute',
@@ -179,7 +179,7 @@ const Lamp: React.FC<LampProps> = ({
           }}
         />
 
-        {/* Bright bulb hot-spot — animates wider on view */}
+        {/* Bright bulb hot-spot - animates wider on view */}
         <motion.div
           initial={{ width: '8rem' }}
           whileInView={{ width: '16rem' }}
@@ -197,7 +197,7 @@ const Lamp: React.FC<LampProps> = ({
           }}
         />
 
-        {/* Filament — sharp horizontal line at the top */}
+        {/* Filament - sharp horizontal line at the top */}
         <motion.div
           initial={{ width: '15rem' }}
           whileInView={{ width: '30rem' }}
@@ -214,7 +214,7 @@ const Lamp: React.FC<LampProps> = ({
           }}
         />
 
-        {/* Top mask — hides the cone's top so the lamp appears to come from above */}
+        {/* Top mask - hides the cone's top so the lamp appears to come from above */}
         <div
           style={{
             position: 'absolute',

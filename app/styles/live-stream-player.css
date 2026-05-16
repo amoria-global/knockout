@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Live Stream Player — video.js-inspired skin
+   Live Stream Player - video.js-inspired skin
    ========================================================================== */
 
 /* Root container */
@@ -23,7 +23,7 @@
   object-fit: contain;
 }
 
-/* Surface — shared glass effect */
+/* Surface - shared glass effect */
 .vjs-surface {
   background-color: rgba(0, 0, 0, 0.72);
   backdrop-filter: blur(16px) saturate(120%);

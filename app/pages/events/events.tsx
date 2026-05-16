@@ -16,7 +16,7 @@ const BRAND = '#083A85';
 const BRAND_DARK = '#062a63';
 
 // =====================================================================
-// Helpers — preserved from the original (formatTime12h, formatTimeRange)
+// Helpers - preserved from the original (formatTime12h, formatTimeRange)
 // =====================================================================
 function formatTime12h(t: string): string {
   const [h, m] = t.split(':');
@@ -61,7 +61,7 @@ function describeWhen(eventDate?: string, startTime?: string): string {
 type TabKey = 'all' | 'live' | 'upcoming' | 'completed';
 
 // =====================================================================
-// Custom dropdown — replaces native <select> so the popover panel matches
+// Custom dropdown - replaces native <select> so the popover panel matches
 // the rest of the platform (rounded, brand-tinted, animated).
 // =====================================================================
 interface FilterOption { value: string; label: string }
@@ -208,7 +208,7 @@ const Events: React.FC = () => {
   // userLocation kept for future use (set by useEffect, not directly read)
   void userLocation;
 
-  // Saved events (bookmarks) — local-only; persists across sessions
+  // Saved events (bookmarks) - local-only; persists across sessions
   const [savedEvents, setSavedEvents] = useState<Set<string>>(() => {
     if (typeof window === 'undefined') return new Set();
     try {
@@ -230,7 +230,7 @@ const Events: React.FC = () => {
     });
   };
 
-  // Active tab — All / Live Now / Upcoming / Recently Ended.
+  // Active tab - All / Live Now / Upcoming / Recently Ended.
   // Defaults to "all" so first-time viewers see every event combined,
   // with the tabs acting as quick filters they can toggle into.
   // Honors a URL `?status=` param (e.g., from navbar links) on first load.
@@ -337,7 +337,7 @@ const Events: React.FC = () => {
         // Visibility for ended events is now driven by admin-controlled flags
         // on the backend (featured_in_recently_ended_tab / featured_in_all_events_tab).
         // The previous client-side "hide completed events older than 2 days"
-        // filter contradicted that — it stripped out events the admin had
+        // filter contradicted that - it stripped out events the admin had
         // explicitly flagged for display. Backend's response is the source of
         // truth: if it returned the event, render it.
         setEventsData(events);
@@ -378,7 +378,7 @@ const Events: React.FC = () => {
   const isEventEnded = (event: PublicEvent) =>
     (event.eventStatus || '').toUpperCase() === 'COMPLETED' || event.streamStatus === 'ended';
 
-  // Featured live events — ALL of them. The banner section shows every live
+  // Featured live events - ALL of them. The banner section shows every live
   // event at once: a single full-width 5:1 cinematic banner when there's
   // one, or a side-by-side grid (2-up / 3-up / scrollable for 4+) when
   // multiple are live, so users see every live event without swiping.
@@ -436,7 +436,7 @@ const Events: React.FC = () => {
     return [1, '...', currentPage - 1, currentPage, currentPage + 1, '...', total];
   };
 
-  // (renderCardStatus / renderPhotographerChip helpers removed — the new
+  // (renderCardStatus / renderPhotographerChip helpers removed - the new
   // poster-style card inlines its time pill and uses an organizer chip
   // built from event.creator / event.eventOrganizer instead.)
 
@@ -444,7 +444,7 @@ const Events: React.FC = () => {
     <div className="ev-root">
       <style>{`
         /* ============================================================
-           EVENTS PAGE — cinematic redesign
+           EVENTS PAGE - cinematic redesign
            ============================================================ */
         .ev-root {
           min-height: 100vh;
@@ -481,7 +481,7 @@ const Events: React.FC = () => {
           transition: background 0.18s, color 0.18s;
         }
         .ev-banner-close:hover { color: #fff; background: rgba(255,255,255,0.12); }
-        /* Mobile — single-line banner: drop the prefix tagline + divider,
+        /* Mobile - single-line banner: drop the prefix tagline + divider,
            keep only the icon + CTA + close so it stays one slim row. */
         @media (max-width: 700px) {
           .ev-banner {
@@ -514,7 +514,7 @@ const Events: React.FC = () => {
           overflow: hidden;
           text-align: center;
         }
-        /* Blurred background image — slight scale prevents blur edges from showing */
+        /* Blurred background image - slight scale prevents blur edges from showing */
         .ev-hero-bg {
           position: absolute;
           inset: -20px;
@@ -527,7 +527,7 @@ const Events: React.FC = () => {
           pointer-events: none;
           z-index: 0;
         }
-        /* Light brand-blue tint — soft from top, slightly darker at the bottom
+        /* Light brand-blue tint - soft from top, slightly darker at the bottom
            so the title still reads clearly. Image dominates the visuals. */
         .ev-hero::before {
           content: '';
@@ -577,14 +577,14 @@ const Events: React.FC = () => {
         }
 
         /* ═══════════════════════════════════════════════════════════
-           HOT LIVE TRENDS — Instagram stories-style live event strip.
+           HOT LIVE TRENDS - Instagram stories-style live event strip.
            Each live event becomes a circular avatar with a rotating
            Instagram-gradient ring + a live badge. Lifts on hover.
            ═══════════════════════════════════════════════════════════ */
         .ev-trends {
           position: relative;
           max-width: 1280px;
-          /* Symmetric breathing room — clears the hero above and the tab
+          /* Symmetric breathing room - clears the hero above and the tab
              segment below. No more negative-margin overlap (that was a
              leftover from when this was the cinematic banner). */
           margin: clamp(20px, 2.5vw, 32px) auto 0;
@@ -594,7 +594,7 @@ const Events: React.FC = () => {
           padding: clamp(20px, 2.5vw, 28px) clamp(0.75rem, 2vw, 1.5rem) clamp(34px, 4vw, 44px);
           z-index: 3;
         }
-        /* Subtle gradient line spanning behind the row — connects the pill
+        /* Subtle gradient line spanning behind the row - connects the pill
            to the stories. Sits at the row's vertical center (which equals
            the avatar center now that titles are absolutely positioned).
            Vertical offset = section-top-padding + scroll-lane-top-padding
@@ -675,7 +675,7 @@ const Events: React.FC = () => {
           letter-spacing: 0;
         }
 
-        /* Scrollable row of stories — flex: 1 fills the remaining width
+        /* Scrollable row of stories - flex: 1 fills the remaining width
            after the pill, so stories spread across the row from left to
            right (and overflow scrolls horizontally when there are many). */
         /* Generous vertical padding so the hover lift + 12px pulse ring
@@ -697,10 +697,10 @@ const Events: React.FC = () => {
         }
         .ev-trends-scroll::-webkit-scrollbar { display: none; }
 
-        /* Each live event story — circular avatar with gradient ring.
+        /* Each live event story - circular avatar with gradient ring.
            Story is a fixed-size square (avatar dimensions only). The title
            below is absolutely positioned so it doesn't add to the story's
-           height — that way the flex row's "align-items: center" lines up
+           height - that way the flex row's "align-items: center" lines up
            the pill and the avatar centers, not the avatar+title centers. */
         .ev-story {
           position: relative;
@@ -712,12 +712,12 @@ const Events: React.FC = () => {
           cursor: pointer;
           transition: transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
         }
-        /* Lift only — scaling expanded the avatar past its layout box and
+        /* Lift only - scaling expanded the avatar past its layout box and
            let the pulse ring overlap neighbours. A clean translateY reads
            as just as "alive" without breaking sibling spacing. */
         .ev-story:hover { transform: translateY(-4px); }
 
-        /* The rotating Instagram-gradient ring — wraps the avatar */
+        /* The rotating Instagram-gradient ring - wraps the avatar */
         .ev-story-ring {
           position: absolute;
           inset: -3px;
@@ -751,7 +751,7 @@ const Events: React.FC = () => {
           100% { box-shadow: 0 0 0 0 rgba(220,39,67,0); }
         }
 
-        /* The actual avatar inside the ring — fills the whole story box */
+        /* The actual avatar inside the ring - fills the whole story box */
         .ev-story-avatar {
           position: absolute;
           inset: 0;
@@ -905,7 +905,7 @@ const Events: React.FC = () => {
           .ev-story:hover { transform: none; }
         }
 
-        /* ===== Single full-width live banner (LEGACY — used elsewhere) ===== */
+        /* ===== Single full-width live banner (LEGACY - used elsewhere) ===== */
         .ev-featured {
           position: relative;
           display: block;
@@ -979,7 +979,7 @@ const Events: React.FC = () => {
         .ev-featured-tint {
           position: absolute; inset: 0;
           /* Deep-navy base differentiates the featured banner from the
-             brand-blue hero above — reads as a separate "premiere stage"
+             brand-blue hero above - reads as a separate "premiere stage"
              rather than a continuation of the hero. */
           background:
             linear-gradient(180deg, rgba(15,23,42,0.10) 0%, rgba(15,23,42,0.30) 40%, rgba(15,23,42,0.78) 80%, rgba(15,23,42,0.92) 100%),
@@ -1027,7 +1027,7 @@ const Events: React.FC = () => {
 
 
         /* ===== Tab segment ===== */
-        /* Sticky tabs — stay visible as the grid scrolls so switching is one tap */
+        /* Sticky tabs - stay visible as the grid scrolls so switching is one tap */
         .ev-tabs-wrap {
           position: sticky;
           top: 8px;
@@ -1064,7 +1064,7 @@ const Events: React.FC = () => {
           transition: background 0.18s, color 0.18s, transform 0.18s;
           white-space: nowrap;
         }
-        /* Mobile — short labels swap in so all 4 tabs fit on a single row
+        /* Mobile - short labels swap in so all 4 tabs fit on a single row
            without horizontal scroll. Each tab keeps flex: 1 to share width
            equally; padding tightens, font drops a notch. */
         @media (max-width: 700px) {
@@ -1087,7 +1087,7 @@ const Events: React.FC = () => {
           .ev-tab-label-full { display: none; }
           .ev-tab-label-short { display: inline; }
         }
-        /* Tiny phones — drop the icons too so labels keep their space */
+        /* Tiny phones - drop the icons too so labels keep their space */
         @media (max-width: 380px) {
           .ev-tab {
             padding: 0.55rem 0.3rem;
@@ -1184,7 +1184,7 @@ const Events: React.FC = () => {
         }
         @media (max-width: 700px) { .ev-filters { grid-template-columns: 1fr; } }
 
-        /* ===== Custom select (FilterSelect component) — light theme ===== */
+        /* ===== Custom select (FilterSelect component) - light theme ===== */
         .ev-select-wrap { position: relative; }
         .ev-select-trigger {
           display: flex; align-items: center; gap: 8px;
@@ -1220,7 +1220,7 @@ const Events: React.FC = () => {
         .ev-select-caret.is-open { transform: rotate(180deg); color: ${BRAND}; }
 
         .ev-select-list {
-          /* Drop-up — anchored to the bottom of the trigger, popover grows upward */
+          /* Drop-up - anchored to the bottom of the trigger, popover grows upward */
           position: absolute;
           bottom: calc(100% + 6px);
           left: 0; right: 0;
@@ -1345,7 +1345,7 @@ const Events: React.FC = () => {
         }
         .ev-grid {
           display: grid;
-          /* Bigger cards — was 260px min, now 320px → fewer per row, more poster real estate */
+          /* Bigger cards - was 260px min, now 320px → fewer per row, more poster real estate */
           grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
           gap: 1.75rem;
         }
@@ -1361,7 +1361,7 @@ const Events: React.FC = () => {
           .ev-grid { grid-template-columns: 1fr; gap: 1rem; }
         }
 
-        /* ===== Card — adapted from sinc-events-design-system / preview/card-default.html
+        /* ===== Card - adapted from sinc-events-design-system / preview/card-default.html
            Structure: media area (3:4, full-bleed image with TL date pill + TR bookmark)
            sitting above a dark meta strip (#0E1116) with venue / title / footer
            (organizer chip + brand-blue price pill, separated by hairline top border). */
@@ -1392,7 +1392,7 @@ const Events: React.FC = () => {
         }
         .ev-card:active { transform: translateY(0) scale(0.99); transition-duration: 80ms; }
 
-        /* Media area — image + overlay rails. 4:3 (wider/shorter) keeps the
+        /* Media area - image + overlay rails. 4:3 (wider/shorter) keeps the
            card compact while still giving the poster proper presence.
            Background matches .ev-card-meta exactly so there's no seam at
            the boundary between image and the dark info strip below. */
@@ -1405,7 +1405,7 @@ const Events: React.FC = () => {
           background: #0E1116;
         }
         /* Image fills edge-to-edge. The 1.30 idle scale aggressively crops
-           the baked-in light margins event posters typically ship with —
+           the baked-in light margins event posters typically ship with -
            removes ~15% from each edge so square Instagram-style posters
            look full-bleed inside the card's media area.
            translate3d + backface-visibility forces GPU compositing so the
@@ -1414,7 +1414,7 @@ const Events: React.FC = () => {
            the meta strip). */
         .ev-card-art {
           position: absolute;
-          /* Extend 1px past every edge — overflow:hidden on the parent
+          /* Extend 1px past every edge - overflow:hidden on the parent
              clips the excess. Guarantees the image always reaches the
              pixel boundary, eliminating sub-pixel anti-alias fringes
              where sliver of the parent bg could otherwise leak. */
@@ -1435,7 +1435,7 @@ const Events: React.FC = () => {
           color: rgba(255,255,255,0.35);
           font-size: 2.75rem;
         }
-        /* Subtle bottom scrim — image protection only, no hue shift */
+        /* Subtle bottom scrim - image protection only, no hue shift */
         .ev-card-scrim {
           position: absolute; inset: 0;
           background: linear-gradient(180deg,
@@ -1454,7 +1454,7 @@ const Events: React.FC = () => {
         .ev-card-tl { left: 14px; }
         .ev-card-tr { right: 14px; }
 
-        /* Date pill — white tear-off, brand-blue overline + tabular-num day */
+        /* Date pill - white tear-off, brand-blue overline + tabular-num day */
         .ev-card-date {
           display: inline-flex; flex-direction: column; align-items: center;
           background: #fff; color: #0E1116;
@@ -1482,7 +1482,7 @@ const Events: React.FC = () => {
           font-variant-numeric: tabular-nums;
         }
 
-        /* Live pill — replaces date when event is currently live.
+        /* Live pill - replaces date when event is currently live.
            Bold red gradient + breathing red glow ring so it punches through
            any backdrop (event poster, hero gradient, dark photos). */
         .ev-card-live {
@@ -1530,7 +1530,7 @@ const Events: React.FC = () => {
           box-shadow: 0 0 0 3px rgba(255,255,255,0.30);
         }
 
-        /* Top-right status banner — solid filled chip, white text.
+        /* Top-right status banner - solid filled chip, white text.
            Default = UPCOMING (brand blue). Variants:
              --live  : emerald green with breathing-halo pulse
              --ended : red */
@@ -1581,7 +1581,7 @@ const Events: React.FC = () => {
               0 6px 16px -6px rgba(0,0,0,0.45);
           }
         }
-        /* Pulse dot inherits color from the live pill — make it white so it
+        /* Pulse dot inherits color from the live pill - make it white so it
            reads against the emerald background. */
         .ev-card-status--live .ev-pulse-dot {
           background: #ffffff;
@@ -1600,7 +1600,7 @@ const Events: React.FC = () => {
           50%      { opacity: 0.55; }
         }
 
-        /* Bookmark — frost-glass dark, top-right */
+        /* Bookmark - frost-glass dark, top-right */
         .ev-bookmark {
           width: 36px; height: 36px;
           border-radius: 50%;
@@ -1623,10 +1623,10 @@ const Events: React.FC = () => {
         .ev-bookmark:active { transform: scale(0.94); }
         .ev-bookmark.is-saved { color: ${BRAND}; }
 
-        /* Meta strip — dark surface below the image (compact).
+        /* Meta strip - dark surface below the image (compact).
            margin-top: -1px overlaps the media area by 1px so any sub-pixel
            gap from aspect-ratio rounding or the scaled image's anti-aliased
-           edge is physically covered — no flashing hairline on hover.
+           edge is physically covered - no flashing hairline on hover.
            position+z-index ensures the meta paints ABOVE the media at that
            overlap. */
         .ev-card-meta {
@@ -1668,7 +1668,7 @@ const Events: React.FC = () => {
           overflow: hidden;
         }
 
-        /* Footer — organizer chip on the left, brand-blue price pill on the right.
+        /* Footer - organizer chip on the left, brand-blue price pill on the right.
            Hairline top border separates from the title block. */
         .ev-card-footer {
           display: flex; align-items: center; justify-content: space-between;
@@ -1710,7 +1710,7 @@ const Events: React.FC = () => {
           white-space: nowrap;
         }
 
-        /* Price pill — brand blue solid, "From RWF X,XXX" inline */
+        /* Price pill - brand blue solid, "From RWF X,XXX" inline */
         .ev-card-price {
           display: inline-flex; align-items: center; gap: 6px;
           padding: 7px 12px;
@@ -1787,7 +1787,7 @@ const Events: React.FC = () => {
               0 0 0 2px rgba(220,38,38,0.55);
           }
         }
-        /* Live price pill — red gradient (the "you can watch this NOW"
+        /* Live price pill - red gradient (the "you can watch this NOW"
            colour, matches the LIVE NOW pill) instead of the brand-blue
            used for upcoming/free pricing. */
         .ev-card.is-live .ev-card-price {
@@ -1799,7 +1799,7 @@ const Events: React.FC = () => {
           background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
         }
 
-        /* Ended state — desaturate poster, neutralize price pill */
+        /* Ended state - desaturate poster, neutralize price pill */
         .ev-card.is-ended .ev-card-art { filter: grayscale(0.55) brightness(0.9); }
         .ev-card.is-ended { opacity: 0.92; }
         .ev-card.is-ended .ev-card-price {
@@ -1808,7 +1808,7 @@ const Events: React.FC = () => {
           border-color: rgba(255,255,255,0.10);
         }
 
-        /* Reduced motion — keep the brand cues but stop the breathing glow. */
+        /* Reduced motion - keep the brand cues but stop the breathing glow. */
         @media (prefers-reduced-motion: reduce) {
           .ev-card.is-live { animation: none; box-shadow: 0 0 0 1px rgba(220,38,38,0.55), 0 12px 32px -8px rgba(0,0,0,0.55); }
         }
@@ -1831,7 +1831,7 @@ const Events: React.FC = () => {
           .ev-card-price { font-size: 13px; padding: 6px 10px; }
         }
 
-        /* 2-up at phone widths — cards become ~170px wide.
+        /* 2-up at phone widths - cards become ~170px wide.
            Stack the TR rail vertically (status above bookmark) so it
            doesn't fight the TL date pill, and trim padding/sizes. */
         @media (max-width: 480px) {
@@ -1873,7 +1873,7 @@ const Events: React.FC = () => {
           .ev-card-footer { flex-wrap: wrap; gap: 4px; }
         }
 
-        /* ===== Skeleton — matches the new full-bleed poster card ===== */
+        /* ===== Skeleton - matches the new full-bleed poster card ===== */
         .ev-skel {
           aspect-ratio: 3/4;
           border-radius: 18px;
@@ -1891,7 +1891,7 @@ const Events: React.FC = () => {
           100% { background-position: -100% 0; }
         }
 
-        /* ===== Empty / Error — light theme ===== */
+        /* ===== Empty / Error - light theme ===== */
         .ev-empty {
           background: #fff;
           border: 1px dashed #e2e8f0;
@@ -1925,7 +1925,7 @@ const Events: React.FC = () => {
           box-shadow: 0 8px 18px -8px rgba(8,58,133,0.55);
         }
 
-        /* ===== Pagination — light theme ===== */
+        /* ===== Pagination - light theme ===== */
         .ev-pager {
           display: flex; justify-content: center; align-items: center;
           gap: 0.4rem;
@@ -2000,7 +2000,7 @@ const Events: React.FC = () => {
           with multiple, the same banner becomes a horizontal scroll-snap
           carousel with prev/next arrows + pagination dots so EVERY live
           event surfaces above the tab segment. */}
-      {/* ── HOT LIVE TRENDS — Instagram-stories-style strip ──
+      {/* ── HOT LIVE TRENDS - Instagram-stories-style strip ──
           Surfaces every live event as a circular avatar with a rotating
           gradient story ring + LIVE badge. Clicking jumps to the event. */}
       {featuredLiveEvents.length > 0 && (
@@ -2012,7 +2012,7 @@ const Events: React.FC = () => {
             {/* Hot Live Trends pill */}
             <div className="ev-trends-pill">
               <span className="ev-trends-flame" aria-hidden="true">🔥</span>
-              {/* Two text variants — full label on desktop, short "Trends"
+              {/* Two text variants - full label on desktop, short "Trends"
                   on mobile to keep the pill compact. CSS toggles which
                   one is visible based on viewport width. */}
               <span className="ev-trends-pill-text ev-trends-pill-text--full">
@@ -2026,7 +2026,7 @@ const Events: React.FC = () => {
               </span>
             </div>
 
-            {/* Stories — each live event is a circular avatar with gradient ring */}
+            {/* Stories - each live event is a circular avatar with gradient ring */}
             <div className="ev-trends-scroll" role="list">
               {featuredLiveEvents.map((evt) => {
                 const cover = evt.eventPhoto || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=500&q=80';
@@ -2046,19 +2046,19 @@ const Events: React.FC = () => {
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={cover} alt="" loading="lazy" />
                     </span>
-                    {/* Live pulse badge — tucked into bottom-right */}
+                    {/* Live pulse badge - tucked into bottom-right */}
                     <span className="ev-story-live" aria-hidden="true">
                       <span className="ev-story-live-dot" />
                       LIVE
                     </span>
-                    {/* Title — truncated */}
+                    {/* Title - truncated */}
                     <span className="ev-story-title">{evt.title}</span>
                   </a>
                 );
               })}
             </div>
 
-            {/* "View all live" — visible only when scrollable */}
+            {/* "View all live" - visible only when scrollable */}
             {featuredLiveEvents.length > 4 && (
               <a
                 href="?status=live"
@@ -2289,7 +2289,7 @@ const Events: React.FC = () => {
                   : null;
                 const orgInitial = (organizerLabel.charAt(0) || '?').toUpperCase();
 
-                // Inline price — "From RWF X,XXX" or "Free". Use the same
+                // Inline price - "From RWF X,XXX" or "Free". Use the same
                 // currency-resolution rule as the view-event page so the
                 // listing card and the detail page stay in sync.
                 const priceText = (() => {
@@ -2303,7 +2303,7 @@ const Events: React.FC = () => {
                   return { label: '', amount: 'Free' };
                 })();
 
-                // Stacked date pill — "MAY / 09" tear-off
+                // Stacked date pill - "MAY / 09" tear-off
                 const dateParts = (() => {
                   if (!event.eventDate) return null;
                   const d = new Date(event.eventDate);
@@ -2321,7 +2321,7 @@ const Events: React.FC = () => {
                     className={`ev-card${live ? ' is-live' : ''}${ended ? ' is-ended' : ''}`}
                     aria-label={event.title}
                   >
-                    {/* Media area — full-bleed image with TL/TR overlay rails */}
+                    {/* Media area - full-bleed image with TL/TR overlay rails */}
                     <div className="ev-card-media">
                       {cover ? (
                         <div
@@ -2378,7 +2378,7 @@ const Events: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Meta strip — venue, title, footer (organizer | price) */}
+                    {/* Meta strip - venue, title, footer (organizer | price) */}
                     <div className="ev-card-meta">
                       {event.location && (
                         <div className="ev-card-row">
@@ -2419,13 +2419,13 @@ const Events: React.FC = () => {
               })}
             </div>
 
-            {/* Pagination — show only when:
+            {/* Pagination - show only when:
                   • backend says there's more than one page AND
                   • the current page is actually full (visible data >=
                     itemsPerPage) OR we're already past page 1
                 Otherwise, the first page already contains every event
                 that survived client-side filtering and pagination would
-                lead to empty/sparse pages — so we hide it. */}
+                lead to empty/sparse pages - so we hide it. */}
             {apiTotalPages > 1 && (eventsData.length >= itemsPerPage || currentPage > 1) && (
               <nav className="ev-pager" aria-label="Pagination">
                 <button

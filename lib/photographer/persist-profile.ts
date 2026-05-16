@@ -14,7 +14,7 @@
  * Completion-driving saves throw on failure so the wizard surfaces a real
  * error instead of leaving a sub-100% profile. Profile photo counts toward
  * completion (⅓ of basic info), so when a file is supplied its upload is
- * NOT best-effort — a silent failure here is exactly why fresh signups were
+ * NOT best-effort - a silent failure here is exactly why fresh signups were
  * stuck around 92%.
  *
  * Idempotent for returning photographers: important-details / photo uploads
@@ -50,20 +50,20 @@ export async function persistPhotographerProfile(
   if (!r1.success) throw new Error(r1.error || 'Could not save your basic details & specialties.');
 
   // Profile photo is completion-critical (⅓ of the basic-info 25%). If a
-  // file was supplied and the upload fails, surface it — do NOT swallow.
+  // file was supplied and the upload fails, surface it - do NOT swallow.
   if (payload.profileFile) {
     const rPic = await updateProfilePicture(payload.profileFile);
     if (!rPic.success) {
       throw new Error(rPic.error || 'Could not upload your profile photo. Please retry.');
     }
   }
-  // Cover photo is genuinely optional — stays best-effort.
+  // Cover photo is genuinely optional - stays best-effort.
   if (payload.coverFile) await updateCoverPhoto(payload.coverFile).catch(() => {});
 
-  // add-project-portfolio is ADD-ONLY — skip if the photographer already
+  // add-project-portfolio is ADD-ONLY - skip if the photographer already
   // has a project (the completion wizard pre-filled it from the server).
   if (!payload.existing?.project) {
-    // year is a primitive `int` on the backend DTO — Jackson rejects
+    // year is a primitive `int` on the backend DTO - Jackson rejects
     // null/empty/NaN with a 400. Coerce to a valid integer, default to the
     // current year if the wizard left it blank.
     const projYearNum = Number(payload.projYear);
@@ -81,7 +81,7 @@ export async function persistPhotographerProfile(
     if (!rPortfolio.success) throw new Error(rPortfolio.error || 'Could not save your portfolio project.');
   }
 
-  // add-work-experience is ADD-ONLY (no update endpoint) — skip if one exists.
+  // add-work-experience is ADD-ONLY (no update endpoint) - skip if one exists.
   if (!payload.existing?.workExp) {
     const rExp = await apiClient.post('/api/remote/photographer/add-work-experience', {
       position: payload.expPosition,
@@ -95,7 +95,7 @@ export async function persistPhotographerProfile(
   }
 
   // All three tiers are pushed every time. POST /packages now upserts by
-  // name on the backend (create-or-update), so this is idempotent — no
+  // name on the backend (create-or-update), so this is idempotent - no
   // duplicates, and re-finalising just refreshes them. Not gated by
   // `existing` for that reason.
   for (const pkg of payload.packages) {

@@ -1,7 +1,7 @@
 /**
  * FREE Album OTP Verification API
  * POST /api/remote/public/albums/free/verify-access
- * No authentication required — verifies OTP and grants access
+ * No authentication required - verifies OTP and grants access
  */
 
 import { apiClient } from '@/lib/api/client';

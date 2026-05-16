@@ -4,7 +4,7 @@ import type { NextRequest } from 'next/server';
 /**
  * Home app middleware for route protection.
  * Checks for authToken cookie and redirects unauthenticated users
- * to login immediately — before any page content loads.
+ * to login immediately - before any page content loads.
  */
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;

@@ -40,7 +40,7 @@ const getCoverImage = (photographer: Photographer | null): string | null => {
 
 /**
  * Same slide-in/slide-out cover carousel used on the photographer listing
- * cards (photographers.tsx::CoverCarousel) — re-implemented here so the
+ * cards (photographers.tsx::CoverCarousel) - re-implemented here so the
  * profile hero rotates the photographer's cover, profile photo, and
  * featured project images on the same 3s cadence. Each slide enters from
  * the right, holds, and exits to the left. Pure CSS transform transitions
@@ -217,7 +217,7 @@ function ViewProfileContent(): React.JSX.Element {
   const openImageViewer = (type: 'profile' | 'cover') => {
     // Cover viewer falls back to the first carousel frame when the
     // photographer has no dedicated cover photo (e.g. only a profile or
-    // project image) — otherwise clicking the rotating hero would open
+    // project image) - otherwise clicking the rotating hero would open
     // nothing.
     const img = type === 'profile'
       ? photographerData?.profileImage
@@ -420,7 +420,7 @@ function ViewProfileContent(): React.JSX.Element {
     return `${u}@${domain}`;
   };
 
-  // ----- Loading state — branded skeleton -----
+  // ----- Loading state - branded skeleton -----
   if (isLoading) {
     return (
       <>
@@ -463,7 +463,7 @@ function ViewProfileContent(): React.JSX.Element {
               }
             }}
           >
-            {/* Slide-in/out carousel — lowest layer, behind tint/pattern/content */}
+            {/* Slide-in/out carousel - lowest layer, behind tint/pattern/content */}
             {photographerData.coverCarouselImages.length > 0 && (
               <HeroCoverCarousel
                 images={photographerData.coverCarouselImages}
@@ -475,7 +475,7 @@ function ViewProfileContent(): React.JSX.Element {
             <div className="vp-hero-cover-tint" aria-hidden="true" />
             <div className="vp-hero-cover-pattern" aria-hidden="true" />
 
-            {/* Empty-state placeholder — shown only when the photographer has
+            {/* Empty-state placeholder - shown only when the photographer has
                 no usable image at all (no cover, profile, or project images) */}
             {photographerData.coverCarouselImages.length === 0 && (
               <div className="vp-hero-cover-empty" aria-hidden="true">
@@ -515,7 +515,7 @@ function ViewProfileContent(): React.JSX.Element {
             </div>
           </div>
 
-          {/* Identity strip — straddles cover bottom (frosted-glass band) */}
+          {/* Identity strip - straddles cover bottom (frosted-glass band) */}
           <div className="vp-hero-content">
             <div className="vp-hero-content-inner">
             <div
@@ -1099,7 +1099,7 @@ function ViewProfileContent(): React.JSX.Element {
 
       <style>{`
         /* ============================================================
-           VIEW-PROFILE — scoped styles
+           VIEW-PROFILE - scoped styles
            Brand: ${BRAND} / ${BRAND_DARK}
            ============================================================ */
         .vp-root {
@@ -1117,13 +1117,13 @@ function ViewProfileContent(): React.JSX.Element {
         .vp-hero {
           position: relative;
           /* Neutral dark fallback so when a cover image is missing or loading
-             we don't flash brand-blue — keeps the cover area photo-faithful. */
+             we don't flash brand-blue - keeps the cover area photo-faithful. */
           background-color: #1f2937;
           background-size: cover;
           background-position: center;
           background-repeat: no-repeat;
         }
-        /* Empty-state hero — matches the photographer card empty state */
+        /* Empty-state hero - matches the photographer card empty state */
         .vp-hero.vp-hero--no-cover {
           background-color: transparent;
           background-image: linear-gradient(135deg, #cbd5e1 0%, #94a3b8 100%);
@@ -1136,7 +1136,7 @@ function ViewProfileContent(): React.JSX.Element {
           overflow: hidden;
         }
         .vp-hero--no-cover .vp-hero-cover { cursor: default; }
-        /* Cover carousel — lowest layer inside the hero. Tint (no z-index),
+        /* Cover carousel - lowest layer inside the hero. Tint (no z-index),
            pattern, toolbar (z-index 3) and content (z-index 2) all paint on
            top, so the existing readability overlays keep working untouched. */
         .vp-hero-slider {
@@ -1165,7 +1165,7 @@ function ViewProfileContent(): React.JSX.Element {
           .vp-hero-slide { transition: opacity 0.3s ease; transform: none !important; opacity: 0; }
           .vp-hero-slide--active { opacity: 1; }
         }
-        /* No tint over a real cover image — let the photo show in its own
+        /* No tint over a real cover image - let the photo show in its own
            colors. The bottom .vp-hero-content black gradient handles text
            contrast for the identity strip. */
         .vp-hero-cover-tint {
@@ -1173,7 +1173,7 @@ function ViewProfileContent(): React.JSX.Element {
           background: linear-gradient(180deg, rgba(0,0,0,0.00) 0%, rgba(0,0,0,0.10) 100%);
           pointer-events: none;
         }
-        /* No cover image — drop the tint so the gray placeholder shows clean */
+        /* No cover image - drop the tint so the gray placeholder shows clean */
         .vp-hero--no-cover .vp-hero-cover-tint { display: none; }
         .vp-hero-cover-pattern {
           position: absolute; inset: 0;
@@ -1234,7 +1234,7 @@ function ViewProfileContent(): React.JSX.Element {
           margin-top: -80px;
           padding: 0;
           z-index: 2;
-          /* Smooth black gradient — fades from clear at top (cover image
+          /* Smooth black gradient - fades from clear at top (cover image
              still readable) to dark at bottom. backdrop-filter blurs whatever
              sits behind so the cover image becomes a soft impression. */
           background: linear-gradient(180deg,
@@ -1970,7 +1970,7 @@ function ViewProfileContent(): React.JSX.Element {
           font-weight: 700;
           color: #fff;
           border-radius: 8px;
-          /* Available (free) — solid emerald chip, matches the legend dot */
+          /* Available (free) - solid emerald chip, matches the legend dot */
           background: #10b981;
           border: 1px solid #059669;
           box-shadow: 0 2px 6px rgba(16, 185, 129, 0.22);
@@ -1980,7 +1980,7 @@ function ViewProfileContent(): React.JSX.Element {
           border-color: transparent;
           box-shadow: none;
         }
-        /* Past — faded out, no fill */
+        /* Past - faded out, no fill */
         .vp-cal-cell.is-past {
           color: #cbd5e1;
           background: transparent;
@@ -1988,7 +1988,7 @@ function ViewProfileContent(): React.JSX.Element {
           box-shadow: none;
           font-weight: 600;
         }
-        /* Today — solid brand-blue chip so it pops in the grid */
+        /* Today - solid brand-blue chip so it pops in the grid */
         .vp-cal-cell.is-today {
           background: ${BRAND};
           color: #fff;
@@ -1996,7 +1996,7 @@ function ViewProfileContent(): React.JSX.Element {
           border-color: ${BRAND};
           box-shadow: 0 2px 6px rgba(8, 58, 133, 0.35);
         }
-        /* Booked — solid red chip with white digit, clearly readable */
+        /* Booked - solid red chip with white digit, clearly readable */
         .vp-cal-cell.is-booked {
           background: #ef4444;
           color: #fff;
@@ -2004,7 +2004,7 @@ function ViewProfileContent(): React.JSX.Element {
           border-color: #dc2626;
           box-shadow: 0 2px 6px rgba(239, 68, 68, 0.30);
         }
-        /* Booked + today — keep red bg, ring it with brand-blue outline */
+        /* Booked + today - keep red bg, ring it with brand-blue outline */
         .vp-cal-cell.is-booked.is-today {
           background: #ef4444;
           border-color: #dc2626;
@@ -2192,7 +2192,7 @@ function ViewProfileContent(): React.JSX.Element {
 }
 
 // =================================================================
-// MiniCalendar — small reusable inline component
+// MiniCalendar - small reusable inline component
 // =================================================================
 function MiniCalendar({
   year,

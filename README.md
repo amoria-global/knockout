@@ -1,6 +1,6 @@
-# Amoria Connekt — Home
+# Amoria Connekt - Home
 
-Connecting moments, creating memories. The public-facing web application for **Amoria** — an all-in-one platform for professional event photography and live streaming.
+Connecting moments, creating memories. The public-facing web application for **Amoria** - an all-in-one platform for professional event photography and live streaming.
 
 ## Tech Stack
 
@@ -15,14 +15,14 @@ Connecting moments, creating memories. The public-facing web application for **A
 
 ## Features
 
-- **Landing Page** — Hero section, how-it-works, global network visualization, peel transition animations
-- **Authentication** — Email/password login, Google OAuth, OTP verification, password reset
-- **Photographer Discovery** — Browse, filter by location/category, view profiles, ratings & reviews
-- **Booking** — Book photographers directly with package selection
-- **Events** — Browse events, join with guest info, live streaming
-- **User Profile** — Profile management and photographer guide
-- **Help Center** — Booking, payment, account, and technical support pages
-- **Internationalization** — Full English, French, and Spanish support
+- **Landing Page** - Hero section, how-it-works, global network visualization, peel transition animations
+- **Authentication** - Email/password login, Google OAuth, OTP verification, password reset
+- **Photographer Discovery** - Browse, filter by location/category, view profiles, ratings & reviews
+- **Booking** - Book photographers directly with package selection
+- **Events** - Browse events, join with guest info, live streaming
+- **User Profile** - Profile management and photographer guide
+- **Help Center** - Booking, payment, account, and technical support pages
+- **Internationalization** - Full English, French, and Spanish support
 
 ## Project Structure
 

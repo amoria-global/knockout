@@ -43,7 +43,7 @@ export default function ContactUsPage(): React.JSX.Element {
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-  // Phone is optional — required fields drive the submit button state
+  // Phone is optional - required fields drive the submit button state
   const isFormComplete = () =>
     formData.fullName.trim() !== '' &&
     emailRegex.test(formData.email) &&
@@ -119,7 +119,7 @@ export default function ContactUsPage(): React.JSX.Element {
       setCopied(label);
       setTimeout(() => setCopied(null), 1500);
     } catch {
-      /* clipboard unavailable — silently ignore */
+      /* clipboard unavailable - silently ignore */
     }
   };
 
@@ -303,7 +303,7 @@ export default function ContactUsPage(): React.JSX.Element {
               className="cu-grid"
               style={{ display: 'grid', gridTemplateColumns: '1.15fr 0.85fr', gap: 'clamp(1.25rem, 2.5vw, 2rem)' }}
             >
-              {/* LEFT — form */}
+              {/* LEFT - form */}
               <div>
                 <p style={{ fontSize: '0.7rem', fontWeight: 700, color: BRAND, letterSpacing: 1.5, textTransform: 'uppercase', margin: 0 }}>
                   Send a message
@@ -387,7 +387,7 @@ export default function ContactUsPage(): React.JSX.Element {
                 </form>
               </div>
 
-              {/* RIGHT — channels + map */}
+              {/* RIGHT - channels + map */}
               <aside style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 <div>
                   <p style={{ fontSize: '0.7rem', fontWeight: 700, color: BRAND, letterSpacing: 1.5, textTransform: 'uppercase', margin: 0 }}>

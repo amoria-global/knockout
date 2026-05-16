@@ -90,7 +90,7 @@ const BookPage = forwardRef<HTMLDivElement, { num: string; value: CoreValue }>(
 // ── DEPRECATED: SplitHoverText (canvas particle simulation) is no longer rendered.
 // The hero now uses Alex Brush plain text + CSS-only ambient effects, which removes the
 // per-mousemove canvas redraw that was the heaviest CPU load on the about page hero.
-// Function kept temporarily to avoid TS churn — safe to delete in a future cleanup pass.
+// Function kept temporarily to avoid TS churn - safe to delete in a future cleanup pass.
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 function SplitHoverText({ lines, style }: { lines: string[]; style: React.CSSProperties }) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -257,14 +257,14 @@ const About = () => {
   const windowRef = useRef<HTMLDivElement>(null);
   const heroTextRefs = useRef<(HTMLDivElement | null)[]>([]);
   const journeyRef = useRef<HTMLDivElement>(null);
-  // (mvRef removed — Mission & Vision now live inside the Journey carousel)
-  // Core Values flip book — section ref for pinning, book ref for driving flips
+  // (mvRef removed - Mission & Vision now live inside the Journey carousel)
+  // Core Values flip book - section ref for pinning, book ref for driving flips
   const cvSectionRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const bookRef = useRef<any>(null);
   const [bookReady, setBookReady] = useState(false);
   const [bookSize, setBookSize] = useState<{ w: number; h: number; single: boolean }>({ w: 380, h: 460, single: false });
-  // Journey carousel — 3 chapters + Mission + Vision = 5 slides (slides built after
+  // Journey carousel - 3 chapters + Mission + Vision = 5 slides (slides built after
   // journeyMilestones is declared further down to avoid a temporal-dead-zone error).
   const [activeSlide, setActiveSlide] = useState(0);
 
@@ -283,7 +283,7 @@ const About = () => {
     return () => cancelAnimationFrame(id);
   }, [bookSize.single]);
 
-  // Responsive book sizing — single-page mode on mobile, two-page spread on desktop.
+  // Responsive book sizing - single-page mode on mobile, two-page spread on desktop.
   // Book uses its natural full height; the section's top padding + header gap are
   // tightened (see CSS below) to give the book maximum vertical real estate.
   useEffect(() => {
@@ -307,9 +307,9 @@ const About = () => {
     window.addEventListener('resize', compute);
     return () => window.removeEventListener('resize', compute);
   }, []);
-  // (Smart Tools section renders statically — refs removed)
+  // (Smart Tools section renders statically - refs removed)
   const earthSectionRef = useRef<HTMLDivElement>(null);
-  // Earth scroll progress as a ref — written by ScrollTrigger, read by Three.js useFrame.
+  // Earth scroll progress as a ref - written by ScrollTrigger, read by Three.js useFrame.
   // Using a ref instead of state means scroll updates never trigger React re-renders,
   // so the WebGL globe stays at full 60fps during scroll.
   const earthProgressRef = useRef<number>(0);
@@ -317,7 +317,7 @@ const About = () => {
   const journeyMilestones = [
     { year: 2025, title: 'The Birth of Our Vision:', highlight: "We're Turning Ideas Into Actions", paragraphs: ["Originally, this started as an idea, but it has started to blossom into something larger than that. People were noticing the obstacles and setbacks that creators in the industry had. They didn't have the right tools and platforms to promote themselves and their work properly.", 'Amoria Connekyt started as a vision to promote creators, but it also helps serve as a bridge to new tools and opportunities.'] },
     { year: 2026, title: 'Scaling Our Impact:', highlight: 'Building the Future Together', paragraphs: ['What began as a passion for supporting event creators, photographers, and storytellers has impacted us in numerous ways and heavily shaped the growth of our company. We listen to our customers and use their feedback to drive changes and developments.', "We've come a long way in our development, and looking to the future, we will continue to evolve with our customers. We're only just getting started and are looking to build even more with you."] },
-    { year: 2027, title: 'Expanding Horizons:', highlight: 'Going Global, Staying Personal', paragraphs: ['With a strong foundation built on trust and innovation, we are expanding into new markets and empowering creators across continents. Our platform now supports multilingual experiences and localized payment solutions.', 'We remain committed to the personal touch that defines Amoria Connekyt — every feature we build starts with the creator in mind. The future is global, but the heart stays local.'] },
+    { year: 2027, title: 'Expanding Horizons:', highlight: 'Going Global, Staying Personal', paragraphs: ['With a strong foundation built on trust and innovation, we are expanding into new markets and empowering creators across continents. Our platform now supports multilingual experiences and localized payment solutions.', 'We remain committed to the personal touch that defines Amoria Connekyt - every feature we build starts with the creator in mind. The future is global, but the heart stays local.'] },
   ];
   const currentYear = new Date().getFullYear();
 
@@ -378,7 +378,7 @@ const About = () => {
     { title: 'Growth', icon: 'bi-graph-up-arrow', desc: 'Empowering photographers to expand their reach and build lasting careers.', color: '#8b5cf6' },
   ];
 
-  // ─── LENIS smooth scroll — eliminates janky wheel/touch scroll on Windows + iOS.
+  // ─── LENIS smooth scroll - eliminates janky wheel/touch scroll on Windows + iOS.
   // The about page has multiple pinned ScrollTriggers (Hero, Core Values, Journey,
   // Half Earth) and ref-based animations (book.flip(), earthProgressRef). Lenis
   // smooths the scroll INPUT itself; ScrollTrigger and our refs receive an already-
@@ -387,7 +387,7 @@ const About = () => {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reduced) return; // honor user preference — let native scroll run
+    if (reduced) return; // honor user preference - let native scroll run
 
     const lenis = new Lenis({
       duration: 1.15,
@@ -412,7 +412,7 @@ const About = () => {
 
     // Pause Lenis whenever a scroll-lock is active (mobile menu, modal,
     // etc. set body.style.overflow = 'hidden'). With syncTouch on, Lenis
-    // transforms the page on touch — that transform turns the body into
+    // transforms the page on touch - that transform turns the body into
     // a containing block for position:fixed children, which makes the
     // mobile drawer drift away with the page on touch-scroll. Pausing
     // Lenis while the lock is active restores the normal fixed-anchoring.
@@ -431,7 +431,7 @@ const About = () => {
     };
   }, []);
 
-  // GSAP reveals + smart tools peel — smoothed scrubs, force3D layers, anticipatePin
+  // GSAP reveals + smart tools peel - smoothed scrubs, force3D layers, anticipatePin
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
@@ -463,7 +463,7 @@ const About = () => {
           const scaleY = window.innerHeight / winRect.height;
           const fillScale = Math.max(scaleX, scaleY) * 1.2;
 
-          // Promote the window to its own GPU layer for the entire scroll life — avoids
+          // Promote the window to its own GPU layer for the entire scroll life - avoids
           // repeated layer creation/destruction during scale, which was the biggest jank source.
           gsap.set(win, { scale: fillScale, force3D: true, willChange: 'transform' });
           gsap.set(hero, { visibility: 'visible' });
@@ -517,10 +517,10 @@ const About = () => {
 
           ScrollTrigger.create({
             trigger: cvSection,
-            // Engage the pin when the section's center reaches the viewport's center —
+            // Engage the pin when the section's center reaches the viewport's center -
             // that way the book is fully visible (and visually centered) before page-flips begin.
             start: 'center center',
-            // ~80vh of scroll per spread feels natural — enough to register intent without dragging
+            // ~80vh of scroll per spread feels natural - enough to register intent without dragging
             end: () => `+=${(bookSize.single ? 7 : 4) * 80}%`,
             pin: true,
             pinSpacing: true,
@@ -543,13 +543,13 @@ const About = () => {
               try {
                 pf.flip(targetPage, 'top');
               } catch {
-                // book mid-init or transitioning — safe to ignore
+                // book mid-init or transitioning - safe to ignore
               }
             },
           });
         }
 
-        // (Journey scroll-pin removed — the section now uses framer-motion's
+        // (Journey scroll-pin removed - the section now uses framer-motion's
         // ContainerScroll for the 3D card-rotation effect, which handles its own
         // scroll-driven animation. Chapter switching is click-driven via year dots.)
 
@@ -560,7 +560,7 @@ const About = () => {
           });
         });
 
-        // (Mission & Vision merged into the Journey carousel — no standalone scroll-pin needed.)
+        // (Mission & Vision merged into the Journey carousel - no standalone scroll-pin needed.)
 
         gsap.utils.toArray<HTMLElement>('.reveal-stagger').forEach((container) => {
           gsap.from(container.children, {
@@ -569,13 +569,13 @@ const About = () => {
           });
         });
 
-        // (Smart Tools peel block removed — its refs were never bound to JSX, so it was a
+        // (Smart Tools peel block removed - its refs were never bound to JSX, so it was a
         // silent no-op. Section now renders statically, which removes one pinned trigger
         // and tightens overall scroll smoothness.)
 
         // ── HALF EARTH: Scroll-driven globe rotation above footer ──
         // Writes scroll progress directly into a ref. Three.js useFrame reads the ref
-        // at 60fps and lerps to the target with frame-rate-independent smoothing —
+        // at 60fps and lerps to the target with frame-rate-independent smoothing -
         // ZERO React re-renders during scroll. Dropping `scrub` removes the GSAP
         // tween latency that was layered on top of the WebGL lerp; the WebGL side
         // already smooths perfectly.
@@ -610,11 +610,11 @@ const About = () => {
     // Outermost wrapper bg deliberately neutral so it can't flash dark at viewport
     // edges during GSAP pin/unpin transitions. The Hero, Half-Earth, and Footer all
     // set their own dark backgrounds internally, so this neutral base never shows
-    // behind dark sections — only behind the light middle sections (where it's invisible).
+    // behind dark sections - only behind the light middle sections (where it's invisible).
     <div style={{ background: '#f8fafc', overflow: 'hidden' }}>
       <style>{`
         /* ══════════════════════════════════════════════════
-           PURE CSS 3D PARALLAX — "Looking Through a Window"
+           PURE CSS 3D PARALLAX - "Looking Through a Window"
            Based on Keith Clark's technique.
            Container has perspective; layers use translateZ.
            Browser compositor handles parallax at 60fps.
@@ -689,7 +689,7 @@ const About = () => {
           opacity: 0.7;
         }
 
-        /* ── Smart Tools dashboard — live pulse keyframe ── */
+        /* ── Smart Tools dashboard - live pulse keyframe ── */
         @keyframes smartLivePulse {
           0%, 100% { opacity: 1; transform: scale(1); }
           50% { opacity: 0.55; transform: scale(0.85); }
@@ -707,10 +707,10 @@ const About = () => {
         .lenis.lenis-stopped { overflow: clip; }
 
         /* ══════════════════════════════════════════════════
-           MOBILE RESPONSIVE FIXES — about page
+           MOBILE RESPONSIVE FIXES - about page
            ══════════════════════════════════════════════════ */
 
-        /* — Who We Serve — corner lamps + cards on phones — */
+        /* - Who We Serve - corner lamps + cards on phones - */
         @media (max-width: 720px) {
           /* Smaller CornerLamp so it doesn't dominate phone-width corners */
           .wws-section .corner-lamp,
@@ -738,7 +738,7 @@ const About = () => {
           .wws-orb { width: 360px !important; height: 200px !important; }
         }
 
-        /* — Journey carousel — fits a phone — */
+        /* - Journey carousel - fits a phone - */
         @media (max-width: 720px) {
           /* Stack the chapter aside above the main column */
           .journey-cs-card {
@@ -778,7 +778,7 @@ const About = () => {
           .journey-card-foot { margin-top: 12px !important; }
           .journey-card-foot-label { font-size: 8.5px !important; letter-spacing: 0.18em !important; }
 
-          /* Carousel tabs row — wrap if needed, smaller dots */
+          /* Carousel tabs row - wrap if needed, smaller dots */
           .journey-cs-tabs { gap: 12px !important; padding: 4px 44px 12px !important; flex-wrap: wrap; }
           .journey-cs-tab { width: 36px !important; height: 36px !important; }
           .journey-cs-tab-num { font-size: 12px !important; }
@@ -792,7 +792,7 @@ const About = () => {
           .cs-card-inner { border-radius: 14px !important; padding: 8px !important; }
         }
 
-        /* — Smart Tools — lamp + dashboard mockup on phones — */
+        /* - Smart Tools - lamp + dashboard mockup on phones - */
         @media (max-width: 720px) {
           /* Tighter section padding so lamp + content fit */
           .smart-tools-section {
@@ -804,7 +804,7 @@ const About = () => {
             line-height: 1.15 !important;
           }
           .smart-tools-section .ab-eyebrow { font-size: 10px !important; }
-          /* Dashboard mockup — make sidebar hide (already done) and grid stack */
+          /* Dashboard mockup - make sidebar hide (already done) and grid stack */
           .smart-dashboard {
             border-radius: 14px !important;
             box-shadow: 0 18px 38px -16px rgba(0,0,0,0.45), 0 6px 14px -6px rgba(168,85,247,0.30) !important;
@@ -822,7 +822,7 @@ const About = () => {
           }
         }
 
-        /* — Half Earth section: tighten the stats + content for mobile — */
+        /* - Half Earth section: tighten the stats + content for mobile - */
         @media (max-width: 720px) {
           .earth-stats { gap: 12px !important; }
           .earth-stat { min-width: 64px !important; }
@@ -833,7 +833,7 @@ const About = () => {
           .earth-orbital { display: none !important; }
         }
 
-        /* — Mock CTA section — mobile copy fit — */
+        /* - Mock CTA section - mobile copy fit - */
         @media (max-width: 720px) {
           /* This section's container has its own clamps but make sure inner copy
              reflows cleanly at < 480px viewports. */
@@ -857,17 +857,17 @@ const About = () => {
           .earth-stat-label { font-size: 9px !important; }
         }
 
-        /* — Reduce GSAP-animated decorations that don't add value on phones — */
+        /* - Reduce GSAP-animated decorations that don't add value on phones - */
         @media (max-width: 720px) {
           .ab-dotgrid { display: none !important; }
         }
 
         /* ══════════════════════════════════════════════════
-           WHO WE SERVE — premium persona showcase
+           WHO WE SERVE - premium persona showcase
            ══════════════════════════════════════════════════ */
         .wws-section {
           position: relative; overflow: hidden;
-          /* Deep purple-tinted dark — provides high contrast for the corner lamp
+          /* Deep purple-tinted dark - provides high contrast for the corner lamp
              cones to read dramatically. Distinct from the navy Hero (different hue
              family, purple instead of blue). White persona cards inside pop as
              spotlit objects against this backdrop. */
@@ -877,7 +877,7 @@ const About = () => {
           padding: clamp(96px, 12vw, 160px) clamp(20px, 4vw, 60px) clamp(60px, 8vw, 100px);
         }
         .wws-orb {
-          /* Soft purple ambient bloom in the lower-mid area — fills the dark space
+          /* Soft purple ambient bloom in the lower-mid area - fills the dark space
              between the corner lamp cones with a faint glow */
           position: absolute; top: 38%; left: 50%; transform: translateX(-50%);
           width: 720px; height: 380px; border-radius: 50%;
@@ -923,7 +923,7 @@ const About = () => {
         .wws-eb { display: flex; flex-direction: column; }
         .wws-eb > .eb-content { flex: 1; display: flex; }
         .wws-eb > .eb-content > .wws-card { width: 100%; }
-        /* Visual rhythm — middle card sits a touch higher to break the flat baseline */
+        /* Visual rhythm - middle card sits a touch higher to break the flat baseline */
         .wws-eb--mid { transform: translateY(-18px); transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
         .wws-eb--mid:hover { transform: translateY(-26px); }
 
@@ -1004,7 +1004,7 @@ const About = () => {
         }
         .wws-card:hover .wws-card-cta { gap: 12px; }
 
-        /* Memory Keepers card — secondary purple-pink palette */
+        /* Memory Keepers card - secondary purple-pink palette */
         .wws-eb--memory .wws-card-eyebrow { color: #B83AB6; }
         .wws-eb--memory .wws-card-title em {
           background: linear-gradient(90deg, #8B5CF6 0%, #EC4899 100%);
@@ -1069,7 +1069,7 @@ const About = () => {
         }
 
         /* ══════════════════════════════════════════════════
-           Core Values — react-pageflip realistic 3D book
+           Core Values - react-pageflip realistic 3D book
            ══════════════════════════════════════════════════ */
         .cv-pf-section { overflow: hidden; }
         .cv-pf-stage-glow {
@@ -1081,7 +1081,7 @@ const About = () => {
         .cv-pf-book-wrap {
           position: relative;
           padding-bottom: 14px;
-          /* Browser-skip offscreen rendering — page-flip's canvas RAF keeps drawing,
+          /* Browser-skip offscreen rendering - page-flip's canvas RAF keeps drawing,
              this offloads it whenever the section is past the viewport, which removes
              the perceived lag during the handoff to the journey section. */
           contain: layout paint;
@@ -1095,7 +1095,7 @@ const About = () => {
         .cv-pf-book { font-family: 'Pragati Narrow', system-ui, sans-serif; }
         .cv-pf-book .stf__parent { perspective: 2400px; }
 
-        /* Cover (hard) — brand-blue gradient with embossed border */
+        /* Cover (hard) - brand-blue gradient with embossed border */
         .cv-pf-cover {
           width: 100%; height: 100%;
           background: linear-gradient(160deg, #052047 0%, #083A85 45%, #0F4FB6 100%);
@@ -1148,7 +1148,7 @@ const About = () => {
           font-style: italic;
         }
 
-        /* Inner page — printed paper texture + text */
+        /* Inner page - printed paper texture + text */
         .cv-pf-page {
           width: 100%; height: 100%;
           background: #fefefe;
@@ -1207,10 +1207,10 @@ const About = () => {
         }
 
         /* ══════════════════════════════════════════════════
-           JOURNEY — 3D ContainerScroll wrapper
+           JOURNEY - 3D ContainerScroll wrapper
            ══════════════════════════════════════════════════ */
         .journey-section-cs {
-          /* Slate-blue gradient — distinct from the white book-flip section above */
+          /* Slate-blue gradient - distinct from the white book-flip section above */
           background:
             radial-gradient(80% 50% at 50% 0%, rgba(8,58,133,0.08), transparent 70%),
             linear-gradient(180deg, #DBE6F2 0%, #C7D5E7 50%, #D4DFEC 100%);
@@ -1226,7 +1226,7 @@ const About = () => {
           pointer-events: none; z-index: 0;
         }
 
-        /* ContainerScroll outer frame — brand-blue gradient */
+        /* ContainerScroll outer frame - brand-blue gradient */
         .cs-section { z-index: 1; }
         .cs-perspective { z-index: 1; }
         .cs-header { max-width: 64rem; margin: 0 auto; text-align: center; position: relative; z-index: 2; }
@@ -1242,7 +1242,7 @@ const About = () => {
           position: relative; z-index: 1;
         }
         .cs-card::before {
-          /* Inner glow ring — gives the brand-blue frame depth */
+          /* Inner glow ring - gives the brand-blue frame depth */
           content: ''; position: absolute; inset: 6px;
           border-radius: 24px;
           border: 1px solid rgba(255,255,255,0.08);
@@ -1350,7 +1350,7 @@ const About = () => {
           outline: 2px solid #3B82F6; outline-offset: 3px;
         }
 
-        /* Dot navigator — just the dots now */
+        /* Dot navigator - just the dots now */
         .journey-cs-tabs {
           position: relative;
           display: flex; align-items: center; justify-content: center;
@@ -1406,7 +1406,7 @@ const About = () => {
           to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Mission / Vision aside column — replaces Roman numeral with a big icon */
+        /* Mission / Vision aside column - replaces Roman numeral with a big icon */
         .journey-mv-aside {
           position: relative;
           display: flex; flex-direction: column;
@@ -1424,7 +1424,7 @@ const About = () => {
           box-shadow: 0 12px 24px -10px rgba(8,58,133,0.45),
                       inset 0 1px 0 rgba(255,255,255,0.15);
         }
-        /* Vision uses the platform's secondary purple-pink gradient — visually
+        /* Vision uses the platform's secondary purple-pink gradient - visually
            distinguishes it from the brand-blue Mission slide. */
         .journey-cs-card--vision .journey-mv-icon {
           background: linear-gradient(160deg, #8B5CF6 0%, #B83AB6 50%, #EC4899 100%);
@@ -1480,7 +1480,7 @@ const About = () => {
           color: #083A85; font-size: 16px;
         }
 
-        /* (Old absolute-stacked timeline + agenda removed — replaced by .journey-cs-tabs
+        /* (Old absolute-stacked timeline + agenda removed - replaced by .journey-cs-tabs
             and .journey-cs-card inside the ContainerScroll rotating frame.) */
 
         /* Left aside column */
@@ -1632,10 +1632,10 @@ const About = () => {
           .journey-cs-tab { width: 38px; height: 38px; }
         }
 
-        /* (Mission & Vision standalone styles removed — content now lives inside the Journey carousel.) */
+        /* (Mission & Vision standalone styles removed - content now lives inside the Journey carousel.) */
 
         /* ══════════════════════════════════════════════════
-           HERO — Alex Brush typography + ambient effects
+           HERO - Alex Brush typography + ambient effects
            ══════════════════════════════════════════════════ */
         /* Cabin wall text: hidden until GSAP animates them in */
         .hero-text-item { opacity: 0; transform: translateY(24px); }
@@ -1748,7 +1748,7 @@ const About = () => {
           margin: 0 0 14px;
         }
         .hero-desc em {
-          /* "connecting" keyword — Alex Brush gradient highlight */
+          /* "connecting" keyword - Alex Brush gradient highlight */
           font-family: 'Alex Brush', cursive;
           font-style: normal; font-weight: 400;
           font-size: 1.55em; line-height: 0.85;
@@ -1902,7 +1902,7 @@ const About = () => {
         }
 
         /* ══════════════════════════════════════════════════
-           HERO MOBILE — absolute layout retained so the GSAP
+           HERO MOBILE - absolute layout retained so the GSAP
            fullscreen-window-shrink animation works the same as desktop.
            Cabin texts arrange around the small centered window:
              TL: brand (Alex Brush)            TR: ABOUT US chip
@@ -1911,7 +1911,7 @@ const About = () => {
              BR: Destination card (centered, lower)
            ══════════════════════════════════════════════════ */
         @media (max-width: 768px) {
-          /* Section keeps the desktop centering — the window must be in the viewport
+          /* Section keeps the desktop centering - the window must be in the viewport
              center for the fullscreen-scale effect to read correctly. */
           .hero-section {
             height: 100vh !important;
@@ -1970,7 +1970,7 @@ const About = () => {
             backdrop-filter: blur(6px);
           }
 
-          /* Bottom-left: Cabin Brief — centered below the window with horizontal accent */
+          /* Bottom-left: Cabin Brief - centered below the window with horizontal accent */
           .hero-bl {
             bottom: clamp(110px, 17vh, 150px) !important;
             left: 50% !important;
@@ -2006,7 +2006,7 @@ const About = () => {
             justify-content: center !important;
           }
 
-          /* Bottom-right: Destination card — centered, full-width-ish under the brief */
+          /* Bottom-right: Destination card - centered, full-width-ish under the brief */
           .hero-br {
             bottom: 22px !important;
             right: auto !important;
@@ -2055,14 +2055,14 @@ const About = () => {
         {/* ━━━ HERO: AIRPLANE WINDOW ━━━ */}
         <div ref={heroRef} className="par-group hero-section" style={{ height: '100vh', minHeight: 650, background: '#041e4f', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', visibility: 'hidden' }}>
 
-          {/* Cabin wall — brand blue gradient */}
+          {/* Cabin wall - brand blue gradient */}
           <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 50% 40%, #0a4a8a 0%, #083A85 30%, #052a5e 70%, #031b3d 100%)' }} />
           <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1px)', backgroundSize: '4px 4px', opacity: 0.5 }} />
 
           {/* ── AIRPLANE WINDOW ── */}
           <div ref={windowRef} className="airplane-window" style={{ position: 'relative', width: 'clamp(240px, 30vw, 400px)', height: 'clamp(290px, 38vw, 500px)', flexShrink: 0, willChange: 'transform' }}>
 
-            {/* Outer bezel — the thick plastic surround */}
+            {/* Outer bezel - the thick plastic surround */}
             <div style={{
               position: 'absolute', inset: 0,
               borderRadius: '45% 45% 42% 42% / 50% 50% 46% 46%',
@@ -2078,14 +2078,14 @@ const About = () => {
               boxShadow: 'inset 0 3px 8px rgba(0,0,0,0.25), inset 0 -1px 3px rgba(255,255,255,0.2)',
             }} />
 
-            {/* Glass opening — the actual window you look through */}
+            {/* Glass opening - the actual window you look through */}
             <div className="window-glass" style={{
               position: 'absolute', inset: 'clamp(28px, 4vw, 44px)',
               borderRadius: '44% 44% 40% 40% / 48% 48% 44% 44%',
               overflow: 'hidden',
               boxShadow: 'inset 0 0 30px 8px rgba(0,0,0,0.3)',
             }}>
-              {/* Scene visible through the window — video fills the glass directly */}
+              {/* Scene visible through the window - video fills the glass directly */}
               <video autoPlay muted loop playsInline poster="/camm.png"
                 style={{
                   position: 'absolute', inset: 0,
@@ -2099,28 +2099,28 @@ const About = () => {
                 <source src="/photographero.mp4" type="video/mp4" />
               </video>
 
-              {/* Brand-blue tint pass — keeps the video reading as ambient cabin view */}
+              {/* Brand-blue tint pass - keeps the video reading as ambient cabin view */}
               <div style={{
                 position: 'absolute', inset: 0,
                 background: 'linear-gradient(180deg, rgba(8,40,100,0.35) 0%, rgba(5,15,40,0.55) 100%)',
                 pointerEvents: 'none',
               }} />
 
-              {/* Top + bottom vignette — fades any awkward video framing into shadow */}
+              {/* Top + bottom vignette - fades any awkward video framing into shadow */}
               <div style={{
                 position: 'absolute', inset: 0,
                 background: 'radial-gradient(120% 80% at 50% 50%, transparent 55%, rgba(0,0,0,0.5) 100%)',
                 pointerEvents: 'none',
               }} />
 
-              {/* Glass reflection — diagonal light streak */}
+              {/* Glass reflection - diagonal light streak */}
               <div style={{
                 position: 'absolute', inset: 0,
                 background: 'linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.03) 30%, transparent 50%, rgba(255,255,255,0.02) 80%, rgba(255,255,255,0.06) 100%)',
                 pointerEvents: 'none',
               }} />
 
-              {/* Secondary reflection arc — top-left highlight */}
+              {/* Secondary reflection arc - top-left highlight */}
               <div style={{
                 position: 'absolute', top: '5%', left: '10%', width: '35%', height: '25%',
                 background: 'radial-gradient(ellipse, rgba(255,255,255,0.08) 0%, transparent 70%)',
@@ -2128,10 +2128,10 @@ const About = () => {
                 pointerEvents: 'none',
               }} />
             </div>
-            {/* (Inner shade groove removed — it visually clipped the bottom of the glass) */}
+            {/* (Inner shade groove removed - it visually clipped the bottom of the glass) */}
           </div>
 
-          {/* ── FULLSCREEN OVERLAY TEXT — Alex Brush cursive, visible at fullscreen window ── */}
+          {/* ── FULLSCREEN OVERLAY TEXT - Alex Brush cursive, visible at fullscreen window ── */}
           <div ref={el => { heroTextRefs.current[4] = el; }} className="hero-overlay-text" style={{
             position: 'absolute', inset: 0, zIndex: 30,
             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
@@ -2157,18 +2157,18 @@ const About = () => {
             <span className="hero-eyebrow-rule" />
           </div>
 
-          {/* Bottom-left: Cabin Brief — manifesto block with vertical accent stripe */}
+          {/* Bottom-left: Cabin Brief - manifesto block with vertical accent stripe */}
           <div ref={el => { heroTextRefs.current[2] = el; }} className="hero-text-item hero-bl">
             <div className="hero-brief">
               <span className="hero-brief-label">Cabin Brief</span>
               <p className="hero-desc">
                 A digital ecosystem <em>connecting</em> verified photographers and creative professionals with clients worldwide.
               </p>
-              <span className="hero-brief-sig">— Crafted in Kigali</span>
+              <span className="hero-brief-sig">- Crafted in Kigali</span>
             </div>
           </div>
 
-          {/* Bottom-right: destination card ornament — replaces the duplicate slogan */}
+          {/* Bottom-right: destination card ornament - replaces the duplicate slogan */}
           <div ref={el => { heroTextRefs.current[3] = el; }} className="hero-text-item hero-br">
             <div className="hero-card">
               <div className="hero-card-row">
@@ -2192,7 +2192,7 @@ const About = () => {
             </div>
           </div>
 
-          {/* Ambient effects — drifting stars + light streak (decorative, GPU-only) */}
+          {/* Ambient effects - drifting stars + light streak (decorative, GPU-only) */}
           <span className="hero-star hero-star--1" aria-hidden="true" />
           <span className="hero-star hero-star--2" aria-hidden="true" />
           <span className="hero-star hero-star--3" aria-hidden="true" />
@@ -2201,10 +2201,10 @@ const About = () => {
           <span className="hero-light-streak" aria-hidden="true" />
         </div>
 
-        {/* ━━━ WHO WE SERVE — premium persona showcase ━━━ */}
+        {/* ━━━ WHO WE SERVE - premium persona showcase ━━━ */}
         <div className="par-group">
           <div className="par-base wws-section">
-            {/* Two corner lamps — pink-purple cones beaming inward over the dark bg */}
+            {/* Two corner lamps - pink-purple cones beaming inward over the dark bg */}
             <CornerLamp
               position="left"
               bgColor="#13091F"
@@ -2222,7 +2222,7 @@ const About = () => {
               zIndex={1}
             />
 
-            {/* Interactive DotGrid — purple palette for dark bg */}
+            {/* Interactive DotGrid - purple palette for dark bg */}
             <div className="ab-dotgrid" aria-hidden="true">
               <DotGrid
                 dotSize={2}
@@ -2265,10 +2265,10 @@ const About = () => {
                 </p>
               </header>
 
-              {/* Persona grid — 3 staggered cards */}
+              {/* Persona grid - 3 staggered cards */}
               <div className="reveal-stagger wws-grid">
 
-                {/* — 01 · Creative Professionals — */}
+                {/* - 01 · Creative Professionals - */}
                 <ElectricBorder color="#3B82F6" speed={1} chaos={0.14} thickness={2} borderRadius={22} className="wws-eb">
                 <a href="/user/auth/signup?userType=Photographer" className="wws-card wws-card--lift">
                   <div className="wws-card-art wws-art--photog">
@@ -2317,7 +2317,7 @@ const About = () => {
                 </a>
                 </ElectricBorder>
 
-                {/* — 02 · Event Organizers — */}
+                {/* - 02 · Event Organizers - */}
                 <ElectricBorder color="#0F4FB6" speed={1.15} chaos={0.16} thickness={2} borderRadius={22} className="wws-eb wws-eb--mid">
                 <a href="/user/auth/signup" className="wws-card wws-card--lift">
                   <div className="wws-card-art wws-art--org">
@@ -2373,7 +2373,7 @@ const About = () => {
                 </a>
                 </ElectricBorder>
 
-                {/* — 03 · Families & Individuals — uses platform secondary purple-pink */}
+                {/* - 03 · Families & Individuals - uses platform secondary purple-pink */}
                 <ElectricBorder color="#B83AB6" speed={0.85} chaos={0.13} thickness={2} borderRadius={22} className="wws-eb wws-eb--memory">
                 <a href="/user/auth/signup" className="wws-card wws-card--lift">
                   <div className="wws-card-art wws-art--fam">
@@ -2442,7 +2442,7 @@ const About = () => {
           </div>
         </div>
 
-        {/* ━━━ CORE VALUES — scroll-pinned react-pageflip 3D book ━━━ */}
+        {/* ━━━ CORE VALUES - scroll-pinned react-pageflip 3D book ━━━ */}
         <div ref={cvSectionRef} className="par-group cv-pf-section" style={{ background: 'linear-gradient(180deg, #E8EEF7 0%, #DBE4F2 50%, #E2E9F4 100%)', position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: 'clamp(20px, 2.5vw, 36px) clamp(16px, 4vw, 60px) clamp(24px, 3vw, 40px)' }}>
           {/* Subtle stage lighting behind the book */}
           <div className="cv-pf-stage-glow" aria-hidden="true" />
@@ -2500,7 +2500,7 @@ const About = () => {
           </div>
         </div>
 
-        {/* ━━━ JOURNEY — 3D ContainerScroll chapter book ━━━ */}
+        {/* ━━━ JOURNEY - 3D ContainerScroll chapter book ━━━ */}
         <div ref={journeyRef} className="journey-section-cs">
           {/* Ambient decorations behind the rotating card */}
           <span className="journey-orb" aria-hidden="true" />
@@ -2528,7 +2528,7 @@ const About = () => {
               const goNext = () => setActiveSlide((s) => (s + 1) % totalSlides);
               return (
                 <div className="journey-cs-content">
-                  {/* Edge-anchored prev / next arrows — visually prominent */}
+                  {/* Edge-anchored prev / next arrows - visually prominent */}
                   <button type="button" aria-label="Previous slide" className="journey-cs-arrow journey-cs-arrow--prev" onClick={goPrev}>
                     <i className="bi bi-chevron-left" />
                   </button>
@@ -2634,9 +2634,9 @@ const About = () => {
           </ContainerScroll>
         </div>
 
-        {/* (Mission & Vision merged into the Journey carousel above — section removed.) */}
+        {/* (Mission & Vision merged into the Journey carousel above - section removed.) */}
 
-        {/* ━━━ SMART TOOLS — Dashboard Mockup with secondary-color lamp ━━━ */}
+        {/* ━━━ SMART TOOLS - Dashboard Mockup with secondary-color lamp ━━━ */}
         <div className="par-group">
           <div
             className="par-base about-section smart-tools-section"
@@ -2673,7 +2673,7 @@ const About = () => {
                 </p>
               </div>
 
-              {/* Dashboard mockup — premium creator-platform UI */}
+              {/* Dashboard mockup - premium creator-platform UI */}
               <div className="reveal smart-dashboard" style={{ maxWidth: 980, margin: '0 auto', borderRadius: 18, overflow: 'hidden', background: '#fff', border: '1px solid rgba(255,255,255,0.10)', boxShadow: '0 30px 80px -20px rgba(0,0,0,0.55), 0 8px 24px -8px rgba(168,85,247,0.35)' }}>
                 {/* Browser bar */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
@@ -2713,7 +2713,7 @@ const About = () => {
                       ))}
                     </nav>
 
-                    {/* Sidebar footer — user card */}
+                    {/* Sidebar footer - user card */}
                     <div style={{ marginTop: 'auto', padding: 10, borderRadius: 10, background: 'rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: 10 }}>
                       <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg, #EC4899, #A855F7)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, color: '#fff', flexShrink: 0 }}>SK</div>
                       <div style={{ flex: 1, minWidth: 0 }}>
@@ -2728,7 +2728,7 @@ const About = () => {
 
                   {/* Main content */}
                   <div style={{ flex: 1, padding: 'clamp(14px, 1.8vw, 22px)', background: 'linear-gradient(180deg, #FAFBFD 0%, #F4F6FB 100%)', display: 'flex', flexDirection: 'column', gap: 14 }}>
-                    {/* Top bar — welcome + live + bell */}
+                    {/* Top bar - welcome + live + bell */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div>
                         <p style={{ color: '#94a3b8', fontSize: 11, margin: 0, letterSpacing: 0.3, textTransform: 'uppercase', fontWeight: 600 }}>Welcome back, Sarah ✨</p>
@@ -2884,7 +2884,7 @@ const About = () => {
         </div>
 
 
-        {/* ── Half Earth — scroll-driven globe rotation ── */}
+        {/* ── Half Earth - scroll-driven globe rotation ── */}
         <style>{`
           .earth-section {
             position: relative; width: 100%; height: 100dvh;
@@ -2894,7 +2894,7 @@ const About = () => {
               linear-gradient(to bottom, #03152F 0%, #062D5E 35%, #083A85 70%, #052047 100%);
             overflow: hidden;
           }
-          /* Starfield — 28 absolutely-positioned twinkling stars */
+          /* Starfield - 28 absolutely-positioned twinkling stars */
           .earth-star {
             position: absolute; width: 2px; height: 2px; border-radius: 50%;
             background: #fff; box-shadow: 0 0 4px rgba(255,255,255,0.8);
@@ -2906,7 +2906,7 @@ const About = () => {
             0%, 100% { opacity: 0.35; }
             50% { opacity: 1; }
           }
-          /* Aurora ribbon — soft cyan/violet sweep above the globe horizon */
+          /* Aurora ribbon - soft cyan/violet sweep above the globe horizon */
           .earth-aurora {
             position: absolute; top: 18%; left: -10%; right: -10%; height: 14%;
             background: linear-gradient(90deg, transparent 0%, rgba(125,211,252,0.18) 25%, rgba(168,85,247,0.22) 50%, rgba(236,72,153,0.18) 75%, transparent 100%);
@@ -2918,7 +2918,7 @@ const About = () => {
             0%, 100% { transform: translateX(0) skewX(-6deg); opacity: 0.65; }
             50% { transform: translateX(20px) skewX(-3deg); opacity: 1; }
           }
-          /* Live stats row — sits between the description and the CTA */
+          /* Live stats row - sits between the description and the CTA */
           .earth-stats {
             display: flex; flex-wrap: wrap; justify-content: center;
             gap: clamp(16px, 3vw, 36px);
@@ -2944,7 +2944,7 @@ const About = () => {
             letter-spacing: 0.32em; text-transform: uppercase;
             color: rgba(255,255,255,0.55);
           }
-          /* Live activity pill — under the CTA */
+          /* Live activity pill - under the CTA */
           .earth-live-pill {
             margin-top: clamp(14px, 2vw, 22px);
             display: inline-flex; align-items: center; gap: 8px;
@@ -3012,7 +3012,7 @@ const About = () => {
           <div className="earth-orbital" aria-hidden="true" />
           <div className="earth-orbital earth-orbital--inner" aria-hidden="true" />
 
-          {/* Starfield — 28 twinkling stars at scattered positions */}
+          {/* Starfield - 28 twinkling stars at scattered positions */}
           {[
             { t: '6%',  l: '8%',  d: 0,    big: true  },
             { t: '4%',  l: '22%', d: 1.2,  big: false },
@@ -3115,7 +3115,7 @@ const About = () => {
               Get Started
             </a>
 
-            {/* Live activity pill — under the CTA */}
+            {/* Live activity pill - under the CTA */}
             <div className="earth-live-pill">
               <span className="earth-live-pill-dot" />
               Broadcasting from 12 cities right now
@@ -3132,7 +3132,7 @@ const About = () => {
         </div>
 
         {/* No bg on the wrapper so the page's neutral #f8fafc shows through the
-            footer-body's rounded top corners — the brand corner radius reads cleanly. */}
+            footer-body's rounded top corners - the brand corner radius reads cleanly. */}
         <div className="about-footer-wrap">
           <Footer />
         </div>

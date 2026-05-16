@@ -120,7 +120,7 @@ async function proxyRequest(
           const body = await request.json();
           fetchOptions.body = JSON.stringify(body);
         } catch {
-          // No body or invalid JSON — continue without body
+          // No body or invalid JSON - continue without body
         }
       }
     }

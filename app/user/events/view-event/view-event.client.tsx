@@ -264,7 +264,7 @@ function ViewEventContent(): React.JSX.Element {
     return () => ro.disconnect();
   }, []);
 
-  // Bookmark — same key as /user/events list page
+  // Bookmark - same key as /user/events list page
   const [isSaved, setIsSaved] = useState(false);
   useEffect(() => {
     if (!selectedEvent?.id || typeof window === 'undefined') return;
@@ -355,7 +355,7 @@ function ViewEventContent(): React.JSX.Element {
     }
   }, [selectedEvent, autoJoinDismissed]);
 
-  // Tick the auto-join countdown — when it hits 0, redirect to the stream.
+  // Tick the auto-join countdown - when it hits 0, redirect to the stream.
   useEffect(() => {
     if (autoJoinSeconds === null || autoJoinDismissed) return;
     if (autoJoinSeconds <= 0) {
@@ -401,7 +401,7 @@ function ViewEventContent(): React.JSX.Element {
   // Pending destination after auth
   const [pendingJoinUrl, setPendingJoinUrl] = useState('');
   const [googleLoading, setGoogleLoading] = useState(false);
-  // Group invite code — auto-fill from URL param (from email link)
+  // Group invite code - auto-fill from URL param (from email link)
   const [groupCode, setGroupCode] = useState(searchParams.get('groupCode') || '');
   const [groupCodeError, setGroupCodeError] = useState('');
   const [groupCodeLoading, setGroupCodeLoading] = useState(false);
@@ -415,7 +415,7 @@ function ViewEventContent(): React.JSX.Element {
   const [vaLoading, setVaLoading] = useState(false);
   const [vaError, setVaError] = useState<string | null>(null);
 
-  // Global error popup — replaces inline error banners across the page
+  // Global error popup - replaces inline error banners across the page
   const [errorPopup, setErrorPopup] = useState<{
     open: boolean;
     severity: PopupSeverity;
@@ -427,7 +427,7 @@ function ViewEventContent(): React.JSX.Element {
   }>({ open: false, severity: 'error', message: '' });
   const closeErrorPopup = useCallback(() => setErrorPopup(p => ({ ...p, open: false })), []);
 
-  // Group invite code — lightweight identity modal (same pattern as paid viewer)
+  // Group invite code - lightweight identity modal (same pattern as paid viewer)
   const [showGroupAuth, setShowGroupAuth] = useState(false);
   const [gaName, setGaName] = useState('');
   const [gaEmail, setGaEmail] = useState('');
@@ -454,7 +454,7 @@ function ViewEventContent(): React.JSX.Element {
   const [inviteError, setInviteError] = useState<string | null>(null);
   const [inviteSuccess, setInviteSuccess] = useState<string | null>(null);
 
-  // Pre-event wishes — text + video reactions before event goes live
+  // Pre-event wishes - text + video reactions before event goes live
   const [wishName, setWishName] = useState('');
   const [wishEmail, setWishEmail] = useState('');
   const [wishMessage, setWishMessage] = useState('');
@@ -610,14 +610,14 @@ function ViewEventContent(): React.JSX.Element {
       const viewerId = resData?.viewerId as string;
 
       if (status === 'ACCESS_GRANTED' || status === 'DEVICE_CONFLICT' || status === 'DEVICE_MISMATCH') {
-        // Viewer recognized — store viewerId and go to live-stream
+        // Viewer recognized - store viewerId and go to live-stream
         if (viewerId) {
           localStorage.setItem(`anonymousViewer_${selectedEvent!.id}`, viewerId);
           localStorage.setItem(`anonymousViewerName_${selectedEvent!.id}`, name);
         }
         window.location.href = `/user/events/live-stream?eventId=${selectedEvent!.id}&from=payment${viewerId ? `&viewerId=${viewerId}` : ''}`;
       } else {
-        // REQUIRES_PAYMENT — not found as a paid viewer. Close inline modal & show popup.
+        // REQUIRES_PAYMENT - not found as a paid viewer. Close inline modal & show popup.
         setShowViewerAuth(false);
         setErrorPopup({
           open: true,
@@ -671,7 +671,7 @@ function ViewEventContent(): React.JSX.Element {
   // Fetch buyer's group code from backend (persistent, works across devices)
   const fetchGroupCode = async () => {
     if (!selectedEvent?.id) return;
-    // Need a viewerId — check localStorage (set during payment or viewer auth)
+    // Need a viewerId - check localStorage (set during payment or viewer auth)
     const viewerId = localStorage.getItem(`anonymousViewer_${selectedEvent.id}`);
     if (!viewerId) return;
     try {
@@ -703,7 +703,7 @@ function ViewEventContent(): React.JSX.Element {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedEvent?.id, selectedEvent?.hasPurchasedAccess]);
 
-  // Listen for session expiry — show login modal instead of redirecting
+  // Listen for session expiry - show login modal instead of redirecting
   useEffect(() => {
     const handleSessionExpired = (e: Event) => {
       e.preventDefault();
@@ -826,7 +826,7 @@ function ViewEventContent(): React.JSX.Element {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [groupCodeFromUrl, selectedEvent, isLoading, autoGroupCodeTriggered]);
 
-  // Loading state — silent. The page renders its own dark backdrop while the
+  // Loading state - silent. The page renders its own dark backdrop while the
   // event fetch resolves; no spinner or "Loading…" text per design request.
   if (isLoading) {
     return (
@@ -882,7 +882,7 @@ function ViewEventContent(): React.JSX.Element {
     );
   }
 
-  // Handle group code submission — validate then open lightweight identity modal
+  // Handle group code submission - validate then open lightweight identity modal
   const handleGroupCodeSubmit = async () => {
     if (!groupCode.trim()) { setGroupCodeError('Please enter a group invite code'); return; }
     if (blockedByGeo()) return;
@@ -907,7 +907,7 @@ function ViewEventContent(): React.JSX.Element {
         setGroupCodeLoading(false);
         return;
       }
-      // Code valid — open lightweight identity modal (same as paid viewer flow)
+      // Code valid - open lightweight identity modal (same as paid viewer flow)
       const restricted = validateData.data?.emailRestricted === true;
       const authorizedEmail = validateData.data?.authorizedEmail || '';
       setPendingInviteCode(groupCode.trim());
@@ -966,7 +966,7 @@ function ViewEventContent(): React.JSX.Element {
     }
   };
 
-  // Navigate to purchase page — no auth required (anonymous viewer flow handles it)
+  // Navigate to purchase page - no auth required (anonymous viewer flow handles it)
   // Send group invite email
   const handleInviteEmail = async () => {
     const email = inviteEmail.trim();
@@ -1005,7 +1005,7 @@ function ViewEventContent(): React.JSX.Element {
     }
   };
 
-  // Geo-gate helper — if the user's location is restricted AND the event
+  // Geo-gate helper - if the user's location is restricted AND the event
   // is still upcoming, re-surface the restriction overlay (even if they
   // previously dismissed it) and return true so the calling action can bail
   // out early. Returns false when the user is allowed OR the event is no
@@ -1013,7 +1013,7 @@ function ViewEventContent(): React.JSX.Element {
   // the geo-block since pre-event purchase windows have closed).
   const blockedByGeo = (): boolean => {
     if (!geoCheck || geoCheck.allowed !== false) return false;
-    // Only enforce on upcoming events — pre-event purchase / reservation flow.
+    // Only enforce on upcoming events - pre-event purchase / reservation flow.
     const rawStatusInner = (selectedEvent?.eventStatus || '').toUpperCase();
     const streamEndedInner = (selectedEvent as Record<string, unknown> | null)?.streamStatus === 'ended';
     const isUpcomingInner = !!selectedEvent
@@ -1071,7 +1071,7 @@ function ViewEventContent(): React.JSX.Element {
           setPendingGroupCode('');
           return;
         }
-        // Check if viewer already paid — redirect to stream instead of join-package
+        // Check if viewer already paid - redirect to stream instead of join-package
         if (selectedEvent?.id) {
           const eventCheck = await getPublicEventById(selectedEvent.id);
           if (eventCheck.success && eventCheck.data?.hasPurchasedAccess) {
@@ -1128,7 +1128,7 @@ function ViewEventContent(): React.JSX.Element {
     try {
       const res = await verifyOtp({ customerId: otpCustomerId, otp: parseInt(otpValue, 10) });
       if (res.success && res.data?.action === 1) {
-        // OTP verify only confirms email — token comes from login. Auto-login with signup credentials.
+        // OTP verify only confirms email - token comes from login. Auto-login with signup credentials.
         const loginRes = await login({ email: signupEmail, password: signupPassword });
         if (loginRes.success && loginRes.data?.token) {
           const ld = loginRes.data;
@@ -1191,15 +1191,15 @@ function ViewEventContent(): React.JSX.Element {
   const isUpcoming = !isLive && !isCompleted && !isCancelled; // PUBLISHED or UPCOMING
   const streamFee = selectedEvent.streamFee || 0;
   const isPaid = streamFee > 0 || (selectedEvent.price || 0) > 0;
-  // Defensive ownership check — require PER-EVENT local proof of purchase.
+  // Defensive ownership check - require PER-EVENT local proof of purchase.
   // The backend's hasPurchasedAccess flag alone isn't trusted because it can
   // come back stale/misconfigured (e.g. a cached "true" for an authenticated
   // user who never actually paid for THIS event). Being merely logged in is
-  // not enough — purchase is per-event and must be locally verifiable.
+  // not enough - purchase is per-event and must be locally verifiable.
   // Local proof keys (any one of these confirms ownership):
-  //   • anonymousViewer_{id}     — set after successful anonymous payment
-  //   • groupCode_{id}            — set after successful group payment
-  //   • connekyt:purchased_{id}   — set after authenticated individual payment
+  //   • anonymousViewer_{id}     - set after successful anonymous payment
+  //   • groupCode_{id}            - set after successful group payment
+  //   • connekyt:purchased_{id}   - set after authenticated individual payment
   const hasPurchasedAccess = (() => {
     if (!selectedEvent.hasPurchasedAccess) return false;
     if (typeof window === 'undefined') return false;
@@ -1410,7 +1410,7 @@ function ViewEventContent(): React.JSX.Element {
 
         return (
           <>
-            {/* Sticky title rail — fades in past hero */}
+            {/* Sticky title rail - fades in past hero */}
             <div
               className={`ve-sticky ${stickyT > 0.05 ? 'is-on' : ''}`}
               style={{ opacity: stickyT, pointerEvents: stickyT > 0.4 ? 'auto' : 'none', transform: `translateY(${(1 - stickyT) * -24}px)` }}
@@ -1428,7 +1428,7 @@ function ViewEventContent(): React.JSX.Element {
                     {statusLabel} · {formatDate(selectedEvent.eventDate)}
                   </small>
                 </div>
-                {/* Verify-access shortcut in the sticky ribbon — same gating as the
+                {/* Verify-access shortcut in the sticky ribbon - same gating as the
                     hero (LIVE-only) so users who scrolled past can still recover
                     prior access without scrolling back up. */}
                 {isPaid && isLive && !hasPurchasedAccess && (
@@ -1474,7 +1474,7 @@ function ViewEventContent(): React.JSX.Element {
                   </button>
                 </div>
 
-                {/* Top-center floating countdown banner — visually anchors
+                {/* Top-center floating countdown banner - visually anchors
                     upcoming events above the hero. Positioned just below the
                     navbar so it stays clearly readable over any backdrop. */}
                 {isUpcoming && showCountdown && msUntilStart !== null && (() => {
@@ -1548,7 +1548,7 @@ function ViewEventContent(): React.JSX.Element {
                   <div className="ve-hero-cta-row">
                     {primaryCTA && renderPrimaryCTA('lg')}
                     {/* For LIVE paid events the user hasn't purchased: surface the
-                        verify-access CTA right next to the buy CTA — equal weight,
+                        verify-access CTA right next to the buy CTA - equal weight,
                         always above-the-fold. Otherwise fall back to the More-info
                         button so users can still scroll to the ticket details. */}
                     {isPaid && isLive && !hasPurchasedAccess ? (
@@ -1811,7 +1811,7 @@ function ViewEventContent(): React.JSX.Element {
                         )}
                       </div>
 
-                      {/* Live countdown card — show big days/hrs/min/sec for upcoming */}
+                      {/* Live countdown card - show big days/hrs/min/sec for upcoming */}
                       {isUpcoming && showCountdown && msUntilStart !== null && (() => {
                         const { days, hours, minutes, seconds } = getCountdownParts(msUntilStart);
                         const pad = (n: number) => String(n).padStart(2, '0');
@@ -1893,7 +1893,7 @@ function ViewEventContent(): React.JSX.Element {
                       <div className="ve-ticket-cta">
                         {primaryCTA && renderPrimaryCTA('lg', 've-btn--block')}
 
-                        {/* PROMINENT verify-access CTA — visible for paid UPCOMING & LIVE
+                        {/* PROMINENT verify-access CTA - visible for paid UPCOMING & LIVE
                             events when the user hasn't purchased yet. Equal weight to the
                             primary "Buy Access" so users with prior payment can recover
                             their access from the same surface. */}
@@ -1920,7 +1920,7 @@ function ViewEventContent(): React.JSX.Element {
                         )}
                       </div>
 
-                      {/* Group code redemption — LIVE events only */}
+                      {/* Group code redemption - LIVE events only */}
                       {isPaid && !hasPurchasedAccess && isLive && (
                         <div className="ve-ticket-aux">
                           <div className="ve-ticket-aux-h">
@@ -2180,7 +2180,7 @@ function ViewEventContent(): React.JSX.Element {
                 font-weight: 800;
                 margin-top: 4px;
               }
-              /* Mobile — drop the banner BELOW the top action rail (back +
+              /* Mobile - drop the banner BELOW the top action rail (back +
                  share + save buttons at top: 76-88px, height ~44px) so they
                  don't share the same horizontal lane and overlap. */
               @media (max-width: 700px) {
@@ -2219,7 +2219,7 @@ function ViewEventContent(): React.JSX.Element {
               .ve-btn--live { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: #fff; border-color: rgba(255,255,255,0.18); box-shadow: 0 12px 36px -10px rgba(220,38,38,0.55), inset 0 1px 0 rgba(255,255,255,0.18); position: relative; }
               .ve-btn--live:hover:not(:disabled) { transform: translateY(-1.5px); box-shadow: 0 18px 40px -8px rgba(220,38,38,0.65); background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); }
 
-              /* Strong "join now" pulse for paid attendees on a live event —
+              /* Strong "join now" pulse for paid attendees on a live event -
                  expanding ring outward + intensified base glow so the CTA
                  grabs attention without overwhelming the page. */
               .ve-btn--joinpulse { animation: veJoinPulse 1.4s ease-out infinite; }
@@ -2240,7 +2240,7 @@ function ViewEventContent(): React.JSX.Element {
               .ve-btn--joinpulse:hover:not(:disabled) { animation-play-state: paused; }
               .ve-btn--reserve { background: #083A85; color: #fff; border-color: rgba(255,255,255,0.18); box-shadow: 0 12px 36px -10px rgba(8,58,133,0.65), inset 0 1px 0 rgba(255,255,255,0.18); }
               .ve-btn--reserve:hover:not(:disabled) { background: #062d6b; transform: translateY(-1.5px); box-shadow: 0 18px 40px -8px rgba(8,58,133,0.75), inset 0 1px 0 rgba(255,255,255,0.18); }
-              /* Verify-access CTA — equal-weight secondary action paired with the primary CTA.
+              /* Verify-access CTA - equal-weight secondary action paired with the primary CTA.
                  Glassmorphism brand-blue card with strong border + halo glow so it reads as a
                  first-class option, not a buried link. */
               .ve-btn--verify {
@@ -2284,7 +2284,7 @@ function ViewEventContent(): React.JSX.Element {
               /* ── Live-now ribbon (paid attendee, event currently live) ──
                  Sits between the hero and the body grid. Pulsing red dot
                  left, headline + countdown text middle, action buttons
-                 right. Visually unmistakable — the "moment of payoff". */
+                 right. Visually unmistakable - the "moment of payoff". */
               .ve-livenow {
                 max-width: 1240px;
                 margin: 0 auto;
@@ -2311,7 +2311,7 @@ function ViewEventContent(): React.JSX.Element {
                 color: #fff;
               }
               .ve-livenow.is-dismissed .ve-livenow-inner {
-                /* Quieter look once cancelled — still red but less assertive */
+                /* Quieter look once cancelled - still red but less assertive */
                 background:
                   linear-gradient(135deg, rgba(239,68,68,0.12) 0%, rgba(220,38,38,0.05) 100%);
                 box-shadow:
@@ -2745,7 +2745,7 @@ function ViewEventContent(): React.JSX.Element {
               </span>
             </div>
 
-            {/* Email-notification promise — emerald accent so it reads as
+            {/* Email-notification promise - emerald accent so it reads as
                 a guaranteed positive next-step, not just a tip. */}
             <div
               style={{
@@ -3042,7 +3042,7 @@ function ViewEventContent(): React.JSX.Element {
               )}
             </div>
 
-            {/* Invite by email — only if slots remaining */}
+            {/* Invite by email - only if slots remaining */}
             {(savedGroupCode.remainingSlots == null || savedGroupCode.remainingSlots > 0) && (
               <div style={{ textAlign: 'left', marginBottom: 14 }}>
                 <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#d1d5db', marginBottom: 6 }}>Invite a viewer by email</label>
@@ -3110,7 +3110,7 @@ function ViewEventContent(): React.JSX.Element {
         </div>
       )}
 
-      {/* ── Group Invite — Viewer Identity Modal ── */}
+      {/* ── Group Invite - Viewer Identity Modal ── */}
       {showGroupAuth && (
         <div
           style={{
@@ -3238,7 +3238,7 @@ function ViewEventContent(): React.JSX.Element {
               </p>
             </div>
 
-            {/* Tab switcher — only on login/signup step */}
+            {/* Tab switcher - only on login/signup step */}
             {authStep !== 'otp' && (
               <div style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: 3, marginBottom: 20 }}>
                 {(['login', 'signup'] as const).map(tab => (
@@ -3383,7 +3383,7 @@ function ViewEventContent(): React.JSX.Element {
   );
 }
 
-// Suspense fallback — silent placeholder, no spinner per design request.
+// Suspense fallback - silent placeholder, no spinner per design request.
 function LoadingFallback() {
   return (
     <div

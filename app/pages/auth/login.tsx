@@ -293,7 +293,7 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
     if (!raw) return null;
     // Internal path
     if (raw.startsWith('/') && !raw.startsWith('//') && !raw.startsWith('/\\')) return raw;
-    // Absolute URL — host must be allow-listed
+    // Absolute URL - host must be allow-listed
     try {
       const u = new URL(raw, window.location.origin);
       if (u.origin === window.location.origin) return u.pathname + u.search + u.hash;
@@ -306,7 +306,7 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
   const returnTo = isSafeRedirect(redirectUrl) || '/user/photographers';
 
   // Helper: redirect to dashboard with booking params (for book-now flows).
-  // No token in the URL — the amoria_auth HttpOnly cookie scoped to
+  // No token in the URL - the amoria_auth HttpOnly cookie scoped to
   // .connekyt.com carries auth across subdomains automatically.
   const redirectToBookingDashboard = (customerType?: string) => {
     const returnToUrl = new URL(returnTo, window.location.origin);
@@ -364,7 +364,7 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
         const userData = { id: data.id || data.customerId || '', firstName: data.firstName || userInfo.given_name, lastName: data.lastName || userInfo.family_name, email: data.email || userInfo.email, phone: data.phone || '', customerId: data.customerId || '', customerType };
         loginUser(userData, data.token);
         setLoggedInUserName(userData.firstName || 'User'); setLoggedInUserType(customerType); showSuccess('Welcome back!');
-        // Auto-redirect for booking flows — skip the PostLoginModal
+        // Auto-redirect for booking flows - skip the PostLoginModal
         if (isBookingRedirect) { setTimeout(() => redirectToBookingDashboard(customerType), 300); }
         else { setShowPostLoginModal(true); }
       } else { const msg = response.error || data?.message || 'Google login failed.'; setLoginError(msg); showError(msg); }
@@ -380,17 +380,17 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
       try {
         const response = await login({ email: loginEmail.trim().toLowerCase(), password: loginPassword });
         const data = response.data;
-        // Security gates first — a locked / 2FA account is never bypassed.
+        // Security gates first - a locked / 2FA account is never bypassed.
         if (data?.accountLocked === true || data?.accountLocked === 'true') { setLoginError('Your account has been locked.'); showError('Your account has been locked.'); setLoginLoading(false); return; }
         if (data?.twoFactorRequired && data?.customerId) { showInfo('Please enter your authenticator code.'); setLoginLoading(false); router.push(`/user/auth/verify-totp?customerId=${encodeURIComponent(String(data.customerId))}`); return; }
 
         // Unverified accounts go to OTP FIRST. The profile-completion modal
         // is shown right AFTER verification (on the verify-otp page), not
-        // before — per product: "right after verification should come back
+        // before - per product: "right after verification should come back
         // and show the modal".
         if (data?.otpVerified === false && data?.customerId) { showWarning(data?.message || 'Please verify your phone number.'); setLoginLoading(false); router.push(`/user/auth/verify-otp?applicantId=${encodeURIComponent(String(data.customerId))}&email=${encodeURIComponent(loginEmail)}`); return; }
 
-        // PROFILE-COMPLETION GATE (verified users) — runs BEFORE the
+        // PROFILE-COMPLETION GATE (verified users) - runs BEFORE the
         // dashboard/keep-exploring modal. A photographer with an incomplete
         // profile (everything except KYC) must finish it here, in the same
         // wizard, and can never slip into the dashboard with gaps.
@@ -423,7 +423,7 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
           const userData = { id: data.id || data.user?.id || '', firstName: data.firstName || data.user?.firstName || '', lastName: data.lastName || data.user?.lastName || '', email: data.email || data.user?.email || loginEmail, phone: data.phone || '', customerId: data.customerId || '', customerType };
           loginUser(userData, data.token || '');
           setLoggedInUserName(userData.firstName || 'User'); setLoggedInUserType(customerType); showSuccess('Welcome back!');
-          // Auto-redirect for booking flows — skip the PostLoginModal
+          // Auto-redirect for booking flows - skip the PostLoginModal
           if (isBookingRedirect) { setTimeout(() => redirectToBookingDashboard(customerType), 300); }
           else { setShowPostLoginModal(true); }
         } else { const msg = response.error || data?.message || 'Login failed.'; setLoginError(msg); showError(msg); }
@@ -451,13 +451,13 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
   const [googleSignupLoading, setGoogleSignupLoading] = useState(false);
   const [isGooglePreFilled, setIsGooglePreFilled] = useState(false);
   const [signupErrors, setSignupErrors] = useState<{ [key: string]: string }>({});
-  // Photographer onboarding state — shown after signup, before OTP
+  // Photographer onboarding state - shown after signup, before OTP
   const [showPhotographerOnboarding, setShowPhotographerOnboarding] = useState(false);
   const [pendingOtpRedirectUrl, setPendingOtpRedirectUrl] = useState('');
 
   // Post-login profile-completion gate. When a photographer logs in with an
   // incomplete profile (anything except KYC), we open the SAME onboarding
-  // wizard as a blocking modal — they cannot reach the dashboard (or even
+  // wizard as a blocking modal - they cannot reach the dashboard (or even
   // OTP) until it's 100%. completionCtx carries identity + how to resume.
   const [showCompletionWizard, setShowCompletionWizard] = useState(false);
   const [completionCtx, setCompletionCtx] = useState<{
@@ -468,7 +468,7 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
 
   const filteredCountries = countries.filter(c => c.name.toLowerCase().includes(countrySearch.toLowerCase()) || c.code.includes(countrySearch));
   // Strength model. The four "required" checks line up with the backend's
-  // PasswordPolicyService rules — we surface each one so the user can see
+  // PasswordPolicyService rules - we surface each one so the user can see
   // what's still missing as they type. The bonus checks (length tiers,
   // case mixing) only feed the visual strength bar; they don't block
   // submission. The bar climbs through five steps:
@@ -485,7 +485,7 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
     const required = [lengthOk, hasLetter, hasDigit, hasSpecial];
     const requiredScore = required.filter(Boolean).length; // 0..4
 
-    // Bonus signals — these don't block, just push the strength bar higher.
+    // Bonus signals - these don't block, just push the strength bar higher.
     const longer = pwd.length >= 12;
     const mixedCase = /[a-z]/.test(pwd) && /[A-Z]/.test(pwd);
     const bonusScore = (longer ? 1 : 0) + (mixedCase ? 1 : 0);
@@ -505,7 +505,7 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
   const strengthLabel = ['', 'Too weak', 'Fair', 'Good', 'Strong'][passwordChecks.score];
   const strengthColor = ['#e5e7eb', '#dc2626', '#f59e0b', '#3b82f6', '#10b981'][passwordChecks.score];
 
-  // Block submission on the same criteria the strength meter exposes — no
+  // Block submission on the same criteria the strength meter exposes - no
   // point letting the user click "Create account" with a password the
   // backend will reject. Confirm-match is also required (handled here
   // rather than only at submit so the button reflects reality as they type).
@@ -557,7 +557,7 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
     if (Object.keys(newErrors).length === 0) {
       // Photographers: validate + CREATE THE ACCOUNT here, on the signup
       // step, then open the wizard. The account must exist up front so the
-      // wizard's progressive autosave can persist immediately — and, just
+      // wizard's progressive autosave can persist immediately - and, just
       // as importantly, any email/password problem shows on THIS form
       // instead of failing confusingly at the last wizard step.
       //
@@ -567,7 +567,7 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
       // photographer with a breached password fills out all 6 wizard steps
       // and only then gets rejected at the deferred signup() call, with no
       // way to fix the password from inside the wizard. validate-password
-      // creates nothing — it just runs the rules and returns the reason.
+      // creates nothing - it just runs the rules and returns the reason.
       if (signupUserType.toLowerCase() === 'photographer') {
         setSignupLoading(true);
         // Email-availability pre-check BEFORE opening the 6-step wizard.
@@ -582,10 +582,10 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
             setSignupLoading(false);
             return;
           }
-          // Network/parse failure shouldn't trap the user — signup() at the
+          // Network/parse failure shouldn't trap the user - signup() at the
           // end still enforces uniqueness server-side.
         } catch {
-          // swallow — proceed; signup() remains the source of truth.
+          // swallow - proceed; signup() remains the source of truth.
         }
         try {
           const pwCheck = await validatePasswordRemote(signupPassword);
@@ -597,12 +597,12 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
             return;
           }
           // Network/parse failure on the pre-check shouldn't trap the user
-          // out of signing up — the real signup() at the end still enforces
+          // out of signing up - the real signup() at the end still enforces
           // the policy server-side, so fall through and open the wizard.
         } catch {
-          // swallow — proceed; signup() remains the source of truth.
+          // swallow - proceed; signup() remains the source of truth.
         }
-        // Create the account NOW — a bad password / taken email surfaces
+        // Create the account NOW - a bad password / taken email surfaces
         // on THIS form, never deep inside the 6-step wizard. signup() mints
         // a pre-OTP token so the wizard's autosave + finalize authenticate.
         try {
@@ -676,7 +676,7 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
       const customerId = response.data.customerId;
       if (!customerId) return { success: false, error: 'Signup succeeded but no customer ID was returned.' };
       if (!response.data.token) {
-        return { success: false, error: 'Signup did not return a session token — profile could not be saved. Please try again.' };
+        return { success: false, error: 'Signup did not return a session token - profile could not be saved. Please try again.' };
       }
       setAuthToken(response.data.token);
       const otpUrl = `/user/auth/verify-otp?applicantId=${encodeURIComponent(String(customerId))}&email=${encodeURIComponent(signupEmail)}&customerType=${encodeURIComponent(signupUserType)}&firstName=${encodeURIComponent(firstName)}&lastName=${encodeURIComponent(lastName)}&phone=${encodeURIComponent(`${countryCode}${phoneNumber}`)}${redirectUrl ? `&redirect=${encodeURIComponent(redirectUrl)}` : ''}`;
@@ -693,14 +693,14 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
     const sess = await ensurePhotographerSession();
     if (!sess.success) throw new Error(sess.error || 'Could not start your session. Please try again.');
     // Idempotent: the wizard passed `existing` so persist skips whatever the
-    // autosave already stored — it just fills any gaps and submits.
+    // autosave already stored - it just fills any gaps and submits.
     await persistPhotographerProfile(payload, {
       firstName, lastName, phone: `${countryCode}${phoneNumber}`,
     });
   };
 
   // Post-login completion: the account already exists and the login response
-  // set the auth token (incl. pre-OTP), so we ONLY persist the profile here —
+  // set the auth token (incl. pre-OTP), so we ONLY persist the profile here -
   // no signup(). After it lands the user is at 100% and we resume the
   // original routing (OTP if still unverified, else the dashboard modal).
   const handleCompletionFinalize = async (payload: import('@/app/components/PhotographerOnboarding').OnboardingPayload) => {
@@ -795,13 +795,13 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
         <div style={{ position: 'relative', overflow: 'hidden', height: '100vh', width: '100vw', backgroundColor: '#fff' }}>
           {/* Forms layer */}
           <div style={{ display: 'flex', height: '100%', width: '100%' }}>
-            {/* Signup form — left half */}
+            {/* Signup form - left half */}
             <div style={{ width: '50%', height: '100%', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', overflow: 'auto', opacity: isLogin ? 0 : 1, pointerEvents: isLogin ? 'none' : 'auto', transition: 'opacity 0.4s ease 0.2s' }}>
               <div style={{ width: '100%', maxWidth: '420px', padding: '2.5rem 3rem', margin: 'auto 0' }}>
                 {renderSignupForm()}
               </div>
             </div>
-            {/* Login form — right half */}
+            {/* Login form - right half */}
             <div style={{ width: '50%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', opacity: isLogin ? 1 : 0, pointerEvents: isLogin ? 'auto' : 'none', transition: 'opacity 0.4s ease 0.2s' }}>
               <div style={{ width: '100%', maxWidth: '420px', padding: '0 3rem' }}>
                 {renderLoginForm()}
@@ -869,11 +869,11 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
 
       <PostLoginModal isOpen={showPostLoginModal} userName={loggedInUserName} customerType={loggedInUserType} onKeepExploring={handleKeepExploring} onGoToDashboard={handleGoToDashboard} />
 
-      {/* Photographer onboarding wizard — after signup, before OTP */}
+      {/* Photographer onboarding wizard - after signup, before OTP */}
       <PhotographerOnboarding
         isOpen={showPhotographerOnboarding}
         onClose={() => {
-          // Dismiss without finalising — nothing has been written to the
+          // Dismiss without finalising - nothing has been written to the
           // backend yet, so the user is free to retry signup with the
           // same email/phone.
           setShowPhotographerOnboarding(false);
@@ -890,7 +890,7 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
         ensureSession={ensurePhotographerSession}
       />
 
-      {/* Post-login profile-completion wizard — same component, but the
+      {/* Post-login profile-completion wizard - same component, but the
           account already exists so onFinalize only persists the profile.
           Blocking: closing it just leaves the user on the login page (no
           dashboard, no OTP) until they finish. */}
@@ -1099,7 +1099,7 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
                 </button>
               </div>
               {/*
-                Strength meter — replaces the static "Must contain at least 8
+                Strength meter - replaces the static "Must contain at least 8
                 characters..." paragraph. The 4-segment bar fills with the
                 password's score (red→amber→blue→green), and each required
                 criterion lights up with a ✓ as it's met. The submit button is
@@ -1163,7 +1163,7 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
                   <i className={`bi ${showConfirmPassword ? 'bi-eye-slash' : 'bi-eye'}`} style={{ fontSize: '16px' }} />
                 </button>
               </div>
-              {/* Live mismatch — surfaces as the user types so they don't have
+              {/* Live mismatch - surfaces as the user types so they don't have
                   to wait for the submit-time validator to catch it. */}
               {confirmPassword.length > 0 && !passwordMatches && (
                 <p style={{ fontSize: 11, color: '#dc2626', marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>

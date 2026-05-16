@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { API_ENDPOINTS } from '@/lib/api/config';
 
 /**
- * DonationPromptModal — platform-wide reusable donation prompt.
+ * DonationPromptModal - platform-wide reusable donation prompt.
  *
  * Pops up AFTER a user clicks the final "Pay" / "Continue" action in any
  * payment modal across Connekyt. Visually distinct from the payment modals
@@ -13,12 +13,12 @@ import { API_ENDPOINTS } from '@/lib/api/config';
  *
  * UX guard-rails to prevent any "did I just pay extra by accident?" confusion:
  *   1. Big amber "OPTIONAL · YOUR PAYMENT IS SEPARATE" banner pinned to the
- *      very top — first thing the eye lands on.
+ *      very top - first thing the eye lands on.
  *   2. Rose/coral palette + animated heart icon clearly say "charity, not pay".
- *   3. Primary action is the brand-blue "Continue to payment →" button — the
+ *   3. Primary action is the brand-blue "Continue to payment →" button - the
  *      familiar payment-flow CTA, so the default safe path is to NOT donate.
  *   4. "Add donation" is a secondary rose ghost button that's disabled until
- *      the user actively picks an amount or types one — no accidental adds.
+ *      the user actively picks an amount or types one - no accidental adds.
  *   5. A live grounding panel always shows the actual payment amount, plus
  *      a + donation row only when an amount is selected.
  *
@@ -42,7 +42,7 @@ import { API_ENDPOINTS } from '@/lib/api/config';
 
 export interface DonationPromptModalProps {
   isOpen: boolean;
-  /** User chose NOT to donate — proceed to payment unchanged. */
+  /** User chose NOT to donate - proceed to payment unchanged. */
   onSkip: () => void;
   /** User added a donation of this amount in `currencyCode`. */
   onDonate: (amount: number) => void;
@@ -93,7 +93,7 @@ const DonationPromptModal: React.FC<DonationPromptModalProps> = ({
         }
       }
     } catch {
-      // Silent — fallback tiers remain
+      // Silent - fallback tiers remain
     }
   }, [currencyCode]);
 
@@ -107,7 +107,7 @@ const DonationPromptModal: React.FC<DonationPromptModalProps> = ({
     }
   }, [isOpen, fetchTiers]);
 
-  // ESC closes — equivalent to skip
+  // ESC closes - equivalent to skip
   useEffect(() => {
     if (!isOpen) return;
     const onKey = (e: KeyboardEvent) => {
@@ -160,7 +160,7 @@ const DonationPromptModal: React.FC<DonationPromptModalProps> = ({
         aria-labelledby="dp-title"
         onMouseDown={(e) => e.stopPropagation()}
       >
-        {/* OPTIONAL banner — the unmissable "this is not your payment" cue */}
+        {/* OPTIONAL banner - the unmissable "this is not your payment" cue */}
         <div className="dp-optional-banner" aria-hidden="false">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="12" cy="12" r="10" />
@@ -170,7 +170,7 @@ const DonationPromptModal: React.FC<DonationPromptModalProps> = ({
           OPTIONAL · YOUR PAYMENT IS SEPARATE
         </div>
 
-        {/* Close (X) — equivalent to skip */}
+        {/* Close (X) - equivalent to skip */}
         <button
           type="button"
           onClick={onSkip}
@@ -183,7 +183,7 @@ const DonationPromptModal: React.FC<DonationPromptModalProps> = ({
           </svg>
         </button>
 
-        {/* Inline header — heart icon + title side-by-side */}
+        {/* Inline header - heart icon + title side-by-side */}
         <div className="dp-header">
           <div className="dp-hero" aria-hidden="true">
             <span className="dp-hero-ring dp-hero-ring--1" />
@@ -200,7 +200,7 @@ const DonationPromptModal: React.FC<DonationPromptModalProps> = ({
           </div>
         </div>
 
-        {/* Tier grid — 2×2 rose */}
+        {/* Tier grid - 2×2 rose */}
         <div className="dp-tiers">
           {tiers.map((tier) => {
             const converted = convert(tier);
@@ -222,7 +222,7 @@ const DonationPromptModal: React.FC<DonationPromptModalProps> = ({
           })}
         </div>
 
-        {/* Custom amount row — clearly an editable field with white interior,
+        {/* Custom amount row - clearly an editable field with white interior,
             visible border, label, and pencil icon to signal "you can type here". */}
         <label className="dp-custom-label">Or enter custom amount</label>
         <div className={`dp-custom ${isCustom ? 'is-active' : ''}`}>
@@ -251,7 +251,7 @@ const DonationPromptModal: React.FC<DonationPromptModalProps> = ({
           </span>
         </div>
 
-        {/* Impact strip — quick scan of what the donation supports.
+        {/* Impact strip - quick scan of what the donation supports.
             Compact icon row: each pill is a beneficiary category. */}
         <div className="dp-impact-strip" role="list" aria-label="What your donation supports">
           <div className="dp-impact-cell" role="listitem">
@@ -295,7 +295,7 @@ const DonationPromptModal: React.FC<DonationPromptModalProps> = ({
           </div>
         </div>
 
-        {/* Trust line — single concise statement about where 100% goes */}
+        {/* Trust line - single concise statement about where 100% goes */}
         <p className="dp-trust">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M9 12l2 2 4-4" />
@@ -306,7 +306,7 @@ const DonationPromptModal: React.FC<DonationPromptModalProps> = ({
           </span>
         </p>
 
-        {/* Grounding panel — visible at all times so the actual payment is
+        {/* Grounding panel - visible at all times so the actual payment is
             never hidden, plus a + donation row only when amount is picked. */}
         <div className="dp-grounding">
           <span className="dp-grounding-row">
@@ -331,7 +331,7 @@ const DonationPromptModal: React.FC<DonationPromptModalProps> = ({
           )}
         </div>
 
-        {/* Single CTA — label + behavior swap based on whether the user
+        {/* Single CTA - label + behavior swap based on whether the user
             has chosen a donation amount. */}
         <div className="dp-actions">
           <button
@@ -390,7 +390,7 @@ const DonationPromptModal: React.FC<DonationPromptModalProps> = ({
           100% { opacity: 1; transform: translateY(0) scale(1); }
         }
 
-        /* OPTIONAL banner — pinned to top, full-width amber */
+        /* OPTIONAL banner - pinned to top, full-width amber */
         .dp-optional-banner {
           position: absolute;
           top: 0;
@@ -436,7 +436,7 @@ const DonationPromptModal: React.FC<DonationPromptModalProps> = ({
           transform: rotate(90deg) scale(1.05);
         }
 
-        /* Inline header — icon and text on one row */
+        /* Inline header - icon and text on one row */
         .dp-header {
           display: flex;
           align-items: center;
@@ -447,7 +447,7 @@ const DonationPromptModal: React.FC<DonationPromptModalProps> = ({
           flex: 1;
           min-width: 0;
         }
-        /* Heart hero — smaller for the compact inline layout */
+        /* Heart hero - smaller for the compact inline layout */
         .dp-hero {
           position: relative;
           width: 44px;
@@ -493,7 +493,7 @@ const DonationPromptModal: React.FC<DonationPromptModalProps> = ({
           100% { transform: scale(1.55); opacity: 0; }
         }
 
-        /* Title + subtitle — left-aligned, tighter */
+        /* Title + subtitle - left-aligned, tighter */
         .dp-title {
           margin: 0 0 2px;
           font-size: 17px;
@@ -511,7 +511,7 @@ const DonationPromptModal: React.FC<DonationPromptModalProps> = ({
           text-align: left;
         }
 
-        /* Tier grid — single row of 4 buttons (was 2×2) */
+        /* Tier grid - single row of 4 buttons (was 2×2) */
         .dp-tiers {
           display: grid;
           grid-template-columns: repeat(4, 1fr);
@@ -544,7 +544,7 @@ const DonationPromptModal: React.FC<DonationPromptModalProps> = ({
           box-shadow: 0 4px 10px -3px rgba(225, 29, 72, 0.45);
         }
 
-        /* Custom amount label — small eyebrow above the field */
+        /* Custom amount label - small eyebrow above the field */
         .dp-custom-label {
           display: block;
           font-size: 10.5px;
@@ -555,7 +555,7 @@ const DonationPromptModal: React.FC<DonationPromptModalProps> = ({
           margin-bottom: 6px;
           font-family: inherit;
         }
-        /* Custom amount input — clearly an editable field. White interior,
+        /* Custom amount input - clearly an editable field. White interior,
            bold rose border, edit icon affordance, and a strong focus glow. */
         .dp-custom {
           display: flex;
@@ -573,7 +573,7 @@ const DonationPromptModal: React.FC<DonationPromptModalProps> = ({
           background: #ffffff;
           box-shadow: 0 0 0 4px rgba(225, 29, 72, 0.16);
         }
-        /* Currency badge on the left — clearly a non-editable prefix label */
+        /* Currency badge on the left - clearly a non-editable prefix label */
         .dp-custom-prefix {
           padding: 9px 12px;
           font-size: 12.5px;
@@ -585,7 +585,7 @@ const DonationPromptModal: React.FC<DonationPromptModalProps> = ({
           letter-spacing: 0.04em;
           flex-shrink: 0;
         }
-        /* The actual input — bigger text, stronger placeholder color */
+        /* The actual input - bigger text, stronger placeholder color */
         .dp-custom input {
           flex: 1;
           padding: 9px 12px;
@@ -603,7 +603,7 @@ const DonationPromptModal: React.FC<DonationPromptModalProps> = ({
           font-weight: 600;
           opacity: 1;
         }
-        /* Edit icon on the right — visual affordance "you can type here" */
+        /* Edit icon on the right - visual affordance "you can type here" */
         .dp-custom-edit {
           display: flex;
           align-items: center;
@@ -616,7 +616,7 @@ const DonationPromptModal: React.FC<DonationPromptModalProps> = ({
         }
         .dp-custom.is-active .dp-custom-edit { color: #e11d48; }
 
-        /* Impact strip — 4-cell row showing categories the donation supports */
+        /* Impact strip - 4-cell row showing categories the donation supports */
         .dp-impact-strip {
           display: grid;
           grid-template-columns: repeat(4, 1fr);
@@ -653,7 +653,7 @@ const DonationPromptModal: React.FC<DonationPromptModalProps> = ({
           line-height: 1;
         }
 
-        /* Trust line — small but reassuring */
+        /* Trust line - small but reassuring */
         .dp-trust {
           margin: 0 0 12px;
           padding: 7px 11px;
@@ -677,7 +677,7 @@ const DonationPromptModal: React.FC<DonationPromptModalProps> = ({
           font-weight: 800;
         }
 
-        /* Grounding panel — tighter */
+        /* Grounding panel - tighter */
         .dp-grounding {
           background: #f8fafc;
           border: 1px solid rgba(8, 58, 133, 0.10);
@@ -709,7 +709,7 @@ const DonationPromptModal: React.FC<DonationPromptModalProps> = ({
           font-weight: 800;
         }
 
-        /* Actions — side-by-side row to save vertical height */
+        /* Actions - side-by-side row to save vertical height */
         .dp-actions {
           display: flex;
           flex-direction: row;
@@ -739,7 +739,7 @@ const DonationPromptModal: React.FC<DonationPromptModalProps> = ({
         @media (max-width: 380px) {
           .dp-actions { flex-direction: column-reverse; }
         }
-        /* Continue (primary) — brand-blue, the obvious safe path */
+        /* Continue (primary) - brand-blue, the obvious safe path */
         .dp-btn--continue {
           background: linear-gradient(135deg, #083A85 0%, #0a4da3 50%, #1f6bff 100%);
           color: #ffffff;
@@ -755,7 +755,7 @@ const DonationPromptModal: React.FC<DonationPromptModalProps> = ({
             inset 0 1px 0 rgba(255, 255, 255, 0.22);
         }
         .dp-btn--continue:active { transform: translateY(0) scale(0.98); }
-        /* Add donation (secondary) — solid rose gradient when an amount is
+        /* Add donation (secondary) - solid rose gradient when an amount is
            selected, so the call-to-action looks confident and clearly clickable.
            Disabled state stays a faint rose so it's obvious you need to pick
            a tier first to enable it. */

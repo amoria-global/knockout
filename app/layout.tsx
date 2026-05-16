@@ -11,14 +11,14 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 import { SITE_URL, SITE_NAME } from "@/lib/seo/seo";
 
 const DEFAULT_DESCRIPTION =
-  "Amoria Connekyt — book professional event photographers and reserve spots or watch live-streamed events. Discover recent and upcoming events and studios.";
+  "Amoria Connekyt - book professional event photographers and reserve spots or watch live-streamed events. Discover recent and upcoming events and studios.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   // Child pages set just their part (e.g. "Book - Legacy Studio") and this
   // template appends the brand → "Book - Legacy Studio | Amoria Connekyt".
   title: {
-    default: `${SITE_NAME} — Event Photography & Live Streaming`,
+    default: `${SITE_NAME} - Event Photography & Live Streaming`,
     template: `%s | ${SITE_NAME}`,
   },
   description: DEFAULT_DESCRIPTION,
@@ -31,13 +31,13 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     siteName: SITE_NAME,
-    title: `${SITE_NAME} — Event Photography & Live Streaming`,
+    title: `${SITE_NAME} - Event Photography & Live Streaming`,
     description: DEFAULT_DESCRIPTION,
     url: SITE_URL,
   },
   twitter: {
     card: "summary_large_image",
-    title: `${SITE_NAME} — Event Photography & Live Streaming`,
+    title: `${SITE_NAME} - Event Photography & Live Streaming`,
     description: DEFAULT_DESCRIPTION,
   },
   robots: {

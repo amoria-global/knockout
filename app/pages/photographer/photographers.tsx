@@ -29,7 +29,7 @@ const BRAND_DARK = '#062a63';
 type SortKey = 'top_rated' | 'most_jobs' | 'newest' | 'price_asc' | 'price_desc';
 
 /* ------------------------------------------------------------------
- * FilterSelect — custom styled dropdown
+ * FilterSelect - custom styled dropdown
  *
  * Native <select> can't have its option list styled (browsers ignore
  * <option> CSS). This is a button + listbox popover that:
@@ -58,7 +58,7 @@ function FilterSelect({
   ariaLabel: string;
   /** Optional inline label shown before the selected value (e.g. "Sort:"). */
   prefix?: string;
-  /** Compact trigger — smaller, inline-block instead of full-width. */
+  /** Compact trigger - smaller, inline-block instead of full-width. */
   compact?: boolean;
   /** Anchor the popover from the left or right edge of the trigger. */
   align?: 'left' | 'right';
@@ -207,7 +207,7 @@ function FilterSelect({
  * right) so we don't need a motion library and the animation stays smooth
  * even under React's reconciliation.
  *
- * If there's only one image the interval is skipped — no animation, just
+ * If there's only one image the interval is skipped - no animation, just
  * a static cover. If there are zero images the parent renders its own
  * empty-state, so this component is rendered conditionally on
  * images.length > 0.
@@ -273,7 +273,7 @@ const Photographers: React.FC = () => {
   const [userLocation, setUserLocation] = useState<LocationData | null>(null);
   const [availableDistricts, setAvailableDistricts] = useState<string[]>([]);
   const [cities, setCities] = useState<City[]>([]);
-  // currencyMap kept for type compatibility — was unused in the original UI
+  // currencyMap kept for type compatibility - was unused in the original UI
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [currencyMap, setCurrencyMap] = useState<Map<string, Currency>>(new Map());
 
@@ -285,7 +285,7 @@ const Photographers: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showBanner, setShowBanner] = useState(true);
 
-  // Sort state — default to newest-first (last come, first out).
+  // Sort state - default to newest-first (last come, first out).
   const [sortBy, setSortBy] = useState<SortKey>('newest');
 
   // Booking wizard state
@@ -516,7 +516,7 @@ const Photographers: React.FC = () => {
         }
         case 'newest':
         default: {
-          // Last come, first out — most recently created photographer first.
+          // Last come, first out - most recently created photographer first.
           // The landing Photographer type carries the registration timestamp
           // as `joinedFrom` (backend maps it from Customer.getCreatedAt());
           // there is no `createdAt` on this type, which is what failed
@@ -537,7 +537,7 @@ const Photographers: React.FC = () => {
     <div className="ph-root">
       <style>{`
         /* ============================================================
-           PHOTOGRAPHERS PAGE — scoped styles
+           PHOTOGRAPHERS PAGE - scoped styles
            Single source of brand-blue, hover-via-CSS, focus rings,
            skeleton shimmer, and responsive overrides.
            ============================================================ */
@@ -621,7 +621,7 @@ const Photographers: React.FC = () => {
           margin: 0 auto;
         }
 
-        /* Control card — floats over hero */
+        /* Control card - floats over hero */
         .ph-control {
           position: relative;
           z-index: 3;
@@ -679,7 +679,7 @@ const Photographers: React.FC = () => {
         }
         @media (max-width: 900px) { .ph-filters { grid-template-columns: repeat(2, 1fr); } }
 
-        /* Date input wrapper (kept native — OS pickers are good) */
+        /* Date input wrapper (kept native - OS pickers are good) */
         .ph-filter {
           position: relative;
           display: flex; align-items: center; gap: 8px;
@@ -732,7 +732,7 @@ const Photographers: React.FC = () => {
           text-align: left;
           transition: border-color 0.18s, box-shadow 0.18s;
         }
-        /* Compact variant — used by Sort in the result strip */
+        /* Compact variant - used by Sort in the result strip */
         .ph-select-trigger--compact {
           width: auto;
           padding: 0.5rem 0.85rem;
@@ -791,14 +791,14 @@ const Photographers: React.FC = () => {
           scrollbar-width: thin;
           scrollbar-color: rgba(8,58,133,0.25) transparent;
         }
-        /* Compact wraps size-to-content — let the popover grow up to a sensible max */
+        /* Compact wraps size-to-content - let the popover grow up to a sensible max */
         .ph-select-wrap--compact .ph-select-list {
           left: 0;
           right: auto;
           min-width: 220px;
           max-width: 280px;
         }
-        /* Right-anchored popover — anchors the dropdown to the trigger's right edge */
+        /* Right-anchored popover - anchors the dropdown to the trigger's right edge */
         .ph-select-wrap--align-right .ph-select-list {
           left: auto;
           right: 0;
@@ -877,7 +877,7 @@ const Photographers: React.FC = () => {
           font-family: inherit;
         }
         .ph-clear-btn:hover { border-color: ${BRAND}; color: ${BRAND}; background: rgba(8,58,133,0.04); }
-        /* .ph-sort native styling removed — sort now uses <FilterSelect compact /> */
+        /* .ph-sort native styling removed - sort now uses <FilterSelect compact /> */
 
         /* Grid */
         .ph-grid {
@@ -892,7 +892,7 @@ const Photographers: React.FC = () => {
           .ph-grid { grid-template-columns: 1fr; }
         }
 
-        /* CARD — preserves original border + cover-height proportions */
+        /* CARD - preserves original border + cover-height proportions */
         .ph-card {
           position: relative;
           background: #fff;
@@ -921,7 +921,7 @@ const Photographers: React.FC = () => {
           object-fit: cover; object-position: center;
           display: block;
         }
-        /* Cover carousel — stack a few images in the same frame and slide
+        /* Cover carousel - stack a few images in the same frame and slide
            through them every 3s. Each slide is absolutely positioned so the
            three positions (left / active / right) line up regardless of the
            image's natural size. */
@@ -946,7 +946,7 @@ const Photographers: React.FC = () => {
         .ph-cover-slide--active { transform: translateX(0); }
         .ph-cover-slide--left   { transform: translateX(-100%); }
         .ph-cover-slide--right  { transform: translateX(100%); }
-        /* Respect reduced-motion preferences — we still cycle the image, just
+        /* Respect reduced-motion preferences - we still cycle the image, just
            without the slide animation. */
         @media (prefers-reduced-motion: reduce) {
           .ph-cover-slide { transition: opacity 0.3s ease; transform: none !important; opacity: 0; }
@@ -958,9 +958,9 @@ const Photographers: React.FC = () => {
           color: rgba(255,255,255,0.7);
           font-size: 2.5rem;
         }
-        /* (gradient fade removed — name no longer overlays the cover) */
+        /* (gradient fade removed - name no longer overlays the cover) */
 
-        /* Avatar — straddles cover/body boundary, mostly in cover with a slight
+        /* Avatar - straddles cover/body boundary, mostly in cover with a slight
            lip into the body so the name has breathing room below it. */
         .ph-avatar {
           position: absolute;
@@ -991,7 +991,7 @@ const Photographers: React.FC = () => {
           color: #94a3b8;
           font-size: 2rem;
         }
-        /* Blue verification tick — small white circle pinned to bottom-right of avatar */
+        /* Blue verification tick - small white circle pinned to bottom-right of avatar */
         .ph-avatar-verif {
           position: absolute;
           bottom: 0;
@@ -1080,7 +1080,7 @@ const Photographers: React.FC = () => {
         .ph-bookmark:hover { transform: scale(1.08); }
         .ph-bookmark.is-saved { color: ${BRAND}; }
 
-        /* Identity block — sits inside the body, below the straddling avatar */
+        /* Identity block - sits inside the body, below the straddling avatar */
         .ph-info {
           display: flex;
           flex-direction: column;
@@ -1117,7 +1117,7 @@ const Photographers: React.FC = () => {
           min-width: 0;
         }
 
-        /* Card body — top padding clears the 18px avatar overhang + 8px breathing */
+        /* Card body - top padding clears the 18px avatar overhang + 8px breathing */
         .ph-card-body {
           padding: 26px 0.95rem 0.7rem;
           display: flex; flex-direction: column; gap: 0.32rem;
@@ -1208,7 +1208,7 @@ const Photographers: React.FC = () => {
           .ph-card { border-radius: 12px; border-width: 2px; }
           .ph-card-cover { height: 105px; }
 
-          /* Mobile avatar — sticks 14px into body, leaving room for the name */
+          /* Mobile avatar - sticks 14px into body, leaving room for the name */
           .ph-avatar { top: 79px; left: 8px; width: 40px; height: 40px; }
           .ph-avatar img,
           .ph-avatar-empty { border-width: 2px; }
@@ -1223,10 +1223,10 @@ const Photographers: React.FC = () => {
           .ph-status, .ph-rating { font-size: 0.58rem; padding: 3px 7px; top: 8px; }
           .ph-status { left: 8px; }
           .ph-rating { right: 8px; }
-          /* Cover is now 150px tall — bookmark fits cleanly below rating chip again */
+          /* Cover is now 150px tall - bookmark fits cleanly below rating chip again */
           .ph-bookmark { width: 24px; height: 24px; top: 38px; right: 8px; font-size: 0.7rem; }
 
-          /* Mobile body padding — clears 14px avatar overhang + 6px breathing */
+          /* Mobile body padding - clears 14px avatar overhang + 6px breathing */
           .ph-card-body { padding: 20px 0.65rem 0.5rem; gap: 0.25rem; }
           .ph-stat { font-size: 0.65rem; }
           .ph-chip { font-size: 0.6rem; padding: 2px 7px; }
@@ -1350,7 +1350,7 @@ const Photographers: React.FC = () => {
         <p className="ph-hero-sub">{t('subtitle')}</p>
       </section>
 
-      {/* Control card — search + filters */}
+      {/* Control card - search + filters */}
       <div className="ph-control">
         <div className="ph-control-card">
           <form onSubmit={handleSearch} role="search">
@@ -1496,7 +1496,7 @@ const Photographers: React.FC = () => {
           </div>
         </div>
 
-        {/* Loading — skeleton grid */}
+        {/* Loading - skeleton grid */}
         {isLoading && (
           <div className="ph-grid" aria-busy="true" aria-live="polite">
             {Array.from({ length: 6 }).map((_, i) => (
@@ -1569,7 +1569,7 @@ const Photographers: React.FC = () => {
               const rating        = photographer.rating ?? 0;
               const reviewCount   = photographer.reviews?.length ?? 0;
               const completedJobs = photographer.completedEvents ?? 0;
-              // Per design spec: every card shows "Available" — no booked state surfaced
+              // Per design spec: every card shows "Available" - no booked state surfaced
               const isVerified    = photographer.isVerified ?? true; // default true (matches old default badge)
               const headline      = specialties[0] || photographer.customerType || 'Photographer';
               const visibleChips  = isMobile ? 2 : 3;
@@ -1586,7 +1586,7 @@ const Photographers: React.FC = () => {
                       </div>
                     )}
 
-                    {/* Status pill — reflects the backend's red-day model:
+                    {/* Status pill - reflects the backend's red-day model:
                         "booked" when today is at capacity or the photographer
                         manually blocked it, "available" otherwise. */}
                     {photographer.currentStatus === 'booked' ? (
@@ -1623,7 +1623,7 @@ const Photographers: React.FC = () => {
 
                   </div>
 
-                  {/* Avatar — straddles cover/body boundary (original placement) */}
+                  {/* Avatar - straddles cover/body boundary (original placement) */}
                   <div className="ph-avatar">
                     {profileImage ? (
                       // eslint-disable-next-line @next/next/no-img-element
@@ -1641,7 +1641,7 @@ const Photographers: React.FC = () => {
 
                   {/* BODY */}
                   <div className="ph-card-body">
-                    {/* Identity — headline + location share one row to keep card compact */}
+                    {/* Identity - headline + location share one row to keep card compact */}
                     <div className="ph-info">
                       <h3 className="ph-name">{displayName}</h3>
                       <p className="ph-meta">
@@ -1713,7 +1713,7 @@ const Photographers: React.FC = () => {
           </div>
         )}
 
-        {/* Pagination — show only when there's actual overflow worth
+        {/* Pagination - show only when there's actual overflow worth
             paginating (visible data fills the current page OR we're
             already past page 1). Hides when the first page already has
             every photographer that survived filtering. */}

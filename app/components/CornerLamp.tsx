@@ -1,6 +1,6 @@
 'use client';
 
-// CornerLamp — a smaller copy of the Smart Tools Lamp design, mounted at a
+// CornerLamp - a smaller copy of the Smart Tools Lamp design, mounted at a
 // section corner and rotated 45° so its conic light cone aims into the section.
 // Same visual recipe as Lamp.tsx (filament line + conic gradient cone + diffuse
 // bulb glow + masks), at roughly half the size.
@@ -110,7 +110,7 @@ const CornerLamp: React.FC<CornerLampProps> = ({
             backgroundImage: `conic-gradient(from 70deg at center top, ${beamColor}, transparent, transparent)`,
           }}
         >
-          {/* Bottom fade — masks the cone into the section bg */}
+          {/* Bottom fade - masks the cone into the section bg */}
           <div
             style={{
               position: 'absolute',
@@ -183,7 +183,7 @@ const CornerLamp: React.FC<CornerLampProps> = ({
           />
         </motion.div>
 
-        {/* BG-color softener — blurs cone into section */}
+        {/* BG-color softener - blurs cone into section */}
         <div
           style={{
             position: 'absolute',
@@ -212,7 +212,7 @@ const CornerLamp: React.FC<CornerLampProps> = ({
           }}
         />
 
-        {/* Bright bulb hot-spot — animates wider on view */}
+        {/* Bright bulb hot-spot - animates wider on view */}
         <motion.div
           initial={{ width: '4rem' }}
           whileInView={{ width: '8rem' }}
@@ -230,7 +230,7 @@ const CornerLamp: React.FC<CornerLampProps> = ({
           }}
         />
 
-        {/* Filament — sharp horizontal line at the top */}
+        {/* Filament - sharp horizontal line at the top */}
         <motion.div
           initial={{ width: '7rem' }}
           whileInView={{ width: '14rem' }}
@@ -247,7 +247,7 @@ const CornerLamp: React.FC<CornerLampProps> = ({
           }}
         />
 
-        {/* Top mask — hides the cone's top so the lamp appears to come from above */}
+        {/* Top mask - hides the cone's top so the lamp appears to come from above */}
         <div
           style={{
             position: 'absolute',

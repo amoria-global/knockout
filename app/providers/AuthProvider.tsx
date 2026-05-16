@@ -69,7 +69,7 @@ function clearStoredUser(): void {
 }
 
 /**
- * Validate profile picture URL — backend sometimes returns URLs like ".../null" instead of actual null
+ * Validate profile picture URL - backend sometimes returns URLs like ".../null" instead of actual null
  */
 function getValidProfilePicture(url: string | null | undefined): string | undefined {
   if (!url || url.includes('/null')) return undefined;

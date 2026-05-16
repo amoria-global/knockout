@@ -8,7 +8,7 @@ import { logger } from '../logger';
 import { isTimeoutError, isAbortError } from './timeout';
 
 /**
- * Default retry configuration — kept aligned with lib/api/config.ts so any
+ * Default retry configuration - kept aligned with lib/api/config.ts so any
  * caller that invokes withRetry() without explicit config gets the same
  * backend-deploy-tolerant behavior as the standard apiClient path.
  */

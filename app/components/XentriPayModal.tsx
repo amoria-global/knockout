@@ -42,9 +42,9 @@ export interface XentriPayModalProps {
   eventId?: string;
   // For donation payments
   donationId?: string;
-  // For streaming payments — optional donation amount added on top of gift
+  // For streaming payments - optional donation amount added on top of gift
   donationAmount?: number;
-  // Anonymous viewer ID — triggers public payment flow (no auth required)
+  // Anonymous viewer ID - triggers public payment flow (no auth required)
   viewerId?: string;
   /**
    * For streaming group-access purchases. The backend re-computes
@@ -53,11 +53,11 @@ export interface XentriPayModalProps {
    * the right amount instead of falling back to per-viewer.
    */
   viewerCount?: number;
-  // For album_purchase — paid face-search photos
+  // For album_purchase - paid face-search photos
   albumId?: string;
   photoIds?: string[];
   buyerId?: string;
-  // For multi_album_purchase — face-scan that matched photos across multiple
+  // For multi_album_purchase - face-scan that matched photos across multiple
   // photographers' albums. One item per gallery; backend creates N
   // AlbumPurchase rows sharing one refid so each photographer gets their
   // correct slice of revenue.
@@ -70,7 +70,7 @@ export interface XentriPayModalProps {
   onDonationAmountChange?: (amount: number) => void;
   // Skip the per-event IP geo-check entirely (always treat as allowed).
   // Used for live events: spot-reservation geo-restrictions only apply to
-  // upcoming events — once the event is live, anyone who paid can join.
+  // upcoming events - once the event is live, anyone who paid can join.
   skipEventGeoCheck?: boolean;
 }
 
@@ -126,7 +126,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
   const stopPollingRef = useRef<(() => void) | null>(null);
 
   // Internal donation state (used when showDonationPrompt is true).
-  // The donation tiers/exchange-rate state below is now legacy — the
+  // The donation tiers/exchange-rate state below is now legacy - the
   // standalone DonationPromptModal owns that fetch/state internally. We
   // keep `internalDonationAmount` so the chosen donation flows back into
   // handlePay and the existing donation-tracking analytics.
@@ -137,7 +137,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
   const [isCustomDonation, setIsCustomDonation] = useState(false);
   const [donationExchangeRate, setDonationExchangeRate] = useState(1);
 
-  // Controls the standalone DonationPromptModal overlay — opened when the
+  // Controls the standalone DonationPromptModal overlay - opened when the
   // user clicks "Continue" on the method step (if showDonationPrompt is on).
   const [showDonationOverlay, setShowDonationOverlay] = useState(false);
 
@@ -204,7 +204,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
   }, [isOpen]);
 
   // Automatic event geo-check based on IP address (only when modal opens).
-  // Skipped entirely when skipEventGeoCheck is true — live events allow
+  // Skipped entirely when skipEventGeoCheck is true - live events allow
   // anyone who has paid to join, regardless of country. Geo-restriction
   // only enforces for spot reservers on upcoming events.
   useEffect(() => {
@@ -394,7 +394,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
         });
       } else if (paymentType === 'streaming' && eventId) {
         if (viewerId) {
-          // Anonymous viewer — use public endpoint (no auth)
+          // Anonymous viewer - use public endpoint (no auth)
           response = await initiateAnonymousStreamingPayment(eventId, {
             viewerId,
             amount,
@@ -529,10 +529,10 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
 
   // Display currency for the whole modal. Defaults to USD (safe universal
   // default) and is controlled by the PaymentCurrencyPreview panel's
-  // selector below — picking a new currency there re-renders every amount
+  // selector below - picking a new currency there re-renders every amount
   // in the modal (header, summaries, inputs, fee lines, success page).
   // The submit wire still carries the original `amount` + `currencyCode`
-  // props unchanged — this is purely presentation.
+  // props unchanged - this is purely presentation.
   //
   // IMPORTANT: these hooks must sit ABOVE the `!isOpen` early return so the
   // hook order stays stable between open/closed renders (Rules of Hooks).
@@ -608,7 +608,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
         }}
         onMouseDown={(e) => e.stopPropagation()}
       >
-        {/* Top brand-blue accent ribbon — subtle gradient that hints at the
+        {/* Top brand-blue accent ribbon - subtle gradient that hints at the
             brand without overwhelming the white surface. */}
         <div
           aria-hidden="true"
@@ -641,7 +641,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
             zIndex: 0,
           }}
         />
-        {/* Decorative dot grid in the bottom-left — barely-there texture */}
+        {/* Decorative dot grid in the bottom-left - barely-there texture */}
         <div
           aria-hidden="true"
           style={{
@@ -744,7 +744,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
               </div>
             )}
 
-            {/* Blocked overlay — full-screen, no close option */}
+            {/* Blocked overlay - full-screen, no close option */}
             {eventId && !geoCheckLoading && eventGeoCheck && !eventGeoCheck.allowed && (
               <div style={{
                 position: 'fixed',
@@ -849,13 +849,13 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
               </div>
             )}
 
-            {/* Normal payment form — only when allowed */}
+            {/* Normal payment form - only when allowed */}
             {(!eventId || (!geoCheckLoading && eventGeoCheck?.allowed !== false)) && (<>
-            {/* Header — eyebrow pill + title + subtitle. Currency preview is
+            {/* Header - eyebrow pill + title + subtitle. Currency preview is
                 pulled out into its own dedicated "Amount panel" below the
                 header so it reads as a first-class element, not an island. */}
             <div style={{ marginBottom: '16px' }}>
-              {/* Brand eyebrow pill — communicates "this is a payment", builds trust */}
+              {/* Brand eyebrow pill - communicates "this is a payment", builds trust */}
               <div style={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -902,7 +902,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
               ) : null}
             </div>
 
-            {/* Amount Panel — the financial heart of the modal. White-on-blue-tint
+            {/* Amount Panel - the financial heart of the modal. White-on-blue-tint
                 gradient card with the headline amount on the left and the currency
                 converter on the right. Replaces the previous "floating box" feel.
                 NB: overflow stays VISIBLE so the currency dropdown menu can open
@@ -1082,7 +1082,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
               </div>
             )}
 
-            {/* Payment Method Selection — uppercase eyebrow label, premium tiles
+            {/* Payment Method Selection - uppercase eyebrow label, premium tiles
                 with brand-blue ring on selected, hover lift, check badge. */}
             <div style={{ marginBottom: '20px' }}>
               <label style={{
@@ -1309,13 +1309,13 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
               </div>
             )}
 
-            {/* Pay Button — gradient brand-blue with brand-blue glow when active.
+            {/* Pay Button - gradient brand-blue with brand-blue glow when active.
                 Disabled state uses a brand-blue tinted soft surface (not pure
                 gray) so it still feels like part of the brand system. */}
             <button
               onClick={() => {
                 // If donation prompt is enabled, open the standalone overlay
-                // (DonationPromptModal) — not the internal step. Skipping or
+                // (DonationPromptModal) - not the internal step. Skipping or
                 // confirming on that overlay continues to handlePay below.
                 if (showDonationPrompt && paymentType !== 'donation') {
                   setShowDonationOverlay(true);
@@ -1628,7 +1628,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
               pointerEvents: 'none',
               zIndex: 0,
             }} />
-            {/* Dual-ring spinner — outer thin track + brand-blue gradient arc */}
+            {/* Dual-ring spinner - outer thin track + brand-blue gradient arc */}
             <div style={{
               width: '92px',
               height: '92px',
@@ -1710,7 +1710,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
             )}
 
             <p style={{ fontSize: '13px', color: '#6b7280' }}>
-              Waiting for the gateway to confirm your payment — this can take up to a minute.
+              Waiting for the gateway to confirm your payment - this can take up to a minute.
             </p>
 
             <p style={{ fontSize: '13px', color: '#ef4444', marginTop: '12px', lineHeight: 1.5 }}>
@@ -1722,7 +1722,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
         {/* ==================== STEP: Success ==================== */}
         {step === 'success' && (
           <div style={{ textAlign: 'center', padding: '20px 0', position: 'relative' }}>
-            {/* Brand-tinted halo behind the green check — keeps the page in
+            {/* Brand-tinted halo behind the green check - keeps the page in
                 the brand system while preserving green's success semantics. */}
             <div aria-hidden="true" style={{
               position: 'absolute',
@@ -1885,7 +1885,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
       `}</style>
 
       {/* ═══════════════════════════════════════════════════════════════════
-          DonationPromptModal — pops over this payment modal AFTER the user
+          DonationPromptModal - pops over this payment modal AFTER the user
           clicks "Continue". Visually distinct (rose-coral palette) so the
           viewer immediately sees this is an OPTIONAL ask, not part of the
           payment progression. Either action below closes the overlay and

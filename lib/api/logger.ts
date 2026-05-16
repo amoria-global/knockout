@@ -184,14 +184,14 @@ export const logger = {
   /**
    * Log API response.
    *
-   * Level policy (matters in production — `warn` always prints, `debug` does not):
+   * Level policy (matters in production - `warn` always prints, `debug` does not):
    *   - 2xx/3xx                           → debug   (routine success)
-   *   - 401 / 403                         → debug   (not authenticated / not authorized —
+   *   - 401 / 403                         → debug   (not authenticated / not authorized -
    *                                                  expected at public surfaces before sign-in)
    *   - 404                               → debug   (routine "not found" for optional resources)
    *   - 408, 500, 502, 503, 504           → debug   (transient infrastructure failures the client
    *                                                  already retries via withRetry with exponential
-   *                                                  backoff — logging each failed attempt as warn
+   *                                                  backoff - logging each failed attempt as warn
    *                                                  spammed the console with a red wall during
    *                                                  backend restarts/deploys. If the retry chain
    *                                                  truly exhausts, the app surfaces its own error

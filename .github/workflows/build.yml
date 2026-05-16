@@ -35,7 +35,7 @@ jobs:
 
   # Merges Dependabot PRs directly via the GitHub API once the build job
   # passes. Using `gh pr merge --squash` (no `--auto` flag) avoids the
-  # "Allow auto-merge" repo setting entirely — that setting is gated to
+  # "Allow auto-merge" repo setting entirely - that setting is gated to
   # GitHub Pro/Team on private repos, but a plain merge API call works on
   # the Free tier.
   dependabot-merge:

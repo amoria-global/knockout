@@ -125,7 +125,7 @@ function wizardReducer(state: WizardState, action: WizardAction): WizardState {
     case 'SET_SELECTED_PHOTOGRAPHER': return { ...state, selectedPhotographerId: action.id, showAvailabilityGate: true };
     case 'SHOW_AVAILABILITY_GATE': return { ...state, selectedPhotographerId: action.id, showAvailabilityGate: true };
     case 'CONFIRM_AVAILABILITY': return { ...state, showAvailabilityGate: false, currentSlide: state.selectedPackageId ? 3 : 2 };
-    // Just stores the selection — advancing to the Milestone slide happens on explicit Continue.
+    // Just stores the selection - advancing to the Milestone slide happens on explicit Continue.
     case 'SET_SELECTED_PACKAGE': return { ...state, selectedPackageId: action.id };
     case 'SET_PAYMENT_MILESTONE': return { ...state, paymentMilestone: action.data, currentSlide: 4 };
     case 'SET_EVENT_DETAILS': return { ...state, eventDetails: action.data };
@@ -148,7 +148,7 @@ function wizardReducer(state: WizardState, action: WizardAction): WizardState {
 }
 
 // ─── Styles ───
-// Brand palette + visual tokens — change here and the whole wizard updates.
+// Brand palette + visual tokens - change here and the whole wizard updates.
 
 const ACCENT = '#083A85';
 const ACCENT_DARK = '#062a63';
@@ -198,7 +198,7 @@ function findDateConflict(dateStr: string, bookedDates: BookedDate[]): BookedDat
 }
 
 // Helper: human-readable reason for a blocked date. There's only one kind
-// of block now — the photographer is fully booked (client bookings reached
+// of block now - the photographer is fully booked (client bookings reached
 // their per-day capacity) or has marked the day unavailable themselves.
 function describeConflict(b: BookedDate): string {
   return `The photographer is fully booked on ${b.date}.`;
@@ -226,7 +226,7 @@ function flagCode(code?: string): string | null {
 
 // ─── Visual styles for the wizard shell, stepper, and inputs/buttons ───
 // Scoped via the .bw-* class prefix so nothing leaks. Keeps the existing
-// inline-style world working — these are layered on top.
+// inline-style world working - these are layered on top.
 function BookingWizardStyles() {
   return (
     <style>{`
@@ -265,7 +265,7 @@ function BookingWizardStyles() {
         font-family: 'Pragati Narrow', system-ui, sans-serif;
       }
 
-      /* Branded header — 3 columns: [back] [eyebrow] [close] */
+      /* Branded header - 3 columns: [back] [eyebrow] [close] */
       .bw-header {
         position: relative;
         background: linear-gradient(135deg, #083A85 0%, #062a63 100%);
@@ -457,7 +457,7 @@ function BookingWizardStyles() {
   );
 }
 
-// Tiny visual atom — flag image (flagcdn.com) + currency code. Used inside
+// Tiny visual atom - flag image (flagcdn.com) + currency code. Used inside
 // the custom CurrencySelect since native <option> elements strip HTML.
 function CurrencyChip({ code, size = 18 }: { code: string; size?: number }) {
   const cc = flagCode(code);
@@ -481,7 +481,7 @@ function CurrencyChip({ code, size = 18 }: { code: string; size?: number }) {
   );
 }
 
-// Custom currency dropdown — looks like the inputStyle trigger but the
+// Custom currency dropdown - looks like the inputStyle trigger but the
 // popover renders flag images via CurrencyChip (native <select> can't).
 function CurrencySelect({
   value, options, onChange,
@@ -613,7 +613,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
   const [briefDate, setBriefDate] = useState('');
   const [briefLocation, setBriefLocation] = useState('');
   const [briefBudgetMin, setBriefBudgetMin] = useState<number>(0);
-  // 0 = "no max specified" — the photographer filter treats it as Infinity
+  // 0 = "no max specified" - the photographer filter treats it as Infinity
   // (see line ~967). Showing 0 as empty in the input lets the placeholder
   // appear naturally and lets users type their own preferred max.
   const [briefBudgetMax, setBriefBudgetMax] = useState<number>(0);
@@ -626,7 +626,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
   const [extraVideos, setExtraVideos] = useState(0);
 
   // Custom-package form (the negotiation path that lives below the
-  // pre-defined Gold/Diamond/etc. cards). Form values stay in local state —
+  // pre-defined Gold/Diamond/etc. cards). Form values stay in local state -
   // they don't go into the wizard reducer because the custom flow short-
   // circuits the rest of the wizard and exits straight to the dashboard
   // inbox, so the values never need to be persisted as part of a booking
@@ -676,7 +676,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
   const [paymentCurrencyCode, setPaymentCurrencyCode] = useState<string>('RWF');
   const [paymentCurrencyId, setPaymentCurrencyId] = useState<string>('');
   // Display-only currency for the Payment Plan step. Controlled by the
-  // PaymentCurrencyPreview panel's selector — picking a new currency there
+  // PaymentCurrencyPreview panel's selector - picking a new currency there
   // re-renders every amount on this step (total + milestone breakdowns +
   // the per-option previews). Submit still uses paymentCurrencyCode.
   const [displayCurrency, setDisplayCurrency] = useState<CurrencyCode>('USD');
@@ -1020,7 +1020,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
   );
 
   // Per-tier gradient backdrops for the package badges. CSS `background`
-  // accepts gradient strings, so the same lookup site works as before — the
+  // accepts gradient strings, so the same lookup site works as before - the
   // returned string just renders as a metallic gradient instead of a solid
   // colour. Silver = brushed-steel grey, Gold = amber/honey, Diamond = an
   // iridescent cyan-purple-blue. Old tier names kept as synonyms in case any
@@ -1052,7 +1052,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
   // Short-circuits the rest of the wizard: instead of moving forward to
   // payment, we seed a chat conversation with the photographer and ship
   // the client to the dashboard inbox to negotiate. Same auth gate the
-  // milestone step uses — if the client isn't logged in yet we flip
+  // milestone step uses - if the client isn't logged in yet we flip
   // SHOW_AUTH and remember that the request needs to fire once they
   // come back authenticated.
   const submitCustomPackageRequest = useCallback(async () => {
@@ -1103,7 +1103,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
 
   const handleCustomPackageSubmit = () => {
     if (!isAuthenticated) {
-      // Same pattern as handleMilestoneNext — pop the inline auth flow.
+      // Same pattern as handleMilestoneNext - pop the inline auth flow.
       // We also flag that, once auth closes, the wizard should auto-fire
       // the request on the user's behalf so they don't have to click
       // "Start negotiation" a second time.
@@ -1114,7 +1114,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
     submitCustomPackageRequest();
   };
 
-  // Auth just closed AND we were mid-custom-request — fire it now.
+  // Auth just closed AND we were mid-custom-request - fire it now.
   useEffect(() => {
     if (!customPendingAfterAuth) return;
     if (!isAuthenticated) return;
@@ -1175,7 +1175,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
     setSubmitError('');
 
     try {
-      // Build location string — include venue name if provided
+      // Build location string - include venue name if provided
       const baseLocation = state.quickBrief?.eventLocation || evtLocation.trim();
       const locationParts = [details.venueName, baseLocation].filter(Boolean);
       const locationStr = locationParts.join(', ') || baseLocation;
@@ -1204,7 +1204,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
         ...(isCoordinator ? { groupDiscountPercentage: details.groupDiscount } : {}),
         // Stream fee is the per-viewer charge the coordinator sets, NOT the
         // photographer's package price. When a fee is set, ALWAYS send a
-        // currency id alongside — fall back to the RWF row from the
+        // currency id alongside - fall back to the RWF row from the
         // currencies catalog so we never store a fee with no currency.
         ...(typeof details.streamFee === 'number' && details.streamFee > 0
             ? {
@@ -1224,7 +1224,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
 
       const res = await createEvent(payload as Parameters<typeof createEvent>[0]);
       if (res.success) {
-        // Extract response data — server returns { data: { event, booking, declarationId, ... } }
+        // Extract response data - server returns { data: { event, booking, declarationId, ... } }
         const responseData = res.data as unknown as CreateEventResponse;
         const innerData = responseData?.data;
         const eventId = innerData?.event?.id || innerData?.id || undefined;
@@ -1234,7 +1234,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
         const currId = innerData?.currencyId;
 
         if (declarationId && payAmount && eventId) {
-          // Photographer selected — open payment modal
+          // Photographer selected - open payment modal
           setPaymentDeclarationId(declarationId);
           setPaymentAmountValue(payAmount);
           setPaymentCurrencyCode(currAbbr || selectedPkg?.currencyAbbreviation || 'RWF');
@@ -1243,7 +1243,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
           setShowPaymentModal(true);
           dispatch({ type: 'SET_SUBMITTING', value: false });
         } else {
-          // No photographer (or no declaration) — direct success
+          // No photographer (or no declaration) - direct success
           await clearDraft();
           dispatch({ type: 'SET_SUCCESS', eventId: eventId || undefined });
         }
@@ -1298,7 +1298,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
       try {
         await revokeUnpaidEvent(paymentEventId);
       } catch {
-        // Revocation failed — event may need manual cleanup
+        // Revocation failed - event may need manual cleanup
       }
       setIsRevoking(false);
     }
@@ -1443,7 +1443,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
       <BookingWizardStyles />
       <div className="bw-overlay">
         <div className="bw-panel" role="dialog" aria-modal="true" aria-label="Book a photographer">
-          {/* Branded header strip — back button (left) + eyebrow + close (right) */}
+          {/* Branded header strip - back button (left) + eyebrow + close (right) */}
           <header className="bw-header">
             {(() => {
               const canGoBack =
@@ -1551,7 +1551,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
               <div>
                 <h3 style={{ color: TEXT_PRIMARY, fontSize: 18, fontWeight: 700, margin: '0 0 12px' }}>Pick the day of your event</h3>
 
-                {/* Photographer context card — makes it obvious WHO is being booked for WHAT day */}
+                {/* Photographer context card - makes it obvious WHO is being booked for WHAT day */}
                 <div style={{
                   display: 'flex', alignItems: 'center', gap: 12,
                   padding: '12px 14px', marginBottom: 14,
@@ -1617,7 +1617,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                       const daysInMonth = new Date(year, month + 1, 0).getDate();
                       const today = new Date();
                       today.setHours(0, 0, 0, 0);
-                      // One entry per date now — no reason priority to resolve.
+                      // One entry per date now - no reason priority to resolve.
                       const bookedSet = new Map<string, BookedDate>();
                       selectedPhotoBookedDates.forEach(b => { bookedSet.set(b.date, b); });
                       const cells: React.ReactNode[] = [];
@@ -1710,7 +1710,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                   )}
                 </div>
 
-                {/* Confirmation pill — reinforces exactly what's being booked */}
+                {/* Confirmation pill - reinforces exactly what's being booked */}
                 {gateCanProceed && (
                   <div style={{
                     display: 'flex', alignItems: 'center', gap: 10,
@@ -1940,7 +1940,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                               </p>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
                                 <i className="bi bi-star-fill" style={{ color: '#FBBF24', fontSize: 11 }}></i>
-                                <span style={{ color: TEXT_MUTED, fontSize: 12 }}>{p.rating?.toFixed(1) || '—'}</span>
+                                <span style={{ color: TEXT_MUTED, fontSize: 12 }}>{p.rating?.toFixed(1) || '-'}</span>
                                 {p.address && <span style={{ color: TEXT_MUTED, fontSize: 12 }}> · {p.address}</span>}
                               </div>
                               {minPrice !== null && (
@@ -2024,7 +2024,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                     })}
 
                     {/*
-                      Custom Package — escape hatch for clients whose ask
+                      Custom Package - escape hatch for clients whose ask
                       doesn't fit any of the pre-defined tiers. Filling and
                       submitting bypasses the rest of the wizard and ships
                       the client to the dashboard inbox to negotiate with
@@ -2272,7 +2272,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                       );
                     })()}
 
-                    {/* Extras — revealed once a package is picked, so users can add media before continuing */}
+                    {/* Extras - revealed once a package is picked, so users can add media before continuing */}
                     {state.selectedPackageId && selectedPkg && (
                       <div style={{ background: '#f9fafb', border: `1px solid ${INPUT_BORDER}`, borderRadius: 14, padding: 16 }}>
                         <p style={{ color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, margin: '0 0 4px' }}>Add Extras</p>
@@ -2321,7 +2321,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                   <p style={{ color: TEXT_MUTED, fontSize: 13, margin: '0 0 4px' }}>Total Amount</p>
                   <p style={{ color: TEXT_PRIMARY, fontSize: 28, fontWeight: 700, margin: 0 }}>{fmtLive(totalPrice)}</p>
                 </div>
-                {/* Currency preview panel — same selector that controls the
+                {/* Currency preview panel - same selector that controls the
                     entire Payment Plan step's amount displays (total +
                     milestone rows below). Display-only; submit still goes
                     through XentriPay in the original paymentCurrencyCode. */}
@@ -2390,7 +2390,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                 {submitError && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '10px 14px', marginBottom: 14, color: '#dc2626', fontSize: 13 }}>{submitError}</div>}
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                  {/* Locked event-date summary — the date was chosen on the Availability step */}
+                  {/* Locked event-date summary - the date was chosen on the Availability step */}
                   {(() => {
                     const lockedDate = state.quickBrief?.eventDate || evtDate;
                     if (!lockedDate) return null;
@@ -2439,7 +2439,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                     );
                   })()}
 
-                  {/* Location — only when Quick Brief was skipped (preselected-photographer flow) */}
+                  {/* Location - only when Quick Brief was skipped (preselected-photographer flow) */}
                   {!state.quickBrief && (
                     <div>
                       <label style={{ display: 'block', color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Event Location *</label>
@@ -2620,7 +2620,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                     </h3>
                     {previewPhotographer.address && <p style={{ color: TEXT_MUTED, fontSize: 13, margin: '0 0 4px' }}><i className="bi bi-geo-alt" style={{ marginRight: 4 }}></i>{previewPhotographer.address}</p>}
                     <div style={{ display: 'flex', gap: 12, fontSize: 13 }}>
-                      <span style={{ color: '#FBBF24' }}><i className="bi bi-star-fill" style={{ marginRight: 4 }}></i>{previewPhotographer.rating?.toFixed(1) || '—'}</span>
+                      <span style={{ color: '#FBBF24' }}><i className="bi bi-star-fill" style={{ marginRight: 4 }}></i>{previewPhotographer.rating?.toFixed(1) || '-'}</span>
                       <span style={{ color: TEXT_SECONDARY }}>{previewPhotographer.completedEvents || 0} events</span>
                     </div>
                   </div>
@@ -2676,7 +2676,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                   </div>
                 )}
 
-                {/* View full profile — booking is initiated from there */}
+                {/* View full profile - booking is initiated from there */}
                 <button onClick={() => {
                   dispatch({ type: 'SHOW_PREVIEW', id: null });
                   handleViewProfile(state.showPhotographerPreview!);

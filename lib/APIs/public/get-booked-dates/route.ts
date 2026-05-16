@@ -16,11 +16,11 @@ import type { ApiResponse } from '@/lib/api/types';
 export type BookedDateReason = 'booked';
 
 export interface BookedDate {
-  date: string;                 // "YYYY-MM-DD" — the blocked calendar day
+  date: string;                 // "YYYY-MM-DD" - the blocked calendar day
   isFullDay: boolean;           // always true now
   reason: BookedDateReason;     // always 'booked'
   bookingId?: string;           // no longer sent
-  eventDate: string;            // "YYYY-MM-DD" — mirrors `date`
+  eventDate: string;            // "YYYY-MM-DD" - mirrors `date`
   startTime?: { hour: number; minute: number } | null;
   endTime?: { hour: number; minute: number } | null;
   deliveryDaysTotal?: number;

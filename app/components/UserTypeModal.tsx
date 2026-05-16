@@ -9,7 +9,7 @@ interface UserTypeModalProps {
 }
 
 /**
- * UserTypeModal — premium account-type selection modal for signup.
+ * UserTypeModal - premium account-type selection modal for signup.
  * Each persona option has its own color identity, gradient icon, and hover effect.
  * Auto-selects on click; supports an optional close callback.
  */
@@ -393,7 +393,7 @@ export default function UserTypeModal({
                     </p>
                   </div>
 
-                  {/* Trailing — checkmark when picked, arrow otherwise */}
+                  {/* Trailing - checkmark when picked, arrow otherwise */}
                   <div
                     style={{
                       width: 28, height: 28,

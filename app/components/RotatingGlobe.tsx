@@ -224,7 +224,7 @@ const RotatingGlobe: React.FC<RotatingGlobeProps> = ({
           />
         ))}
 
-        {/* Dots — displaced when interactive */}
+        {/* Dots - displaced when interactive */}
         {displacedDots.map((dot) => {
           const isKey = dot.id < 10; // First 10 are key cities
           const baseR = isKey ? 3 : 1.5;
