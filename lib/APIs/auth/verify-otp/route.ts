@@ -22,6 +22,15 @@ export interface VerifyOtpResponse {
   action: number; // 0 = failure, 1 = success
   message: string;
   token?: string;
+  customerId?: string;
+  customerType?: string;
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  email?: string;
+  // Profile-completion gate (shown right after verification).
+  profileCompletionPercentage?: number;
+  missingItems?: string[];
   user?: {
     id: string;
     email: string;

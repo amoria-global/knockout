@@ -2,10 +2,14 @@
 import React, { useState, useRef, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { verifyOtp } from '@/lib/APIs/auth/verify-otp/route';
 import { resendOtp } from '@/lib/APIs/auth/resend-otp/route';
 import { useToast } from '@/lib/notifications/ToastProvider';
-import { getAuthToken, getRefreshToken } from '@/lib/api/client';
+import { getAuthToken, getRefreshToken, setAuthToken } from '@/lib/api/client';
+import { persistPhotographerProfile } from '@/lib/photographer/persist-profile';
+
+const PhotographerOnboarding = dynamic(() => import('@/app/components/PhotographerOnboarding'), { ssr: false });
 
 // Component that uses useSearchParams - needs to be wrapped in Suspense
 function VerifyOtpContent(): React.JSX.Element {
@@ -20,6 +24,24 @@ function VerifyOtpContent(): React.JSX.Element {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // Post-OTP profile-completion gate. After a photographer verifies, if
+  // their profile isn't 100% (everything except KYC) the SAME onboarding
+  // wizard opens here as a blocking modal before any dashboard redirect.
+  const [showCompletionWizard, setShowCompletionWizard] = useState(false);
+  const [completionCtx, setCompletionCtx] = useState<{
+    firstName: string; lastName: string; phone: string;
+  } | null>(null);
+  const [dashboardUrl, setDashboardUrl] = useState('');
+
+  const goToDashboard = (token: string) => {
+    const base = process.env.NEXT_PUBLIC_DASHBOARD_URL || '';
+    const refreshTkn = getRefreshToken();
+    const params = new URLSearchParams();
+    params.set('token', token);
+    if (refreshTkn) params.set('refreshToken', refreshTkn);
+    window.location.href = `${base}/?${params.toString()}`;
+  };
 
   // Create refs for each input box
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -109,20 +131,35 @@ function VerifyOtpContent(): React.JSX.Element {
         const response = await verifyOtp({ customerId: applicantId, otp: parseInt(otpCode, 10) });
 
         if (response.success) {
-          setSuccess(true);
+          const d = response.data;
+          const token = d?.token || getAuthToken();
 
-          // If verify-otp returned a token, user is fully authenticated — go to dashboard
-          const token = response.data?.token || getAuthToken();
+          // PROFILE-COMPLETION GATE — right after verification. A photographer
+          // whose profile isn't 100% (everything except KYC) must finish it
+          // in the wizard before reaching the dashboard. The backend returned
+          // a token so the wizard's /photographer/* saves authenticate.
+          const ct = String(d?.customerType || '');
+          const isPhotographer = ct.toLowerCase() === 'photographer';
+          const pct = typeof d?.profileCompletionPercentage === 'number'
+            ? d.profileCompletionPercentage : 100;
+          if (isPhotographer && pct < 100 && token) {
+            setAuthToken(token);
+            setDashboardUrl(token);
+            setCompletionCtx({
+              firstName: d?.firstName || '',
+              lastName: d?.lastName || '',
+              phone: d?.phone || '',
+            });
+            showSuccess('Account verified! Finish your profile to continue.');
+            setShowCompletionWizard(true);
+            setLoading(false);
+            return;
+          }
+
+          setSuccess(true);
           if (token) {
             showSuccess('Account verified! Redirecting to dashboard...');
-            setTimeout(() => {
-              const dashboardBaseUrl = process.env.NEXT_PUBLIC_DASHBOARD_URL || '';
-              const refreshTkn = getRefreshToken();
-              const params = new URLSearchParams();
-              params.set('token', token);
-              if (refreshTkn) params.set('refreshToken', refreshTkn);
-              window.location.href = `${dashboardBaseUrl}/?${params.toString()}`;
-            }, 2000);
+            setTimeout(() => goToDashboard(token), 2000);
           } else {
             // No token — redirect to login so user can authenticate
             showSuccess('Account verified! Please log in to continue.');
@@ -196,6 +233,32 @@ function VerifyOtpContent(): React.JSX.Element {
           </div>
         </div>
       </div>
+    );
+  }
+
+  // Post-verification completion gate — blocking. Closing it does NOT
+  // bypass (no dashboard); the profile is saved server-side incrementally.
+  if (showCompletionWizard && completionCtx) {
+    return (
+      <PhotographerOnboarding
+        isOpen={true}
+        onClose={() => { setShowCompletionWizard(false); }}
+        onFinalize={async (payload) => {
+          await persistPhotographerProfile(payload, completionCtx);
+        }}
+        onComplete={() => {
+          setShowCompletionWizard(false);
+          setSuccess(true);
+          showSuccess('Profile complete! Redirecting to dashboard...');
+          setTimeout(() => {
+            if (dashboardUrl) goToDashboard(dashboardUrl);
+            else window.location.href = '/user/auth/login';
+          }, 1500);
+        }}
+        firstName={completionCtx.firstName}
+        lastName={completionCtx.lastName}
+        phone={completionCtx.phone}
+      />
     );
   }
 
