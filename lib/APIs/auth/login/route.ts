@@ -41,8 +41,11 @@ export interface LoginResponse {
   customer_id?: string | null;
   twoFactorRequired?: boolean; // True when TOTP verification is needed (action=2)
   twoFactorSetupRequired?: boolean; // True when 2FA setup is mandatory (balance > 0, action=1)
-  token?: string; // JWT token (only on successful login)
+  token?: string; // JWT token (success login, OR minted pre-OTP for the completion gate)
   refreshToken?: string; // Refresh token UUID (only on successful login)
+  // Photographer profile-completion gate. Non-photographers read 100 / [].
+  profileCompletionPercentage?: number;
+  missingItems?: string[];
   user?: {
     id: string;
     email: string;

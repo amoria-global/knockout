@@ -379,9 +379,39 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
       try {
         const response = await login({ email: loginEmail.trim().toLowerCase(), password: loginPassword });
         const data = response.data;
-        if (data?.otpVerified === false && data?.customerId) { showWarning(data?.message || 'Please verify your phone number.'); setLoginLoading(false); router.push(`/user/auth/verify-otp?applicantId=${encodeURIComponent(String(data.customerId))}&email=${encodeURIComponent(loginEmail)}`); return; }
+        // Security gates first — a locked / 2FA account is never bypassed.
         if (data?.accountLocked === true || data?.accountLocked === 'true') { setLoginError('Your account has been locked.'); showError('Your account has been locked.'); setLoginLoading(false); return; }
         if (data?.twoFactorRequired && data?.customerId) { showInfo('Please enter your authenticator code.'); setLoginLoading(false); router.push(`/user/auth/verify-totp?customerId=${encodeURIComponent(String(data.customerId))}`); return; }
+
+        // PROFILE-COMPLETION GATE — runs BEFORE the OTP redirect and before
+        // the dashboard modal. A photographer with an incomplete profile
+        // (everything except KYC) must finish it here, in the same wizard,
+        // and can never slip into the dashboard with gaps. Works pre-OTP
+        // because the backend mints a token on that branch too.
+        {
+          const ct = (data?.customerType || data?.user?.userType || '');
+          const isPhotographer = String(ct).toLowerCase() === 'photographer';
+          const pct = typeof data?.profileCompletionPercentage === 'number'
+            ? data.profileCompletionPercentage : 100;
+          if (isPhotographer && pct < 100 && data?.token) {
+            setAuthToken(data.token); // authenticates the wizard's saves (incl. pre-OTP)
+            setCompletionCtx({
+              firstName: data.firstName || data.user?.firstName || '',
+              lastName: data.lastName || data.user?.lastName || '',
+              phone: data.phone || '',
+              customerId: String(data.customerId || ''),
+              customerType: String(ct),
+              email: data.email || loginEmail,
+              otpVerified: data.otpVerified !== false, // false → still need OTP after
+              missingItems: Array.isArray(data.missingItems) ? data.missingItems : [],
+            });
+            setLoginLoading(false);
+            setShowCompletionWizard(true);
+            return;
+          }
+        }
+
+        if (data?.otpVerified === false && data?.customerId) { showWarning(data?.message || 'Please verify your phone number.'); setLoginLoading(false); router.push(`/user/auth/verify-otp?applicantId=${encodeURIComponent(String(data.customerId))}&email=${encodeURIComponent(loginEmail)}`); return; }
         if (response.success && data) {
           const customerType = data.user?.userType || data.customerType || '';
           if (customerType === 'Viewer') { setLoginError('Viewer accounts can only sign in from event pages.'); showError('Viewer accounts can only sign in from event pages.'); setLoginLoading(false); return; }
@@ -419,6 +449,17 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
   // Photographer onboarding state — shown after signup, before OTP
   const [showPhotographerOnboarding, setShowPhotographerOnboarding] = useState(false);
   const [pendingOtpRedirectUrl, setPendingOtpRedirectUrl] = useState('');
+
+  // Post-login profile-completion gate. When a photographer logs in with an
+  // incomplete profile (anything except KYC), we open the SAME onboarding
+  // wizard as a blocking modal — they cannot reach the dashboard (or even
+  // OTP) until it's 100%. completionCtx carries identity + how to resume.
+  const [showCompletionWizard, setShowCompletionWizard] = useState(false);
+  const [completionCtx, setCompletionCtx] = useState<{
+    firstName: string; lastName: string; phone: string;
+    customerId: string; customerType: string; email: string;
+    otpVerified: boolean; missingItems: string[];
+  } | null>(null);
 
   const filteredCountries = countries.filter(c => c.name.toLowerCase().includes(countrySearch.toLowerCase()) || c.code.includes(countrySearch));
   // Strength model. The four "required" checks line up with the backend's
@@ -580,44 +621,22 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
   // first time we write anything to the backend for this signup. If the
   // wizard is closed before reaching this point, no customer record is
   // ever created and the email/phone can be used for a fresh signup.
-  const handlePhotographerFinalize = async (payload: import('@/app/components/PhotographerOnboarding').OnboardingPayload) => {
-    const response = await signup({
-      firstName, lastName, email: signupEmail,
-      phone: `${countryCode}${phoneNumber}`,
-      customerType: signupUserType, password: signupPassword,
-    });
-    if (!response.success || !response.data) {
-      throw new Error(response.error || 'Signup failed. Please try again.');
-    }
-    const customerId = response.data.customerId;
-    if (!customerId) throw new Error('Signup succeeded but no customer ID was returned.');
-
-    // CRITICAL: signup now returns a token (OTP not yet verified, but the
-    // backend mints one so the wizard can persist the profile right away).
-    // Set it BEFORE any /api/remote/photographer/* call — those endpoints
-    // resolve the photographer purely from the JWT principal. Without this
-    // the entire profile payload was 401ing and being silently dropped,
-    // leaving brand-new photographers stuck under 100% with nothing to do
-    // in the dashboard.
-    if (response.data.token) {
-      setAuthToken(response.data.token);
-    } else {
-      // No token => the profile calls below cannot authenticate. Fail loudly
-      // instead of silently creating an empty profile.
-      throw new Error('Signup did not return a session token — profile could not be saved. Please try again.');
-    }
-
+  // Shared profile-persistence chain. Assumes the auth token is ALREADY set
+  // (signup mints one pre-OTP; login returns one for the completion gate).
+  // Used by both the signup wizard and the post-login completion wizard so
+  // there is exactly one source of truth for "what makes a profile 100%".
+  // Completion-driving saves throw on failure so the wizard surfaces a real
+  // error instead of leaving a half-saved profile.
+  const persistPhotographerProfile = async (
+    payload: import('@/app/components/PhotographerOnboarding').OnboardingPayload,
+    who: { firstName: string; lastName: string; phone: string }
+  ) => {
     const { updateImportantDetails, updateProfilePicture, updateCoverPhoto, submitProfile } =
       await import('@/lib/APIs/photographers/update-profile/route');
     const { apiClient } = await import('@/lib/api/client');
 
-    // Completion-driving saves — these MUST land for the profile to be
-    // submitted-on-signup (the user's requirement). A failure throws so the
-    // onboarding wizard surfaces a real error and the user can retry, rather
-    // than landing in the dashboard with a half-saved profile.
     const r1 = await updateImportantDetails({
-      firstName, lastName,
-      phone: `${countryCode}${phoneNumber}`,
+      firstName: who.firstName, lastName: who.lastName, phone: who.phone,
       about: payload.about,
       address: payload.address,
       specialtyIds: payload.specialtyIds,
@@ -628,8 +647,7 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
     });
     if (!r1.success) throw new Error(r1.error || 'Could not save your basic details & specialties.');
 
-    // Media uploads stay best-effort: the most flake-prone step, and a
-    // missing image shouldn't block account submission.
+    // Media uploads stay best-effort: the most flake-prone step.
     await updateProfilePicture(payload.profileFile).catch(() => {});
     if (payload.coverFile) await updateCoverPhoto(payload.coverFile).catch(() => {});
 
@@ -674,10 +692,48 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
 
     // Marks the profile submitted/ready for admin review.
     await submitProfile().catch(() => {});
+  };
 
-    // Now wire up the OTP redirect — onComplete handler will push to it.
+  const handlePhotographerFinalize = async (payload: import('@/app/components/PhotographerOnboarding').OnboardingPayload) => {
+    const response = await signup({
+      firstName, lastName, email: signupEmail,
+      phone: `${countryCode}${phoneNumber}`,
+      customerType: signupUserType, password: signupPassword,
+    });
+    if (!response.success || !response.data) {
+      throw new Error(response.error || 'Signup failed. Please try again.');
+    }
+    const customerId = response.data.customerId;
+    if (!customerId) throw new Error('Signup succeeded but no customer ID was returned.');
+
+    // signup() mints a token pre-OTP so the /photographer/* saves can
+    // authenticate (the endpoints resolve the photographer purely from the
+    // JWT principal). Set it BEFORE persisting or every call 401s.
+    if (response.data.token) {
+      setAuthToken(response.data.token);
+    } else {
+      throw new Error('Signup did not return a session token — profile could not be saved. Please try again.');
+    }
+
+    await persistPhotographerProfile(payload, {
+      firstName, lastName, phone: `${countryCode}${phoneNumber}`,
+    });
+
     const otpUrl = `/user/auth/verify-otp?applicantId=${encodeURIComponent(String(customerId))}&email=${encodeURIComponent(signupEmail)}&customerType=${encodeURIComponent(signupUserType)}&firstName=${encodeURIComponent(firstName)}&lastName=${encodeURIComponent(lastName)}&phone=${encodeURIComponent(`${countryCode}${phoneNumber}`)}${redirectUrl ? `&redirect=${encodeURIComponent(redirectUrl)}` : ''}`;
     setPendingOtpRedirectUrl(otpUrl);
+  };
+
+  // Post-login completion: the account already exists and the login response
+  // set the auth token (incl. pre-OTP), so we ONLY persist the profile here —
+  // no signup(). After it lands the user is at 100% and we resume the
+  // original routing (OTP if still unverified, else the dashboard modal).
+  const handleCompletionFinalize = async (payload: import('@/app/components/PhotographerOnboarding').OnboardingPayload) => {
+    if (!completionCtx) throw new Error('Missing login context. Please log in again.');
+    await persistPhotographerProfile(payload, {
+      firstName: completionCtx.firstName,
+      lastName: completionCtx.lastName,
+      phone: completionCtx.phone,
+    });
   };
 
   const handleUserTypeSelect = (type: string) => { setSelectedUserType(type); setShowUserTypeModal(false); };
@@ -855,6 +911,43 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
         lastName={lastName}
         phone={`${countryCode}${phoneNumber}`}
       />
+
+      {/* Post-login profile-completion wizard — same component, but the
+          account already exists so onFinalize only persists the profile.
+          Blocking: closing it just leaves the user on the login page (no
+          dashboard, no OTP) until they finish. */}
+      {completionCtx && (
+        <PhotographerOnboarding
+          isOpen={showCompletionWizard}
+          onClose={() => {
+            // Hard gate: dismissing does NOT let them through. Profile is
+            // saved incrementally server-side; they re-login to resume.
+            setShowCompletionWizard(false);
+          }}
+          onFinalize={handleCompletionFinalize}
+          onComplete={() => {
+            setShowCompletionWizard(false);
+            const ctx = completionCtx;
+            if (!ctx) { router.push('/user/auth/login'); return; }
+            if (!ctx.otpVerified) {
+              // Profile is now 100%; the account still needs OTP.
+              router.push(`/user/auth/verify-otp?applicantId=${encodeURIComponent(ctx.customerId)}&email=${encodeURIComponent(ctx.email)}`);
+              return;
+            }
+            // Verified + complete → proceed to the normal post-login modal.
+            const userData = { id: ctx.customerId, firstName: ctx.firstName, lastName: ctx.lastName, email: ctx.email, phone: ctx.phone, customerId: ctx.customerId, customerType: ctx.customerType };
+            loginUser(userData, getAuthToken() || '');
+            setLoggedInUserName(ctx.firstName || 'User');
+            setLoggedInUserType(ctx.customerType);
+            showSuccess('Profile complete! Welcome back.');
+            if (isBookingRedirect) { setTimeout(() => redirectToBookingDashboard(ctx.customerType), 300); }
+            else { setShowPostLoginModal(true); }
+          }}
+          firstName={completionCtx.firstName}
+          lastName={completionCtx.lastName}
+          phone={completionCtx.phone}
+        />
+      )}
     </>
   );
 
