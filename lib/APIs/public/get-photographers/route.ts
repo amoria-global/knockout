@@ -39,6 +39,8 @@ export interface Photographer {
   specialties?: Specialty[] | string[];
   rating?: number;
   completedEvents?: number;
+  // Admin ordering: 0 = top, ascending; null/undefined = unprioritized.
+  priority?: number | null;
   reviews?: Review[];
   availabilities?: Availability[];
   projects?: Project[];

@@ -496,9 +496,18 @@ const Photographers: React.FC = () => {
       return true;
     });
 
-    // Client-side sort
+    // Client-side sort. Admin priority ALWAYS dominates: a photographer
+    // with a priority ranks before one without, and among prioritized ones
+    // the smaller number comes first (0 = top). The sort dropdown only
+    // orders the rest (and breaks ties), so the admin's curated order is
+    // never overridden.
     const sorted = [...filtered];
     sorted.sort((a, b) => {
+      const ap = a.priority ?? null;
+      const bp = b.priority ?? null;
+      if (ap !== null && bp !== null) { if (ap !== bp) return ap - bp; }
+      else if (ap !== null) return -1;
+      else if (bp !== null) return 1;
       switch (sortBy) {
         case 'top_rated':
           return (b.rating ?? 0) - (a.rating ?? 0);
