@@ -1,7 +1,7 @@
 /**
  * Facial Recognition API (Public)
  * POST /api/remote/public/face-search
- * No authentication required — resolves event from invite code
+ * No authentication required - resolves event from invite code
  */
 
 import { apiClient } from '@/lib/api/client';
@@ -32,7 +32,7 @@ export interface FacialRecognitionResponse {
 
 /**
  * Upload a selfie for facial recognition to find matching photos.
- * Public endpoint — backend resolves the event from the invite code.
+ * Public endpoint - backend resolves the event from the invite code.
  * When inviteCode is empty, searches across all event albums (pending backend support).
  */
 export async function uploadSelfieForRecognition(

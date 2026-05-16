@@ -29,7 +29,7 @@ async function fetchAlbumMeta(code: string): Promise<AlbumMeta | null> {
     if (!code) return null;
     try {
         const url = `${BACKEND_BASE}/api/remote/public/albums/meta?code=${encodeURIComponent(code)}`;
-        // 5 s timeout — crawlers hate slow OG responses; default to logo if
+        // 5 s timeout - crawlers hate slow OG responses; default to logo if
         // the backend is unreachable. Cache for 5 min so re-shares of the
         // same link don't hammer the API.
         const ctrl = new AbortController();
@@ -68,7 +68,7 @@ export async function generateMetadata({ searchParams }: { searchParams: SearchP
     }
 
     const title = meta.title
-        ? `${meta.title} — Connekyt`
+        ? `${meta.title} - Connekyt`
         : DEFAULT_TITLE;
 
     // Compose a "Photos by <name> ★ <rating> (<reviews>)" prefix so the

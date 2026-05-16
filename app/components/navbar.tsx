@@ -30,7 +30,7 @@ const getIconForCategory = (name: string): string => {
   return categoryIcons[normalized] || 'bi-camera-fill';
 };
 
-// Known event categories — icons and translation keys (must match messages/en.json eventCategories keys)
+// Known event categories - icons and translation keys (must match messages/en.json eventCategories keys)
 const EVENT_CATEGORY_BASE: { value: string; icon: string; translationKey: string }[] = [
   { value: 'wedding',       icon: 'bi-heart-fill',        translationKey: 'wedding' },
   { value: 'concert',       icon: 'bi-music-note-beamed', translationKey: 'concert' },
@@ -100,7 +100,7 @@ const AmoriaKNavbar = () => {
     }
   };
 
-  // Pages with a full-bleed dark cinematic hero — the navbar should sit
+  // Pages with a full-bleed dark cinematic hero - the navbar should sit
   // transparent over the hero and switch to dark glass once the user scrolls
   // past it (Prime Video / Plex pattern).
   const DARK_HERO_ROUTES = [
@@ -155,7 +155,7 @@ const AmoriaKNavbar = () => {
     return path;
   };
 
-  // Fetch photographer categories — derive cards directly from photographer specialties
+  // Fetch photographer categories - derive cards directly from photographer specialties
   useEffect(() => {
     const fetchCategoriesAndSpecialties = async () => {
       try {
@@ -245,7 +245,7 @@ const AmoriaKNavbar = () => {
             catMap.set(raw, catMap.get(raw) ?? false);
           }
 
-          // Second pass: mark live — ONGOING + (hasLiveStream OR streamStatus
+          // Second pass: mark live - ONGOING + (hasLiveStream OR streamStatus
           // signaling live) is sufficient; Cloudflare check adds any missed ones
           let anyLive = false;
 
@@ -297,7 +297,7 @@ const AmoriaKNavbar = () => {
 
           setEventCategories([...knownCards, ...dynamicCards]);
         }
-      } catch { /* silent — navbar should never break on API errors */ }
+      } catch { /* silent - navbar should never break on API errors */ }
       finally { setEventCategoriesLoading(false); }
     };
     fetchEventCategories();
@@ -334,7 +334,7 @@ const AmoriaKNavbar = () => {
 
   // Effect to handle clicks outside of the language dropdown and profile dropdown.
   //
-  // NOTE: the mobile menu drawer is INTENTIONALLY excluded from this handler —
+  // NOTE: the mobile menu drawer is INTENTIONALLY excluded from this handler -
   // it uses a dedicated backdrop overlay (rendered when `isMobileMenuOpen`) to
   // catch tap-outside-to-close, plus the explicit X close button. Including
   // the drawer here was closing it mid-scroll on touch devices because
@@ -412,7 +412,7 @@ const AmoriaKNavbar = () => {
 
   // Kept as a no-op so existing `onClick={handleLinkClick}` references in
   // mobile drawer Links don't break, but we no longer close the drawer here.
-  // Closing now happens centrally via the pathname-change effect above —
+  // Closing now happens centrally via the pathname-change effect above -
   // that prevents accidental closes when a touch "scroll" gesture inside
   // the drawer registers as a synthetic click on a Link.
   const handleLinkClick = () => { /* close handled by pathname effect */ };
@@ -458,7 +458,7 @@ const AmoriaKNavbar = () => {
         // Drop shadow + an inset bottom highlight (in place of a literal
         // border-bottom). The inset shadow renders via the compositor and
         // doesn't leave a fixed-pixel hairline that flashes during scroll
-        // re-renders — same fix philosophy as the event-card seam.
+        // re-renders - same fix philosophy as the event-card seam.
         //
         // IMPORTANT: do NOT add `transform`, `will-change: transform`, or
         // any property that creates a CSS containing block here. Those
@@ -836,7 +836,7 @@ const AmoriaKNavbar = () => {
           background-color: rgba(255, 255, 255, 0.10) !important;
           border-color: rgba(255, 255, 255, 0.75) !important;
         }
-        /* Mobile menu toggle (hamburger) — bars use currentColor */
+        /* Mobile menu toggle (hamburger) - bars use currentColor */
         nav[data-theme^="dark"] button[aria-label*="menu" i],
         nav[data-theme^="dark"] button[aria-label*="navigation" i] {
           color: #ffffff !important;
@@ -845,7 +845,7 @@ const AmoriaKNavbar = () => {
         /* ── Dropdown panels (Photographers / Events / Language / Profile) ──
            Convert the white panels to dark glass to match the navbar. The
            coloured header strips inside each panel keep their brand
-           gradients — they read fine against either bg. */
+           gradients - they read fine against either bg. */
         nav[data-theme^="dark"] [data-navdropdown] {
           background: rgba(7, 8, 13, 0.92) !important;
           border: 1px solid rgba(255, 255, 255, 0.10) !important;
@@ -855,7 +855,7 @@ const AmoriaKNavbar = () => {
           backdrop-filter: blur(24px) saturate(160%);
           -webkit-backdrop-filter: blur(24px) saturate(160%);
         }
-        /* Default text inside the panel — light */
+        /* Default text inside the panel - light */
         nav[data-theme^="dark"] [data-navdropdown] {
           color: #f4f6fb;
         }
@@ -863,13 +863,13 @@ const AmoriaKNavbar = () => {
         nav[data-theme^="dark"] [data-navdropdown] p {
           color: #9ca3af !important;
         }
-        /* Skeleton placeholder shimmer — match dark panel */
+        /* Skeleton placeholder shimmer - match dark panel */
         nav[data-theme^="dark"] [data-navdropdown] [style*="nav-skeleton-pulse"],
         nav[data-theme^="dark"] [data-navdropdown] div[style*="background: rgb(243, 244, 246)"] {
           background: rgba(255, 255, 255, 0.06) !important;
         }
 
-        /* Category chips inside dropdowns — dark glass with white text,
+        /* Category chips inside dropdowns - dark glass with white text,
            hover lifts to a brand-blue tinted glass. Live chips keep their
            emerald accent but on a darker base. */
         nav[data-theme^="dark"] [data-navchip] {
@@ -895,7 +895,7 @@ const AmoriaKNavbar = () => {
           box-shadow: 0 4px 14px rgba(220, 38, 38, 0.40) !important;
         }
 
-        /* Language menu rows — flip light bg/text to dark glass + white */
+        /* Language menu rows - flip light bg/text to dark glass + white */
         nav[data-theme^="dark"] [data-navdropdown] a,
         nav[data-theme^="dark"] [data-navdropdown] button {
           color: #f4f6fb !important;
@@ -921,7 +921,7 @@ const AmoriaKNavbar = () => {
           box-shadow: 0 8px 30px rgba(0, 0, 0, 0.55) !important;
         }
         /* Top-level buttons (Photographers/Events/Lang triggers) and
-           links (About/Donate/Find My Photos/Login/Signup) — white text. */
+           links (About/Donate/Find My Photos/Login/Signup) - white text. */
         nav[data-theme^="dark"] [data-mobiledrawer] button:not([data-navchip]),
         nav[data-theme^="dark"] [data-mobiledrawer] a:not([data-navchip]) {
           color: #f4f6fb !important;
@@ -931,7 +931,7 @@ const AmoriaKNavbar = () => {
           background-color: rgba(255, 255, 255, 0.06) !important;
           color: #ffffff !important;
         }
-        /* Hamburger close icon when menu is open — keep visible */
+        /* Hamburger close icon when menu is open - keep visible */
         nav[data-theme^="dark"] button[aria-label="Toggle menu"] {
           color: #ffffff !important;
         }
@@ -943,10 +943,10 @@ const AmoriaKNavbar = () => {
           border-color: rgba(255, 255, 255, 0.10) !important;
         }
         /* Mobile sub-dropdown panels (Photographers/Events/Lang sub-list)
-           — these are the [data-navdropdown] containers nested inside the
+           - these are the [data-navdropdown] containers nested inside the
            drawer. The sub-panel itself uses an inline rgba(255,255,255,0.6)
            background that needs to flip dark too. The [data-navdropdown]
-           rule above already handles this — the override below only
+           rule above already handles this - the override below only
            tightens the border that was a brand-blue tint. */
         nav[data-theme^="dark"] [data-mobiledrawer] [data-navdropdown] {
           border-color: rgba(255, 255, 255, 0.08) !important;
@@ -979,7 +979,7 @@ const AmoriaKNavbar = () => {
             </span>
           </Link>
 
-          {/* Center: Navigation Links (Desktop) — glass pill, absolutely centered */}
+          {/* Center: Navigation Links (Desktop) - glass pill, absolutely centered */}
           <div ref={navPillRef} data-navpill className="hidden md:flex items-center gap-1 absolute left-1/2 -translate-x-1/2" style={{
             overflow: 'visible',
             background: 'rgba(255, 255, 255, 0.85)',
@@ -1062,7 +1062,7 @@ const AmoriaKNavbar = () => {
                       </Link>
                     </div>
 
-                    {/* Categories — compact chips */}
+                    {/* Categories - compact chips */}
                     <div style={{ padding: '0.75rem 1rem' }}>
                       {categoriesLoading ? (
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
@@ -1229,7 +1229,7 @@ const AmoriaKNavbar = () => {
                       </Link>
                     </div>
 
-                    {/* Categories — compact chips */}
+                    {/* Categories - compact chips */}
                     <div style={{ padding: '0.75rem 1rem' }}>
                       {eventCategoriesLoading ? (
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
@@ -1573,7 +1573,7 @@ const AmoriaKNavbar = () => {
       {/* Mobile Menu */}
       {isMobileMenuOpen && (
         <>
-          {/* Backdrop overlay — closes the drawer ONLY on a real tap, not
+          {/* Backdrop overlay - closes the drawer ONLY on a real tap, not
               when a scroll gesture happens to start on the backdrop area.
               We track the touchstart position and compare against touchend;
               if the finger moved more than ~8px in any direction, it's a
@@ -1592,7 +1592,7 @@ const AmoriaKNavbar = () => {
               const dx = Math.abs(t.clientX - start.x);
               const dy = Math.abs(t.clientY - start.y);
               // Only treat as a tap if the finger barely moved.
-              // Otherwise it's a scroll gesture — leave the drawer open.
+              // Otherwise it's a scroll gesture - leave the drawer open.
               if (dx < 8 && dy < 8) {
                 e.preventDefault(); // prevent the synthetic click that follows
                 setIsMobileMenuOpen(false);
@@ -1602,7 +1602,7 @@ const AmoriaKNavbar = () => {
             onClick={(e) => {
               // For pure mouse clicks (no touch involved), the touchstart
               // ref will be null. If a touch was just processed (handled in
-              // onTouchEnd), this onClick is the synthetic follow-up — skip.
+              // onTouchEnd), this onClick is the synthetic follow-up - skip.
               if (e.nativeEvent && (e.nativeEvent as PointerEvent).pointerType === 'touch') return;
               setIsMobileMenuOpen(false);
               document.body.style.overflow = '';
@@ -1942,7 +1942,7 @@ const AmoriaKNavbar = () => {
                   </div>
                 </div>
 
-                {/* Dashboard Link — hidden for viewers */}
+                {/* Dashboard Link - hidden for viewers */}
                 {user.customerType?.toLowerCase() !== 'viewer' && (
                   <a
                     href={getDashboardUrl()}

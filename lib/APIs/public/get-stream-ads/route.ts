@@ -1,8 +1,8 @@
 /**
  * Public Stream Ads API
- * GET /api/remote/public/events/{eventId}/ads — get ads for a live stream
- * GET /api/remote/public/events/{eventId}/ads/trigger — poll for manual triggers
- * POST /api/remote/public/events/{eventId}/ads/{adId}/click — record ad click
+ * GET /api/remote/public/events/{eventId}/ads - get ads for a live stream
+ * GET /api/remote/public/events/{eventId}/ads/trigger - poll for manual triggers
+ * POST /api/remote/public/events/{eventId}/ads/{adId}/click - record ad click
  */
 
 import { apiClient } from '@/lib/api/client';

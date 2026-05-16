@@ -1,6 +1,6 @@
 'use client';
 
-// ElectricBorder — animated, electrified glowing border around any element.
+// ElectricBorder - animated, electrified glowing border around any element.
 // Inspired by @BalintFerenczy's CodePen (https://codepen.io/BalintFerenczy/pen/KwdoyEN).
 // Ported from the React Bits JS reference into TypeScript and inlined the CSS so it
 // drops in without a separate stylesheet.
@@ -292,7 +292,7 @@ const ElectricBorder: React.FC<ElectricBorderProps> = ({
     const resizeObserver = new ResizeObserver(() => updateSize());
     resizeObserver.observe(container);
 
-    // Pause animation when the element scrolls offscreen — saves CPU on pages with
+    // Pause animation when the element scrolls offscreen - saves CPU on pages with
     // multiple ElectricBorders (the persona cards section uses 3).
     const intersectionObserver = new IntersectionObserver(
       (entries) => {

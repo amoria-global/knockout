@@ -134,7 +134,7 @@ function VerifyOtpContent(): React.JSX.Element {
           const d = response.data;
           const token = d?.token || getAuthToken();
 
-          // PROFILE-COMPLETION GATE — right after verification. A photographer
+          // PROFILE-COMPLETION GATE - right after verification. A photographer
           // whose profile isn't 100% (everything except KYC) must finish it
           // in the wizard before reaching the dashboard. The backend returned
           // a token so the wizard's /photographer/* saves authenticate.
@@ -161,7 +161,7 @@ function VerifyOtpContent(): React.JSX.Element {
             showSuccess('Account verified! Redirecting to dashboard...');
             setTimeout(() => goToDashboard(token), 2000);
           } else {
-            // No token — redirect to login so user can authenticate
+            // No token - redirect to login so user can authenticate
             showSuccess('Account verified! Please log in to continue.');
             setTimeout(() => {
               window.location.href = '/user/auth/login';
@@ -236,7 +236,7 @@ function VerifyOtpContent(): React.JSX.Element {
     );
   }
 
-  // Post-verification completion gate — blocking. Closing it does NOT
+  // Post-verification completion gate - blocking. Closing it does NOT
   // bypass (no dashboard); the profile is saved server-side incrementally.
   if (showCompletionWizard && completionCtx) {
     return (

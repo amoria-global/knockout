@@ -434,7 +434,7 @@ Amoria Connekyt is owned and operated by Amoria Global Tech Ltd., registered in 
     }
   ];
 
-  // Palettes cycle — every 4th section gets the dark theme
+  // Palettes cycle - every 4th section gets the dark theme
   const palettes = [
     { bg: 'linear-gradient(180deg, #ffffff 0%, #f0f4fa 100%)' },
     { bg: 'linear-gradient(180deg, #f0f4fa 0%, #e8edf6 100%)' },
@@ -873,7 +873,7 @@ Amoria Connekyt is owned and operated by Amoria Global Tech Ltd., registered in 
               className="tos-plx-section"
               style={{ background: palette.bg }}
             >
-              {/* L1: Giant number (0.12x — dramatic slow drift) */}
+              {/* L1: Giant number (0.12x - dramatic slow drift) */}
               <div
                 className={`tos-plx-bg-num ${numSide}`}
                 style={{
@@ -898,7 +898,7 @@ Amoria Connekyt is owned and operated by Amoria Global Tech Ltd., registered in 
                 }}
               />
 
-              {/* L2b: Orb B — opposite corner (0.18x) */}
+              {/* L2b: Orb B - opposite corner (0.18x) */}
               <div
                 className="tos-plx-orb"
                 style={{
@@ -969,7 +969,7 @@ Amoria Connekyt is owned and operated by Amoria Global Tech Ltd., registered in 
                 <div style={{ position: 'absolute', width: '2px', height: '100%', left: '50%', top: 0, transform: 'translateX(-50%)', background: isDark ? '#fff' : '#083A85', borderRadius: 1 }} />
               </div>
 
-              {/* L6: Content card (foreground — 3D tilt + reveal) */}
+              {/* L6: Content card (foreground - 3D tilt + reveal) */}
               <div
                 ref={el => { cardRefs.current[index] = el; }}
                 className={`tos-plx-card ${isRevealed ? 'revealed' : ''}`}

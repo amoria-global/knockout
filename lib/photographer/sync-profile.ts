@@ -1,7 +1,7 @@
 /**
  * Progressive, best-effort server autosave for the photographer onboarding
  * wizard. Runs on a 5s debounce while the user fills the wizard so every
- * section lands in the DB as they go — a dropped network just means a tick
+ * section lands in the DB as they go - a dropped network just means a tick
  * is skipped, the next tick (or the final finalize) retries, and a returning
  * user resumes from whatever the server already has (via the prefill).
  *
@@ -28,11 +28,11 @@
 import type { OnboardingPayload } from '@/app/components/PhotographerOnboarding';
 
 export interface SyncState {
-  // What we've confirmed exists server-side (sticky — never cleared, so a
+  // What we've confirmed exists server-side (sticky - never cleared, so a
   // flaky summary fetch can't trigger a duplicate create).
   created: { project: boolean; workExp: boolean; pkg: boolean };
   ids: { projectId?: string; workExpId?: string; pkgId?: string };
-  // Stale work-experience rows whose delete hasn't confirmed yet — retried
+  // Stale work-experience rows whose delete hasn't confirmed yet - retried
   // every tick until gone.
   staleWorkExpIds: string[];
   // File object refs we already uploaded (re-upload only when a NEW file is
@@ -42,7 +42,7 @@ export interface SyncState {
   uploadedProjFile: File | null;
   // Per-section signatures of the last successfully-synced values, so we
   // only hit an endpoint when that section actually changed. `pkgs` is
-  // keyed by tier name (Silver/Gold/Diamond) — each upserts independently.
+  // keyed by tier name (Silver/Gold/Diamond) - each upserts independently.
   sigs: { important?: string; project?: string; workExp?: string; pkgs?: Record<string, string> };
 }
 
@@ -113,7 +113,7 @@ export async function syncPhotographerProfile(
         if (exp?.id) { s.ids.workExpId = exp.id; s.created.workExp = true; presence.workExp = true; }
         if ((p.packages?.length ?? 0) > 0) { s.created.pkg = true; presence.pkg = true; }
       }
-    } catch { /* offline — use sticky state below */ }
+    } catch { /* offline - use sticky state below */ }
 
     // ── 1. Important details (idempotent UPDATE; needs address+specialties) ──
     const addr = payload.address.trim();
@@ -179,7 +179,7 @@ export async function syncPhotographerProfile(
           }
         }
         // created but id unknown (summary fetch failed): skip this tick,
-        // update once the id is learned — never re-add.
+        // update once the id is learned - never re-add.
       }
     }
 
@@ -229,7 +229,7 @@ export async function syncPhotographerProfile(
       }
     }
 
-    // ── 5. Packages — all three tiers, each upserted by name ──
+    // ── 5. Packages - all three tiers, each upserted by name ──
     // POST /packages is now an upsert (create-or-update by name) on the
     // backend, so there's no id tracking and no PUT race: just POST each
     // changed tier. A per-tier signature avoids needless calls.
@@ -265,7 +265,7 @@ export async function syncPhotographerProfile(
     }
   } catch {
     // Whole tick failed (offline / import error). Return the state unchanged
-    // enough that the next tick safely retries — never throw.
+    // enough that the next tick safely retries - never throw.
   }
 
   return { state: s, presence };

@@ -6,7 +6,7 @@
  * Returns whether an email is already registered WITHOUT creating anything.
  * Used to gate the photographer onboarding wizard: the email is entered on
  * the signup form but the real signup() call is deferred to the wizard's
- * last (6th) step — so we check it here first and refuse to open the wizard
+ * last (6th) step - so we check it here first and refuse to open the wizard
  * for an email the backend would reject six steps later.
  *
  * Always resolves (HTTP 200). action === 1 → available;

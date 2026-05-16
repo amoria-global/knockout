@@ -51,7 +51,7 @@ function JoinPackageContent(): React.JSX.Element {
   const [invitedEmails, setInvitedEmails] = useState<string[]>([]);
   const [remainingInvites, setRemainingInvites] = useState<number>(0);
 
-  // Invite code input — auto-fill from URL if shared via group link
+  // Invite code input - auto-fill from URL if shared via group link
   const [inviteCode, setInviteCode] = useState(searchParams.get('inviteToken') || '');
   const [groupRedeemError, setGroupRedeemError] = useState<string | null>(null);
 
@@ -234,7 +234,7 @@ function JoinPackageContent(): React.JSX.Element {
           setSelectedEvent(response.data);
         }
       } catch {
-        // silently fail — event stays null
+        // silently fail - event stays null
       } finally {
         setIsLoading(false);
       }
@@ -249,10 +249,10 @@ function JoinPackageContent(): React.JSX.Element {
     const urlToken = searchParams.get('inviteToken');
     if (!urlToken) return;
     const price = selectedEvent.price || 0;
-    if (price > 0) return; // Paid event — let user go through normal flow
+    if (price > 0) return; // Paid event - let user go through normal flow
 
     if (!isAuthenticated) {
-      // Show login modal — viewer must authenticate to claim a group code slot
+      // Show login modal - viewer must authenticate to claim a group code slot
       setAuthStep('login');
       setAuthError('');
       setShowAuthModal(true);
@@ -318,7 +318,7 @@ function JoinPackageContent(): React.JSX.Element {
 
   // Anonymous-viewer access precheck: identity + device must both match.
   // Only run if we already have a stored viewerId (proof of prior identity verification).
-  // Fingerprint alone can never grant access — users without a stored viewerId must
+  // Fingerprint alone can never grant access - users without a stored viewerId must
   // identify themselves via the banner / ViewerInfoModal.
   useEffect(() => {
     if (!selectedEvent || isLoading || isAuthenticated) return;
@@ -343,7 +343,7 @@ function JoinPackageContent(): React.JSX.Element {
           }
         }
       } catch {
-        // Silent — fall through to normal purchase flow
+        // Silent - fall through to normal purchase flow
       }
     })();
     return () => { cancelled = true; };
@@ -403,7 +403,7 @@ function JoinPackageContent(): React.JSX.Element {
       setShowPeopleInput(true);
     } else {
       setShowPeopleInput(false);
-      // Individual package — skip Continue button, proceed immediately
+      // Individual package - skip Continue button, proceed immediately
       setTimeout(() => handleProceed(), 0);
     }
   };
@@ -492,7 +492,7 @@ function JoinPackageContent(): React.JSX.Element {
         openPaymentFlow();
         return;
       }
-      // Fallback — user skipped the banner; open modal to collect name/email/phone
+      // Fallback - user skipped the banner; open modal to collect name/email/phone
       setViewerInfoError('');
       setShowViewerInfoModal(true);
       return;
@@ -503,10 +503,10 @@ function JoinPackageContent(): React.JSX.Element {
     const tokenParam = inviteToken ? `&inviteToken=${encodeURIComponent(inviteToken)}` : '';
 
     if (price > 0) {
-      // Authenticated — go directly to payment
+      // Authenticated - go directly to payment
       openPaymentFlow();
     } else {
-      // Free event — redirect to join-event
+      // Free event - redirect to join-event
       if (selectedPackage === 'individual') {
         window.location.href = `/user/events/join-event?id=${selectedEvent.id}&package=individual${tokenParam}`;
       } else if (selectedPackage === 'group' && isGroupInputValid()) {
@@ -538,7 +538,7 @@ function JoinPackageContent(): React.JSX.Element {
 
       if (!res.success) {
         // Backend handles existing-email cases via ACCESS_GRANTED / DEVICE_CONFLICT / REQUIRES_PAYMENT
-        // status branches below — any !success here is a real error (network, server, validation).
+        // status branches below - any !success here is a real error (network, server, validation).
         setError(res.error || 'Registration failed. Please try again.');
         return;
       }
@@ -554,20 +554,20 @@ function JoinPackageContent(): React.JSX.Element {
       }
 
       if (status === 'ACCESS_GRANTED') {
-        // Already paid — go to stream (skip packages entirely)
+        // Already paid - go to stream (skip packages entirely)
         setShowViewerInfoModal(false);
         router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&from=payment`);
       } else if (status === 'DEVICE_CONFLICT') {
-        // Active on another device — ask to switch
+        // Active on another device - ask to switch
         setShowViewerInfoModal(false);
         setShowDeviceSwitchModal(true);
       } else {
         // REQUIRES_PAYMENT
         if (source === 'banner') {
-          // Identity captured — collapse banner; user now picks package & clicks Reserve
+          // Identity captured - collapse banner; user now picks package & clicks Reserve
           setIdentityConfirmed(true);
         } else {
-          // Modal path — user already picked package, go straight to payment
+          // Modal path - user already picked package, go straight to payment
           setShowViewerInfoModal(false);
           openPaymentFlow();
         }
@@ -582,7 +582,7 @@ function JoinPackageContent(): React.JSX.Element {
   // Modal wrapper (existing callback signature)
   const handleViewerInfoSubmit = (data: ViewerInfoData) => submitViewerIdentity(data, 'modal');
 
-  // Banner submit handler — validates then delegates
+  // Banner submit handler - validates then delegates
   const handleBannerSubmit = () => {
     const name = bannerName.trim();
     const email = bannerEmail.trim();
@@ -621,7 +621,7 @@ function JoinPackageContent(): React.JSX.Element {
     setShowPaymentModal(false);
     if (!selectedEvent) return;
 
-    // Single source of truth for event live-ness — used everywhere below
+    // Single source of truth for event live-ness - used everywhere below
     // to decide whether the viewer should land on the live-stream player
     // or be sent back to view-event with a "spot reserved" confirmation.
     const isEventCurrentlyLive =
@@ -668,7 +668,7 @@ function JoinPackageContent(): React.JSX.Element {
           setInvitedEmails((d.authorizedEmails as string[]) || []);
           setShowGroupCodeModal(true);
         } else {
-          // Fallback — use payment ref as temp code if API fails
+          // Fallback - use payment ref as temp code if API fails
           const code = refid.slice(-8).toUpperCase();
           const expiry = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
           const codeData = { code, expiry, people, refid, eventId: selectedEvent.id, eventTitle: selectedEvent.title };
@@ -694,7 +694,7 @@ function JoinPackageContent(): React.JSX.Element {
     } else {
       // ── Individual payment success ───────────────────────────────
       // Confirm anonymous payment with backend (if applicable) BEFORE
-      // routing — the route decision depends on event live-ness, not
+      // routing - the route decision depends on event live-ness, not
       // anonymous-vs-authenticated.
       if (!isAuthenticated && pendingViewerId) {
         try {
@@ -711,7 +711,7 @@ function JoinPackageContent(): React.JSX.Element {
       // the view-event page with a `?reserved=1` flag so a success modal
       // + "Spot reserved" banners show.
       if (isEventCurrentlyLive) {
-        // Event is live — proceed to the stream
+        // Event is live - proceed to the stream
         const code = inviteCode.trim();
         if (code && selectedEvent.id) {
           try {
@@ -738,7 +738,7 @@ function JoinPackageContent(): React.JSX.Element {
           }
         }
       } else {
-        // Event is UPCOMING / not yet live — go back to view-event with
+        // Event is UPCOMING / not yet live - go back to view-event with
         // ?reserved=1 to trigger the "Spot reserved" success modal +
         // owned-access banners. The user can return when the event goes live.
         router.push(`/user/events/view-event?id=${selectedEvent.id}&reserved=1`);
@@ -770,7 +770,7 @@ function JoinPackageContent(): React.JSX.Element {
     }
   };
 
-  // Loading state — silent dark backdrop matching the cinematic theme.
+  // Loading state - silent dark backdrop matching the cinematic theme.
   if (isLoading) {
     return (
       <>
@@ -879,7 +879,7 @@ function JoinPackageContent(): React.JSX.Element {
 
       {/* Group-code error is shown via the global ErrorPopup (rendered at the bottom of this page) */}
 
-      {/* Cinematic backdrop — blurred event poster + dark veil + grain */}
+      {/* Cinematic backdrop - blurred event poster + dark veil + grain */}
       <div className="jp-backdrop" aria-hidden="true">
         <div className="jp-backdrop-img" style={{ backgroundImage: `url("${encodeURI(eventImage)}")` }} />
         <div className="jp-backdrop-veil" />
@@ -935,7 +935,7 @@ function JoinPackageContent(): React.JSX.Element {
           <p>Pick how you want to watch. Pay once, watch live in HD.</p>
         </div>
 
-        {/* View My Code button — shown when viewer has a saved group code */}
+        {/* View My Code button - shown when viewer has a saved group code */}
         {groupShareCode && (
           <div className="jp-savedcode">
             <button
@@ -1003,7 +1003,7 @@ function JoinPackageContent(): React.JSX.Element {
                   ))}
                 </ul>
 
-                {/* Group package — people input + price breakdown */}
+                {/* Group package - people input + price breakdown */}
                 {pkg.id === 'group' && selected && (
                   <div className="jp-group-input" onClick={(e) => e.stopPropagation()}>
                     <label htmlFor="jp-people-count" className="jp-input-label">
@@ -1085,7 +1085,7 @@ function JoinPackageContent(): React.JSX.Element {
           })}
         </section>
 
-        {/* ─── Action bar — group only (individual auto-proceeds) ─── */}
+        {/* ─── Action bar - group only (individual auto-proceeds) ─── */}
         {selectedPackage === 'group' && (
           <div className="jp-actions" role="group" aria-label="Confirm selection">
             <button type="button" className="jp-btn jp-btn--ghost" onClick={handleCancel}>
@@ -1417,7 +1417,7 @@ function JoinPackageContent(): React.JSX.Element {
         .jp-savedcode-text small { font-size: 12px; color: var(--jp-text-mute); }
         .jp-savedcode-btn > i:last-child { color: #fbbf77; font-size: 14px; }
 
-        /* ── Cards grid — auto-fit handles 1 or 2 cards gracefully:
+        /* ── Cards grid - auto-fit handles 1 or 2 cards gracefully:
               • 1 card  → centered, up to 460px wide
               • 2 cards → side-by-side, each up to 1fr
               • mobile  → stacked single column */
@@ -1558,7 +1558,7 @@ function JoinPackageContent(): React.JSX.Element {
           margin-bottom: 18px;
         }
 
-        /* Group card — center the bouncing "Save up to N%" tag and its
+        /* Group card - center the bouncing "Save up to N%" tag and its
            price-note caption so the rotation in discount-bounce reads
            cleanly and the tag becomes the visual anchor of the card. */
         .jp-card--group .jp-card-price {
@@ -1835,7 +1835,7 @@ function JoinPackageContent(): React.JSX.Element {
           && (selectedEvent as Record<string, unknown> | null)?.streamStatus !== 'ended'}
       />
 
-      {/* Discount Badge — overlays payment modal when group package selected */}
+      {/* Discount Badge - overlays payment modal when group package selected */}
       {showPaymentModal && selectedPackage === 'group' && (
         <div
           className="discount-bounce"
@@ -1879,7 +1879,7 @@ function JoinPackageContent(): React.JSX.Element {
               <p style={{ color: '#9ca3af', fontSize: 13, margin: '0 0 12px' }}>
                 Invite your group to access the stream
               </p>
-              {/* Skip — context-aware: only routes to live-stream when the
+              {/* Skip - context-aware: only routes to live-stream when the
                   event is live. Otherwise sends back to view-event with
                   ?reserved=1 (success banners + spot-reserved confirmation). */}
               <button
@@ -2017,9 +2017,9 @@ function JoinPackageContent(): React.JSX.Element {
               You can invite viewers now or come back later to add more.
             </p>
 
-            {/* Action button — context-aware: "Watch now" routes to the
+            {/* Action button - context-aware: "Watch now" routes to the
                 live-stream player ONLY when the event is live; on upcoming
-                events the button instead becomes "Done — back to event"
+                events the button instead becomes "Done - back to event"
                 and routes to view-event with the success flag. */}
             <div style={{ display: 'flex', gap: 10 }}>
               {(() => {

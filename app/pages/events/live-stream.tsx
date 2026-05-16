@@ -171,7 +171,7 @@ const App = () => {
   const [mainEventIndex, setMainEventIndex] = useState(0);
   const mainEvent = events[mainEventIndex];
 
-  // Live countdown for "coming soon" overlay — ticks only while event is ≤6h away
+  // Live countdown for "coming soon" overlay - ticks only while event is ≤6h away
   const [msUntilStart, setMsUntilStart] = useState<number | null>(null);
   useEffect(() => {
     const start = getEventStartDate(mainEvent?.eventDate, mainEvent?.eventStartTime);
@@ -224,7 +224,7 @@ const App = () => {
   }, []);
   useEffect(() => {
     if (!showWelcomeSplash) return;
-    // Auto-dismiss after 2.6s — long enough to read "Welcome, you're in!"
+    // Auto-dismiss after 2.6s - long enough to read "Welcome, you're in!"
     // but short enough not to delay the actual stream meaningfully.
     const t = window.setTimeout(() => {
       setWelcomeSplashFadingOut(true);
@@ -238,7 +238,7 @@ const App = () => {
   const [showDeviceSwitchModal, setShowDeviceSwitchModal] = useState(false);
   const [deviceSwitchLoading, setDeviceSwitchLoading] = useState(false);
 
-  // Check if user already rated this event — uses new backend endpoint
+  // Check if user already rated this event - uses new backend endpoint
   useEffect(() => {
     if (!mainEvent?.id) return;
     const checkRating = async () => {
@@ -276,7 +276,7 @@ const App = () => {
   const [otpValue, setOtpValue] = useState('');
   const [googleLoading, setGoogleLoading] = useState(false);
 
-  // Interaction capability — true when user can chat, rate, gift, etc.
+  // Interaction capability - true when user can chat, rate, gift, etc.
   const canInteract = isAuthenticated || (isAnonymousViewer && !!anonymousViewerId);
 
   // Open auth modal instead of redirecting
@@ -290,7 +290,7 @@ const App = () => {
     }
   };
 
-  // Require interaction capability — shows ViewerInfoModal for unregistered anonymous viewers
+  // Require interaction capability - shows ViewerInfoModal for unregistered anonymous viewers
   const requireInteraction = (action: () => void) => {
     if (isAuthenticated) {
       action();
@@ -302,7 +302,7 @@ const App = () => {
     }
   };
 
-  // Listen for session expiry — show login modal instead of redirecting
+  // Listen for session expiry - show login modal instead of redirecting
   useEffect(() => {
     const handleSessionExpired = (e: Event) => {
       e.preventDefault();
@@ -349,7 +349,7 @@ const App = () => {
           customerType: d.customerType || 'Viewer',
         }, d.token!);
         setShowAuthModal(false);
-        // Reload to refetch event with auth — backend returns whepUrl + hasPurchasedAccess for paid viewers
+        // Reload to refetch event with auth - backend returns whepUrl + hasPurchasedAccess for paid viewers
         window.location.reload();
       } else {
         setAuthError(res.data?.message || res.error || 'Incorrect email or password. Please try again.');
@@ -484,7 +484,7 @@ const App = () => {
       });
       if (!res.success) {
         // Backend handles existing-email cases via ACCESS_GRANTED / DEVICE_CONFLICT / REQUIRES_PAYMENT
-        // status branches below — any !success here is a real error (network, server, validation).
+        // status branches below - any !success here is a real error (network, server, validation).
         setViewerInfoError(res.error || 'Registration failed');
         return;
       }
@@ -593,7 +593,7 @@ const App = () => {
   }, [searchParams, isAuthenticated]);
 
 
-  // Stream access gate — determine flow based on streamType
+  // Stream access gate - determine flow based on streamType
   // Access is ALWAYS verified from the database (whepUrl / checkAnonymousAccessStatus).
   // The `from=payment` param only triggers a retry to handle post-payment race conditions.
   useEffect(() => {
@@ -612,7 +612,7 @@ const App = () => {
         if (mainEvent.whepUrl) {
           setStreamAccessGranted(true);
         } else if (fromPayment) {
-          // Just completed payment — backend may not have processed yet, retry after 2s
+          // Just completed payment - backend may not have processed yet, retry after 2s
           setAccessCheckLoading(true);
           setTimeout(async () => {
             try {
@@ -629,7 +629,7 @@ const App = () => {
           }, 2000);
         }
       } else {
-        // Anonymous viewer — check access via DB (fingerprint + viewerId)
+        // Anonymous viewer - check access via DB (fingerprint + viewerId)
         const viewerId = urlViewerId || localStorage.getItem(`anonymousViewer_${mainEvent.id}`);
         if (viewerId) {
           setAnonymousViewerId(viewerId);
@@ -661,7 +661,7 @@ const App = () => {
                 setShowDeviceSwitchModal(true);
                 setAccessCheckLoading(false);
               } else if (fromPayment) {
-                // Just completed payment — backend may not have processed yet, retry after 2s
+                // Just completed payment - backend may not have processed yet, retry after 2s
                 setTimeout(async () => {
                   try {
                     const fp = await getDeviceId();
@@ -697,7 +697,7 @@ const App = () => {
             }
           })();
         } else if (fromPayment) {
-          // Came from payment but no viewerId — show modal to re-identify
+          // Came from payment but no viewerId - show modal to re-identify
           setViewerInfoError('');
           setShowViewerInfoModal(true);
         }
@@ -724,10 +724,10 @@ const App = () => {
               }, ...prev.slice(1)]);
               setStreamAccessGranted(true);
             } else {
-              // Token invalid — clear saved token and prompt
+              // Token invalid - clear saved token and prompt
               localStorage.removeItem(`streamToken_${mainEvent.id}`);
               if (savedToken && !urlToken) {
-                // Saved token expired — don't show error, just prompt fresh
+                // Saved token expired - don't show error, just prompt fresh
                 setShowInviteTokenModal(true);
               } else {
                 setInviteTokenError(res.error || 'Invalid invite token. Please try again.');
@@ -741,11 +741,11 @@ const App = () => {
           }
         })();
       } else {
-        // No token anywhere — show token input overlay
+        // No token anywhere - show token input overlay
         setShowInviteTokenModal(true);
       }
     } else {
-      // No stream type or unknown — open access
+      // No stream type or unknown - open access
       setStreamAccessGranted(true);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -778,10 +778,10 @@ const App = () => {
     }
   };
 
-  // Stream status overlay — tracks ONGOING→PUBLISHED (paused) / ONGOING→COMPLETED (ended)
+  // Stream status overlay - tracks ONGOING→PUBLISHED (paused) / ONGOING→COMPLETED (ended)
   const [streamOverlay, setStreamOverlay] = useState<'live' | 'paused' | 'ended' | 'scheduled' | null>(null);
 
-  // Poll event status every 15s — detects status transitions
+  // Poll event status every 15s - detects status transitions
   useEffect(() => {
     const eventId = searchParams.get('eventId') || searchParams.get('id');
     if (!eventId) return;
@@ -806,7 +806,7 @@ const App = () => {
 
             // Detect status transitions
             if (oldStatus === 'ONGOING' && newStatus === 'PUBLISHED') {
-              setStreamOverlay('paused'); // Photographer stopped — will resume
+              setStreamOverlay('paused'); // Photographer stopped - will resume
             } else if (oldStatus === 'ONGOING' && newStatus === 'COMPLETED') {
               setStreamOverlay('ended');
             } else if (newStatus === 'ONGOING') {
@@ -847,7 +847,7 @@ const App = () => {
     return () => clearInterval(interval);
   }, [searchParams]);
 
-  // Poll viewer count every 15s (public endpoint — no auth required)
+  // Poll viewer count every 15s (public endpoint - no auth required)
   useEffect(() => {
     const eventId = searchParams.get('eventId') || searchParams.get('id');
     if (!eventId) return;
@@ -908,7 +908,7 @@ const App = () => {
           } catch { /* silent */ }
         }, 30000);
       } catch {
-        // Silent fail — don't block viewing on fingerprint errors
+        // Silent fail - don't block viewing on fingerprint errors
       }
     };
 
@@ -1112,7 +1112,7 @@ const App = () => {
   }, [mainEvent?.messages?.length]);
 
   // ── Fetch stream ads + poll for manual triggers ──
-  // Ads load independently — viewer is already on the stream page
+  // Ads load independently - viewer is already on the stream page
   useEffect(() => {
     if (!mainEvent?.id || mainEvent.title === 'Loading...') return;
     let cancelled = false;
@@ -1161,7 +1161,7 @@ const App = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mainEvent?.id, streamAccessGranted]);
 
-  // Initialize WHEP (WebRTC) player — sub-second latency playback, with HLS fallback
+  // Initialize WHEP (WebRTC) player - sub-second latency playback, with HLS fallback
   useEffect(() => {
     const whepUrl = mainEvent?.whepUrl;
     const hlsUrl = mainEvent?.hlsManifestUrl;
@@ -1195,7 +1195,7 @@ const App = () => {
       const savedVol = volumeRef.current[eventId] ?? getSavedVolume();
       videoEl.volume = savedVol / 100;
       volumeRef.current[eventId] = savedVol;
-      // Start muted for autoplay policy — will unmute immediately after play succeeds
+      // Start muted for autoplay policy - will unmute immediately after play succeeds
       videoEl.muted = true;
 
       if (whepUrl) {
@@ -1217,12 +1217,12 @@ const App = () => {
         videoEl.play().catch(() => {});
       }
 
-      // Autoplay when stream attaches — start muted, then unmute immediately
+      // Autoplay when stream attaches - start muted, then unmute immediately
       videoEl.onloadedmetadata = () => {
         if (cancelled) return;
         videoEl.play().then(() => {
           if (cancelled) return;
-          // Unmute now that play succeeded — the user navigated here intentionally
+          // Unmute now that play succeeded - the user navigated here intentionally
           videoEl.muted = false;
           setPlaybackState(prev => ({
             ...prev,
@@ -1234,7 +1234,7 @@ const App = () => {
             }
           }));
         }).catch(() => {
-          // Autoplay with sound blocked — stay muted, let user unmute manually
+          // Autoplay with sound blocked - stay muted, let user unmute manually
           setPlaybackState(prev => ({
             ...prev,
             [eventId]: {
@@ -1292,7 +1292,7 @@ const App = () => {
   const videoRefs = useRef<{ [key: string]: HTMLVideoElement | null }>({});
   // HLS.js instances - one per event
   const whepInstancesRef = useRef<{ [key: string]: WHEPClient | null }>({});
-  // Stable ref callback for main video — only stores element, no side effects
+  // Stable ref callback for main video - only stores element, no side effects
   const mainVideoRefCallback = useCallback((el: HTMLVideoElement | null) => {
     const id = events[mainEventIndex]?.id;
     if (!id) return;
@@ -1453,7 +1453,7 @@ const App = () => {
   const isEntryFeeStream = (event: EventStream) => getStreamType(event) === 'entry_fee';
   const isInviteTokenStream = (event: EventStream) => getStreamType(event) === 'invite_token';
 
-  // All live streams are giftable — both paid (entry_fee) and free (invite_token) events
+  // All live streams are giftable - both paid (entry_fee) and free (invite_token) events
   const isEventGiftable = (_event: EventStream) => true;
 
   // Check if current main event is giftable (for backward compatibility)
@@ -1541,7 +1541,7 @@ const App = () => {
     const providerMap: Record<string, string> = { mtn: 'MTN', airtel: 'AIRTEL' };
     const paymentMethodType = isCard ? 'CARD' : 'MOBILE_MONEY';
 
-    // Resolve currency — use event's currency, default to RWF
+    // Resolve currency - use event's currency, default to RWF
     const abbr = mainEvent?.streamFeeCurrencyAbbreviation;
     const matchedCurrency = abbr ? streamCurrencies.find(c => c.code === abbr) : null;
     const currencyId = matchedCurrency?.id
@@ -1559,7 +1559,7 @@ const App = () => {
       let response;
 
       if (isAuthenticated) {
-        // Authenticated user — use standard streaming payment
+        // Authenticated user - use standard streaming payment
         response = await initiateXentriPayStreaming({
           eventId: targetEvent.id,
           amount: parseInt(giftAmount),
@@ -1570,7 +1570,7 @@ const App = () => {
           ...(isCard ? { redirectUrl } : {}),
         });
       } else if (isAnonymousViewer && anonymousViewerId) {
-        // Anonymous viewer — use public gift endpoint (works for both entry_fee and invite_token)
+        // Anonymous viewer - use public gift endpoint (works for both entry_fee and invite_token)
         const fingerprint = await getDeviceId();
         const chatBase = typeof window !== 'undefined' && process.env.NODE_ENV === 'production'
           ? '/api/proxy' : (process.env.NEXT_PUBLIC_API_URL || 'https://backend.connekyt.com');
@@ -1751,7 +1751,7 @@ const App = () => {
             video.play().catch(() => {});
           }
         } else {
-          // Main player: Only enforce volume and pause state — never touch muted
+          // Main player: Only enforce volume and pause state - never touch muted
           if (state) {
             const savedVolume = volumeRef.current[event.id] ?? state.volume ?? 100;
             const targetVolume = savedVolume / 100;
@@ -1759,7 +1759,7 @@ const App = () => {
               video.volume = targetVolume;
             }
 
-            // Only enforce pause — don't auto-play, let togglePlay handle that
+            // Only enforce pause - don't auto-play, let togglePlay handle that
             if (!state.isPlaying && !video.paused) {
               video.pause();
             }
@@ -1783,7 +1783,7 @@ const App = () => {
         : newMessage;
 
       const tempId = Date.now();
-      // Use viewer's real name for display — anonymousViewerName for paid viewers, user profile for JWT-authenticated
+      // Use viewer's real name for display - anonymousViewerName for paid viewers, user profile for JWT-authenticated
       const senderName = anonymousViewerName
         || (user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : '')
         || 'You';
@@ -1812,12 +1812,12 @@ const App = () => {
       setNewMessage("");
       setReplyingTo(null);
 
-      // Send to API — branch on auth type
+      // Send to API - branch on auth type
       // Paid entry_fee viewers (have viewerId) use public endpoint; others use coordinator endpoint
       try {
         let success = false;
         if (anonymousViewerId) {
-          // Paid viewer — use public chat endpoint (no JWT needed)
+          // Paid viewer - use public chat endpoint (no JWT needed)
           const fingerprint = await getDeviceId();
           const chatBase = typeof window !== 'undefined' && process.env.NODE_ENV === 'production'
             ? '/api/proxy' : (process.env.NEXT_PUBLIC_API_URL || 'https://backend.connekyt.com');
@@ -1852,7 +1852,7 @@ const App = () => {
           });
         }
       } catch {
-        // Message stays as undelivered — no removal
+        // Message stays as undelivered - no removal
       }
     }
   };
@@ -2093,7 +2093,7 @@ const App = () => {
         return newState;
       });
 
-      // STEP 5: Sync mute with volume — volume > 0 means unmute, volume = 0 means mute
+      // STEP 5: Sync mute with volume - volume > 0 means unmute, volume = 0 means mute
       video.muted = newVolume === 0;
 
     }
@@ -2111,7 +2111,7 @@ const App = () => {
       // Track if viewer is behind the live edge (main player only)
       if (eventId === mainEvent?.id) {
         if (video.duration && isFinite(video.duration)) {
-          // HLS/buffered source — compare currentTime to duration
+          // HLS/buffered source - compare currentTime to duration
           setIsBehindLive(video.duration - video.currentTime > 5);
         }
         // For WebRTC (duration=Infinity), isBehindLive is managed by stall detection below
@@ -2119,7 +2119,7 @@ const App = () => {
     }
   };
 
-  // Jump to live edge — reconnect WHEP for WebRTC, seek for HLS
+  // Jump to live edge - reconnect WHEP for WebRTC, seek for HLS
   const jumpToLive = () => {
     const video = videoRefs.current[mainEvent.id];
     if (!video) return;
@@ -2143,7 +2143,7 @@ const App = () => {
     setIsBehindLive(false);
   };
 
-  // WebRTC stall detection — detect when viewer falls behind live edge
+  // WebRTC stall detection - detect when viewer falls behind live edge
   // For WebRTC, video.duration is Infinity so we track frame progress instead
   const lastFrameTimeRef = useRef<number>(0);
   useEffect(() => {
@@ -2198,7 +2198,7 @@ const App = () => {
         };
 
         const handlePause = () => {
-          // Only update isPlaying — never touch isMuted or volume
+          // Only update isPlaying - never touch isMuted or volume
           setPlaybackState(prev => {
             const updated = { ...prev };
             events.forEach(event => {
@@ -2243,7 +2243,7 @@ const App = () => {
       const mainVideo = videoRefs.current[mainEvent.id];
       const mainState = playbackState[mainEvent.id];
 
-      // Apply state to main video — only play/pause and volume, never muted
+      // Apply state to main video - only play/pause and volume, never muted
       if (mainVideo && mainState) {
         mainVideo.volume = (mainState.volume ?? 100) / 100;
 
@@ -2270,7 +2270,7 @@ const App = () => {
             video.play().catch(() => {});
           }
         } else {
-          // Main player: Only enforce play/pause — never touch muted
+          // Main player: Only enforce play/pause - never touch muted
           if (state) {
             if (!state.isPlaying && !video.paused) {
               video.pause();
@@ -2469,7 +2469,7 @@ const App = () => {
   const [showLeaveConfirmModal, setShowLeaveConfirmModal] = useState(false);
   // Cinematic goodbye splash shown after the user confirms leaving.
   // Plays for ~2.4s, then the existing leave logic runs (history.back or
-  // event removal). Pure UI state — no backend interaction.
+  // event removal). Pure UI state - no backend interaction.
   const [showGoodbyeSplash, setShowGoodbyeSplash] = useState(false);
 
   const confirmLeaveStream = () => {
@@ -2478,7 +2478,7 @@ const App = () => {
     // Capture the leave action so we run it AFTER the splash plays.
     const performLeave = () => {
       if (events.length === 1) {
-        // Last event — go back. The destination page replaces this one,
+        // Last event - go back. The destination page replaces this one,
         // so the splash naturally disappears with the navigation.
         window.history.back();
       } else {
@@ -2492,7 +2492,7 @@ const App = () => {
           return newState;
         });
         setMainEventIndex(0);
-        // We're staying on the page — hide the splash so the UI returns.
+        // We're staying on the page - hide the splash so the UI returns.
         setShowGoodbyeSplash(false);
       }
     };
@@ -2622,14 +2622,14 @@ const App = () => {
     }
   };
 
-  // Toggle fullscreen — iOS only supports fullscreen on <video> directly
+  // Toggle fullscreen - iOS only supports fullscreen on <video> directly
   const toggleFullscreen = () => {
     const video = videoRefs.current[mainEvent.id];
     const videoContainer = video?.parentElement;
     if (!videoContainer) return;
 
     if (!isFullscreen) {
-      // Enter fullscreen — try container first, fall back to video element (iOS)
+      // Enter fullscreen - try container first, fall back to video element (iOS)
       if (videoContainer.requestFullscreen) {
         videoContainer.requestFullscreen();
       } else if ((videoContainer as any).webkitRequestFullscreen) {
@@ -2639,7 +2639,7 @@ const App = () => {
       } else if ((videoContainer as any).msRequestFullscreen) {
         (videoContainer as any).msRequestFullscreen();
       } else if (video && (video as any).webkitEnterFullscreen) {
-        // iOS Safari — only supports fullscreen on <video> element
+        // iOS Safari - only supports fullscreen on <video> element
         (video as any).webkitEnterFullscreen();
       }
       setIsFullscreen(true);
@@ -2840,12 +2840,12 @@ const App = () => {
     };
   }, [playbackState, mainEvent.id, isFullscreen]);
 
-  // Low-latency toggle — WebRTC is always sub-second, no toggle needed
+  // Low-latency toggle - WebRTC is always sub-second, no toggle needed
   const handleLowLatencyToggle = () => {
     setLowLatencyMode(!lowLatencyMode);
   };
 
-  // Handle report issue — sends via stream interaction API
+  // Handle report issue - sends via stream interaction API
   const handleReportIssue = async (issueType: string) => {
     setShowSettings(false);
     setShowReportIssues(false);
@@ -2855,7 +2855,7 @@ const App = () => {
         await reportStreamIssue(mainEvent.id, issueType);
       }
     } catch {
-      // Silent fail — best-effort report
+      // Silent fail - best-effort report
     }
   };
 
@@ -2898,7 +2898,7 @@ const App = () => {
 
     setRatingSubmitting(true);
     try {
-      // Use new unified endpoint — backend resolves identity via JWT, viewerId, or IP
+      // Use new unified endpoint - backend resolves identity via JWT, viewerId, or IP
       const body: { rating: number; comment?: string; viewerId?: string } = { rating };
       if (ratingComment) body.comment = ratingComment;
       if (anonymousViewerId) body.viewerId = anonymousViewerId;
@@ -3058,7 +3058,7 @@ const App = () => {
       )}
 
       {/* ═══════════════════════════════════════════════════════════════════
-          GOODBYE SPLASH — appears for ~2.4s after the user confirms leaving.
+          GOODBYE SPLASH - appears for ~2.4s after the user confirms leaving.
           Cinematic farewell with a heartbeat icon, message, and progress
           bar. Mirrors the welcome splash visual language so the entry/exit
           experiences feel like bookends. */}
@@ -3226,7 +3226,7 @@ const App = () => {
         }
         .ls-welcome-sub strong { color: #f4f6fb; font-weight: 700; }
 
-        /* Indeterminate progress bar — slides a brand-blue chunk across */
+        /* Indeterminate progress bar - slides a brand-blue chunk across */
         .ls-welcome-progress {
           width: 200px;
           height: 4px;
@@ -3486,12 +3486,12 @@ const App = () => {
       `}</style>
 
       {/* ═══════════════════════════════════════════════════════════════════════════
-          SPOTLIGHT CINEMA — Live-stream theater redesign
+          SPOTLIGHT CINEMA - Live-stream theater redesign
           ═══════════════════════════════════════════════════════════════════════════
           Design vision: the page is a private theater. The video is the STAGE,
           spotlit by ambient brand-blue lighting that breathes overhead. Everything
           else (chat, info bar, controls, reactions, mini players) floats around the
-          stage as glass surfaces — backdrop-filtered, brand-blue rim-lit, with
+          stage as glass surfaces - backdrop-filtered, brand-blue rim-lit, with
           subtle inner gleams. Heavy use of layered radial lighting + film grain +
           micro-animations to make the page feel ALIVE without being noisy.
 
@@ -3525,7 +3525,7 @@ const App = () => {
           position: relative;
           color: #f4f6fb;
         }
-        /* Film grain — fixed so it doesn't move on scroll. Mix-blend overlay
+        /* Film grain - fixed so it doesn't move on scroll. Mix-blend overlay
            makes it whisper into the glass surfaces below. */
         .main-container::before {
           content: '';
@@ -3537,11 +3537,11 @@ const App = () => {
           mix-blend-mode: overlay;
           background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.7'/></svg>");
         }
-        /* Overhead spotlight removed — was lightening the video area too much.
+        /* Overhead spotlight removed - was lightening the video area too much.
            The page now relies purely on the static edge gradients above. */
         .layout-wrapper { position: relative; z-index: 1; }
 
-        /* Theater-curtain wipe — runs once on first mount */
+        /* Theater-curtain wipe - runs once on first mount */
         .layout-wrapper {
           animation: ls-curtain-rise 800ms cubic-bezier(0.22, 1, 0.36, 1) 80ms backwards;
         }
@@ -3564,7 +3564,7 @@ const App = () => {
           padding-bottom: clamp(14px, 2vw, 22px) !important;
           position: relative;
         }
-        /* Stage halo removed — was lightening the area above the player. */
+        /* Stage halo removed - was lightening the area above the player. */
 
         /* ─── The Stage: video player container ─────────────────────────── */
         .video-player-container {
@@ -3585,11 +3585,11 @@ const App = () => {
             0 36px 80px -20px rgba(0, 0, 0, 0.95),
             0 0 0 1px rgba(96, 165, 250, 0.20) !important;
         }
-        /* Conic rim removed — the previous brand-blue rotating halo lit up
+        /* Conic rim removed - the previous brand-blue rotating halo lit up
            the player edge. Plain hairline border (in box-shadow above) keeps
            the player feeling like a real screen, not a glowing toy. */
         .video-player-container::after { display: none !important; }
-        /* Top-edge gleam removed — was lightening the inside of the player.
+        /* Top-edge gleam removed - was lightening the inside of the player.
            The video stage now stays pure black throughout. */
         .video-player-container::before { display: none !important; }
 
@@ -3642,7 +3642,7 @@ const App = () => {
           text-transform: uppercase !important;
         }
 
-        /* Chat input — frosted floor */
+        /* Chat input - frosted floor */
         .chat-section input[type="text"],
         .chat-section textarea {
           background: rgba(255, 255, 255, 0.05) !important;
@@ -3664,7 +3664,7 @@ const App = () => {
           color: rgba(244, 246, 251, 0.42) !important;
         }
 
-        /* ─── Stream info area — transparent, no container chrome.
+        /* ─── Stream info area - transparent, no container chrome.
               Each child below the player floats independently on the page. */
         .stream-info-section {
           background: transparent !important;
@@ -3720,7 +3720,7 @@ const App = () => {
         .stream-action-btn:active,
         .gift-btn-main:active { transform: translateY(0) scale(0.98) !important; }
 
-        /* Gift button — gold-to-crimson sunrise gradient */
+        /* Gift button - gold-to-crimson sunrise gradient */
         .gift-btn-main {
           background: linear-gradient(135deg, rgba(245, 158, 11, 0.30) 0%, rgba(220, 39, 67, 0.24) 100%) !important;
           border-color: rgba(252, 211, 77, 0.55) !important;
@@ -3746,7 +3746,7 @@ const App = () => {
         }
         .gift-btn-main:hover::before { transform: translateX(100%); }
 
-        /* Stat items — independent, no wrapper backgrounds */
+        /* Stat items - independent, no wrapper backgrounds */
         .stat-item {
           background: transparent !important;
           border: none !important;
@@ -3757,7 +3757,7 @@ const App = () => {
           padding: 0 !important;
         }
 
-        /* ─── Mini players strip — independent, no container chrome ────── */
+        /* ─── Mini players strip - independent, no container chrome ────── */
         .mini-players-container {
           margin-top: 12px !important;
           padding: 0 !important;
@@ -3770,8 +3770,8 @@ const App = () => {
           position: relative !important;
         }
 
-        /* ─── Video.js controls — precision instrument panel.
-              The base CSS sets gap: 2px (and 0 on mobile!) on the rows —
+        /* ─── Video.js controls - precision instrument panel.
+              The base CSS sets gap: 2px (and 0 on mobile!) on the rows -
               we override with proper breathing room so buttons don't crush
               into each other. */
         .vjs-buttons-row {
@@ -3848,7 +3848,7 @@ const App = () => {
           box-shadow: 0 0 0 3px rgba(31, 107, 255, 0.35), 0 2px 6px rgba(0, 0, 0, 0.50) !important;
         }
 
-        /* ─── Live label — pulsing red beacon, pinned top-right of player.
+        /* ─── Live label - pulsing red beacon, pinned top-right of player.
               The high-specificity selector + !important on the position
               properties beats the external app/styles/live-stream-player.css
               rule that puts it at top-left by default. */
@@ -3897,7 +3897,7 @@ const App = () => {
           }
         }
 
-        /* ─── Big play overlay — first-touch invitation ─────────────────── */
+        /* ─── Big play overlay - first-touch invitation ─────────────────── */
         .vjs-play-overlay {
           background:
             radial-gradient(closest-side, rgba(31, 107, 255, 0.95) 0%, rgba(8, 58, 133, 0.92) 60%, rgba(8, 58, 133, 0.78) 100%) !important;
@@ -3922,7 +3922,7 @@ const App = () => {
             inset 0 1px 0 rgba(255, 255, 255, 0.45) !important;
         }
 
-        /* ─── Cinematic dialogs (dark glass) — gift modal handled separately
+        /* ─── Cinematic dialogs (dark glass) - gift modal handled separately
               below with a clean light treatment for better viewer UX. */
         .rating-modal,
         .auth-stream-modal,
@@ -3955,7 +3955,7 @@ const App = () => {
         }
 
         /* ═══════════════════════════════════════════════════════════════════════
-           SEND GIFT MODAL — distinctly festive "gifting" aesthetic, NOT a
+           SEND GIFT MODAL - distinctly festive "gifting" aesthetic, NOT a
            generic payment modal. Champagne-gold palette, amber title, gold
            amount stripe, animated gift-ribbon corner, soft sparkle pattern.
            Payment methods stay brand-blue (those ARE the actual payment) so
@@ -3980,7 +3980,7 @@ const App = () => {
           overflow: hidden !important;
           isolation: isolate;
         }
-        /* Top emerald-green accent ribbon — celebration, not transaction */
+        /* Top emerald-green accent ribbon - celebration, not transaction */
         .gift-modal::before {
           content: '';
           position: absolute;
@@ -4004,13 +4004,13 @@ const App = () => {
           pointer-events: none;
           z-index: 0;
         }
-        /* Inner content layer — handles padding + scroll, sits above the
+        /* Inner content layer - handles padding + scroll, sits above the
            decorative ::before / ::after pseudo-elements via z-index. */
         .gift-modal > * {
           position: relative;
           z-index: 2;
         }
-        /* Padding — matches XentriPayModal exactly */
+        /* Padding - matches XentriPayModal exactly */
         .gift-modal {
           padding-top: clamp(26px, 4.5vw, 38px) !important;
           padding-left: clamp(22px, 4vw, 34px) !important;
@@ -4018,7 +4018,7 @@ const App = () => {
           padding-bottom: clamp(22px, 4vw, 34px) !important;
         }
 
-        /* Decorative diagonal "GIFT" ribbon in the top-left corner — green */
+        /* Decorative diagonal "GIFT" ribbon in the top-left corner - green */
         .gift-ribbon-corner {
           position: absolute;
           top: 18px;
@@ -4082,7 +4082,7 @@ const App = () => {
           .gift-modal-sparkle { animation: none !important; opacity: 0.40; }
         }
 
-        /* Eyebrow pill — emerald-mint for "gifting" mood */
+        /* Eyebrow pill - emerald-mint for "gifting" mood */
         .gift-modal-eyebrow {
           display: inline-flex;
           align-items: center;
@@ -4102,7 +4102,7 @@ const App = () => {
         }
         .gift-modal-eyebrow svg { color: #047857 !important; stroke: #047857 !important; }
 
-        /* Title — deep forest green, celebratory */
+        /* Title - deep forest green, celebratory */
         .gift-modal-title {
           margin: 0 0 4px;
           font-size: clamp(20px, 4.5vw, 24px);
@@ -4113,7 +4113,7 @@ const App = () => {
           font-family: 'Pragati Narrow', sans-serif;
           text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
         }
-        /* Subtitle — soft slate */
+        /* Subtitle - soft slate */
         .gift-modal-sub {
           margin: 0 0 16px;
           font-size: 13.5px;
@@ -4125,7 +4125,7 @@ const App = () => {
           font-weight: 700;
         }
 
-        /* Amount Panel — emerald-tinted card with green stripe */
+        /* Amount Panel - emerald-tinted card with green stripe */
         .gift-modal-amount-panel {
           position: relative;
           background: linear-gradient(135deg, #ecfdf5 0%, #ffffff 60%, #d1fae5 100%);
@@ -4157,7 +4157,7 @@ const App = () => {
           font-family: 'Pragati Narrow', sans-serif;
           margin-bottom: 8px;
         }
-        /* Gift amount input — white interior with emerald border */
+        /* Gift amount input - white interior with emerald border */
         .gift-modal-amount-input {
           width: 100%;
           padding: 13px 16px;
@@ -4212,7 +4212,7 @@ const App = () => {
           box-shadow: 0 6px 14px -4px rgba(16, 185, 129, 0.55);
         }
 
-        /* ─── Payment method tiles — emerald-accented selected state */
+        /* ─── Payment method tiles - emerald-accented selected state */
         .gift-modal-payment-grid {
           display: grid;
           grid-template-columns: repeat(3, 1fr);
@@ -4296,7 +4296,7 @@ const App = () => {
           border: 1.5px solid #ffffff;
           color: #ffffff;
         }
-        /* Tighten the donation toggle area — compact pill, not a big card */
+        /* Tighten the donation toggle area - compact pill, not a big card */
         .gift-modal-donation {
           margin-bottom: 16px !important;
           padding: 12px 14px !important;
@@ -4435,7 +4435,7 @@ const App = () => {
         }
 
         /* ═══════════════════════════════════════════════════════════════════════
-           CINEMA HERO STRIP — the new event identity surface above the player.
+           CINEMA HERO STRIP - the new event identity surface above the player.
            Glass plate with brand-blue ambient glow + gradient bottom rim. Holds
            the live pill, title, organizer row, and the prominent gift CTA.
            ═══════════════════════════════════════════════════════════════════════ */
@@ -4483,8 +4483,8 @@ const App = () => {
           pointer-events: none;
           z-index: 1;
         }
-        /* Top eyebrow row — status pill + stats, all unified.
-           Tight spacing now that the "STARTING SOON" pill is gone — the
+        /* Top eyebrow row - status pill + stats, all unified.
+           Tight spacing now that the "STARTING SOON" pill is gone - the
            eyebrow only appears as a slim metadata strip. Empty rows
            (no LIVE pill, no stats) collapse to zero height. */
         .ls-hero-eyebrow {
@@ -4501,7 +4501,7 @@ const App = () => {
         .ls-hero-eyebrow:empty {
           display: none;
         }
-        /* Body row — avatar + title block + gift button */
+        /* Body row - avatar + title block + gift button */
         .ls-hero-row {
           position: relative;
           z-index: 2;
@@ -4584,7 +4584,7 @@ const App = () => {
           color: rgba(147, 197, 253, 0.45);
           font-weight: 800;
         }
-        /* Title — bigger, bolder, gradient sheen for premium feel */
+        /* Title - bigger, bolder, gradient sheen for premium feel */
         .ls-hero-title {
           margin: 0;
           padding: 0;
@@ -4604,7 +4604,7 @@ const App = () => {
           text-overflow: ellipsis;
           min-width: 0;
         }
-        /* Avatar wrap — holds the avatar + a "live" pulse dot badge */
+        /* Avatar wrap - holds the avatar + a "live" pulse dot badge */
         .ls-hero-avatar-wrap {
           position: relative;
           flex-shrink: 0;
@@ -4647,7 +4647,7 @@ const App = () => {
           100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
         }
 
-        /* Host row — refined "Hosted by · Name · ✓ verified" */
+        /* Host row - refined "Hosted by · Name · ✓ verified" */
         .ls-hero-host {
           display: inline-flex;
           align-items: center;
@@ -4682,7 +4682,7 @@ const App = () => {
           filter: drop-shadow(0 0 3px rgba(31, 107, 255, 0.55));
           line-height: 0;
         }
-        /* Gift CTA — emerald-green pill with shimmer (was gold/crimson) */
+        /* Gift CTA - emerald-green pill with shimmer (was gold/crimson) */
         .ls-hero-gift {
           position: relative;
           display: inline-flex;
@@ -4738,7 +4738,7 @@ const App = () => {
         }
 
         /* ═══════════════════════════════════════════════════════════════════════
-           HIDE REDUNDANT CHROME — the new hero replaces these.
+           HIDE REDUNDANT CHROME - the new hero replaces these.
            ═══════════════════════════════════════════════════════════════════════ */
         /* Original standalone Send Gift below the player → now in hero */
         .video-section > div > .gift-btn-main { display: none !important; }
@@ -4746,7 +4746,7 @@ const App = () => {
         .video-section > div:has(> .gift-btn-main) { display: none !important; }
 
         /* ═══════════════════════════════════════════════════════════════════════
-           VIDEO STAGE — pure dark, no ambient lighting INSIDE the player.
+           VIDEO STAGE - pure dark, no ambient lighting INSIDE the player.
            The brand-blue rim (conic-gradient ::after defined earlier) and the
            outer shadow halo still wrap around the player from outside. The
            interior stays a deep neutral black so playback content is the
@@ -4758,7 +4758,7 @@ const App = () => {
         }
 
         /* ═══════════════════════════════════════════════════════════════════════
-           LEAVE STREAM BUTTON — ghost idle, deep red on hover.
+           LEAVE STREAM BUTTON - ghost idle, deep red on hover.
            Wins against the generic .stream-action-btn:hover (which paints
            brand-blue) by using a more-specific selector + !important.
            ═══════════════════════════════════════════════════════════════════════ */
@@ -4780,7 +4780,7 @@ const App = () => {
         }
         .stream-action-btn.ls-leave-btn:hover,
         .ls-leave-btn:hover {
-          /* Soft translucent red gradient — mirrors the smoothness of the
+          /* Soft translucent red gradient - mirrors the smoothness of the
              brand-blue hover on the Rate button, just in red tones. */
           background: linear-gradient(135deg, rgba(239, 68, 68, 0.18) 0%, rgba(220, 38, 38, 0.28) 100%) !important;
           background-color: transparent !important;
@@ -4803,23 +4803,23 @@ const App = () => {
         }
 
         /* ═══════════════════════════════════════════════════════════════════════
-           DEDUPLICATE — hide ONLY the title/organizer pieces the hero already
+           DEDUPLICATE - hide ONLY the title/organizer pieces the hero already
            shows. The action buttons (Rate / Add / Leave) keep their original
            position in the bottom row, but the row gets generous bottom padding
            so the buttons don't read as floating in an empty strip.
            ═══════════════════════════════════════════════════════════════════════ */
-        /* In-video "N watching" badge — duplicates the hero stat */
+        /* In-video "N watching" badge - duplicates the hero stat */
         .video-player-container .ls-hide-overlay-watching { display: none !important; }
         /* Hide just the photographer eyebrow + avatar + name in the original
            bottom row. The action buttons (Rate / Add / Leave) stay visible. */
         .ls-org-row > span:first-child,
         .ls-org-row > img,
         .ls-org-row > .photographer-name { display: none !important; }
-        /* The fallback avatar (a div without buttons inside) — also hidden */
+        /* The fallback avatar (a div without buttons inside) - also hidden */
         .ls-org-row > div:not(:has(button)) { display: none !important; }
-        /* Action buttons row — right-aligned on its own line. Stats row
+        /* Action buttons row - right-aligned on its own line. Stats row
            below is lifted up via negative margin so the two share a single
-           visual row (stats on left, buttons on right) — no extra scroll. */
+           visual row (stats on left, buttons on right) - no extra scroll. */
         .ls-org-row {
           justify-content: flex-end !important;
           margin: 14px 0 0 !important;
@@ -4830,7 +4830,7 @@ const App = () => {
           position: relative;
           z-index: 1;
         }
-        /* Stats row — pull it up so it occupies the same vertical space as
+        /* Stats row - pull it up so it occupies the same vertical space as
            the action buttons row. Right-padding clears the buttons (which
            are floating right) so the stats text never collides. */
         .ls-stats-row {
@@ -4840,11 +4840,11 @@ const App = () => {
           min-height: 40px;
           padding-right: 380px !important;
         }
-        /* Tablet — labels still fit but with less right clearance */
+        /* Tablet - labels still fit but with less right clearance */
         @media (max-width: 1100px) and (min-width: 721px) {
           .ls-stats-row { padding-right: 320px !important; }
         }
-        /* Mobile — keep stats + buttons on a single row by collapsing the
+        /* Mobile - keep stats + buttons on a single row by collapsing the
            action buttons to icon-only (40px circles). Stats stay text. */
         @media (max-width: 720px) {
           /* Hide the verbose button text by zeroing the button's font-size
@@ -4884,7 +4884,7 @@ const App = () => {
             font-size: 12px !important;
           }
         }
-        /* Very small phones — drop to stacked layout. Negative-margin
+        /* Very small phones - drop to stacked layout. Negative-margin
            overlap is too tight on <380px screens. */
         @media (max-width: 380px) {
           .ls-stats-row {
@@ -4894,11 +4894,11 @@ const App = () => {
           }
           .ls-stats-row .stat-item { font-size: 10.5px !important; }
         }
-        /* Duplicate event title (stream-title) below the old row — hidden */
+        /* Duplicate event title (stream-title) below the old row - hidden */
         .stream-info-section .stream-title { display: none !important; }
 
         /* ═══════════════════════════════════════════════════════════════════════
-           CHAT INPUT — single unified rounded pill containing the input and
+           CHAT INPUT - single unified rounded pill containing the input and
            the brand-blue send button. Pill background is a subtle dark glass
            that brightens on focus-within with a brand-blue rim glow.
            ═══════════════════════════════════════════════════════════════════════ */
@@ -4937,7 +4937,7 @@ const App = () => {
         .ls-chat-input-row input[type="text"]::placeholder {
           color: rgba(244, 246, 251, 0.42) !important;
         }
-        /* Send button — circular brand-blue icon nested inside the pill */
+        /* Send button - circular brand-blue icon nested inside the pill */
         .ls-chat-input-row > button {
           width: 38px;
           height: 38px;
@@ -4976,7 +4976,7 @@ const App = () => {
         }
 
         /* ═══════════════════════════════════════════════════════════════════════
-           SEND 1-MIN VIDEO MESSAGE — convert from green to brand-blue gradient
+           SEND 1-MIN VIDEO MESSAGE - convert from green to brand-blue gradient
            ═══════════════════════════════════════════════════════════════════════ */
         .ls-video-msg-cta {
           background: linear-gradient(135deg, #083A85 0%, #0a4da3 50%, #1f6bff 100%) !important;
@@ -4997,7 +4997,7 @@ const App = () => {
         .ls-video-msg-cta:active { transform: translateY(0) scale(0.98) !important; }
 
         /* ═══════════════════════════════════════════════════════════════════════
-           CHAT EMPTY STATE — animated orb + bubble teasers
+           CHAT EMPTY STATE - animated orb + bubble teasers
            ═══════════════════════════════════════════════════════════════════════ */
         .ls-chat-empty {
           flex: 1;
@@ -5085,7 +5085,7 @@ const App = () => {
         }
 
         /* ═══════════════════════════════════════════════════════════════════════
-           CHAT — refined header pill + brand-blue Send-Video-Message CTA
+           CHAT - refined header pill + brand-blue Send-Video-Message CTA
            ═══════════════════════════════════════════════════════════════════════ */
         /* Make the top message-count pill brand-blue (was teal) */
         .chat-section h3 > span:not(.mobile-chat-close) {
@@ -5095,7 +5095,7 @@ const App = () => {
         }
 
         /* Convert the green "Send 1 Min Video Message" button to brand-blue
-           gradient — keeps the camera icon but matches our palette. */
+           gradient - keeps the camera icon but matches our palette. */
         .chat-section button[aria-label="Send video message"],
         .chat-section button[aria-label="Send video message"]:hover {
           background: linear-gradient(135deg, #083A85 0%, #0a4da3 50%, #1f6bff 100%) !important;
@@ -5163,7 +5163,7 @@ const App = () => {
           .ls-hero-stat { font-size: 10.5px; }
           .ls-hero-stat svg { width: 10px; height: 10px; }
         }
-        /* Tiny phones — collapse the gift CTA to icon-only */
+        /* Tiny phones - collapse the gift CTA to icon-only */
         @media (max-width: 380px) {
           .ls-hero-gift > span:not(.ls-hero-gift-shimmer) {
             display: none;
@@ -6118,7 +6118,7 @@ const App = () => {
           }
         }
 
-        /* Mobile-only floating buttons — base styles */
+        /* Mobile-only floating buttons - base styles */
         .floating-action-btn {
           position: fixed;
           right: 20px;
@@ -6139,7 +6139,7 @@ const App = () => {
           }
         }
 
-        /* Bottom button (chat) — sits above iOS home indicator */
+        /* Bottom button (chat) - sits above iOS home indicator */
         .floating-action-bottom {
           bottom: 80px;
         }
@@ -6149,7 +6149,7 @@ const App = () => {
           }
         }
 
-        /* Top button (video msg) — stacked above the chat button */
+        /* Top button (video msg) - stacked above the chat button */
         .floating-action-top {
           bottom: 144px;
         }
@@ -6185,7 +6185,7 @@ const App = () => {
             border-radius: 10px !important;
             min-height: 32px !important;
           }
-          /* Hide Stream ID on mobile — not useful for viewers */
+          /* Hide Stream ID on mobile - not useful for viewers */
           .desktop-only-stat {
             display: none !important;
           }
@@ -6284,7 +6284,7 @@ const App = () => {
         }
 
         /* Modal responsive improvements.
-           NOTE: .gift-modal removed from this group — it has its own
+           NOTE: .gift-modal removed from this group - it has its own
            tighter max-width (380px) defined in the polish layer above. */
         .modal-content,
         .add-event-modal,
@@ -6314,7 +6314,7 @@ const App = () => {
             border-radius: 14px !important;
           }
 
-          /* Gift modal — own mobile sizing (tighter than the generic rule).
+          /* Gift modal - own mobile sizing (tighter than the generic rule).
              The decorative ribbon + sparkles are downsized/hidden, the
              payment grid stays 3-col but gets tighter padding, and the
              eyebrow gets out of the close button's way. */
@@ -6328,7 +6328,7 @@ const App = () => {
             padding-right: 16px !important;
             padding-bottom: 18px !important;
           }
-          /* Ribbon corner — smaller, repositioned so it doesn't crowd the
+          /* Ribbon corner - smaller, repositioned so it doesn't crowd the
              eyebrow text on narrow screens */
           .gift-ribbon-corner {
             top: 14px;
@@ -6337,10 +6337,10 @@ const App = () => {
             font-size: 9px;
             padding: 3px 0;
           }
-          /* Sparkles — hidden on mobile to avoid overlapping the close
+          /* Sparkles - hidden on mobile to avoid overlapping the close
              button + eyebrow on tight viewports */
           .gift-modal-sparkle { display: none !important; }
-          /* Eyebrow + title + sub — slightly tighter */
+          /* Eyebrow + title + sub - slightly tighter */
           .gift-modal-eyebrow {
             font-size: 9.5px !important;
             padding: 4px 9px 4px 7px !important;
@@ -6353,7 +6353,7 @@ const App = () => {
             font-size: 12.5px !important;
             margin-bottom: 14px !important;
           }
-          /* Amount panel — tighter padding */
+          /* Amount panel - tighter padding */
           .gift-modal-amount-panel {
             padding: 12px 14px !important;
             margin-bottom: 14px !important;
@@ -6362,7 +6362,7 @@ const App = () => {
             padding: 11px 14px !important;
             font-size: 14px !important;
           }
-          /* Tier buttons — tighter gap, smaller padding */
+          /* Tier buttons - tighter gap, smaller padding */
           .gift-modal-tiers {
             gap: 5px !important;
             margin-top: 8px !important;
@@ -6372,7 +6372,7 @@ const App = () => {
             font-size: 11px !important;
             min-width: 50px !important;
           }
-          /* Payment grid — tighter on mobile */
+          /* Payment grid - tighter on mobile */
           .gift-modal-payment-grid {
             gap: 6px !important;
             margin-bottom: 14px !important;
@@ -6431,7 +6431,7 @@ const App = () => {
           }
         }
 
-        /* Tiny phones — additional gift modal compaction (≤380px wide) */
+        /* Tiny phones - additional gift modal compaction (≤380px wide) */
         @media (max-width: 380px) {
           .gift-modal {
             padding-left: 14px !important;
@@ -6551,7 +6551,7 @@ const App = () => {
           }}>
 
             {/* ═══════════════════════════════════════════════════════════════
-                CINEMA HERO — event identity strip above the stage.
+                CINEMA HERO - event identity strip above the stage.
                 Pure presentation: pulls from the existing mainEvent state,
                 no new backend calls. Sits at the top of the video-section so
                 viewers see what they're watching the moment the page paints. */}
@@ -6560,7 +6560,7 @@ const App = () => {
                 <div className="ls-hero-veil" aria-hidden="true" />
                 <div className="ls-hero-glow" aria-hidden="true" />
 
-                {/* Eyebrow row — LIVE pill (when ongoing only) + stats. The
+                {/* Eyebrow row - LIVE pill (when ongoing only) + stats. The
                     "STARTING SOON" banner has been removed per design req. */}
                 <div className="ls-hero-eyebrow">
                   {mainEvent.eventStatus === 'ONGOING' && (
@@ -6589,7 +6589,7 @@ const App = () => {
                   )}
                 </div>
 
-                {/* Body row — avatar, title + host, gift button */}
+                {/* Body row - avatar, title + host, gift button */}
                 <div className="ls-hero-row">
                   <div className="ls-hero-avatar-wrap">
                     {mainEvent.photographerAvatar ? (
@@ -6680,10 +6680,10 @@ const App = () => {
                   textAlign: 'center',
                   gap: '16px',
                 }}>
-                  {/* ── Entry Fee — check if already paid or need purchase ── */}
+                  {/* ── Entry Fee - check if already paid or need purchase ── */}
                   {isEntryFeeStream(mainEvent) ? (
                     accessCheckLoading ? (
-                      // Verifying access — show spinner while checking
+                      // Verifying access - show spinner while checking
                       <>
                         <div style={{ width: 42, height: 42, border: '3px solid rgba(255,255,255,0.2)', borderTopColor: '#10b981', borderRadius: '50%', animation: 'authSpin 0.8s linear infinite' }} />
                         <h3 style={{ color: '#fff', fontSize: '20px', fontWeight: '600', margin: 0 }}>
@@ -6694,7 +6694,7 @@ const App = () => {
                         </p>
                       </>
                     ) : mainEvent.hasPurchasedAccess ? (
-                      // Paid viewer (backend confirmed) — access confirmed, waiting for stream
+                      // Paid viewer (backend confirmed) - access confirmed, waiting for stream
                       <>
                         <i className="bi bi-hourglass-split" style={{ fontSize: '42px', color: '#10b981' }}></i>
                         <h3 style={{ color: '#fff', fontSize: '20px', fontWeight: '600', margin: 0 }}>
@@ -6705,7 +6705,7 @@ const App = () => {
                         </p>
                       </>
                     ) : !isAuthenticated ? (
-                      // Not logged in and not a registered anonymous viewer — show purchase
+                      // Not logged in and not a registered anonymous viewer - show purchase
                       <>
                         <i className="bi bi-lock-fill" style={{ fontSize: '42px', color: '#03969c' }}></i>
                         <h3 style={{ color: '#fff', fontSize: '20px', fontWeight: '600', margin: 0 }}>
@@ -6733,7 +6733,7 @@ const App = () => {
                         </button>
                       </>
                     ) : (
-                      // Logged in but hasn't paid — redirect to purchase
+                      // Logged in but hasn't paid - redirect to purchase
                       <>
                         <i className="bi bi-lock-fill" style={{ fontSize: '42px', color: '#03969c' }}></i>
                         <h3 style={{ color: '#fff', fontSize: '20px', fontWeight: '600', margin: 0 }}>
@@ -6924,7 +6924,7 @@ const App = () => {
                 />
               )}
 
-              {/* Stream starting overlay — ONGOING but WHEP URL not yet available
+              {/* Stream starting overlay - ONGOING but WHEP URL not yet available
                   Hide while access-status is still being checked (race condition guard) */}
               {mainEvent.eventStatus === 'ONGOING' && !mainEvent.whepUrl && !accessCheckLoading && (
                 <div style={{
@@ -6955,7 +6955,7 @@ const App = () => {
                 </div>
               )}
 
-              {/* Stream paused overlay — photographer stopped, will resume */}
+              {/* Stream paused overlay - photographer stopped, will resume */}
               {streamOverlay === 'paused' && (
                 <div style={{
                   position: 'absolute',
@@ -7001,7 +7001,7 @@ const App = () => {
                 </div>
               )}
 
-              {/* Scheduled overlay — stream not yet started */}
+              {/* Scheduled overlay - stream not yet started */}
               {streamOverlay === 'scheduled' && !mainEvent.whepUrl && (
                 <div style={{
                   position: 'absolute',
@@ -7037,7 +7037,7 @@ const App = () => {
                 </div>
               )}
 
-              {/* Viewer Count — clickable to open participants panel.
+              {/* Viewer Count - clickable to open participants panel.
                   Note: hidden via CSS (.ls-hide-overlay-watching) when the
                   Cinema Hero above already shows the watcher count. */}
               {mainEvent.viewers > 0 && (
@@ -7070,7 +7070,7 @@ const App = () => {
                 </div>
               )}
 
-              {/* Live Badge — pinned to top-right corner of the video */}
+              {/* Live Badge - pinned to top-right corner of the video */}
               <div
                 className="vjs-live-label"
                 onClick={(e) => e.stopPropagation()}
@@ -8005,7 +8005,7 @@ const App = () => {
                 )}
                 <span className="photographer-name" style={{ fontSize: 'clamp(12px, 3vw, 14px)', fontWeight: 600, color: '#efeff1' }}>{mainEvent.photographer}</span>
 
-                {/* Action Buttons — pushed right */}
+                {/* Action Buttons - pushed right */}
                 <div style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -8046,7 +8046,7 @@ const App = () => {
                       kept so existing references compile, but the button
                       that triggered it no longer renders. */}
 
-                  {/* Leave Stream Button — ghost by default, deep red on hover.
+                  {/* Leave Stream Button - ghost by default, deep red on hover.
                       The .ls-leave-btn class carries the red-on-hover styles
                       (with !important) so they beat the generic
                       .stream-action-btn:hover brand-blue rule. */}
@@ -8082,7 +8082,7 @@ const App = () => {
                 lineHeight: '1.4'
               }}>{mainEvent.title}</h2>
 
-              {/* Stats Row — pulled inline with the action buttons row above
+              {/* Stats Row - pulled inline with the action buttons row above
                   via CSS (.ls-stats-row class). Stats float on the left, the
                   action buttons stay on the right of the same visual line. */}
               <div className="ls-stats-row" style={{
@@ -8232,7 +8232,7 @@ const App = () => {
               flexDirection: 'column',
               gap: '8px'
             }}>
-              {/* Filter out pre-event "wish" messages — those were sent while
+              {/* Filter out pre-event "wish" messages - those were sent while
                   the event was still upcoming and are meant as private notes
                   to the host, not for the live chat. We compare each
                   message's createdAt against the event's scheduled start,
@@ -8258,7 +8258,7 @@ const App = () => {
 
                 return (
                   <>
-                    {/* Empty-state — when no public chat messages yet */}
+                    {/* Empty-state - when no public chat messages yet */}
                     {visibleMessages.length === 0 && (
                       <div className="ls-chat-empty" role="status" aria-live="polite">
                         <div className="ls-chat-empty-orb" aria-hidden="true">
@@ -8700,7 +8700,7 @@ const App = () => {
                 </button>
               )}
 
-              {/* Send Video Message Button — restyled to brand-blue gradient
+              {/* Send Video Message Button - restyled to brand-blue gradient
                   via the .ls-video-msg-cta class (overrides inline green). */}
               <button
                 onClick={() => canInteract ? setShowVideoMessageRecorder(true) : requireInteraction(() => {})}
@@ -8758,7 +8758,7 @@ const App = () => {
           handlers) keep compiling, but the modal itself never renders. */}
 
       {/* ═══════════════════════════════════════════════════════════════════
-          Standalone DonationPromptModal — pops over the gift modal AFTER
+          Standalone DonationPromptModal - pops over the gift modal AFTER
           the user clicks "Send Gift". Handles both the skip path (no
           donation) and the add path (donation amount), then triggers
           handleSendGift to actually process the gift payment. */}
@@ -8780,7 +8780,7 @@ const App = () => {
       />
 
       {/* ═══════════════════════════════════════════════════════════════════
-          AppreciationModal — celebratory overlay shown after a gift OR a
+          AppreciationModal - celebratory overlay shown after a gift OR a
           donation payment completes. Same component, different theme based
           on `type`. When a viewer gives BOTH (gift + donation in one flow),
           we show the gift appreciation first, then the donation one. */}
@@ -9338,7 +9338,7 @@ const App = () => {
               <i className="bi bi-x-lg"></i>
             </button>
 
-            {/* ── Decorative gift ribbon corner — distinguishes this from
+            {/* ── Decorative gift ribbon corner - distinguishes this from
                   payment modals at first glance. Diagonal "GIFT" banner in
                   the top-left with sparkle accents floating on the page. */}
             <span className="gift-ribbon-corner" aria-hidden="true">
@@ -9350,7 +9350,7 @@ const App = () => {
 
             {/* ── STEP: Form ── */}
             {giftStep === 'form' && (<>
-            {/* Eyebrow pill — gift-themed gold badge */}
+            {/* Eyebrow pill - gift-themed gold badge */}
             <div className="gift-modal-eyebrow">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <polyline points="20 12 20 22 4 22 4 12" />
@@ -9368,7 +9368,7 @@ const App = () => {
               Send a gift to <strong>{giftTargetEvent?.photographer || mainEvent.photographer}</strong>
             </p>
 
-            {/* Donation Section — REMOVED from inline. Donation is now
+            {/* Donation Section - REMOVED from inline. Donation is now
                 surfaced via the standalone DonationPromptModal that pops up
                 AFTER the user clicks "Send Gift" (see overlay below). The
                 false-gate keeps the JSX block harmless if any legacy code
@@ -9476,7 +9476,7 @@ const App = () => {
             </div>
             )}{/* end of disabled inline donation section */}
 
-            {/* Gift Amount Panel — wraps the input + tier buttons in a single
+            {/* Gift Amount Panel - wraps the input + tier buttons in a single
                 brand-blue tinted card, matching the XentriPayModal Amount
                 Panel design language (gradient bg + left accent stripe). */}
             <div className="gift-modal-amount-panel">
@@ -9505,7 +9505,7 @@ const App = () => {
               </div>
             </div>
 
-            {/* Payment Method Selection — 3-column grid mirrors XentriPayModal */}
+            {/* Payment Method Selection - 3-column grid mirrors XentriPayModal */}
             <div style={{ marginBottom: '14px' }}>
               <label className="gift-modal-amount-label" style={{ marginBottom: '8px' }}>
                 Select Payment Method
@@ -9540,7 +9540,7 @@ const App = () => {
             </div>
 
             {/* Payment Details Input - MTN/Airtel Mobile Money */}
-            {/* Amount reminder — shown for all methods when no amount is entered */}
+            {/* Amount reminder - shown for all methods when no amount is entered */}
             {selectedPaymentMethod && (!giftAmount || parseInt(giftAmount) <= 0) && (
               <div style={{ padding: '12px 16px', marginBottom: '20px', backgroundColor: 'rgba(8,58,133,0.06)', border: '1.5px solid rgba(8,58,133,0.2)', borderRadius: '12px' }}>
                 <p style={{ fontSize: '13px', color: '#083A85', margin: 0 }}>
@@ -9670,7 +9670,7 @@ const App = () => {
               </div>
             )}
 
-            {/* Send Gift Button — opens the standalone DonationPromptModal
+            {/* Send Gift Button - opens the standalone DonationPromptModal
                 first so the viewer can optionally add a donation. The modal
                 calls back into handleSendGift with the chosen donation
                 amount (0 if skipped). */}
@@ -9762,7 +9762,7 @@ const App = () => {
                     A payment prompt has been sent to your phone. Please check and confirm.
                   </p>
                 )}
-                <p style={{ fontSize: '12px', color: '#9ca3af' }}>Waiting for the gateway to confirm your payment — this can take up to a minute.</p>
+                <p style={{ fontSize: '12px', color: '#9ca3af' }}>Waiting for the gateway to confirm your payment - this can take up to a minute.</p>
                 <button onClick={resetGiftModal} style={{
                   marginTop: '16px', padding: '10px 24px', backgroundColor: 'transparent',
                   border: '1px solid #e5e7eb', borderRadius: '10px', color: '#6b7280', fontSize: '14px', cursor: 'pointer',
@@ -9822,7 +9822,7 @@ const App = () => {
         </div>
       )}
 
-      {/* Mobile Floating Buttons — Portal to document.body to escape parent transforms/overflow */}
+      {/* Mobile Floating Buttons - Portal to document.body to escape parent transforms/overflow */}
       {!isChatOpen && typeof document !== 'undefined' && createPortal(
         <>
           <button

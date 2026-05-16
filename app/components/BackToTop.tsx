@@ -224,7 +224,7 @@ export default function BackToTop(): React.JSX.Element {
             inset 0 1px 0 rgba(255, 255, 255, 0.40);
         }
 
-        /* Mobile — slightly smaller, hugs the dock.
+        /* Mobile - slightly smaller, hugs the dock.
            - More right offset so the phone's rounded corner doesn't clip
              the outer ring/halo (which extends ~6-8px beyond the core).
            - bottom accounts for both the mobile dock (used on view-event)
@@ -237,7 +237,7 @@ export default function BackToTop(): React.JSX.Element {
             height: 48px;
           }
         }
-        /* Very small phones — pull back further from the edge to clear
+        /* Very small phones - pull back further from the edge to clear
            rounded corners on devices like iPhone SE / smaller Androids. */
         @media (max-width: 380px) {
           .btt { right: 22px; }

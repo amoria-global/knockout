@@ -3,7 +3,7 @@
 import type React from 'react';
 import { motion } from 'framer-motion';
 
-// Lightweight inline className joiner — avoids adding clsx/tailwind-merge as deps.
+// Lightweight inline className joiner - avoids adding clsx/tailwind-merge as deps.
 const cn = (...classes: Array<string | false | null | undefined>): string =>
 	classes.filter(Boolean).join(' ');
 

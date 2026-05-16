@@ -91,7 +91,7 @@ export default function Footer() {
     /* Soft fade toward the bottom so the copyright area stays clean */
     .footer-dotgrid { -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 70%, rgba(0,0,0,0.55) 100%); mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 70%, rgba(0,0,0,0.55) 100%); }
 
-    /* Ambient drifting particles — pure white + brand-blue, no cyan */
+    /* Ambient drifting particles - pure white + brand-blue, no cyan */
     .footer-particle { position: absolute; width: 4px; height: 4px; border-radius: 50%; pointer-events: none; opacity: 0.55; filter: blur(0.4px); z-index: 1; }
     .footer-particle.p1 { background: rgba(255,255,255,0.7); top: 22%; left: 14%; animation: ftDrift1 14s ease-in-out infinite; }
     .footer-particle.p2 { background: rgba(255,255,255,0.55); top: 68%; left: 8%; animation: ftDrift2 17s ease-in-out infinite; animation-delay: -3s; }
@@ -319,7 +319,7 @@ export default function Footer() {
 
       {/* Main Footer Body */}
       <div className="footer-body">
-        {/* Interactive DotGrid — 2px dots with 15px gap. Dim brand-blue at rest → bright
+        {/* Interactive DotGrid - 2px dots with 15px gap. Dim brand-blue at rest → bright
             brand-blue on cursor proximity, with GSAP InertiaPlugin push and click shockwave. */}
         <div className="footer-dotgrid" aria-hidden="true">
           <DotGrid

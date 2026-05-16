@@ -43,7 +43,7 @@ function apiUrl(path: string): string {
 // Per-viewer identifier persisted in localStorage. Stamped into every preview
 // image the user sees so that any screenshot/leak can be traced back to the
 // specific browser that viewed it. Prefers buyerId once we know one, otherwise
-// falls back to a per-device random id. This is NOT a security token — the
+// falls back to a per-device random id. This is NOT a security token - the
 // server only uses it as watermark text.
 function getViewerId(buyerId?: string | null): string {
   if (buyerId) return `B${buyerId.slice(0, 8)}`;
@@ -136,7 +136,7 @@ const FindMyPhotos = () => {
   const [purchaseNotice, setPurchaseNotice] = useState<string | null>(null);
   const [pendingDonationAmount, setPendingDonationAmount] = useState(0);
 
-  // Persistent buyer identity (one per album) — mirrors anonymous-viewer pattern
+  // Persistent buyer identity (one per album) - mirrors anonymous-viewer pattern
   const [buyerId, setBuyerId] = useState<string | null>(null);
   const [buyerAlbumId, setBuyerAlbumId] = useState<string | null>(null);
   // "Your Details" modal
@@ -149,7 +149,7 @@ const FindMyPhotos = () => {
   // Pending photos to buy, held while details modal is open
   const pendingBuyRef = useRef<PhotoItem[] | null>(null);
 
-  // "Unlock my photos" modal — for returning buyers who paid before and want
+  // "Unlock my photos" modal - for returning buyers who paid before and want
   // to re-download with either the emailed unlock code or their email.
   const [unlockOpen, setUnlockOpen] = useState(false);
   const [unlockMode, setUnlockMode] = useState<'code' | 'email'>('code');
@@ -244,11 +244,11 @@ const FindMyPhotos = () => {
                     if (d.expiresAt) setFreeAlbumExpiresAt(d.expiresAt);
                     setFreeAlbumFlow('verified');
                   } else {
-                    // No photos in response — fall back to OTP screen
+                    // No photos in response - fall back to OTP screen
                     setFreeAlbumOtp(codeFromUrl);
                   }
                 } else {
-                  // Auto-verify failed — fall back to manual OTP entry
+                  // Auto-verify failed - fall back to manual OTP entry
                   setFreeAlbumError('');
                 }
                 setFreeAlbumLoading(false);
@@ -529,7 +529,7 @@ const FindMyPhotos = () => {
         if (d.photographerName) setFreeAlbumPhotographer(d.photographerName);
         if (d.expiresAt) setFreeAlbumExpiresAt(d.expiresAt);
         if (d.photos?.length) {
-          // Photos included in verify response — render directly
+          // Photos included in verify response - render directly
           setFreeAlbumPhotos(d.photos);
           setFreeAlbumFlow('verified');
         } else {
@@ -576,7 +576,7 @@ const FindMyPhotos = () => {
 
   const handleFreePhotoDownload = async (photo: FreeAlbumPhoto) => {
     // Free-album photos are served directly from the backend's /uploads/
-    // static path — photo.url is already the clean full-res JPEG, no
+    // static path - photo.url is already the clean full-res JPEG, no
     // separate "/original" endpoint exists. Hitting that path returned a
     // 404 JSON which then got saved as photo-<id>.jpg and refused to open.
     await triggerPhotoDownload(photo.url, `photo-${photo.id}.jpg`);
@@ -592,7 +592,7 @@ const FindMyPhotos = () => {
    * Bulk-download every photo the user has selected in the verified-free-album
    * grid. Iterates through selectedFreePhotoIds and routes each one through
    * the SAME single-photo handler (handleFreePhotoDownload) so the backend
-   * call path is identical to clicking a download button on a single card —
+   * call path is identical to clicking a download button on a single card -
    * we're just sequencing them. Small stagger keeps the browser from
    * collapsing the parallel <a download> clicks into one save dialog.
    */
@@ -641,7 +641,7 @@ const FindMyPhotos = () => {
   // apps) or the tab becomes hidden, instantly blank every preview image on the
   // page. Restored on focus/visibility. This catches casual snipping-tool usage
   // because Snipping Tool steals focus from the browser before the user drags
-  // the selection rectangle — by the time they do, the images are already black.
+  // the selection rectangle - by the time they do, the images are already black.
   //
   // Does NOT stop keyboard-shortcut-invoked captures or determined screen
   // recorders. The real defence remains the baked-in per-viewer watermark.
@@ -670,11 +670,11 @@ const FindMyPhotos = () => {
 
   // ── Anti-save hardening ──
   // Every image on this page is a watermarked preview from the backend, so
-  // "saving" them only yields a low-res stamped copy — but we still block the
+  // "saving" them only yields a low-res stamped copy - but we still block the
   // casual save paths (context menu, drag, Ctrl+S/P, F12) to remove the
   // friction-free "right-click → save" experience and make it clear the images
   // are protected. This cannot stop determined screen-capture, and it isn't
-  // meant to — the server-side watermark is the real defence.
+  // meant to - the server-side watermark is the real defence.
   useEffect(() => {
     const blockContext = (e: MouseEvent) => {
       const target = e.target as HTMLElement | null;
@@ -699,7 +699,7 @@ const FindMyPhotos = () => {
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && k === 's') {
         e.preventDefault();
       }
-      // F12 / Ctrl+Shift+I / Ctrl+Shift+J — devtools shortcuts
+      // F12 / Ctrl+Shift+I / Ctrl+Shift+J - devtools shortcuts
       if (k === 'f12') e.preventDefault();
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && (k === 'i' || k === 'j')) {
         e.preventDefault();
@@ -753,7 +753,7 @@ const FindMyPhotos = () => {
     try {
       const res = await fetch(url);
       // If the server returned a non-OK status, OR a JSON/HTML body instead
-      // of an image, don't save it as a .jpg — that's how we ended up with
+      // of an image, don't save it as a .jpg - that's how we ended up with
       // a 403 JSON blob being written to disk with a .jpg extension.
       const contentType = res.headers.get('content-type') || '';
       if (!res.ok || !contentType.startsWith('image/')) {
@@ -812,7 +812,7 @@ const FindMyPhotos = () => {
   // Backend: GET /albums/{albumId}/photo/{photoId}/download verifies buyerId/refid
   // and responds with either a 302 redirect to the image bytes (on success) or
   // a 403 JSON error body (on denial). fetch() follows the redirect transparently
-  // so a successful response's body IS the JPEG — we save it as a blob directly.
+  // so a successful response's body IS the JPEG - we save it as a blob directly.
   const downloadPurchasedPhoto = async (
     albumId: string,
     photoId: string,
@@ -836,7 +836,7 @@ const FindMyPhotos = () => {
         try {
           const errJson = await res?.json();
           if (errJson?.message) message = errJson.message;
-        } catch { /* non-JSON error body — keep generic message */ }
+        } catch { /* non-JSON error body - keep generic message */ }
         throw new Error(message);
       }
       const blob = await res.blob();
@@ -885,7 +885,7 @@ const FindMyPhotos = () => {
     }
 
     // Group payable photos by albumId. A face-scan can match photos across
-    // multiple paid albums (different photographers) — each album becomes
+    // multiple paid albums (different photographers) - each album becomes
     // its own AlbumPurchase row server-side so revenue routes to the right
     // photographer at that gallery's price.
     const groups = new Map<string, { albumId: string; photoIds: string[]; amount: number; currencyId: string }>();
@@ -934,7 +934,7 @@ const FindMyPhotos = () => {
         // per-slice on the backend regardless.
         displayCurrencyId = items[0].currencyId;
       } else {
-        // Rates not yet loaded or one currency lacks a rate — fall back to
+        // Rates not yet loaded or one currency lacks a rate - fall back to
         // the native sum so the user still sees *some* total. Backend math
         // is unaffected.
         displayAmount = items.reduce((s, i) => s + i.amount, 0);
@@ -949,7 +949,7 @@ const FindMyPhotos = () => {
 
     setPendingPurchase({
       // For multi-album buys, the top-level albumId is just the first slice's
-      // album — used for currency display only. The per-photo download loop
+      // album - used for currency display only. The per-photo download loop
       // looks up the correct album via photoAlbumMap, and the gateway
       // initiate API uses the items[] breakdown.
       albumId: items[0].albumId,
@@ -990,7 +990,7 @@ const FindMyPhotos = () => {
   /**
    * Bulk-download every selected photo that's either already purchased OR
    * free (no price). Paid-unpurchased photos in the selection are skipped
-   * here — they're handled by handleBulkBuy via a separate button in the
+   * here - they're handled by handleBulkBuy via a separate button in the
    * action bar. This routes each photo through the SAME handleDownloadClick
    * used by the per-card download button, so the backend selection logic
    * (purchased-via-backend vs free-direct-URL) stays untouched; we're just
@@ -1018,7 +1018,7 @@ const FindMyPhotos = () => {
     // it's what flips each AlbumPurchase row to COMPLETED, links the buyer,
     // and emits the unlock code. The backend confirms the payment via
     // XentriPay inline, and XentriPay's webhook + status endpoint can lag
-    // a few seconds behind the user's "I just paid" callback — so we
+    // a few seconds behind the user's "I just paid" callback - so we
     // retry with a short backoff before giving up. Without this retry,
     // a fast-clicking buyer hits a race where record-album-purchase 400s
     // ("Purchase not found" / "Payment not successful"), the buyer→photo
@@ -1033,7 +1033,7 @@ const FindMyPhotos = () => {
     const delaysMs = [0, 3000, 5000, 5000, 5000, 10000, 10000, 15000, 15000, 20000, 20000, 20000];
     for (let i = 0; i < delaysMs.length; i++) {
       if (delaysMs[i] > 0) {
-        setPurchaseNotice('Waiting for the gateway to confirm your payment — this can take up to a minute…');
+        setPurchaseNotice('Waiting for the gateway to confirm your payment - this can take up to a minute…');
         // eslint-disable-next-line no-await-in-loop
         await new Promise(r => setTimeout(r, delaysMs[i]));
       }
@@ -1046,7 +1046,7 @@ const FindMyPhotos = () => {
       }
       recordError = recordRes.error || null;
       // If the backend definitively says it can't find the refid AND the
-      // gateway already reported success once, keep retrying — the
+      // gateway already reported success once, keep retrying - the
       // initiate-purchase webhook may still be in flight. Permanent
       // errors (anything else) bail early.
       const transient = (recordError || '').toLowerCase();
@@ -1058,11 +1058,11 @@ const FindMyPhotos = () => {
     }
 
     if (!recordOk) {
-      // Surface the real reason so the buyer knows what happened — silent
+      // Surface the real reason so the buyer knows what happened - silent
       // failure here previously left them staring at a frozen "Buy" button
       // with .jpg downloads that 403'd.
       setPurchaseNotice(recordError
-        ? `Couldn't finalise purchase: ${recordError}. Your payment is safe — refresh or contact support if this persists.`
+        ? `Couldn't finalise purchase: ${recordError}. Your payment is safe - refresh or contact support if this persists.`
         : 'Could not finalise the purchase. Please refresh and try again.');
       setTimeout(() => setPurchaseNotice(null), 9000);
       return;
@@ -1074,7 +1074,7 @@ const FindMyPhotos = () => {
     setAllPhotos(prev => prev.map(p => boughtIds.has(p.id) ? { ...p, isPurchased: true } : p));
     setSelectedPhotoIds(new Set());
 
-    // Trigger downloads — prefer persistent buyerId over per-transaction refid.
+    // Trigger downloads - prefer persistent buyerId over per-transaction refid.
     // For multi-album purchases, each photo belongs to a different gallery,
     // so look up the right albumId per photoId. Single-album buys have all
     // photos under pendingPurchase.albumId; the map is still safe to consult.
@@ -1086,7 +1086,7 @@ const FindMyPhotos = () => {
     }
 
     // Surface the unlock code so the buyer can save it before leaving. The
-    // same code is also in the receipt email — this just makes it visible
+    // same code is also in the receipt email - this just makes it visible
     // immediately for users who don't check email right away.
     if (unlockCodeFromServer) {
       setRecentUnlockCode(unlockCodeFromServer);
@@ -1114,7 +1114,7 @@ const FindMyPhotos = () => {
     setXentriModalOpen(false);
 
     if (remaining.length === 0) {
-      // All selected photos were already owned — just download them
+      // All selected photos were already owned - just download them
       setPurchaseNotice('You already own these. Downloading…');
       (async () => {
         for (const photoId of alreadyIds) {
@@ -1184,7 +1184,7 @@ const FindMyPhotos = () => {
       setDetailsOpen(false);
       setDetailsLoading(false);
 
-      // Resume the buy flow — filter out photos the buyer already owns
+      // Resume the buy flow - filter out photos the buyer already owns
       const owned = new Set(purchasedPhotoIds || []);
       const freshPhotos = photos.map(p => owned.has(p.id) ? { ...p, isPurchased: true } : p);
       const toPay = freshPhotos.filter(p => !p.isPurchased);
@@ -1212,7 +1212,7 @@ const FindMyPhotos = () => {
   const handleUnlockSubmit = async () => {
     setUnlockError(null);
 
-    // Need an album in scope — pulled from any photo on the page (single-album
+    // Need an album in scope - pulled from any photo on the page (single-album
     // assumption matches the rest of this page).
     const albumId =
       displayedPhotos.find(p => p.albumId)?.albumId ||
@@ -1337,7 +1337,7 @@ const FindMyPhotos = () => {
         }
       }, 50);
     } catch {
-      // Camera not available or permission denied — fall back silently
+      // Camera not available or permission denied - fall back silently
       setIsCameraActive(false);
     }
   };
@@ -1380,7 +1380,7 @@ const FindMyPhotos = () => {
 
   const goToPhase = (id: string) => {
     if (id === 'phase-connect') {
-      // Step back to invite/scan — reset the photo-grid state.
+      // Step back to invite/scan - reset the photo-grid state.
       setIsCodeSubmitted(false);
       setIsFiltered(false);
       setSelectedPhotoIds(new Set());
@@ -1496,7 +1496,7 @@ const FindMyPhotos = () => {
 
       <Navbar />
 
-      {/* ── Phase Stepper — visible across all phases, click to navigate back ── */}
+      {/* ── Phase Stepper - visible across all phases, click to navigate back ── */}
       <div className="fmp-stepper" aria-label="Phase navigation">
         <nav className="fmp-stepper-inner">
           {phases.map((p, i) => {
@@ -2014,7 +2014,7 @@ const FindMyPhotos = () => {
           )}
         </div>
       ) : !isCodeSubmitted ? (
-        /* ── Phase 1: Connect — Hero + Invite Code ── */
+        /* ── Phase 1: Connect - Hero + Invite Code ── */
         <div
           id="phase-connect"
           ref={heroSectionRef}
@@ -2032,7 +2032,7 @@ const FindMyPhotos = () => {
             scrollMarginTop: '120px',
           }}
         >
-          {/* Interactive DotGrid — same brand-blue palette + sizing as the footer.
+          {/* Interactive DotGrid - same brand-blue palette + sizing as the footer.
               Replaces the old static dot pattern + manual mouse-spotlight overlay. */}
           <div style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none' }} aria-hidden="true">
             <DotGrid
@@ -2524,7 +2524,7 @@ const FindMyPhotos = () => {
           </div>
         </div>
       ) : (
-        /* ── Phase 2: Discover — Photo Grid + Scan ── */
+        /* ── Phase 2: Discover - Photo Grid + Scan ── */
         <div id="phase-discover" style={{ scrollMarginTop: '120px' }}>
           {/* Header */}
           <div
@@ -2539,7 +2539,7 @@ const FindMyPhotos = () => {
               overflow: 'hidden',
             }}
           >
-            {/* Back-to-Connect button — top-left corner */}
+            {/* Back-to-Connect button - top-left corner */}
             <button
               type="button"
               onClick={() => goToPhase('phase-connect')}
@@ -2578,7 +2578,7 @@ const FindMyPhotos = () => {
               <i className="bi bi-arrow-left" style={{ fontSize: 13 }} />
               Back to Connect
             </button>
-            {/* Interactive DotGrid — matches the footer's pattern */}
+            {/* Interactive DotGrid - matches the footer's pattern */}
             <div style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none' }} aria-hidden="true">
               <DotGrid
                 dotSize={2}
@@ -2699,7 +2699,7 @@ const FindMyPhotos = () => {
             </div>
           </div>
 
-          {/* Photo Grid — also acts as the checkout anchor when items are selected */}
+          {/* Photo Grid - also acts as the checkout anchor when items are selected */}
           <div
             id="phase-checkout"
             ref={gridSectionRef}
@@ -2714,7 +2714,7 @@ const FindMyPhotos = () => {
               scrollMarginTop: '120px',
             }}
           >
-            {/* Interactive DotGrid — matches the footer's pattern */}
+            {/* Interactive DotGrid - matches the footer's pattern */}
             <div style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none' }} aria-hidden="true">
               <DotGrid
                 dotSize={2}
@@ -2744,7 +2744,7 @@ const FindMyPhotos = () => {
                 const isPaid = (photo.price ?? 0) > 0;
                 const isPurchased = !!photo.isPurchased;
                 // Any photo the user can act on (download or buy) is now
-                // selectable — that unlocks the unified "cart" UX in the
+                // selectable - that unlocks the unified "cart" UX in the
                 // bottom action bar. The downstream actions still filter
                 // by type: handleBulkBuy only sends paid-unpurchased, and
                 // handleBulkDownload only sends free/purchased.
@@ -2754,7 +2754,7 @@ const FindMyPhotos = () => {
                 // Visual identity for the checkbox: free / already-purchased
                 // photos show a brand-pink check (these go to the download
                 // path), unpurchased-paid photos show a teal check (these go
-                // to the buy path — teal is the existing platform purchase
+                // to the buy path - teal is the existing platform purchase
                 // colour, preserved per request).
                 const selectAccent = (isPurchased || isFree) ? '#F20C8F' : '#03969c';
                 const currencyLabel = photo.currencyAbbreviation || albumCurrencySymbol || 'RF';
@@ -2801,7 +2801,7 @@ const FindMyPhotos = () => {
                       }}
                       loading="lazy"
                     />
-                    {/* Repeating tile watermark — Shutterstock/Getty style.
+                    {/* Repeating tile watermark - Shutterstock/Getty style.
                         Small "AMORIA" text dotted diagonally across the whole
                         image at low opacity. Visible enough to mark the photo
                         as a preview without obscuring the subject. */}
@@ -2826,7 +2826,7 @@ const FindMyPhotos = () => {
                       />
                     )}
                   </div>
-                  {/* Selection checkbox — appears on every actionable photo
+                  {/* Selection checkbox - appears on every actionable photo
                       so the bottom action bar can build a unified cart of
                       free downloads + paid buys. Accent color reflects the
                       intent (pink = download, teal = buy). */}
@@ -3051,7 +3051,7 @@ const FindMyPhotos = () => {
                     transition: 'filter 0.1s linear',
                   }}
                 />
-                {/* Transparent overlay — absorbs right-click / drag / selection
+                {/* Transparent overlay - absorbs right-click / drag / selection
                     attempts that slip past the handlers above */}
                 <div
                   aria-hidden
@@ -3065,7 +3065,7 @@ const FindMyPhotos = () => {
                 />
                 {isLocked && (
                   <>
-                    {/* Four 45° blurred diagonal bands — real image shows between them */}
+                    {/* Four 45° blurred diagonal bands - real image shows between them */}
                     {[0, 1, 2, 3].map((i) => (
                       <div
                         key={i}
@@ -3449,7 +3449,7 @@ const FindMyPhotos = () => {
             />
 
             {isScanning ? (
-              /* Scanning state — blurred photo with overlay */
+              /* Scanning state - blurred photo with overlay */
               <div style={{
                 textAlign: 'center',
                 padding: '20px 0',
@@ -3772,7 +3772,7 @@ const FindMyPhotos = () => {
         }
       `}</style>
 
-      {/* ── Cart Action Bar — unified multi-select for downloads + buys ── */}
+      {/* ── Cart Action Bar - unified multi-select for downloads + buys ── */}
       {(() => {
         const selectedCount = selectedPhotoIds.size;
         if (selectedCount === 0 && !purchaseNotice) return null;

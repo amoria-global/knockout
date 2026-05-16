@@ -208,7 +208,7 @@ export interface StreamVideoResponse {
 export async function getStreamVideo(eventId: string): Promise<ApiResponse<StreamVideoResponse>> {
   // This endpoint is coordinator-authenticated on the backend, so calling it
   // as an anonymous visitor just generates 401s (every 30s from the navbar
-  // poller, for every ongoing event — that's where the red wall of warnings in
+  // poller, for every ongoing event - that's where the red wall of warnings in
   // DevTools came from). Return an inert "not-available" response instead; the
   // landing page's hasLiveStream flag from the public events endpoint is
   // already sufficient for unauthenticated visitors.

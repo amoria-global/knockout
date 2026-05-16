@@ -267,7 +267,7 @@ const PhotographerGuide = () => {
                   )}
                 </div>
 
-                {/* Center — step number */}
+                {/* Center - step number */}
                 <div className="pg-timeline-center" style={{ width: "6%", display: "flex", justifyContent: "center", position: "relative", zIndex: 2 }}>
                   <div style={{ width: 36, height: 36, borderRadius: "50%", background: isVisible ? step.color : "#e2e8f0", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, fontSize: "0.85rem", fontFamily: "'Pragati Narrow', sans-serif", transition: "background 0.5s ease", boxShadow: isVisible ? `0 4px 12px ${step.color}40` : "none" }}>
                     {step.num}

@@ -1,6 +1,6 @@
 'use client';
 
-// ContainerScroll — 3D card-rotation scroll effect.
+// ContainerScroll - 3D card-rotation scroll effect.
 // Inspired by Aceternity's container-scroll-animation. Card starts tilted forward
 // (rotateX: 20deg) and flattens to 0 as the section enters the viewport.
 
@@ -10,7 +10,7 @@ import { useScroll, useTransform, motion, MotionValue } from 'framer-motion';
 interface ContainerScrollProps {
   titleComponent: string | React.ReactNode;
   children: React.ReactNode;
-  /** Outer card frame colors — defaults to a brand-blue gradient frame */
+  /** Outer card frame colors - defaults to a brand-blue gradient frame */
   frameClassName?: string;
   /** Inner content area background */
   innerClassName?: string;

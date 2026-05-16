@@ -29,7 +29,7 @@ export function getDashboardUrl(customerType?: string): string {
  * dashboard could extract auth from the URL on first load. That handoff is
  * no longer needed: backend issues the JWT as an HttpOnly cookie scoped to
  * `.connekyt.com`, which travels automatically on any navigation to
- * `dashboard.connekyt.com` — no secrets in URL bars, referrer headers, or
+ * `dashboard.connekyt.com` - no secrets in URL bars, referrer headers, or
  * browser history. The old `token` / `refreshToken` parameters are
  * accepted for source-compat and silently dropped.
  */

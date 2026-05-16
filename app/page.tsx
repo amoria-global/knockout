@@ -7,7 +7,7 @@ import Footer from "./components/footer";
 import Navbar from "./components/navbar";
 import GlobalNetwork from "./components/GlobalNetwork";
 import DotGrid from "./components/DotGrid";
-// import Preloader from "./components/Preloader"; // Commented out — client requested no preloader
+// import Preloader from "./components/Preloader"; // Commented out - client requested no preloader
 import { getPublicEvents } from '@/lib/APIs/public';
 import { getStreamVideo } from '@/lib/APIs/streams/route';
 import { getPhotographers } from '@/lib/APIs/photographers/get-photographers/route';
@@ -22,7 +22,7 @@ if (typeof window !== 'undefined') {
 export default function Home() {
   const t = useTranslations();
   const [hasLiveEvents, setHasLiveEvents] = useState(false);
-  // Real platform stats fetched from public APIs — feed the hero trust strip
+  // Real platform stats fetched from public APIs - feed the hero trust strip
   // and the "Joined by N photographers" pill. null while loading; numbers
   // once the API responds (success or failure). Refreshed periodically.
   const [stats, setStats] = useState<{
@@ -34,7 +34,7 @@ export default function Home() {
   const [heroEventSlide, setHeroEventSlide] = useState(0);
   const [heroSlideKey, setHeroSlideKey] = useState(0);
   const [activeCard, setActiveCard] = useState(0) // rated, 1: live, 2: pay, 3: gallery
-  // (Manual mouse-tracking state for the dot patterns was removed — replaced with the
+  // (Manual mouse-tracking state for the dot patterns was removed - replaced with the
   // interactive DotGrid component which handles cursor tracking + GSAP InertiaPlugin internally.)
   const [heroMousePos, setHeroMousePos] = useState<{ x: number; y: number } | null>(null)
   const [howItWorksAutoScroll, setHowItWorksAutoScroll] = useState(false) // Auto-scroll flag (mobile-only)
@@ -64,11 +64,11 @@ export default function Home() {
   const phoneTextRef = useRef<HTMLDivElement>(null)
   const tabletTextRef = useRef<HTMLDivElement>(null)
   const laptopTextRef = useRef<HTMLDivElement>(null)
-  // Mobile-only text refs — flow left→right above/below mockups during each phase
+  // Mobile-only text refs - flow left→right above/below mockups during each phase
   const phoneMobileTextRef = useRef<HTMLDivElement>(null)
   const tabletMobileTextRef = useRef<HTMLDivElement>(null)
   const laptopMobileTextRef = useRef<HTMLDivElement>(null)
-  // Preloader disabled — client requested no preloader (kept for future reuse)
+  // Preloader disabled - client requested no preloader (kept for future reuse)
   // const [showPreloader, setShowPreloader] = useState(() => {
   //   if (typeof window !== 'undefined') {
   //     const hasShownPreloader = sessionStorage.getItem('hasShownPreloader');
@@ -100,7 +100,7 @@ export default function Home() {
       try {
         const res = await getPublicEvents({ size: 100 });
         if (!res.success || !res.data) return;
-        // Collect event cover images for hero carousel — same filter as events page
+        // Collect event cover images for hero carousel - same filter as events page
         const allEvents = res.data.content;
         const twoDaysAgo = Date.now() - 2 * 24 * 60 * 60 * 1000;
         const visibleEvents = allEvents.filter(ev => {
@@ -122,10 +122,10 @@ export default function Home() {
           ev => (ev.eventStatus as string)?.toLowerCase() === 'ongoing' && (ev as Record<string, unknown>).streamStatus !== 'ended'
         );
 
-        // (totalEvents already set above — defensive parse before any
+        // (totalEvents already set above - defensive parse before any
         // downstream filter logic that might throw)
 
-        // No ongoing events at all — clear the flag and bail
+        // No ongoing events at all - clear the flag and bail
         if (ongoingEvents.length === 0) {
           setHasLiveEvents(false);
           return;
@@ -151,7 +151,7 @@ export default function Home() {
         }
 
         setHasLiveEvents(anyLive);
-      } catch { /* silent — totalEvents handled by separate effect */ }
+      } catch { /* silent - totalEvents handled by separate effect */ }
     };
     // Run immediately, then poll every 30s so streams that go live AFTER
     // the page loads also light up the EVENTS card pulse without needing
@@ -167,7 +167,7 @@ export default function Home() {
   // mockup card stack). Native wheel/touch input arrives in chunky bursts,
   // making those pinned animations stutter. Lenis interpolates the scroll
   // input itself; ScrollTrigger and any ref-driven onUpdate handlers
-  // receive an already-smoothed scroll position at 60fps — no React
+  // receive an already-smoothed scroll position at 60fps - no React
   // re-renders, no choppy peel transitions.
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -189,14 +189,14 @@ export default function Home() {
     // the smoothed scroll value Lenis is currently emitting.
     lenis.on('scroll', ScrollTrigger.update);
 
-    // Drive Lenis from GSAP's ticker — single rAF loop site-wide.
+    // Drive Lenis from GSAP's ticker - single rAF loop site-wide.
     const tick = (time: number) => lenis.raf(time * 1000);
     gsap.ticker.add(tick);
     gsap.ticker.lagSmoothing(0);
 
     // Pause Lenis whenever a scroll-lock is active (mobile menu, modal,
     // etc. set body.style.overflow = 'hidden'). With syncTouch on, Lenis
-    // transforms the page on touch — that transform turns the body into
+    // transforms the page on touch - that transform turns the body into
     // a containing block for position:fixed children, which makes the
     // mobile drawer drift away with the page on touch-scroll. Pausing
     // Lenis while the lock is active restores the normal fixed-anchoring.
@@ -248,7 +248,7 @@ export default function Home() {
           setStats(prev => ({ ...prev, totalEvents: sum }));
         }
       } catch {
-        // Silent — keep previous totalEvents value
+        // Silent - keep previous totalEvents value
       }
     };
     fetchTotalEventsCount();
@@ -257,7 +257,7 @@ export default function Home() {
     return () => clearInterval(id);
   }, []);
 
-  // Fetch photographer stats — total count + avg rating — for the hero
+  // Fetch photographer stats - total count + avg rating - for the hero
   // trust strip. Refreshes every 5 minutes; safe-fails to keep the UI
   // from breaking if the API is unreachable.
   useEffect(() => {
@@ -265,7 +265,7 @@ export default function Home() {
       try {
         const res = await getPhotographers({ size: 100 });
         if (!res.success || !res.data) {
-          // API failed — set safe zeros so UI doesn't dangle on "—"
+          // API failed - set safe zeros so UI doesn't dangle on "-"
           setStats(prev => ({
             ...prev,
             photographers: prev.photographers ?? 0,
@@ -274,7 +274,7 @@ export default function Home() {
           return;
         }
         // The real backend response is Spring Boot pagination
-        // ({ content, totalElements, totalPages }) — the TS interface in
+        // ({ content, totalElements, totalPages }) - the TS interface in
         // the route.ts is outdated. Read both shapes defensively so we
         // work whichever the backend returns.
         const raw = res.data as unknown as {
@@ -288,7 +288,7 @@ export default function Home() {
           : (typeof raw.total === 'number' ? raw.total : list.length));
         // Compute average rating from the sample (only count photographers
         // who have at least one review so newcomers don't drag it to 0).
-        // Default to 5.0 (perfect) if no rated photographers yet — better
+        // Default to 5.0 (perfect) if no rated photographers yet - better
         // marketing optics for a platform with limited reviews.
         const rated = list.filter((p) => (p.reviewCount || 0) > 0 && (p.rating || 0) > 0);
         const avg = rated.length > 0
@@ -300,7 +300,7 @@ export default function Home() {
           avgRating: Math.round(avg * 10) / 10,
         }));
       } catch {
-        // Network error — keep previous values, but ensure they're never null
+        // Network error - keep previous values, but ensure they're never null
         setStats(prev => ({
           ...prev,
           photographers: prev.photographers ?? 0,
@@ -313,16 +313,16 @@ export default function Home() {
     return () => clearInterval(statsInterval);
   }, []);
 
-  // Format helpers — abbreviate large numbers (5,000 → 5K), graceful "—"
+  // Format helpers - abbreviate large numbers (5,000 → 5K), graceful "-"
   // while data is loading. Used by the hero trust strip + the "Joined by"
   // pill in the For Creators card.
   const fmtCount = (n: number | null): string => {
-    if (n === null) return '—';
+    if (n === null) return '-';
     if (n >= 1000) return `${(n / 1000).toFixed(n >= 10000 ? 0 : 1).replace(/\.0$/, '')}K+`;
     if (n >= 100) return `${Math.floor(n / 10) * 10}+`;
     return String(n);
   };
-  const fmtRating = (r: number | null): string => r === null ? '—' : r.toFixed(1);
+  const fmtRating = (r: number | null): string => r === null ? '-' : r.toFixed(1);
 
   // Auto-slide hero event images carousel
   useEffect(() => {
@@ -405,7 +405,7 @@ export default function Home() {
         const tl = gsap.timeline({
           defaults: {
             // Soft sine ease-out gives a "settling" feel on every clip
-            // animation — much lovelier than pure linear scrubbing.
+            // animation - much lovelier than pure linear scrubbing.
             ease: 'sine.inOut',
             // Force the GPU to handle the transform layer for every tween.
             force3D: true,
@@ -414,7 +414,7 @@ export default function Home() {
             trigger: section,
             start: 'top top',
             end: '+=1300%',
-            // Heavier scrub smoothing (was 0.5) — playback gently catches
+            // Heavier scrub smoothing (was 0.5) - playback gently catches
             // up with the scroll wheel instead of snapping frame-by-frame.
             scrub: 1.2,
             pin: true,
@@ -555,12 +555,12 @@ export default function Home() {
   // The original request was to have How It Works scroll normally and reveal mockups behind it
   // This needs a different approach - possibly wrapping both sections in a container
 
-  // Mouse handlers for the dot-pattern spotlight effect were removed —
+  // Mouse handlers for the dot-pattern spotlight effect were removed -
   // the DotGrid component handles all cursor tracking internally.
 
   return (
     <>
-      {/* Preloader disabled — client requested no preloader (kept for future reuse)
+      {/* Preloader disabled - client requested no preloader (kept for future reuse)
       {showPreloader && <Preloader onComplete={handlePreloaderComplete} />}
       */}
 
@@ -634,7 +634,7 @@ export default function Home() {
             50%      { transform: translate3d(40px, -30px, 0) scale(1.10); }
           }
 
-          /* Floating particles — small dots drifting across the bg */
+          /* Floating particles - small dots drifting across the bg */
           .mockups-particle {
             position: absolute;
             width: 6px;
@@ -657,7 +657,7 @@ export default function Home() {
             50%      { transform: translate3d(20px, -30px, 0); opacity: 1.00; }
           }
 
-          /* Soft dot grid for tactile depth — masked to fade at edges */
+          /* Soft dot grid for tactile depth - masked to fade at edges */
           .mockups-grid {
             position: absolute;
             inset: 0;
@@ -670,7 +670,7 @@ export default function Home() {
             z-index: 0;
           }
 
-          /* Reduced motion — calm everything */
+          /* Reduced motion - calm everything */
           @media (prefers-reduced-motion: reduce) {
             .mockups-halo,
             .mockups-particle {
@@ -680,7 +680,7 @@ export default function Home() {
 
           /* ─── Why Amoria section innovations ───────────────────────── */
 
-          /* Eyebrow pill above the title — matches the rest of the page */
+          /* Eyebrow pill above the title - matches the rest of the page */
           .wa-eyebrow {
             display: inline-flex;
             align-items: center;
@@ -746,7 +746,7 @@ export default function Home() {
             100% { transform: translateX(110%); }
           }
 
-          /* Drifting brand halos — soft blurred glows */
+          /* Drifting brand halos - soft blurred glows */
           .wa-halo {
             position: absolute;
             border-radius: 50%;
@@ -870,7 +870,7 @@ export default function Home() {
             50%      { transform: translate3d(20px, -30px, 0); opacity: 1.00; }
           }
 
-          /* Compass coordinate ornament — top-left corner of section */
+          /* Compass coordinate ornament - top-left corner of section */
           .gn-compass {
             position: absolute;
             top: 26px;
@@ -954,7 +954,7 @@ export default function Home() {
 
           /* ─── Why Amoria SECTION-LEVEL spices ──────────────────────── */
 
-          /* Center backdrop crest — concentric dashed circles behind the
+          /* Center backdrop crest - concentric dashed circles behind the
              dashboard area. Slowly counter-rotate for a "platform pulse" */
           .wa-crest {
             position: absolute;
@@ -978,7 +978,7 @@ export default function Home() {
             to { transform: rotate(360deg); }
           }
 
-          /* Geometric corner ornaments — slowly rotate brand glyphs */
+          /* Geometric corner ornaments - slowly rotate brand glyphs */
           .wa-corner {
             position: absolute;
             width: 56px;
@@ -997,7 +997,7 @@ export default function Home() {
             to { transform: rotate(360deg); }
           }
 
-          /* Promise marquee — continuous scroll of brand promises */
+          /* Promise marquee - continuous scroll of brand promises */
           .wa-marquee {
             position: relative;
             margin-top: 100px;
@@ -1073,7 +1073,7 @@ export default function Home() {
             isolation: isolate;
           }
 
-          /* Top-edge gradient accent stripe — different palette per card */
+          /* Top-edge gradient accent stripe - different palette per card */
           .why-amoria-card::before {
             content: '';
             position: absolute;
@@ -1104,7 +1104,7 @@ export default function Home() {
             background: linear-gradient(90deg, transparent 0%, #047857 25%, #10b981 50%, #047857 75%, transparent 100%);
           }
 
-          /* Sparkle corner badge — appears on hover */
+          /* Sparkle corner badge - appears on hover */
           .why-amoria-card::after {
             content: '✦';
             position: absolute;
@@ -1136,7 +1136,7 @@ export default function Home() {
               0 0 60px -10px rgba(59, 130, 246, 0.30) !important;
           }
 
-          /* Card images — subtle zoom on hover for depth */
+          /* Card images - subtle zoom on hover for depth */
           .why-amoria-card img {
             transition: transform 700ms cubic-bezier(0.22, 1, 0.36, 1), filter 320ms ease;
             will-change: transform;
@@ -1146,7 +1146,7 @@ export default function Home() {
             filter: saturate(1.10) brightness(1.02);
           }
 
-          /* Card titles — subtle gradient accent on hover */
+          /* Card titles - subtle gradient accent on hover */
           .why-amoria-card h3 {
             transition: background 280ms ease, color 280ms ease, transform 280ms ease;
             background: linear-gradient(90deg, #083A85 0%, #083A85 100%);
@@ -1163,7 +1163,7 @@ export default function Home() {
             transform: translateX(2px);
           }
 
-          /* Image wrapper — soft gradient overlay reveal on hover */
+          /* Image wrapper - soft gradient overlay reveal on hover */
           .why-amoria-card img + div,
           .why-amoria-card div[style*="overflow: hidden"] {
             position: relative;
@@ -1203,7 +1203,7 @@ export default function Home() {
             }
           }
 
-          /* Mobile mockup flowing text — scroll-driven horizontal flow per mockup */
+          /* Mobile mockup flowing text - scroll-driven horizontal flow per mockup */
           .mobile-mockup-text {
             display: none;
           }
@@ -1322,7 +1322,7 @@ export default function Home() {
             .hero-glow { left: 50% !important; transform: translateX(-50%) !important; width: 400px !important; top: 10px !important; }
             .hero-floating-card { transform: none !important; }
 
-            /* Mobile: land10 design — simple clean vertical stack */
+            /* Mobile: land10 design - simple clean vertical stack */
             .how-it-works-title { font-size: 36px !important; margin-bottom: 40px !important; text-align: center !important; }
             .how-it-works-steps { flex-direction: column !important; gap: 12px !important; align-items: center !important; animation: none !important; }
             .how-it-works-svg { display: none !important; }
@@ -1364,8 +1364,8 @@ export default function Home() {
             .why-amoria-title { font-size: 28px !important; text-align: center !important; line-height: 1.15 !important; margin-bottom: 16px !important; }
             .why-amoria-subtitle { font-size: 14px !important; text-align: center !important; padding: 0 10px !important; }
 
-            /* Stack the dashboard cards vertically on mobile so every card —
-               including the Facial Recognition accent card — gets its own
+            /* Stack the dashboard cards vertically on mobile so every card -
+               including the Facial Recognition accent card - gets its own
                row instead of overlapping/clipping inside the absolute layout. */
             .why-amoria-dashboard {
               height: auto !important;
@@ -1390,7 +1390,7 @@ export default function Home() {
               z-index: 1 !important;
             }
             /* Image-only "Full Event Gallery" card adds no extra info on
-               mobile — hide it to reduce vertical scroll and keep focus on
+               mobile - hide it to reduce vertical scroll and keep focus on
                the four content cards. */
             .why-amoria-dashboard .why-amoria-card-large { display: none !important; }
             /* Reorder cards for a logical mobile reading order:
@@ -1400,7 +1400,7 @@ export default function Home() {
             .why-amoria-dashboard .why-amoria-card-accent { order: 3 !important; }
             .why-amoria-dashboard .why-amoria-card-base   { order: 4 !important; }
             /* Decorative connection lines need the absolute layout to make
-               sense — drop them on mobile. */
+               sense - drop them on mobile. */
             .why-amoria-connections { display: none !important; }
 
             .why-amoria-card-title { font-size: 16px !important; }
@@ -1436,7 +1436,7 @@ export default function Home() {
             .global-network-title { font-size: 45px !important; }
           }
 
-          /* Short viewports (laptops < 720px tall) — apply a *light* trim so
+          /* Short viewports (laptops < 720px tall) - apply a *light* trim so
              the CTAs land at the bottom of the section instead of overflowing.
              Everything stays at near-default sizes; only padding + a couple of
              marginals shrink. */
@@ -1480,7 +1480,7 @@ export default function Home() {
           {/* ── Decorative innovation layer ─────────────────────────────
                Animated brand-blue & coral orbs floating in the background,
                a subtle dot-grid pattern overlay, and a thin gradient hairline
-               framing the bottom edge. All purely visual — no layout shift,
+               framing the bottom edge. All purely visual - no layout shift,
                no impact on existing content. */}
           <div className="hero-deco-grid" aria-hidden="true" />
           <div className="hero-orb hero-orb--blue" aria-hidden="true" />
@@ -1501,7 +1501,7 @@ export default function Home() {
             transition: 'opacity 0.15s ease'
           }} />
 
-          {/* Hero Content Container — tightened so the full layout
+          {/* Hero Content Container - tightened so the full layout
               (eyebrow → title → description → CTAs → glass card → trust)
               fits cleanly at 100% browser zoom on a 1366×768 viewport. */}
           <div className="hero-content" style={{
@@ -1516,7 +1516,7 @@ export default function Home() {
             minHeight: 'calc(100vh - 72px)'
           }}>
 
-            {/* Left Content — flex column with explicit order so the
+            {/* Left Content - flex column with explicit order so the
                 hierarchy reads: eyebrow → title → description → CTAs →
                 glass card → trust strip. */}
             <div className="hero-left" style={{
@@ -1541,7 +1541,7 @@ export default function Home() {
                 pointerEvents: 'none'
               }} />
 
-              {/* Hero Feature Glass Card — sits BELOW the eyebrow pill and
+              {/* Hero Feature Glass Card - sits BELOW the eyebrow pill and
                   ABOVE the headline, presenting EVENTS + AI SCAN as quick
                   entry tiles before the user reads the headline. */}
               <div className="hero-glass-card" style={{
@@ -1656,7 +1656,7 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Buttons row — outside sub-cards, inside main card */}
+                {/* Buttons row - outside sub-cards, inside main card */}
                 <div className="glass-btns" style={{ display: 'flex', gap: '12px', marginTop: '10px' }}>
                   <button
                     onClick={() => window.location.href = '/user/events'}
@@ -1735,7 +1735,7 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Brand eyebrow pill — premium identity flag above the title */}
+              {/* Brand eyebrow pill - premium identity flag above the title */}
               <div className="hero-eyebrow" aria-hidden="true" style={{ order: 1 }}>
                 <span className="hero-eyebrow-dot" />
                 <span className="hero-eyebrow-text">
@@ -1744,7 +1744,7 @@ export default function Home() {
                 <span className="hero-eyebrow-sparkle">✨</span>
               </div>
 
-              {/* Main Heading — sits AFTER the glass card, with CTAs
+              {/* Main Heading - sits AFTER the glass card, with CTAs
                   directly underneath, then description, then trust. */}
               <h1 className="hero-title" style={{
                 fontSize: '56px',
@@ -1757,7 +1757,7 @@ export default function Home() {
                 <div style={{
                   color: '#083A85',
                   marginBottom: '3px',
-                  // Cursive script flourish on the typing word — same
+                  // Cursive script flourish on the typing word - same
                   // 'Alex Brush' treatment as the contact page's "connect"
                   // word. The contact-page sizing (1.4em + descender
                   // baseline) makes the strokes render thicker visually.
@@ -1788,7 +1788,7 @@ export default function Home() {
                 <div style={{ color: '#000' }}>{t('hero.title3')}</div>
               </h1>
 
-              {/* Description — now sits AFTER the CTA buttons */}
+              {/* Description - now sits AFTER the CTA buttons */}
               <p className="hero-description" style={{
                 fontSize: '14px',
                 color: '#1f1d1d',
@@ -1801,7 +1801,7 @@ export default function Home() {
                 {t('hero.description')}
               </p>
 
-              {/* CTA Buttons — positioned directly UNDER the heading */}
+              {/* CTA Buttons - positioned directly UNDER the heading */}
               <div className="hero-buttons" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', order: 4 }}>
                 <button
                   className="hero-cta hero-cta--primary"
@@ -1825,7 +1825,7 @@ export default function Home() {
                 </button>
               </div>
 
-              {/* Trust strip — quick scan of platform credibility.
+              {/* Trust strip - quick scan of platform credibility.
                   Order 6 places it at the very bottom of the column. */}
               <div className="hero-trust" aria-label="Platform highlights" style={{ order: 6 }}>
                 <div className="hero-trust-cell">
@@ -2214,7 +2214,7 @@ export default function Home() {
                 margin: '0 auto',
                 padding: '0 20px'
               }}>
-                {/* Section Title group — eyebrow pill + title + accent line */}
+                {/* Section Title group - eyebrow pill + title + accent line */}
                 <div className="hiw-title-group">
                   <div className="hiw-eyebrow" aria-hidden="true">
                     <span className="hiw-eyebrow-dot" />
@@ -2611,7 +2611,7 @@ export default function Home() {
                     </stop>
                   </linearGradient>
                 </defs>
-                {/* Vertical S-curve — same flowing dots as desktop, rotated vertically */}
+                {/* Vertical S-curve - same flowing dots as desktop, rotated vertically */}
                 <path
                   d="M 150 0 C 300 160, 0 340, 150 500 C 300 660, 0 840, 150 1000"
                   stroke="url(#mobileFlowGrad)"
@@ -2686,7 +2686,7 @@ export default function Home() {
                       {/* Soft brand-blue halo (kept) */}
                       <span className="hiw-halo" aria-hidden="true" />
 
-                      {/* Outer dashed rounded-rect ring — counter-rotating
+                      {/* Outer dashed rounded-rect ring - counter-rotating
                           (rounded rect to match the avatar card shape) */}
                       <svg
                         className="hiw-ring hiw-ring--outer"
@@ -2701,7 +2701,7 @@ export default function Home() {
                           vectorEffect="non-scaling-stroke" />
                       </svg>
 
-                      {/* Inner gradient rounded-rect ring — rotating gradient
+                      {/* Inner gradient rounded-rect ring - rotating gradient
                           gives the chasing-arc effect on a rectangular path */}
                       <svg
                         className="hiw-ring hiw-ring--inner"
@@ -2729,7 +2729,7 @@ export default function Home() {
                           vectorEffect="non-scaling-stroke" />
                       </svg>
 
-                      {/* Orbital dot — travels along the rounded-rect ring path */}
+                      {/* Orbital dot - travels along the rounded-rect ring path */}
                       <svg
                         className="hiw-orbital-dot-svg"
                         viewBox="0 0 200 200"
@@ -2762,13 +2762,13 @@ export default function Home() {
                         </circle>
                       </svg>
 
-                      {/* Step number badge — top-right corner */}
+                      {/* Step number badge - top-right corner */}
                       <span className="hiw-step-badge" aria-hidden="true">
                         <span className="hiw-step-badge-num">{String(i + 1).padStart(2, '0')}</span>
                         <span className="hiw-step-badge-label">STEP</span>
                       </span>
 
-                      {/* Shimmer ribbon — sweeps diagonally across the avatar */}
+                      {/* Shimmer ribbon - sweeps diagonally across the avatar */}
                       <span className="hiw-shimmer-ribbon" aria-hidden="true" />
 
                       <img
@@ -2845,7 +2845,7 @@ export default function Home() {
             </div>
 
 
-            {/* For Photographers Container — modern brand-blue card with
+            {/* For Photographers Container - modern brand-blue card with
                 motion design matching the steps section above. */}
             <div
               ref={forPhotographersRef}
@@ -2899,7 +2899,7 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Right Video Container — modern bezel with brand glow */}
+              {/* Right Video Container - modern bezel with brand glow */}
               <div className="photographer-video-container hiw-pro-video">
                 <div className="hiw-pro-video-frame">
                   {/* Top-left LIVE-style indicator on the bezel */}
@@ -2966,7 +2966,7 @@ export default function Home() {
             <div className="mockups-particle mockups-particle--5" aria-hidden="true" />
             {/* Innovation layer 3: subtle dot grid texture for depth */}
             <div className="mockups-grid" aria-hidden="true" />
-                {/* Mobile-only scroll-driven flowing texts — one per mockup phase */}
+                {/* Mobile-only scroll-driven flowing texts - one per mockup phase */}
                 <div ref={phoneMobileTextRef} className="mobile-mockup-text mobile-mockup-text--bottom" aria-hidden="true">
                   {t('devices.mockupHeadings.phone.line1')} {t('devices.mockupHeadings.phone.line2')}
                 </div>
@@ -4053,7 +4053,7 @@ export default function Home() {
             </svg>
           </div>
 
-          {/* Ambient brand halos — soft drifting blue glows */}
+          {/* Ambient brand halos - soft drifting blue glows */}
           <div className="wa-halo wa-halo--a" aria-hidden="true" />
           <div className="wa-halo wa-halo--b" aria-hidden="true" />
 
@@ -4064,7 +4064,7 @@ export default function Home() {
           <span className="wa-particle wa-particle--4" aria-hidden="true" />
           <span className="wa-particle wa-particle--5" aria-hidden="true" />
 
-          {/* Decorative center backdrop crest — concentric dashed circles
+          {/* Decorative center backdrop crest - concentric dashed circles
               that slowly counter-rotate, sitting behind the dashboard */}
           <svg className="wa-crest" viewBox="0 0 600 600" aria-hidden="true">
             <circle cx="300" cy="300" r="280" fill="none" stroke="#083A85" strokeWidth="1" strokeDasharray="2 8" opacity="0.18" className="wa-crest-ring wa-crest-ring--outer" />
@@ -4072,7 +4072,7 @@ export default function Home() {
             <circle cx="300" cy="300" r="160" fill="none" stroke="#083A85" strokeWidth="1" strokeDasharray="2 4" opacity="0.14" className="wa-crest-ring wa-crest-ring--inner" />
           </svg>
 
-          {/* Geometric corner ornaments — slowly rotating brand glyphs */}
+          {/* Geometric corner ornaments - slowly rotating brand glyphs */}
           <span className="wa-corner wa-corner--tl" aria-hidden="true">
             <svg viewBox="0 0 60 60" fill="none">
               <polygon points="30,4 56,30 30,56 4,30" stroke="#083A85" strokeWidth="1.5" />
@@ -4102,7 +4102,7 @@ export default function Home() {
             </svg>
           </span>
 
-          {/* Interactive DotGrid — 2px dots with 15px gap. Dim slate at rest → primary
+          {/* Interactive DotGrid - 2px dots with 15px gap. Dim slate at rest → primary
               brand-blue on cursor proximity, with GSAP InertiaPlugin push and click shockwave. */}
           <div style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none' }} aria-hidden="true">
             <DotGrid
@@ -4125,7 +4125,7 @@ export default function Home() {
             position: 'relative',
             zIndex: 1
           }}>
-            {/* Section Header — premium eyebrow + gradient italic last word */}
+            {/* Section Header - premium eyebrow + gradient italic last word */}
             <div className="why-amoria-header wa-header" style={{
               maxWidth: '780px',
               margin: '0 auto 120px',
@@ -4234,7 +4234,7 @@ export default function Home() {
                 <path d="M 60 630 Q 10 630 10 590" stroke="#083A85" strokeWidth="3" fill="none" strokeDasharray="10,8" strokeLinecap="round" opacity="1"/>
                 <path d="M 10 60 Q 10 20 60 20" stroke="#083A85" strokeWidth="3" fill="none" strokeDasharray="10,8" strokeLinecap="round" opacity="1"/>
 
-                {/* Animated full-perimeter loop — invisible path used for
+                {/* Animated full-perimeter loop - invisible path used for
                     the traveling pulse below. animateMotion follows it. */}
                 <path
                   id="wa-connection-loop"
@@ -4242,7 +4242,7 @@ export default function Home() {
                   fill="none"
                   stroke="none"
                 />
-                {/* Traveling glow pulse — circulates the perimeter every 12s */}
+                {/* Traveling glow pulse - circulates the perimeter every 12s */}
                 <circle r="6" fill="#3b82f6" opacity="0.95">
                   <animateMotion dur="12s" repeatCount="indefinite" rotate="auto">
                     <mpath xlinkHref="#wa-connection-loop" />
@@ -4511,7 +4511,7 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Extra small accent card - Bottom Right — Facial Recognition */}
+              {/* Extra small accent card - Bottom Right - Facial Recognition */}
               <div
                 className="why-amoria-card-accent"
                 onMouseEnter={() => setActiveCard(4)}
@@ -4593,7 +4593,7 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Promise marquee — continuous scrolling strip of brand
+            {/* Promise marquee - continuous scrolling strip of brand
                 promises below the dashboard. Doubles the content for a
                 seamless infinite loop. */}
             <div className="wa-marquee" aria-label="Platform promises">
@@ -4637,7 +4637,7 @@ export default function Home() {
             }
           }
 
-          /* ─── Hero CTA buttons — premium gradient + ghost variants ── */
+          /* ─── Hero CTA buttons - premium gradient + ghost variants ── */
           .hero-cta {
             position: relative;
             display: inline-flex;
@@ -4690,7 +4690,7 @@ export default function Home() {
           }
           .hero-cta--ghost i { font-size: 14px; }
 
-          /* Hero title — subtle gradient sheen on the second + third lines */
+          /* Hero title - subtle gradient sheen on the second + third lines */
           .hero-title { text-shadow: 0 1px 2px rgba(255, 255, 255, 0.45); }
 
           /* ─── Hero innovation layer ─────────────────────────────────
@@ -4804,7 +4804,7 @@ export default function Home() {
             50%      { opacity: 1.00; transform: rotate(20deg); }
           }
 
-          /* Trust strip — 4-cell credibility row below the buttons */
+          /* Trust strip - 4-cell credibility row below the buttons */
           .hero-trust {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -4875,7 +4875,7 @@ export default function Home() {
             }
           }
 
-          /* ─── How It Works — modern motion redesign ─────────────── */
+          /* ─── How It Works - modern motion redesign ─────────────── */
 
           /* Title group: eyebrow + title + accent line + subtitle */
           .hiw-title-group {
@@ -4969,7 +4969,7 @@ export default function Home() {
             animation: hiw-eyebrow-rise 700ms cubic-bezier(0.22, 1, 0.36, 1) 280ms backwards;
           }
 
-          /* Step entry — stagger fade-up */
+          /* Step entry - stagger fade-up */
           .hiw-step {
             animation: hiw-step-rise 800ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
           }
@@ -4978,7 +4978,7 @@ export default function Home() {
             to   { opacity: 1; transform: translateY(0); }
           }
 
-          /* Avatar wrap — hover lift + 3D tilt feel */
+          /* Avatar wrap - hover lift + 3D tilt feel */
           .hiw-avatar-wrap {
             transition: transform 480ms cubic-bezier(0.22, 1, 0.36, 1);
           }
@@ -4986,7 +4986,7 @@ export default function Home() {
             transform: translateY(-6px) scale(1.02);
           }
 
-          /* Avatar image — hover scale + softer drop shadow */
+          /* Avatar image - hover scale + softer drop shadow */
           .hiw-step-img {
             transition: transform 480ms cubic-bezier(0.22, 1, 0.36, 1), filter 320ms ease;
             filter: drop-shadow(0 10px 24px rgba(8, 58, 133, 0.18));
@@ -4996,7 +4996,7 @@ export default function Home() {
             filter: drop-shadow(0 18px 32px rgba(8, 58, 133, 0.32));
           }
 
-          /* Brand-blue halo behind avatar — pulses gently */
+          /* Brand-blue halo behind avatar - pulses gently */
           .hiw-halo {
             position: absolute;
             inset: 8%;
@@ -5017,7 +5017,7 @@ export default function Home() {
             50%      { transform: scale(1.08); opacity: 1.00; }
           }
 
-          /* ─── Orbital ring system — rounded-rect rings hugging the card ── */
+          /* ─── Orbital ring system - rounded-rect rings hugging the card ── */
 
           /* SVG rings stretch to fit the rectangular avatar wrap exactly,
              so the dashed strokes follow the card outline instead of
@@ -5039,7 +5039,7 @@ export default function Home() {
             opacity: 1;
           }
 
-          /* Orbital dot — uses SVG animateMotion to travel along a rounded
+          /* Orbital dot - uses SVG animateMotion to travel along a rounded
              rectangle path that traces the card outline. The mpath ensures
              the dot follows the card shape regardless of aspect ratio. */
           .hiw-orbital-dot-svg {
@@ -5052,7 +5052,7 @@ export default function Home() {
             overflow: visible;
           }
 
-          /* Shimmer ribbon — diagonal shine sweep across the avatar.
+          /* Shimmer ribbon - diagonal shine sweep across the avatar.
              Clipped to the wrap's bounds to avoid bleeding past the card. */
           .hiw-shimmer-ribbon {
             position: absolute;
@@ -5078,7 +5078,7 @@ export default function Home() {
             100% { transform: translateX(60%); }
           }
 
-          /* Step number badge — top-right corner of avatar */
+          /* Step number badge - top-right corner of avatar */
           .hiw-step-badge {
             position: absolute;
             top: -6px;
@@ -5136,7 +5136,7 @@ export default function Home() {
             .hiw-particle { display: none; }
           }
 
-          /* ─── For Creators card — modern brand-blue redesign ─────── */
+          /* ─── For Creators card - modern brand-blue redesign ─────── */
           .hiw-pro-card {
             position: relative;
             margin-top: 60px;
@@ -5290,7 +5290,7 @@ export default function Home() {
             opacity: 1 !important;
           }
 
-          /* CTA — refined brand-coherent design (was pink/purple) */
+          /* CTA - refined brand-coherent design (was pink/purple) */
           .hiw-pro-cta {
             position: static !important;
             top: auto !important;
@@ -5376,7 +5376,7 @@ export default function Home() {
             font-weight: 800;
           }
 
-          /* Right video — modern bezel with brand glow */
+          /* Right video - modern bezel with brand glow */
           .hiw-pro-video {
             position: relative !important;
             z-index: 2;
@@ -5464,7 +5464,7 @@ export default function Home() {
             .hiw-pro-cta { width: 100% !important; padding: 12px 20px !important; }
           }
 
-          /* Reduced motion — strip animations cleanly */
+          /* Reduced motion - strip animations cleanly */
           @media (prefers-reduced-motion: reduce) {
             .hiw-eyebrow,
             .hiw-eyebrow-dot,
@@ -5569,7 +5569,7 @@ export default function Home() {
             overflow: 'hidden'
           }}
         >
-          {/* Interactive DotGrid — same brand-blue palette as the footer. 2px dots with 15px gap,
+          {/* Interactive DotGrid - same brand-blue palette as the footer. 2px dots with 15px gap,
               dim brand at rest → bright brand on cursor proximity, GSAP inertia push + click shock. */}
           <div style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none' }} aria-hidden="true">
             <DotGrid
@@ -5585,7 +5585,7 @@ export default function Home() {
             />
           </div>
 
-          {/* Floating cyan particles — drift slowly across the section */}
+          {/* Floating cyan particles - drift slowly across the section */}
           <span className="gn-particle gn-particle--1" aria-hidden="true" />
           <span className="gn-particle gn-particle--2" aria-hidden="true" />
           <span className="gn-particle gn-particle--3" aria-hidden="true" />
@@ -5593,7 +5593,7 @@ export default function Home() {
           <span className="gn-particle gn-particle--5" aria-hidden="true" />
           <span className="gn-particle gn-particle--6" aria-hidden="true" />
 
-          {/* Decorative compass corner — coordinate ornament top-left */}
+          {/* Decorative compass corner - coordinate ornament top-left */}
           <span className="gn-compass" aria-hidden="true">
             <svg viewBox="0 0 80 80" fill="none">
               <circle cx="40" cy="40" r="36" stroke="#00E8FF" strokeWidth="1" strokeDasharray="2 4" opacity="0.45" />
@@ -5624,14 +5624,14 @@ export default function Home() {
               maxWidth: '550px',
               color: '#fff'
             }}>
-              {/* Eyebrow pill — same brand language as other sections */}
+              {/* Eyebrow pill - same brand language as other sections */}
               <div className="gn-eyebrow" aria-hidden="true">
                 <span className="gn-eyebrow-dot" />
                 <span>GLOBAL NETWORK · LIVE</span>
                 <span className="gn-eyebrow-spark">✦</span>
               </div>
 
-              {/* Title — last word styled in italic gradient text fill */}
+              {/* Title - last word styled in italic gradient text fill */}
               <h2 className="global-network-title gn-title" style={{
                 fontSize: '55px',
                 fontWeight: 1000,
@@ -5719,7 +5719,7 @@ export default function Home() {
                 </button>
               </div>
 
-              {/* Live network stats — small chips reinforcing the
+              {/* Live network stats - small chips reinforcing the
                   "live, growing platform" idea below the CTAs */}
               <div className="gn-stats" aria-label="Network reach">
                 <div className="gn-stat">

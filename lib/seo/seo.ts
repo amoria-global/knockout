@@ -2,7 +2,7 @@
  * Server-side SEO helpers.
  *
  * generateMetadata / sitemap run on the server (or at build) where the
- * browser-only apiClient (localStorage, window) can't run — so we fetch the
+ * browser-only apiClient (localStorage, window) can't run - so we fetch the
  * public backend directly with plain fetch + `no-store` so every crawl gets
  * the current title/description (nothing stale to "propagate").
  */
@@ -49,7 +49,7 @@ async function getJson(path: string): Promise<unknown | null> {
 }
 
 /** Backend public endpoints wrap the payload as `{ data: … }` (sometimes
- *  with extra root fields) or return it at the root — unwrap both. */
+ *  with extra root fields) or return it at the root - unwrap both. */
 function unwrap<T = Record<string, unknown>>(j: unknown): T | null {
   if (j == null || typeof j !== 'object') return null;
   const o = j as Record<string, unknown>;

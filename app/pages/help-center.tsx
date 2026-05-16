@@ -302,7 +302,7 @@ const HelpSupportCenter: React.FC = () => {
     <div className="min-h-screen" style={{ background: '#f8fafc' }}>
       <Navbar />
 
-      {/* Hero Section with Search — premium redesign */}
+      {/* Hero Section with Search - premium redesign */}
       <style>{`
         @keyframes hcStarTwinkle { 0%,100% { opacity: 0.3; } 50% { opacity: 1; } }
         @keyframes hcDotPulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.55; transform: scale(0.85); } }
@@ -326,7 +326,7 @@ const HelpSupportCenter: React.FC = () => {
           background: 'linear-gradient(160deg, #03152F 0%, #052047 30%, #083A85 70%, #0F4FB6 100%)',
         }}
       >
-        {/* Interactive DotGrid — same brand pattern as the rest of the site */}
+        {/* Interactive DotGrid - same brand pattern as the rest of the site */}
         <div style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none' }} aria-hidden="true">
           <DotGrid
             dotSize={2}
@@ -583,7 +583,7 @@ const HelpSupportCenter: React.FC = () => {
             </div>
           </form>
 
-          {/* Quick stats strip — adds credibility under the search */}
+          {/* Quick stats strip - adds credibility under the search */}
           <div style={{
             display: 'flex',
             justifyContent: 'center',

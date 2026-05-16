@@ -12,7 +12,7 @@
  * Differences from the dashboard variant: landing has no CurrencyContext /
  * topbar currency selector, so this component self-fetches live rates from
  * the public /api/remote/public/currencies/rates endpoint and caches them
- * at module scope. No global "user currency preference" to inherit — each
+ * at module scope. No global "user currency preference" to inherit - each
  * modal owns its own selection.
  *
  * Display-only. The submitted amount + currency to the backend is unchanged.
@@ -33,7 +33,7 @@ const NAME: Record<CurrencyCode, string> = {
 const CURRENCY_CODES: CurrencyCode[] = ["USD", "RWF", "EUR", "KES", "UGX", "TZS"];
 
 // Module-level cache so every modal doesn't refetch the same rate table.
-// Rates refresh on page reload — good enough for a conversion preview.
+// Rates refresh on page reload - good enough for a conversion preview.
 let ratesCache: Record<string, CurrencyRate> | null = null;
 let ratesPromise: Promise<Record<string, CurrencyRate> | null> | null = null;
 function loadRates(): Promise<Record<string, CurrencyRate> | null> {
@@ -66,7 +66,7 @@ interface PaymentCurrencyPreviewProps {
   defaultCurrency?: CurrencyCode;
   /** Notify parent when the user picks a different display currency. */
   onCurrencyChange?: (code: CurrencyCode) => void;
-  /** Whether the parent app is in dark mode — affects selection highlight color. */
+  /** Whether the parent app is in dark mode - affects selection highlight color. */
   darkMode?: boolean;
 }
 
@@ -309,7 +309,7 @@ const PaymentCurrencyPreview: React.FC<PaymentCurrencyPreviewProps> = ({
 export default PaymentCurrencyPreview;
 
 // Conversion helper for callers that want to format a number in a specific
-// display currency without rendering the panel itself — useful when a modal
+// display currency without rendering the panel itself - useful when a modal
 // has many scattered amount displays and only wants to reuse the rate maths.
 export function convertAmount(
   amount: number,
@@ -340,7 +340,7 @@ export { DECIMALS as CURRENCY_DECIMALS, SYMBOL as CURRENCY_SYMBOL, FLAG as CURRE
  * user's chosen display currency without duplicating the rate-fetch.
  *
  * Used by XentriPayModal / BookingWizard / join-event to flip every amount
- * on the modal — not just the preview panel — when the user picks a new
+ * on the modal - not just the preview panel - when the user picks a new
  * currency in the panel's selector. The modal holds the display currency
  * state and passes it back into the panel via defaultCurrency + receives
  * changes via onCurrencyChange.
@@ -354,7 +354,7 @@ export function useLiveRates() {
   const convert = React.useCallback(
     (amount: number, from: CurrencyCode, to: CurrencyCode): number => {
       // Before rates load, returning a converted value would use rate=1 as a
-      // fallback — which treats e.g. 1000 RWF as $1000 USD. Wildly wrong to
+      // fallback - which treats e.g. 1000 RWF as $1000 USD. Wildly wrong to
       // show. Return the original amount unchanged; callers should pair this
       // with `ready` or format() so they don't mislabel the currency.
       if (!rates && from !== to) return amount;

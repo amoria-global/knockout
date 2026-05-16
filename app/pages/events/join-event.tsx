@@ -67,7 +67,7 @@ const placeholderEvent: EventItem = {
   currency: 'RWF',
   attendees: 0,
 };
-// eventsData removed — replaced by real API calls
+// eventsData removed - replaced by real API calls
 
 // Big event categories that require payment for live stream access
 const paidEventCategories = [
@@ -189,7 +189,7 @@ export default function JoinEvent() {
       });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // runs once on mount — URL params are stable
+  }, []); // runs once on mount - URL params are stable
 
   // Detect screen size for responsive adjustments
   useEffect(() => {
@@ -227,7 +227,7 @@ export default function JoinEvent() {
           setEventsData(content.map(mapPublicEvent));
         }
       } catch {
-        // Failed to fetch — eventsData stays empty
+        // Failed to fetch - eventsData stays empty
       } finally {
         setEventsLoading(false);
       }
@@ -283,7 +283,7 @@ export default function JoinEvent() {
           // Show inline payment form
           setDetectedEvent(eventData);
         } else if (hasPackageFromJoinPackage) {
-          // Free event from join-package — skip payment, go directly to live stream
+          // Free event from join-package - skip payment, go directly to live stream
           router.push(`/user/events/live-stream?eventId=${eventId}&from=payment`);
         }
         // For upcoming, free, or non-paid category events without package param - show original content
@@ -478,7 +478,7 @@ export default function JoinEvent() {
           filter: freeEventCover ? undefined : 'brightness(0.2)',
         }}
       />
-      {/* Cinematic gradient overlay — top to bottom */}
+      {/* Cinematic gradient overlay - top to bottom */}
       {freeEventCover && (
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(14,14,16,0.92) 0%, rgba(14,14,16,0.82) 25%, rgba(14,14,16,0.7) 50%, rgba(14,14,16,0.88) 74%, rgba(14,14,16,0.96) 88%, #0e0e10 100%)' }} />
       )}
@@ -591,7 +591,7 @@ export default function JoinEvent() {
                     Processing Payment...
                   </p>
                   <p style={{ color: '#9ca3af', fontSize: '13px', marginTop: '8px' }}>
-                    Waiting for the gateway to confirm your payment — this can take up to a minute.
+                    Waiting for the gateway to confirm your payment - this can take up to a minute.
                   </p>
                 </div>
               )}
@@ -693,7 +693,7 @@ export default function JoinEvent() {
                           {fmtFee(Math.round(detectedEvent.fee / numberOfPeople))} per person (discounted)
                         </p>
                       )}
-                      {/* Currency preview — same selector that controls the
+                      {/* Currency preview - same selector that controls the
                           fee headline + per-person split just above, plus
                           the Pay button label further below. Flipping the
                           selector re-renders every amount on this page in
@@ -857,7 +857,7 @@ export default function JoinEvent() {
                     </div>
                   )}
 
-                  {/* Card payments are handled via XentriPay redirect — no card fields needed */}
+                  {/* Card payments are handled via XentriPay redirect - no card fields needed */}
                   {selectedPaymentMethod === 'card' && (
                     <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)', marginBottom: '14px' }}>
                       You will be redirected to a secure payment page to enter your card details.
@@ -893,7 +893,7 @@ export default function JoinEvent() {
                     Pay {fmtFee(detectedEvent.fee)} {packageType === 'group' ? `for ${numberOfPeople} People` : '& Join'}
                   </button>
 
-                  {/* Already paid? — equal-weight verify-access CTA. Routes the user
+                  {/* Already paid? - equal-weight verify-access CTA. Routes the user
                       back to view-event with ?verify=true so the verify modal opens
                       automatically. Visible on every page in the path to live-stream. */}
                   <button

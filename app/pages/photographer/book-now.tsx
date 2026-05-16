@@ -647,7 +647,7 @@ function BookNowContent(): React.JSX.Element {
                   </div>
                 )}
 
-                {/* Best value pill — Premium only */}
+                {/* Best value pill - Premium only */}
                 {pkg.isDiamond && selectedPackage !== pkg.id && (
                   <div style={{
                     position: 'absolute', top: '12px', left: '50%', transform: 'translateX(-50%)',
@@ -743,7 +743,7 @@ function BookNowContent(): React.JSX.Element {
                       const parts = [];
                       if (pkg.includedPhotos) parts.push(`${pkg.includedPhotos} photos`);
                       if (pkg.includedVideos) parts.push(`${pkg.includedVideos} videos`);
-                      return parts.join(' · ') || '—';
+                      return parts.join(' · ') || '-';
                     })()}
                   </div>
 
@@ -791,7 +791,7 @@ function BookNowContent(): React.JSX.Element {
                     }}
                   ></div>
 
-                  {/* All Offers & Features — unified list */}
+                  {/* All Offers & Features - unified list */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', transition: 'all 0.3s ease' }}>
                     {[
                       // Combined photos & videos line
@@ -804,7 +804,7 @@ function BookNowContent(): React.JSX.Element {
                         const combined = [photoPart, videoPart].filter(Boolean).join(' & ') + ' included';
                         return [{ text: combined, available: true }];
                       })(),
-                      // All features across all packages — checked if this package includes it
+                      // All features across all packages - checked if this package includes it
                       ...allFeatureNames.map(name => {
                         const available = pkg.includedFeatureNames.has(name);
                         // Enhance "Printed photo album" with dynamic photo count

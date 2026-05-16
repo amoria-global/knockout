@@ -17,7 +17,7 @@ export interface OnboardingPayload {
   tin: string;
   // Slide 1
   specialtyIds: string[];
-  // Slide 2 — null is allowed in the completion flow when the photographer
+  // Slide 2 - null is allowed in the completion flow when the photographer
   // already has a profile photo on the server (don't force a re-upload).
   profileFile: File | null;
   coverFile: File | null;
@@ -33,13 +33,13 @@ export interface OnboardingPayload {
   expStartDate: string;
   expEndDate: string;
   expDescription: string;
-  // Slide 5 — all three tiers are kept independently and pushed together;
+  // Slide 5 - all three tiers are kept independently and pushed together;
   // switching tier never wipes another tier's edits. POST /packages upserts
   // by name on the backend, so re-pushing the same tier just updates it.
   pkgCurrencyId: string;
   packages: PackageEntry[];
   // Set by the completion flow from GET /profile-summary so the persist
-  // step is idempotent — it SKIPS the add-only endpoints (project / work
+  // step is idempotent - it SKIPS the add-only endpoints (project / work
   // experience) for sections the photographer already has, instead of
   // creating duplicate rows. Undefined on fresh signup → add all.
   // (Packages are always upserted by name, so they're not gated here.)
@@ -79,7 +79,7 @@ interface PhotographerOnboardingProps {
   phone: string;
   // Completion flow only: fetch GET /profile-summary on open and pre-fill
   // every already-saved field so a returning photographer never re-enters
-  // data. Omitted (false) for fresh signup — there's no server record yet.
+  // data. Omitted (false) for fresh signup - there's no server record yet.
   prefillFromServer?: boolean;
   // Progressive server autosave: every section is debounced-saved to the DB
   // 5s after the user stops editing, so onboarding survives a dropped
@@ -183,7 +183,7 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
   // ── Draft auto-save (localStorage) ──
   // A returning user finds their typed answers pre-filled. Keyed by phone so
   // two people sharing a browser don't clobber each other. Files (profile /
-  // cover / project image) are NOT serialisable so they're never persisted —
+  // cover / project image) are NOT serialisable so they're never persisted -
   // that's why the restored slide is capped at the Photos step (see below).
   const draftStorageKey =
     'connekyt:onb-draft:v1:' + (phone ? phone.replace(/\D/g, '') || 'default' : 'default');
@@ -256,7 +256,7 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
     Gold: { price: TIER_PRESETS.Gold.price, duration: TIER_PRESETS.Gold.duration, photos: TIER_PRESETS.Gold.photos, videos: TIER_PRESETS.Gold.videos, delivery: TIER_PRESETS.Gold.delivery, description: '' },
     Diamond: { price: TIER_PRESETS.Diamond.price, duration: TIER_PRESETS.Diamond.duration, photos: TIER_PRESETS.Diamond.photos, videos: TIER_PRESETS.Diamond.videos, delivery: TIER_PRESETS.Diamond.delivery, description: '' },
   });
-  // `pkgTier` is only WHICH tier the form is currently showing — switching
+  // `pkgTier` is only WHICH tier the form is currently showing - switching
   // it never wipes data because every tier has its own record in `pkgs`.
   const [pkgTier, setPkgTier] = useState<PackageTier>('Silver');
   const [pkgCurrencyId, setPkgCurrencyId] = useState('');
@@ -290,7 +290,7 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
         const list = r.data;
         setCurrenciesList(list);
         // `prev || …` so a currency restored from a saved draft (or the
-        // server prefill) wins over the RWF default — this fetch resolves
+        // server prefill) wins over the RWF default - this fetch resolves
         // after draft hydration.
         const fallbackId = (list.find(c => c.code === 'RWF') || list[0])?.id;
         if (fallbackId) setPkgCurrencyId(prev => prev || fallbackId);
@@ -316,7 +316,7 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
 
   // No tier-preset effect: every tier has its own record in `pkgs`
   // (seeded from TIER_PRESETS once), so switching tier just changes which
-  // record the form shows — it never overwrites another tier's edits.
+  // record the form shows - it never overwrites another tier's edits.
 
   // ── Hydrate from a saved draft (once, on mount) ──
   useEffect(() => {
@@ -374,7 +374,7 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
         if (restoredSlide > 0) dispatch({ type: 'SET_SLIDE', slide: restoredSlide });
       }
     } catch {
-      // Corrupt / unavailable storage — start fresh, never block the wizard.
+      // Corrupt / unavailable storage - start fresh, never block the wizard.
     }
     draftHydratedRef.current = true;
   }, [draftStorageKey]);
@@ -396,7 +396,7 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
           currentSlide: state.currentSlide,
         }));
       } catch {
-        // Quota / private-mode — auto-save is best-effort, never block.
+        // Quota / private-mode - auto-save is best-effort, never block.
       }
     }, 400);
     return () => clearTimeout(t);
@@ -409,8 +409,8 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
   ]);
 
   // ── Server prefill (completion flow): pre-fill EVERY already-saved field ──
-  // Runs last (after the localStorage hydration) so the server — the source
-  // of truth for persisted data — wins. A returning photographer never
+  // Runs last (after the localStorage hydration) so the server - the source
+  // of truth for persisted data - wins. A returning photographer never
   // re-enters address / specialties / business identity / project / work
   // experience / package / photos that important-details (and the other
   // saves) already stored.
@@ -493,7 +493,7 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
           pkg: (p.packages?.length ?? 0) > 0,
         });
       } catch {
-        // Network / auth hiccup — fall back to a blank (or draft) wizard
+        // Network / auth hiccup - fall back to a blank (or draft) wizard
         // rather than blocking the user behind a spinner forever.
       } finally {
         if (!cancelled) setPrefillLoading(false);
@@ -502,7 +502,7 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
     return () => { cancelled = true; };
   }, [prefillFromServer]);
 
-  // No skip path — photographers must finish every slide before they reach
+  // No skip path - photographers must finish every slide before they reach
   // the OTP / dashboard. onClose stays on the props for type-compat with
   // the parent, but the wizard never calls it.
 
@@ -516,7 +516,7 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
     }
     setSlideError('');
     dispatch({ type: 'SET_SLIDE', slide: 1 });
-    // No backend save here — the customer record doesn't exist yet. Every
+    // No backend save here - the customer record doesn't exist yet. Every
     // field is buffered in component state and posted at the final
     // "Continue to Dashboard" step via onFinalize.
   };
@@ -629,7 +629,7 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
     try {
       const r = await sessionPromiseRef.current;
       // Cache ONLY a success. A failed/transient attempt must NOT be cached
-      // (ensureSession resolves {success:false} rather than throwing) — else
+      // (ensureSession resolves {success:false} rather than throwing) - else
       // one early hiccup poisons every later tick AND the final finalize.
       if (!r || !r.success) sessionPromiseRef.current = null;
       return r;
@@ -641,7 +641,7 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
 
   // Synchronous view of what's saved server-side, read straight from the
   // sync ref (updated atomically by runServerSync) OR'd with the prefill
-  // snapshot. Used for the idempotent `existing` at finalize — React state
+  // snapshot. Used for the idempotent `existing` at finalize - React state
   // (serverHas) lags a tick, so reading it right after an awaited sync would
   // be stale and could let persist duplicate a just-saved section.
   const presenceFromRef = () => ({
@@ -665,7 +665,7 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
       while (syncInFlightRef.current && waited < 12000) {
         await new Promise(r => setTimeout(r, 200)); waited += 200;
       }
-      // Still running after the wait — don't start an overlapping pass
+      // Still running after the wait - don't start an overlapping pass
       // (that risks a double create); finalize falls back to the last
       // good presence from the ref.
       if (syncInFlightRef.current) return;
@@ -678,7 +678,7 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
       syncStateRef.current = nextState;
       setServerHas(presence);
     } catch {
-      // never throw — resilient layer
+      // never throw - resilient layer
     } finally {
       syncInFlightRef.current = false;
     }
@@ -706,7 +706,7 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
     if (badTier) { setSlideError(`Please enter a valid price for the ${badTier} package`); return; }
     if (!pkgCurrencyId) { setSlideError('Please select a currency'); return; }
     if (!profileFile && !serverHas.profilePhoto) {
-      setSlideError('Profile photo is missing — go back to the Photos step'); return;
+      setSlideError('Profile photo is missing - go back to the Photos step'); return;
     }
     setSlideError('');
 
@@ -726,13 +726,13 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
       const payload: OnboardingPayload = {
         ...buildPayload(),
         // With a session (autosave or completion) persist must be
-        // idempotent — skip whatever the flush just saved. Read from the
+        // idempotent - skip whatever the flush just saved. Read from the
         // sync ref (synchronous & fresh), not serverHas (a render behind).
         existing: (serverSync || prefillFromServer) ? presenceFromRef() : undefined,
       };
 
       await onFinalize(payload);
-      // Profile is stored — drop the draft so the next visit starts clean
+      // Profile is stored - drop the draft so the next visit starts clean
       // and the debounced save effect stops re-writing it.
       draftFinalizedRef.current = true;
       try { window.localStorage.removeItem(draftStorageKey); } catch { /* ignore */ }
@@ -843,7 +843,7 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
             }} />
           </div>
 
-          {/* Close button — dismisses the wizard but does NOT advance to OTP.
+          {/* Close button - dismisses the wizard but does NOT advance to OTP.
               Only slide 6's "Continue to Dashboard" button (onComplete) is
               allowed to push the user toward the verify-OTP page. */}
           <button
@@ -1310,7 +1310,7 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
                 )}
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                  {/* Tier selector — matches Connekyt booking wizard gradients */}
+                  {/* Tier selector - matches Connekyt booking wizard gradients */}
                   <div>
                     <label style={labelStyle}>Package Tier</label>
                     <div style={{ display: 'flex', gap: 8 }}>
@@ -1346,7 +1346,7 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
                     </div>
                   </div>
 
-                  {/* Active tier preview card — mirrors the booking wizard tier card */}
+                  {/* Active tier preview card - mirrors the booking wizard tier card */}
                   <div style={{
                     position: 'relative',
                     borderRadius: 14,
@@ -1445,7 +1445,7 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
                     />
                   </div>
 
-                  {/* Features preview — branded */}
+                  {/* Features preview - branded */}
                   <div style={{
                     position: 'relative',
                     background: 'linear-gradient(135deg, rgba(8,58,133,0.04) 0%, rgba(242,12,143,0.04) 100%)',

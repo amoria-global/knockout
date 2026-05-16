@@ -1,7 +1,7 @@
 /**
  * Public Album API
  * GET /api/remote/public/albums?code={inviteCode}
- * No authentication required — open to all visitors with a valid invite code
+ * No authentication required - open to all visitors with a valid invite code
  */
 
 import { apiClient } from '@/lib/api/client';
@@ -38,7 +38,7 @@ export interface AlbumData {
 
 /**
  * Fetch all photos in a published album by invite code.
- * Public endpoint — no auth needed.
+ * Public endpoint - no auth needed.
  */
 export async function getAlbumByCode(inviteCode: string): Promise<ApiResponse<AlbumData>> {
   return apiClient.get<AlbumData>(

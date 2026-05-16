@@ -1,7 +1,7 @@
 /**
  * FREE Album Access Request API
  * POST /api/remote/public/albums/free/request-access
- * No authentication required — open to recipients with valid access code
+ * No authentication required - open to recipients with valid access code
  */
 
 import { apiClient } from '@/lib/api/client';
