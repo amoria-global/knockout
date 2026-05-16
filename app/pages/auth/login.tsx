@@ -555,12 +555,13 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
     setSignupErrors(newErrors);
     if (!isOnline) { showWarning('You are offline.'); return; }
     if (Object.keys(newErrors).length === 0) {
-      // Photographers: open the wizard with credentials buffered locally.
-      // Nothing hits the backend yet — signup() only fires after the user
-      // finishes every required slide. If they close the wizard with X,
-      // their email/phone stay free for a fresh signup attempt.
+      // Photographers: validate + CREATE THE ACCOUNT here, on the signup
+      // step, then open the wizard. The account must exist up front so the
+      // wizard's progressive autosave can persist immediately — and, just
+      // as importantly, any email/password problem shows on THIS form
+      // instead of failing confusingly at the last wizard step.
       //
-      // BUT: pre-check the password against the backend's full policy
+      // First pre-check the password against the backend's full policy
       // (including the HaveIBeenPwned breach corpus, which the client-side
       // strength meter can't see) BEFORE opening the wizard. Without this a
       // photographer with a breached password fills out all 6 wizard steps
@@ -601,6 +602,35 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
         } catch {
           // swallow — proceed; signup() remains the source of truth.
         }
+        // Create the account NOW — a bad password / taken email surfaces
+        // on THIS form, never deep inside the 6-step wizard. signup() mints
+        // a pre-OTP token so the wizard's autosave + finalize authenticate.
+        try {
+          const resp = await signup({
+            firstName, lastName, email: signupEmail,
+            phone: `${countryCode}${phoneNumber}`,
+            customerType: signupUserType, password: signupPassword,
+          });
+          if (!resp.success || !resp.data || !resp.data.customerId || !resp.data.token) {
+            const msg = (resp.success ? '' : resp.error)
+              || 'Signup did not complete. Please try again.';
+            setSignupErrors(/password/i.test(msg) ? { password: msg } : { email: msg });
+            showError(msg);
+            setSignupLoading(false);
+            return;
+          }
+          setAuthToken(resp.data.token);
+          const otpUrl = `/user/auth/verify-otp?applicantId=${encodeURIComponent(String(resp.data.customerId))}&email=${encodeURIComponent(signupEmail)}&customerType=${encodeURIComponent(signupUserType)}&firstName=${encodeURIComponent(firstName)}&lastName=${encodeURIComponent(lastName)}&phone=${encodeURIComponent(`${countryCode}${phoneNumber}`)}${redirectUrl ? `&redirect=${encodeURIComponent(redirectUrl)}` : ''}`;
+          setPendingOtpRedirectUrl(otpUrl);
+          // Account already exists → the wizard's ensureSession is a no-op.
+          photographerSessionRef.current = Promise.resolve({ success: true });
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : 'Signup failed. Please try again.';
+          setSignupErrors({ email: msg });
+          showError(msg);
+          setSignupLoading(false);
+          return;
+        }
         setSignupLoading(false);
         setShowPhotographerOnboarding(true);
         return;
@@ -621,20 +651,16 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
     }
   };
 
-  // Photographer onboarding finaliser — only runs when the user clicks the
-  // "Continue to Dashboard" button on the last wizard slide. THIS is the
-  // first time we write anything to the backend for this signup. If the
-  // wizard is closed before reaching this point, no customer record is
-  // ever created and the email/phone can be used for a fresh signup.
-  // persistPhotographerProfile now lives in @/lib/photographer/persist-profile
+  // persistPhotographerProfile lives in @/lib/photographer/persist-profile
   // (shared by signup, post-login, and post-OTP completion flows).
 
-  // Lazily create the photographer account ONCE — invoked by the wizard's
-  // progressive autosave the first time it needs a session (≈5s after the
-  // user starts filling slide 0), and again (idempotently) at finalize.
+  // Session guard for the wizard. In the signup flow the account is already
+  // created at the signup step (handleSignupSubmit sets this ref to a
+  // resolved success), so this is a no-op. The lazy signup() below is only
+  // a fallback for any path that opens the wizard without a session yet.
   // signup() mints a pre-OTP token so the /photographer/* saves authenticate
   // (they resolve the photographer purely from the JWT principal). Memoised
-  // via a ref so concurrent callers share one in-flight signup.
+  // via a ref so concurrent callers share one result.
   const photographerSessionRef = React.useRef<Promise<{ success: boolean; error?: string }> | null>(null);
   const ensurePhotographerSession = async (): Promise<{ success: boolean; error?: string }> => {
     if (photographerSessionRef.current) return photographerSessionRef.current;

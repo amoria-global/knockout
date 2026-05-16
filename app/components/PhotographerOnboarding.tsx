@@ -627,9 +627,13 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
     if (!ensureSession) return { success: true };
     if (!sessionPromiseRef.current) sessionPromiseRef.current = ensureSession();
     try {
-      return await sessionPromiseRef.current;
+      const r = await sessionPromiseRef.current;
+      // Cache ONLY a success. A failed/transient attempt must NOT be cached
+      // (ensureSession resolves {success:false} rather than throwing) — else
+      // one early hiccup poisons every later tick AND the final finalize.
+      if (!r || !r.success) sessionPromiseRef.current = null;
+      return r;
     } catch (e) {
-      // Let a failed attempt be retried by the next tick / finalize.
       sessionPromiseRef.current = null;
       return { success: false, error: e instanceof Error ? e.message : 'Could not start your session.' };
     }
