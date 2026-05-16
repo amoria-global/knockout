@@ -7,6 +7,7 @@ import { useGoogleLogin } from '@react-oauth/google';
 import { login } from '@/lib/APIs/auth/login/route';
 import { signup } from '@/lib/APIs/auth/signup/route';
 import { validatePassword as validatePasswordRemote } from '@/lib/APIs/auth/validate-password/route';
+import { checkEmail as checkEmailRemote } from '@/lib/APIs/auth/check-email/route';
 import { googleAuth } from '@/lib/APIs/auth/google/route';
 import { setAuthToken, getAuthToken, getRefreshToken } from '@/lib/api/client';
 import { useToast } from '@/lib/notifications/ToastProvider';
@@ -522,6 +523,23 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
       // creates nothing — it just runs the rules and returns the reason.
       if (signupUserType.toLowerCase() === 'photographer') {
         setSignupLoading(true);
+        // Email-availability pre-check BEFORE opening the 6-step wizard.
+        // signup() is deferred to the wizard's last step, so without this a
+        // duplicate email is only caught after all 6 steps are filled.
+        try {
+          const emailCheck = await checkEmailRemote(signupEmail.trim());
+          if (emailCheck.data && emailCheck.data.action === 0) {
+            const msg = emailCheck.data.message || 'This email already exists. Please log in to use your account.';
+            setSignupErrors({ email: msg });
+            showError(msg);
+            setSignupLoading(false);
+            return;
+          }
+          // Network/parse failure shouldn't trap the user — signup() at the
+          // end still enforces uniqueness server-side.
+        } catch {
+          // swallow — proceed; signup() remains the source of truth.
+        }
         try {
           const pwCheck = await validatePasswordRemote(signupPassword);
           if (pwCheck.data && pwCheck.data.action === 0) {

@@ -91,6 +91,7 @@ export const API_ENDPOINTS = {
     SET_NEW_PASSWORD: '/api/remote/auth/set-new-password',
     VALIDATE_TOKEN: '/api/remote/auth/validate-token',
     VALIDATE_PASSWORD: '/api/remote/auth/validate-password',
+    CHECK_EMAIL: '/api/remote/auth/check-email',
     REFRESH_TOKEN: '/api/remote/auth/refresh-token',
     LOGOUT: '/api/remote/auth/logout',
     GOOGLE: '/api/remote/auth/google',
