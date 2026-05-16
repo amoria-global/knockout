@@ -33,20 +33,16 @@ export interface OnboardingPayload {
   expStartDate: string;
   expEndDate: string;
   expDescription: string;
-  // Slide 5
-  pkgTier: 'Silver' | 'Gold' | 'Diamond';
-  pkgPrice: number;
+  // Slide 5 — all three tiers are kept independently and pushed together;
+  // switching tier never wipes another tier's edits. POST /packages upserts
+  // by name on the backend, so re-pushing the same tier just updates it.
   pkgCurrencyId: string;
-  pkgDuration: number;
-  pkgPhotos: number;
-  pkgVideos: number;
-  pkgDelivery: number;
-  pkgDescription: string;
-  pkgFeatures: { featureName: string; isIncluded: boolean; displayOrder: number }[];
+  packages: PackageEntry[];
   // Set by the completion flow from GET /profile-summary so the persist
   // step is idempotent — it SKIPS the add-only endpoints (project / work
-  // experience / package) for sections the photographer already has,
-  // instead of creating duplicate rows. Undefined on fresh signup → add all.
+  // experience) for sections the photographer already has, instead of
+  // creating duplicate rows. Undefined on fresh signup → add all.
+  // (Packages are always upserted by name, so they're not gated here.)
   existing?: {
     profilePhoto: boolean;
     coverPhoto: boolean;
@@ -54,6 +50,19 @@ export interface OnboardingPayload {
     workExp: boolean;
     pkg: boolean;
   };
+}
+
+export type PackageTier = 'Silver' | 'Gold' | 'Diamond';
+
+export interface PackageEntry {
+  tier: PackageTier;
+  price: number;
+  duration: number;
+  photos: number;
+  videos: number;
+  delivery: number;
+  description: string;
+  features: { featureName: string; isIncluded: boolean; displayOrder: number }[];
 }
 
 interface PhotographerOnboardingProps {
@@ -180,9 +189,6 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
     'connekyt:onb-draft:v1:' + (phone ? phone.replace(/\D/g, '') || 'default' : 'default');
   const draftHydratedRef = useRef(false);
   const draftFinalizedRef = useRef(false);
-  // When hydration restores a non-default tier it must NOT trigger the tier
-  // preset effect (that would overwrite the user's restored package numbers).
-  const skipPresetOnceRef = useRef(false);
 
   // ── Server prefill (completion flow) ──
   // True until GET /profile-summary resolves, so the wizard shows a brief
@@ -243,15 +249,32 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
   const [expIsCurrent, setExpIsCurrent] = useState(false);
   const [expDescription, setExpDescription] = useState('');
 
-  // ── Slide 5: Package ──
-  const [pkgTier, setPkgTier] = useState<'Silver' | 'Gold' | 'Diamond'>('Silver');
-  const [pkgPrice, setPkgPrice] = useState(50000);
+  // ── Slide 5: Packages (all three tiers kept independently) ──
+  type PkgFields = { price: number; duration: number; photos: number; videos: number; delivery: number; description: string };
+  const makeInitialPkgs = (): Record<PackageTier, PkgFields> => ({
+    Silver: { price: TIER_PRESETS.Silver.price, duration: TIER_PRESETS.Silver.duration, photos: TIER_PRESETS.Silver.photos, videos: TIER_PRESETS.Silver.videos, delivery: TIER_PRESETS.Silver.delivery, description: '' },
+    Gold: { price: TIER_PRESETS.Gold.price, duration: TIER_PRESETS.Gold.duration, photos: TIER_PRESETS.Gold.photos, videos: TIER_PRESETS.Gold.videos, delivery: TIER_PRESETS.Gold.delivery, description: '' },
+    Diamond: { price: TIER_PRESETS.Diamond.price, duration: TIER_PRESETS.Diamond.duration, photos: TIER_PRESETS.Diamond.photos, videos: TIER_PRESETS.Diamond.videos, delivery: TIER_PRESETS.Diamond.delivery, description: '' },
+  });
+  // `pkgTier` is only WHICH tier the form is currently showing — switching
+  // it never wipes data because every tier has its own record in `pkgs`.
+  const [pkgTier, setPkgTier] = useState<PackageTier>('Silver');
   const [pkgCurrencyId, setPkgCurrencyId] = useState('');
-  const [pkgDuration, setPkgDuration] = useState(2);
-  const [pkgPhotos, setPkgPhotos] = useState(50);
-  const [pkgVideos, setPkgVideos] = useState(0);
-  const [pkgDelivery, setPkgDelivery] = useState(7);
-  const [pkgDescription, setPkgDescription] = useState('');
+  const [pkgs, setPkgs] = useState<Record<PackageTier, PkgFields>>(makeInitialPkgs);
+
+  // Derived views + per-tier setters so the existing slide JSX (which reads
+  // pkgPrice / setPkgPrice / …) keeps working but edits the current tier.
+  const cur = pkgs[pkgTier];
+  const pkgPrice = cur.price, pkgDuration = cur.duration, pkgPhotos = cur.photos,
+        pkgVideos = cur.videos, pkgDelivery = cur.delivery, pkgDescription = cur.description;
+  const setPkgField = (k: keyof PkgFields, v: number | string) =>
+    setPkgs(p => ({ ...p, [pkgTier]: { ...p[pkgTier], [k]: v } }));
+  const setPkgPrice = (v: number) => setPkgField('price', v);
+  const setPkgDuration = (v: number) => setPkgField('duration', v);
+  const setPkgPhotos = (v: number) => setPkgField('photos', v);
+  const setPkgVideos = (v: number) => setPkgField('videos', v);
+  const setPkgDelivery = (v: number) => setPkgField('delivery', v);
+  const setPkgDescription = (v: string) => setPkgField('description', v);
 
   // ── Fetch data (eagerly on mount so specialties are ready when modal opens) ──
   useEffect(() => {
@@ -291,33 +314,17 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
     }
   }, [isOpen]);
 
-  // ── Apply tier presets ──
-  useEffect(() => {
-    // Skip exactly once when draft hydration switched the tier — otherwise
-    // the preset would overwrite the user's restored package numbers.
-    if (skipPresetOnceRef.current) {
-      skipPresetOnceRef.current = false;
-      return;
-    }
-    const preset = TIER_PRESETS[pkgTier];
-    if (preset) {
-      setPkgPrice(preset.price);
-      setPkgDuration(preset.duration);
-      setPkgPhotos(preset.photos);
-      setPkgVideos(preset.videos);
-      setPkgDelivery(preset.delivery);
-    }
-  }, [pkgTier]);
+  // No tier-preset effect: every tier has its own record in `pkgs`
+  // (seeded from TIER_PRESETS once), so switching tier just changes which
+  // record the form shows — it never overwrites another tier's edits.
 
   // ── Hydrate from a saved draft (once, on mount) ──
-  // Defined AFTER the preset effect so its restored values land last.
   useEffect(() => {
     try {
       const raw = window.localStorage.getItem(draftStorageKey);
       if (raw) {
         const d = JSON.parse(raw) as Record<string, unknown>;
         const s = (k: string) => (typeof d[k] === 'string' ? (d[k] as string) : undefined);
-        const n = (k: string) => (typeof d[k] === 'number' ? (d[k] as number) : undefined);
 
         if (s('address') !== undefined) setAddress(d.address as string);
         if (s('about') !== undefined) setAbout(d.about as string);
@@ -341,18 +348,23 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
         if (s('expDescription') !== undefined) setExpDescription(d.expDescription as string);
 
         if (d.pkgTier === 'Silver' || d.pkgTier === 'Gold' || d.pkgTier === 'Diamond') {
-          // Non-default tier change would re-fire the preset effect; tell it
-          // to skip once so the restored package numbers below survive.
-          if (d.pkgTier !== 'Silver') skipPresetOnceRef.current = true;
           setPkgTier(d.pkgTier);
         }
-        if (n('pkgPrice') !== undefined) setPkgPrice(d.pkgPrice as number);
         if (s('pkgCurrencyId') !== undefined) setPkgCurrencyId(d.pkgCurrencyId as string);
-        if (n('pkgDuration') !== undefined) setPkgDuration(d.pkgDuration as number);
-        if (n('pkgPhotos') !== undefined) setPkgPhotos(d.pkgPhotos as number);
-        if (n('pkgVideos') !== undefined) setPkgVideos(d.pkgVideos as number);
-        if (n('pkgDelivery') !== undefined) setPkgDelivery(d.pkgDelivery as number);
-        if (s('pkgDescription') !== undefined) setPkgDescription(d.pkgDescription as string);
+        // Restore all three tiers' edits; merge over presets so a partial
+        // / older draft still yields a valid record per tier.
+        if (d.pkgs && typeof d.pkgs === 'object') {
+          const draftPkgs = d.pkgs as Record<string, Partial<PkgFields>>;
+          setPkgs(base => {
+            const merged = { ...base };
+            (['Silver', 'Gold', 'Diamond'] as PackageTier[]).forEach(t => {
+              if (draftPkgs[t] && typeof draftPkgs[t] === 'object') {
+                merged[t] = { ...merged[t], ...draftPkgs[t] };
+              }
+            });
+            return merged;
+          });
+        }
 
         // Files aren't persisted, and slides 3-5 hard-require the profile
         // photo, so send a returning user back to (at most) the Photos step
@@ -380,8 +392,7 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
           projTitle, projYear, projDescription,
           expPosition, expCompany, expLocation, expStartDate, expEndDate,
           expIsCurrent, expDescription,
-          pkgTier, pkgPrice, pkgCurrencyId, pkgDuration, pkgPhotos,
-          pkgVideos, pkgDelivery, pkgDescription,
+          pkgTier, pkgCurrencyId, pkgs,
           currentSlide: state.currentSlide,
         }));
       } catch {
@@ -393,8 +404,7 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
     draftStorageKey, address, about, businessType, companyName, tin,
     selectedSpecialtyIds, projTitle, projYear, projDescription,
     expPosition, expCompany, expLocation, expStartDate, expEndDate,
-    expIsCurrent, expDescription, pkgTier, pkgPrice, pkgCurrencyId,
-    pkgDuration, pkgPhotos, pkgVideos, pkgDelivery, pkgDescription,
+    expIsCurrent, expDescription, pkgTier, pkgCurrencyId, pkgs,
     state.currentSlide,
   ]);
 
@@ -444,27 +454,30 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
           if (exp.description) setExpDescription(exp.description);
         }
 
-        const pkg = p.packages?.[0];
-        if (pkg) {
-          if (pkg.packageName === 'Silver' || pkg.packageName === 'Gold' || pkg.packageName === 'Diamond') {
-            const tier = pkg.packageName;
-            // Any tier CHANGE re-fires the preset effect, which would clobber
-            // the server's real package numbers set below. Skip it once — but
-            // only when the tier actually changes (a draft may have already
-            // moved it off the Silver default), else a later user-initiated
-            // tier switch would wrongly keep its old preset.
-            setPkgTier(prev => {
-              if (prev !== tier) skipPresetOnceRef.current = true;
-              return tier;
-            });
-          }
-          if (typeof pkg.price === 'number' && pkg.price > 0) setPkgPrice(pkg.price);
-          if (pkg.currencyId) setPkgCurrencyId(pkg.currencyId);
-          if (typeof pkg.durationHours === 'number') setPkgDuration(pkg.durationHours);
-          if (typeof pkg.includedPhotos === 'number') setPkgPhotos(pkg.includedPhotos);
-          if (typeof pkg.includedVideos === 'number') setPkgVideos(pkg.includedVideos);
-          if (typeof pkg.deliveryDays === 'number') setPkgDelivery(pkg.deliveryDays);
-          if (pkg.description) setPkgDescription(pkg.description);
+        // Pre-fill EVERY saved tier into its own record (not just the
+        // first), so all three stay up to date and editable.
+        if (Array.isArray(p.packages) && p.packages.length > 0) {
+          let firstSavedTier: PackageTier | null = null;
+          setPkgs(base => {
+            const merged = { ...base };
+            for (const pk of p.packages!) {
+              const t = pk.packageName;
+              if (t !== 'Silver' && t !== 'Gold' && t !== 'Diamond') continue;
+              if (!firstSavedTier) firstSavedTier = t;
+              merged[t] = {
+                price: typeof pk.price === 'number' && pk.price > 0 ? pk.price : merged[t].price,
+                duration: typeof pk.durationHours === 'number' ? pk.durationHours : merged[t].duration,
+                photos: typeof pk.includedPhotos === 'number' ? pk.includedPhotos : merged[t].photos,
+                videos: typeof pk.includedVideos === 'number' ? pk.includedVideos : merged[t].videos,
+                delivery: typeof pk.deliveryDays === 'number' ? pk.deliveryDays : merged[t].delivery,
+                description: pk.description || merged[t].description,
+              };
+            }
+            return merged;
+          });
+          const cid = p.packages.find(pk => pk.currencyId)?.currencyId;
+          if (cid) setPkgCurrencyId(cid);
+          if (firstSavedTier) setPkgTier(firstSavedTier);
         }
 
         // Existing images: show them as the preview so the photographer sees
@@ -570,9 +583,17 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
   // Single source of the OnboardingPayload (minus `existing`), shared by the
   // 5s autosave and the final finalize so they can never disagree.
   const buildPayload = (): OnboardingPayload => {
-    const preset = TIER_PRESETS[pkgTier];
-    const features = (preset?.features || []).map((f, i) => ({
-      featureName: f, isIncluded: true, displayOrder: i,
+    const allPackages: PackageEntry[] = (['Silver', 'Gold', 'Diamond'] as PackageTier[]).map(t => ({
+      tier: t,
+      price: pkgs[t].price,
+      duration: pkgs[t].duration,
+      photos: pkgs[t].photos,
+      videos: pkgs[t].videos,
+      delivery: pkgs[t].delivery,
+      description: pkgs[t].description,
+      features: (TIER_PRESETS[t]?.features || []).map((f, i) => ({
+        featureName: f, isIncluded: true, displayOrder: i,
+      })),
     }));
     return {
       address: address.trim(),
@@ -593,15 +614,8 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
       expStartDate: expStartDate.trim(),
       expEndDate: expIsCurrent ? '' : expEndDate.trim(),
       expDescription: expDescription.trim(),
-      pkgTier,
-      pkgPrice,
       pkgCurrencyId,
-      pkgDuration,
-      pkgPhotos,
-      pkgVideos,
-      pkgDelivery,
-      pkgDescription,
-      pkgFeatures: features,
+      packages: allPackages,
     };
   };
 
@@ -677,15 +691,15 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
     serverSync, address, about, businessType, companyName, tin,
     selectedSpecialtyIds, profileFile, coverFile, projTitle, projYear,
     projDescription, projFile, expPosition, expCompany, expLocation,
-    expStartDate, expEndDate, expIsCurrent, expDescription, pkgTier,
-    pkgPrice, pkgCurrencyId, pkgDuration, pkgPhotos, pkgVideos,
-    pkgDelivery, pkgDescription, state.currentSlide,
+    expStartDate, expEndDate, expIsCurrent, expDescription,
+    pkgCurrencyId, pkgs, state.currentSlide,
   ]);
 
   // ─── SLIDE 5: Package ───
 
   const handleCreatePackage = async () => {
-    if (!pkgPrice || pkgPrice <= 0) { setSlideError('Please enter a valid price'); return; }
+    const badTier = (['Silver', 'Gold', 'Diamond'] as PackageTier[]).find(t => !pkgs[t].price || pkgs[t].price <= 0);
+    if (badTier) { setSlideError(`Please enter a valid price for the ${badTier} package`); return; }
     if (!pkgCurrencyId) { setSlideError('Please select a currency'); return; }
     if (!profileFile && !serverHas.profilePhoto) {
       setSlideError('Profile photo is missing — go back to the Photos step'); return;
@@ -1509,7 +1523,7 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
                   margin: '0 0 10px', letterSpacing: '-0.015em',
                 }}>Profile Submitted!</h2>
                 <p style={{ color: TEXT_SECONDARY, fontSize: 14, margin: '0 0 6px', lineHeight: 1.5 }}>
-                  Your <strong>{pkgTier}</strong> package at <strong>{currencyCode} {pkgPrice.toLocaleString()}</strong> has been created.
+                  Your <strong>Silver</strong>, <strong>Gold</strong> &amp; <strong>Diamond</strong> packages (from <strong>{currencyCode} {pkgs.Silver.price.toLocaleString()}</strong>) have been saved.
                 </p>
                 <p style={{ color: TEXT_MUTED, fontSize: 13, margin: '0 auto 24px', lineHeight: 1.55, maxWidth: 360 }}>
                   Your profile is now under review. Once approved, clients will be able to find and book you.
