@@ -276,6 +276,10 @@ function ViewProfileContent(): React.JSX.Element {
       return photographer.address || '';
     })(),
     eventsCompleted: photographer?.completedEvents ?? photographer?.projects?.length ?? 0,
+    // Backend red-day model: 'booked' when today is at capacity or the
+    // photographer hard-blocked it, else 'available'.
+    currentStatus: photographer?.currentStatus === 'booked' ? 'booked' : 'available',
+    nextAvailableDate: photographer?.nextAvailableDate ?? null,
     rating: photographer?.rating || 0,
     profileImage: getProfileImage(photographer),
     backgroundImage: getCoverImage(photographer),
@@ -582,10 +586,17 @@ function ViewProfileContent(): React.JSX.Element {
                     <span className="vp-stat-mute">Since {photographerData.joinedFrom}</span>
                   </span>
                 )}
-                <span className="vp-stat vp-stat--avail">
-                  <span className="vp-status-dot" aria-hidden="true" />
-                  Available
-                </span>
+                {photographerData.currentStatus === 'booked' ? (
+                  <span className="vp-stat vp-stat--booked" title={photographerData.nextAvailableDate ? `Next free: ${photographerData.nextAvailableDate}` : 'Booked today'}>
+                    <span className="vp-status-dot" aria-hidden="true" />
+                    Booked
+                  </span>
+                ) : (
+                  <span className="vp-stat vp-stat--avail">
+                    <span className="vp-status-dot" aria-hidden="true" />
+                    Available
+                  </span>
+                )}
               </div>
             </div>
 
@@ -1333,12 +1344,27 @@ function ViewProfileContent(): React.JSX.Element {
           font-size: 0.7rem;
           border: 1px solid rgba(16,185,129,0.4);
         }
+        .vp-stat--booked {
+          padding: 3px 10px;
+          border-radius: 999px;
+          background: rgba(239,68,68,0.20);
+          color: #fecaca;
+          font-weight: 700;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
+          font-size: 0.7rem;
+          border: 1px solid rgba(239,68,68,0.45);
+        }
         .vp-status-dot {
           width: 7px; height: 7px;
           border-radius: 50%;
           background: #10b981;
           animation: vp-pulse 2s ease-out infinite;
           box-shadow: 0 0 0 0 rgba(16,185,129,0.6);
+        }
+        .vp-stat--booked .vp-status-dot {
+          background: #ef4444;
+          box-shadow: 0 0 0 0 rgba(239,68,68,0.6);
         }
         @keyframes vp-pulse {
           0%   { box-shadow: 0 0 0 0 rgba(16,185,129,0.55); }

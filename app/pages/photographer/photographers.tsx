@@ -1037,7 +1037,8 @@ const Photographers: React.FC = () => {
           animation: ph-pulse 2s ease-out infinite;
         }
         .ph-status--available     { color: #047857; }
-        /* (.ph-status--booked rules removed — booked state is never rendered) */
+        .ph-status--booked        { color: #b91c1c; }
+        .ph-status--booked .ph-status-dot { background: #ef4444; box-shadow: 0 0 0 0 rgba(239,68,68,0.5); }
         @keyframes ph-pulse {
           0%   { box-shadow: 0 0 0 0 rgba(16,185,129,0.55); }
           70%  { box-shadow: 0 0 0 8px rgba(16,185,129,0); }
@@ -1585,11 +1586,20 @@ const Photographers: React.FC = () => {
                       </div>
                     )}
 
-                    {/* Status pill — always Available per design spec */}
-                    <span className="ph-status ph-status--available" aria-label="Available now">
-                      <span className="ph-status-dot" aria-hidden="true" />
-                      Available
-                    </span>
+                    {/* Status pill — reflects the backend's red-day model:
+                        "booked" when today is at capacity or the photographer
+                        manually blocked it, "available" otherwise. */}
+                    {photographer.currentStatus === 'booked' ? (
+                      <span className="ph-status ph-status--booked" aria-label="Booked today">
+                        <span className="ph-status-dot" aria-hidden="true" />
+                        Booked
+                      </span>
+                    ) : (
+                      <span className="ph-status ph-status--available" aria-label="Available now">
+                        <span className="ph-status-dot" aria-hidden="true" />
+                        Available
+                      </span>
+                    )}
 
                     {/* Rating chip */}
                     {rating > 0 && (
