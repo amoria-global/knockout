@@ -7,7 +7,9 @@ import FreeAlbumEmailForm from '@/app/components/FreeAlbumEmailForm';
 import FreeAlbumOTPForm from '@/app/components/FreeAlbumOTPForm';
 import { requestFreeAlbumAccess } from '@/lib/APIs/public/request-free-access/route';
 import { verifyFreeAlbumAccess } from '@/lib/APIs/public/verify-free-access/route';
-import { getFreeAlbum, type FreeAlbumData } from '@/lib/APIs/public/get-free-album/route';
+import { getFreeAlbum, selectFreeAlbumPhotos, consumeFreeAlbumGrant, type FreeAlbumData } from '@/lib/APIs/public/get-free-album/route';
+import { identifyAlbumBuyer } from '@/lib/APIs/public/identify-buyer/route';
+import { initiateXentriPayAlbumPurchase, recordAlbumPurchase } from '@/lib/APIs/payments/xentripay';
 
 type ViewState = 'email' | 'otp' | 'album';
 
@@ -34,6 +36,12 @@ const FreeAlbumAccessPage = () => {
 
   // Photo viewer
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(null);
+
+  // Capped-album selection + pay-for-extra state
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [statusMsg, setStatusMsg] = useState('');
+  const [pendingPay, setPendingPay] = useState<{ refid: string; buyerId: string } | null>(null);
 
   useEffect(() => {
     if (!accessCode) {
@@ -130,6 +138,98 @@ const FreeAlbumAccessPage = () => {
         handlePhotoDownload(photo.url, `photo-${index + 1}.jpg`);
       }, index * 500); // Stagger downloads to avoid browser blocking
     });
+  };
+
+  // ── Capped free album: selection + pay-for-extra (reuses paid flow) ──
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  // Download the selected photos (by id), then consume the one-time grant.
+  const downloadSelectedAndConsume = async () => {
+    if (!albumData) return;
+    const chosen = albumData.photos.filter(p => selectedIds.has(p.id));
+    try { await selectFreeAlbumPhotos(albumData.id, chosen.map(p => p.id)); } catch { /* best effort */ }
+    chosen.forEach((photo, i) =>
+      setTimeout(() => handlePhotoDownload(photo.url, `photo-${i + 1}.jpg`), i * 500));
+    try { await consumeFreeAlbumGrant(albumData.id); } catch { /* best effort */ }
+    setStatusMsg(`Downloading ${chosen.length} photo(s). This access link is now used — ask the photographer to regenerate it if you need it again.`);
+  };
+
+  const handleCappedDownload = async () => {
+    if (!albumData || isProcessing) return;
+    const cap = albumData.maxFreeDownloads ?? Infinity;
+    const price = albumData.pricePerExtraImage ?? 0;
+    const count = selectedIds.size;
+    if (count === 0) { setStatusMsg('Select at least one photo to download.'); return; }
+    const overflow = Number.isFinite(cap) ? Math.max(0, count - (cap as number)) : 0;
+
+    if (overflow === 0) { setIsProcessing(true); await downloadSelectedAndConsume(); setIsProcessing(false); return; }
+
+    if (!(price > 0) || !albumData.currencyId) {
+      setStatusMsg(`You can download at most ${cap} photo(s) from this album.`);
+      return;
+    }
+
+    // Overflow → pay for the extras via the existing paid-album flow.
+    setIsProcessing(true);
+    setStatusMsg('Preparing payment for extra photos…');
+    try {
+      const ident = await identifyAlbumBuyer(albumData.id, {
+        name: email, email, phone: '', deviceFingerprint: '',
+      });
+      const buyerId = ident.data?.buyerId;
+      if (!ident.success || !buyerId) throw new Error(ident.error || 'Could not identify you. Please retry.');
+
+      // First `cap` selected are free; the rest are the paid overflow.
+      const selectedList = albumData.photos.filter(p => selectedIds.has(p.id)).map(p => p.id);
+      const overflowIds = selectedList.slice(cap as number);
+      const amount = Math.round(price * overflowIds.length);
+
+      const pay = await initiateXentriPayAlbumPurchase({
+        albumId: albumData.id,
+        buyerId,
+        photoIds: overflowIds,
+        amount,
+        currencyId: albumData.currencyId,
+        paymentMethod: 'CARD',
+        redirectUrl: typeof window !== 'undefined' ? window.location.href : '',
+      });
+      if (!pay.success || !pay.data?.paymentUrl || !pay.data?.refid) {
+        throw new Error(pay.error || 'Could not start payment. Please try again.');
+      }
+      window.open(pay.data.paymentUrl, '_blank', 'noopener');
+      setPendingPay({ refid: pay.data.refid, buyerId });
+      setStatusMsg(`Opened payment for ${overflowIds.length} extra photo(s) (${albumData.currencyAbbreviation || ''} ${amount}). Complete it, then click "I've paid — download".`);
+    } catch (e) {
+      setStatusMsg(e instanceof Error ? e.message : 'Payment could not be started.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleConfirmPaid = async () => {
+    if (!pendingPay || !albumData || isProcessing) return;
+    setIsProcessing(true);
+    setStatusMsg('Confirming payment…');
+    try {
+      const rec = await recordAlbumPurchase(pendingPay.refid, pendingPay.buyerId);
+      const status = (rec.data?.status || '').toUpperCase();
+      if (rec.success && (status === 'COMPLETED' || status === '')) {
+        setPendingPay(null);
+        await downloadSelectedAndConsume();
+      } else {
+        setStatusMsg('Payment not confirmed yet. Finish it in the payment tab, then try again.');
+      }
+    } catch (e) {
+      setStatusMsg(e instanceof Error ? e.message : 'Could not confirm payment yet. Try again shortly.');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const openPhotoViewer = (index: number) => {
@@ -238,13 +338,50 @@ const FreeAlbumAccessPage = () => {
                         {albumData.photoCount} photo{albumData.photoCount !== 1 ? 's' : ''}
                       </p>
                     </div>
-                    <button
-                      onClick={handleBulkDownload}
-                      className="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition"
-                    >
-                      Download All Photos
-                    </button>
+                    {albumData.capped ? (
+                      <div className="flex flex-col items-end gap-2">
+                        <div className="text-sm text-gray-600">
+                          Selected <span className="font-semibold">{selectedIds.size}</span>
+                          {typeof albumData.maxFreeDownloads === 'number' && (
+                            <> · first <span className="font-semibold">{albumData.maxFreeDownloads}</span> free</>
+                          )}
+                          {(albumData.pricePerExtraImage ?? 0) > 0 && (
+                            <> · extra @ {albumData.currencyAbbreviation || ''} {albumData.pricePerExtraImage}</>
+                          )}
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={handleCappedDownload}
+                            disabled={isProcessing || selectedIds.size === 0}
+                            className="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50"
+                          >
+                            {isProcessing ? 'Working…' : 'Download Selected'}
+                          </button>
+                          {pendingPay && (
+                            <button
+                              onClick={handleConfirmPaid}
+                              disabled={isProcessing}
+                              className="px-6 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition disabled:opacity-50"
+                            >
+                              I&apos;ve paid — download
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={handleBulkDownload}
+                        className="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition"
+                      >
+                        Download All Photos
+                      </button>
+                    )}
                   </div>
+                  {albumData.capped && statusMsg && (
+                    <div className="mt-3 bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
+                      {statusMsg}
+                    </div>
+                  )}
 
                   {albumData.expiresAt && (
                     <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
@@ -268,7 +405,23 @@ const FreeAlbumAccessPage = () => {
                         src={photo.thumbnailUrl}
                         alt={photo.caption || `Photo ${index + 1}`}
                         className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                        onContextMenu={(e) => albumData.capped && e.preventDefault()}
+                        onDragStart={(e) => albumData.capped && e.preventDefault()}
+                        draggable={albumData.capped ? false : undefined}
                       />
+                      {albumData.capped && (
+                        <label
+                          className="absolute top-2 left-2 z-10 flex items-center justify-center w-7 h-7 rounded-md bg-white/90 shadow cursor-pointer"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <input
+                            type="checkbox"
+                            className="w-4 h-4 accent-blue-600"
+                            checked={selectedIds.has(photo.id)}
+                            onChange={() => toggleSelect(photo.id)}
+                          />
+                        </label>
+                      )}
                       <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition flex items-center justify-center">
                         <svg
                           className="w-12 h-12 text-white opacity-0 group-hover:opacity-100 transition"

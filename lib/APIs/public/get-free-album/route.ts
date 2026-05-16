@@ -29,6 +29,15 @@ export interface FreeAlbumData {
   photoCount: number;
   photographerName?: string;
   photos: FreeAlbumPhoto[];
+  // Capped free album: first `maxFreeDownloads` selected are free, the
+  // rest cost `pricePerExtraImage` each (paid via the existing paid-album
+  // flow). `capped` true => one-time access (consumed after download).
+  capped?: boolean;
+  maxFreeDownloads?: number | null;
+  pricePerExtraImage?: number | null;
+  currencyId?: string;
+  currencyAbbreviation?: string;
+  currencySymbol?: string;
 }
 
 /**
@@ -60,4 +69,23 @@ export async function getFreeAlbum(
   }
 
   return response;
+}
+
+/** Persist the client's photo selection (so a regenerated grant is
+ *  scoped to exactly these). Capped albums only; no-op otherwise. */
+export async function selectFreeAlbumPhotos(albumId: string, photoIds: string[]) {
+  return apiClient.post(
+    `/api/remote/public/albums/free/${albumId}/select`,
+    { photoIds },
+    { retries: 1, skipAuth: false, credentials: 'include' }
+  );
+}
+
+/** Consume the one-time grant after a completed bulk download. */
+export async function consumeFreeAlbumGrant(albumId: string) {
+  return apiClient.post(
+    `/api/remote/public/albums/free/${albumId}/consume`,
+    {},
+    { retries: 1, skipAuth: false, credentials: 'include' }
+  );
 }
