@@ -53,11 +53,18 @@ export async function persistPhotographerProfile(
   // Cover photo is genuinely optional — stays best-effort.
   if (payload.coverFile) await updateCoverPhoto(payload.coverFile).catch(() => {});
 
+  // year is a primitive `int` on the backend DTO — Jackson rejects
+  // null/empty/NaN with a 400. Coerce to a valid integer, default to the
+  // current year if the wizard left it blank.
+  const projYearNum = Number(payload.projYear);
+  const safeYear = Number.isFinite(projYearNum) && projYearNum > 0
+    ? Math.trunc(projYearNum)
+    : new Date().getFullYear();
   const fd = new FormData();
   fd.append('requestDTO', new Blob([JSON.stringify({
     title: payload.projTitle,
     description: payload.projDescription,
-    year: payload.projYear,
+    year: safeYear,
   })], { type: 'application/json' }));
   if (payload.projFile) fd.append('projectImage', payload.projFile);
   const rPortfolio = await apiClient.post('/api/remote/photographer/add-project-portfolio', fd, { retries: 1 });

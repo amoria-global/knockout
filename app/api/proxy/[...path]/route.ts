@@ -138,8 +138,16 @@ async function proxyRequest(
 
     if (method !== 'GET' && method !== 'DELETE') {
       if (isMultipart) {
-        const formData = await request.formData();
-        fetchOptions.body = formData;
+        // Stream the raw multipart body straight through and forward the
+        // ORIGINAL Content-Type (which carries the exact boundary). Re-parsing
+        // via request.formData() and re-sending strips the per-part
+        // Content-Type — notably the `application/json` on Blob parts like
+        // `requestDTO` — so Spring's @RequestPart binding fails with a 400
+        // ("Bad request") on portfolio / profile-photo / cover uploads.
+        fetchOptions.body = request.body;
+        headers['Content-Type'] = incomingContentType;
+        // undici requires duplex when the request body is a stream.
+        (fetchOptions as RequestInit & { duplex?: 'half' }).duplex = 'half';
       } else {
         try {
           const body = await request.json();
