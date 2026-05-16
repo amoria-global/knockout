@@ -629,33 +629,48 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
   // persistPhotographerProfile now lives in @/lib/photographer/persist-profile
   // (shared by signup, post-login, and post-OTP completion flows).
 
-  const handlePhotographerFinalize = async (payload: import('@/app/components/PhotographerOnboarding').OnboardingPayload) => {
-    const response = await signup({
-      firstName, lastName, email: signupEmail,
-      phone: `${countryCode}${phoneNumber}`,
-      customerType: signupUserType, password: signupPassword,
-    });
-    if (!response.success || !response.data) {
-      throw new Error(response.error || 'Signup failed. Please try again.');
-    }
-    const customerId = response.data.customerId;
-    if (!customerId) throw new Error('Signup succeeded but no customer ID was returned.');
-
-    // signup() mints a token pre-OTP so the /photographer/* saves can
-    // authenticate (the endpoints resolve the photographer purely from the
-    // JWT principal). Set it BEFORE persisting or every call 401s.
-    if (response.data.token) {
+  // Lazily create the photographer account ONCE — invoked by the wizard's
+  // progressive autosave the first time it needs a session (≈5s after the
+  // user starts filling slide 0), and again (idempotently) at finalize.
+  // signup() mints a pre-OTP token so the /photographer/* saves authenticate
+  // (they resolve the photographer purely from the JWT principal). Memoised
+  // via a ref so concurrent callers share one in-flight signup.
+  const photographerSessionRef = React.useRef<Promise<{ success: boolean; error?: string }> | null>(null);
+  const ensurePhotographerSession = async (): Promise<{ success: boolean; error?: string }> => {
+    if (photographerSessionRef.current) return photographerSessionRef.current;
+    const attempt = (async () => {
+      const response = await signup({
+        firstName, lastName, email: signupEmail,
+        phone: `${countryCode}${phoneNumber}`,
+        customerType: signupUserType, password: signupPassword,
+      });
+      if (!response.success || !response.data) {
+        return { success: false, error: response.error || 'Signup failed. Please try again.' };
+      }
+      const customerId = response.data.customerId;
+      if (!customerId) return { success: false, error: 'Signup succeeded but no customer ID was returned.' };
+      if (!response.data.token) {
+        return { success: false, error: 'Signup did not return a session token — profile could not be saved. Please try again.' };
+      }
       setAuthToken(response.data.token);
-    } else {
-      throw new Error('Signup did not return a session token — profile could not be saved. Please try again.');
-    }
+      const otpUrl = `/user/auth/verify-otp?applicantId=${encodeURIComponent(String(customerId))}&email=${encodeURIComponent(signupEmail)}&customerType=${encodeURIComponent(signupUserType)}&firstName=${encodeURIComponent(firstName)}&lastName=${encodeURIComponent(lastName)}&phone=${encodeURIComponent(`${countryCode}${phoneNumber}`)}${redirectUrl ? `&redirect=${encodeURIComponent(redirectUrl)}` : ''}`;
+      setPendingOtpRedirectUrl(otpUrl);
+      return { success: true };
+    })();
+    photographerSessionRef.current = attempt;
+    const res = await attempt;
+    if (!res.success) photographerSessionRef.current = null; // let the next tick / finalize retry
+    return res;
+  };
 
+  const handlePhotographerFinalize = async (payload: import('@/app/components/PhotographerOnboarding').OnboardingPayload) => {
+    const sess = await ensurePhotographerSession();
+    if (!sess.success) throw new Error(sess.error || 'Could not start your session. Please try again.');
+    // Idempotent: the wizard passed `existing` so persist skips whatever the
+    // autosave already stored — it just fills any gaps and submits.
     await persistPhotographerProfile(payload, {
       firstName, lastName, phone: `${countryCode}${phoneNumber}`,
     });
-
-    const otpUrl = `/user/auth/verify-otp?applicantId=${encodeURIComponent(String(customerId))}&email=${encodeURIComponent(signupEmail)}&customerType=${encodeURIComponent(signupUserType)}&firstName=${encodeURIComponent(firstName)}&lastName=${encodeURIComponent(lastName)}&phone=${encodeURIComponent(`${countryCode}${phoneNumber}`)}${redirectUrl ? `&redirect=${encodeURIComponent(redirectUrl)}` : ''}`;
-    setPendingOtpRedirectUrl(otpUrl);
   };
 
   // Post-login completion: the account already exists and the login response
@@ -845,6 +860,8 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
         firstName={firstName}
         lastName={lastName}
         phone={`${countryCode}${phoneNumber}`}
+        serverSync
+        ensureSession={ensurePhotographerSession}
       />
 
       {/* Post-login profile-completion wizard — same component, but the
@@ -882,6 +899,7 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
           lastName={completionCtx.lastName}
           phone={completionCtx.phone}
           prefillFromServer
+          serverSync
         />
       )}
     </>

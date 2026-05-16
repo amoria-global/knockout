@@ -4,6 +4,7 @@ import React, { useState, useEffect, useReducer, useRef } from 'react';
 import { getCurrencies, type Currency } from '@/lib/APIs/public';
 import { apiClient } from '@/lib/api/client';
 import { getProfileSummary } from '@/lib/APIs/photographers/update-profile/route';
+import { syncPhotographerProfile, initialSyncState, type SyncState } from '@/lib/photographer/sync-profile';
 
 // ─── Types ───
 
@@ -71,6 +72,14 @@ interface PhotographerOnboardingProps {
   // every already-saved field so a returning photographer never re-enters
   // data. Omitted (false) for fresh signup — there's no server record yet.
   prefillFromServer?: boolean;
+  // Progressive server autosave: every section is debounced-saved to the DB
+  // 5s after the user stops editing, so onboarding survives a dropped
+  // network and resumes from the server on return.
+  serverSync?: boolean;
+  // Signup flow only: lazily create the account (signup → token) the first
+  // time autosave needs a session. Memoised by the caller so it runs once.
+  // Omitted in the completion flow (the session already exists).
+  ensureSession?: () => Promise<{ success: boolean; error?: string }>;
 }
 
 interface OnboardingState {
@@ -155,12 +164,11 @@ const TIER_PRESETS: Record<string, { price: number; duration: number; photos: nu
 
 const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
   isOpen, onClose, onComplete, onFinalize, firstName, lastName, phone,
-  prefillFromServer = false,
+  prefillFromServer = false, serverSync = false, ensureSession,
 }) => {
-  // firstName / lastName / phone are kept on props so the parent can pass
-  // them back through onFinalize alongside its own credentials state, but
-  // the wizard itself doesn't need to read them during the slides.
-  void firstName; void lastName; void phone;
+  // firstName / lastName / phone identify the photographer for the
+  // important-details save (used by the progressive autosave and passed
+  // back through onFinalize alongside the parent's credentials state).
   const [state, dispatch] = useReducer(reducer, initialState);
 
   // ── Draft auto-save (localStorage) ──
@@ -187,6 +195,15 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
   const [serverHas, setServerHas] = useState({
     profilePhoto: false, coverPhoto: false, project: false, workExp: false, pkg: false,
   });
+
+  // ── Progressive server autosave (5s debounce) ──
+  const syncStateRef = useRef<SyncState>(initialSyncState());
+  // Memoise the one-time signup (signup flow): the first tick that needs a
+  // session creates the account; everyone after awaits the same promise.
+  const sessionPromiseRef = useRef<Promise<{ success: boolean; error?: string }> | null>(null);
+  // Serialise sync runs so a slow tick can't overlap the next one (which
+  // would race the create/update decisions).
+  const syncInFlightRef = useRef(false);
 
   // ── Shared state across slides ──
   const [address, setAddress] = useState('');
@@ -548,22 +565,16 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
     dispatch({ type: 'SET_SLIDE', slide: 5 });
   };
 
-  // ─── SLIDE 5: Package ───
+  // ─── Payload + progressive server autosave ───
 
-  const handleCreatePackage = async () => {
-    if (!pkgPrice || pkgPrice <= 0) { setSlideError('Please enter a valid price'); return; }
-    if (!pkgCurrencyId) { setSlideError('Please select a currency'); return; }
-    if (!profileFile && !serverHas.profilePhoto) {
-      setSlideError('Profile photo is missing — go back to the Photos step'); return;
-    }
-    setSlideError('');
-
+  // Single source of the OnboardingPayload (minus `existing`), shared by the
+  // 5s autosave and the final finalize so they can never disagree.
+  const buildPayload = (): OnboardingPayload => {
     const preset = TIER_PRESETS[pkgTier];
     const features = (preset?.features || []).map((f, i) => ({
       featureName: f, isIncluded: true, displayOrder: i,
     }));
-
-    const payload: OnboardingPayload = {
+    return {
       address: address.trim(),
       about: about.trim(),
       businessType,
@@ -591,13 +602,117 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
       pkgDelivery,
       pkgDescription,
       pkgFeatures: features,
-      // Only meaningful in the completion flow; undefined → fresh signup,
-      // persist adds everything. In completion it makes persist idempotent.
-      existing: prefillFromServer ? serverHas : undefined,
     };
+  };
+
+  const who = { firstName, lastName, phone };
+
+  // Create the account once (signup flow); a no-op when the session already
+  // exists (completion flow passes no ensureSession).
+  const ensureSessionOnce = async (): Promise<{ success: boolean; error?: string }> => {
+    if (!ensureSession) return { success: true };
+    if (!sessionPromiseRef.current) sessionPromiseRef.current = ensureSession();
+    try {
+      return await sessionPromiseRef.current;
+    } catch (e) {
+      // Let a failed attempt be retried by the next tick / finalize.
+      sessionPromiseRef.current = null;
+      return { success: false, error: e instanceof Error ? e.message : 'Could not start your session.' };
+    }
+  };
+
+  // Synchronous view of what's saved server-side, read straight from the
+  // sync ref (updated atomically by runServerSync) OR'd with the prefill
+  // snapshot. Used for the idempotent `existing` at finalize — React state
+  // (serverHas) lags a tick, so reading it right after an awaited sync would
+  // be stale and could let persist duplicate a just-saved section.
+  const presenceFromRef = () => ({
+    profilePhoto: !!syncStateRef.current.uploadedProfileFile || serverHas.profilePhoto,
+    coverPhoto: !!syncStateRef.current.uploadedCoverFile || serverHas.coverPhoto,
+    project: syncStateRef.current.created.project || serverHas.project,
+    workExp: syncStateRef.current.created.workExp || serverHas.workExp,
+    pkg: syncStateRef.current.created.pkg || serverHas.pkg,
+  });
+
+  // One best-effort sync pass. `flush` (used at finalize) waits for any
+  // in-flight pass instead of skipping, so the very latest edits land.
+  const runServerSync = async (flush = false): Promise<void> => {
+    if (!serverSync || draftFinalizedRef.current) return;
+    const sess = await ensureSessionOnce();
+    if (!sess.success) return;
+    if (syncInFlightRef.current) {
+      if (!flush) return;
+      // crude wait-for-idle so flush doesn't race the running pass
+      let waited = 0;
+      while (syncInFlightRef.current && waited < 12000) {
+        await new Promise(r => setTimeout(r, 200)); waited += 200;
+      }
+      // Still running after the wait — don't start an overlapping pass
+      // (that risks a double create); finalize falls back to the last
+      // good presence from the ref.
+      if (syncInFlightRef.current) return;
+    }
+    syncInFlightRef.current = true;
+    try {
+      const { state: nextState, presence } = await syncPhotographerProfile(
+        buildPayload(), who, syncStateRef.current
+      );
+      syncStateRef.current = nextState;
+      setServerHas(presence);
+    } catch {
+      // never throw — resilient layer
+    } finally {
+      syncInFlightRef.current = false;
+    }
+  };
+
+  // 5s debounce: re-armed on every serialisable change, so a section is
+  // saved ~5s after the user stops editing it.
+  useEffect(() => {
+    if (!serverSync || draftFinalizedRef.current || state.currentSlide === 6) return;
+    const t = setTimeout(() => { void runServerSync(false); }, 5000);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    serverSync, address, about, businessType, companyName, tin,
+    selectedSpecialtyIds, profileFile, coverFile, projTitle, projYear,
+    projDescription, projFile, expPosition, expCompany, expLocation,
+    expStartDate, expEndDate, expIsCurrent, expDescription, pkgTier,
+    pkgPrice, pkgCurrencyId, pkgDuration, pkgPhotos, pkgVideos,
+    pkgDelivery, pkgDescription, state.currentSlide,
+  ]);
+
+  // ─── SLIDE 5: Package ───
+
+  const handleCreatePackage = async () => {
+    if (!pkgPrice || pkgPrice <= 0) { setSlideError('Please enter a valid price'); return; }
+    if (!pkgCurrencyId) { setSlideError('Please select a currency'); return; }
+    if (!profileFile && !serverHas.profilePhoto) {
+      setSlideError('Profile photo is missing — go back to the Photos step'); return;
+    }
+    setSlideError('');
 
     dispatch({ type: 'SET_SUBMITTING', value: true });
     try {
+      // Make sure the account exists (signup flow) before the final save.
+      if (serverSync) {
+        const sess = await ensureSessionOnce();
+        if (!sess.success) {
+          throw new Error(sess.error || 'Could not start your session. Please try again.');
+        }
+        // Flush the latest edits through the idempotent autosave so the
+        // final persist only has to fill gaps + submit (no duplicates).
+        await runServerSync(true);
+      }
+
+      const payload: OnboardingPayload = {
+        ...buildPayload(),
+        // With a session (autosave or completion) persist must be
+        // idempotent — skip whatever the flush just saved. Read from the
+        // sync ref (synchronous & fresh), not serverHas (a render behind).
+        existing: (serverSync || prefillFromServer) ? presenceFromRef() : undefined,
+      };
+
       await onFinalize(payload);
       // Profile is stored — drop the draft so the next visit starts clean
       // and the debounced save effect stops re-writing it.
