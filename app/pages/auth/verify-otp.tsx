@@ -258,6 +258,7 @@ function VerifyOtpContent(): React.JSX.Element {
         firstName={completionCtx.firstName}
         lastName={completionCtx.lastName}
         phone={completionCtx.phone}
+        prefillFromServer
       />
     );
   }

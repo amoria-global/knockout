@@ -16,6 +16,13 @@
  * completion (⅓ of basic info), so when a file is supplied its upload is
  * NOT best-effort — a silent failure here is exactly why fresh signups were
  * stuck around 92%.
+ *
+ * Idempotent for returning photographers: important-details / photo uploads
+ * are server-side UPDATEs (safe to repeat), but project / work-experience /
+ * package are ADD-ONLY endpoints. `payload.existing` (set by the completion
+ * wizard from GET /profile-summary) tells us which of those the photographer
+ * already has so we SKIP re-adding them instead of creating duplicate rows.
+ * Undefined on fresh signup → nothing exists yet → add everything.
  */
 
 import type { OnboardingPayload } from '@/app/components/PhotographerOnboarding';
@@ -53,51 +60,62 @@ export async function persistPhotographerProfile(
   // Cover photo is genuinely optional — stays best-effort.
   if (payload.coverFile) await updateCoverPhoto(payload.coverFile).catch(() => {});
 
-  // year is a primitive `int` on the backend DTO — Jackson rejects
-  // null/empty/NaN with a 400. Coerce to a valid integer, default to the
-  // current year if the wizard left it blank.
-  const projYearNum = Number(payload.projYear);
-  const safeYear = Number.isFinite(projYearNum) && projYearNum > 0
-    ? Math.trunc(projYearNum)
-    : new Date().getFullYear();
-  const fd = new FormData();
-  fd.append('requestDTO', new Blob([JSON.stringify({
-    title: payload.projTitle,
-    description: payload.projDescription,
-    year: safeYear,
-  })], { type: 'application/json' }));
-  if (payload.projFile) fd.append('projectImage', payload.projFile);
-  const rPortfolio = await apiClient.post('/api/remote/photographer/add-project-portfolio', fd, { retries: 1 });
-  if (!rPortfolio.success) throw new Error(rPortfolio.error || 'Could not save your portfolio project.');
+  // add-project-portfolio is ADD-ONLY — skip if the photographer already
+  // has a project (the completion wizard pre-filled it from the server).
+  if (!payload.existing?.project) {
+    // year is a primitive `int` on the backend DTO — Jackson rejects
+    // null/empty/NaN with a 400. Coerce to a valid integer, default to the
+    // current year if the wizard left it blank.
+    const projYearNum = Number(payload.projYear);
+    const safeYear = Number.isFinite(projYearNum) && projYearNum > 0
+      ? Math.trunc(projYearNum)
+      : new Date().getFullYear();
+    const fd = new FormData();
+    fd.append('requestDTO', new Blob([JSON.stringify({
+      title: payload.projTitle,
+      description: payload.projDescription,
+      year: safeYear,
+    })], { type: 'application/json' }));
+    if (payload.projFile) fd.append('projectImage', payload.projFile);
+    const rPortfolio = await apiClient.post('/api/remote/photographer/add-project-portfolio', fd, { retries: 1 });
+    if (!rPortfolio.success) throw new Error(rPortfolio.error || 'Could not save your portfolio project.');
+  }
 
-  const rExp = await apiClient.post('/api/remote/photographer/add-work-experience', {
-    position: payload.expPosition,
-    company: payload.expCompany,
-    location: payload.expLocation,
-    startDate: payload.expStartDate,
-    endDate: payload.expEndDate,
-    description: payload.expDescription,
-  }, { retries: 1 });
-  if (!rExp.success) throw new Error(rExp.error || 'Could not save your work experience.');
+  // add-work-experience is ADD-ONLY (no update endpoint) — skip if one exists.
+  if (!payload.existing?.workExp) {
+    const rExp = await apiClient.post('/api/remote/photographer/add-work-experience', {
+      position: payload.expPosition,
+      company: payload.expCompany,
+      location: payload.expLocation,
+      startDate: payload.expStartDate,
+      endDate: payload.expEndDate,
+      description: payload.expDescription,
+    }, { retries: 1 });
+    if (!rExp.success) throw new Error(rExp.error || 'Could not save your work experience.');
+  }
 
-  const rPkg = await apiClient.post('/api/remote/photographer/packages', {
-    packageName: payload.pkgTier,
-    price: payload.pkgPrice,
-    currencyId: payload.pkgCurrencyId,
-    priceUnit: 'per session',
-    durationHours: payload.pkgDuration,
-    description: payload.pkgDescription || `${payload.pkgTier} photography package`,
-    isActive: true,
-    hasLiveStream: payload.pkgTier === 'Diamond',
-    includedPhotos: payload.pkgPhotos,
-    includedVideos: payload.pkgVideos,
-    extraPhotoPrice: 0,
-    extraVideoPrice: 0,
-    photobookPhotos: 0,
-    deliveryDays: payload.pkgDelivery,
-    features: payload.pkgFeatures,
-  }, { retries: 2 });
-  if (!rPkg.success) throw new Error(rPkg.error || 'Could not save your package.');
+  // POST /packages is create-only (there's even a /packages/debug/duplicates
+  // endpoint) — skip if the photographer already has a package.
+  if (!payload.existing?.pkg) {
+    const rPkg = await apiClient.post('/api/remote/photographer/packages', {
+      packageName: payload.pkgTier,
+      price: payload.pkgPrice,
+      currencyId: payload.pkgCurrencyId,
+      priceUnit: 'per session',
+      durationHours: payload.pkgDuration,
+      description: payload.pkgDescription || `${payload.pkgTier} photography package`,
+      isActive: true,
+      hasLiveStream: payload.pkgTier === 'Diamond',
+      includedPhotos: payload.pkgPhotos,
+      includedVideos: payload.pkgVideos,
+      extraPhotoPrice: 0,
+      extraVideoPrice: 0,
+      photobookPhotos: 0,
+      deliveryDays: payload.pkgDelivery,
+      features: payload.pkgFeatures,
+    }, { retries: 2 });
+    if (!rPkg.success) throw new Error(rPkg.error || 'Could not save your package.');
+  }
 
   // Marks the profile submitted / ready for admin review.
   await submitProfile().catch(() => {});

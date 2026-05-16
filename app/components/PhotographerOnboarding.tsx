@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useReducer, useRef } from 'react';
 import { getCurrencies, type Currency } from '@/lib/APIs/public';
 import { apiClient } from '@/lib/api/client';
+import { getProfileSummary } from '@/lib/APIs/photographers/update-profile/route';
 
 // ─── Types ───
 
@@ -15,8 +16,9 @@ export interface OnboardingPayload {
   tin: string;
   // Slide 1
   specialtyIds: string[];
-  // Slide 2
-  profileFile: File;
+  // Slide 2 — null is allowed in the completion flow when the photographer
+  // already has a profile photo on the server (don't force a re-upload).
+  profileFile: File | null;
   coverFile: File | null;
   // Slide 3
   projTitle: string;
@@ -40,6 +42,17 @@ export interface OnboardingPayload {
   pkgDelivery: number;
   pkgDescription: string;
   pkgFeatures: { featureName: string; isIncluded: boolean; displayOrder: number }[];
+  // Set by the completion flow from GET /profile-summary so the persist
+  // step is idempotent — it SKIPS the add-only endpoints (project / work
+  // experience / package) for sections the photographer already has,
+  // instead of creating duplicate rows. Undefined on fresh signup → add all.
+  existing?: {
+    profilePhoto: boolean;
+    coverPhoto: boolean;
+    project: boolean;
+    workExp: boolean;
+    pkg: boolean;
+  };
 }
 
 interface PhotographerOnboardingProps {
@@ -54,6 +67,10 @@ interface PhotographerOnboardingProps {
   firstName: string;
   lastName: string;
   phone: string;
+  // Completion flow only: fetch GET /profile-summary on open and pre-fill
+  // every already-saved field so a returning photographer never re-enters
+  // data. Omitted (false) for fresh signup — there's no server record yet.
+  prefillFromServer?: boolean;
 }
 
 interface OnboardingState {
@@ -138,12 +155,38 @@ const TIER_PRESETS: Record<string, { price: number; duration: number; photos: nu
 
 const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
   isOpen, onClose, onComplete, onFinalize, firstName, lastName, phone,
+  prefillFromServer = false,
 }) => {
   // firstName / lastName / phone are kept on props so the parent can pass
   // them back through onFinalize alongside its own credentials state, but
   // the wizard itself doesn't need to read them during the slides.
   void firstName; void lastName; void phone;
   const [state, dispatch] = useReducer(reducer, initialState);
+
+  // ── Draft auto-save (localStorage) ──
+  // A returning user finds their typed answers pre-filled. Keyed by phone so
+  // two people sharing a browser don't clobber each other. Files (profile /
+  // cover / project image) are NOT serialisable so they're never persisted —
+  // that's why the restored slide is capped at the Photos step (see below).
+  const draftStorageKey =
+    'connekyt:onb-draft:v1:' + (phone ? phone.replace(/\D/g, '') || 'default' : 'default');
+  const draftHydratedRef = useRef(false);
+  const draftFinalizedRef = useRef(false);
+  // When hydration restores a non-default tier it must NOT trigger the tier
+  // preset effect (that would overwrite the user's restored package numbers).
+  const skipPresetOnceRef = useRef(false);
+
+  // ── Server prefill (completion flow) ──
+  // True until GET /profile-summary resolves, so the wizard shows a brief
+  // loader instead of flashing blank fields that then fill (and to avoid
+  // overwriting anything the user just typed mid-fetch).
+  const [prefillLoading, setPrefillLoading] = useState(prefillFromServer);
+  // What's ALREADY saved server-side. Drives (a) relaxing the profile-photo
+  // requirement and (b) the idempotent persist so we never duplicate the
+  // add-only project / work-experience / package rows.
+  const [serverHas, setServerHas] = useState({
+    profilePhoto: false, coverPhoto: false, project: false, workExp: false, pkg: false,
+  });
 
   // ── Shared state across slides ──
   const [address, setAddress] = useState('');
@@ -204,10 +247,13 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
     }).catch(() => {});
     getCurrencies().then(r => {
       if (r.success && Array.isArray(r.data)) {
-        setCurrenciesList(r.data);
-        const rwf = r.data.find(c => c.code === 'RWF');
-        if (rwf) setPkgCurrencyId(rwf.id);
-        else if (r.data.length > 0) setPkgCurrencyId(r.data[0].id);
+        const list = r.data;
+        setCurrenciesList(list);
+        // `prev || …` so a currency restored from a saved draft (or the
+        // server prefill) wins over the RWF default — this fetch resolves
+        // after draft hydration.
+        const fallbackId = (list.find(c => c.code === 'RWF') || list[0])?.id;
+        if (fallbackId) setPkgCurrencyId(prev => prev || fallbackId);
       }
     }).catch(() => {});
   }, []);
@@ -230,6 +276,12 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
 
   // ── Apply tier presets ──
   useEffect(() => {
+    // Skip exactly once when draft hydration switched the tier — otherwise
+    // the preset would overwrite the user's restored package numbers.
+    if (skipPresetOnceRef.current) {
+      skipPresetOnceRef.current = false;
+      return;
+    }
     const preset = TIER_PRESETS[pkgTier];
     if (preset) {
       setPkgPrice(preset.price);
@@ -239,6 +291,186 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
       setPkgDelivery(preset.delivery);
     }
   }, [pkgTier]);
+
+  // ── Hydrate from a saved draft (once, on mount) ──
+  // Defined AFTER the preset effect so its restored values land last.
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(draftStorageKey);
+      if (raw) {
+        const d = JSON.parse(raw) as Record<string, unknown>;
+        const s = (k: string) => (typeof d[k] === 'string' ? (d[k] as string) : undefined);
+        const n = (k: string) => (typeof d[k] === 'number' ? (d[k] as number) : undefined);
+
+        if (s('address') !== undefined) setAddress(d.address as string);
+        if (s('about') !== undefined) setAbout(d.about as string);
+        if (d.businessType === 'Freelancer' || d.businessType === 'Registered Company')
+          setBusinessType(d.businessType);
+        if (s('companyName') !== undefined) setCompanyName(d.companyName as string);
+        if (s('tin') !== undefined) setTin(d.tin as string);
+        if (Array.isArray(d.selectedSpecialtyIds))
+          setSelectedSpecialtyIds((d.selectedSpecialtyIds as unknown[]).filter(x => typeof x === 'string') as string[]);
+
+        if (s('projTitle') !== undefined) setProjTitle(d.projTitle as string);
+        if (s('projYear') !== undefined) setProjYear(d.projYear as string);
+        if (s('projDescription') !== undefined) setProjDescription(d.projDescription as string);
+
+        if (s('expPosition') !== undefined) setExpPosition(d.expPosition as string);
+        if (s('expCompany') !== undefined) setExpCompany(d.expCompany as string);
+        if (s('expLocation') !== undefined) setExpLocation(d.expLocation as string);
+        if (s('expStartDate') !== undefined) setExpStartDate(d.expStartDate as string);
+        if (s('expEndDate') !== undefined) setExpEndDate(d.expEndDate as string);
+        if (typeof d.expIsCurrent === 'boolean') setExpIsCurrent(d.expIsCurrent);
+        if (s('expDescription') !== undefined) setExpDescription(d.expDescription as string);
+
+        if (d.pkgTier === 'Silver' || d.pkgTier === 'Gold' || d.pkgTier === 'Diamond') {
+          // Non-default tier change would re-fire the preset effect; tell it
+          // to skip once so the restored package numbers below survive.
+          if (d.pkgTier !== 'Silver') skipPresetOnceRef.current = true;
+          setPkgTier(d.pkgTier);
+        }
+        if (n('pkgPrice') !== undefined) setPkgPrice(d.pkgPrice as number);
+        if (s('pkgCurrencyId') !== undefined) setPkgCurrencyId(d.pkgCurrencyId as string);
+        if (n('pkgDuration') !== undefined) setPkgDuration(d.pkgDuration as number);
+        if (n('pkgPhotos') !== undefined) setPkgPhotos(d.pkgPhotos as number);
+        if (n('pkgVideos') !== undefined) setPkgVideos(d.pkgVideos as number);
+        if (n('pkgDelivery') !== undefined) setPkgDelivery(d.pkgDelivery as number);
+        if (s('pkgDescription') !== undefined) setPkgDescription(d.pkgDescription as string);
+
+        // Files aren't persisted, and slides 3-5 hard-require the profile
+        // photo, so send a returning user back to (at most) the Photos step
+        // to re-pick their images. Never restore the success slide (6).
+        const savedSlide = typeof d.currentSlide === 'number' ? d.currentSlide : 0;
+        const restoredSlide = Math.max(0, Math.min(savedSlide, 2));
+        if (restoredSlide > 0) dispatch({ type: 'SET_SLIDE', slide: restoredSlide });
+      }
+    } catch {
+      // Corrupt / unavailable storage — start fresh, never block the wizard.
+    }
+    draftHydratedRef.current = true;
+  }, [draftStorageKey]);
+
+  // ── Persist the draft (debounced) on every serialisable change ──
+  useEffect(() => {
+    // Don't write until hydration ran (avoids defaults clobbering a draft),
+    // and stop once the profile has been finalised / cleared.
+    if (!draftHydratedRef.current || draftFinalizedRef.current) return;
+    const t = setTimeout(() => {
+      try {
+        window.localStorage.setItem(draftStorageKey, JSON.stringify({
+          address, about, businessType, companyName, tin,
+          selectedSpecialtyIds,
+          projTitle, projYear, projDescription,
+          expPosition, expCompany, expLocation, expStartDate, expEndDate,
+          expIsCurrent, expDescription,
+          pkgTier, pkgPrice, pkgCurrencyId, pkgDuration, pkgPhotos,
+          pkgVideos, pkgDelivery, pkgDescription,
+          currentSlide: state.currentSlide,
+        }));
+      } catch {
+        // Quota / private-mode — auto-save is best-effort, never block.
+      }
+    }, 400);
+    return () => clearTimeout(t);
+  }, [
+    draftStorageKey, address, about, businessType, companyName, tin,
+    selectedSpecialtyIds, projTitle, projYear, projDescription,
+    expPosition, expCompany, expLocation, expStartDate, expEndDate,
+    expIsCurrent, expDescription, pkgTier, pkgPrice, pkgCurrencyId,
+    pkgDuration, pkgPhotos, pkgVideos, pkgDelivery, pkgDescription,
+    state.currentSlide,
+  ]);
+
+  // ── Server prefill (completion flow): pre-fill EVERY already-saved field ──
+  // Runs last (after the localStorage hydration) so the server — the source
+  // of truth for persisted data — wins. A returning photographer never
+  // re-enters address / specialties / business identity / project / work
+  // experience / package / photos that important-details (and the other
+  // saves) already stored.
+  useEffect(() => {
+    if (!prefillFromServer) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await getProfileSummary();
+        const p = res.success ? res.data?.data : undefined;
+        if (cancelled || !p) return;
+
+        if (p.address) setAddress(p.address);
+        if (p.businessType === 'Registered Company') {
+          setBusinessType('Registered Company');
+          if (p.organizationName) setCompanyName(p.organizationName);
+          if (p.taxId) setTin(p.taxId);
+        } else if (p.businessType === 'Freelancer') {
+          setBusinessType('Freelancer');
+        }
+        if (Array.isArray(p.specialties) && p.specialties.length > 0) {
+          setSelectedSpecialtyIds(p.specialties.map(s => s.id).filter(Boolean));
+        }
+
+        const proj = p.projects?.[0];
+        if (proj) {
+          if (proj.title) setProjTitle(proj.title);
+          if (proj.year) setProjYear(String(proj.year));
+          if (proj.description) setProjDescription(proj.description);
+          if (proj.projectImage) setProjPreview(proj.projectImage);
+        }
+
+        const exp = p.workExperiences?.[0];
+        if (exp) {
+          if (exp.position) setExpPosition(exp.position);
+          if (exp.company) setExpCompany(exp.company);
+          if (exp.location) setExpLocation(exp.location);
+          if (exp.startDate) setExpStartDate(exp.startDate);
+          if (exp.endDate) setExpEndDate(exp.endDate);
+          setExpIsCurrent(!exp.endDate);
+          if (exp.description) setExpDescription(exp.description);
+        }
+
+        const pkg = p.packages?.[0];
+        if (pkg) {
+          if (pkg.packageName === 'Silver' || pkg.packageName === 'Gold' || pkg.packageName === 'Diamond') {
+            const tier = pkg.packageName;
+            // Any tier CHANGE re-fires the preset effect, which would clobber
+            // the server's real package numbers set below. Skip it once — but
+            // only when the tier actually changes (a draft may have already
+            // moved it off the Silver default), else a later user-initiated
+            // tier switch would wrongly keep its old preset.
+            setPkgTier(prev => {
+              if (prev !== tier) skipPresetOnceRef.current = true;
+              return tier;
+            });
+          }
+          if (typeof pkg.price === 'number' && pkg.price > 0) setPkgPrice(pkg.price);
+          if (pkg.currencyId) setPkgCurrencyId(pkg.currencyId);
+          if (typeof pkg.durationHours === 'number') setPkgDuration(pkg.durationHours);
+          if (typeof pkg.includedPhotos === 'number') setPkgPhotos(pkg.includedPhotos);
+          if (typeof pkg.includedVideos === 'number') setPkgVideos(pkg.includedVideos);
+          if (typeof pkg.deliveryDays === 'number') setPkgDelivery(pkg.deliveryDays);
+          if (pkg.description) setPkgDescription(pkg.description);
+        }
+
+        // Existing images: show them as the preview so the photographer sees
+        // their photo is already on file and isn't forced to re-upload.
+        if (p.profilePicture) setProfilePreview(p.profilePicture);
+        if (p.coverPicture) setCoverPreview(p.coverPicture);
+
+        setServerHas({
+          profilePhoto: !!p.profilePicture,
+          coverPhoto: !!p.coverPicture,
+          project: (p.projects?.length ?? 0) > 0,
+          workExp: (p.workExperiences?.length ?? 0) > 0,
+          pkg: (p.packages?.length ?? 0) > 0,
+        });
+      } catch {
+        // Network / auth hiccup — fall back to a blank (or draft) wizard
+        // rather than blocking the user behind a spinner forever.
+      } finally {
+        if (!cancelled) setPrefillLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [prefillFromServer]);
 
   // No skip path — photographers must finish every slide before they reach
   // the OTP / dashboard. onClose stays on the props for type-compat with
@@ -282,7 +514,11 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
   };
 
   const handlePhotosNext = () => {
-    if (!profileFile) { setSlideError('Please upload a profile photo'); return; }
+    // A photographer who already has a profile photo on the server isn't
+    // forced to re-upload one (the existing one shows as the preview).
+    if (!profileFile && !serverHas.profilePhoto) {
+      setSlideError('Please upload a profile photo'); return;
+    }
     setSlideError('');
     dispatch({ type: 'SET_SLIDE', slide: 3 });
   };
@@ -317,7 +553,9 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
   const handleCreatePackage = async () => {
     if (!pkgPrice || pkgPrice <= 0) { setSlideError('Please enter a valid price'); return; }
     if (!pkgCurrencyId) { setSlideError('Please select a currency'); return; }
-    if (!profileFile) { setSlideError('Profile photo is missing — go back to the Photos step'); return; }
+    if (!profileFile && !serverHas.profilePhoto) {
+      setSlideError('Profile photo is missing — go back to the Photos step'); return;
+    }
     setSlideError('');
 
     const preset = TIER_PRESETS[pkgTier];
@@ -353,11 +591,18 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
       pkgDelivery,
       pkgDescription,
       pkgFeatures: features,
+      // Only meaningful in the completion flow; undefined → fresh signup,
+      // persist adds everything. In completion it makes persist idempotent.
+      existing: prefillFromServer ? serverHas : undefined,
     };
 
     dispatch({ type: 'SET_SUBMITTING', value: true });
     try {
       await onFinalize(payload);
+      // Profile is stored — drop the draft so the next visit starts clean
+      // and the debounced save effect stops re-writing it.
+      draftFinalizedRef.current = true;
+      try { window.localStorage.removeItem(draftStorageKey); } catch { /* ignore */ }
       dispatch({ type: 'SET_SLIDE', slide: 6 });
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Could not finalise your profile. Please try again.';
@@ -367,6 +612,39 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
   };
 
   if (!isOpen) return null;
+
+  // Completion flow: hold the wizard behind a brief loader until the saved
+  // profile is fetched, so fields never flash blank then fill (and a slow
+  // fetch can't overwrite something the user already started typing).
+  if (prefillFromServer && prefillLoading) {
+    return (
+      <>
+        <style>{`@keyframes ck-onb-spin { to { transform: rotate(360deg); } }`}</style>
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 9998,
+          background: 'rgba(0,0,0,0.50)',
+          backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: 16,
+        }}>
+          <div style={{
+            background: '#ffffff', borderRadius: 20, padding: '32px 36px',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16,
+            boxShadow: '0 25px 60px -12px rgba(8,58,133,0.32)',
+          }}>
+            <div style={{
+              width: 38, height: 38, borderRadius: '50%',
+              border: '3px solid #e2e8f0', borderTopColor: '#083A85',
+              animation: 'ck-onb-spin 0.8s linear infinite',
+            }} />
+            <div style={{ fontSize: 14, color: '#475569', fontWeight: 600 }}>
+              Loading your saved details…
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
 
   const currencyCode = currencies.find(c => c.id === pkgCurrencyId)?.code || 'RWF';
 

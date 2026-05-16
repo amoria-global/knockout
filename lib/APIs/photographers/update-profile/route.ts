@@ -66,6 +66,36 @@ interface GenericResponse {
   message: string;
 }
 
+// Shape of `data` from GET /profile-summary (PhotographerResponseDTO).
+// Only the fields the onboarding/completion wizard pre-fills are typed.
+export interface PhotographerProfile {
+  address?: string | null;
+  businessType?: string | null;
+  organizationName?: string | null;
+  taxId?: string | null;
+  profilePicture?: string | null;
+  coverPicture?: string | null;
+  specialties?: { id: string; name: string }[];
+  projects?: { id: string; title: string; description: string; year: number; projectImage?: string | null }[];
+  workExperiences?: {
+    id: string; position: string; company: string; location: string;
+    startDate: string; endDate: string; description: string;
+  }[];
+  packages?: {
+    id: string; packageName: string; price: number; currencyId?: string | null;
+    durationHours?: number | null; description?: string | null;
+    includedPhotos?: number | null; includedVideos?: number | null;
+    deliveryDays?: number | null;
+  }[];
+  completionPercentage?: number;
+}
+
+interface ProfileSummaryResponse {
+  action: number;
+  message: string;
+  data?: PhotographerProfile;
+}
+
 // ---------- Profile Picture / Cover Photo ----------
 
 export async function updateProfilePicture(file: File): Promise<ApiResponse<GenericResponse>> {
@@ -184,6 +214,6 @@ export async function submitProfile(): Promise<ApiResponse<GenericResponse>> {
 
 // ---------- Profile Summary ----------
 
-export async function getProfileSummary(): Promise<ApiResponse<GenericResponse>> {
-  return apiClient.get<GenericResponse>(`${BASE}/profile-summary`, { retries: 2 });
+export async function getProfileSummary(): Promise<ApiResponse<ProfileSummaryResponse>> {
+  return apiClient.get<ProfileSummaryResponse>(`${BASE}/profile-summary`, { retries: 2 });
 }
