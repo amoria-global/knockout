@@ -8,6 +8,7 @@ import { login } from '@/lib/APIs/auth/login/route';
 import { signup } from '@/lib/APIs/auth/signup/route';
 import { validatePassword as validatePasswordRemote } from '@/lib/APIs/auth/validate-password/route';
 import { checkEmail as checkEmailRemote } from '@/lib/APIs/auth/check-email/route';
+import { persistPhotographerProfile } from '@/lib/photographer/persist-profile';
 import { googleAuth } from '@/lib/APIs/auth/google/route';
 import { setAuthToken, getAuthToken, getRefreshToken } from '@/lib/api/client';
 import { useToast } from '@/lib/notifications/ToastProvider';
@@ -383,18 +384,23 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
         if (data?.accountLocked === true || data?.accountLocked === 'true') { setLoginError('Your account has been locked.'); showError('Your account has been locked.'); setLoginLoading(false); return; }
         if (data?.twoFactorRequired && data?.customerId) { showInfo('Please enter your authenticator code.'); setLoginLoading(false); router.push(`/user/auth/verify-totp?customerId=${encodeURIComponent(String(data.customerId))}`); return; }
 
-        // PROFILE-COMPLETION GATE — runs BEFORE the OTP redirect and before
-        // the dashboard modal. A photographer with an incomplete profile
-        // (everything except KYC) must finish it here, in the same wizard,
-        // and can never slip into the dashboard with gaps. Works pre-OTP
-        // because the backend mints a token on that branch too.
+        // Unverified accounts go to OTP FIRST. The profile-completion modal
+        // is shown right AFTER verification (on the verify-otp page), not
+        // before — per product: "right after verification should come back
+        // and show the modal".
+        if (data?.otpVerified === false && data?.customerId) { showWarning(data?.message || 'Please verify your phone number.'); setLoginLoading(false); router.push(`/user/auth/verify-otp?applicantId=${encodeURIComponent(String(data.customerId))}&email=${encodeURIComponent(loginEmail)}`); return; }
+
+        // PROFILE-COMPLETION GATE (verified users) — runs BEFORE the
+        // dashboard/keep-exploring modal. A photographer with an incomplete
+        // profile (everything except KYC) must finish it here, in the same
+        // wizard, and can never slip into the dashboard with gaps.
         {
           const ct = (data?.customerType || data?.user?.userType || '');
           const isPhotographer = String(ct).toLowerCase() === 'photographer';
           const pct = typeof data?.profileCompletionPercentage === 'number'
             ? data.profileCompletionPercentage : 100;
           if (isPhotographer && pct < 100 && data?.token) {
-            setAuthToken(data.token); // authenticates the wizard's saves (incl. pre-OTP)
+            setAuthToken(data.token); // authenticates the wizard's saves
             setCompletionCtx({
               firstName: data.firstName || data.user?.firstName || '',
               lastName: data.lastName || data.user?.lastName || '',
@@ -402,7 +408,7 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
               customerId: String(data.customerId || ''),
               customerType: String(ct),
               email: data.email || loginEmail,
-              otpVerified: data.otpVerified !== false, // false → still need OTP after
+              otpVerified: true, // this branch only runs for verified users
               missingItems: Array.isArray(data.missingItems) ? data.missingItems : [],
             });
             setLoginLoading(false);
@@ -411,7 +417,6 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
           }
         }
 
-        if (data?.otpVerified === false && data?.customerId) { showWarning(data?.message || 'Please verify your phone number.'); setLoginLoading(false); router.push(`/user/auth/verify-otp?applicantId=${encodeURIComponent(String(data.customerId))}&email=${encodeURIComponent(loginEmail)}`); return; }
         if (response.success && data) {
           const customerType = data.user?.userType || data.customerType || '';
           if (customerType === 'Viewer') { setLoginError('Viewer accounts can only sign in from event pages.'); showError('Viewer accounts can only sign in from event pages.'); setLoginLoading(false); return; }
@@ -621,78 +626,8 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
   // first time we write anything to the backend for this signup. If the
   // wizard is closed before reaching this point, no customer record is
   // ever created and the email/phone can be used for a fresh signup.
-  // Shared profile-persistence chain. Assumes the auth token is ALREADY set
-  // (signup mints one pre-OTP; login returns one for the completion gate).
-  // Used by both the signup wizard and the post-login completion wizard so
-  // there is exactly one source of truth for "what makes a profile 100%".
-  // Completion-driving saves throw on failure so the wizard surfaces a real
-  // error instead of leaving a half-saved profile.
-  const persistPhotographerProfile = async (
-    payload: import('@/app/components/PhotographerOnboarding').OnboardingPayload,
-    who: { firstName: string; lastName: string; phone: string }
-  ) => {
-    const { updateImportantDetails, updateProfilePicture, updateCoverPhoto, submitProfile } =
-      await import('@/lib/APIs/photographers/update-profile/route');
-    const { apiClient } = await import('@/lib/api/client');
-
-    const r1 = await updateImportantDetails({
-      firstName: who.firstName, lastName: who.lastName, phone: who.phone,
-      about: payload.about,
-      address: payload.address,
-      specialtyIds: payload.specialtyIds,
-      businessType: payload.businessType,
-      ...(payload.businessType === 'Registered Company'
-        ? { organizationName: payload.companyName, taxId: payload.tin }
-        : {}),
-    });
-    if (!r1.success) throw new Error(r1.error || 'Could not save your basic details & specialties.');
-
-    // Media uploads stay best-effort: the most flake-prone step.
-    await updateProfilePicture(payload.profileFile).catch(() => {});
-    if (payload.coverFile) await updateCoverPhoto(payload.coverFile).catch(() => {});
-
-    const fd = new FormData();
-    fd.append('requestDTO', new Blob([JSON.stringify({
-      title: payload.projTitle,
-      description: payload.projDescription,
-      year: payload.projYear,
-    })], { type: 'application/json' }));
-    if (payload.projFile) fd.append('projectImage', payload.projFile);
-    const rPortfolio = await apiClient.post('/api/remote/photographer/add-project-portfolio', fd, { retries: 1 });
-    if (!rPortfolio.success) throw new Error(rPortfolio.error || 'Could not save your portfolio project.');
-
-    const rExp = await apiClient.post('/api/remote/photographer/add-work-experience', {
-      position: payload.expPosition,
-      company: payload.expCompany,
-      location: payload.expLocation,
-      startDate: payload.expStartDate,
-      endDate: payload.expEndDate,
-      description: payload.expDescription,
-    }, { retries: 1 });
-    if (!rExp.success) throw new Error(rExp.error || 'Could not save your work experience.');
-
-    const rPkg = await apiClient.post('/api/remote/photographer/packages', {
-      packageName: payload.pkgTier,
-      price: payload.pkgPrice,
-      currencyId: payload.pkgCurrencyId,
-      priceUnit: 'per session',
-      durationHours: payload.pkgDuration,
-      description: payload.pkgDescription || `${payload.pkgTier} photography package`,
-      isActive: true,
-      hasLiveStream: payload.pkgTier === 'Diamond',
-      includedPhotos: payload.pkgPhotos,
-      includedVideos: payload.pkgVideos,
-      extraPhotoPrice: 0,
-      extraVideoPrice: 0,
-      photobookPhotos: 0,
-      deliveryDays: payload.pkgDelivery,
-      features: payload.pkgFeatures,
-    }, { retries: 2 });
-    if (!rPkg.success) throw new Error(rPkg.error || 'Could not save your package.');
-
-    // Marks the profile submitted/ready for admin review.
-    await submitProfile().catch(() => {});
-  };
+  // persistPhotographerProfile now lives in @/lib/photographer/persist-profile
+  // (shared by signup, post-login, and post-OTP completion flows).
 
   const handlePhotographerFinalize = async (payload: import('@/app/components/PhotographerOnboarding').OnboardingPayload) => {
     const response = await signup({
