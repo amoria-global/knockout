@@ -1653,6 +1653,10 @@ const Events: React.FC = () => {
           background: none;
           position: relative;
           z-index: 2;
+          /* Grow to fill the card's full height (cards in a grid row stretch
+             to equal height) so the footer can be pinned to the very bottom
+             regardless of how tall the venue / title above it are. */
+          flex: 1 1 auto;
         }
         .ev-card-meta::before {
           content: "";
@@ -1718,7 +1722,11 @@ const Events: React.FC = () => {
         .ev-card-footer {
           display: flex; align-items: center; justify-content: space-between;
           gap: 8px;
-          margin-top: 4px;
+          /* Pinned to the very bottom of the card - takes all the free space
+             above it so the organizer + price banner is static at the bottom
+             and unaffected by the venue/title length above. */
+          margin-top: auto;
+          padding-top: 10px;
         }
 
         .ev-card-chip-org {
