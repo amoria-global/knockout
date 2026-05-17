@@ -466,6 +466,131 @@ function BookingWizardStyles() {
   );
 }
 
+// ─── Service-type chooser ───
+// Two plain-language choice cards (Outdoor event vs Studio session). Purely
+// presentational: it calls onChange with the SAME 'OUTDOOR' | 'STUDIO' values
+// the wizard already dispatches via SET_SERVICE_TYPE, so no booking logic,
+// pricing, or payload changes - only how the choice is presented. Rendered
+// in both the Quick Brief and the Availability Gate.
+const SERVICE_TYPE_OPTIONS = [
+  {
+    val: 'OUTDOOR' as const,
+    icon: 'bi-geo-alt',
+    title: 'Outdoor event',
+    desc: 'The photographer comes to your venue or event location.',
+  },
+  {
+    val: 'STUDIO' as const,
+    icon: 'bi-camera2',
+    title: 'Studio session',
+    desc: 'An indoor photo / video shoot at the photographer’s own studio.',
+  },
+];
+
+function ServiceTypeChooser({
+  value,
+  onChange,
+  style,
+}: {
+  value: 'OUTDOOR' | 'STUDIO';
+  onChange: (v: 'OUTDOOR' | 'STUDIO') => void;
+  style?: React.CSSProperties;
+}) {
+  return (
+    <div
+      role="radiogroup"
+      aria-label="What would you like to book?"
+      style={{ display: 'flex', flexWrap: 'wrap', gap: 10, ...style }}
+    >
+      {SERVICE_TYPE_OPTIONS.map(opt => {
+        const active = value === opt.val;
+        return (
+          <button
+            key={opt.val}
+            type="button"
+            role="radio"
+            aria-checked={active}
+            onClick={() => onChange(opt.val)}
+            style={{
+              flex: '1 1 200px',
+              minWidth: 0,
+              position: 'relative',
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: 12,
+              textAlign: 'left',
+              padding: '14px 16px',
+              paddingRight: 34,
+              borderRadius: 14,
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+              border: `1.5px solid ${active ? ACCENT : INPUT_BORDER}`,
+              background: active ? 'rgba(8,58,133,0.05)' : '#ffffff',
+              boxShadow: active ? '0 0 0 3px rgba(8,58,133,0.10)' : 'none',
+              transition: 'border-color 0.18s, background 0.18s, box-shadow 0.18s',
+            }}
+          >
+            <span
+              aria-hidden="true"
+              style={{
+                flex: 'none',
+                width: 40,
+                height: 40,
+                borderRadius: 12,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 18,
+                background: active ? `linear-gradient(135deg, ${ACCENT}, ${ACCENT_DARK})` : '#f1f5f9',
+                color: active ? '#ffffff' : ACCENT,
+                transition: 'background 0.18s, color 0.18s',
+              }}
+            >
+              <i className={`bi ${opt.icon}`} />
+            </span>
+            <span style={{ minWidth: 0 }}>
+              <span
+                style={{
+                  display: 'block',
+                  fontSize: 14.5,
+                  fontWeight: 700,
+                  color: active ? ACCENT : TEXT_PRIMARY,
+                }}
+              >
+                {opt.title}
+              </span>
+              <span
+                style={{
+                  display: 'block',
+                  marginTop: 3,
+                  fontSize: 12,
+                  lineHeight: 1.45,
+                  color: TEXT_MUTED,
+                }}
+              >
+                {opt.desc}
+              </span>
+            </span>
+            <i
+              className="bi bi-check-circle-fill"
+              aria-hidden="true"
+              style={{
+                position: 'absolute',
+                top: 12,
+                right: 12,
+                fontSize: 16,
+                color: ACCENT,
+                opacity: active ? 1 : 0,
+                transition: 'opacity 0.18s',
+              }}
+            />
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 // Tiny visual atom - flag image (flagcdn.com) + currency code. Used inside
 // the custom CurrencySelect since native <option> elements strip HTML.
 function CurrencyChip({ code, size = 18 }: { code: string; size?: number }) {
@@ -1629,28 +1754,11 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                     photographer also offers indoor studio sessions, surface
                     the same choice here. Hidden when they only do outdoor. */}
                 {selectedPhotographer?.studioRate && (
-                  <div style={{ display: 'flex', gap: 8, background: '#f1f5f9', padding: 4, borderRadius: 12, marginBottom: 14 }}>
-                    {([
-                      { val: 'OUTDOOR' as const, label: 'Outdoor event', icon: 'bi-geo-alt' },
-                      { val: 'STUDIO' as const, label: 'Studio session', icon: 'bi-camera2' },
-                    ]).map(opt => {
-                      const active = state.serviceType === opt.val;
-                      return (
-                        <button key={opt.val} type="button"
-                          onClick={() => dispatch({ type: 'SET_SERVICE_TYPE', value: opt.val })}
-                          style={{
-                            flex: 1, padding: '10px 12px', borderRadius: 9, border: 'none', cursor: 'pointer',
-                            fontSize: 13, fontWeight: 700, fontFamily: 'inherit',
-                            background: active ? `linear-gradient(135deg, ${ACCENT}, ${ACCENT_DARK})` : 'transparent',
-                            color: active ? '#fff' : TEXT_SECONDARY,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                            transition: 'all 0.18s',
-                          }}>
-                          <i className={`bi ${opt.icon}`} /> {opt.label}
-                        </button>
-                      );
-                    })}
-                  </div>
+                  <ServiceTypeChooser
+                    value={state.serviceType}
+                    onChange={v => dispatch({ type: 'SET_SERVICE_TYPE', value: v })}
+                    style={{ marginBottom: 14 }}
+                  />
                 )}
 
                 <p style={{ color: TEXT_SECONDARY, fontSize: 13.5, lineHeight: 1.55, margin: '0 0 14px' }}>
@@ -1911,29 +2019,12 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                     : 'We’ll find the best photographers for you'}
                 </p>
 
-                {/* Service-type switch — Outdoor (existing flow) vs Studio. */}
-                <div style={{ display: 'flex', gap: 8, background: '#f1f5f9', padding: 4, borderRadius: 12, marginBottom: 18 }}>
-                  {([
-                    { val: 'OUTDOOR' as const, label: 'Outdoor event', icon: 'bi-geo-alt' },
-                    { val: 'STUDIO' as const, label: 'Studio session', icon: 'bi-camera2' },
-                  ]).map(opt => {
-                    const active = state.serviceType === opt.val;
-                    return (
-                      <button key={opt.val} type="button"
-                        onClick={() => dispatch({ type: 'SET_SERVICE_TYPE', value: opt.val })}
-                        style={{
-                          flex: 1, padding: '10px 12px', borderRadius: 9, border: 'none', cursor: 'pointer',
-                          fontSize: 13, fontWeight: 700, fontFamily: 'inherit',
-                          background: active ? `linear-gradient(135deg, ${ACCENT}, ${ACCENT_DARK})` : 'transparent',
-                          color: active ? '#fff' : TEXT_SECONDARY,
-                          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                          transition: 'all 0.18s',
-                        }}>
-                        <i className={`bi ${opt.icon}`} /> {opt.label}
-                      </button>
-                    );
-                  })}
-                </div>
+                {/* Service-type chooser — Outdoor (existing flow) vs Studio. */}
+                <ServiceTypeChooser
+                  value={state.serviceType}
+                  onChange={v => dispatch({ type: 'SET_SERVICE_TYPE', value: v })}
+                  style={{ marginBottom: 18 }}
+                />
 
                 {briefError && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '10px 14px', marginBottom: 14, color: '#dc2626', fontSize: 13 }}>{briefError}</div>}
 
