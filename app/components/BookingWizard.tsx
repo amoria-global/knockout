@@ -1624,8 +1624,39 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                   </div>
                 </div>
 
+                {/* When entering via a preselected photographer the brief
+                    (with its Outdoor/Studio switch) is skipped — so if this
+                    photographer also offers indoor studio sessions, surface
+                    the same choice here. Hidden when they only do outdoor. */}
+                {selectedPhotographer?.studioRate && (
+                  <div style={{ display: 'flex', gap: 8, background: '#f1f5f9', padding: 4, borderRadius: 12, marginBottom: 14 }}>
+                    {([
+                      { val: 'OUTDOOR' as const, label: 'Outdoor event', icon: 'bi-geo-alt' },
+                      { val: 'STUDIO' as const, label: 'Studio session', icon: 'bi-camera2' },
+                    ]).map(opt => {
+                      const active = state.serviceType === opt.val;
+                      return (
+                        <button key={opt.val} type="button"
+                          onClick={() => dispatch({ type: 'SET_SERVICE_TYPE', value: opt.val })}
+                          style={{
+                            flex: 1, padding: '10px 12px', borderRadius: 9, border: 'none', cursor: 'pointer',
+                            fontSize: 13, fontWeight: 700, fontFamily: 'inherit',
+                            background: active ? `linear-gradient(135deg, ${ACCENT}, ${ACCENT_DARK})` : 'transparent',
+                            color: active ? '#fff' : TEXT_SECONDARY,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                            transition: 'all 0.18s',
+                          }}>
+                          <i className={`bi ${opt.icon}`} /> {opt.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
                 <p style={{ color: TEXT_SECONDARY, fontSize: 13.5, lineHeight: 1.55, margin: '0 0 14px' }}>
-                  Pick the day <strong>{photographerDisplayName}</strong> will photograph your event. The days highlighted below are already taken by other bookings, so choose any available (green) day to continue.
+                  {isStudio
+                    ? <>Pick the day for your studio session with <strong>{photographerDisplayName}</strong>. Days highlighted below are already taken, so choose any available (green) day to continue.</>
+                    : <>Pick the day <strong>{photographerDisplayName}</strong> will photograph your event. The days highlighted below are already taken by other bookings, so choose any available (green) day to continue.</>}
                 </p>
 
                 {/* Calendar */}
