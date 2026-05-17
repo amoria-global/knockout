@@ -1131,7 +1131,7 @@ function ViewProfileContent(): React.JSX.Element {
         .vp-hero-cover {
           position: relative;
           width: 100%;
-          height: 380px;
+          height: 480px;
           cursor: pointer;
           overflow: hidden;
         }
@@ -2153,7 +2153,7 @@ function ViewProfileContent(): React.JSX.Element {
           }
         }
         @media (max-width: 768px) {
-          .vp-hero-cover { height: 240px; }
+          .vp-hero-cover { height: 320px; }
           .vp-hero-cover-empty { font-size: 3rem; }
           .vp-hero-content {
             margin-top: -56px;
