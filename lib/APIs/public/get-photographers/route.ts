@@ -54,6 +54,19 @@ export interface Photographer {
   isVerified?: boolean;
   currentStatus?: 'available' | 'booked';
   nextAvailableDate?: string | null;
+  // Indoor studio rate. Present only when the photographer opted in; absent
+  // means they're outdoor/package-only and not offered for studio bookings.
+  studioRate?: StudioRate | null;
+}
+
+export interface StudioRate {
+  id: string;
+  pricePerPhoto: number;
+  pricePerVideo: number;
+  baseSessionFee?: number | null;
+  currencyId?: string;
+  currencyAbbreviation?: string;
+  studioAddress?: string | null;
 }
 
 export interface PhotographerPackageFeature {
@@ -236,6 +249,7 @@ export interface GetPhotographersRequest {
   location?: string;
   search?: string;
   availableOn?: string; // "YYYY-MM-DD" - filter by availability
+  service?: string; // "STUDIO" → only photographers offering indoor sessions
 }
 
 /**
@@ -321,6 +335,9 @@ export async function getPhotographers(
   }
   if (params?.availableOn) {
     queryParams.append('availableOn', params.availableOn);
+  }
+  if (params?.service) {
+    queryParams.append('service', params.service);
   }
 
   const endpoint = `${API_ENDPOINTS.PUBLIC.PHOTOGRAPHERS_LIST}?${queryParams.toString()}`;
