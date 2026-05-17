@@ -1428,20 +1428,19 @@ function ViewEventContent(): React.JSX.Element {
                     {statusLabel} · {formatDate(selectedEvent.eventDate)}
                   </small>
                 </div>
-                {/* Verify-access shortcut in the sticky ribbon - same gating as the
-                    hero (LIVE-only) so users who scrolled past can still recover
-                    prior access without scrolling back up. */}
-                {isPaid && isLive && !hasPurchasedAccess && (
-                  <button
-                    type="button"
-                    className="ve-btn ve-btn--verify ve-btn--md ve-sticky-verify"
-                    onClick={() => { setVaError(null); setShowViewerAuth(true); }}
-                    aria-label="Already paid? Verify access"
-                  >
-                    <i className="bi bi-shield-fill-check" aria-hidden="true" />
-                    <span className="ve-btn-label">Already paid?</span>
-                  </button>
-                )}
+                {/* Verify-access shortcut in the sticky ribbon - always shown
+                    beside the primary CTA (same as the hero) so users who
+                    scrolled past can recover prior access without scrolling
+                    back up. */}
+                <button
+                  type="button"
+                  className="ve-btn ve-btn--verify ve-btn--md ve-sticky-verify"
+                  onClick={() => { setVaError(null); setShowViewerAuth(true); }}
+                  aria-label="Already paid? Verify access"
+                >
+                  <i className="bi bi-shield-fill-check" aria-hidden="true" />
+                  <span className="ve-btn-label">Already paid?</span>
+                </button>
                 {primaryCTA && renderPrimaryCTA('md', 've-sticky-cta')}
               </div>
             </div>
@@ -1547,25 +1546,17 @@ function ViewEventContent(): React.JSX.Element {
 
                   <div className="ve-hero-cta-row">
                     {primaryCTA && renderPrimaryCTA('lg')}
-                    {/* For LIVE paid events the user hasn't purchased: surface the
-                        verify-access CTA right next to the buy CTA - equal weight,
-                        always above-the-fold. Otherwise fall back to the More-info
-                        button so users can still scroll to the ticket details. */}
-                    {isPaid && isLive && !hasPurchasedAccess ? (
-                      <button
-                        type="button"
-                        className="ve-btn ve-btn--verify ve-btn--lg"
-                        onClick={() => { setVaError(null); setShowViewerAuth(true); }}
-                      >
-                        <i className="bi bi-shield-fill-check" aria-hidden="true" />
-                        <span className="ve-btn-label">Already paid? Verify access</span>
-                      </button>
-                    ) : (
-                      <button type="button" className="ve-btn ve-btn--ghost ve-btn--lg" onClick={scrollToTickets}>
-                        <i className="bi bi-info-circle" aria-hidden="true" />
-                        <span className="ve-btn-label">More info</span>
-                      </button>
-                    )}
+                    {/* Always pair the primary CTA with the verify-access
+                        button (replaces the old More-info button) so anyone
+                        who already paid can recover access from the same row. */}
+                    <button
+                      type="button"
+                      className="ve-btn ve-btn--verify ve-btn--lg"
+                      onClick={() => { setVaError(null); setShowViewerAuth(true); }}
+                    >
+                      <i className="bi bi-shield-fill-check" aria-hidden="true" />
+                      <span className="ve-btn-label">Already paid? Verify access</span>
+                    </button>
                   </div>
                 </div>
 

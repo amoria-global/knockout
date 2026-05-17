@@ -1362,9 +1362,13 @@ const Events: React.FC = () => {
         }
 
         /* ===== Card - adapted from sinc-events-design-system / preview/card-default.html
-           Structure: media area (3:4, full-bleed image with TL date pill + TR bookmark)
-           sitting above a dark meta strip (#0E1116) with venue / title / footer
-           (organizer chip + brand-blue price pill, separated by hairline top border). */
+           Structure: the cover image now fills the ENTIRE card (no separate
+           dark strip), but the card's TOTAL height is unchanged from the
+           old design - it's still the 4:3 image region plus the natural
+           height of the details block. The image simply also spans behind
+           the details, which sit on a gradient that progressively darkens
+           only the lower region so they stay readable while the top of the
+           poster stays bright and full-bleed. */
         .ev-card {
           position: relative;
           display: flex;
@@ -1392,16 +1396,17 @@ const Events: React.FC = () => {
         }
         .ev-card:active { transform: translateY(0) scale(0.99); transition-duration: 80ms; }
 
-        /* Media area - image + overlay rails. 4:3 (wider/shorter) keeps the
-           card compact while still giving the poster proper presence.
-           Background matches .ev-card-meta exactly so there's no seam at
-           the boundary between image and the dark info strip below. */
+        /* Media area - a STATIC flow spacer that reserves the original 4:3
+           top region (so the card's overall height is identical to the old
+           design). It is intentionally non-positioned: that lets .ev-card-art
+           resolve its containing block against .ev-card and span the WHOLE
+           card (this region + the details region below). Holds the TL/TR
+           overlay rails. */
         .ev-card-media {
-          position: relative;
-          display: block;
+          position: static;
           width: 100%;
-          aspect-ratio: 4/3;
-          overflow: hidden;
+          flex: 0 0 auto;
+          aspect-ratio: 4 / 3;
           background: #0E1116;
         }
         /* Image fills edge-to-edge. The 1.30 idle scale aggressively crops
@@ -1435,13 +1440,22 @@ const Events: React.FC = () => {
           color: rgba(255,255,255,0.35);
           font-size: 2.75rem;
         }
-        /* Subtle bottom scrim - image protection only, no hue shift */
+        /* Bottom darkening - progressively dims only the lower portion of
+           the poster so the overlaid details read clearly while the top of
+           the image stays bright and full-bleed. Tuned to #0E1116 (the old
+           strip colour) so the bottom edge lands on the same tone the card
+           used to have, just blended into the artwork instead of a hard
+           seam. */
         .ev-card-scrim {
           position: absolute; inset: 0;
+          z-index: 1;
           background: linear-gradient(180deg,
-            rgba(0,0,0,0) 0%,
-            rgba(0,0,0,0.45) 55%,
-            rgba(0,0,0,0.85) 100%);
+            rgba(8,11,16,0) 0%,
+            rgba(8,11,16,0) 38%,
+            rgba(8,11,16,0.32) 55%,
+            rgba(8,11,16,0.66) 72%,
+            rgba(8,11,16,0.88) 86%,
+            rgba(8,11,16,0.97) 100%);
           pointer-events: none;
         }
 
@@ -1623,59 +1637,88 @@ const Events: React.FC = () => {
         .ev-bookmark:active { transform: scale(0.94); }
         .ev-bookmark.is-saved { color: ${BRAND}; }
 
-        /* Meta strip - dark surface below the image (compact).
-           margin-top: -1px overlaps the media area by 1px so any sub-pixel
-           gap from aspect-ratio rounding or the scaled image's anti-aliased
-           edge is physically covered - no flashing hairline on hover.
-           position+z-index ensures the meta paints ABOVE the media at that
-           overlap. */
+        /* Meta block - in normal flow at the bottom of the card (NOT
+           absolute), so it contributes its natural height and the card's
+           total height stays identical to the old design. It has no
+           background; instead its ::before paints a gradient anchored to
+           the text block, extending ~86px above it, so the area directly
+           behind the details is always dark enough to read regardless of
+           content height (1- vs 2-line title, with/without venue) -
+           independent of the card-wide scrim. z-index:2 keeps it above the
+           full-card image + scrim. */
         .ev-card-meta {
           display: flex; flex-direction: column;
-          gap: 6px;
-          padding: 12px 14px;
-          background: #0E1116;
+          gap: 7px;
+          padding: 14px 16px 16px;
+          background: none;
           position: relative;
-          z-index: 1;
-          margin-top: -1px;
+          z-index: 2;
+        }
+        .ev-card-meta::before {
+          content: "";
+          position: absolute;
+          left: 0; right: 0; bottom: 0;
+          top: -86px;
+          z-index: -1;
+          pointer-events: none;
+          background: linear-gradient(180deg,
+            rgba(8,11,16,0) 0%,
+            rgba(8,11,16,0.45) 34%,
+            rgba(8,11,16,0.78) 62%,
+            rgba(8,11,16,0.94) 100%);
         }
         .ev-card-row {
-          display: inline-flex; align-items: center; gap: 6px;
-          font-size: 12.5px;
-          line-height: 1.4;
-          font-weight: 500;
-          color: #C5C9D2;
+          display: flex; align-items: flex-start; gap: 8px;
+          font-size: 13.5px;
+          line-height: 1.35;
+          font-weight: 600;
+          letter-spacing: 0.005em;
+          color: #E3E6EE;
+          text-shadow: 0 1px 3px rgba(0,0,0,0.65);
+          padding-bottom: 4px;
         }
         .ev-card-row svg, .ev-card-row i {
           flex: none;
-          color: #C5C9D2;
+          width: 16px; height: 16px;
+          margin-top: 2px;
+          color: #6E97DD;
+          filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5));
         }
+        /* Venue wraps to a 2nd line when it's too long for the card width
+           (instead of single-line ellipsis), then clamps with an ellipsis
+           if it still overflows two lines. min-width:0 lets it shrink inside
+           the flex row so it actually wraps at the card edge. */
         .ev-card-venue {
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
           margin: 0;
+          min-width: 0;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+          overflow-wrap: anywhere;
         }
         .ev-card-title {
           margin: 0;
-          font-size: 15.5px;
-          font-weight: 600;
-          line-height: 1.25;
-          letter-spacing: -0.01em;
-          color: #F5F6F8;
+          font-size: 22px;
+          font-weight: 800;
+          line-height: 1.15;
+          letter-spacing: -0.02em;
+          color: #FFFFFF;
+          text-shadow: 0 1px 2px rgba(0,0,0,0.45), 0 2px 10px rgba(0,0,0,0.55);
+          text-wrap: balance;
           display: -webkit-box;
           -webkit-line-clamp: 2;
           -webkit-box-orient: vertical;
           overflow: hidden;
         }
 
-        /* Footer - organizer chip on the left, brand-blue price pill on the right.
-           Hairline top border separates from the title block. */
+        /* Footer - organizer chip on the left, brand-blue price pill on the
+           right. No divider line: over a photo a hairline reads as dated, so
+           we separate it from the title with spacing alone. */
         .ev-card-footer {
           display: flex; align-items: center; justify-content: space-between;
           gap: 8px;
-          padding-top: 6px;
-          border-top: 1px solid rgba(255,255,255,0.06);
-          margin-top: 2px;
+          margin-top: 4px;
         }
 
         .ev-card-chip-org {
@@ -1685,8 +1728,10 @@ const Events: React.FC = () => {
           font-weight: 600;
           line-height: 1.3;
           border-radius: 10px;
-          background: rgba(255,255,255,0.06);
-          border: 1px solid rgba(255,255,255,0.06);
+          background: rgba(15,18,22,0.55);
+          backdrop-filter: blur(10px) saturate(140%);
+          -webkit-backdrop-filter: blur(10px) saturate(140%);
+          border: 1px solid rgba(255,255,255,0.10);
           color: #F5F6F8;
           max-width: 60%;
           white-space: nowrap;
@@ -1815,9 +1860,9 @@ const Events: React.FC = () => {
 
         @media (max-width: 700px) {
           .ev-card { border-radius: 16px; }
-          .ev-card-meta { padding: 12px; gap: 6px; }
-          .ev-card-title { font-size: 15px; }
-          .ev-card-row { font-size: 12px; }
+          .ev-card-meta { padding: 13px 14px 14px; gap: 7px; }
+          .ev-card-title { font-size: 20px; }
+          .ev-card-row { font-size: 12.5px; }
           .ev-card-tl, .ev-card-tr { top: 10px; }
           .ev-card-tl { left: 10px; }
           .ev-card-tr { right: 10px; }
@@ -1836,9 +1881,10 @@ const Events: React.FC = () => {
            doesn't fight the TL date pill, and trim padding/sizes. */
         @media (max-width: 480px) {
           .ev-card { border-radius: 14px; }
-          .ev-card-meta { padding: 10px; gap: 5px; }
-          .ev-card-title { font-size: 13.5px; }
-          .ev-card-row { font-size: 11px; }
+          .ev-card-meta { padding: 11px 11px 12px; gap: 6px; }
+          .ev-card-title { font-size: 17px; }
+          .ev-card-row { font-size: 11.5px; }
+          .ev-card-row svg, .ev-card-row i { width: 14px; height: 14px; }
           .ev-card-tl, .ev-card-tr { top: 8px; }
           .ev-card-tl { left: 8px; }
           .ev-card-tr { right: 8px; flex-direction: column; align-items: flex-end; gap: 6px; }
