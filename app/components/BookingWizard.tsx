@@ -70,6 +70,10 @@ interface MilestoneConfig {
 
 interface WizardState {
   currentSlide: number;
+  // 'OUTDOOR' = the existing event flow (photographer travels to the client).
+  // 'STUDIO' = indoor session at the photographer's studio, priced from their
+  // studio rate. Defaults OUTDOOR so every existing path is unchanged.
+  serviceType: 'OUTDOOR' | 'STUDIO';
   quickBrief: QuickBrief | null;
   selectedPhotographerId: string | null;
   selectedPackageId: string | null;
@@ -88,6 +92,7 @@ interface WizardState {
 
 type WizardAction =
   | { type: 'SET_SLIDE'; slide: number }
+  | { type: 'SET_SERVICE_TYPE'; value: 'OUTDOOR' | 'STUDIO' }
   | { type: 'SET_QUICK_BRIEF'; data: QuickBrief }
   | { type: 'SET_SELECTED_PHOTOGRAPHER'; id: string }
   | { type: 'SET_SELECTED_PACKAGE'; id: string }
@@ -104,6 +109,7 @@ type WizardAction =
 
 const initialState: WizardState = {
   currentSlide: 0,
+  serviceType: 'OUTDOOR',
   quickBrief: null,
   selectedPhotographerId: null,
   selectedPackageId: null,
@@ -120,6 +126,9 @@ const initialState: WizardState = {
 function wizardReducer(state: WizardState, action: WizardAction): WizardState {
   switch (action.type) {
     case 'SET_SLIDE': return { ...state, currentSlide: action.slide };
+    // Switching service type clears any package pick — studio has no packages
+    // and a stale outdoor package must never leak into a studio booking.
+    case 'SET_SERVICE_TYPE': return { ...state, serviceType: action.value, selectedPackageId: null };
     case 'SET_QUICK_BRIEF': return { ...state, quickBrief: action.data, currentSlide: 1 };
     // Selecting a photographer now opens the Availability Gate instead of jumping straight to packages.
     case 'SET_SELECTED_PHOTOGRAPHER': return { ...state, selectedPhotographerId: action.id, showAvailabilityGate: true };
@@ -624,6 +633,10 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
   // ── Slide 3 extras ──
   const [extraPhotos, setExtraPhotos] = useState(0);
   const [extraVideos, setExtraVideos] = useState(0);
+  // Indoor studio session: how many photos / videos the client wants. Drives
+  // the auto-computed studio total (separate from package extras above).
+  const [studioPhotos, setStudioPhotos] = useState(0);
+  const [studioVideos, setStudioVideos] = useState(0);
 
   // Custom-package form (the negotiation path that lives below the
   // pre-defined Gold/Diamond/etc. cards). Form values stay in local state -
@@ -956,6 +969,24 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
   const totalPrice = pkgBasePrice + (extraPhotos * extraPhotoPrice) + (extraVideos * extraVideoPrice);
   const currencySymbol = selectedPkg?.currencySymbol || selectedPkg?.currencyAbbreviation || 'RWF';
 
+  // ── Indoor studio session pricing ──
+  // studioRate is exposed on the public photographer DTO only when the
+  // photographer opted in. Total = base fee + photos×price + videos×price,
+  // mirroring the backend's computeStudioTotal exactly.
+  const isStudio = state.serviceType === 'STUDIO';
+  const studioRateData = selectedPhotographer?.studioRate || null;
+  const studioTotal = studioRateData
+    ? (studioRateData.baseSessionFee || 0)
+        + studioPhotos * (studioRateData.pricePerPhoto || 0)
+        + studioVideos * (studioRateData.pricePerVideo || 0)
+    : 0;
+  // The effective total/currency the payment step and submit use — studio
+  // when in studio mode, otherwise the unchanged package total.
+  const effectiveTotal = isStudio ? studioTotal : totalPrice;
+  const effectiveCurrency = isStudio
+    ? (studioRateData?.currencyAbbreviation || 'RWF')
+    : currencySymbol;
+
   // ── Milestone computation ──
   const computeMilestones = (opt: 'full' | 'half' | 'thirty'): MilestoneConfig => {
     const splits: Record<string, { label: string; pct: number }[]> = {
@@ -965,7 +996,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
     };
     return {
       option: opt,
-      milestones: splits[opt].map(s => ({ label: s.label, percentage: s.pct, amount: Math.round(totalPrice * s.pct / 100) })),
+      milestones: splits[opt].map(s => ({ label: s.label, percentage: s.pct, amount: Math.round(effectiveTotal * s.pct / 100) })),
     };
   };
 
@@ -973,7 +1004,10 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
 
   const handleBriefNext = () => {
     if (!briefDate) { setBriefError('Please select an event date'); return; }
-    if (!briefLocation.trim()) { setBriefError('Please enter event location'); return; }
+    // Studio sessions happen at the photographer's own studio, so the client
+    // doesn't supply a location — it's resolved from the photographer's
+    // studio address on the backend.
+    if (!isStudio && !briefLocation.trim()) { setBriefError('Please enter event location'); return; }
     setBriefError('');
     const brief: QuickBrief = {
       eventDate: briefDate, eventLocation: briefLocation.trim(),
@@ -981,9 +1015,14 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
       inclusivityPrefs: briefPrefs,
     };
     dispatch({ type: 'SET_QUICK_BRIEF', data: brief });
-    // Fetch matching photographers
+    // Fetch matching photographers — for studio, only those who opted in.
     setPhotographersLoading(true);
-    getPhotographers({ availableOn: briefDate, location: briefLocation.trim(), size: 50 }).then(res => {
+    getPhotographers({
+      availableOn: briefDate,
+      location: isStudio ? undefined : briefLocation.trim(),
+      service: isStudio ? 'STUDIO' : undefined,
+      size: 50,
+    }).then(res => {
       if (res.success && res.data) {
         const raw = res.data as unknown as Record<string, unknown>;
         const list = (raw?.content || raw?.data || res.data) as Photographer[];
@@ -1189,11 +1228,20 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
         endTime: details.endTime ? `${details.endTime}:00` : undefined,
         location: locationStr,
         photographerId: state.selectedPhotographerId || undefined,
-        packageId: state.selectedPackageId || undefined,
+        // Studio bookings are package-less; never send a packageId for them.
+        packageId: isStudio ? undefined : (state.selectedPackageId || undefined),
         guestCount: details.guestCount || undefined,
         notes: details.notes || undefined,
-        price: totalPrice || undefined,
-        priceCurrency: selectedPkg?.currencyAbbreviation || 'RWF',
+        price: effectiveTotal || undefined,
+        priceCurrency: (isStudio ? studioRateData?.currencyAbbreviation : selectedPkg?.currencyAbbreviation) || 'RWF',
+        // Indoor studio session: the backend waives the package requirement,
+        // computes the price from the photographer's studio rate + these
+        // counts, and sets the event location to the studio address.
+        ...(isStudio ? {
+          serviceType: 'STUDIO',
+          studioPhotoCount: studioPhotos,
+          studioVideoCount: studioVideos,
+        } : {}),
         // Coordinator-specific fields
         ...(details.organizer ? { eventOrganizer: details.organizer } : {}),
         ...(details.tags.length > 0 ? { eventTags: details.tags.join(',') } : {}),
@@ -1823,8 +1871,38 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
             /* ── SLIDE 0: Quick Brief ── */
             ) : state.currentSlide === 0 ? (
               <div>
-                <h3 style={{ color: TEXT_PRIMARY, fontSize: 20, fontWeight: 700, margin: '0 0 4px' }}>Tell us about your event</h3>
-                <p style={{ color: TEXT_MUTED, fontSize: 13, margin: '0 0 20px' }}>We&apos;ll find the best photographers for you</p>
+                <h3 style={{ color: TEXT_PRIMARY, fontSize: 20, fontWeight: 700, margin: '0 0 4px' }}>
+                  {isStudio ? 'Book a studio session' : 'Tell us about your event'}
+                </h3>
+                <p style={{ color: TEXT_MUTED, fontSize: 13, margin: '0 0 16px' }}>
+                  {isStudio
+                    ? 'Indoor photo/video shoot at the photographer’s studio'
+                    : 'We’ll find the best photographers for you'}
+                </p>
+
+                {/* Service-type switch — Outdoor (existing flow) vs Studio. */}
+                <div style={{ display: 'flex', gap: 8, background: '#f1f5f9', padding: 4, borderRadius: 12, marginBottom: 18 }}>
+                  {([
+                    { val: 'OUTDOOR' as const, label: 'Outdoor event', icon: 'bi-geo-alt' },
+                    { val: 'STUDIO' as const, label: 'Studio session', icon: 'bi-camera2' },
+                  ]).map(opt => {
+                    const active = state.serviceType === opt.val;
+                    return (
+                      <button key={opt.val} type="button"
+                        onClick={() => dispatch({ type: 'SET_SERVICE_TYPE', value: opt.val })}
+                        style={{
+                          flex: 1, padding: '10px 12px', borderRadius: 9, border: 'none', cursor: 'pointer',
+                          fontSize: 13, fontWeight: 700, fontFamily: 'inherit',
+                          background: active ? `linear-gradient(135deg, ${ACCENT}, ${ACCENT_DARK})` : 'transparent',
+                          color: active ? '#fff' : TEXT_SECONDARY,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                          transition: 'all 0.18s',
+                        }}>
+                        <i className={`bi ${opt.icon}`} /> {opt.label}
+                      </button>
+                    );
+                  })}
+                </div>
 
                 {briefError && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '10px 14px', marginBottom: 14, color: '#dc2626', fontSize: 13 }}>{briefError}</div>}
 
@@ -1833,10 +1911,19 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                     <label style={{ display: 'block', color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Event Date *</label>
                     <input type="date" value={briefDate} onChange={e => setBriefDate(e.target.value)} min={new Date().toISOString().split('T')[0]} style={inputStyle} />
                   </div>
-                  <div>
-                    <label style={{ display: 'block', color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Event Location *</label>
-                    <input type="text" value={briefLocation} onChange={e => setBriefLocation(e.target.value)} placeholder="e.g. Kigali, Rwanda" style={inputStyle} />
-                  </div>
+                  {isStudio ? (
+                    <div style={{ background: '#eff6ff', border: `1px solid ${INPUT_BORDER}`, borderRadius: 10, padding: '11px 14px', display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                      <i className="bi bi-info-circle" style={{ color: ACCENT, fontSize: 14, marginTop: 1 }} />
+                      <span style={{ color: TEXT_SECONDARY, fontSize: 12.5, lineHeight: 1.5 }}>
+                        The shoot takes place at the photographer&apos;s studio — you&apos;ll see their address before you confirm.
+                      </span>
+                    </div>
+                  ) : (
+                    <div>
+                      <label style={{ display: 'block', color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Event Location *</label>
+                      <input type="text" value={briefLocation} onChange={e => setBriefLocation(e.target.value)} placeholder="e.g. Kigali, Rwanda" style={inputStyle} />
+                    </div>
+                  )}
                   <div>
                     <label style={{ display: 'block', color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Budget Range</label>
                     <div style={{ display: 'flex', gap: 8 }}>
@@ -1894,7 +1981,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                     </div>
                   </div>
                   <button onClick={handleBriefNext} style={{ ...btnPrimary, marginTop: 8 }}>
-                    Get Best For You <i className="bi bi-arrow-right"></i>
+                    {isStudio ? 'Find studio photographers' : 'Get Best For You'} <i className="bi bi-arrow-right"></i>
                   </button>
                 </div>
               </div>
@@ -1943,14 +2030,20 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                                 <span style={{ color: TEXT_MUTED, fontSize: 12 }}>{p.rating?.toFixed(1) || '-'}</span>
                                 {p.address && <span style={{ color: TEXT_MUTED, fontSize: 12 }}> · {p.address}</span>}
                               </div>
-                              {minPrice !== null && (
+                              {isStudio && p.studioRate ? (
+                                <p style={{ color: ACCENT, fontSize: 12, fontWeight: 600, margin: '4px 0 0' }}>
+                                  Studio · {p.studioRate.pricePerPhoto?.toLocaleString()}/photo · {p.studioRate.pricePerVideo?.toLocaleString()}/video {p.studioRate.currencyAbbreviation || ''}
+                                </p>
+                              ) : (!isStudio && minPrice !== null) ? (
                                 <p style={{ color: ACCENT, fontSize: 12, fontWeight: 600, margin: '4px 0 0' }}>
                                   From {minPrice.toLocaleString()} {p.packages?.[0]?.currencyAbbreviation || ''}
                                 </p>
-                              )}
+                              ) : null}
                             </div>
                           </div>
-                          <button onClick={() => handleViewProfile(p.id)} style={{
+                          <button onClick={() => isStudio
+                              ? dispatch({ type: 'SET_SELECTED_PHOTOGRAPHER', id: p.id })
+                              : handleViewProfile(p.id)} style={{
                             width: '100%', padding: '10px 0',
                             background: `linear-gradient(135deg, ${ACCENT}, ${ACCENT_DARK})`,
                             border: 'none', borderRadius: 10, color: '#fff',
@@ -1959,7 +2052,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                             boxShadow: '0 8px 18px -8px rgba(8,58,133,0.55)',
                             fontFamily: 'inherit',
                           }}>
-                            View Profile <i className="bi bi-arrow-right"></i>
+                            {isStudio ? 'Select for studio' : 'View Profile'} <i className="bi bi-arrow-right"></i>
                           </button>
                         </div>
                       );
@@ -1971,9 +2064,63 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
             /* ── SLIDE 2: Package Selection ── */
             ) : state.currentSlide === 2 ? (
               <div>
-                <h3 style={{ color: TEXT_PRIMARY, fontSize: 18, fontWeight: 700, margin: '0 0 16px' }}>Select a Package</h3>
+                <h3 style={{ color: TEXT_PRIMARY, fontSize: 18, fontWeight: 700, margin: '0 0 16px' }}>
+                  {isStudio ? 'Build your studio session' : 'Select a Package'}
+                </h3>
 
-                {packagesLoading ? (
+                {isStudio ? (
+                  !studioRateData ? (
+                    <p style={{ color: TEXT_SECONDARY, fontSize: 14, textAlign: 'center', padding: 40 }}>
+                      This photographer doesn’t offer indoor studio sessions.
+                    </p>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                      <div style={{ background: '#f9fafb', border: `1px solid ${INPUT_BORDER}`, borderRadius: 14, padding: 16 }}>
+                        <p style={{ color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, margin: '0 0 4px' }}>
+                          Choose how many photos and videos you want
+                        </p>
+                        <p style={{ color: TEXT_MUTED, fontSize: 12, margin: '0 0 14px' }}>
+                          {studioRateData.baseSessionFee ? `Base fee ${effectiveCurrency}${studioRateData.baseSessionFee.toLocaleString()} · ` : ''}
+                          {effectiveCurrency}{studioRateData.pricePerPhoto?.toLocaleString()}/photo · {effectiveCurrency}{studioRateData.pricePerVideo?.toLocaleString()}/video
+                        </p>
+                        <div style={{ display: 'flex', gap: 12 }}>
+                          <div style={{ flex: 1 }}>
+                            <label style={{ color: TEXT_MUTED, fontSize: 12, display: 'block', marginBottom: 4 }}>Photos</label>
+                            <input type="number" min={0} value={studioPhotos || ''}
+                              onChange={e => setStudioPhotos(Math.max(0, parseInt(e.target.value) || 0))}
+                              placeholder="0" style={inputStyle} />
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <label style={{ color: TEXT_MUTED, fontSize: 12, display: 'block', marginBottom: 4 }}>Videos</label>
+                            <input type="number" min={0} value={studioVideos || ''}
+                              onChange={e => setStudioVideos(Math.max(0, parseInt(e.target.value) || 0))}
+                              placeholder="0" style={inputStyle} />
+                          </div>
+                        </div>
+                        {studioRateData.studioAddress && (
+                          <p style={{ color: TEXT_MUTED, fontSize: 12, margin: '12px 0 0', display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+                            <i className="bi bi-geo-alt" style={{ color: ACCENT, marginTop: 1 }} />
+                            <span>{studioRateData.studioAddress}</span>
+                          </p>
+                        )}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 14, paddingTop: 12, borderTop: '1px solid #e5e7eb' }}>
+                          <span style={{ color: TEXT_SECONDARY, fontSize: 14, fontWeight: 600 }}>Total</span>
+                          <span style={{ color: TEXT_PRIMARY, fontSize: 18, fontWeight: 700 }}>{effectiveCurrency}{studioTotal.toLocaleString()}</span>
+                        </div>
+                        <button
+                          onClick={() => { if (studioPhotos + studioVideos > 0) dispatch({ type: 'SET_SLIDE', slide: 3 }); }}
+                          disabled={studioPhotos + studioVideos <= 0}
+                          style={{
+                            ...btnPrimary, marginTop: 14,
+                            opacity: studioPhotos + studioVideos > 0 ? 1 : 0.55,
+                            cursor: studioPhotos + studioVideos > 0 ? 'pointer' : 'not-allowed',
+                          }}>
+                          Continue to payment plan <i className="bi bi-arrow-right"></i>
+                        </button>
+                      </div>
+                    </div>
+                  )
+                ) : packagesLoading ? (
                   <div style={{ textAlign: 'center', padding: 40 }}>
                     <div style={{ width: 32, height: 32, border: '3px solid #e5e7eb', borderTopColor: ACCENT, borderRadius: '50%', animation: 'bwSpin 0.8s linear infinite', margin: '0 auto' }} />
                   </div>
@@ -2319,7 +2466,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
 
                 <div style={{ textAlign: 'center', marginBottom: 16 }}>
                   <p style={{ color: TEXT_MUTED, fontSize: 13, margin: '0 0 4px' }}>Total Amount</p>
-                  <p style={{ color: TEXT_PRIMARY, fontSize: 28, fontWeight: 700, margin: 0 }}>{fmtLive(totalPrice)}</p>
+                  <p style={{ color: TEXT_PRIMARY, fontSize: 28, fontWeight: 700, margin: 0 }}>{fmtLive(effectiveTotal)}</p>
                 </div>
                 {/* Currency preview panel - same selector that controls the
                     entire Payment Plan step's amount displays (total +
@@ -2330,7 +2477,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                     fromCurrency={(paymentCurrencyCode || 'RWF') as CurrencyCode}
                     defaultCurrency={displayCurrency}
                     onCurrencyChange={setDisplayCurrency}
-                    amounts={[{ label: 'Total Amount', amount: totalPrice }]}
+                    amounts={[{ label: 'Total Amount', amount: effectiveTotal }]}
                   />
                 </div>
 
