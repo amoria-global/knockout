@@ -23,6 +23,9 @@ const ALLOWED_ORIGINS = new Set<string>([
 // Keeps this route from being abused as a generic reverse proxy.
 const ALLOWED_PATH_PREFIXES = [
   'api/remote/',
+  // Ecosystem (OAuth2/OIDC + developer platform). Same-origin proxy so the
+  // /eco/* pages reuse the existing Bearer/cookie auth without CORS.
+  'api/v1/',
   'uploads/',
   // Face-scan / Find-My-Photos download path. /api/photos/{id}/original is
   // served as raw JPEG bytes by the backend; without this entry the proxy
