@@ -4,7 +4,6 @@ import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Navbar from '../../components/navbar';
 import Footer from '../../components/footer';
-import { EcoStyles } from '../_eco';
 
 const PARAM_KEYS = ['response_type', 'client_id', 'redirect_uri', 'scope', 'state', 'nonce', 'code_challenge', 'code_challenge_method'];
 
@@ -38,7 +37,6 @@ function Shell({ children }: { children: React.ReactNode }) {
     <>
       <Navbar />
       <main className="eco">
-        <EcoStyles />
         <div className="eco-narrow"><div style={card}>{children}</div></div>
       </main>
       <Footer />

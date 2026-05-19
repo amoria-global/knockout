@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import Navbar from '../../components/navbar';
 import Footer from '../../components/footer';
-import { EcoStyles, CopyBtn } from '../_eco';
+import { CopyBtn } from '../_copy';
 
 function authToken(): string { try { return localStorage.getItem('authToken') || ''; } catch { return ''; } }
 async function api(path: string, init?: RequestInit) {
@@ -58,7 +58,6 @@ export default function EcoDevelopersPage() {
     <>
       <Navbar />
       <main className="eco">
-        <EcoStyles />
         <div className="eco-wrap">
           <h1 className="eco-h1">Developer Console</h1>
           <p className="eco-sub">Manage your apps, OAuth credentials &amp; API keys. <a className="eco-link" href="/eco/docs">Read the docs →</a></p>
