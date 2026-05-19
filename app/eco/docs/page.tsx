@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Navbar from '../../components/navbar';
 import Footer from '../../components/footer';
-import { EcoStyles, CodeBlock } from '../_eco';
+import { CodeBlock } from '../_eco';
 
 export const metadata: Metadata = {
   title: 'Developer Docs',
@@ -30,7 +30,6 @@ export default function EcoDocsPage() {
     <>
       <Navbar />
       <main className="eco">
-        <EcoStyles />
         <div className="eco-wrap">
           <section className="eco-hero">
             <p className="k">Connekyt Developers</p>
