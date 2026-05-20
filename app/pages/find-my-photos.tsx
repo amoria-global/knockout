@@ -18,8 +18,6 @@ import { requestFreeAlbumAccess } from '@/lib/APIs/public/request-free-access/ro
 import { verifyFreeAlbumAccess } from '@/lib/APIs/public/verify-free-access/route';
 import {
   getFreeAlbum,
-  selectFreeAlbumPhotos,
-  consumeFreeAlbumGrant,
   type FreeAlbumPhoto,
 } from '@/lib/APIs/public/get-free-album/route';
 import { API_ENDPOINTS } from '@/lib/api/config';
@@ -644,15 +642,21 @@ const FindMyPhotos = () => {
   };
 
   /**
-   * Download every currently-selected free-album photo, persist the selection,
-   * then consume the one-time grant. Mirrors the canonical implementation on
-   * /user/albums/free/[code] so behaviour is identical on both routes.
+   * Download every currently-selected free-album photo.
+   *
+   * No one-time consumption / link expiry: the access link must stay active
+   * across visits so the user can come back and re-download (or pick more
+   * photos). The only limits we enforce on the client are:
+   *   - max free count per click (freeAlbumMax)
+   *   - per-extra-photo fee (freeAlbumPricePerExtra) for overflow
+   * Lifetime / quota tracking is the backend's responsibility — we don't
+   * call selectFreeAlbumPhotos or consumeFreeAlbumGrant any more because
+   * both side-effects locked the link.
    */
-  const downloadFreeSelectedAndConsume = async () => {
+  const downloadFreeSelected = async () => {
     if (!freeAlbumId) return;
     const chosen = freeAlbumPhotos.filter(p => selectedFreePhotoIds.has(p.id));
     if (chosen.length === 0) return;
-    try { await selectFreeAlbumPhotos(freeAlbumId, chosen.map(p => p.id)); } catch { /* best effort */ }
     // Stagger so the browser doesn't collapse parallel save dialogs.
     for (let i = 0; i < chosen.length; i++) {
       const photo = chosen[i];
@@ -660,10 +664,9 @@ const FindMyPhotos = () => {
       handleFreePhotoDownload(photo);
       await new Promise(r => setTimeout(r, 350));
     }
-    try { await consumeFreeAlbumGrant(freeAlbumId); } catch { /* best effort */ }
     setFreeStatusMsg(
-      `Downloading ${chosen.length} photo${chosen.length !== 1 ? 's' : ''}. This access link is now used — ` +
-      `ask the photographer to regenerate it if you need it again.`
+      `Downloading ${chosen.length} photo${chosen.length !== 1 ? 's' : ''}. ` +
+      `Your access link stays active — come back any time.`
     );
   };
 
@@ -686,7 +689,7 @@ const FindMyPhotos = () => {
 
     if (overflow === 0) {
       setFreeIsProcessing(true);
-      try { await downloadFreeSelectedAndConsume(); }
+      try { await downloadFreeSelected(); }
       finally { setFreeIsProcessing(false); }
       return;
     }
@@ -752,7 +755,7 @@ const FindMyPhotos = () => {
       const status = (rec.data?.status || '').toUpperCase();
       if (rec.success && (status === 'COMPLETED' || status === '')) {
         setFreePendingPay(null);
-        await downloadFreeSelectedAndConsume();
+        await downloadFreeSelected();
       } else {
         setFreeStatusMsg('Payment not confirmed yet. Finish it in the payment tab, then try again.');
       }
