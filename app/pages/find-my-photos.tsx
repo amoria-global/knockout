@@ -18,6 +18,7 @@ import { requestFreeAlbumAccess } from '@/lib/APIs/public/request-free-access/ro
 import { verifyFreeAlbumAccess } from '@/lib/APIs/public/verify-free-access/route';
 import {
   getFreeAlbum,
+  logFreeAlbumDownload,
   type FreeAlbumPhoto,
 } from '@/lib/APIs/public/get-free-album/route';
 import { API_ENDPOINTS } from '@/lib/api/config';
@@ -225,6 +226,15 @@ const FindMyPhotos = () => {
   const [freePendingPay, setFreePendingPay] = useState<{ refid: string; buyerId: string } | null>(null);
   const [freeIsProcessing, setFreeIsProcessing] = useState(false);
   const [freeStatusMsg, setFreeStatusMsg] = useState('');
+  // Photos this email has already free-downloaded (cumulative) or purchased
+  // on this album — returned by the backend on verify/getFreeAlbum. Renders
+  // a ✓ OWNED badge, never counts against the free cap, always free to
+  // re-download.
+  const [freeAcquiredIds, setFreeAcquiredIds] = useState<Set<string>>(new Set());
+  // One-shot "you're about to use a paid extra" warning modal — fires the
+  // first time the user's selection (minus OWNED) crosses the free cap.
+  const [freeCapWarnShown, setFreeCapWarnShown] = useState(false);
+  const [freeCapWarnOpen, setFreeCapWarnOpen] = useState(false);
 
   // Auto-fill invite code from URL param and load album (e.g. /find-my-photos?code=ABC123)
   useEffect(() => {
@@ -639,19 +649,52 @@ const FindMyPhotos = () => {
     const curAbbr = raw.currencyAbbreviation ?? raw.currency_abbreviation
       ?? raw.pricing?.currencyAbbreviation ?? raw.currencySymbol ?? raw.currency_symbol;
     if (curAbbr) setFreeAlbumCurrencyAbbr(String(curAbbr));
+    // Returning-viewer OWNED set from the backend (cumulative free downloads
+    // + completed purchases by this email). Union with whatever we already
+    // have so a re-fetch never shrinks the set.
+    const acquiredRaw = raw.alreadyAcquiredPhotoIds ?? raw.acquiredPhotoIds
+      ?? raw.already_acquired_photo_ids ?? raw.ownedPhotoIds;
+    if (Array.isArray(acquiredRaw)) {
+      setFreeAcquiredIds(prev => {
+        const next = new Set(prev);
+        for (const id of acquiredRaw) {
+          if (typeof id === 'string' && id) next.add(id);
+        }
+        return next;
+      });
+    }
   };
 
   /**
-   * Download every currently-selected free-album photo.
+   * Memoised partition of the current selection into:
+   *   - owned: photos already acquired (free-download log OR purchased)
+   *   - newPicks: selected photos NOT yet acquired (these count toward cap)
+   * The pay-for-extras flow only ever charges for OVERFLOW within newPicks.
+   */
+  const getCappedSelectionInfo = () => {
+    const owned: string[] = [];
+    const newPicks: string[] = [];
+    for (const id of selectedFreePhotoIds) {
+      if (freeAcquiredIds.has(id)) owned.push(id); else newPicks.push(id);
+    }
+    const cap = freeAlbumMax ?? Infinity;
+    const freeQuotaUsedNew = Number.isFinite(cap) ? Math.min(newPicks.length, cap as number) : newPicks.length;
+    const overflow = Number.isFinite(cap) ? Math.max(0, newPicks.length - (cap as number)) : 0;
+    return {
+      owned, newPicks, cap, freeQuotaUsedNew, overflow,
+      total: owned.length + newPicks.length,
+    };
+  };
+
+  /**
+   * Ship every currently-selected photo to the user's disk, then tell the
+   * backend so the OWNED set persists across visits.
    *
-   * No one-time consumption / link expiry: the access link must stay active
-   * across visits so the user can come back and re-download (or pick more
-   * photos). The only limits we enforce on the client are:
-   *   - max free count per click (freeAlbumMax)
-   *   - per-extra-photo fee (freeAlbumPricePerExtra) for overflow
-   * Lifetime / quota tracking is the backend's responsibility — we don't
-   * call selectFreeAlbumPhotos or consumeFreeAlbumGrant any more because
-   * both side-effects locked the link.
+   * No one-time consumption / link expiry — the access link stays active.
+   * The cap is enforced before this fires (in handleFreeCappedDownload /
+   * handleFreeConfirmPaid) so by the time we land here, every selected
+   * photo is either OWNED already or in the free quota or has just been
+   * paid for.
    */
   const downloadFreeSelected = async () => {
     if (!freeAlbumId) return;
@@ -664,6 +707,18 @@ const FindMyPhotos = () => {
       handleFreePhotoDownload(photo);
       await new Promise(r => setTimeout(r, 350));
     }
+    // Persist to backend (best-effort) so a return visit recognises these
+    // photos as OWNED. Capped albums only; the backend no-ops anyway when
+    // there's no grant row for non-capped albums.
+    const ids = chosen.map(p => p.id);
+    try { await logFreeAlbumDownload(freeAlbumId, ids); } catch { /* best effort */ }
+    // Optimistically grow the local OWNED set so the next click already
+    // treats these as acquired (won't count against cap).
+    setFreeAcquiredIds(prev => {
+      const next = new Set(prev);
+      for (const id of ids) next.add(id);
+      return next;
+    });
     setFreeStatusMsg(
       `Downloading ${chosen.length} photo${chosen.length !== 1 ? 's' : ''}. ` +
       `Your access link stays active — come back any time.`
@@ -671,23 +726,28 @@ const FindMyPhotos = () => {
   };
 
   /**
-   * Selection-required free-album download. If the user selects more than the
-   * album cap, the overflow is paid for via the existing XentriPay album
-   * purchase flow (same payment path used for paid albums). After payment the
-   * user clicks "I've paid — download" which calls handleFreeConfirmPaid.
+   * The main cart action.
    *
-   * Hard rule: the bulk button NEVER downloads more than what's selected, and
-   * paid-extras NEVER ship until handleFreeConfirmPaid recorded the purchase.
+   *   • Pure free-quota selection (no overflow) → just download & log.
+   *   • Overflow on a capped+priced album → open XentriPay for the EXTRAS
+   *     only (free quota + OWNED never re-paid), set freePendingPay.
+   *     handleFreeConfirmPaid finalises after the user pays.
+   *   • Overflow on a cap-only album (no extra price) → polite refusal.
+   *
+   * Hard invariants:
+   *   • Never downloads photos the user didn't pay for and aren't OWNED
+   *     or in free quota.
+   *   • The first time the user's selection crosses the cap with at least
+   *     one paid extra, the warning modal fires once and we stop here —
+   *     the user has to confirm by clicking Purchase again to actually pay.
    */
   const handleFreeCappedDownload = async () => {
     if (!freeAlbumId || freeIsProcessing) return;
-    const cap = freeAlbumMax ?? Infinity;
+    const info = getCappedSelectionInfo();
+    if (info.total === 0) { setFreeStatusMsg('Select at least one photo to download.'); return; }
     const price = freeAlbumPricePerExtra || 0;
-    const count = selectedFreePhotoIds.size;
-    if (count === 0) { setFreeStatusMsg('Select at least one photo to download.'); return; }
-    const overflow = Number.isFinite(cap) ? Math.max(0, count - (cap as number)) : 0;
 
-    if (overflow === 0) {
+    if (info.overflow === 0) {
       setFreeIsProcessing(true);
       try { await downloadFreeSelected(); }
       finally { setFreeIsProcessing(false); }
@@ -695,11 +755,23 @@ const FindMyPhotos = () => {
     }
 
     if (!(price > 0) || !freeAlbumCurrencyId) {
-      setFreeStatusMsg(`You can download at most ${cap} photo(s) from this album.`);
+      setFreeStatusMsg(`You can download at most ${info.cap} new photo(s) for free from this album.`);
       return;
     }
 
-    // Overflow → kick off payment for the extras only.
+    // First-time crossing the cap → confirmation modal.
+    if (!freeCapWarnShown) {
+      setFreeCapWarnShown(true);
+      setFreeCapWarnOpen(true);
+      setFreeStatusMsg(
+        `${info.overflow} of your selection ${info.overflow === 1 ? 'is' : 'are'} extra photo${info.overflow === 1 ? '' : 's'}. ` +
+        `Please confirm to continue.`
+      );
+      return;
+    }
+
+    // Overflow → kick off payment for the OVERFLOW ids only. Owned + free
+    // quota never charged.
     setFreeIsProcessing(true);
     setFreeStatusMsg('Preparing payment for extra photos…');
     try {
@@ -712,9 +784,9 @@ const FindMyPhotos = () => {
       const bId = ident.data?.buyerId;
       if (!ident.success || !bId) throw new Error(ident.error || 'Could not identify you. Please retry.');
 
-      // First `cap` selected are free; the rest are the paid overflow.
-      const selectedList = freeAlbumPhotos.filter(p => selectedFreePhotoIds.has(p.id)).map(p => p.id);
-      const overflowIds = selectedList.slice(cap as number);
+      // Out of the NEW (non-owned) picks: first `cap` are free, the rest
+      // are the paid overflow that needs the XentriPay flow.
+      const overflowIds = info.newPicks.slice(info.cap as number);
       const amount = Math.round(price * overflowIds.length);
 
       const pay = await initiateXentriPayAlbumPurchase({
@@ -732,7 +804,7 @@ const FindMyPhotos = () => {
       window.open(pay.data.paymentUrl, '_blank', 'noopener');
       setFreePendingPay({ refid: pay.data.refid, buyerId: bId });
       setFreeStatusMsg(
-        `Opened payment for ${overflowIds.length} extra photo(s) ` +
+        `Opened payment for ${overflowIds.length} extra photo${overflowIds.length === 1 ? '' : 's'} ` +
         `(${freeAlbumCurrencyAbbr || ''} ${amount}). Complete it, then click "I've paid — download".`
       );
     } catch (e) {
@@ -1908,12 +1980,13 @@ const FindMyPhotos = () => {
                   <i className="bi bi-images" style={{ marginRight: 5, color: '#F20C8F' }} />
                   {freeAlbumPhotos.length} photo{freeAlbumPhotos.length !== 1 ? 's' : ''}
                 </p>
-                {/* Per album policy: NO bulk "Download All" — user must pick
-                    photos so we can enforce the free cap (and charge for any
-                    extras). Keep the convenience "Select all" though; if their
-                    pick exceeds the cap, the cart bar will route through the
-                    pay-for-extras flow. */}
-                {freeAlbumPhotos.length > 1 && selectedFreePhotoIds.size < freeAlbumPhotos.length && (
+                {/* "Select all" is shown ONLY on uncapped free albums.
+                    On capped albums every selection counts toward the cap,
+                    so a one-tap "select everything" would trick the user
+                    into a giant unexpected purchase. */}
+                {!(freeAlbumMax !== null || freeAlbumPricePerExtra > 0)
+                  && freeAlbumPhotos.length > 1
+                  && selectedFreePhotoIds.size < freeAlbumPhotos.length && (
                   <div style={{ display: 'inline-flex', gap: 10, marginTop: 16, flexWrap: 'wrap', justifyContent: 'center' }}>
                     <button
                       onClick={() => setSelectedFreePhotoIds(new Set(freeAlbumPhotos.map(p => p.id)))}
@@ -1938,15 +2011,18 @@ const FindMyPhotos = () => {
                     </button>
                   </div>
                 )}
-                {/* Cap / extra-price hint so the user sees what they'll be
-                    charged for if they pick more than the free quota. */}
+                {/* Cap / extra-price hint, with an OWNED count if the user
+                    is a returning visitor. */}
                 {(freeAlbumMax !== null || freeAlbumPricePerExtra > 0) && (
-                  <p style={{ color: 'rgba(255,255,255,0.62)', fontSize: 12, marginTop: 10, lineHeight: 1.5 }}>
+                  <p style={{ color: 'rgba(255,255,255,0.72)', fontSize: 12.5, marginTop: 10, lineHeight: 1.5 }}>
                     {freeAlbumMax !== null && (
-                      <>Free up to <strong style={{ color: '#fff' }}>{freeAlbumMax}</strong> photo{freeAlbumMax === 1 ? '' : 's'}.</>
+                      <>Free up to <strong style={{ color: '#fff' }}>{freeAlbumMax}</strong> new photo{freeAlbumMax === 1 ? '' : 's'}.</>
                     )}
                     {freeAlbumPricePerExtra > 0 && (
                       <> Extras cost <strong style={{ color: '#fff' }}>{freeAlbumCurrencyAbbr || ''} {freeAlbumPricePerExtra}</strong> each.</>
+                    )}
+                    {freeAcquiredIds.size > 0 && (
+                      <> You already own <strong style={{ color: '#fff' }}>{freeAcquiredIds.size}</strong> photo{freeAcquiredIds.size === 1 ? '' : 's'} from past visits — free to re-download.</>
                     )}
                   </p>
                 )}
@@ -1965,19 +2041,26 @@ const FindMyPhotos = () => {
               }}>
                 {freeAlbumPhotos.map((photo) => {
                   const isSelected = selectedFreePhotoIds.has(photo.id);
+                  const isOwned = freeAcquiredIds.has(photo.id);
+                  const isCappedAlbum = freeAlbumMax !== null || freeAlbumPricePerExtra > 0;
                   return (
                   <div
                     key={photo.id}
+                    onContextMenu={(e) => { if (isCappedAlbum) e.preventDefault(); }}
                     style={{
                       position: 'relative',
                       borderRadius: '14px',
                       overflow: 'hidden',
                       aspectRatio: '1',
                       cursor: 'pointer',
-                      border: isSelected ? '1px solid rgba(242,12,143,0.45)' : '1px solid rgba(255,255,255,0.08)',
-                      boxShadow: isSelected
-                        ? '0 0 0 3px #F20C8F, 0 8px 22px -6px rgba(242,12,143,0.42)'
-                        : 'none',
+                      border: isOwned
+                        ? '1px solid rgba(16,185,129,0.55)'
+                        : isSelected ? '1px solid rgba(242,12,143,0.45)' : '1px solid rgba(255,255,255,0.08)',
+                      boxShadow: isOwned
+                        ? '0 0 0 2px rgba(16,185,129,0.55), 0 6px 18px -6px rgba(16,185,129,0.35)'
+                        : isSelected
+                          ? '0 0 0 3px #F20C8F, 0 8px 22px -6px rgba(242,12,143,0.42)'
+                          : 'none',
                       transition: 'box-shadow 0.18s, border-color 0.18s',
                     }}
                     onClick={() => setSelectedPhoto({
@@ -2004,6 +2087,60 @@ const FindMyPhotos = () => {
                         transition: 'filter 0.1s linear',
                       }}
                     />
+                    {/* Visible watermark overlay on capped/priced albums —
+                        deters casual screenshot reuse. Repeated diagonal
+                        text bands sit above the image. */}
+                    {isCappedAlbum && !isOwned && (
+                      <div
+                        aria-hidden
+                        onContextMenu={(e) => e.preventDefault()}
+                        style={{
+                          position: 'absolute', inset: 0,
+                          pointerEvents: 'none',
+                          backgroundImage:
+                            `repeating-linear-gradient(-30deg, transparent 0 40px, rgba(255,255,255,0.06) 40px 41px)`,
+                          mixBlendMode: 'overlay',
+                        }}
+                      />
+                    )}
+                    {isCappedAlbum && !isOwned && (
+                      <div
+                        aria-hidden
+                        style={{
+                          position: 'absolute', inset: 0,
+                          pointerEvents: 'none',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          transform: 'rotate(-22deg)',
+                          color: 'rgba(255,255,255,0.30)',
+                          fontWeight: 800,
+                          fontSize: 'clamp(11px, 2.5vw, 18px)',
+                          letterSpacing: '4px',
+                          textShadow: '0 1px 4px rgba(0,0,0,0.45)',
+                          fontFamily: 'system-ui, -apple-system, sans-serif',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        PREVIEW · {freeAlbumPhotographer || 'CONNEKYT'}
+                      </div>
+                    )}
+                    {/* OWNED ribbon for returning users */}
+                    {isOwned && (
+                      <div
+                        aria-hidden
+                        style={{
+                          position: 'absolute', top: 8, right: 8,
+                          padding: '4px 9px', borderRadius: 999,
+                          background: '#10B981', color: '#fff',
+                          fontSize: 10.5, fontWeight: 800, letterSpacing: 0.5,
+                          display: 'inline-flex', alignItems: 'center', gap: 4,
+                          boxShadow: '0 4px 12px -3px rgba(16,185,129,0.55)',
+                          zIndex: 3,
+                        }}
+                      >
+                        <i className="bi bi-check2-circle" style={{ fontSize: 11 }} />
+                        OWNED
+                      </div>
+                    )}
                     {/* Add-to-cart toggle */}
                     <button
                       onClick={(e) => { e.stopPropagation(); toggleFreePhotoSelected(photo.id); }}
@@ -2122,14 +2259,12 @@ const FindMyPhotos = () => {
                       Clear
                     </button>
                     {(() => {
-                      const cap = freeAlbumMax ?? Infinity;
-                      const count = selectedFreePhotoIds.size;
-                      const overflow = Number.isFinite(cap) ? Math.max(0, count - (cap as number)) : 0;
-                      const extrasTotal = overflow * (freeAlbumPricePerExtra || 0);
-                      const showExtras = overflow > 0 && freeAlbumPricePerExtra > 0;
-                      const label = showExtras
-                        ? `Pay ${freeAlbumCurrencyAbbr || ''} ${extrasTotal} & download ${count}`
-                        : `Download ${count} photo${count !== 1 ? 's' : ''}`;
+                      const info = getCappedSelectionInfo();
+                      const extrasTotal = info.overflow * (freeAlbumPricePerExtra || 0);
+                      const showPurchase = info.overflow > 0 && freeAlbumPricePerExtra > 0;
+                      const label = showPurchase
+                        ? `Purchase (${freeAlbumCurrencyAbbr || ''} ${extrasTotal} for ${info.overflow} extra)`
+                        : `Download ${info.total} photo${info.total !== 1 ? 's' : ''}`;
                       return (
                         <button
                           onClick={handleFreeCappedDownload}
@@ -2137,7 +2272,9 @@ const FindMyPhotos = () => {
                           style={{
                             padding: '11px 18px',
                             borderRadius: 11,
-                            background: 'linear-gradient(135deg, #083A85 0%, #F20C8F 130%)',
+                            background: showPurchase
+                              ? 'linear-gradient(135deg, #f59e0b 0%, #f20c8f 130%)'
+                              : 'linear-gradient(135deg, #083A85 0%, #F20C8F 130%)',
                             border: 'none',
                             color: '#fff',
                             fontSize: 13.5,
@@ -2152,7 +2289,7 @@ const FindMyPhotos = () => {
                           onMouseEnter={(e) => { if (!freeIsProcessing && !freePendingPay) { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 12px 28px -6px rgba(242,12,143,0.55)'; } }}
                           onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 22px -6px rgba(242,12,143,0.45)'; }}
                         >
-                          <i className={showExtras ? 'bi bi-credit-card-2-front' : 'bi bi-download'} style={{ fontSize: 13 }} />
+                          <i className={showPurchase ? 'bi bi-credit-card-2-front' : 'bi bi-download'} style={{ fontSize: 13 }} />
                           {label}
                         </button>
                       );
@@ -3111,6 +3248,110 @@ const FindMyPhotos = () => {
           </div>
         </div>
       )}
+
+      {/* ── Free-album cap-cross warning modal ── */}
+      {/* Fires the first time the user adds enough photos to push the
+          paying-extras count above 0. They have to confirm; clicking
+          Purchase again then triggers handleFreeCappedDownload which
+          opens XentriPay. */}
+      {freeCapWarnOpen && (() => {
+        const info = getCappedSelectionInfo();
+        const extrasTotal = info.overflow * (freeAlbumPricePerExtra || 0);
+        return (
+          <div
+            onClick={() => setFreeCapWarnOpen(false)}
+            style={{
+              position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+              background: 'rgba(0,0,0,0.78)', backdropFilter: 'blur(6px)',
+              zIndex: 3500,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              padding: 20,
+            }}
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="cap-warn-title"
+              style={{
+                width: 'min(440px, 100%)',
+                background: '#15151a',
+                border: '1px solid rgba(255,255,255,0.10)',
+                borderRadius: 18,
+                padding: 24,
+                color: '#fff',
+                boxShadow: '0 30px 70px -20px rgba(0,0,0,0.65)',
+              }}
+            >
+              <div style={{
+                width: 48, height: 48, borderRadius: '50%',
+                background: 'rgba(245,158,11,0.18)', color: '#f59e0b',
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                marginBottom: 14,
+              }}>
+                <i className="bi bi-exclamation-triangle-fill" style={{ fontSize: 20 }} />
+              </div>
+              <h3 id="cap-warn-title" style={{ margin: '0 0 10px', fontSize: 18, fontWeight: 800, letterSpacing: '-0.01em' }}>
+                You&apos;re about to pay for extra photos
+              </h3>
+              <p style={{ margin: 0, fontSize: 13.5, color: 'rgba(255,255,255,0.78)', lineHeight: 1.55 }}>
+                The first <strong>{info.cap === Infinity ? freeAlbumPhotos.length : info.cap}</strong> new photo{info.cap === 1 ? '' : 's'} {info.cap === 1 ? 'is' : 'are'} free.
+                You picked <strong>{info.overflow}</strong> beyond that — each costs{' '}
+                <strong>{freeAlbumCurrencyAbbr || ''} {freeAlbumPricePerExtra}</strong>.
+              </p>
+              <div style={{
+                marginTop: 16, padding: '12px 14px', borderRadius: 12,
+                background: 'rgba(245,158,11,0.10)', border: '1px solid rgba(245,158,11,0.30)',
+                color: '#fff',
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+                  <span style={{ color: 'rgba(255,255,255,0.72)' }}>Free quota used</span>
+                  <strong>{info.freeQuotaUsedNew} / {info.cap === Infinity ? '∞' : info.cap}</strong>
+                </div>
+                {info.owned.length > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginTop: 6, color: '#10B981' }}>
+                    <span>Already owned (free)</span>
+                    <strong>{info.owned.length}</strong>
+                  </div>
+                )}
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginTop: 6 }}>
+                  <span style={{ color: 'rgba(255,255,255,0.72)' }}>Paid extras</span>
+                  <strong>{info.overflow} × {freeAlbumCurrencyAbbr || ''} {freeAlbumPricePerExtra}</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, marginTop: 10, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.10)' }}>
+                  <span style={{ fontWeight: 700 }}>Total to pay</span>
+                  <span style={{ fontWeight: 800, color: '#f59e0b' }}>{freeAlbumCurrencyAbbr || ''} {extrasTotal}</span>
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
+                <button
+                  onClick={() => setFreeCapWarnOpen(false)}
+                  style={{
+                    flex: 1, padding: '11px 14px', borderRadius: 11,
+                    background: 'rgba(255,255,255,0.06)', color: '#fff',
+                    border: '1px solid rgba(255,255,255,0.20)',
+                    fontSize: 13.5, fontWeight: 700, cursor: 'pointer',
+                  }}
+                >
+                  Adjust selection
+                </button>
+                <button
+                  onClick={() => { setFreeCapWarnOpen(false); void handleFreeCappedDownload(); }}
+                  style={{
+                    flex: 1, padding: '11px 14px', borderRadius: 11,
+                    background: 'linear-gradient(135deg, #f59e0b 0%, #f20c8f 130%)',
+                    color: '#fff', border: 'none',
+                    fontSize: 13.5, fontWeight: 800, cursor: 'pointer',
+                    boxShadow: '0 8px 22px -6px rgba(242,12,143,0.55)',
+                  }}
+                >
+                  Continue to payment
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ── Image Viewer Modal ── */}
       {selectedPhoto && (
