@@ -10,13 +10,18 @@ import { uploadSelfieForRecognition, type MatchedPhoto } from '@/lib/APIs/custom
 import { getCurrencies, type Currency } from '@/lib/APIs/public';
 import { getCurrencyRates, type CurrencyRate } from '@/lib/APIs/public/get-currency-rates/route';
 import { recordStreamingPayment } from '@/lib/APIs/payments/route';
-import { recordAlbumPurchase } from '@/lib/APIs/payments/xentripay';
+import { recordAlbumPurchase, initiateXentriPayAlbumPurchase } from '@/lib/APIs/payments/xentripay';
 import { identifyAlbumBuyer } from '@/lib/APIs/public/identify-buyer/route';
 import { unlockAlbumPhotos } from '@/lib/APIs/public/unlock-photos/route';
 import { getDeviceId } from '@/lib/fingerprint';
 import { requestFreeAlbumAccess } from '@/lib/APIs/public/request-free-access/route';
 import { verifyFreeAlbumAccess } from '@/lib/APIs/public/verify-free-access/route';
-import { getFreeAlbum, type FreeAlbumPhoto } from '@/lib/APIs/public/get-free-album/route';
+import {
+  getFreeAlbum,
+  selectFreeAlbumPhotos,
+  consumeFreeAlbumGrant,
+  type FreeAlbumPhoto,
+} from '@/lib/APIs/public/get-free-album/route';
 import { API_ENDPOINTS } from '@/lib/api/config';
 import { API_CONFIG } from '@/lib/api/config';
 
@@ -212,6 +217,16 @@ const FindMyPhotos = () => {
   const [freeAlbumError, setFreeAlbumError] = useState('');
   const [freeAlbumLoading, setFreeAlbumLoading] = useState(false);
   const [freeAlbumOtp, setFreeAlbumOtp] = useState('');
+  // Cap + pay-for-extras: when an album has maxFreeDownloads set, the first
+  // `cap` selected photos are free and the remainder requires payment at
+  // `pricePerExtraImage` each (existing paid-album XentriPay flow).
+  const [freeAlbumMax, setFreeAlbumMax] = useState<number | null>(null);
+  const [freeAlbumPricePerExtra, setFreeAlbumPricePerExtra] = useState<number>(0);
+  const [freeAlbumCurrencyId, setFreeAlbumCurrencyId] = useState<string>('');
+  const [freeAlbumCurrencyAbbr, setFreeAlbumCurrencyAbbr] = useState<string>('');
+  const [freePendingPay, setFreePendingPay] = useState<{ refid: string; buyerId: string } | null>(null);
+  const [freeIsProcessing, setFreeIsProcessing] = useState(false);
+  const [freeStatusMsg, setFreeStatusMsg] = useState('');
 
   // Auto-fill invite code from URL param and load album (e.g. /find-my-photos?code=ABC123)
   useEffect(() => {
@@ -237,12 +252,22 @@ const FindMyPhotos = () => {
                   // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   const d = verifyRes.data as any;
                   setFreeAlbumId(d.albumId || '');
+                  applyFreeAlbumPricing(d);
                   if (d.photos?.length) {
                     setFreeAlbumPhotos(d.photos);
                     if (d.title) setFreeAlbumTitle(d.title);
                     if (d.photographerName) setFreeAlbumPhotographer(d.photographerName);
                     if (d.expiresAt) setFreeAlbumExpiresAt(d.expiresAt);
                     setFreeAlbumFlow('verified');
+                    // Pull cap/price authoritatively if verify omitted them.
+                    if (d.maxFreeDownloads == null && d.pricePerExtraImage == null) {
+                      const aid = d.albumId || '';
+                      if (aid) {
+                        getFreeAlbum(aid).then(extra => {
+                          if (extra.success && extra.data) applyFreeAlbumPricing(extra.data);
+                        }).catch(() => {});
+                      }
+                    }
                   } else {
                     // No photos in response - fall back to OTP screen
                     setFreeAlbumOtp(codeFromUrl);
@@ -528,10 +553,19 @@ const FindMyPhotos = () => {
         if (d.title) setFreeAlbumTitle(d.title);
         if (d.photographerName) setFreeAlbumPhotographer(d.photographerName);
         if (d.expiresAt) setFreeAlbumExpiresAt(d.expiresAt);
+        applyFreeAlbumPricing(d);
         if (d.photos?.length) {
           // Photos included in verify response - render directly
           setFreeAlbumPhotos(d.photos);
           setFreeAlbumFlow('verified');
+          // Verify response sometimes omits cap/price fields the photographer
+          // configured at album-create time. Re-fetch to make sure we enforce
+          // the right cap when the user clicks download.
+          if (d.maxFreeDownloads == null && d.pricePerExtraImage == null) {
+            getFreeAlbum(albumId).then(extra => {
+              if (extra.success && extra.data) applyFreeAlbumPricing(extra.data);
+            }).catch(() => {});
+          }
         } else {
           // Fallback: fetch photos separately
           const albumRes = await getFreeAlbum(albumId);
@@ -540,6 +574,7 @@ const FindMyPhotos = () => {
             if (albumRes.data.title) setFreeAlbumTitle(albumRes.data.title);
             if (albumRes.data.photographerName) setFreeAlbumPhotographer(albumRes.data.photographerName);
             if (albumRes.data.expiresAt) setFreeAlbumExpiresAt(albumRes.data.expiresAt);
+            applyFreeAlbumPricing(albumRes.data);
             setFreeAlbumFlow('verified');
           } else {
             setFreeAlbumError(albumRes.error || 'Failed to load album photos.');
@@ -582,26 +617,149 @@ const FindMyPhotos = () => {
     await triggerPhotoDownload(photo.url, `photo-${photo.id}.jpg`);
   };
 
-  const handleFreeDownloadAll = async () => {
-    for (const photo of freeAlbumPhotos) {
-      await handleFreePhotoDownload(photo);
+  /**
+   * Pull cap / price / currency out of either a verify response or a
+   * getFreeAlbum response into the shared free-album state. Tolerant of
+   * field-shape drift (camelCase + snake_case + nested `pricing`).
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const applyFreeAlbumPricing = (raw: any) => {
+    if (!raw || typeof raw !== 'object') return;
+    const maxRaw = raw.maxFreeDownloads ?? raw.max_free_downloads ?? raw.maxFreeImages ?? null;
+    if (maxRaw !== null && maxRaw !== undefined) {
+      const n = Number(maxRaw);
+      if (Number.isFinite(n) && n >= 0) setFreeAlbumMax(n);
+    }
+    const priceRaw = raw.pricePerExtraImage ?? raw.price_per_extra_image
+      ?? raw.pricing?.pricePerExtraImage ?? null;
+    if (priceRaw !== null && priceRaw !== undefined) {
+      const n = Number(priceRaw);
+      if (Number.isFinite(n) && n >= 0) setFreeAlbumPricePerExtra(n);
+    }
+    const curId = raw.currencyId ?? raw.currency_id ?? raw.pricing?.currencyId;
+    if (curId) setFreeAlbumCurrencyId(String(curId));
+    const curAbbr = raw.currencyAbbreviation ?? raw.currency_abbreviation
+      ?? raw.pricing?.currencyAbbreviation ?? raw.currencySymbol ?? raw.currency_symbol;
+    if (curAbbr) setFreeAlbumCurrencyAbbr(String(curAbbr));
+  };
+
+  /**
+   * Download every currently-selected free-album photo, persist the selection,
+   * then consume the one-time grant. Mirrors the canonical implementation on
+   * /user/albums/free/[code] so behaviour is identical on both routes.
+   */
+  const downloadFreeSelectedAndConsume = async () => {
+    if (!freeAlbumId) return;
+    const chosen = freeAlbumPhotos.filter(p => selectedFreePhotoIds.has(p.id));
+    if (chosen.length === 0) return;
+    try { await selectFreeAlbumPhotos(freeAlbumId, chosen.map(p => p.id)); } catch { /* best effort */ }
+    // Stagger so the browser doesn't collapse parallel save dialogs.
+    for (let i = 0; i < chosen.length; i++) {
+      const photo = chosen[i];
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises
+      handleFreePhotoDownload(photo);
+      await new Promise(r => setTimeout(r, 350));
+    }
+    try { await consumeFreeAlbumGrant(freeAlbumId); } catch { /* best effort */ }
+    setFreeStatusMsg(
+      `Downloading ${chosen.length} photo${chosen.length !== 1 ? 's' : ''}. This access link is now used — ` +
+      `ask the photographer to regenerate it if you need it again.`
+    );
+  };
+
+  /**
+   * Selection-required free-album download. If the user selects more than the
+   * album cap, the overflow is paid for via the existing XentriPay album
+   * purchase flow (same payment path used for paid albums). After payment the
+   * user clicks "I've paid — download" which calls handleFreeConfirmPaid.
+   *
+   * Hard rule: the bulk button NEVER downloads more than what's selected, and
+   * paid-extras NEVER ship until handleFreeConfirmPaid recorded the purchase.
+   */
+  const handleFreeCappedDownload = async () => {
+    if (!freeAlbumId || freeIsProcessing) return;
+    const cap = freeAlbumMax ?? Infinity;
+    const price = freeAlbumPricePerExtra || 0;
+    const count = selectedFreePhotoIds.size;
+    if (count === 0) { setFreeStatusMsg('Select at least one photo to download.'); return; }
+    const overflow = Number.isFinite(cap) ? Math.max(0, count - (cap as number)) : 0;
+
+    if (overflow === 0) {
+      setFreeIsProcessing(true);
+      try { await downloadFreeSelectedAndConsume(); }
+      finally { setFreeIsProcessing(false); }
+      return;
+    }
+
+    if (!(price > 0) || !freeAlbumCurrencyId) {
+      setFreeStatusMsg(`You can download at most ${cap} photo(s) from this album.`);
+      return;
+    }
+
+    // Overflow → kick off payment for the extras only.
+    setFreeIsProcessing(true);
+    setFreeStatusMsg('Preparing payment for extra photos…');
+    try {
+      const ident = await identifyAlbumBuyer(freeAlbumId, {
+        name: freeAlbumEmail,
+        email: freeAlbumEmail,
+        phone: '',
+        deviceFingerprint: '',
+      });
+      const bId = ident.data?.buyerId;
+      if (!ident.success || !bId) throw new Error(ident.error || 'Could not identify you. Please retry.');
+
+      // First `cap` selected are free; the rest are the paid overflow.
+      const selectedList = freeAlbumPhotos.filter(p => selectedFreePhotoIds.has(p.id)).map(p => p.id);
+      const overflowIds = selectedList.slice(cap as number);
+      const amount = Math.round(price * overflowIds.length);
+
+      const pay = await initiateXentriPayAlbumPurchase({
+        albumId: freeAlbumId,
+        buyerId: bId,
+        photoIds: overflowIds,
+        amount,
+        currencyId: freeAlbumCurrencyId,
+        paymentMethod: 'CARD',
+        redirectUrl: typeof window !== 'undefined' ? window.location.href : '',
+      });
+      if (!pay.success || !pay.data?.paymentUrl || !pay.data?.refid) {
+        throw new Error(pay.error || 'Could not start payment. Please try again.');
+      }
+      window.open(pay.data.paymentUrl, '_blank', 'noopener');
+      setFreePendingPay({ refid: pay.data.refid, buyerId: bId });
+      setFreeStatusMsg(
+        `Opened payment for ${overflowIds.length} extra photo(s) ` +
+        `(${freeAlbumCurrencyAbbr || ''} ${amount}). Complete it, then click "I've paid — download".`
+      );
+    } catch (e) {
+      setFreeStatusMsg(e instanceof Error ? e.message : 'Payment could not be started.');
+    } finally {
+      setFreeIsProcessing(false);
     }
   };
 
   /**
-   * Bulk-download every photo the user has selected in the verified-free-album
-   * grid. Iterates through selectedFreePhotoIds and routes each one through
-   * the SAME single-photo handler (handleFreePhotoDownload) so the backend
-   * call path is identical to clicking a download button on a single card -
-   * we're just sequencing them. Small stagger keeps the browser from
-   * collapsing the parallel <a download> clicks into one save dialog.
+   * After the user completes the XentriPay popup, record the purchase against
+   * the album then ship all selected photos (free quota + paid extras).
    */
-  const handleBulkFreeDownload = async () => {
-    const chosen = freeAlbumPhotos.filter(p => selectedFreePhotoIds.has(p.id));
-    if (chosen.length === 0) return;
-    for (const photo of chosen) {
-      await handleFreePhotoDownload(photo);
-      await new Promise(r => setTimeout(r, 120));
+  const handleFreeConfirmPaid = async () => {
+    if (!freePendingPay || !freeAlbumId || freeIsProcessing) return;
+    setFreeIsProcessing(true);
+    setFreeStatusMsg('Confirming payment…');
+    try {
+      const rec = await recordAlbumPurchase(freePendingPay.refid, freePendingPay.buyerId);
+      const status = (rec.data?.status || '').toUpperCase();
+      if (rec.success && (status === 'COMPLETED' || status === '')) {
+        setFreePendingPay(null);
+        await downloadFreeSelectedAndConsume();
+      } else {
+        setFreeStatusMsg('Payment not confirmed yet. Finish it in the payment tab, then try again.');
+      }
+    } catch (e) {
+      setFreeStatusMsg(e instanceof Error ? e.message : 'Could not confirm payment yet. Try again shortly.');
+    } finally {
+      setFreeIsProcessing(false);
     }
   };
 
@@ -1747,54 +1905,52 @@ const FindMyPhotos = () => {
                   <i className="bi bi-images" style={{ marginRight: 5, color: '#F20C8F' }} />
                   {freeAlbumPhotos.length} photo{freeAlbumPhotos.length !== 1 ? 's' : ''}
                 </p>
-                {freeAlbumPhotos.length > 1 && (
+                {/* Per album policy: NO bulk "Download All" — user must pick
+                    photos so we can enforce the free cap (and charge for any
+                    extras). Keep the convenience "Select all" though; if their
+                    pick exceeds the cap, the cart bar will route through the
+                    pay-for-extras flow. */}
+                {freeAlbumPhotos.length > 1 && selectedFreePhotoIds.size < freeAlbumPhotos.length && (
                   <div style={{ display: 'inline-flex', gap: 10, marginTop: 16, flexWrap: 'wrap', justifyContent: 'center' }}>
                     <button
-                      onClick={handleFreeDownloadAll}
+                      onClick={() => setSelectedFreePhotoIds(new Set(freeAlbumPhotos.map(p => p.id)))}
                       style={{
-                        padding: '11px 22px',
+                        padding: '11px 18px',
                         borderRadius: 11,
-                        border: 'none',
-                        background: 'linear-gradient(135deg, #083A85 0%, #F20C8F 130%)',
+                        border: '1.5px solid rgba(255,255,255,0.22)',
+                        background: 'rgba(255,255,255,0.06)',
                         color: '#fff',
-                        fontSize: 14,
+                        fontSize: 13.5,
                         fontWeight: 700,
                         letterSpacing: '-0.005em',
                         cursor: 'pointer',
-                        display: 'inline-flex', alignItems: 'center', gap: 8,
-                        boxShadow: '0 8px 22px -6px rgba(242,12,143,0.45)',
-                        transition: 'transform 0.15s, box-shadow 0.15s',
+                        display: 'inline-flex', alignItems: 'center', gap: 7,
+                        transition: 'background 0.15s, border-color 0.15s',
                       }}
-                      onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 12px 28px -6px rgba(242,12,143,0.55)'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 22px -6px rgba(242,12,143,0.45)'; }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(242,12,143,0.12)'; e.currentTarget.style.borderColor = 'rgba(242,12,143,0.42)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.22)'; }}
                     >
-                      <i className="bi bi-download" style={{ fontSize: 14 }} />
-                      Download All
+                      <i className="bi bi-check2-square" style={{ fontSize: 13 }} />
+                      Select all
                     </button>
-                    {selectedFreePhotoIds.size < freeAlbumPhotos.length && (
-                      <button
-                        onClick={() => setSelectedFreePhotoIds(new Set(freeAlbumPhotos.map(p => p.id)))}
-                        style={{
-                          padding: '11px 18px',
-                          borderRadius: 11,
-                          border: '1.5px solid rgba(255,255,255,0.22)',
-                          background: 'rgba(255,255,255,0.06)',
-                          color: '#fff',
-                          fontSize: 13.5,
-                          fontWeight: 700,
-                          letterSpacing: '-0.005em',
-                          cursor: 'pointer',
-                          display: 'inline-flex', alignItems: 'center', gap: 7,
-                          transition: 'background 0.15s, border-color 0.15s',
-                        }}
-                        onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(242,12,143,0.12)'; e.currentTarget.style.borderColor = 'rgba(242,12,143,0.42)'; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.22)'; }}
-                      >
-                        <i className="bi bi-check2-square" style={{ fontSize: 13 }} />
-                        Select all
-                      </button>
-                    )}
                   </div>
+                )}
+                {/* Cap / extra-price hint so the user sees what they'll be
+                    charged for if they pick more than the free quota. */}
+                {(freeAlbumMax !== null || freeAlbumPricePerExtra > 0) && (
+                  <p style={{ color: 'rgba(255,255,255,0.62)', fontSize: 12, marginTop: 10, lineHeight: 1.5 }}>
+                    {freeAlbumMax !== null && (
+                      <>Free up to <strong style={{ color: '#fff' }}>{freeAlbumMax}</strong> photo{freeAlbumMax === 1 ? '' : 's'}.</>
+                    )}
+                    {freeAlbumPricePerExtra > 0 && (
+                      <> Extras cost <strong style={{ color: '#fff' }}>{freeAlbumCurrencyAbbr || ''} {freeAlbumPricePerExtra}</strong> each.</>
+                    )}
+                  </p>
+                )}
+                {freeStatusMsg && (
+                  <p style={{ color: '#F20C8F', fontSize: 12.5, marginTop: 8, maxWidth: 520, marginLeft: 'auto', marginRight: 'auto', lineHeight: 1.5 }}>
+                    {freeStatusMsg}
+                  </p>
                 )}
               </div>
 
@@ -1881,33 +2037,10 @@ const FindMyPhotos = () => {
                         <i className="bi bi-plus" style={{ fontSize: '16px', color: '#F20C8F', fontWeight: 700, lineHeight: 1 }} />
                       )}
                     </button>
-                    {/* Download button */}
-                    <button
-                      onClick={(e) => { e.stopPropagation(); handleFreePhotoDownload(photo); }}
-                      aria-label="Download photo"
-                      title="Download photo"
-                      style={{
-                        position: 'absolute',
-                        bottom: '8px',
-                        right: '8px',
-                        width: '34px',
-                        height: '34px',
-                        borderRadius: '10px',
-                        border: '1px solid rgba(255,255,255,0.18)',
-                        background: 'rgba(0,0,0,0.55)',
-                        color: '#fff',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        backdropFilter: 'blur(4px)',
-                        transition: 'background 0.15s, transform 0.15s',
-                      }}
-                      onMouseEnter={(e) => { e.currentTarget.style.background = '#F20C8F'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(0,0,0,0.55)'; e.currentTarget.style.transform = 'translateY(0)'; }}
-                    >
-                      <i className="bi bi-download" style={{ fontSize: '14px' }}></i>
-                    </button>
+                    {/* Per-card direct-download removed: would bypass the
+                        free-album cap and the pay-for-extras flow. Users add
+                        photos to the cart with the +/✓ toggle above, then use
+                        the bottom action bar to download. */}
                   </div>
                   );
                 })}
@@ -1985,28 +2118,65 @@ const FindMyPhotos = () => {
                       <i className="bi bi-x-circle" style={{ fontSize: 13 }} />
                       Clear
                     </button>
-                    <button
-                      onClick={handleBulkFreeDownload}
-                      style={{
-                        padding: '11px 18px',
-                        borderRadius: 11,
-                        background: 'linear-gradient(135deg, #083A85 0%, #F20C8F 130%)',
-                        border: 'none',
-                        color: '#fff',
-                        fontSize: 13.5,
-                        fontWeight: 700,
-                        letterSpacing: '-0.005em',
-                        cursor: 'pointer',
-                        display: 'inline-flex', alignItems: 'center', gap: 7,
-                        boxShadow: '0 8px 22px -6px rgba(242,12,143,0.45)',
-                        transition: 'transform 0.15s, box-shadow 0.15s',
-                      }}
-                      onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 12px 28px -6px rgba(242,12,143,0.55)'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 22px -6px rgba(242,12,143,0.45)'; }}
-                    >
-                      <i className="bi bi-download" style={{ fontSize: 13 }} />
-                      Download {selectedFreePhotoIds.size} photo{selectedFreePhotoIds.size !== 1 ? 's' : ''}
-                    </button>
+                    {(() => {
+                      const cap = freeAlbumMax ?? Infinity;
+                      const count = selectedFreePhotoIds.size;
+                      const overflow = Number.isFinite(cap) ? Math.max(0, count - (cap as number)) : 0;
+                      const extrasTotal = overflow * (freeAlbumPricePerExtra || 0);
+                      const showExtras = overflow > 0 && freeAlbumPricePerExtra > 0;
+                      const label = showExtras
+                        ? `Pay ${freeAlbumCurrencyAbbr || ''} ${extrasTotal} & download ${count}`
+                        : `Download ${count} photo${count !== 1 ? 's' : ''}`;
+                      return (
+                        <button
+                          onClick={handleFreeCappedDownload}
+                          disabled={freeIsProcessing || !!freePendingPay}
+                          style={{
+                            padding: '11px 18px',
+                            borderRadius: 11,
+                            background: 'linear-gradient(135deg, #083A85 0%, #F20C8F 130%)',
+                            border: 'none',
+                            color: '#fff',
+                            fontSize: 13.5,
+                            fontWeight: 700,
+                            letterSpacing: '-0.005em',
+                            cursor: freeIsProcessing || !!freePendingPay ? 'not-allowed' : 'pointer',
+                            opacity: freeIsProcessing || !!freePendingPay ? 0.65 : 1,
+                            display: 'inline-flex', alignItems: 'center', gap: 7,
+                            boxShadow: '0 8px 22px -6px rgba(242,12,143,0.45)',
+                            transition: 'transform 0.15s, box-shadow 0.15s',
+                          }}
+                          onMouseEnter={(e) => { if (!freeIsProcessing && !freePendingPay) { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 12px 28px -6px rgba(242,12,143,0.55)'; } }}
+                          onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 22px -6px rgba(242,12,143,0.45)'; }}
+                        >
+                          <i className={showExtras ? 'bi bi-credit-card-2-front' : 'bi bi-download'} style={{ fontSize: 13 }} />
+                          {label}
+                        </button>
+                      );
+                    })()}
+                    {freePendingPay && (
+                      <button
+                        onClick={handleFreeConfirmPaid}
+                        disabled={freeIsProcessing}
+                        style={{
+                          padding: '11px 18px',
+                          borderRadius: 11,
+                          background: '#10B981',
+                          border: 'none',
+                          color: '#fff',
+                          fontSize: 13.5,
+                          fontWeight: 700,
+                          letterSpacing: '-0.005em',
+                          cursor: freeIsProcessing ? 'wait' : 'pointer',
+                          opacity: freeIsProcessing ? 0.65 : 1,
+                          display: 'inline-flex', alignItems: 'center', gap: 7,
+                          boxShadow: '0 8px 22px -6px rgba(16,185,129,0.45)',
+                        }}
+                      >
+                        <i className="bi bi-check2-circle" style={{ fontSize: 13 }} />
+                        I&apos;ve paid — download
+                      </button>
+                    )}
                   </div>
                 </div>
               )}
@@ -2972,36 +3142,58 @@ const FindMyPhotos = () => {
               zIndex: 2001,
             }}
           >
-            <button
-              onClick={(e) => { e.stopPropagation(); handleDownloadClick(selectedPhoto); }}
-              style={{
-                display: 'flex',
+            {/* When the previewed photo belongs to the current free album,
+                the lightbox is preview-only — the user must add it to the
+                cart and route through handleFreeCappedDownload so the cap
+                and the pay-for-extras flow stay enforced. */}
+            {freeAlbumPhotos.some(p => p.id === selectedPhoto.id) ? (
+              <span style={{
+                display: 'inline-flex',
                 alignItems: 'center',
-                gap: '7px',
-                padding: '10px 20px',
+                gap: 7,
+                padding: '10px 16px',
                 borderRadius: '50px',
-                background: '#03969c',
-                border: 'none',
-                color: '#ffffff',
-                fontSize: '14px',
+                background: 'rgba(255,255,255,0.08)',
+                color: 'rgba(255,255,255,0.78)',
+                fontSize: 12.5,
                 fontWeight: 600,
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = '#026d72'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = '#03969c'; }}
-            >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                <polyline points="7 10 12 15 17 10"/>
-                <line x1="12" y1="15" x2="12" y2="3"/>
-              </svg>
-              {selectedPhoto.isPurchased
-                ? 'Download'
-                : (selectedPhoto.price ?? 0) > 0
-                  ? `Buy (${selectedPhoto.currencyAbbreviation || albumCurrencySymbol || 'RF'} ${selectedPhoto.price?.toLocaleString()})`
-                  : 'Download'}
-            </button>
+                border: '1px solid rgba(255,255,255,0.18)',
+              }}>
+                <i className="bi bi-info-circle" />
+                Use the + button to add this photo, then download from the cart bar
+              </span>
+            ) : (
+              <button
+                onClick={(e) => { e.stopPropagation(); handleDownloadClick(selectedPhoto); }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '7px',
+                  padding: '10px 20px',
+                  borderRadius: '50px',
+                  background: '#03969c',
+                  border: 'none',
+                  color: '#ffffff',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = '#026d72'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = '#03969c'; }}
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="7 10 12 15 17 10"/>
+                  <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                {selectedPhoto.isPurchased
+                  ? 'Download'
+                  : (selectedPhoto.price ?? 0) > 0
+                    ? `Buy (${selectedPhoto.currencyAbbreviation || albumCurrencySymbol || 'RF'} ${selectedPhoto.price?.toLocaleString()})`
+                    : 'Download'}
+              </button>
+            )}
             <button
               onClick={(e) => { e.stopPropagation(); setSelectedPhoto(null); }}
               style={{
