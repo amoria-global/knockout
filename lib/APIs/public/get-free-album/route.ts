@@ -31,13 +31,18 @@ export interface FreeAlbumData {
   photos: FreeAlbumPhoto[];
   // Capped free album: first `maxFreeDownloads` selected are free, the
   // rest cost `pricePerExtraImage` each (paid via the existing paid-album
-  // flow). `capped` true => one-time access (consumed after download).
+  // flow). `capped` true means the photographer has configured a cap and/or
+  // a per-extra price; the access link itself stays reusable across visits.
   capped?: boolean;
   maxFreeDownloads?: number | null;
   pricePerExtraImage?: number | null;
   currencyId?: string;
   currencyAbbreviation?: string;
   currencySymbol?: string;
+  // Photos this viewer has already free-downloaded (cumulative) or paid
+  // for. Frontend marks them OWNED — free to re-download, excluded from
+  // cap counting and from the pay-for-extras total.
+  alreadyAcquiredPhotoIds?: string[];
 }
 
 /**
@@ -86,6 +91,19 @@ export async function consumeFreeAlbumGrant(albumId: string) {
   return apiClient.post(
     `/api/remote/public/albums/free/${albumId}/consume`,
     {},
+    { retries: 1, skipAuth: false, credentials: 'include' }
+  );
+}
+
+/**
+ * Cumulative download log for capped free albums. Posts the IDs the viewer
+ * just downloaded so the next visit shows them as OWNED. Idempotent — the
+ * backend UNIONs into AlbumAccessGrant.selectedPhotoIds.
+ */
+export async function logFreeAlbumDownload(albumId: string, photoIds: string[]) {
+  return apiClient.post(
+    `/api/remote/public/albums/free/${albumId}/log-download`,
+    { photoIds },
     { retries: 1, skipAuth: false, credentials: 'include' }
   );
 }
