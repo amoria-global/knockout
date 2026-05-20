@@ -223,9 +223,17 @@ const FindMyPhotos = () => {
   const [freeAlbumPricePerExtra, setFreeAlbumPricePerExtra] = useState<number>(0);
   const [freeAlbumCurrencyId, setFreeAlbumCurrencyId] = useState<string>('');
   const [freeAlbumCurrencyAbbr, setFreeAlbumCurrencyAbbr] = useState<string>('');
-  const [freePendingPay, setFreePendingPay] = useState<{ refid: string; buyerId: string } | null>(null);
   const [freeIsProcessing, setFreeIsProcessing] = useState(false);
   const [freeStatusMsg, setFreeStatusMsg] = useState('');
+  // When the XentriPayModal opens for free-album extras (not paid-album
+  // photos), this captures the in-flight overflow + full-selection ids so
+  // handlePurchaseSuccess can route the post-payment download through the
+  // free-album direct-URL path instead of the paid-album backend path.
+  // Cleared on modal close or onSuccess.
+  const [freeExtrasInFlight, setFreeExtrasInFlight] = useState<{
+    overflowIds: string[];
+    allSelectedIds: string[];
+  } | null>(null);
   // Photos this email has already free-downloaded (cumulative) or purchased
   // on this album — returned by the backend on verify/getFreeAlbum. Renders
   // a ✓ OWNED badge, never counts against the free cap, always free to
@@ -691,10 +699,10 @@ const FindMyPhotos = () => {
    * backend so the OWNED set persists across visits.
    *
    * No one-time consumption / link expiry — the access link stays active.
-   * The cap is enforced before this fires (in handleFreeCappedDownload /
-   * handleFreeConfirmPaid) so by the time we land here, every selected
-   * photo is either OWNED already or in the free quota or has just been
-   * paid for.
+   * The cap is enforced before this fires (in handleFreeCappedDownload or
+   * via the XentriPayModal onSuccess branch in handlePurchaseSuccess) so
+   * by the time we land here, every selected photo is either OWNED
+   * already, in the free quota, or has just been paid for.
    */
   const downloadFreeSelected = async () => {
     if (!freeAlbumId) return;
@@ -729,9 +737,11 @@ const FindMyPhotos = () => {
    * The main cart action.
    *
    *   • Pure free-quota selection (no overflow) → just download & log.
-   *   • Overflow on a capped+priced album → open XentriPay for the EXTRAS
-   *     only (free quota + OWNED never re-paid), set freePendingPay.
-   *     handleFreeConfirmPaid finalises after the user pays.
+   *   • Overflow on a capped+priced album → open the in-page XentriPayModal
+   *     for the EXTRAS only (free quota + OWNED never re-paid). The modal's
+   *     onSuccess routes back through handlePurchaseSuccess which detects
+   *     the free-album flag (freeExtrasInFlight) and ships the photos via
+   *     the direct-URL free-album path.
    *   • Overflow on a cap-only album (no extra price) → polite refusal.
    *
    * Hard invariants:
@@ -770,10 +780,14 @@ const FindMyPhotos = () => {
       return;
     }
 
-    // Overflow → kick off payment for the OVERFLOW ids only. Owned + free
-    // quota never charged.
+    // Overflow → open the in-page XentriPayModal for the OVERFLOW ids only.
+    // Owned + free quota are never charged. We DO NOT use window.open here
+    // — popups opened after an `await` are blocked by modern browsers
+    // because they're no longer considered part of the user-gesture chain.
+    // The shared XentriPayModal handles gateway initiate + status polling
+    // entirely inside the page so there's no popup to block.
     setFreeIsProcessing(true);
-    setFreeStatusMsg('Preparing payment for extra photos…');
+    setFreeStatusMsg('Identifying you for payment…');
     try {
       const ident = await identifyAlbumBuyer(freeAlbumId, {
         name: freeAlbumEmail,
@@ -783,29 +797,34 @@ const FindMyPhotos = () => {
       });
       const bId = ident.data?.buyerId;
       if (!ident.success || !bId) throw new Error(ident.error || 'Could not identify you. Please retry.');
+      setBuyerId(bId);
+      setBuyerAlbumId(freeAlbumId);
 
       // Out of the NEW (non-owned) picks: first `cap` are free, the rest
-      // are the paid overflow that needs the XentriPay flow.
+      // are the paid overflow.
       const overflowIds = info.newPicks.slice(info.cap as number);
       const amount = Math.round(price * overflowIds.length);
 
-      const pay = await initiateXentriPayAlbumPurchase({
+      // Remember the full selection so handlePurchaseSuccess can ship
+      // every chosen photo (free quota + overflow) through the
+      // direct-URL free-album path after payment lands.
+      setFreeExtrasInFlight({
+        overflowIds,
+        allSelectedIds: Array.from(selectedFreePhotoIds),
+      });
+
+      setPendingPurchase({
         albumId: freeAlbumId,
-        buyerId: bId,
         photoIds: overflowIds,
         amount,
         currencyId: freeAlbumCurrencyId,
-        paymentMethod: 'CARD',
-        redirectUrl: typeof window !== 'undefined' ? window.location.href : '',
+        currencyCode: freeAlbumCurrencyAbbr || '',
       });
-      if (!pay.success || !pay.data?.paymentUrl || !pay.data?.refid) {
-        throw new Error(pay.error || 'Could not start payment. Please try again.');
-      }
-      window.open(pay.data.paymentUrl, '_blank', 'noopener');
-      setFreePendingPay({ refid: pay.data.refid, buyerId: bId });
+      setPendingDonationAmount(0);
+      setXentriModalOpen(true);
       setFreeStatusMsg(
-        `Opened payment for ${overflowIds.length} extra photo${overflowIds.length === 1 ? '' : 's'} ` +
-        `(${freeAlbumCurrencyAbbr || ''} ${amount}). Complete it, then click "I've paid — download".`
+        `Pay ${freeAlbumCurrencyAbbr || ''} ${amount} for ${overflowIds.length} extra photo${overflowIds.length === 1 ? '' : 's'} ` +
+        `to unlock your download.`
       );
     } catch (e) {
       setFreeStatusMsg(e instanceof Error ? e.message : 'Payment could not be started.');
@@ -814,29 +833,10 @@ const FindMyPhotos = () => {
     }
   };
 
-  /**
-   * After the user completes the XentriPay popup, record the purchase against
-   * the album then ship all selected photos (free quota + paid extras).
-   */
-  const handleFreeConfirmPaid = async () => {
-    if (!freePendingPay || !freeAlbumId || freeIsProcessing) return;
-    setFreeIsProcessing(true);
-    setFreeStatusMsg('Confirming payment…');
-    try {
-      const rec = await recordAlbumPurchase(freePendingPay.refid, freePendingPay.buyerId);
-      const status = (rec.data?.status || '').toUpperCase();
-      if (rec.success && (status === 'COMPLETED' || status === '')) {
-        setFreePendingPay(null);
-        await downloadFreeSelected();
-      } else {
-        setFreeStatusMsg('Payment not confirmed yet. Finish it in the payment tab, then try again.');
-      }
-    } catch (e) {
-      setFreeStatusMsg(e instanceof Error ? e.message : 'Could not confirm payment yet. Try again shortly.');
-    } finally {
-      setFreeIsProcessing(false);
-    }
-  };
+  // handleFreeConfirmPaid + freePendingPay were the manual "I've paid"
+  // fallback for the old window.open flow. Removed in favour of the
+  // in-page XentriPayModal which handles status polling + onSuccess
+  // directly (see handlePurchaseSuccess freeExtrasInFlight branch).
 
   const toggleFreePhotoSelected = (photoId: string) => {
     setSelectedFreePhotoIds(prev => {
@@ -1246,6 +1246,37 @@ const FindMyPhotos = () => {
     if (!pendingPurchase) return;
     setPurchaseRefid(refid);
     setPurchaseNotice('Payment confirmed! Recording purchase…');
+
+    // ── Free-album extras short-circuit ──
+    // When this modal was opened by the free-album cap+pay flow (not the
+    // standard paid-album path), shift to the direct-URL download path
+    // used by every other free-album action. The paid-album branch below
+    // calls downloadPurchasedPhoto which goes through the protected
+    // backend download endpoint — that's wrong for free-album photos
+    // whose URLs are already the original-quality JPEGs.
+    if (freeExtrasInFlight) {
+      const allSelected = freeExtrasInFlight.allSelectedIds;
+      const overflowIds = freeExtrasInFlight.overflowIds;
+      setXentriModalOpen(false);
+      setPendingPurchase(null);
+      setPendingDonationAmount(0);
+      setFreeExtrasInFlight(null);
+      // Optimistically mark every just-paid photo as OWNED so a refresh
+      // wouldn't re-charge for them.
+      setFreeAcquiredIds(prev => {
+        const next = new Set(prev);
+        for (const id of allSelected) next.add(id);
+        return next;
+      });
+      // Ship every selected photo via the existing free-album download
+      // routine + log to backend so OWNED persists across visits.
+      await downloadFreeSelected();
+      setPurchaseNotice(
+        `Payment confirmed. ${overflowIds.length} extra photo${overflowIds.length === 1 ? '' : 's'} unlocked and downloading.`
+      );
+      setTimeout(() => setPurchaseNotice(null), 5000);
+      return;
+    }
 
     // record-album-purchase has to win before the downloads can succeed:
     // it's what flips each AlbumPurchase row to COMPLETED, links the buyer,
@@ -2268,7 +2299,7 @@ const FindMyPhotos = () => {
                       return (
                         <button
                           onClick={handleFreeCappedDownload}
-                          disabled={freeIsProcessing || !!freePendingPay}
+                          disabled={freeIsProcessing}
                           style={{
                             padding: '11px 18px',
                             borderRadius: 11,
@@ -2280,13 +2311,13 @@ const FindMyPhotos = () => {
                             fontSize: 13.5,
                             fontWeight: 700,
                             letterSpacing: '-0.005em',
-                            cursor: freeIsProcessing || !!freePendingPay ? 'not-allowed' : 'pointer',
-                            opacity: freeIsProcessing || !!freePendingPay ? 0.65 : 1,
+                            cursor: freeIsProcessing ? 'not-allowed' : 'pointer',
+                            opacity: freeIsProcessing ? 0.65 : 1,
                             display: 'inline-flex', alignItems: 'center', gap: 7,
                             boxShadow: '0 8px 22px -6px rgba(242,12,143,0.45)',
                             transition: 'transform 0.15s, box-shadow 0.15s',
                           }}
-                          onMouseEnter={(e) => { if (!freeIsProcessing && !freePendingPay) { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 12px 28px -6px rgba(242,12,143,0.55)'; } }}
+                          onMouseEnter={(e) => { if (!freeIsProcessing) { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 12px 28px -6px rgba(242,12,143,0.55)'; } }}
                           onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 22px -6px rgba(242,12,143,0.45)'; }}
                         >
                           <i className={showPurchase ? 'bi bi-credit-card-2-front' : 'bi bi-download'} style={{ fontSize: 13 }} />
@@ -2294,29 +2325,9 @@ const FindMyPhotos = () => {
                         </button>
                       );
                     })()}
-                    {freePendingPay && (
-                      <button
-                        onClick={handleFreeConfirmPaid}
-                        disabled={freeIsProcessing}
-                        style={{
-                          padding: '11px 18px',
-                          borderRadius: 11,
-                          background: '#10B981',
-                          border: 'none',
-                          color: '#fff',
-                          fontSize: 13.5,
-                          fontWeight: 700,
-                          letterSpacing: '-0.005em',
-                          cursor: freeIsProcessing ? 'wait' : 'pointer',
-                          opacity: freeIsProcessing ? 0.65 : 1,
-                          display: 'inline-flex', alignItems: 'center', gap: 7,
-                          boxShadow: '0 8px 22px -6px rgba(16,185,129,0.45)',
-                        }}
-                      >
-                        <i className="bi bi-check2-circle" style={{ fontSize: 13 }} />
-                        I&apos;ve paid — download
-                      </button>
-                    )}
+                    {/* The XentriPayModal handles the entire pay→download
+                        cycle in-page (no popup, no "I've paid" button) so
+                        the old freePendingPay fallback button is gone. */}
                   </div>
                 </div>
               )}
@@ -4384,7 +4395,18 @@ const FindMyPhotos = () => {
       {pendingPurchase && (
         <XentriPayModal
           isOpen={xentriModalOpen}
-          onClose={() => { setXentriModalOpen(false); setPendingPurchase(null); setPendingDonationAmount(0); }}
+          onClose={() => {
+            setXentriModalOpen(false);
+            setPendingPurchase(null);
+            setPendingDonationAmount(0);
+            // Free-album case: if the user dismisses the modal without
+            // paying, drop the in-flight context so the next Purchase
+            // click starts a fresh flow with the current selection.
+            if (freeExtrasInFlight) {
+              setFreeExtrasInFlight(null);
+              setFreeStatusMsg('Payment cancelled. Your selection is unchanged.');
+            }
+          }}
           onSuccess={handlePurchaseSuccess}
           onError={(e) => setPurchaseNotice(e)}
           amount={pendingPurchase.amount}
