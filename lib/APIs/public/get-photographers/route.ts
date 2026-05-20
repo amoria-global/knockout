@@ -91,6 +91,11 @@ export interface PhotographerPackage {
   includedVideos?: number | null;
   extraPhotoPrice?: number;
   extraVideoPrice?: number;
+  // "OUTDOOR" (default, event packages) or "STUDIO" (indoor session
+  // packages). Missing/unknown → treat as OUTDOOR. Lets the booking
+  // wizard split a photographer's packages into the right card grid
+  // (outdoor for events; studio for indoor sessions).
+  serviceType?: 'OUTDOOR' | 'STUDIO';
   features: PhotographerPackageFeature[];
 }
 

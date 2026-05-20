@@ -111,6 +111,9 @@ export interface PublicPackage {
   hasLiveStream?: boolean;
   photobookPhotos?: number | null;
   deliveryDays?: number | null;
+  // "OUTDOOR" (default event packages) or "STUDIO" (indoor session
+  // packages). Missing/unknown is treated as OUTDOOR by callers.
+  serviceType?: 'OUTDOOR' | 'STUDIO';
   features: PublicPackageFeature[];
 }
 
