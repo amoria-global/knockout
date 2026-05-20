@@ -131,16 +131,11 @@ const FreeAlbumAccessPage = () => {
     document.body.removeChild(link);
   };
 
-  const handleBulkDownload = () => {
-    if (!albumData) return;
-    albumData.photos.forEach((photo, index) => {
-      setTimeout(() => {
-        handlePhotoDownload(photo.url, `photo-${index + 1}.jpg`);
-      }, index * 500); // Stagger downloads to avoid browser blocking
-    });
-  };
+  // NOTE: "Download all" was removed — every shared free album now
+  // requires explicit selection so we can enforce the free-download cap
+  // and charge per-photo for any extras picked beyond it.
 
-  // ── Capped free album: selection + pay-for-extra (reuses paid flow) ──
+  // ── Free album: selection + pay-for-extra (reuses paid flow) ──
   const toggleSelect = (id: string) => {
     setSelectedIds(prev => {
       const next = new Set(prev);
@@ -338,46 +333,37 @@ const FreeAlbumAccessPage = () => {
                         {albumData.photoCount} photo{albumData.photoCount !== 1 ? 's' : ''}
                       </p>
                     </div>
-                    {albumData.capped ? (
-                      <div className="flex flex-col items-end gap-2">
-                        <div className="text-sm text-gray-600">
-                          Selected <span className="font-semibold">{selectedIds.size}</span>
-                          {typeof albumData.maxFreeDownloads === 'number' && (
-                            <> · first <span className="font-semibold">{albumData.maxFreeDownloads}</span> free</>
-                          )}
-                          {(albumData.pricePerExtraImage ?? 0) > 0 && (
-                            <> · extra @ {albumData.currencyAbbreviation || ''} {albumData.pricePerExtraImage}</>
-                          )}
-                        </div>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={handleCappedDownload}
-                            disabled={isProcessing || selectedIds.size === 0}
-                            className="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50"
-                          >
-                            {isProcessing ? 'Working…' : 'Download Selected'}
-                          </button>
-                          {pendingPay && (
-                            <button
-                              onClick={handleConfirmPaid}
-                              disabled={isProcessing}
-                              className="px-6 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition disabled:opacity-50"
-                            >
-                              I&apos;ve paid — download
-                            </button>
-                          )}
-                        </div>
+                    <div className="flex flex-col items-end gap-2">
+                      <div className="text-sm text-gray-600">
+                        Selected <span className="font-semibold">{selectedIds.size}</span>
+                        {typeof albumData.maxFreeDownloads === 'number' && (
+                          <> · first <span className="font-semibold">{albumData.maxFreeDownloads}</span> free</>
+                        )}
+                        {(albumData.pricePerExtraImage ?? 0) > 0 && (
+                          <> · extra @ {albumData.currencyAbbreviation || ''} {albumData.pricePerExtraImage}</>
+                        )}
                       </div>
-                    ) : (
-                      <button
-                        onClick={handleBulkDownload}
-                        className="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition"
-                      >
-                        Download All Photos
-                      </button>
-                    )}
+                      <div className="flex gap-2">
+                        <button
+                          onClick={handleCappedDownload}
+                          disabled={isProcessing || selectedIds.size === 0}
+                          className="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50"
+                        >
+                          {isProcessing ? 'Working…' : 'Download Selected'}
+                        </button>
+                        {pendingPay && (
+                          <button
+                            onClick={handleConfirmPaid}
+                            disabled={isProcessing}
+                            className="px-6 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition disabled:opacity-50"
+                          >
+                            I&apos;ve paid — download
+                          </button>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  {albumData.capped && statusMsg && (
+                  {statusMsg && (
                     <div className="mt-3 bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
                       {statusMsg}
                     </div>
@@ -405,23 +391,21 @@ const FreeAlbumAccessPage = () => {
                         src={photo.thumbnailUrl}
                         alt={photo.caption || `Photo ${index + 1}`}
                         className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
-                        onContextMenu={(e) => albumData.capped && e.preventDefault()}
-                        onDragStart={(e) => albumData.capped && e.preventDefault()}
-                        draggable={albumData.capped ? false : undefined}
+                        onContextMenu={(e) => e.preventDefault()}
+                        onDragStart={(e) => e.preventDefault()}
+                        draggable={false}
                       />
-                      {albumData.capped && (
-                        <label
-                          className="absolute top-2 left-2 z-10 flex items-center justify-center w-7 h-7 rounded-md bg-white/90 shadow cursor-pointer"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <input
-                            type="checkbox"
-                            className="w-4 h-4 accent-blue-600"
-                            checked={selectedIds.has(photo.id)}
-                            onChange={() => toggleSelect(photo.id)}
-                          />
-                        </label>
-                      )}
+                      <label
+                        className="absolute top-2 left-2 z-10 flex items-center justify-center w-7 h-7 rounded-md bg-white/90 shadow cursor-pointer"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <input
+                          type="checkbox"
+                          className="w-4 h-4 accent-blue-600"
+                          checked={selectedIds.has(photo.id)}
+                          onChange={() => toggleSelect(photo.id)}
+                        />
+                      </label>
                       <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition flex items-center justify-center">
                         <svg
                           className="w-12 h-12 text-white opacity-0 group-hover:opacity-100 transition"
@@ -495,22 +479,20 @@ const FreeAlbumAccessPage = () => {
             <img
               src={albumData.photos[selectedPhotoIndex].url}
               alt={albumData.photos[selectedPhotoIndex].caption || `Photo ${selectedPhotoIndex + 1}`}
-              className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
+              className="w-full h-auto max-h-[80vh] object-contain rounded-lg select-none"
+              onContextMenu={(e) => e.preventDefault()}
+              onDragStart={(e) => e.preventDefault()}
+              draggable={false}
             />
             <div className="mt-4 text-center">
-              <button
-                onClick={() =>
-                  handlePhotoDownload(
-                    albumData.photos[selectedPhotoIndex].url,
-                    `photo-${selectedPhotoIndex + 1}.jpg`
-                  )
-                }
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-              >
-                Download Photo
-              </button>
-              <p className="text-white text-sm mt-2">
+              {/* No in-modal download. Tick the photo's checkbox in the grid
+                  to add it to your selection, then use "Download Selected"
+                  on the album header (free up to your cap; pay for extras). */}
+              <p className="text-white text-sm">
                 Photo {selectedPhotoIndex + 1} of {albumData.photos.length}
+              </p>
+              <p className="text-white/60 text-xs mt-1">
+                Close this preview and tick the photo to select it for download.
               </p>
             </div>
           </div>
