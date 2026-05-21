@@ -46,6 +46,13 @@ export interface LoginResponse {
   // Photographer profile-completion gate. Non-photographers read 100 / [].
   profileCompletionPercentage?: number;
   missingItems?: string[];
+  // Forced first-login password change. Set true by the backend when the
+  // Customer.isPasswordChanged is false (i.e. an invited team member who
+  // just signed in with the temp password from their invitation email).
+  // Knockout's login handler routes these users to /user/auth/change-password
+  // BEFORE the dashboard hand-off so they never see a flash of UI they
+  // can't fully use.
+  mustChangePassword?: boolean;
   user?: {
     id: string;
     email: string;

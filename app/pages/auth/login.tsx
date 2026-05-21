@@ -390,6 +390,26 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
         // and show the modal".
         if (data?.otpVerified === false && data?.customerId) { showWarning(data?.message || 'Please verify your phone number.'); setLoginLoading(false); router.push(`/user/auth/verify-otp?applicantId=${encodeURIComponent(String(data.customerId))}&email=${encodeURIComponent(loginEmail)}`); return; }
 
+        // FORCED FIRST-LOGIN PASSWORD CHANGE.
+        // TeamService.inviteTeamMember persists invited members with
+        // isPasswordChanged=false; the backend login response sets
+        // mustChangePassword=true for those. We route them to the
+        // change-password page on knockout itself, BEFORE the
+        // photographer-completion wizard or the dashboard hand-off,
+        // so they never see a flash of UI they can't fully use until
+        // they've picked their own password.
+        if (data?.mustChangePassword === true) {
+          // Persist the token so the change-password form can attach
+          // it as a Bearer header when calling /set-new-password.
+          if (data?.token) setAuthToken(data.token);
+          setLoginLoading(false);
+          const params = new URLSearchParams();
+          params.set('email', loginEmail);
+          if (data?.customerType) params.set('customerType', String(data.customerType));
+          router.push(`/user/auth/change-password?${params.toString()}`);
+          return;
+        }
+
         // PROFILE-COMPLETION GATE (verified users) - runs BEFORE the
         // dashboard/keep-exploring modal. A photographer with an incomplete
         // profile (everything except KYC) must finish it here, in the same
