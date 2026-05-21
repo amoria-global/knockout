@@ -99,21 +99,26 @@ export async function persistPhotographerProfile(
   // duplicates, and re-finalising just refreshes them. Not gated by
   // `existing` for that reason.
   for (const pkg of payload.packages) {
+    // Studio packages don't make sense with hasLiveStream (1-2 hour indoor
+    // shoots aren't live-streamed) — keep that flag scoped to outdoor
+    // Diamond. Missing serviceType is treated as OUTDOOR by the backend.
+    const serviceType = pkg.serviceType ?? 'OUTDOOR';
     const rPkg = await apiClient.post('/api/remote/photographer/packages', {
       packageName: pkg.tier,
       price: pkg.price,
       currencyId: payload.pkgCurrencyId,
-      priceUnit: 'per session',
+      priceUnit: serviceType === 'STUDIO' ? 'per studio session' : 'per session',
       durationHours: pkg.duration,
-      description: pkg.description || `${pkg.tier} photography package`,
+      description: pkg.description || `${pkg.tier} ${serviceType === 'STUDIO' ? 'studio session' : 'photography'} package`,
       isActive: true,
-      hasLiveStream: pkg.tier === 'Diamond',
+      hasLiveStream: serviceType === 'OUTDOOR' && pkg.tier === 'Diamond',
       includedPhotos: pkg.photos,
       includedVideos: pkg.videos,
       extraPhotoPrice: 0,
       extraVideoPrice: 0,
       photobookPhotos: 0,
       deliveryDays: pkg.delivery,
+      serviceType,
       features: pkg.features,
     }, { retries: 2 });
     if (!rPkg.success) throw new Error(rPkg.error || `Could not save your ${pkg.tier} package.`);
