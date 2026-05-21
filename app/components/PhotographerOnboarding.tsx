@@ -387,9 +387,28 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
           });
         }
 
+        // Restore the optional studio packages too. Same shape as outdoor
+        // pkgs; missing → keep the (zero-priced) defaults so a draft from
+        // before this field existed still hydrates cleanly.
+        if (d.studioPkgs && typeof d.studioPkgs === 'object') {
+          const draftStudioPkgs = d.studioPkgs as Record<string, Partial<PkgFields>>;
+          setStudioPkgs(base => {
+            const merged = { ...base };
+            (['Silver', 'Gold', 'Diamond'] as PackageTier[]).forEach(t => {
+              if (draftStudioPkgs[t] && typeof draftStudioPkgs[t] === 'object') {
+                merged[t] = { ...merged[t], ...draftStudioPkgs[t] };
+              }
+            });
+            return merged;
+          });
+        }
+        if (d.studioPkgTier === 'Silver' || d.studioPkgTier === 'Gold' || d.studioPkgTier === 'Diamond') {
+          setStudioPkgTier(d.studioPkgTier);
+        }
+
         // Files aren't persisted, and slides 3-5 hard-require the profile
         // photo, so send a returning user back to (at most) the Photos step
-        // to re-pick their images. Never restore the success slide (6).
+        // to re-pick their images. Never restore the success slide (7).
         const savedSlide = typeof d.currentSlide === 'number' ? d.currentSlide : 0;
         const restoredSlide = Math.max(0, Math.min(savedSlide, 2));
         if (restoredSlide > 0) dispatch({ type: 'SET_SLIDE', slide: restoredSlide });
@@ -414,6 +433,7 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
           expPosition, expCompany, expLocation, expStartDate, expEndDate,
           expIsCurrent, expDescription,
           pkgTier, pkgCurrencyId, pkgs,
+          studioPkgTier, studioPkgs,
           currentSlide: state.currentSlide,
         }));
       } catch {
@@ -426,6 +446,7 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
     selectedSpecialtyIds, projTitle, projYear, projDescription,
     expPosition, expCompany, expLocation, expStartDate, expEndDate,
     expIsCurrent, expDescription, pkgTier, pkgCurrencyId, pkgs,
+    studioPkgTier, studioPkgs,
     state.currentSlide,
   ]);
 
@@ -476,15 +497,26 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
         }
 
         // Pre-fill EVERY saved tier into its own record (not just the
-        // first), so all three stay up to date and editable.
+        // first), so all three stay up to date and editable. Split by
+        // serviceType so a returning photographer's STUDIO packages
+        // don't get merged into the OUTDOOR slide's state (and vice
+        // versa) — both sides are independent now.
         if (Array.isArray(p.packages) && p.packages.length > 0) {
           let firstSavedTier: PackageTier | null = null;
-          setPkgs(base => {
+          let firstSavedStudioTier: PackageTier | null = null;
+          const mergeInto = (
+            setter: typeof setPkgs,
+            captureFirst: (t: PackageTier) => void,
+            wantStudio: boolean,
+          ) => setter(base => {
             const merged = { ...base };
             for (const pk of p.packages!) {
               const t = pk.packageName;
               if (t !== 'Silver' && t !== 'Gold' && t !== 'Diamond') continue;
-              if (!firstSavedTier) firstSavedTier = t;
+              const pkServiceType = (pk as { serviceType?: string }).serviceType ?? 'OUTDOOR';
+              const isStudio = pkServiceType === 'STUDIO';
+              if (isStudio !== wantStudio) continue;
+              captureFirst(t);
               merged[t] = {
                 price: typeof pk.price === 'number' && pk.price > 0 ? pk.price : merged[t].price,
                 duration: typeof pk.durationHours === 'number' ? pk.durationHours : merged[t].duration,
@@ -496,9 +528,12 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
             }
             return merged;
           });
+          mergeInto(setPkgs, t => { if (!firstSavedTier) firstSavedTier = t; }, false);
+          mergeInto(setStudioPkgs, t => { if (!firstSavedStudioTier) firstSavedStudioTier = t; }, true);
           const cid = p.packages.find(pk => pk.currencyId)?.currencyId;
           if (cid) setPkgCurrencyId(cid);
           if (firstSavedTier) setPkgTier(firstSavedTier);
+          if (firstSavedStudioTier) setStudioPkgTier(firstSavedStudioTier);
         }
 
         // Existing images: show them as the preview so the photographer sees
@@ -734,7 +769,7 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
     selectedSpecialtyIds, profileFile, coverFile, projTitle, projYear,
     projDescription, projFile, expPosition, expCompany, expLocation,
     expStartDate, expEndDate, expIsCurrent, expDescription,
-    pkgCurrencyId, pkgs, state.currentSlide,
+    pkgCurrencyId, pkgs, studioPkgs, state.currentSlide,
   ]);
 
   // ─── SLIDE 5: Outdoor Packages ───
