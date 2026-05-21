@@ -1256,7 +1256,7 @@ const Photographers: React.FC = () => {
         .ph-price-value {
           font-size: 0.95rem;
           font-weight: 800;
-          color: #0f172a;
+          color: #16a34a;
           overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
         }
         .ph-price-value small { color: #64748b; font-weight: 500; font-size: 0.72rem; }
