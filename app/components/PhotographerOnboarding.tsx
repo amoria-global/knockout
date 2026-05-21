@@ -167,6 +167,28 @@ const errorBoxStyle: React.CSSProperties = {
   display: 'flex', alignItems: 'flex-start', gap: 8,
 };
 
+// Tier gradients matched 1:1 with the connekyt booking wizard package step
+// so the badges look consistent across onboarding + booking. Used by both
+// the required-packages slide and the optional-packages slide (same look,
+// no outdoor/indoor visual divergence).
+const TIER_GRADIENTS: Record<'Silver' | 'Gold' | 'Diamond', { gradient: string; glow: string; icon: string }> = {
+  Silver: {
+    gradient: 'linear-gradient(135deg, #94A3B8 0%, #CBD5E1 45%, #64748B 100%)',
+    glow: 'rgba(100,116,139,0.32)',
+    icon: 'bi-gem',
+  },
+  Gold: {
+    gradient: 'linear-gradient(135deg, #F59E0B 0%, #FBBF24 50%, #D97706 100%)',
+    glow: 'rgba(245,158,11,0.36)',
+    icon: 'bi-award-fill',
+  },
+  Diamond: {
+    gradient: 'linear-gradient(135deg, #06B6D4 0%, #A78BFA 55%, #3B82F6 100%)',
+    glow: 'rgba(59,130,246,0.36)',
+    icon: 'bi-stars',
+  },
+};
+
 const TIER_PRESETS: Record<string, { price: number; duration: number; photos: number; videos: number; delivery: number; features: string[] }> = {
   Silver: { price: 50000, duration: 2, photos: 50, videos: 0, delivery: 7, features: ['Online gallery storage', 'Digital Memory Sharing Experience', 'Same-day preview', 'Custom branding'] },
   Gold: { price: 100000, duration: 4, photos: 100, videos: 1, delivery: 5, features: ['Online gallery storage', 'Digital Memory Sharing Experience', 'Same-day preview', 'Custom branding', 'Fast processing', 'Outdoor photography', 'Event coverage'] },
@@ -1347,26 +1369,6 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
             /* ── SLIDE 5: Package ── */
             ) : state.currentSlide === 5 ? (
               (() => {
-                // Tier gradients matched 1:1 with the connekyt booking wizard
-                // package step so the badges look consistent across the
-                // photographer onboarding flow and the client booking flow.
-                const TIER_GRADIENTS: Record<'Silver' | 'Gold' | 'Diamond', { gradient: string; glow: string; icon: string }> = {
-                  Silver: {
-                    gradient: 'linear-gradient(135deg, #94A3B8 0%, #CBD5E1 45%, #64748B 100%)',
-                    glow: 'rgba(100,116,139,0.32)',
-                    icon: 'bi-gem',
-                  },
-                  Gold: {
-                    gradient: 'linear-gradient(135deg, #F59E0B 0%, #FBBF24 50%, #D97706 100%)',
-                    glow: 'rgba(245,158,11,0.36)',
-                    icon: 'bi-award-fill',
-                  },
-                  Diamond: {
-                    gradient: 'linear-gradient(135deg, #06B6D4 0%, #A78BFA 55%, #3B82F6 100%)',
-                    glow: 'rgba(59,130,246,0.36)',
-                    icon: 'bi-stars',
-                  },
-                };
                 const activeTier = TIER_GRADIENTS[pkgTier];
                 return (
               <div>
@@ -1381,7 +1383,7 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
                       fontSize: 10.5, fontWeight: 700,
                       color: PINK, letterSpacing: '0.08em', textTransform: 'uppercase',
                       marginBottom: 2,
-                    }}>Step 6 of 7 · Outdoor Pricing</div>
+                    }}>Step 6 of 7 · Pricing</div>
                     <h3 style={{ color: TEXT_PRIMARY, fontSize: 19, fontWeight: 800, margin: 0, letterSpacing: '-0.015em' }}>Create a Package</h3>
                     <p style={{ color: TEXT_MUTED, fontSize: 12.5, margin: '2px 0 0' }}>Set your first pricing package &mdash; you can edit or add more later.</p>
                   </div>
@@ -1582,15 +1584,18 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
                 );
               })()
 
-            /* ── SLIDE 6: Indoor Studio Packages (OPTIONAL) ──
-               This is the single optional step in the wizard. Continue
-               submits whatever indoor prices the user filled (filtered to
-               > 0 in buildPayload); Skip submits the profile with zero
-               studio packages. Either way the final submit (handleFinalSubmit)
-               runs here so we only persist once. */
+            /* ── SLIDE 6: Optional Packages ──
+               Visually identical to slide 5 (same TIER_GRADIENTS, same
+               PINK accents, same field layout) — the only difference is
+               that it's optional, hence the Skip button alongside
+               Continue. Submission happens here for both buttons via
+               handleFinalSubmit. */
             ) : state.currentSlide === 6 ? (
+              (() => {
+                const activeStudioTier = TIER_GRADIENTS[studioPkgTier];
+                return (
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
                   <button onClick={() => dispatch({ type: 'SET_SLIDE', slide: 5 })} style={backBtnStyle}
                     onMouseEnter={(e) => { e.currentTarget.style.borderColor = PINK; e.currentTarget.style.color = PINK; }}
                     onMouseLeave={(e) => { e.currentTarget.style.borderColor = INPUT_BORDER; e.currentTarget.style.color = TEXT_SECONDARY; }}>
@@ -1601,10 +1606,10 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
                       fontSize: 10.5, fontWeight: 700,
                       color: PINK, letterSpacing: '0.08em', textTransform: 'uppercase',
                       marginBottom: 2,
-                    }}>Step 7 of 7 · Studio (Optional)</div>
-                    <h3 style={{ color: TEXT_PRIMARY, fontSize: 19, fontWeight: 800, margin: 0, letterSpacing: '-0.015em' }}>Indoor Studio Packages</h3>
+                    }}>Step 7 of 7 · Pricing (Optional)</div>
+                    <h3 style={{ color: TEXT_PRIMARY, fontSize: 19, fontWeight: 800, margin: 0, letterSpacing: '-0.015em' }}>Create Another Package</h3>
                     <p style={{ color: TEXT_MUTED, fontSize: 12.5, margin: '2px 0 0' }}>
-                      Optionally price your indoor studio sessions. Set any tier&apos;s price &mdash; or Skip if you don&apos;t offer studio sessions.
+                      Optional &mdash; add an extra package or skip to finish.
                     </p>
                   </div>
                 </div>
@@ -1616,12 +1621,14 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
                   </div>
                 )}
 
-                {/* Tier selector — same Silver/Gold/Diamond as outdoor */}
-                <div style={{ marginBottom: 14 }}>
-                  <label style={labelStyle}>Tier</label>
-                  <div style={{ display: 'flex', gap: 8 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  {/* Tier selector — same Silver/Gold/Diamond gradients as slide 5 */}
+                  <div>
+                    <label style={labelStyle}>Package Tier</label>
+                    <div style={{ display: 'flex', gap: 8 }}>
                     {(['Silver', 'Gold', 'Diamond'] as const).map(tier => {
                       const sel = studioPkgTier === tier;
+                      const t = TIER_GRADIENTS[tier];
                       return (
                         <button
                           key={tier}
@@ -1629,26 +1636,60 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
                           type="button"
                           style={{
                             flex: 1,
-                            padding: '10px 8px',
-                            borderRadius: 11,
+                            padding: '12px 8px',
+                            borderRadius: 12,
                             fontSize: 13.5,
                             fontWeight: 800,
+                            letterSpacing: '-0.005em',
                             cursor: 'pointer',
-                            background: sel ? `linear-gradient(135deg, #083A85 0%, #F20C8F 130%)` : '#f9fafb',
+                            background: sel ? t.gradient : '#f9fafb',
                             border: sel ? 'none' : `1.5px solid ${INPUT_BORDER}`,
                             color: sel ? '#fff' : TEXT_SECONDARY,
+                            boxShadow: sel ? `0 8px 20px -6px ${t.glow}` : 'none',
+                            textShadow: sel ? '0 1px 2px rgba(0,0,0,0.18)' : 'none',
                             transition: 'all 0.2s',
+                            display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                           }}
                         >
+                          <i className={`bi ${t.icon}`} style={{ fontSize: 13 }} />
                           {tier}{studioPkgs[tier].price > 0 ? ' ✓' : ''}
                         </button>
                       );
                     })}
+                    </div>
+                    <p style={{ fontSize: 11, color: TEXT_MUTED, margin: '6px 0 0' }}>
+                      The ✓ shows which tiers you&apos;ve priced. Tiers left at 0 are skipped on submit.
+                    </p>
                   </div>
-                  <p style={{ fontSize: 11, color: TEXT_MUTED, margin: '6px 0 0' }}>
-                    The ✓ shows which tiers you&apos;ve priced. Tiers left at 0 are skipped on submit.
-                  </p>
-                </div>
+
+                  {/* Active tier preview card — mirrors slide 5's "Selected tier" card */}
+                  <div style={{
+                    position: 'relative',
+                    borderRadius: 14,
+                    padding: '12px 14px',
+                    background: `linear-gradient(135deg, rgba(8,58,133,0.04) 0%, rgba(242,12,143,0.04) 100%)`,
+                    border: `1.5px solid rgba(8,58,133,0.12)`,
+                    display: 'flex', alignItems: 'center', gap: 12,
+                    overflow: 'hidden',
+                  }}>
+                    <span aria-hidden style={{
+                      position: 'absolute', top: 0, left: 0, right: 0, height: 2,
+                      background: 'linear-gradient(90deg, #083A85 0%, #F20C8F 100%)',
+                    }} />
+                    <div style={{
+                      width: 38, height: 38, borderRadius: 11,
+                      background: activeStudioTier.gradient,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      color: '#fff', fontSize: 16,
+                      boxShadow: `0 8px 18px -6px ${activeStudioTier.glow}`,
+                    }}>
+                      <i className={`bi ${activeStudioTier.icon}`} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 10.5, fontWeight: 700, color: PINK, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Selected tier</div>
+                      <div style={{ fontSize: 15, fontWeight: 800, color: TEXT_PRIMARY, letterSpacing: '-0.01em' }}>{studioPkgTier} package</div>
+                    </div>
+                  </div>
 
                 {/* Compact form for the currently-selected studio tier */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12, marginBottom: 14 }}>
@@ -1762,7 +1803,10 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
                     )}
                   </button>
                 </div>
+                </div>
               </div>
+                );
+              })()
 
             /* ── SLIDE 7: Success ── */
             ) : state.currentSlide === 7 ? (
