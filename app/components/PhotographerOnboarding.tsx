@@ -63,6 +63,10 @@ export interface PackageEntry {
   delivery: number;
   description: string;
   features: { featureName: string; isIncluded: boolean; displayOrder: number }[];
+  // OUTDOOR (default event packages) or STUDIO (optional indoor packages,
+  // skipped on signup → empty array, edited later from the profile). Missing
+  // is treated as OUTDOOR by the persisters so older clients keep working.
+  serviceType?: 'OUTDOOR' | 'STUDIO';
 }
 
 interface PhotographerOnboardingProps {
@@ -275,6 +279,23 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
   const setPkgVideos = (v: number) => setPkgField('videos', v);
   const setPkgDelivery = (v: number) => setPkgField('delivery', v);
   const setPkgDescription = (v: string) => setPkgField('description', v);
+
+  // ── Slide 6: Indoor Studio Packages (OPTIONAL) ──
+  // Same shape as outdoor `pkgs`, but every tier starts at price 0 so a
+  // photographer who Skips the slide submits zero studio packages (the
+  // payload builder filters those out). Currency reuses the outdoor
+  // pkgCurrencyId — clients typically price indoor in the same currency
+  // and asking them to re-pick mid-signup hurts the skip-friendly UX.
+  const makeInitialStudioPkgs = (): Record<PackageTier, PkgFields> => ({
+    Silver:  { price: 0, duration: 1, photos: 25,  videos: 5,  delivery: 7, description: '' },
+    Gold:    { price: 0, duration: 2, photos: 60,  videos: 12, delivery: 5, description: '' },
+    Diamond: { price: 0, duration: 3, photos: 120, videos: 25, delivery: 3, description: '' },
+  });
+  const [studioPkgTier, setStudioPkgTier] = useState<PackageTier>('Silver');
+  const [studioPkgs, setStudioPkgs] = useState<Record<PackageTier, PkgFields>>(makeInitialStudioPkgs);
+  const studioCur = studioPkgs[studioPkgTier];
+  const setStudioPkgField = (k: keyof PkgFields, v: number | string) =>
+    setStudioPkgs(p => ({ ...p, [studioPkgTier]: { ...p[studioPkgTier], [k]: v } }));
 
   // ── Fetch data (eagerly on mount so specialties are ready when modal opens) ──
   useEffect(() => {
@@ -583,7 +604,7 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
   // Single source of the OnboardingPayload (minus `existing`), shared by the
   // 5s autosave and the final finalize so they can never disagree.
   const buildPayload = (): OnboardingPayload => {
-    const allPackages: PackageEntry[] = (['Silver', 'Gold', 'Diamond'] as PackageTier[]).map(t => ({
+    const outdoorPackages: PackageEntry[] = (['Silver', 'Gold', 'Diamond'] as PackageTier[]).map(t => ({
       tier: t,
       price: pkgs[t].price,
       duration: pkgs[t].duration,
@@ -594,7 +615,24 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
       features: (TIER_PRESETS[t]?.features || []).map((f, i) => ({
         featureName: f, isIncluded: true, displayOrder: i,
       })),
+      serviceType: 'OUTDOOR',
     }));
+    // Studio packages are OPTIONAL — only ones the photographer actually
+    // priced (> 0) get sent. Skip → all three zero → empty array.
+    const studioPackagesPayload: PackageEntry[] = (['Silver', 'Gold', 'Diamond'] as PackageTier[])
+      .filter(t => studioPkgs[t].price && studioPkgs[t].price > 0)
+      .map(t => ({
+        tier: t,
+        price: studioPkgs[t].price,
+        duration: studioPkgs[t].duration,
+        photos: studioPkgs[t].photos,
+        videos: studioPkgs[t].videos,
+        delivery: studioPkgs[t].delivery,
+        description: studioPkgs[t].description,
+        features: [],
+        serviceType: 'STUDIO',
+      }));
+    const allPackages: PackageEntry[] = [...outdoorPackages, ...studioPackagesPayload];
     return {
       address: address.trim(),
       about: about.trim(),
@@ -687,7 +725,7 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
   // 5s debounce: re-armed on every serialisable change, so a section is
   // saved ~5s after the user stops editing it.
   useEffect(() => {
-    if (!serverSync || draftFinalizedRef.current || state.currentSlide === 6) return;
+    if (!serverSync || draftFinalizedRef.current || state.currentSlide === 7) return;
     const t = setTimeout(() => { void runServerSync(false); }, 5000);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -699,9 +737,12 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
     pkgCurrencyId, pkgs, state.currentSlide,
   ]);
 
-  // ─── SLIDE 5: Package ───
+  // ─── SLIDE 5: Outdoor Packages ───
+  // Continue validates the three required outdoor tiers and advances to
+  // the new optional studio-packages slide. The actual API submit moved
+  // to handleFinalSubmit below so the studio packages can ride along.
 
-  const handleCreatePackage = async () => {
+  const handleCreatePackage = () => {
     const badTier = (['Silver', 'Gold', 'Diamond'] as PackageTier[]).find(t => !pkgs[t].price || pkgs[t].price <= 0);
     if (badTier) { setSlideError(`Please enter a valid price for the ${badTier} package`); return; }
     if (!pkgCurrencyId) { setSlideError('Please select a currency'); return; }
@@ -709,7 +750,16 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
       setSlideError('Profile photo is missing - go back to the Photos step'); return;
     }
     setSlideError('');
+    dispatch({ type: 'SET_SLIDE', slide: 6 });
+  };
 
+  // ─── SLIDE 6: Studio Packages (OPTIONAL) ───
+  // Continue submits whatever studio prices the user filled in; Skip
+  // submits the profile with zero studio packages. Either way, this is
+  // the final submission step — the API/onFinalize call moved here from
+  // handleCreatePackage so studio data joins the same persist run.
+  const handleFinalSubmit = async () => {
+    setSlideError('');
     dispatch({ type: 'SET_SUBMITTING', value: true });
     try {
       // Make sure the account exists (signup flow) before the final save.
@@ -732,11 +782,9 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
       };
 
       await onFinalize(payload);
-      // Profile is stored - drop the draft so the next visit starts clean
-      // and the debounced save effect stops re-writing it.
       draftFinalizedRef.current = true;
       try { window.localStorage.removeItem(draftStorageKey); } catch { /* ignore */ }
-      dispatch({ type: 'SET_SLIDE', slide: 6 });
+      dispatch({ type: 'SET_SLIDE', slide: 7 });
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Could not finalise your profile. Please try again.';
       setSlideError(msg);
@@ -784,8 +832,10 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
   // ─── RENDER ───
 
   // Total slides (0–5; 6 = success). Used for the progress strip.
-  const TOTAL_INPUT_SLIDES = 6;
-  const isSuccessSlide = state.currentSlide === 6;
+  // Slides 0..6 are inputs (with slide 6 being the OPTIONAL studio packages
+  // step); slide 7 is the success screen.
+  const TOTAL_INPUT_SLIDES = 7;
+  const isSuccessSlide = state.currentSlide === 7;
   const progressPct = isSuccessSlide
     ? 100
     : Math.min(100, Math.round(((state.currentSlide + 1) / TOTAL_INPUT_SLIDES) * 100));
@@ -893,7 +943,7 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
                     fontSize: '0.66rem', fontWeight: 700,
                     color: PINK, letterSpacing: '0.08em', textTransform: 'uppercase',
                     marginBottom: 4,
-                  }}>Step 1 of 6 · Basics</div>
+                  }}>Step 1 of 7 · Basics</div>
                   <h3 style={{
                     color: TEXT_PRIMARY, fontSize: 22, fontWeight: 800,
                     margin: '0 0 6px', letterSpacing: '-0.015em',
@@ -1296,7 +1346,7 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
                       fontSize: 10.5, fontWeight: 700,
                       color: PINK, letterSpacing: '0.08em', textTransform: 'uppercase',
                       marginBottom: 2,
-                    }}>Step 6 of 6 · Pricing</div>
+                    }}>Step 6 of 7 · Outdoor Pricing</div>
                     <h3 style={{ color: TEXT_PRIMARY, fontSize: 19, fontWeight: 800, margin: 0, letterSpacing: '-0.015em' }}>Create a Package</h3>
                     <p style={{ color: TEXT_MUTED, fontSize: 12.5, margin: '2px 0 0' }}>Set your first pricing package &mdash; you can edit or add more later.</p>
                   </div>
@@ -1485,11 +1535,10 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
                     onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = BRAND_SHADOW; }}
                   >
                     {state.isSubmitting ? (
-                      <>Creating Package&hellip;</>
+                      <>Saving&hellip;</>
                     ) : (
                       <>
-                        <i className="bi bi-check-circle-fill"></i>
-                        Create Package &amp; Submit Profile
+                        Continue <i className="bi bi-arrow-right"></i>
                       </>
                     )}
                   </button>
@@ -1498,8 +1547,190 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
                 );
               })()
 
-            /* ── SLIDE 6: Success ── */
+            /* ── SLIDE 6: Indoor Studio Packages (OPTIONAL) ──
+               This is the single optional step in the wizard. Continue
+               submits whatever indoor prices the user filled (filtered to
+               > 0 in buildPayload); Skip submits the profile with zero
+               studio packages. Either way the final submit (handleFinalSubmit)
+               runs here so we only persist once. */
             ) : state.currentSlide === 6 ? (
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+                  <button onClick={() => dispatch({ type: 'SET_SLIDE', slide: 5 })} style={backBtnStyle}
+                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = PINK; e.currentTarget.style.color = PINK; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = INPUT_BORDER; e.currentTarget.style.color = TEXT_SECONDARY; }}>
+                    <i className="bi bi-arrow-left"></i>
+                  </button>
+                  <div>
+                    <div style={{
+                      fontSize: 10.5, fontWeight: 700,
+                      color: PINK, letterSpacing: '0.08em', textTransform: 'uppercase',
+                      marginBottom: 2,
+                    }}>Step 7 of 7 · Studio (Optional)</div>
+                    <h3 style={{ color: TEXT_PRIMARY, fontSize: 19, fontWeight: 800, margin: 0, letterSpacing: '-0.015em' }}>Indoor Studio Packages</h3>
+                    <p style={{ color: TEXT_MUTED, fontSize: 12.5, margin: '2px 0 0' }}>
+                      Optionally price your indoor studio sessions. Set any tier&apos;s price &mdash; or Skip if you don&apos;t offer studio sessions.
+                    </p>
+                  </div>
+                </div>
+
+                {slideError && (
+                  <div style={errorBoxStyle}>
+                    <i className="bi bi-exclamation-circle-fill" style={{ fontSize: 14, marginTop: 1, flexShrink: 0 }} />
+                    <span>{slideError}</span>
+                  </div>
+                )}
+
+                {/* Tier selector — same Silver/Gold/Diamond as outdoor */}
+                <div style={{ marginBottom: 14 }}>
+                  <label style={labelStyle}>Tier</label>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    {(['Silver', 'Gold', 'Diamond'] as const).map(tier => {
+                      const sel = studioPkgTier === tier;
+                      return (
+                        <button
+                          key={tier}
+                          onClick={() => setStudioPkgTier(tier)}
+                          type="button"
+                          style={{
+                            flex: 1,
+                            padding: '10px 8px',
+                            borderRadius: 11,
+                            fontSize: 13.5,
+                            fontWeight: 800,
+                            cursor: 'pointer',
+                            background: sel ? `linear-gradient(135deg, #083A85 0%, #F20C8F 130%)` : '#f9fafb',
+                            border: sel ? 'none' : `1.5px solid ${INPUT_BORDER}`,
+                            color: sel ? '#fff' : TEXT_SECONDARY,
+                            transition: 'all 0.2s',
+                          }}
+                        >
+                          {tier}{studioPkgs[tier].price > 0 ? ' ✓' : ''}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p style={{ fontSize: 11, color: TEXT_MUTED, margin: '6px 0 0' }}>
+                    The ✓ shows which tiers you&apos;ve priced. Tiers left at 0 are skipped on submit.
+                  </p>
+                </div>
+
+                {/* Compact form for the currently-selected studio tier */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12, marginBottom: 14 }}>
+                  <div>
+                    <label style={labelStyle}>Price ({currencyCode || 'select on prev step'})</label>
+                    <input
+                      type="number" min={0}
+                      value={studioCur.price || ''}
+                      onChange={e => setStudioPkgField('price', Math.max(0, parseInt(e.target.value, 10) || 0))}
+                      placeholder="e.g. 50000"
+                      style={inputStyle}
+                    />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Duration (hrs)</label>
+                    <input
+                      type="number" min={0}
+                      value={studioCur.duration || ''}
+                      onChange={e => setStudioPkgField('duration', Math.max(0, parseInt(e.target.value, 10) || 0))}
+                      placeholder="e.g. 2"
+                      style={inputStyle}
+                    />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Photos</label>
+                    <input
+                      type="number" min={0}
+                      value={studioCur.photos || ''}
+                      onChange={e => setStudioPkgField('photos', Math.max(0, parseInt(e.target.value, 10) || 0))}
+                      placeholder="e.g. 50"
+                      style={inputStyle}
+                    />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Videos</label>
+                    <input
+                      type="number" min={0}
+                      value={studioCur.videos || ''}
+                      onChange={e => setStudioPkgField('videos', Math.max(0, parseInt(e.target.value, 10) || 0))}
+                      placeholder="e.g. 5"
+                      style={inputStyle}
+                    />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Delivery (days)</label>
+                    <input
+                      type="number" min={1}
+                      value={studioCur.delivery || ''}
+                      onChange={e => setStudioPkgField('delivery', Math.max(1, parseInt(e.target.value, 10) || 1))}
+                      placeholder="e.g. 5"
+                      style={inputStyle}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: 18 }}>
+                  <label style={labelStyle}>Description</label>
+                  <textarea
+                    value={studioCur.description}
+                    onChange={e => setStudioPkgField('description', e.target.value)}
+                    placeholder={`${studioPkgTier} indoor studio session`}
+                    rows={2}
+                    style={{ ...inputStyle, resize: 'vertical' }}
+                  />
+                </div>
+
+                {/* Action row: Skip on the left, Continue on the right */}
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <button
+                    type="button"
+                    onClick={handleFinalSubmit}
+                    disabled={state.isSubmitting}
+                    style={{
+                      flex: '0 0 auto',
+                      padding: '12px 18px',
+                      borderRadius: 12,
+                      border: `1.5px solid ${INPUT_BORDER}`,
+                      background: '#ffffff',
+                      color: TEXT_SECONDARY,
+                      fontSize: 14,
+                      fontWeight: 700,
+                      cursor: state.isSubmitting ? 'not-allowed' : 'pointer',
+                      opacity: state.isSubmitting ? 0.6 : 1,
+                      transition: 'border-color 0.15s, color 0.15s',
+                    }}
+                    onMouseEnter={(e) => { if (!state.isSubmitting) { e.currentTarget.style.borderColor = PINK; e.currentTarget.style.color = PINK; } }}
+                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = INPUT_BORDER; e.currentTarget.style.color = TEXT_SECONDARY; }}
+                  >
+                    Skip
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleFinalSubmit}
+                    disabled={state.isSubmitting}
+                    style={{
+                      ...btnPrimary,
+                      flex: 1,
+                      opacity: state.isSubmitting ? 0.7 : 1,
+                      cursor: state.isSubmitting ? 'not-allowed' : 'pointer',
+                    }}
+                    onMouseEnter={(e) => { if (!state.isSubmitting) { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 12px 28px -6px rgba(242,12,143,0.55)'; } }}
+                    onMouseLeave={(e) => { if (!state.isSubmitting) { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = BRAND_SHADOW; } }}
+                  >
+                    {state.isSubmitting ? (
+                      <>Submitting profile&hellip;</>
+                    ) : (
+                      <>
+                        <i className="bi bi-check-circle-fill"></i>
+                        Continue &amp; Submit Profile
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+            /* ── SLIDE 7: Success ── */
+            ) : state.currentSlide === 7 ? (
               <div style={{ textAlign: 'center', padding: '40px 20px' }}>
                 <div style={{
                   width: 72, height: 72, borderRadius: 22,

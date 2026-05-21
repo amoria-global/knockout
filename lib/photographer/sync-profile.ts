@@ -237,29 +237,35 @@ export async function syncPhotographerProfile(
       const sigs = s.sigs.pkgs || {};
       for (const pk of payload.packages) {
         if (!pk.price || pk.price <= 0) continue;
+        const serviceType = pk.serviceType ?? 'OUTDOOR';
+        // Sig key + body include serviceType so an outdoor Silver and a
+        // studio Silver don't collide (the dedup map is keyed per tier,
+        // so without the prefix the second one would never POST).
+        const sigKey = `${serviceType}:${pk.tier}`;
         const sig = JSON.stringify([
           pk.tier, pk.price, payload.pkgCurrencyId, pk.duration,
-          pk.photos, pk.videos, pk.delivery, pk.description,
+          pk.photos, pk.videos, pk.delivery, pk.description, serviceType,
         ]);
-        if (sig === sigs[pk.tier]) continue;
+        if (sig === sigs[sigKey]) continue;
         const r = await apiClient.post(`${BASE}/packages`, {
           packageName: pk.tier,
           price: pk.price,
           currencyId: payload.pkgCurrencyId,
-          priceUnit: 'per session',
+          priceUnit: serviceType === 'STUDIO' ? 'per studio session' : 'per session',
           durationHours: pk.duration,
-          description: pk.description || `${pk.tier} photography package`,
+          description: pk.description || `${pk.tier} ${serviceType === 'STUDIO' ? 'studio session' : 'photography'} package`,
           isActive: true,
-          hasLiveStream: pk.tier === 'Diamond',
+          hasLiveStream: serviceType === 'OUTDOOR' && pk.tier === 'Diamond',
           includedPhotos: pk.photos,
           includedVideos: pk.videos,
           extraPhotoPrice: 0,
           extraVideoPrice: 0,
           photobookPhotos: 0,
           deliveryDays: pk.delivery,
+          serviceType,
           features: pk.features,
         }, { retries: 2 });
-        if (r.success) { sigs[pk.tier] = sig; s.created.pkg = true; presence.pkg = true; }
+        if (r.success) { sigs[sigKey] = sig; s.created.pkg = true; presence.pkg = true; }
       }
       s.sigs.pkgs = sigs;
     }
