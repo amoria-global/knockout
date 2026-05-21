@@ -576,14 +576,23 @@ const Photographers: React.FC = () => {
         case 'most_jobs':
           return (b.completedEvents ?? 0) - (a.completedEvents ?? 0);
         case 'price_asc': {
-          const ap = getStartingPrice(a)?.price ?? Number.POSITIVE_INFINITY;
-          const bp = getStartingPrice(b)?.price ?? Number.POSITIVE_INFINITY;
-          return ap - bp;
+          // Sort uses the lowest of {outdoor, studio} so a photographer with
+          // a cheap studio package isn't pushed down because their outdoor
+          // prices are higher (and vice versa).
+          const lowest = (x: Photographer, fallback: number) => {
+            const s = getStartingPrices(x);
+            const xs = [s.outdoor?.price, s.studio?.price].filter((v): v is number => typeof v === 'number');
+            return xs.length === 0 ? fallback : Math.min(...xs);
+          };
+          return lowest(a, Number.POSITIVE_INFINITY) - lowest(b, Number.POSITIVE_INFINITY);
         }
         case 'price_desc': {
-          const ap = getStartingPrice(a)?.price ?? Number.NEGATIVE_INFINITY;
-          const bp = getStartingPrice(b)?.price ?? Number.NEGATIVE_INFINITY;
-          return bp - ap;
+          const lowest = (x: Photographer, fallback: number) => {
+            const s = getStartingPrices(x);
+            const xs = [s.outdoor?.price, s.studio?.price].filter((v): v is number => typeof v === 'number');
+            return xs.length === 0 ? fallback : Math.min(...xs);
+          };
+          return lowest(b, Number.NEGATIVE_INFINITY) - lowest(a, Number.NEGATIVE_INFINITY);
         }
         case 'newest':
         default: {
