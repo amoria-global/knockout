@@ -14,6 +14,7 @@ import {
   getCities,
   getCurrencies,
   type Photographer,
+  type PhotographerPackage,
   type PhotographerCategory,
   type City,
   type Currency,
@@ -255,6 +256,57 @@ const CoverCarousel: React.FC<{ images: string[]; alt: string }> = ({ images, al
   );
 };
 
+// Auto-sliding price block in the card's bottom-left. When the photographer
+// has BOTH outdoor and studio packages set, this rotates between their
+// cheapest in each category at the same interval as the cover carousel
+// (COVER_SLIDE_INTERVAL_MS) so the two sliders advance in lockstep — the
+// timers are started from the same React mount cycle, so they tick together
+// to within a millisecond. Single-category photographers see a static label;
+// nothing renders when there are no packages at all (caller falls back to
+// "On request").
+const PriceSlider: React.FC<{
+  outdoor: PhotographerPackage | null;
+  studio: PhotographerPackage | null;
+}> = ({ outdoor, studio }) => {
+  // Order matters for the slide animation — keep outdoor first, then studio,
+  // so a photographer who later adds studio packages sees their existing
+  // outdoor price still appear first.
+  const entries: { kind: 'Outdoor' | 'Studio'; pkg: PhotographerPackage }[] = [];
+  if (outdoor) entries.push({ kind: 'Outdoor', pkg: outdoor });
+  if (studio) entries.push({ kind: 'Studio', pkg: studio });
+
+  const [currentIndex, setCurrentIndex] = useState(0);
+  useEffect(() => {
+    if (entries.length <= 1) return;
+    const id = setInterval(() => {
+      setCurrentIndex(i => (i + 1) % entries.length);
+    }, COVER_SLIDE_INTERVAL_MS);
+    return () => clearInterval(id);
+  }, [entries.length]);
+
+  if (entries.length === 0) return null;
+
+  return (
+    <div className="ph-price ph-price-slider" aria-live="polite">
+      {entries.map((e, i) => {
+        let position: 'left' | 'active' | 'right';
+        if (i === currentIndex) position = 'active';
+        else if ((i + 1) % entries.length === currentIndex) position = 'left';
+        else position = 'right';
+        return (
+          <div key={i} className={`ph-price-slide ph-price-slide--${position}`}>
+            <span className="ph-price-label">{e.kind} · From</span>
+            <span className="ph-price-value">
+              {e.pkg.currencySymbol || ''}{e.pkg.price.toLocaleString()}{' '}
+              <small>{e.pkg.priceUnit}</small>
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
 const Photographers: React.FC = () => {
   const t = useTranslations('photographers');
   const searchParams = useSearchParams();
@@ -439,11 +491,21 @@ const Photographers: React.FC = () => {
     return null;
   };
 
-  const getStartingPrice = (photographer: Photographer) => {
-    const activePkgs = (photographer.packages ?? []).filter(p => p.isActive);
-    if (activePkgs.length === 0) return null;
-    const cheapest = activePkgs.reduce((min, p) => p.price < min.price ? p : min, activePkgs[0]);
-    return cheapest;
+  // Returns the cheapest active package SEPARATELY for outdoor (event) and
+  // studio (indoor) services. Either side may be null when the photographer
+  // hasn't published packages of that kind yet — the card-level PriceSlider
+  // handles the empty/single/dual cases.
+  const getStartingPrices = (photographer: Photographer): {
+    outdoor: PhotographerPackage | null;
+    studio: PhotographerPackage | null;
+  } => {
+    const active = (photographer.packages ?? []).filter(p => p.isActive);
+    const cheapest = (pkgs: PhotographerPackage[]) =>
+      pkgs.length === 0 ? null : pkgs.reduce((m, p) => (p.price < m.price ? p : m), pkgs[0]);
+    return {
+      outdoor: cheapest(active.filter(p => (p.serviceType ?? 'OUTDOOR') !== 'STUDIO')),
+      studio: cheapest(active.filter(p => p.serviceType === 'STUDIO')),
+    };
   };
 
   // Pagination
@@ -1190,6 +1252,34 @@ const Photographers: React.FC = () => {
         }
         .ph-price-value small { color: #64748b; font-weight: 500; font-size: 0.72rem; }
 
+        /* Auto-sliding price block — only kicks in when the photographer has
+           BOTH outdoor and studio packages. Container becomes the slide
+           viewport (relative + clipped); each slide is absolutely positioned
+           and animates with the SAME duration and easing as the cover
+           carousel so they advance together. Min-width matches the original
+           static price block so the CTA button doesn't jump when slides swap. */
+        .ph-price-slider {
+          position: relative;
+          overflow: hidden;
+          min-height: calc(0.65rem * 1.1 + 0.95rem * 1.1 + 2px);
+          min-width: 120px;
+        }
+        .ph-price-slide {
+          position: absolute;
+          inset: 0;
+          display: flex; flex-direction: column;
+          line-height: 1.1;
+          will-change: transform;
+          transition: transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .ph-price-slide--active { transform: translateX(0); }
+        .ph-price-slide--left   { transform: translateX(-100%); }
+        .ph-price-slide--right  { transform: translateX(100%); }
+        @media (prefers-reduced-motion: reduce) {
+          .ph-price-slide { transition: opacity 0.3s ease; transform: none !important; opacity: 0; }
+          .ph-price-slide--active { opacity: 1; }
+        }
+
         .ph-cta {
           display: inline-flex; align-items: center; gap: 6px;
           padding: 0.55rem 0.95rem;
@@ -1571,7 +1661,8 @@ const Photographers: React.FC = () => {
                   .filter((u): u is string => typeof u === 'string' && !!u && !u.includes('/null'))
               ));
               const location      = getPhotographerLocation(photographer);
-              const cheapest      = getStartingPrice(photographer);
+              const startingPrices = getStartingPrices(photographer);
+              const hasAnyPrice    = startingPrices.outdoor !== null || startingPrices.studio !== null;
               const specialties   = (photographer.specialties ?? []).map(s =>
                 typeof s === 'string' ? s : s.name
               );
@@ -1693,14 +1784,8 @@ const Photographers: React.FC = () => {
 
                     {/* Price + CTA */}
                     <div className="ph-cta-row">
-                      {cheapest ? (
-                        <div className="ph-price">
-                          <span className="ph-price-label">From</span>
-                          <span className="ph-price-value">
-                            {cheapest.currencySymbol || ''}{cheapest.price.toLocaleString()}{' '}
-                            <small>{cheapest.priceUnit}</small>
-                          </span>
-                        </div>
+                      {hasAnyPrice ? (
+                        <PriceSlider outdoor={startingPrices.outdoor} studio={startingPrices.studio} />
                       ) : (
                         <div className="ph-price">
                           <span className="ph-price-label">Pricing</span>
