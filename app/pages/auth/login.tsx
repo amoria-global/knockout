@@ -414,12 +414,20 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
         // dashboard/keep-exploring modal. A photographer with an incomplete
         // profile (everything except KYC) must finish it here, in the same
         // wizard, and can never slip into the dashboard with gaps.
+        // EXCEPTION: a team member invited by a photographer inherits the
+        // owner's customerType so dashboard role-routing keeps working,
+        // but they don't OWN the profile — the owner does. Bouncing them
+        // into the wizard would trap them in a form they can't legitimately
+        // fill out. data.isTeamMember (added on the backend login response,
+        // computed from Customer.organization_owner_id) lets us skip the
+        // gate for those users.
         {
           const ct = (data?.customerType || data?.user?.userType || '');
           const isPhotographer = String(ct).toLowerCase() === 'photographer';
+          const isTeamMember = data?.isTeamMember === true;
           const pct = typeof data?.profileCompletionPercentage === 'number'
             ? data.profileCompletionPercentage : 100;
-          if (isPhotographer && pct < 100 && data?.token) {
+          if (isPhotographer && !isTeamMember && pct < 100 && data?.token) {
             setAuthToken(data.token); // authenticates the wizard's saves
             setCompletionCtx({
               firstName: data.firstName || data.user?.firstName || '',

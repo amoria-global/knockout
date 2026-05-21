@@ -53,6 +53,14 @@ export interface LoginResponse {
   // BEFORE the dashboard hand-off so they never see a flash of UI they
   // can't fully use.
   mustChangePassword?: boolean;
+  // RBAC team-member flag. True when the customer's organization_owner_id
+  // points at a DIFFERENT customer (i.e. they were invited by an org owner
+  // — see TeamService.inviteTeamMember). They inherit the owner's
+  // customerType so dashboard role-routing works, but the photographer-
+  // onboarding wizard and other owner-only gates must be skipped because
+  // they don't own the profile. Owners read isTeamMember=false.
+  isTeamMember?: boolean;
+  organizationOwnerId?: string;
   user?: {
     id: string;
     email: string;
