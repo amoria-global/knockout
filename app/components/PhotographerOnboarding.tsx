@@ -1383,9 +1383,9 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
                       fontSize: 10.5, fontWeight: 700,
                       color: PINK, letterSpacing: '0.08em', textTransform: 'uppercase',
                       marginBottom: 2,
-                    }}>Step 6 of 7 · Pricing</div>
-                    <h3 style={{ color: TEXT_PRIMARY, fontSize: 19, fontWeight: 800, margin: 0, letterSpacing: '-0.015em' }}>Create a Package</h3>
-                    <p style={{ color: TEXT_MUTED, fontSize: 12.5, margin: '2px 0 0' }}>Set your first pricing package &mdash; you can edit or add more later.</p>
+                    }}>Step 6 of 7 · Outdoor Packages</div>
+                    <h3 style={{ color: TEXT_PRIMARY, fontSize: 19, fontWeight: 800, margin: 0, letterSpacing: '-0.015em' }}>Outdoor Packages</h3>
+                    <p style={{ color: TEXT_MUTED, fontSize: 12.5, margin: '2px 0 0' }}>Set your Silver / Gold / Diamond pricing for outdoor event bookings.</p>
                   </div>
                 </div>
 
@@ -1606,10 +1606,10 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
                       fontSize: 10.5, fontWeight: 700,
                       color: PINK, letterSpacing: '0.08em', textTransform: 'uppercase',
                       marginBottom: 2,
-                    }}>Step 7 of 7 · Pricing (Optional)</div>
-                    <h3 style={{ color: TEXT_PRIMARY, fontSize: 19, fontWeight: 800, margin: 0, letterSpacing: '-0.015em' }}>Create Another Package</h3>
+                    }}>Step 7 of 7 · Indoor / Studio Packages (Optional)</div>
+                    <h3 style={{ color: TEXT_PRIMARY, fontSize: 19, fontWeight: 800, margin: 0, letterSpacing: '-0.015em' }}>Indoor / Studio Packages</h3>
                     <p style={{ color: TEXT_MUTED, fontSize: 12.5, margin: '2px 0 0' }}>
-                      Optional &mdash; add an extra package or skip to finish.
+                      Optional &mdash; price your indoor studio sessions or Skip if you don&apos;t offer them.
                     </p>
                   </div>
                 </div>
