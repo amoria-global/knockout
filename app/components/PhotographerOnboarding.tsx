@@ -302,7 +302,7 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
   const setPkgDelivery = (v: number) => setPkgField('delivery', v);
   const setPkgDescription = (v: string) => setPkgField('description', v);
 
-  // ── Slide 6: Indoor Studio Packages (OPTIONAL) ──
+  // ── Slide 6: Optional Packages (sent as STUDIO serviceType) ──
   // Same shape as outdoor `pkgs`, but every tier starts at price 0 so a
   // photographer who Skips the slide submits zero studio packages (the
   // payload builder filters those out). Currency reuses the outdoor
