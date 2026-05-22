@@ -246,6 +246,12 @@ export async function initiateMultiAlbumPurchase(
     paymentMethod: 'MOBILE_MONEY' | 'CARD';
     viewerEmail?: string;
     redirectUrl?: string;
+    // Combined-with-purchase donation. Backend charges the gateway
+    // for items.total + donationAmount and splits 100% of the
+    // donation to the platform Donation table at finalisation —
+    // never mixed into any photographer's 70/30 payout.
+    donationAmount?: number;
+    donationCurrency?: string;
   }
 ): Promise<ApiResponse<InitiateMultiAlbumResponse>> {
   return apiClient.post<InitiateMultiAlbumResponse>(

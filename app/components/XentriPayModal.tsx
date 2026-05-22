@@ -461,6 +461,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
           items: multiAlbumItems,
           ...(buyerId ? { buyerId } : {}),
           ...(viewerEmail ? { viewerEmail } : {}),
+          ...(hasEffectiveDonation ? { donationAmount: effectiveDonation, donationCurrency: currencyCode } : {}),
           phone,
           ...(isCard ? {} : { telecomProvider: method.provider }),
           paymentMethod: paymentMethodType,
