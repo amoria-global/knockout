@@ -11,24 +11,15 @@ import type { MultiAlbumPurchaseItem } from "@/lib/APIs/payments/xentripay";
 /**
  * Public stock-photo browse + buy.
  *
- * Layout intent (per spec):
- *   - 4 photos per row, no gaps, no border-radius (just edge-to-edge browsing)
- *   - Each card overlays bottom-left with photographer logo + name only
- *   - No captions, no descriptions, no titles on the image itself
- *   - Click toggles add/remove from cart (selection highlight)
+ * Design mirrors find-my-photos.tsx — dark navy gradient, dotted
+ * background, rounded photo cards, lightbox preview, sticky bottom
+ * cart action bar. Same image-protection wiring (no right-click, no
+ * drag, no pointer events on the <img>) and same diagonal "PREVIEW
+ * · {photographer}" watermark band.
  *
- * Filters across the top bar:
- *   - Search by keyword
- *   - Category dropdown (only categories that have live photos)
- *   - Photographer dropdown (only photographers with live photos)
- *   - Min/Max price (in the buyer's chosen currency)
- *   - Buyer currency picker (drives the price display + cart total)
- *
- * Cart is a sticky right-side drawer with checkout button.
- *
- * Auth: NONE. Buyer identifies via email at checkout. The post-purchase
- * email contains a ZIP attachment + a re-download link; the recovery
- * flow (/user/browse-photos/recover) lets them re-issue from any device.
+ * Layout: 5 photos per row on desktop, 2 on mobile, with page padding.
+ * Click a photo opens the watermarked lightbox; the + button adds it
+ * to the cart.
  */
 
 const BACKEND_BASE = (process.env.NEXT_PUBLIC_API_URL
@@ -66,9 +57,10 @@ export default function BrowsePhotosPage() {
   const [items, setItems] = useState<BrowseRow[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
-  const [size] = useState(48);
+  const [size] = useState(50); // 5 cols × 10 rows
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
 
   const [categories, setCategories] = useState<CategoryOption[]>([]);
   const [photographers, setPhotographers] = useState<PhotographerOption[]>([]);
@@ -78,9 +70,15 @@ export default function BrowsePhotosPage() {
   const [qDebounced, setQDebounced] = useState('');
   const [category, setCategory] = useState('');
   const [photographerId, setPhotographerId] = useState('');
-  const [buyerCurrency, setBuyerCurrency] = useState('USD');
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
+  // Price display = photographer's listing currency, native. Buyer
+  // currency = always USD for the cart total + checkout (matches the
+  // find-my-photos flow — XentriPay charges USD-equivalent in RWF
+  // server-side and the per-item revenue split stays in each
+  // photographer's listing currency for accurate payouts).
+  const buyerCurrency = 'USD';
+  const buyerCurrencyId = 'USD';
 
   // Cart (map keyed by imageId so toggle is O(1))
   const [cart, setCart] = useState<Record<string, BrowseRow>>({});
@@ -90,10 +88,19 @@ export default function BrowsePhotosPage() {
     [cartItems]
   );
 
-  // Checkout
+  // Lightbox + checkout
+  const [previewing, setPreviewing] = useState<BrowseRow | null>(null);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [email, setEmail] = useState('');
   const [showXentri, setShowXentri] = useState(false);
+
+  // Mobile breakpoint watcher
+  useEffect(() => {
+    const apply = () => setIsMobile(window.innerWidth < 768);
+    apply();
+    window.addEventListener('resize', apply);
+    return () => window.removeEventListener('resize', apply);
+  }, []);
 
   // ── Debounce search input ──
   useEffect(() => {
@@ -121,7 +128,7 @@ export default function BrowsePhotosPage() {
     })();
   }, []);
 
-  // ── Browse load (reacts to filters + page) ──
+  // ── Browse load ──
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -141,21 +148,15 @@ export default function BrowsePhotosPage() {
       if (j?.action === 1 && j.data) {
         setItems(j.data.items || []);
         setTotal(j.data.total || 0);
-      } else {
-        setItems([]); setTotal(0);
-      }
+      } else { setItems([]); setTotal(0); }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load photos');
       setItems([]); setTotal(0);
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   }, [qDebounced, category, photographerId, minPrice, maxPrice, buyerCurrency, page, size]);
   useEffect(() => { void load(); }, [load]);
 
-  // Reset to page 0 when any filter (other than the page itself) changes.
-  // Without this, applying a tighter filter on a deep page would show
-  // "no photos" until the user manually paged back.
+  // Reset to page 0 when filters change.
   const filtersKey = `${qDebounced}|${category}|${photographerId}|${minPrice}|${maxPrice}|${buyerCurrency}`;
   const lastFiltersKey = useRef(filtersKey);
   useEffect(() => {
@@ -178,16 +179,19 @@ export default function BrowsePhotosPage() {
   };
   const clearCart = () => setCart({});
 
-  const sym = useMemo(
-    () => CURRENCIES.find(c => c.code === buyerCurrency)?.symbol || buyerCurrency,
-    [buyerCurrency]
-  );
+  const sym = '$'; // USD only for the cart total (display only)
 
-  // Build the multi-album items payload for XentriPay. Grouped by gallery
-  // so each row in album_purchases lands under the right photographer for
-  // the revenue split. Amount is sent in the GALLERY's listing currency
-  // (the backend converts each row to RWF for the gateway charge — same
-  // contract as the existing face-scan multi-album flow).
+  const fmtListing = (it: BrowseRow) => {
+    const code = it.listingCurrency || 'USD';
+    const symbol = code === 'USD' ? '$' : code === 'EUR' ? '€' : code === 'GBP' ? '£' : code;
+    const dp = code === 'RWF' ? 0 : 2;
+    return `${symbol} ${Number(it.listingPrice || 0).toFixed(dp)}`;
+  };
+
+  // Each per-photographer slice keeps its NATIVE listing currency so
+  // the photographer is credited the exact amount they set (the backend
+  // converts each slice to RWF for the gateway charge). This mirrors
+  // the find-my-photos multi-album flow.
   const multiAlbumItems: MultiAlbumPurchaseItem[] = useMemo(() => {
     const groups = new Map<string, { items: BrowseRow[], totalListing: number, currency: string }>();
     for (const it of cartItems) {
@@ -200,14 +204,10 @@ export default function BrowsePhotosPage() {
       albumId: galleryId,
       photoIds: g.items.map(i => i.imageId),
       amount: g.totalListing,
-      currencyId: g.currency, // backend resolves UUID or abbreviation
+      // Backend resolves either UUID or abbreviation (USD/RWF/EUR/…).
+      currencyId: g.currency,
     }));
   }, [cartItems]);
-
-  const buyerCurrencyId = useMemo(
-    () => CURRENCIES.find(c => c.code === buyerCurrency)?.id || 'USD',
-    [buyerCurrency]
-  );
 
   const handleCheckoutClick = () => {
     if (cartItems.length === 0) return;
@@ -230,23 +230,60 @@ export default function BrowsePhotosPage() {
   };
 
   const totalPages = Math.max(1, Math.ceil(total / size));
+  const filtersActive = !!(q || category || photographerId || minPrice || maxPrice);
 
   // ── Render ────────────────────────────────────────────────────
   return (
     <>
       <Navbar />
 
-      <main style={{ minHeight: '100vh', background: '#f9fafb', paddingTop: 80 }}>
-        {/* Filter bar */}
-        <div style={{ background: '#fff', borderBottom: '1px solid #e5e7eb', padding: '12px 16px' }}>
-          <div style={{ maxWidth: 1400, margin: '0 auto', display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-            <div style={{ position: 'relative', flex: '1 1 240px', minWidth: 220 }}>
-              <i className="bi bi-search" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }} />
+      <main style={{
+        minHeight: '100vh',
+        background: 'linear-gradient(to right, #052047, #052047, #103E83)',
+        position: 'relative',
+        paddingTop: 80,
+      }}>
+        {/* Dotted background — same vibe as find-my-photos hero */}
+        <div aria-hidden style={{
+          position: 'absolute', inset: 0, pointerEvents: 'none',
+          backgroundImage: 'radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px)',
+          backgroundSize: '24px 24px',
+          maskImage: 'radial-gradient(ellipse at top, black 50%, transparent 100%)',
+          WebkitMaskImage: 'radial-gradient(ellipse at top, black 50%, transparent 100%)',
+        }} />
+
+        <div style={{ position: 'relative', zIndex: 1, maxWidth: 1400, margin: '0 auto', padding: isMobile ? '20px 14px 140px' : '32px 32px 160px' }}>
+
+          {/* Heading */}
+          <div style={{ marginBottom: 18 }}>
+            <h1 style={{ margin: 0, fontSize: isMobile ? 24 : 30, fontWeight: 800, color: '#fff', letterSpacing: '-0.02em' }}>Browse photos</h1>
+            <p style={{ margin: '6px 0 0', fontSize: 14, color: 'rgba(255,255,255,0.72)', maxWidth: 720 }}>
+              Curated photography by category — press, nature, sport, luxury, diplomatic, more.
+              Per-photo paid download. Photos are emailed to you after purchase.
+            </p>
+          </div>
+
+          {/* Filter row */}
+          <div style={{
+            background: 'rgba(255,255,255,0.05)',
+            border: '1px solid rgba(255,255,255,0.10)',
+            borderRadius: 14,
+            padding: isMobile ? 10 : 12,
+            display: 'flex',
+            gap: 8,
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            marginBottom: 18,
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+          }}>
+            <div style={{ position: 'relative', flex: '1 1 240px', minWidth: 200 }}>
+              <i className="bi bi-search" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.55)' }} />
               <input
                 value={q}
                 onChange={e => setQ(e.target.value)}
                 placeholder="Search photos, photographers, keywords…"
-                style={{ width: '100%', padding: '10px 12px 10px 36px', borderRadius: 8, border: '1px solid #e5e7eb', fontSize: 14, outline: 'none' }}
+                style={searchInput}
               />
             </div>
             <select value={category} onChange={e => setCategory(e.target.value)} style={selectStyle}>
@@ -261,177 +298,357 @@ export default function BrowsePhotosPage() {
                 <option key={p.id} value={p.id}>{p.name || '—'}</option>
               ))}
             </select>
-            <select value={buyerCurrency} onChange={e => setBuyerCurrency(e.target.value)} style={{ ...selectStyle, width: 90 }}>
-              {CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.code}</option>)}
-            </select>
-            <input
-              type="number" placeholder="Min" value={minPrice}
+            <input type="number" placeholder="Min $" value={minPrice}
               onChange={e => setMinPrice(e.target.value)}
-              style={{ ...selectStyle, width: 85 }}
-            />
-            <input
-              type="number" placeholder="Max" value={maxPrice}
+              style={{ ...selectStyle, width: 90 }} />
+            <input type="number" placeholder="Max $" value={maxPrice}
               onChange={e => setMaxPrice(e.target.value)}
-              style={{ ...selectStyle, width: 85 }}
-            />
-            {(q || category || photographerId || minPrice || maxPrice) && (
-              <button type="button" onClick={() => { setQ(''); setCategory(''); setPhotographerId(''); setMinPrice(''); setMaxPrice(''); }}
-                style={{ padding: '8px 12px', fontSize: 12.5, fontWeight: 600, background: 'transparent', color: '#F20C8F', border: 'none', cursor: 'pointer' }}>
+              style={{ ...selectStyle, width: 90 }} />
+            {filtersActive && (
+              <button type="button"
+                onClick={() => { setQ(''); setCategory(''); setPhotographerId(''); setMinPrice(''); setMaxPrice(''); }}
+                style={{ padding: '8px 12px', fontSize: 12.5, fontWeight: 700, background: 'transparent', color: '#F20C8F', border: 'none', cursor: 'pointer' }}>
                 Clear
               </button>
             )}
-            <Link href="/user/browse-photos/recover" style={{ marginLeft: 'auto', fontSize: 12.5, color: '#054d6f', textDecoration: 'none', fontWeight: 600 }}>
+            <Link href="/user/browse-photos/recover" style={{ marginLeft: 'auto', fontSize: 12.5, color: 'rgba(255,255,255,0.78)', textDecoration: 'none', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
               <i className="bi bi-arrow-clockwise" /> Recover past purchases
             </Link>
           </div>
-        </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 320px', gap: 0, maxWidth: 1400, margin: '0 auto', minHeight: 'calc(100vh - 200px)' }}>
-          {/* ── Grid ── */}
-          <section>
-            {error && (
-              <div style={{ padding: 16, color: '#991b1b', background: '#fef2f2' }}>
-                {error}. <button type="button" onClick={() => load()} style={{ background: 'none', border: 'none', color: '#F20C8F', cursor: 'pointer', fontWeight: 600 }}>Retry</button>
-              </div>
-            )}
-            {loading ? (
-              <div style={{ padding: 60, textAlign: 'center', color: '#6b7280' }}>Loading photos…</div>
-            ) : items.length === 0 ? (
-              <div style={{ padding: 60, textAlign: 'center', color: '#6b7280' }}>
-                No photos match your filters. <button type="button" onClick={() => { setQ(''); setCategory(''); setPhotographerId(''); setMinPrice(''); setMaxPrice(''); }} style={{ background: 'none', border: 'none', color: '#F20C8F', cursor: 'pointer', fontWeight: 600 }}>Clear filters</button>
-              </div>
-            ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 0 }}>
-                {items.map(it => {
-                  const selected = !!cart[it.imageId];
-                  return (
-                    <div
-                      key={it.imageId}
-                      onClick={() => toggleCart(it)}
-                      style={{
-                        position: 'relative',
-                        cursor: 'pointer',
-                        aspectRatio: '1 / 1',
-                        background: '#000',
-                        overflow: 'hidden',
-                        outline: selected ? '4px solid #F20C8F' : 'none',
-                        outlineOffset: -4,
-                      }}
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={it.fileUrl}
-                        alt=""
-                        loading="lazy"
-                        draggable={false}
-                        onContextMenu={(e) => e.preventDefault()}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', userSelect: 'none', pointerEvents: 'none' }}
-                      />
-                      {/* Light watermark to discourage right-click steal even though we already block it */}
-                      <div style={{
-                        position: 'absolute', inset: 0,
-                        background: 'repeating-linear-gradient(45deg, rgba(255,255,255,0) 0 80px, rgba(255,255,255,0.06) 80px 81px)',
-                        pointerEvents: 'none',
-                      }} />
-
-                      {/* Bottom-left: photographer logo + name */}
-                      <div style={{
-                        position: 'absolute', left: 8, bottom: 8, display: 'flex', alignItems: 'center', gap: 6,
-                        padding: '4px 8px 4px 4px',
-                        background: 'rgba(0,0,0,0.55)',
-                        backdropFilter: 'blur(4px)',
-                        WebkitBackdropFilter: 'blur(4px)',
-                        maxWidth: 'calc(100% - 16px)',
-                      }}>
-                        {it.photographerLogo ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={it.photographerLogo} alt="" style={{ width: 20, height: 20, borderRadius: '50%', objectFit: 'cover' }} />
-                        ) : (
-                          <span style={{ width: 20, height: 20, borderRadius: '50%', background: 'linear-gradient(135deg,#083A85,#F20C8F)', color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800 }}>
-                            {(it.photographerName || '·').trim().charAt(0).toUpperCase()}
-                          </span>
-                        )}
-                        <span style={{ color: '#fff', fontSize: 11.5, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {it.photographerName || '—'}
-                        </span>
-                      </div>
-
-                      {/* Top-right: price chip */}
-                      <div style={{
-                        position: 'absolute', top: 6, right: 6,
-                        background: selected ? '#F20C8F' : 'rgba(0,0,0,0.55)',
-                        color: '#fff', fontSize: 11.5, fontWeight: 700,
-                        padding: '3px 7px',
-                      }}>
-                        {sym} {Number(it.buyerPrice || 0).toFixed(buyerCurrency === 'RWF' ? 0 : 2)}
-                      </div>
-
-                      {/* Selection check */}
-                      {selected && (
-                        <div style={{ position: 'absolute', top: 6, left: 6, width: 24, height: 24, borderRadius: '50%', background: '#F20C8F', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>
-                          <i className="bi bi-check-lg" />
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div style={{ display: 'flex', gap: 8, justifyContent: 'center', padding: 24 }}>
-                <button type="button" disabled={page === 0} onClick={() => setPage(p => Math.max(0, p - 1))}
-                  style={pagerBtn(page === 0)}>← Prev</button>
-                <span style={{ alignSelf: 'center', fontSize: 13, color: '#6b7280' }}>Page {page + 1} / {totalPages}</span>
-                <button type="button" disabled={page + 1 >= totalPages} onClick={() => setPage(p => p + 1)}
-                  style={pagerBtn(page + 1 >= totalPages)}>Next →</button>
-              </div>
-            )}
-          </section>
-
-          {/* ── Cart drawer (sticky right) ── */}
-          <aside style={{ position: 'sticky', top: 80, height: 'calc(100vh - 80px)', background: '#fff', borderLeft: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ padding: '14px 16px', borderBottom: '1px solid #f0f2f5', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <strong style={{ fontSize: 14 }}>Cart ({cartItems.length})</strong>
-              {cartItems.length > 0 && (
-                <button type="button" onClick={clearCart} style={{ background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>Clear</button>
-              )}
+          {/* Grid */}
+          {error && (
+            <div style={{ padding: 16, color: '#fecaca', background: 'rgba(220,38,38,0.15)', borderRadius: 12, marginBottom: 14 }}>
+              {error}.{' '}
+              <button type="button" onClick={() => load()} style={{ background: 'none', border: 'none', color: '#F20C8F', cursor: 'pointer', fontWeight: 600 }}>Retry</button>
             </div>
-            <div style={{ flex: 1, overflowY: 'auto', padding: '8px 12px' }}>
-              {cartItems.length === 0 ? (
-                <div style={{ padding: '24px 8px', textAlign: 'center', color: '#9ca3af', fontSize: 13 }}>
-                  Click any photo to add it to your cart.
-                </div>
+          )}
+
+          {loading ? (
+            <div style={{ padding: 80, textAlign: 'center', color: 'rgba(255,255,255,0.6)' }}>Loading photos…</div>
+          ) : items.length === 0 ? (
+            <div style={{ padding: 80, textAlign: 'center', color: 'rgba(255,255,255,0.6)' }}>
+              {filtersActive ? (
+                <>No photos match your filters.{' '}
+                  <button type="button"
+                    onClick={() => { setQ(''); setCategory(''); setPhotographerId(''); setMinPrice(''); setMaxPrice(''); }}
+                    style={{ background: 'none', border: 'none', color: '#F20C8F', cursor: 'pointer', fontWeight: 600 }}>
+                    Clear filters
+                  </button>
+                </>
               ) : (
-                cartItems.map(it => (
-                  <div key={it.imageId} style={{ display: 'flex', gap: 8, padding: '6px 0', borderBottom: '1px solid #f9fafb' }}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={it.fileUrl} alt="" style={{ width: 56, height: 56, objectFit: 'cover', flexShrink: 0 }} />
-                    <div style={{ flex: 1, minWidth: 0, fontSize: 12 }}>
-                      <div style={{ color: '#1f2937', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.photographerName || '—'}</div>
-                      <div style={{ color: '#6b7280', fontSize: 11 }}>{it.categoryLabel || ''}</div>
-                      <div style={{ color: '#054d6f', fontWeight: 700 }}>{sym} {Number(it.buyerPrice || 0).toFixed(buyerCurrency === 'RWF' ? 0 : 2)}</div>
-                    </div>
-                    <button type="button" onClick={() => removeFromCart(it.imageId)} aria-label="Remove"
-                      style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', fontSize: 16, alignSelf: 'flex-start' }}>×</button>
-                  </div>
-                ))
+                <>No photos are available right now. Check back soon.</>
               )}
             </div>
-            <div style={{ padding: 14, borderTop: '1px solid #f0f2f5', background: '#fafafa' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10, fontSize: 14 }}>
-                <span style={{ color: '#6b7280' }}>Total</span>
-                <strong style={{ color: '#111' }}>{sym} {cartTotal.toFixed(buyerCurrency === 'RWF' ? 0 : 2)}</strong>
-              </div>
-              <button type="button" onClick={handleCheckoutClick} disabled={cartItems.length === 0}
-                style={{ width: '100%', padding: '12px 14px', background: cartItems.length === 0 ? '#e5e7eb' : '#F20C8F', color: cartItems.length === 0 ? '#9ca3af' : '#fff', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 14, cursor: cartItems.length === 0 ? 'not-allowed' : 'pointer' }}>
-                Checkout
-              </button>
+          ) : (
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(5, 1fr)',
+              gap: isMobile ? 10 : 14,
+            }}>
+              {items.map(it => {
+                const isSelected = !!cart[it.imageId];
+                const priceLabel = fmtListing(it);
+                return (
+                  <div
+                    key={it.imageId}
+                    onContextMenu={(e) => e.preventDefault()}
+                    onClick={() => setPreviewing(it)}
+                    style={{
+                      position: 'relative',
+                      borderRadius: 14,
+                      overflow: 'hidden',
+                      aspectRatio: '1',
+                      cursor: 'pointer',
+                      background: '#0a1a36',
+                      border: isSelected ? '1px solid rgba(242,12,143,0.45)' : '1px solid rgba(255,255,255,0.08)',
+                      boxShadow: isSelected
+                        ? '0 0 0 3px #F20C8F, 0 8px 22px -6px rgba(242,12,143,0.42)'
+                        : '0 4px 14px -6px rgba(0,0,0,0.35)',
+                      transition: 'box-shadow 0.18s, border-color 0.18s',
+                    }}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={it.fileUrl}
+                      alt=""
+                      loading="lazy"
+                      draggable={false}
+                      onDragStart={(e) => e.preventDefault()}
+                      onContextMenu={(e) => e.preventDefault()}
+                      style={{
+                        width: '100%', height: '100%', objectFit: 'cover', display: 'block',
+                        userSelect: 'none', WebkitUserSelect: 'none', pointerEvents: 'none',
+                      }}
+                    />
+
+                    {/* Diagonal sheen (cheap deterrent) */}
+                    <div aria-hidden style={{
+                      position: 'absolute', inset: 0, pointerEvents: 'none',
+                      backgroundImage: 'repeating-linear-gradient(-30deg, transparent 0 40px, rgba(255,255,255,0.06) 40px 41px)',
+                      mixBlendMode: 'overlay',
+                    }} />
+
+                    {/* Visible PREVIEW · photographer watermark */}
+                    <div aria-hidden style={{
+                      position: 'absolute', inset: 0, pointerEvents: 'none',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      transform: 'rotate(-22deg)',
+                      color: 'rgba(255,255,255,0.32)',
+                      fontWeight: 800,
+                      fontSize: 'clamp(11px, 2vw, 16px)',
+                      letterSpacing: '4px',
+                      textShadow: '0 1px 4px rgba(0,0,0,0.5)',
+                      fontFamily: 'system-ui, -apple-system, sans-serif',
+                      whiteSpace: 'nowrap',
+                    }}>
+                      PREVIEW · {(it.photographerName || 'CONNEKYT').toUpperCase()}
+                    </div>
+
+                    {/* Bottom-left: photographer logo + name */}
+                    <div style={{
+                      position: 'absolute', left: 8, bottom: 8,
+                      display: 'flex', alignItems: 'center', gap: 6,
+                      padding: '4px 8px 4px 4px',
+                      background: 'rgba(0,0,0,0.55)',
+                      backdropFilter: 'blur(4px)',
+                      WebkitBackdropFilter: 'blur(4px)',
+                      borderRadius: 999,
+                      maxWidth: 'calc(100% - 16px)',
+                    }}>
+                      {it.photographerLogo ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={it.photographerLogo} alt=""
+                          onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                          style={{ width: 20, height: 20, borderRadius: '50%', objectFit: 'cover' }} />
+                      ) : (
+                        <span style={{ width: 20, height: 20, borderRadius: '50%', background: 'linear-gradient(135deg,#083A85,#F20C8F)', color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800 }}>
+                          {(it.photographerName || '·').trim().charAt(0).toUpperCase()}
+                        </span>
+                      )}
+                      <span style={{ color: '#fff', fontSize: 11.5, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {it.photographerName || '—'}
+                      </span>
+                    </div>
+
+                    {/* Top-right: price chip */}
+                    <div style={{
+                      position: 'absolute', top: 8, right: 8,
+                      background: isSelected ? '#F20C8F' : 'rgba(0,0,0,0.55)',
+                      color: '#fff', fontSize: 11.5, fontWeight: 700,
+                      padding: '3px 9px', borderRadius: 999,
+                    }}>
+                      {priceLabel}
+                    </div>
+
+                    {/* Top-left: add-to-cart toggle (find-my-photos style) */}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); toggleCart(it); }}
+                      aria-label={isSelected ? 'Remove from cart' : 'Add to cart'}
+                      title={isSelected ? 'Remove from cart' : 'Add to cart'}
+                      style={{
+                        position: 'absolute', top: 8, left: 8,
+                        width: 30, height: 30, borderRadius: 9,
+                        background: isSelected ? '#F20C8F' : 'rgba(255,255,255,0.95)',
+                        border: isSelected ? '2px solid #F20C8F' : '2px solid rgba(255,255,255,0.6)',
+                        cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        zIndex: 3, padding: 0,
+                        boxShadow: isSelected
+                          ? '0 4px 12px -2px rgba(242,12,143,0.50)'
+                          : '0 2px 6px rgba(0,0,0,0.30)',
+                        transition: 'transform 0.15s, background 0.15s',
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.08)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+                    >
+                      {isSelected ? (
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                      ) : (
+                        <i className="bi bi-plus" style={{ fontSize: 16, color: '#F20C8F', fontWeight: 700, lineHeight: 1 }} />
+                      )}
+                    </button>
+                  </div>
+                );
+              })}
             </div>
-          </aside>
+          )}
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'center', padding: '32px 0 0' }}>
+              <button type="button" disabled={page === 0} onClick={() => setPage(p => Math.max(0, p - 1))}
+                style={pagerBtn(page === 0)}>← Prev</button>
+              <span style={{ alignSelf: 'center', fontSize: 13, color: 'rgba(255,255,255,0.7)' }}>Page {page + 1} / {totalPages}</span>
+              <button type="button" disabled={page + 1 >= totalPages} onClick={() => setPage(p => p + 1)}
+                style={pagerBtn(page + 1 >= totalPages)}>Next →</button>
+            </div>
+          )}
         </div>
       </main>
+
+      {/* ── Cart action bar (sticky bottom, matches find-my-photos) ── */}
+      {cartItems.length > 0 && (
+        <div style={{
+          position: 'fixed', bottom: 0, left: 0, right: 0,
+          background: 'rgba(15,15,20,0.97)',
+          backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
+          borderTop: '1px solid rgba(255,255,255,0.08)',
+          padding: isMobile ? '14px 16px' : '16px 24px',
+          zIndex: 1500,
+          boxShadow: '0 -12px 32px rgba(0,0,0,0.40)',
+        }}>
+          <span aria-hidden style={{
+            position: 'absolute', top: 0, left: 0, right: 0, height: 2,
+            background: 'linear-gradient(90deg, #083A85 0%, #F20C8F 100%)',
+          }} />
+          <div style={{
+            maxWidth: 1400, margin: '0 auto',
+            display: 'flex', flexDirection: isMobile ? 'column' : 'row',
+            alignItems: isMobile ? 'stretch' : 'center', gap: 12,
+          }}>
+            <div style={{ flex: isMobile ? 'initial' : 1, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+              <div style={{
+                display: 'inline-flex', alignItems: 'center', gap: 7,
+                padding: '6px 12px 6px 8px',
+                borderRadius: 999,
+                background: 'linear-gradient(135deg, #083A85 0%, #F20C8F 130%)',
+                color: '#fff', fontSize: 13, fontWeight: 700,
+                boxShadow: '0 6px 14px -4px rgba(242,12,143,0.36)',
+              }}>
+                <span style={{ width: 22, height: 22, borderRadius: '50%', background: 'rgba(255,255,255,0.22)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <i className="bi bi-bag-check-fill" style={{ fontSize: 11 }} />
+                </span>
+                {cartItems.length} photo{cartItems.length === 1 ? '' : 's'} in cart
+              </div>
+              <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13, fontWeight: 600 }}>
+                Total: <strong>{sym} {cartTotal.toFixed(2)}</strong>
+              </span>
+            </div>
+            <button onClick={clearCart}
+              style={{
+                padding: '10px 16px', borderRadius: 11,
+                background: 'transparent', border: '1.5px solid rgba(255,255,255,0.20)',
+                color: 'rgba(255,255,255,0.82)', fontSize: 13.5, fontWeight: 700,
+                cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6,
+                transition: 'border-color 0.15s, color 0.15s',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#F20C8F'; e.currentTarget.style.color = '#F20C8F'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.20)'; e.currentTarget.style.color = 'rgba(255,255,255,0.82)'; }}
+            >
+              <i className="bi bi-x-circle" style={{ fontSize: 13 }} /> Clear
+            </button>
+            <button onClick={handleCheckoutClick}
+              style={{
+                padding: '11px 18px', borderRadius: 11,
+                background: 'linear-gradient(135deg, #083A85 0%, #F20C8F 130%)',
+                border: 'none', color: '#fff', fontSize: 13.5, fontWeight: 700,
+                cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 7,
+                boxShadow: '0 8px 22px -6px rgba(242,12,143,0.45)',
+                transition: 'transform 0.15s, box-shadow 0.15s',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 12px 28px -6px rgba(242,12,143,0.55)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 22px -6px rgba(242,12,143,0.45)'; }}
+            >
+              <i className="bi bi-credit-card-2-front" /> Checkout · {sym} {cartTotal.toFixed(2)}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Lightbox preview ── */}
+      {previewing && (
+        <div
+          onClick={() => setPreviewing(null)}
+          onContextMenu={(e) => e.preventDefault()}
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.92)',
+            backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)',
+            zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: 20,
+          }}
+        >
+          <div onClick={(e) => e.stopPropagation()} style={{ position: 'absolute', top: 20, right: 20, display: 'flex', gap: 8 }}>
+            <button
+              onClick={(e) => { e.stopPropagation(); toggleCart(previewing!); }}
+              style={{
+                padding: '10px 18px', borderRadius: 50,
+                background: cart[previewing!.imageId] ? '#F20C8F' : 'linear-gradient(135deg, #083A85 0%, #F20C8F 130%)',
+                color: '#fff', border: 'none', fontSize: 13.5, fontWeight: 700, cursor: 'pointer',
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+              }}
+            >
+              {cart[previewing!.imageId] ? (
+                <><i className="bi bi-check2-circle" /> In cart</>
+              ) : (
+                <><i className="bi bi-plus-lg" /> Add · {fmtListing(previewing!)}</>
+              )}
+            </button>
+            <button onClick={() => setPreviewing(null)}
+              style={{
+                width: 40, height: 40, borderRadius: '50%',
+                background: 'rgba(255,255,255,0.10)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)',
+                cursor: 'pointer', fontSize: 18,
+              }}
+              aria-label="Close preview"
+            >×</button>
+          </div>
+          <div style={{ position: 'relative', maxWidth: '90vw', maxHeight: '85vh' }} onContextMenu={(e) => e.preventDefault()}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={previewing!.fileUrl}
+              alt=""
+              draggable={false}
+              onDragStart={(e) => e.preventDefault()}
+              onContextMenu={(e) => e.preventDefault()}
+              style={{
+                maxWidth: '90vw', maxHeight: '85vh', objectFit: 'contain',
+                userSelect: 'none', WebkitUserSelect: 'none', pointerEvents: 'none',
+                borderRadius: 8,
+              }}
+            />
+            {/* Lightbox watermark — bigger because the image is bigger */}
+            <div aria-hidden style={{
+              position: 'absolute', inset: 0, pointerEvents: 'none',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              transform: 'rotate(-22deg)',
+              color: 'rgba(255,255,255,0.30)', fontWeight: 800,
+              fontSize: 'clamp(20px, 4vw, 48px)', letterSpacing: '8px',
+              textShadow: '0 2px 8px rgba(0,0,0,0.65)',
+              fontFamily: 'system-ui, -apple-system, sans-serif',
+              whiteSpace: 'nowrap',
+            }}>
+              PREVIEW · {(previewing!.photographerName || 'CONNEKYT').toUpperCase()}
+            </div>
+            <div style={{
+              position: 'absolute', left: 14, bottom: 14, display: 'flex', alignItems: 'center', gap: 8,
+              padding: '6px 12px 6px 6px',
+              background: 'rgba(0,0,0,0.65)', borderRadius: 999, backdropFilter: 'blur(6px)',
+            }}>
+              {previewing!.photographerLogo ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={previewing!.photographerLogo} alt=""
+                  onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                  style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover' }} />
+              ) : (
+                <span style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg,#083A85,#F20C8F)', color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800 }}>
+                  {(previewing!.photographerName || '·').trim().charAt(0).toUpperCase()}
+                </span>
+              )}
+              <span style={{ color: '#fff', fontSize: 13.5, fontWeight: 700 }}>
+                {previewing!.photographerName || '—'}
+              </span>
+              {previewing!.categoryLabel && (
+                <span style={{ marginLeft: 4, fontSize: 11, color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: 1 }}>
+                  · {previewing!.categoryLabel}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Email-collection step before launching XentriPay */}
       {checkoutOpen && (
@@ -444,9 +661,7 @@ export default function BrowsePhotosPage() {
             </p>
             <label style={{ display: 'block', fontSize: 12.5, fontWeight: 600, color: '#374151', marginBottom: 6 }}>Email address</label>
             <input
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
+              type="email" value={email} onChange={e => setEmail(e.target.value)}
               placeholder="you@example.com"
               style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #e5e7eb', fontSize: 14, outline: 'none', marginBottom: 14 }}
             />
@@ -458,8 +673,6 @@ export default function BrowsePhotosPage() {
         </div>
       )}
 
-      {/* XentriPay payment modal — handles method/phone/polling, fires
-          onSuccess(refid) which we route to the purchase status page. */}
       {showXentri && cartItems.length > 0 && (
         <XentriPayModal
           isOpen={showXentri}
@@ -482,22 +695,30 @@ export default function BrowsePhotosPage() {
 }
 
 // ─── styles ───────────────────────────────────────────────────────
+const searchInput: React.CSSProperties = {
+  width: '100%', padding: '10px 12px 10px 36px', borderRadius: 10,
+  border: '1px solid rgba(255,255,255,0.14)',
+  background: 'rgba(255,255,255,0.05)',
+  color: '#fff', fontSize: 13.5, outline: 'none',
+};
 const selectStyle: React.CSSProperties = {
-  padding: '10px 10px', borderRadius: 8, border: '1px solid #e5e7eb',
-  fontSize: 13, outline: 'none', background: '#fff',
+  padding: '10px 10px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.14)',
+  fontSize: 13, outline: 'none', background: 'rgba(255,255,255,0.05)', color: '#fff',
 };
 const pagerBtn = (disabled: boolean): React.CSSProperties => ({
-  padding: '8px 14px', borderRadius: 8, border: '1px solid #e5e7eb',
-  background: disabled ? '#f3f4f6' : '#fff', color: disabled ? '#9ca3af' : '#1f2937',
+  padding: '8px 14px', borderRadius: 10,
+  border: '1px solid rgba(255,255,255,0.14)',
+  background: disabled ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.08)',
+  color: disabled ? 'rgba(255,255,255,0.35)' : '#fff',
   fontSize: 13, fontWeight: 600, cursor: disabled ? 'not-allowed' : 'pointer',
 });
 const modalOverlay: React.CSSProperties = {
-  position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)',
+  position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
   display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 16,
 };
 const modalCard: React.CSSProperties = {
-  background: '#fff', borderRadius: 12, maxWidth: 440, width: '100%',
-  padding: 22, boxShadow: '0 20px 50px rgba(0,0,0,0.25)',
+  background: '#fff', borderRadius: 14, maxWidth: 440, width: '100%',
+  padding: 22, boxShadow: '0 20px 50px rgba(0,0,0,0.35)',
 };
 const btnPrimary: React.CSSProperties = {
   padding: '10px 18px', background: '#F20C8F', color: '#fff',
