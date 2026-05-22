@@ -12,7 +12,7 @@ import Footer from "../components/footer";
  * Polls the public purchase-status endpoint until status flips to
  * COMPLETED, then auto-triggers a download from the same URL the
  * "Download again" button uses. Buyer also receives the ZIP attached
- * to the receipt email — this page is the auto-download + recovery
+ * to the receipt email - this page is the auto-download + recovery
  * fallback for the same session.
  *
  * Edge cases:
@@ -67,7 +67,7 @@ export default function BrowsePhotosSuccessPage({ refid }: { refid: string }) {
       } catch (e) {
         if (stopped) return;
         setError(e instanceof Error ? e.message : 'Failed to load purchase');
-        // Keep polling — transient backend hiccups shouldn't kill the page.
+        // Keep polling - transient backend hiccups shouldn't kill the page.
         timer = setTimeout(poll, POLL_INTERVAL_MS * 2);
       }
     };
@@ -118,7 +118,7 @@ export default function BrowsePhotosSuccessPage({ refid }: { refid: string }) {
                 <div style={spinnerWrap}><div style={spinner} /></div>
                 <h2 style={titleStyle}>Waiting for payment confirmation…</h2>
                 <p style={textStyle}>
-                  Hang tight — once mobile money confirms, we&apos;ll prep your photos and email them to{' '}
+                  Hang tight - once mobile money confirms, we&apos;ll prep your photos and email them to{' '}
                   <strong>{data.email}</strong>. You don&apos;t need to keep this page open.
                 </p>
               </>
@@ -129,7 +129,7 @@ export default function BrowsePhotosSuccessPage({ refid }: { refid: string }) {
                 <div style={{ ...iconCircle, background: '#dcfce7', color: '#15803d' }}>
                   <i className="bi bi-check-lg" style={{ fontSize: 36 }} />
                 </div>
-                <h2 style={titleStyle}>Thanks — your photos are on the way</h2>
+                <h2 style={titleStyle}>Thanks - your photos are on the way</h2>
                 <p style={textStyle}>
                   Your {data.photoCount} photo{data.photoCount === 1 ? '' : 's'} were emailed to{' '}
                   <strong>{data.email}</strong> as a ZIP attachment.{' '}
@@ -150,7 +150,7 @@ export default function BrowsePhotosSuccessPage({ refid }: { refid: string }) {
                 {data.unlockCode && (
                   <div style={{ marginTop: 20, padding: 12, background: '#f9fafb', border: '1px solid #f0f2f5', borderRadius: 8, fontSize: 12.5, color: '#6b7280' }}>
                     Your unlock code: <code style={codeChip}>{data.unlockCode}</code><br/>
-                    Save this — it re-unlocks these exact photos via the recovery flow
+                    Save this - it re-unlocks these exact photos via the recovery flow
                     if your email gets lost.
                   </div>
                 )}
@@ -171,14 +171,14 @@ export default function BrowsePhotosSuccessPage({ refid }: { refid: string }) {
             {timedOut && status !== 'COMPLETED' && (
               <div style={{ marginTop: 16, padding: 12, background: '#fffbeb', color: '#92400e', borderRadius: 8, fontSize: 13 }}>
                 Payment is taking longer than usual to confirm. Your receipt email will
-                still arrive once it clears — you can also{' '}
+                still arrive once it clears - you can also{' '}
                 <Link href="/user/browse-photos/recover" style={{ color: '#92400e', fontWeight: 700 }}>recover by email</Link>.
               </div>
             )}
 
             {error && !data && (
               // Only surface transient poll errors before we have any
-              // data at all — once status is in flight, mid-poll hiccups
+              // data at all - once status is in flight, mid-poll hiccups
               // shouldn't replace the live pending/complete UI with a
               // scary red HTTP code.
               <div style={{ marginTop: 12, fontSize: 12.5, color: '#dc2626' }}>{error}</div>

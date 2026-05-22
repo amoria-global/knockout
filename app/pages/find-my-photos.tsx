@@ -2692,7 +2692,7 @@ const FindMyPhotos = () => {
                       <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginTop: '2px' }}>From gallery</p>
                     </div>
 
-                    {/* Browse Photos — third option, routes to the public
+                    {/* Browse Photos - third option, routes to the public
                         stock-photo catalog (separate flow from face-scan).
                         i icon surfaces the use-case description on hover. */}
                     <div
@@ -2711,7 +2711,7 @@ const FindMyPhotos = () => {
                       onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; e.currentTarget.style.background = 'transparent'; }}
                     >
                       <span
-                        title="Built to support professional photography art — usable on press, newspapers, luxury venues, magazine covers, etc."
+                        title="Built to support professional photography art - usable on press, newspapers, luxury venues, magazine covers, etc."
                         onClick={(e) => e.stopPropagation()}
                         style={{
                           position: 'absolute', top: 8, right: 8,
@@ -4197,7 +4197,7 @@ const FindMyPhotos = () => {
                       <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: '2px' }}>From gallery</p>
                     </div>
 
-                    {/* Browse Photos — routes to the public stock catalog. */}
+                    {/* Browse Photos - routes to the public stock catalog. */}
                     <div
                       onClick={() => { if (typeof window !== 'undefined') window.location.href = '/user/browse-photos'; }}
                       style={{
@@ -4214,7 +4214,7 @@ const FindMyPhotos = () => {
                       onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#d1d5db'; e.currentTarget.style.background = 'transparent'; }}
                     >
                       <span
-                        title="Built to support professional photography art — usable on press, newspapers, luxury venues, magazine covers, etc."
+                        title="Built to support professional photography art - usable on press, newspapers, luxury venues, magazine covers, etc."
                         onClick={(e) => e.stopPropagation()}
                         style={{
                           position: 'absolute', top: 8, right: 8,

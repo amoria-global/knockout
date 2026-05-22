@@ -10,7 +10,7 @@ import Footer from "../components/footer";
  * /user/browse-photos/recover
  *
  * Lets a returning buyer re-trigger ZIP+email delivery for any past
- * CONTENT-album purchases they made under a given email. No login —
+ * CONTENT-album purchases they made under a given email. No login -
  * the email itself is the credential. The backend response is
  * intentionally neutral (always "if we found anything, you'll get an
  * email") so a stranger plugging in someone else's email learns nothing.
@@ -39,7 +39,7 @@ export default function BrowsePhotosRecoverPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email.trim() }),
       });
-      // Backend always returns 200 with a neutral message — we just
+      // Backend always returns 200 with a neutral message - we just
       // check action === 1.
       const j = await res.json().catch(() => ({}));
       if (j?.action === 1) {
@@ -66,7 +66,7 @@ export default function BrowsePhotosRecoverPage() {
               </div>
               <h2 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#111' }}>Recover past purchases</h2>
               <p style={{ margin: '6px 0 0', fontSize: 14, color: '#6b7280', lineHeight: 1.55 }}>
-                Enter the email you used at checkout — we&apos;ll re-send a fresh
+                Enter the email you used at checkout - we&apos;ll re-send a fresh
                 download link (and ZIP attachment) for everything you&apos;ve bought.
               </p>
             </div>
@@ -74,7 +74,7 @@ export default function BrowsePhotosRecoverPage() {
             {done ? (
               <div style={{ padding: 14, background: '#dcfce7', borderRadius: 8, color: '#166534', fontSize: 13.5, textAlign: 'center' }}>
                 If we found purchases under that email, your fresh download
-                link is on its way. Check your inbox in a minute or two —
+                link is on its way. Check your inbox in a minute or two -
                 also worth peeking in spam.
                 <div style={{ marginTop: 14 }}>
                   <Link href="/user/browse-photos" style={{ color: '#166534', fontWeight: 700, textDecoration: 'none' }}>

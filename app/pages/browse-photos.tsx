@@ -13,7 +13,7 @@ import type { MultiAlbumPurchaseItem } from "@/lib/APIs/payments/xentripay";
 /**
  * Public stock-photo browse + buy.
  *
- * Design mirrors find-my-photos.tsx — dark navy gradient, dotted
+ * Design mirrors find-my-photos.tsx - dark navy gradient, dotted
  * background, rounded photo cards, lightbox preview, sticky bottom
  * cart action bar. Same image-protection wiring (no right-click, no
  * drag, no pointer events on the <img>) and same diagonal "PREVIEW
@@ -77,7 +77,7 @@ export default function BrowsePhotosPage() {
   const [maxPrice, setMaxPrice] = useState('');
   // Price display = photographer's listing currency, native. Buyer
   // currency = always USD for the cart total + checkout (matches the
-  // find-my-photos flow — XentriPay charges USD-equivalent in RWF
+  // find-my-photos flow - XentriPay charges USD-equivalent in RWF
   // server-side and the per-item revenue split stays in each
   // photographer's listing currency for accurate payouts).
   const buyerCurrency = 'USD';
@@ -108,7 +108,7 @@ export default function BrowsePhotosPage() {
   // Tab-occlusion: when the buyer switches tabs or the window loses
   // focus, blank every photo (filter: brightness(0)) so screen recorders
   // / second-window capture get only black. Mirrors find-my-photos's
-  // anti-piracy deterrent — doesn't stop a determined attacker but
+  // anti-piracy deterrent - doesn't stop a determined attacker but
   // raises the bar on casual stealing.
   const [isOccluded, setIsOccluded] = useState(false);
   useEffect(() => {
@@ -125,7 +125,7 @@ export default function BrowsePhotosPage() {
     };
   }, []);
 
-  // First-visit welcome modal — localStorage-gated so it only opens
+  // First-visit welcome modal - localStorage-gated so it only opens
   // once per browser. Pure flavour copy to orient the visitor before
   // they dive into the grid. OK or X dismisses + remembers.
   const [showWelcome, setShowWelcome] = useState(false);
@@ -133,7 +133,7 @@ export default function BrowsePhotosPage() {
     if (typeof window === 'undefined') return;
     try {
       if (!window.localStorage.getItem('connekyt:browse:welcomed')) setShowWelcome(true);
-    } catch { /* incognito / disabled — silent */ }
+    } catch { /* incognito / disabled - silent */ }
   }, []);
   const dismissWelcome = () => {
     setShowWelcome(false);
@@ -170,7 +170,7 @@ export default function BrowsePhotosPage() {
           const j = await pgRes.json();
           setPhotographers(j?.data?.photographers ?? []);
         }
-      } catch { /* silent — feed still loads */ }
+      } catch { /* silent - feed still loads */ }
     })();
   }, []);
 
@@ -277,7 +277,7 @@ export default function BrowsePhotosPage() {
     setShowXentri(true);
   };
   const handlePurchaseSuccess = (refid: string) => {
-    // No redirect — snapshot the cart so the success modal can display
+    // No redirect - snapshot the cart so the success modal can display
     // the bought items, then open the modal in-place. Cart is cleared
     // AFTER the snapshot so the bottom action bar disappears but the
     // modal still has everything it needs.
@@ -307,7 +307,7 @@ export default function BrowsePhotosPage() {
           paddingTop: 64,
         }}
       >
-        {/* Dotted background — same vibe as find-my-photos hero */}
+        {/* Dotted background - same vibe as find-my-photos hero */}
         <div aria-hidden style={{
           position: 'absolute', inset: 0, pointerEvents: 'none',
           backgroundImage: 'radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px)',
@@ -318,11 +318,11 @@ export default function BrowsePhotosPage() {
 
         <div style={{ position: 'relative', zIndex: 1, maxWidth: 1400, margin: '0 auto', padding: isMobile ? '12px 14px 140px' : '14px 32px 160px' }}>
 
-          {/* Heading — compact so the filter row sits near the top fold */}
+          {/* Heading - compact so the filter row sits near the top fold */}
           <div style={{ marginBottom: 12 }}>
             <h1 style={{ margin: 0, fontSize: isMobile ? 22 : 26, fontWeight: 800, color: '#fff', letterSpacing: '-0.02em' }}>Browse photos</h1>
             <p style={{ margin: '4px 0 0', fontSize: 13.5, color: 'rgba(255,255,255,0.72)', maxWidth: 760, lineHeight: 1.55 }}>
-              Welcome to Connekyt&apos;s curated photography library — built to support
+              Welcome to Connekyt&apos;s curated photography library - built to support
               professional photography art. Here you&apos;ll find exceptional work by
               independent creators: press, nature, sport, luxury, diplomatic, fashion
               and more. Per-photo paid download; everything is emailed to you straight
@@ -362,7 +362,7 @@ export default function BrowsePhotosPage() {
             <select value={photographerId} onChange={e => setPhotographerId(e.target.value)} style={selectStyle}>
               <option value="">All photographers</option>
               {photographers.map(p => (
-                <option key={p.id} value={p.id}>{p.name || '—'}</option>
+                <option key={p.id} value={p.id}>{p.name || '-'}</option>
               ))}
             </select>
             <input type="number" placeholder="Min $" value={minPrice}
@@ -411,7 +411,7 @@ export default function BrowsePhotosPage() {
             <div style={{
               display: 'grid',
               gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(5, 1fr)',
-              // Zero gap — edge-to-edge browsing per spec. Cards meet
+              // Zero gap - edge-to-edge browsing per spec. Cards meet
               // their neighbours on every side; the selection ring inset
               // and the photographer chip read fine without a gutter.
               gap: 0,
@@ -457,7 +457,7 @@ export default function BrowsePhotosPage() {
                       }}
                     />
 
-                    {/* Repeating tile watermark — matches the paid-album
+                    {/* Repeating tile watermark - matches the paid-album
                         watermark on /user/find-my-photos. Many small
                         rotated "CONNEKYT" labels tiled across the whole
                         image, exactly the Shutterstock/Getty pattern.
@@ -478,7 +478,7 @@ export default function BrowsePhotosPage() {
                       mixBlendMode: 'overlay',
                     }} />
 
-                    {/* Top-right: price chip — pill to match find-my-photos. */}
+                    {/* Top-right: price chip - pill to match find-my-photos. */}
                     <div style={{
                       position: 'absolute', top: 8, right: 8,
                       background: isSelected ? '#F20C8F' : 'rgba(0,0,0,0.75)',
@@ -518,7 +518,7 @@ export default function BrowsePhotosPage() {
                       )}
                     </button>
 
-                    {/* Bottom-right: Buy (price) pill — express buy, adds
+                    {/* Bottom-right: Buy (price) pill - express buy, adds
                         this single photo to cart and opens checkout. The
                         accumulation flow (+ button + bottom bar) is still
                         available for batched purchases. */}
@@ -700,7 +700,7 @@ export default function BrowsePhotosPage() {
               style={{ position: 'absolute', inset: 0, background: 'transparent', userSelect: 'none' }}
             />
 
-            {/* Four 45° blurred diagonal bands — real image shows
+            {/* Four 45° blurred diagonal bands - real image shows
                 between them, white frosted-glass stripes obscure parts.
                 Same shape find-my-photos uses on locked paid photos. */}
             {[0, 1, 2, 3].map((i) => (
@@ -766,7 +766,7 @@ export default function BrowsePhotosPage() {
         </div>
       )}
 
-      {/* First-visit welcome modal — pure flavour. */}
+      {/* First-visit welcome modal - pure flavour. */}
       {showWelcome && (
         <div onClick={dismissWelcome} style={{
           position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)',
@@ -792,7 +792,7 @@ export default function BrowsePhotosPage() {
               Welcome to Connekyt
             </h3>
             <p style={{ margin: '0 0 16px', fontSize: 13.5, color: '#4b5563', lineHeight: 1.6 }}>
-              You&apos;re inside a library of professional photography art —
+              You&apos;re inside a library of professional photography art -
               curated for press, newspapers, luxury venues, magazine covers
               and more. Every image is the work of a credited photographer.
               Pick what you love, pay per photo, get the originals in your inbox.
@@ -839,7 +839,7 @@ export default function BrowsePhotosPage() {
           // Show the donation step between method-select and pay so the
           // buyer can optionally tack a platform donation onto the same
           // gateway invoice. Backend splits it out at finalisation and
-          // saves to the Donation table — never mixed into any
+          // saves to the Donation table - never mixed into any
           // photographer's 70/30 payout.
           showDonationPrompt
           title="Connekyt Photos"
