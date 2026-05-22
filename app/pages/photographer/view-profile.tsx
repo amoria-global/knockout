@@ -877,23 +877,15 @@ function ViewProfileContent(): React.JSX.Element {
               ))}
           </div>
 
-          {/* ---- sticky sidebar ---- */}
+          {/* ---- sticky sidebar ----
+              Money intentionally NOT shown on the view-profile surface.
+              Per product policy buyers only see prices at the step of
+              selecting a package inside the booking wizard. The card
+              just confirms the photographer offers bookable packages
+              and exposes the Book Now CTA. */}
           <aside className="vp-sidebar" aria-label="Booking and contact">
             <div className="vp-side-card">
-              <span className="vp-side-eyebrow">{t('overview.startingPrice')}</span>
-              {cheapestPackage ? (
-                <div className="vp-side-price">
-                  <span className="vp-side-price-value">
-                    {cheapestPackage.currencySymbol || ''}
-                    {cheapestPackage.price.toLocaleString()}
-                  </span>
-                  <span className="vp-side-price-unit">{cheapestPackage.priceUnit}</span>
-                </div>
-              ) : (
-                <div className="vp-side-price">
-                  <span className="vp-side-price-onreq">On request</span>
-                </div>
-              )}
+              <span className="vp-side-eyebrow">{cheapestPackage ? 'Available to book' : 'Bookings on request'}</span>
               <button
                 type="button"
                 className="vp-cta vp-cta--primary vp-cta--block"
@@ -1027,22 +1019,14 @@ function ViewProfileContent(): React.JSX.Element {
           </aside>
         </div>
 
-        {/* Mobile floating bottom CTA */}
+        {/* Mobile floating bottom CTA - no money displayed; price lives
+            on the package-selection step inside the booking wizard. */}
         {isMobile && (
           <div className="vp-mobile-cta" role="region" aria-label="Quick booking action">
             <div className="vp-mobile-cta-price">
-              {cheapestPackage ? (
-                <>
-                  <span className="vp-mobile-cta-from">From</span>
-                  <strong>
-                    {cheapestPackage.currencySymbol || ''}
-                    {cheapestPackage.price.toLocaleString()}
-                  </strong>
-                  <span className="vp-mobile-cta-unit">{cheapestPackage.priceUnit}</span>
-                </>
-              ) : (
-                <span className="vp-mobile-cta-onreq">On request</span>
-              )}
+              <span className="vp-mobile-cta-onreq">
+                {cheapestPackage ? 'Available to book' : 'On request'}
+              </span>
             </div>
             <button
               type="button"

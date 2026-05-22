@@ -286,6 +286,11 @@ const PriceSlider: React.FC<{
 
   if (entries.length === 0) return null;
 
+  // Money is intentionally NOT shown on the listing card. Per product
+  // policy buyers only see the price at the step of selecting a
+  // package (inside the booking wizard / view-profile package picker).
+  // The card just rotates between the service-type labels the
+  // photographer offers - Outdoor, Indoor, or both.
   return (
     <div className="ph-price ph-price-slider" aria-live="polite">
       {entries.map((e, i) => {
@@ -295,11 +300,7 @@ const PriceSlider: React.FC<{
         else position = 'right';
         return (
           <div key={i} className={`ph-price-slide ph-price-slide--${position}`}>
-            <span className="ph-price-label">{e.kind} · From</span>
-            <span className="ph-price-value">
-              {e.pkg.currencySymbol || ''}{e.pkg.price.toLocaleString()}{' '}
-              <small>{e.pkg.priceUnit}</small>
-            </span>
+            <span className="ph-price-label">{e.kind}</span>
           </div>
         );
       })}
