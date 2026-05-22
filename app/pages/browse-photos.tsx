@@ -422,28 +422,26 @@ export default function BrowsePhotosPage() {
                       }}
                     />
 
-                    {/* Diagonal sheen (cheap deterrent) */}
+                    {/* Repeating tile watermark — matches the paid-album
+                        watermark on /user/find-my-photos. Many small
+                        rotated "CONNEKYT" labels tiled across the whole
+                        image, exactly the Shutterstock/Getty pattern.
+                        Replaces the single oversized PREVIEW · NAME
+                        overlay so content browse and paid-album browse
+                        feel consistent. */}
                     <div aria-hidden style={{
                       position: 'absolute', inset: 0, pointerEvents: 'none',
-                      backgroundImage: 'repeating-linear-gradient(-30deg, transparent 0 40px, rgba(255,255,255,0.06) 40px 41px)',
+                      backgroundImage:
+                        'url("data:image/svg+xml;utf8,' +
+                        encodeURIComponent(
+                          '<svg xmlns="http://www.w3.org/2000/svg" width="140" height="80" viewBox="0 0 140 80">' +
+                            '<text x="70" y="46" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="700" letter-spacing="2" fill="rgba(255,255,255,0.55)" text-anchor="middle" transform="rotate(-24 70 42)">CONNEKYT</text>' +
+                          '</svg>'
+                        ) +
+                        '")',
+                      backgroundRepeat: 'repeat',
                       mixBlendMode: 'overlay',
                     }} />
-
-                    {/* Visible PREVIEW · photographer watermark */}
-                    <div aria-hidden style={{
-                      position: 'absolute', inset: 0, pointerEvents: 'none',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      transform: 'rotate(-22deg)',
-                      color: 'rgba(255,255,255,0.32)',
-                      fontWeight: 800,
-                      fontSize: 'clamp(11px, 2vw, 16px)',
-                      letterSpacing: '4px',
-                      textShadow: '0 1px 4px rgba(0,0,0,0.5)',
-                      fontFamily: 'system-ui, -apple-system, sans-serif',
-                      whiteSpace: 'nowrap',
-                    }}>
-                      PREVIEW · {(it.photographerName || 'CONNEKYT').toUpperCase()}
-                    </div>
 
                     {/* Bottom-left: photographer logo + name */}
                     <div style={{
@@ -650,19 +648,22 @@ export default function BrowsePhotosPage() {
                 borderRadius: 8,
               }}
             />
-            {/* Lightbox watermark — bigger because the image is bigger */}
+            {/* Lightbox watermark — same repeating-tile CONNEKYT pattern
+                as the grid cards so the buyer can't escape it by zooming
+                in. Slightly bigger tile for the larger surface. */}
             <div aria-hidden style={{
               position: 'absolute', inset: 0, pointerEvents: 'none',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              transform: 'rotate(-22deg)',
-              color: 'rgba(255,255,255,0.30)', fontWeight: 800,
-              fontSize: 'clamp(20px, 4vw, 48px)', letterSpacing: '8px',
-              textShadow: '0 2px 8px rgba(0,0,0,0.65)',
-              fontFamily: 'system-ui, -apple-system, sans-serif',
-              whiteSpace: 'nowrap',
-            }}>
-              PREVIEW · {(previewing!.photographerName || 'CONNEKYT').toUpperCase()}
-            </div>
+              backgroundImage:
+                'url("data:image/svg+xml;utf8,' +
+                encodeURIComponent(
+                  '<svg xmlns="http://www.w3.org/2000/svg" width="220" height="120" viewBox="0 0 220 120">' +
+                    '<text x="110" y="68" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700" letter-spacing="3" fill="rgba(255,255,255,0.55)" text-anchor="middle" transform="rotate(-24 110 62)">CONNEKYT</text>' +
+                  '</svg>'
+                ) +
+                '")',
+              backgroundRepeat: 'repeat',
+              mixBlendMode: 'overlay',
+            }} />
             <div style={{
               position: 'absolute', left: 14, bottom: 14, display: 'flex', alignItems: 'center', gap: 8,
               padding: '6px 12px 6px 6px',

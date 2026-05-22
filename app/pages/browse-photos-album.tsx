@@ -324,22 +324,21 @@ export default function BrowsePhotosAlbumPage({
                       onContextMenu={(e) => e.preventDefault()}
                       style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', userSelect: 'none', pointerEvents: 'none' }}
                     />
+                    {/* Repeating-tile CONNEKYT watermark — matches the
+                        paid-album style on /user/find-my-photos. */}
                     <div aria-hidden style={{
                       position: 'absolute', inset: 0, pointerEvents: 'none',
-                      backgroundImage: 'repeating-linear-gradient(-30deg, transparent 0 40px, rgba(255,255,255,0.06) 40px 41px)',
+                      backgroundImage:
+                        'url("data:image/svg+xml;utf8,' +
+                        encodeURIComponent(
+                          '<svg xmlns="http://www.w3.org/2000/svg" width="140" height="80" viewBox="0 0 140 80">' +
+                            '<text x="70" y="46" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="700" letter-spacing="2" fill="rgba(255,255,255,0.55)" text-anchor="middle" transform="rotate(-24 70 42)">CONNEKYT</text>' +
+                          '</svg>'
+                        ) +
+                        '")',
+                      backgroundRepeat: 'repeat',
                       mixBlendMode: 'overlay',
                     }} />
-                    <div aria-hidden style={{
-                      position: 'absolute', inset: 0, pointerEvents: 'none',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      transform: 'rotate(-22deg)',
-                      color: 'rgba(255,255,255,0.32)', fontWeight: 800,
-                      fontSize: 'clamp(11px, 2vw, 16px)', letterSpacing: '4px',
-                      textShadow: '0 1px 4px rgba(0,0,0,0.5)',
-                      whiteSpace: 'nowrap',
-                    }}>
-                      PREVIEW · {(it.photographerName || 'CONNEKYT').toUpperCase()}
-                    </div>
                     <div style={{
                       position: 'absolute', top: 8, right: 8,
                       background: isSelected ? '#F20C8F' : 'rgba(0,0,0,0.55)',
@@ -450,12 +449,17 @@ export default function BrowsePhotosAlbumPage({
             />
             <div aria-hidden style={{
               position: 'absolute', inset: 0, pointerEvents: 'none',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              transform: 'rotate(-22deg)', color: 'rgba(255,255,255,0.30)', fontWeight: 800,
-              fontSize: 'clamp(20px, 4vw, 48px)', letterSpacing: '8px', whiteSpace: 'nowrap',
-            }}>
-              PREVIEW · {(previewing!.photographerName || 'CONNEKYT').toUpperCase()}
-            </div>
+              backgroundImage:
+                'url("data:image/svg+xml;utf8,' +
+                encodeURIComponent(
+                  '<svg xmlns="http://www.w3.org/2000/svg" width="220" height="120" viewBox="0 0 220 120">' +
+                    '<text x="110" y="68" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700" letter-spacing="3" fill="rgba(255,255,255,0.55)" text-anchor="middle" transform="rotate(-24 110 62)">CONNEKYT</text>' +
+                  '</svg>'
+                ) +
+                '")',
+              backgroundRepeat: 'repeat',
+              mixBlendMode: 'overlay',
+            }} />
           </div>
         </div>
       )}
