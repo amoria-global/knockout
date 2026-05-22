@@ -2619,7 +2619,7 @@ const FindMyPhotos = () => {
                     display: 'flex',
                     gap: '12px',
                     marginBottom: '20px',
-                    maxWidth: '340px',
+                    maxWidth: '520px',
                     marginLeft: 'auto',
                     marginRight: 'auto',
                   }}>
@@ -2690,6 +2690,56 @@ const FindMyPhotos = () => {
                       </div>
                       <p style={{ fontSize: '14px', fontWeight: 600, color: '#ffffff' }}>Upload Photo</p>
                       <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginTop: '2px' }}>From gallery</p>
+                    </div>
+
+                    {/* Browse Photos — third option, routes to the public
+                        stock-photo catalog (separate flow from face-scan).
+                        i icon surfaces the use-case description on hover. */}
+                    <div
+                      onClick={() => { if (typeof window !== 'undefined') window.location.href = '/user/browse-photos'; }}
+                      style={{
+                        flex: 1,
+                        position: 'relative',
+                        border: '2px dashed rgba(255,255,255,0.2)',
+                        borderRadius: '16px',
+                        padding: '24px 12px',
+                        textAlign: 'center',
+                        cursor: 'pointer',
+                        transition: 'all 0.3s ease',
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#F20C8F'; e.currentTarget.style.background = 'rgba(242,12,143,0.08)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; e.currentTarget.style.background = 'transparent'; }}
+                    >
+                      <span
+                        title="Built to support professional photography art — usable on press, newspapers, luxury venues, magazine covers, etc."
+                        onClick={(e) => e.stopPropagation()}
+                        style={{
+                          position: 'absolute', top: 8, right: 8,
+                          width: 20, height: 20, borderRadius: '50%',
+                          background: 'rgba(242,12,143,0.20)', color: '#F20C8F',
+                          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: 11, fontWeight: 800, fontFamily: 'serif',
+                          cursor: 'help',
+                        }}>i</span>
+                      <div style={{
+                        width: '48px',
+                        height: '48px',
+                        borderRadius: '50%',
+                        background: 'rgba(242,12,143,0.15)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        margin: '0 auto 10px',
+                      }}>
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#F20C8F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="3" y="3" width="7" height="7" />
+                          <rect x="14" y="3" width="7" height="7" />
+                          <rect x="14" y="14" width="7" height="7" />
+                          <rect x="3" y="14" width="7" height="7" />
+                        </svg>
+                      </div>
+                      <p style={{ fontSize: '14px', fontWeight: 600, color: '#ffffff' }}>Browse Photos</p>
+                      <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginTop: '2px' }}>Stock library</p>
                     </div>
                   </div>
                 )}
@@ -4145,6 +4195,54 @@ const FindMyPhotos = () => {
                       </div>
                       <p style={{ fontSize: '14px', fontWeight: 600, color: '#374151' }}>Upload Photo</p>
                       <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: '2px' }}>From gallery</p>
+                    </div>
+
+                    {/* Browse Photos — routes to the public stock catalog. */}
+                    <div
+                      onClick={() => { if (typeof window !== 'undefined') window.location.href = '/user/browse-photos'; }}
+                      style={{
+                        flex: 1,
+                        position: 'relative',
+                        border: '2px dashed #d1d5db',
+                        borderRadius: '16px',
+                        padding: '28px 12px',
+                        textAlign: 'center',
+                        cursor: 'pointer',
+                        transition: 'all 0.3s ease',
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#F20C8F'; e.currentTarget.style.background = 'rgba(242,12,143,0.03)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#d1d5db'; e.currentTarget.style.background = 'transparent'; }}
+                    >
+                      <span
+                        title="Built to support professional photography art — usable on press, newspapers, luxury venues, magazine covers, etc."
+                        onClick={(e) => e.stopPropagation()}
+                        style={{
+                          position: 'absolute', top: 8, right: 8,
+                          width: 20, height: 20, borderRadius: '50%',
+                          background: 'rgba(242,12,143,0.15)', color: '#F20C8F',
+                          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: 11, fontWeight: 800, fontFamily: 'serif',
+                          cursor: 'help',
+                        }}>i</span>
+                      <div style={{
+                        width: '48px',
+                        height: '48px',
+                        borderRadius: '50%',
+                        background: 'rgba(242,12,143,0.10)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        margin: '0 auto 10px',
+                      }}>
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#F20C8F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="3" y="3" width="7" height="7" />
+                          <rect x="14" y="3" width="7" height="7" />
+                          <rect x="14" y="14" width="7" height="7" />
+                          <rect x="3" y="14" width="7" height="7" />
+                        </svg>
+                      </div>
+                      <p style={{ fontSize: '14px', fontWeight: 600, color: '#374151' }}>Browse Photos</p>
+                      <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: '2px' }}>Stock library</p>
                     </div>
                   </div>
                 )}
