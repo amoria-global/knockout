@@ -62,6 +62,10 @@ export interface XentriPayModalProps {
   // AlbumPurchase rows sharing one refid so each photographer gets their
   // correct slice of revenue.
   multiAlbumItems?: import('@/lib/APIs/payments/xentripay').MultiAlbumPurchaseItem[];
+  // Guest-buyer email for content-album purchases (no auth, no buyerId).
+  // Passes through to the backend so the post-purchase ZIP+email flow
+  // has someone to send to.
+  viewerEmail?: string;
   // Dark theme to match viewer auth modal
   darkMode?: boolean;
   // Show donation prompt after payment method selection
@@ -109,6 +113,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
   photoIds,
   buyerId,
   multiAlbumItems,
+  viewerEmail,
   donationAmount: donationAmountProp = 0,
   darkMode = false,
   showDonationPrompt = false,
@@ -455,6 +460,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
         response = await initiateMultiAlbumPurchase({
           items: multiAlbumItems,
           ...(buyerId ? { buyerId } : {}),
+          ...(viewerEmail ? { viewerEmail } : {}),
           phone,
           ...(isCard ? {} : { telecomProvider: method.provider }),
           paymentMethod: paymentMethodType,
