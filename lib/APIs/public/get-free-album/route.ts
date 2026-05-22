@@ -40,7 +40,7 @@ export interface FreeAlbumData {
   currencyAbbreviation?: string;
   currencySymbol?: string;
   // Photos this viewer has already free-downloaded (cumulative) or paid
-  // for. Frontend marks them OWNED — free to re-download, excluded from
+  // for. Frontend marks them OWNED. free to re-download, excluded from
   // cap counting and from the pay-for-extras total.
   alreadyAcquiredPhotoIds?: string[];
 }
@@ -97,7 +97,7 @@ export async function consumeFreeAlbumGrant(albumId: string) {
 
 /**
  * Cumulative download log for capped free albums. Posts the IDs the viewer
- * just downloaded so the next visit shows them as OWNED. Idempotent — the
+ * just downloaded so the next visit shows them as OWNED. Idempotent. the
  * backend UNIONs into AlbumAccessGrant.selectedPhotoIds.
  */
 export async function logFreeAlbumDownload(albumId: string, photoIds: string[]) {

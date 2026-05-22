@@ -100,7 +100,7 @@ export async function persistPhotographerProfile(
   // `existing` for that reason.
   for (const pkg of payload.packages) {
     // Studio packages don't make sense with hasLiveStream (1-2 hour indoor
-    // shoots aren't live-streamed) — keep that flag scoped to outdoor
+    // shoots aren't live-streamed). keep that flag scoped to outdoor
     // Diamond. Missing serviceType is treated as OUTDOOR by the backend.
     const serviceType = pkg.serviceType ?? 'OUTDOOR';
     const rPkg = await apiClient.post('/api/remote/photographer/packages', {

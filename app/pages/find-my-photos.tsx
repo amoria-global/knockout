@@ -235,11 +235,11 @@ const FindMyPhotos = () => {
     allSelectedIds: string[];
   } | null>(null);
   // Photos this email has already free-downloaded (cumulative) or purchased
-  // on this album — returned by the backend on verify/getFreeAlbum. Renders
+  // on this album. returned by the backend on verify/getFreeAlbum. Renders
   // a ✓ OWNED badge, never counts against the free cap, always free to
   // re-download.
   const [freeAcquiredIds, setFreeAcquiredIds] = useState<Set<string>>(new Set());
-  // One-shot "you're about to use a paid extra" warning modal — fires the
+  // One-shot "you're about to use a paid extra" warning modal. fires the
   // first time the user's selection (minus OWNED) crosses the free cap.
   const [freeCapWarnShown, setFreeCapWarnShown] = useState(false);
   const [freeCapWarnOpen, setFreeCapWarnOpen] = useState(false);
@@ -698,7 +698,7 @@ const FindMyPhotos = () => {
    * Ship every currently-selected photo to the user's disk, then tell the
    * backend so the OWNED set persists across visits.
    *
-   * No one-time consumption / link expiry — the access link stays active.
+   * No one-time consumption / link expiry. the access link stays active.
    * The cap is enforced before this fires (in handleFreeCappedDownload or
    * via the XentriPayModal onSuccess branch in handlePurchaseSuccess) so
    * by the time we land here, every selected photo is either OWNED
@@ -729,7 +729,7 @@ const FindMyPhotos = () => {
     });
     setFreeStatusMsg(
       `Downloading ${chosen.length} photo${chosen.length !== 1 ? 's' : ''}. ` +
-      `Your access link stays active — come back any time.`
+      `Your access link stays active. come back any time.`
     );
   };
 
@@ -748,8 +748,8 @@ const FindMyPhotos = () => {
    *   • Never downloads photos the user didn't pay for and aren't OWNED
    *     or in free quota.
    *   • The first time the user's selection crosses the cap with at least
-   *     one paid extra, the warning modal fires once and we stop here —
-   *     the user has to confirm by clicking Purchase again to actually pay.
+   *     one paid extra, the warning modal fires once and we stop here,
+   *     so the user has to confirm by clicking Purchase again to actually pay.
    */
   const handleFreeCappedDownload = async () => {
     if (!freeAlbumId || freeIsProcessing) return;
@@ -782,7 +782,7 @@ const FindMyPhotos = () => {
 
     // Overflow → open the in-page XentriPayModal for the OVERFLOW ids only.
     // Owned + free quota are never charged. We DO NOT use window.open here
-    // — popups opened after an `await` are blocked by modern browsers
+    //. popups opened after an `await` are blocked by modern browsers
     // because they're no longer considered part of the user-gesture chain.
     // The shared XentriPayModal handles gateway initiate + status polling
     // entirely inside the page so there's no popup to block.
@@ -1252,7 +1252,7 @@ const FindMyPhotos = () => {
     // standard paid-album path), shift to the direct-URL download path
     // used by every other free-album action. The paid-album branch below
     // calls downloadPurchasedPhoto which goes through the protected
-    // backend download endpoint — that's wrong for free-album photos
+    // backend download endpoint. that's wrong for free-album photos
     // whose URLs are already the original-quality JPEGs.
     if (freeExtrasInFlight) {
       const allSelected = freeExtrasInFlight.allSelectedIds;
@@ -2053,7 +2053,7 @@ const FindMyPhotos = () => {
                       <> Extras cost <strong style={{ color: '#fff' }}>{freeAlbumCurrencyAbbr || ''} {freeAlbumPricePerExtra}</strong> each.</>
                     )}
                     {freeAcquiredIds.size > 0 && (
-                      <> You already own <strong style={{ color: '#fff' }}>{freeAcquiredIds.size}</strong> photo{freeAcquiredIds.size === 1 ? '' : 's'} from past visits — free to re-download.</>
+                      <> You already own <strong style={{ color: '#fff' }}>{freeAcquiredIds.size}</strong> photo{freeAcquiredIds.size === 1 ? '' : 's'} from past visits. free to re-download.</>
                     )}
                   </p>
                 )}
@@ -2118,7 +2118,7 @@ const FindMyPhotos = () => {
                         transition: 'filter 0.1s linear',
                       }}
                     />
-                    {/* Visible watermark overlay on capped/priced albums —
+                    {/* Visible watermark overlay on capped/priced albums,
                         deters casual screenshot reuse. Repeated diagonal
                         text bands sit above the image. */}
                     {isCappedAlbum && !isOwned && (
@@ -3307,7 +3307,7 @@ const FindMyPhotos = () => {
               </h3>
               <p style={{ margin: 0, fontSize: 13.5, color: 'rgba(255,255,255,0.78)', lineHeight: 1.55 }}>
                 The first <strong>{info.cap === Infinity ? freeAlbumPhotos.length : info.cap}</strong> new photo{info.cap === 1 ? '' : 's'} {info.cap === 1 ? 'is' : 'are'} free.
-                You picked <strong>{info.overflow}</strong> beyond that — each costs{' '}
+                You picked <strong>{info.overflow}</strong> beyond that. each costs{' '}
                 <strong>{freeAlbumCurrencyAbbr || ''} {freeAlbumPricePerExtra}</strong>.
               </p>
               <div style={{
@@ -3398,7 +3398,7 @@ const FindMyPhotos = () => {
             }}
           >
             {/* When the previewed photo belongs to the current free album,
-                the lightbox is preview-only — the user must add it to the
+                the lightbox is preview-only. the user must add it to the
                 cart and route through handleFreeCappedDownload so the cap
                 and the pay-for-extras flow stay enforced. */}
             {freeAlbumPhotos.some(p => p.id === selectedPhoto.id) ? (
