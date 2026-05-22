@@ -467,23 +467,24 @@ function BookingWizardStyles() {
 }
 
 // ─── Service-type chooser ───
-// Two plain-language choice cards (Outdoor event vs Studio session). Purely
+// Two plain-language choice cards (Outdoor vs Indoor). Purely
 // presentational: it calls onChange with the SAME 'OUTDOOR' | 'STUDIO' values
 // the wizard already dispatches via SET_SERVICE_TYPE, so no booking logic,
 // pricing, or payload changes - only how the choice is presented. Rendered
-// in both the Quick Brief and the Availability Gate.
+// in both the Quick Brief and the Availability Gate. ("STUDIO" remains the
+// internal enum value to avoid touching DB rows, controllers, and analytics.)
 const SERVICE_TYPE_OPTIONS = [
   {
     val: 'OUTDOOR' as const,
     icon: 'bi-geo-alt',
-    title: 'Outdoor event',
+    title: 'Outdoor',
     desc: 'The photographer comes to your venue or event location.',
   },
   {
     val: 'STUDIO' as const,
     icon: 'bi-camera2',
-    title: 'Studio session',
-    desc: 'An indoor photo / video shoot at the photographer’s own studio.',
+    title: 'Indoor',
+    desc: 'A photo / video shoot at the photographer’s own studio.',
   },
 ];
 
@@ -2004,7 +2005,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
             ) : state.currentSlide === 0 ? (
               <div>
                 <h3 style={{ color: TEXT_PRIMARY, fontSize: 20, fontWeight: 700, margin: '0 0 4px' }}>
-                  {isStudio ? 'Book a studio session' : 'Tell us about your event'}
+                  {isStudio ? 'Book an indoor session' : 'Tell us about your event'}
                 </h3>
                 <p style={{ color: TEXT_MUTED, fontSize: 13, margin: '0 0 16px' }}>
                   {isStudio
@@ -2012,7 +2013,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                     : 'We’ll find the best photographers for you'}
                 </p>
 
-                {/* Service-type chooser. Outdoor (existing flow) vs Studio. */}
+                {/* Service-type chooser. Indoor (studio) vs Outdoor (event flow). */}
                 <ServiceTypeChooser
                   value={state.serviceType}
                   onChange={v => dispatch({ type: 'SET_SERVICE_TYPE', value: v })}
@@ -2160,7 +2161,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                                 const cur = relevantPkgs[0]?.currencyAbbreviation || '';
                                 return (
                                   <p style={{ color: ACCENT, fontSize: 12, fontWeight: 600, margin: '4px 0 0' }}>
-                                    {isStudio ? 'Studio · ' : ''}From {min.toLocaleString()} {cur}
+                                    {isStudio ? 'Indoor · ' : ''}From {min.toLocaleString()} {cur}
                                   </p>
                                 );
                               })()}
@@ -2177,7 +2178,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                             boxShadow: '0 8px 18px -8px rgba(8,58,133,0.55)',
                             fontFamily: 'inherit',
                           }}>
-                            {isStudio ? 'Select for studio' : 'View Profile'} <i className="bi bi-arrow-right"></i>
+                            {isStudio ? 'Select for indoor' : 'View Profile'} <i className="bi bi-arrow-right"></i>
                           </button>
                         </div>
                       );
@@ -2190,7 +2191,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
             ) : state.currentSlide === 2 ? (
               <div>
                 <h3 style={{ color: TEXT_PRIMARY, fontSize: 18, fontWeight: 700, margin: '0 0 16px' }}>
-                  {isStudio ? 'Select a Studio Session Package' : 'Select a Package'}
+                  {isStudio ? 'Select an Indoor Package' : 'Select a Package'}
                 </h3>
 
                 {packagesLoading ? (

@@ -271,9 +271,9 @@ const PriceSlider: React.FC<{
   // Order matters for the slide animation. keep outdoor first, then studio,
   // so a photographer who later adds studio packages sees their existing
   // outdoor price still appear first.
-  const entries: { kind: 'Outdoor' | 'Studio'; pkg: PhotographerPackage }[] = [];
+  const entries: { kind: 'Outdoor' | 'Indoor'; pkg: PhotographerPackage }[] = [];
   if (outdoor) entries.push({ kind: 'Outdoor', pkg: outdoor });
-  if (studio) entries.push({ kind: 'Studio', pkg: studio });
+  if (studio) entries.push({ kind: 'Indoor', pkg: studio });
 
   const [currentIndex, setCurrentIndex] = useState(0);
   useEffect(() => {
