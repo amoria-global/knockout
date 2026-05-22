@@ -1729,8 +1729,8 @@ export default function Home() {
                     onMouseEnter={(e) => { e.currentTarget.style.background = '#1a1a1a'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; }}
                     onMouseLeave={(e) => { e.currentTarget.style.background = '#000000'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; }}
                   >
-                    <i className="bi bi-search" style={{ fontSize: '11px' }}></i>
-                    Scan now
+                    <i className="bi bi-grid-3x3-gap-fill" style={{ fontSize: '11px' }}></i>
+                    Browse Photos
                   </button>
                 </div>
               </div>
