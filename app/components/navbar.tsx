@@ -116,6 +116,7 @@ const AmoriaKNavbar = () => {
   const [selectedLang, setSelectedLang] = useState(languageNames[locale as Locale]);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isPhotographersDropdownOpen, setIsPhotographersDropdownOpen] = useState(false);
+  const [isFindMyPhotosDropdownOpen, setIsFindMyPhotosDropdownOpen] = useState(false);
   const [isEventsDropdownOpen, setIsEventsDropdownOpen] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -1317,7 +1318,67 @@ const AmoriaKNavbar = () => {
 
             <Link href={getLocalePath('/user/about')} className="nav-link-hover text-gray-700 hover:text-[#083A85] text-sm lg:text-base font-semibold transition-colors duration-200 whitespace-nowrap cursor-pointer">{t('about')}</Link>
             <Link href={getLocalePath('/user/donations')} className="nav-link-hover text-gray-700 hover:text-[#083A85] text-sm lg:text-base font-semibold transition-colors duration-200 whitespace-nowrap cursor-pointer">Donate</Link>
-            <Link href={getLocalePath('/user/find-my-photos')} className="nav-link-hover text-gray-700 hover:text-[#083A85] text-sm lg:text-base font-semibold transition-colors duration-200 whitespace-nowrap cursor-pointer">Find My Photos</Link>
+            {/* Find My Photos — dropdown with two paths:
+                  • Get Your Photos  → existing face-recognition lookup
+                  • Browse Photos   → new stock-style content album browse */}
+            <div
+              className="relative"
+              onMouseEnter={() => setIsFindMyPhotosDropdownOpen(true)}
+              onMouseLeave={() => setIsFindMyPhotosDropdownOpen(false)}
+            >
+              <button
+                type="button"
+                onClick={() => setIsFindMyPhotosDropdownOpen(v => !v)}
+                className={`nav-link-hover ${isFindMyPhotosDropdownOpen ? 'nav-link-active' : ''} flex items-center gap-1 text-gray-700 hover:text-[#083A85] text-sm lg:text-base font-semibold transition-colors duration-200 whitespace-nowrap cursor-pointer bg-transparent border-0 p-0`}
+              >
+                <span>Find My Photos</span>
+                <i className={`bi bi-chevron-down transition-transform duration-200 ${isFindMyPhotosDropdownOpen ? 'rotate-180' : ''}`}></i>
+              </button>
+              {isFindMyPhotosDropdownOpen && (
+                <>
+                  <div style={{ position: 'absolute', top: '100%', left: '-20px', right: '-20px', height: '16px', zIndex: 9998 }} />
+                  <div
+                    data-navdropdown
+                    style={{
+                      position: 'absolute',
+                      top: 'calc(100% + 12px)',
+                      right: 0,
+                      zIndex: 9999,
+                      minWidth: 240,
+                      background: '#ffffff',
+                      boxShadow: '0 20px 40px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.04)',
+                      borderRadius: 12,
+                      overflow: 'hidden',
+                      animation: 'nav-dropdown-enter 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                    }}
+                  >
+                    <Link
+                      href={getLocalePath('/user/find-my-photos')}
+                      onClick={() => setIsFindMyPhotosDropdownOpen(false)}
+                      style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '12px 14px', textDecoration: 'none', color: '#1a2332' }}
+                    >
+                      <i className="bi bi-person-bounding-box" style={{ fontSize: 18, color: '#083A85', marginTop: 2 }} />
+                      <span>
+                        <span style={{ display: 'block', fontSize: 13.5, fontWeight: 700 }}>Get Your Photos</span>
+                        <span style={{ display: 'block', fontSize: 11.5, color: '#6b7280' }}>AI face scan from your events</span>
+                      </span>
+                    </Link>
+                    <div style={{ height: 1, background: '#f0f2f5' }} />
+                    <Link
+                      href={getLocalePath('/user/browse-photos')}
+                      onClick={() => setIsFindMyPhotosDropdownOpen(false)}
+                      style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '12px 14px', textDecoration: 'none', color: '#1a2332' }}
+                    >
+                      <i className="bi bi-grid-3x3-gap-fill" style={{ fontSize: 18, color: '#F20C8F', marginTop: 2 }} />
+                      <span>
+                        <span style={{ display: 'block', fontSize: 13.5, fontWeight: 700 }}>Browse Photos</span>
+                        <span style={{ display: 'block', fontSize: 11.5, color: '#6b7280' }}>Stock photos by category, paid per photo</span>
+                      </span>
+                    </Link>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
 
           {/* Right: Language and Auth Buttons (Desktop) */}
@@ -1822,7 +1883,16 @@ const AmoriaKNavbar = () => {
 
             <Link href={getLocalePath('/user/about')} onClick={handleLinkClick} className="block rounded-md text-gray-700 hover:bg-gray-50 hover:text-gray-900 font-medium transition-colors cursor-pointer" style={{ padding: isMobile ? '0.5rem 0.75rem' : '0.5rem 0.75rem', fontSize: isMobile ? '0.9375rem' : '1rem' }}>{t('about')}</Link>
             <Link href={getLocalePath('/user/donations')} onClick={handleLinkClick} className="block rounded-md text-gray-700 hover:bg-gray-50 hover:text-gray-900 font-medium transition-colors cursor-pointer" style={{ padding: isMobile ? '0.5rem 0.75rem' : '0.5rem 0.75rem', fontSize: isMobile ? '0.9375rem' : '1rem' }}>Donate</Link>
-            <Link href={getLocalePath('/user/find-my-photos')} onClick={handleLinkClick} className="block rounded-md text-gray-700 hover:bg-gray-50 hover:text-gray-900 font-medium transition-colors cursor-pointer" style={{ padding: isMobile ? '0.5rem 0.75rem' : '0.5rem 0.75rem', fontSize: isMobile ? '0.9375rem' : '1rem' }}>Find My Photos</Link>
+            {/* Mobile: two-row dropdown content (no JS state needed —
+                always visible in the slide-out so the buyer never has to
+                tap-to-expand inside an already-open mobile menu). */}
+            <div style={{ padding: '0.4rem 0.75rem', fontSize: '0.78rem', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 0.6 }}>Find My Photos</div>
+            <Link href={getLocalePath('/user/find-my-photos')} onClick={handleLinkClick} className="block rounded-md text-gray-700 hover:bg-gray-50 hover:text-gray-900 font-medium transition-colors cursor-pointer" style={{ padding: '0.5rem 1.25rem', fontSize: isMobile ? '0.9375rem' : '1rem' }}>
+              <i className="bi bi-person-bounding-box mr-2" /> Get Your Photos
+            </Link>
+            <Link href={getLocalePath('/user/browse-photos')} onClick={handleLinkClick} className="block rounded-md text-gray-700 hover:bg-gray-50 hover:text-gray-900 font-medium transition-colors cursor-pointer" style={{ padding: '0.5rem 1.25rem', fontSize: isMobile ? '0.9375rem' : '1rem' }}>
+              <i className="bi bi-grid-3x3-gap-fill mr-2" /> Browse Photos
+            </Link>
 
             {/* Location Section (Mobile) - Hidden but location detection still active */}
 
