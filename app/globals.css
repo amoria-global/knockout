@@ -1217,7 +1217,7 @@ body {
   }
 }
 
-/* ===== Connekyt Ecosystem (/eco/*) — namespaced, SSR-guaranteed ===== */
+/* ===== Connekyt Ecosystem (/eco/*) - namespaced, SSR-guaranteed ===== */
 .eco{font-family:'Pragati Narrow',system-ui,sans-serif;color:#0f172a;background:linear-gradient(#f8fafc,#fff);min-height:100vh;padding:130px 20px 90px}
 .eco *{box-sizing:border-box}
 .eco-wrap{max-width:1040px;margin:0 auto}

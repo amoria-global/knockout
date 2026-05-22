@@ -1318,7 +1318,7 @@ const AmoriaKNavbar = () => {
 
             <Link href={getLocalePath('/user/about')} className="nav-link-hover text-gray-700 hover:text-[#083A85] text-sm lg:text-base font-semibold transition-colors duration-200 whitespace-nowrap cursor-pointer">{t('about')}</Link>
             <Link href={getLocalePath('/user/donations')} className="nav-link-hover text-gray-700 hover:text-[#083A85] text-sm lg:text-base font-semibold transition-colors duration-200 whitespace-nowrap cursor-pointer">Donate</Link>
-            {/* Find My Photos — dropdown with two paths:
+            {/* Find My Photos - dropdown with two paths:
                   • Get Your Photos  → existing face-recognition lookup
                   • Browse Photos   → new stock-style content album browse */}
             <div
@@ -1883,7 +1883,7 @@ const AmoriaKNavbar = () => {
 
             <Link href={getLocalePath('/user/about')} onClick={handleLinkClick} className="block rounded-md text-gray-700 hover:bg-gray-50 hover:text-gray-900 font-medium transition-colors cursor-pointer" style={{ padding: isMobile ? '0.5rem 0.75rem' : '0.5rem 0.75rem', fontSize: isMobile ? '0.9375rem' : '1rem' }}>{t('about')}</Link>
             <Link href={getLocalePath('/user/donations')} onClick={handleLinkClick} className="block rounded-md text-gray-700 hover:bg-gray-50 hover:text-gray-900 font-medium transition-colors cursor-pointer" style={{ padding: isMobile ? '0.5rem 0.75rem' : '0.5rem 0.75rem', fontSize: isMobile ? '0.9375rem' : '1rem' }}>Donate</Link>
-            {/* Mobile: two-row dropdown content (no JS state needed —
+            {/* Mobile: two-row dropdown content (no JS state needed -
                 always visible in the slide-out so the buyer never has to
                 tap-to-expand inside an already-open mobile menu). */}
             <div style={{ padding: '0.4rem 0.75rem', fontSize: '0.78rem', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 0.6 }}>Find My Photos</div>

@@ -5,7 +5,7 @@ import 'bootstrap-icons/font/bootstrap-icons.css';
 
 /**
  * Minimal row shape the modal needs to render a thumbnail and trigger
- * a per-image download. Other callers pass their own richer shape — we
+ * a per-image download. Other callers pass their own richer shape - we
  * only read these fields. Keeping the surface narrow lets both
  * /user/browse-photos and /user/browse-photos/[slug] share this
  * component without coupling on the full BrowseRow.
@@ -22,10 +22,10 @@ const POLL_MS = 3000;
 const TIMEOUT_MS = 10 * 60 * 1000;
 
 /**
- * Post-payment in-page modal — polls status until COMPLETED, auto-fires
+ * Post-payment in-page modal - polls status until COMPLETED, auto-fires
  * a one-time ZIP download, and gives the buyer per-image and batched
  * download. Email delivery happens server-side (ContentZipService,
- * idempotent — one mail per refid).
+ * idempotent - one mail per refid).
  */
 export default function PurchaseSuccessModal({
   refid, items, email, onClose,
@@ -130,7 +130,7 @@ export default function PurchaseSuccessModal({
         <div style={{ padding: '18px 22px', borderBottom: '1px solid #f0f2f5', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
           <div style={{ minWidth: 0 }}>
             <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: '#0f172a' }}>
-              {status === 'COMPLETED' ? 'Payment confirmed — your photos are ready' :
+              {status === 'COMPLETED' ? 'Payment confirmed - your photos are ready' :
                status === 'FAILED' ? 'Payment didn\'t go through' :
                'Waiting for payment confirmation…'}
             </h3>
@@ -138,7 +138,7 @@ export default function PurchaseSuccessModal({
               {status === 'COMPLETED'
                 ? <>A ZIP with all your photos was emailed to <strong>{email}</strong>. Your browser is also auto-downloading.</>
                 : status === 'PENDING'
-                  ? <>Once mobile money confirms, we&apos;ll prep everything. You don&apos;t need to keep this open — we&apos;ll email <strong>{email}</strong>.</>
+                  ? <>Once mobile money confirms, we&apos;ll prep everything. You don&apos;t need to keep this open - we&apos;ll email <strong>{email}</strong>.</>
                   : <>You weren&apos;t charged. Close this and try again from your cart.</>}
             </p>
           </div>
@@ -217,7 +217,7 @@ export default function PurchaseSuccessModal({
                   fontSize: 12, color: '#6b7280',
                 }}>
                   Unlock code: <code style={{ background: '#fff', padding: '2px 7px', borderRadius: 4, color: '#054d6f', fontWeight: 700 }}>{unlockCode}</code>
-                  &nbsp;— save this to re-download from any device via the recovery page.
+                  &nbsp;- save this to re-download from any device via the recovery page.
                 </div>
               )}
             </>

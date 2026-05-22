@@ -303,7 +303,7 @@ export default function BrowsePhotosAlbumPage({
                       {(album.photographerName || '·').trim().charAt(0).toUpperCase()}
                     </span>
                   )}
-                  <span style={{ fontSize: 13, color: '#fff', fontWeight: 700 }}>{album.photographerName || '—'}</span>
+                  <span style={{ fontSize: 13, color: '#fff', fontWeight: 700 }}>{album.photographerName || '-'}</span>
                   {album.photoCount != null && (
                     <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', marginLeft: 4 }}>
                       · {album.photoCount} photo{album.photoCount === 1 ? '' : 's'}
@@ -361,7 +361,7 @@ export default function BrowsePhotosAlbumPage({
                         transition: 'filter 0.1s linear',
                       }}
                     />
-                    {/* Repeating-tile CONNEKYT watermark — matches the
+                    {/* Repeating-tile CONNEKYT watermark - matches the
                         paid-album style on /user/find-my-photos. */}
                     <div aria-hidden style={{
                       position: 'absolute', inset: 0, pointerEvents: 'none',
@@ -481,7 +481,7 @@ export default function BrowsePhotosAlbumPage({
         </div>
       )}
 
-      {/* Lightbox — find-my-photos paid-album style: four blurred 45°
+      {/* Lightbox - find-my-photos paid-album style: four blurred 45°
           diagonal bands as watermark, teal Buy pill + circular close at
           top-right, "🔒 PREVIEW · BUY TO UNLOCK" pill at bottom-left.
           Right-click + drag blocked at every layer; image blacks out
@@ -559,7 +559,7 @@ export default function BrowsePhotosAlbumPage({
           <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: 14, maxWidth: 440, width: '100%', padding: 22 }}>
             <h3 style={{ margin: '0 0 6px', fontSize: 18, fontWeight: 700 }}>One last step</h3>
             <p style={{ margin: '0 0 14px', fontSize: 13, color: '#6b7280' }}>
-              We&apos;ll email your downloadable ZIP to this address — recoverable later via the recover page.
+              We&apos;ll email your downloadable ZIP to this address - recoverable later via the recover page.
             </p>
             <label style={{ display: 'block', fontSize: 12.5, fontWeight: 600, color: '#374151', marginBottom: 6 }}>Email address</label>
             <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com"
