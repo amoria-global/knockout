@@ -105,6 +105,26 @@ export default function BrowsePhotosPage() {
   const [purchasedItems, setPurchasedItems] = useState<BrowseRow[]>([]);
   const [purchaseEmail, setPurchaseEmail] = useState('');
 
+  // Tab-occlusion: when the buyer switches tabs or the window loses
+  // focus, blank every photo (filter: brightness(0)) so screen recorders
+  // / second-window capture get only black. Mirrors find-my-photos's
+  // anti-piracy deterrent — doesn't stop a determined attacker but
+  // raises the bar on casual stealing.
+  const [isOccluded, setIsOccluded] = useState(false);
+  useEffect(() => {
+    const occlude = () => setIsOccluded(true);
+    const reveal = () => setIsOccluded(false);
+    const onVis = () => { if (document.hidden) occlude(); else reveal(); };
+    window.addEventListener('blur', occlude);
+    window.addEventListener('focus', reveal);
+    document.addEventListener('visibilitychange', onVis);
+    return () => {
+      window.removeEventListener('blur', occlude);
+      window.removeEventListener('focus', reveal);
+      document.removeEventListener('visibilitychange', onVis);
+    };
+  }, []);
+
   // First-visit welcome modal — localStorage-gated so it only opens
   // once per browser. Pure flavour copy to orient the visitor before
   // they dive into the grid. OK or X dismisses + remembers.
@@ -239,6 +259,15 @@ export default function BrowsePhotosPage() {
     if (cartItems.length === 0) return;
     setCheckoutOpen(true);
   };
+
+  // Express-buy from a card / the lightbox: ensure the photo is in the
+  // cart, then immediately open the email-collection step → XentriPay.
+  // The cart accumulation flow (+ button + bottom bar) stays available
+  // for batch buys; this is just the one-tap shortcut.
+  const expressBuy = (it: BrowseRow) => {
+    setCart(prev => ({ ...prev, [it.imageId]: it }));
+    setCheckoutOpen(true);
+  };
   const handleEmailContinue = () => {
     if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       alert('Please enter a valid email address.');
@@ -267,14 +296,17 @@ export default function BrowsePhotosPage() {
     <>
       <Navbar />
 
-      <main style={{
-        minHeight: '100vh',
-        background: 'linear-gradient(to right, #052047, #052047, #103E83)',
-        position: 'relative',
-        // Just enough to clear the fixed navbar (~64px). The page's own
-        // top padding handles the breathing room around the heading.
-        paddingTop: 64,
-      }}>
+      <main
+        onContextMenu={(e) => e.preventDefault()}
+        style={{
+          minHeight: '100vh',
+          background: 'linear-gradient(to right, #052047, #052047, #103E83)',
+          position: 'relative',
+          // Just enough to clear the fixed navbar (~64px). The page's own
+          // top padding handles the breathing room around the heading.
+          paddingTop: 64,
+        }}
+      >
         {/* Dotted background — same vibe as find-my-photos hero */}
         <div aria-hidden style={{
           position: 'absolute', inset: 0, pointerEvents: 'none',
@@ -419,6 +451,9 @@ export default function BrowsePhotosPage() {
                       style={{
                         width: '100%', height: '100%', objectFit: 'cover', display: 'block',
                         userSelect: 'none', WebkitUserSelect: 'none', pointerEvents: 'none',
+                        // Tab-occlusion blackout for screen-capture deterrence.
+                        filter: isOccluded ? 'brightness(0)' : undefined,
+                        transition: 'filter 0.1s linear',
                       }}
                     />
 
@@ -443,71 +478,66 @@ export default function BrowsePhotosPage() {
                       mixBlendMode: 'overlay',
                     }} />
 
-                    {/* Bottom-left: photographer logo + name */}
-                    <div style={{
-                      position: 'absolute', left: 8, bottom: 8,
-                      display: 'flex', alignItems: 'center', gap: 6,
-                      padding: '4px 8px 4px 4px',
-                      background: 'rgba(0,0,0,0.55)',
-                      backdropFilter: 'blur(4px)',
-                      WebkitBackdropFilter: 'blur(4px)',
-                      borderRadius: 999,
-                      maxWidth: 'calc(100% - 16px)',
-                    }}>
-                      {it.photographerLogo ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={it.photographerLogo} alt=""
-                          onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
-                          style={{ width: 20, height: 20, borderRadius: '50%', objectFit: 'cover' }} />
-                      ) : (
-                        <span style={{ width: 20, height: 20, borderRadius: '50%', background: 'linear-gradient(135deg,#083A85,#F20C8F)', color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800 }}>
-                          {(it.photographerName || '·').trim().charAt(0).toUpperCase()}
-                        </span>
-                      )}
-                      <span style={{ color: '#fff', fontSize: 11.5, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {it.photographerName || '—'}
-                      </span>
-                    </div>
-
-                    {/* Top-right: price chip — square to match the flat
-                        card aesthetic. */}
+                    {/* Top-right: price chip — pill to match find-my-photos. */}
                     <div style={{
                       position: 'absolute', top: 8, right: 8,
-                      background: isSelected ? '#F20C8F' : 'rgba(0,0,0,0.55)',
+                      background: isSelected ? '#F20C8F' : 'rgba(0,0,0,0.75)',
                       color: '#fff', fontSize: 11.5, fontWeight: 700,
-                      padding: '3px 9px',
+                      padding: '4px 11px', borderRadius: 999,
+                      border: '1px solid rgba(255,255,255,0.18)',
                     }}>
                       {priceLabel}
                     </div>
 
-                    {/* Top-left: add-to-cart toggle (find-my-photos style) */}
+                    {/* Top-left: Add-to-cart toggle. Round teal pill matches
+                        find-my-photos paid-album affordance. */}
                     <button
                       onClick={(e) => { e.stopPropagation(); toggleCart(it); }}
                       aria-label={isSelected ? 'Remove from cart' : 'Add to cart'}
                       title={isSelected ? 'Remove from cart' : 'Add to cart'}
                       style={{
                         position: 'absolute', top: 8, left: 8,
-                        width: 30, height: 30, borderRadius: 9,
-                        background: isSelected ? '#F20C8F' : 'rgba(255,255,255,0.95)',
-                        border: isSelected ? '2px solid #F20C8F' : '2px solid rgba(255,255,255,0.6)',
+                        width: 36, height: 36, borderRadius: '50%',
+                        background: isSelected ? '#F20C8F' : '#ffffff',
+                        border: 'none',
                         cursor: 'pointer',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         zIndex: 3, padding: 0,
-                        boxShadow: isSelected
-                          ? '0 4px 12px -2px rgba(242,12,143,0.50)'
-                          : '0 2px 6px rgba(0,0,0,0.30)',
-                        transition: 'transform 0.15s, background 0.15s',
+                        boxShadow: '0 4px 12px -2px rgba(0,0,0,0.45)',
+                        transition: 'transform 0.15s',
                       }}
                       onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.08)'; }}
                       onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
                     >
                       {isSelected ? (
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                           <polyline points="20 6 9 17 4 12"/>
                         </svg>
                       ) : (
-                        <i className="bi bi-plus" style={{ fontSize: 16, color: '#F20C8F', fontWeight: 700, lineHeight: 1 }} />
+                        <i className="bi bi-plus-lg" style={{ fontSize: 17, color: '#03969c', fontWeight: 700, lineHeight: 1 }} />
                       )}
+                    </button>
+
+                    {/* Bottom-right: Buy (price) pill — express buy, adds
+                        this single photo to cart and opens checkout. The
+                        accumulation flow (+ button + bottom bar) is still
+                        available for batched purchases. */}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); expressBuy(it); }}
+                      aria-label="Buy this photo"
+                      style={{
+                        position: 'absolute', bottom: 8, right: 8,
+                        padding: '7px 14px', borderRadius: 999,
+                        background: '#03969c', color: '#fff',
+                        border: 'none', cursor: 'pointer', zIndex: 3,
+                        fontSize: 12.5, fontWeight: 700,
+                        display: 'inline-flex', alignItems: 'center', gap: 6,
+                        boxShadow: '0 6px 16px -4px rgba(0,0,0,0.55)',
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = '#026d72'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = '#03969c'; }}
+                    >
+                      <i className="bi bi-download" /> Buy ({priceLabel})
                     </button>
                   </div>
                 );
@@ -597,7 +627,12 @@ export default function BrowsePhotosPage() {
         </div>
       )}
 
-      {/* ── Lightbox preview ── */}
+      {/* ── Lightbox preview ── matches find-my-photos paid-album style:
+          four 45° blurred-glass diagonal bands as the watermark, teal
+          "Buy (price)" pill + circular close at top-right, "🔒 PREVIEW ·
+          BUY TO UNLOCK" pill at bottom-left. No photographer chip
+          (kept clean per spec). Right-click + drag blocked at every
+          layer. */}
       {previewing && (
         <div
           onClick={() => setPreviewing(null)}
@@ -609,32 +644,40 @@ export default function BrowsePhotosPage() {
             padding: 20,
           }}
         >
-          <div onClick={(e) => e.stopPropagation()} style={{ position: 'absolute', top: 20, right: 20, display: 'flex', gap: 8 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ position: 'absolute', top: 20, right: 20, display: 'flex', gap: 10, zIndex: 2001 }}>
             <button
-              onClick={(e) => { e.stopPropagation(); toggleCart(previewing!); }}
+              onClick={(e) => { e.stopPropagation(); expressBuy(previewing!); setPreviewing(null); }}
               style={{
-                padding: '10px 18px', borderRadius: 50,
-                background: cart[previewing!.imageId] ? '#F20C8F' : 'linear-gradient(135deg, #083A85 0%, #F20C8F 130%)',
-                color: '#fff', border: 'none', fontSize: 13.5, fontWeight: 700, cursor: 'pointer',
-                display: 'inline-flex', alignItems: 'center', gap: 6,
+                display: 'flex', alignItems: 'center', gap: 7,
+                padding: '10px 20px', borderRadius: 50,
+                background: '#03969c', border: 'none', color: '#fff',
+                fontSize: 14, fontWeight: 600, cursor: 'pointer',
+                transition: 'all 0.2s ease',
               }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = '#026d72'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = '#03969c'; }}
             >
-              {cart[previewing!.imageId] ? (
-                <><i className="bi bi-check2-circle" /> In cart</>
-              ) : (
-                <><i className="bi bi-plus-lg" /> Add · {fmtListing(previewing!)}</>
-              )}
+              <i className="bi bi-download" /> Buy ({fmtListing(previewing!)})
             </button>
-            <button onClick={() => setPreviewing(null)}
-              style={{
-                width: 40, height: 40, borderRadius: '50%',
-                background: 'rgba(255,255,255,0.10)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)',
-                cursor: 'pointer', fontSize: 18,
-              }}
+            <button
+              onClick={(e) => { e.stopPropagation(); setPreviewing(null); }}
               aria-label="Close preview"
+              style={{
+                width: 44, height: 44, borderRadius: '50%',
+                background: 'rgba(255,255,255,0.15)', border: 'none',
+                color: '#fff', fontSize: 24, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                transition: 'all 0.3s ease',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.3)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.15)'; }}
             >×</button>
           </div>
-          <div style={{ position: 'relative', maxWidth: '90vw', maxHeight: '85vh' }} onContextMenu={(e) => e.preventDefault()}>
+          <div
+            onClick={(e) => e.stopPropagation()}
+            onContextMenu={(e) => e.preventDefault()}
+            style={{ position: 'relative', maxWidth: '90vw', maxHeight: '85vh', borderRadius: 12, overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}
+          >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={previewing!.fileUrl}
@@ -643,50 +686,58 @@ export default function BrowsePhotosPage() {
               onDragStart={(e) => e.preventDefault()}
               onContextMenu={(e) => e.preventDefault()}
               style={{
-                maxWidth: '90vw', maxHeight: '85vh', objectFit: 'contain',
+                display: 'block', maxWidth: '90vw', maxHeight: '85vh', objectFit: 'contain',
                 userSelect: 'none', WebkitUserSelect: 'none', pointerEvents: 'none',
-                borderRadius: 8,
+                filter: isOccluded ? 'brightness(0)' : undefined,
+                transition: 'filter 0.1s linear',
               }}
             />
-            {/* Lightbox watermark — same repeating-tile CONNEKYT pattern
-                as the grid cards so the buyer can't escape it by zooming
-                in. Slightly bigger tile for the larger surface. */}
-            <div aria-hidden style={{
-              position: 'absolute', inset: 0, pointerEvents: 'none',
-              backgroundImage:
-                'url("data:image/svg+xml;utf8,' +
-                encodeURIComponent(
-                  '<svg xmlns="http://www.w3.org/2000/svg" width="220" height="120" viewBox="0 0 220 120">' +
-                    '<text x="110" y="68" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700" letter-spacing="3" fill="rgba(255,255,255,0.55)" text-anchor="middle" transform="rotate(-24 110 62)">CONNEKYT</text>' +
-                  '</svg>'
-                ) +
-                '")',
-              backgroundRepeat: 'repeat',
-              mixBlendMode: 'overlay',
-            }} />
-            <div style={{
-              position: 'absolute', left: 14, bottom: 14, display: 'flex', alignItems: 'center', gap: 8,
-              padding: '6px 12px 6px 6px',
-              background: 'rgba(0,0,0,0.65)', borderRadius: 999, backdropFilter: 'blur(6px)',
-            }}>
-              {previewing!.photographerLogo ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={previewing!.photographerLogo} alt=""
-                  onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
-                  style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover' }} />
-              ) : (
-                <span style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg,#083A85,#F20C8F)', color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800 }}>
-                  {(previewing!.photographerName || '·').trim().charAt(0).toUpperCase()}
-                </span>
-              )}
-              <span style={{ color: '#fff', fontSize: 13.5, fontWeight: 700 }}>
-                {previewing!.photographerName || '—'}
-              </span>
-              {previewing!.categoryLabel && (
-                <span style={{ marginLeft: 4, fontSize: 11, color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: 1 }}>
-                  · {previewing!.categoryLabel}
-                </span>
-              )}
+
+            {/* Right-click / drag absorber */}
+            <div aria-hidden
+              onContextMenu={(e) => e.preventDefault()}
+              onDragStart={(e) => e.preventDefault()}
+              style={{ position: 'absolute', inset: 0, background: 'transparent', userSelect: 'none' }}
+            />
+
+            {/* Four 45° blurred diagonal bands — real image shows
+                between them, white frosted-glass stripes obscure parts.
+                Same shape find-my-photos uses on locked paid photos. */}
+            {[0, 1, 2, 3].map((i) => (
+              <div
+                key={i}
+                aria-hidden
+                style={{
+                  position: 'absolute',
+                  top: `${-5 + i * 32}%`,
+                  left: '-50%',
+                  width: '200%',
+                  height: '60px',
+                  transform: 'rotate(-45deg)',
+                  transformOrigin: 'center',
+                  backdropFilter: 'blur(16px)',
+                  WebkitBackdropFilter: 'blur(16px)',
+                  background: 'rgba(255,255,255,0.18)',
+                  borderTop: '1px solid rgba(255,255,255,0.35)',
+                  borderBottom: '1px solid rgba(255,255,255,0.35)',
+                  pointerEvents: 'none',
+                }}
+              />
+            ))}
+
+            {/* Bottom-left lock label */}
+            <div
+              aria-hidden
+              style={{
+                position: 'absolute', bottom: 12, left: 12,
+                padding: '6px 12px', borderRadius: 50,
+                background: 'rgba(0,0,0,0.7)', color: '#fff',
+                fontSize: 11, fontWeight: 700, letterSpacing: '0.5px',
+                border: '1px solid rgba(255,255,255,0.2)', backdropFilter: 'blur(6px)',
+                pointerEvents: 'none',
+              }}
+            >
+              🔒 PREVIEW · BUY TO UNLOCK
             </div>
           </div>
         </div>
