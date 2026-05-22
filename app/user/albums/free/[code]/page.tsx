@@ -8,7 +8,7 @@
  * the watermark/anti-scrape protections live in exactly one place. We keep
  * this route alive so emailed invite links of the form
  *   /user/albums/free/{code}
- * (and the old shape with ?email=…) still work — they just bounce to the
+ * (and the old shape with ?email=…) still work. they just bounce to the
  * canonical page with the same params.
  *
  * The redirect is client-side because the email link sometimes carries a

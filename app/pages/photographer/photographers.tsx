@@ -259,7 +259,7 @@ const CoverCarousel: React.FC<{ images: string[]; alt: string }> = ({ images, al
 // Auto-sliding price block in the card's bottom-left. When the photographer
 // has BOTH outdoor and studio packages set, this rotates between their
 // cheapest in each category at the same interval as the cover carousel
-// (COVER_SLIDE_INTERVAL_MS) so the two sliders advance in lockstep — the
+// (COVER_SLIDE_INTERVAL_MS) so the two sliders advance in lockstep. the
 // timers are started from the same React mount cycle, so they tick together
 // to within a millisecond. Single-category photographers see a static label;
 // nothing renders when there are no packages at all (caller falls back to
@@ -268,7 +268,7 @@ const PriceSlider: React.FC<{
   outdoor: PhotographerPackage | null;
   studio: PhotographerPackage | null;
 }> = ({ outdoor, studio }) => {
-  // Order matters for the slide animation — keep outdoor first, then studio,
+  // Order matters for the slide animation. keep outdoor first, then studio,
   // so a photographer who later adds studio packages sees their existing
   // outdoor price still appear first.
   const entries: { kind: 'Outdoor' | 'Studio'; pkg: PhotographerPackage }[] = [];
@@ -493,7 +493,7 @@ const Photographers: React.FC = () => {
 
   // Returns the cheapest active package SEPARATELY for outdoor (event) and
   // studio (indoor) services. Either side may be null when the photographer
-  // hasn't published packages of that kind yet — the card-level PriceSlider
+  // hasn't published packages of that kind yet. the card-level PriceSlider
   // handles the empty/single/dual cases.
   const getStartingPrices = (photographer: Photographer): {
     outdoor: PhotographerPackage | null;
@@ -1261,7 +1261,7 @@ const Photographers: React.FC = () => {
         }
         .ph-price-value small { color: #64748b; font-weight: 500; font-size: 0.72rem; }
 
-        /* Auto-sliding price block — only kicks in when the photographer has
+        /* Auto-sliding price block. only kicks in when the photographer has
            BOTH outdoor and studio packages. Container becomes the slide
            viewport (relative + clipped); each slide is absolutely positioned
            and animates with the SAME duration and easing as the cover

@@ -5,7 +5,7 @@ import { CodeBlock } from '../_eco';
 
 export const metadata: Metadata = {
   title: 'Developer Docs',
-  description: 'Connekyt ecosystem — OAuth2 / OpenID Connect & developer API reference.',
+  description: 'Connekyt ecosystem. OAuth2 / OpenID Connect & developer API reference.',
 };
 
 const TOC = [
@@ -35,7 +35,7 @@ export default function EcoDocsPage() {
             <p className="k">Connekyt Developers</p>
             <h1>Build with Connekyt</h1>
             <p>OAuth2 &amp; OpenID Connect. Add “Continue with Connekyt” and call the
-              Connekyt APIs on a user’s behalf — wallets, transactions and more.</p>
+              Connekyt APIs on a user’s behalf: wallets, transactions and more.</p>
             <div className="eco-row" style={{ marginTop: 18 }}>
               <a className="eco-btn" href="/eco/developers"><i className="bi bi-grid-1x2" /> Developer console</a>
               <a className="eco-btn ghost" style={{ background: 'transparent', color: '#fff', borderColor: 'rgba(255,255,255,.5)' }}
@@ -54,7 +54,7 @@ export default function EcoDocsPage() {
 
             <article style={{ minWidth: 0 }}>
               <h2 id="discovery" className="eco-h2"><i className="bi bi-compass i" />Discovery</h2>
-              <p className="eco-p">Standard OIDC metadata &amp; public keys (RS256 — verify tokens with no shared secret):</p>
+              <p className="eco-p">Standard OIDC metadata &amp; public keys (RS256, verify tokens with no shared secret):</p>
               <CodeBlock method="GET" endpoint="/api/v1/oauth/.well-known/openid-configuration" />
               <CodeBlock method="GET" endpoint="/api/v1/oauth/jwks" />
 
@@ -110,7 +110,7 @@ export default function EcoDocsPage() {
 
               <div className="eco-note" style={{ marginTop: 30 }}>
                 <i className="bi bi-info-circle" style={{ color: '#b45309', marginRight: 6 }} />
-                Payouts route through Connekyt’s existing KYC-gated withdrawal flow — one money-moving path, nothing duplicated.
+                Payouts route through Connekyt’s existing KYC-gated withdrawal flow. one money-moving path, nothing duplicated.
               </div>
             </article>
           </div>

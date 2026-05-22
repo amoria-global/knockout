@@ -126,7 +126,7 @@ const initialState: WizardState = {
 function wizardReducer(state: WizardState, action: WizardAction): WizardState {
   switch (action.type) {
     case 'SET_SLIDE': return { ...state, currentSlide: action.slide };
-    // Switching service type clears any package pick — studio has no packages
+    // Switching service type clears any package pick. studio has no packages
     // and a stale outdoor package must never leak into a studio booking.
     case 'SET_SERVICE_TYPE': return { ...state, serviceType: action.value, selectedPackageId: null };
     case 'SET_QUICK_BRIEF': return { ...state, quickBrief: action.data, currentSlide: 1 };
@@ -1103,7 +1103,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
 
   // Indoor sessions used to be rate-calculated (price/photo + price/video +
   // base fee); they are now package-based and ride the same `totalPrice` /
-  // `currencySymbol` as outdoor — kept as `effectiveTotal`/`effectiveCurrency`
+  // `currencySymbol` as outdoor. kept as `effectiveTotal`/`effectiveCurrency`
   // aliases so the rest of the wizard (payment plan / submit) didn't need
   // to be touched.
   const effectiveTotal = totalPrice;
@@ -1127,7 +1127,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
   const handleBriefNext = () => {
     if (!briefDate) { setBriefError('Please select an event date'); return; }
     // Studio sessions happen at the photographer's own studio, so the client
-    // doesn't supply a location — it's resolved from the photographer's
+    // doesn't supply a location. it's resolved from the photographer's
     // studio address on the backend.
     if (!isStudio && !briefLocation.trim()) { setBriefError('Please enter event location'); return; }
     setBriefError('');
@@ -1137,7 +1137,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
       inclusivityPrefs: briefPrefs,
     };
     dispatch({ type: 'SET_QUICK_BRIEF', data: brief });
-    // Fetch matching photographers — for studio, only those who opted in.
+    // Fetch matching photographers. for studio, only those who opted in.
     setPhotographersLoading(true);
     getPhotographers({
       availableOn: briefDate,
@@ -1350,7 +1350,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
         endTime: details.endTime ? `${details.endTime}:00` : undefined,
         location: locationStr,
         photographerId: state.selectedPhotographerId || undefined,
-        // Both outdoor and studio bookings are now package-based — the
+        // Both outdoor and studio bookings are now package-based. the
         // backend validates that a STUDIO booking carries a package with
         // serviceType=STUDIO. The serviceType tag below is the only signal
         // distinguishing the two flows server-side.
@@ -1743,7 +1743,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                 </div>
 
                 {/* When entering via a preselected photographer the brief
-                    (with its Outdoor/Studio switch) is skipped — so if this
+                    (with its Outdoor/Studio switch) is skipped. so if this
                     photographer also offers indoor studio sessions, surface
                     the same choice here. Hidden when they only do outdoor. */}
                 {(selectedPhotographer?.packages || []).some(p => p.serviceType === 'STUDIO') && (
@@ -2012,7 +2012,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                     : 'We’ll find the best photographers for you'}
                 </p>
 
-                {/* Service-type chooser — Outdoor (existing flow) vs Studio. */}
+                {/* Service-type chooser. Outdoor (existing flow) vs Studio. */}
                 <ServiceTypeChooser
                   value={state.serviceType}
                   onChange={v => dispatch({ type: 'SET_SERVICE_TYPE', value: v })}
@@ -2030,7 +2030,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                     <div style={{ background: '#eff6ff', border: `1px solid ${INPUT_BORDER}`, borderRadius: 10, padding: '11px 14px', display: 'flex', gap: 8, alignItems: 'flex-start' }}>
                       <i className="bi bi-info-circle" style={{ color: ACCENT, fontSize: 14, marginTop: 1 }} />
                       <span style={{ color: TEXT_SECONDARY, fontSize: 12.5, lineHeight: 1.5 }}>
-                        The shoot takes place at the photographer&apos;s studio — you&apos;ll see their address before you confirm.
+                        The shoot takes place at the photographer&apos;s studio, and you&apos;ll see their address before you confirm.
                       </span>
                     </div>
                   ) : (
@@ -2349,7 +2349,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                                   None of these fit? Propose your own.
                                 </div>
                                 <p style={{ color: TEXT_MUTED, fontSize: 12.5, margin: 0, lineHeight: 1.45 }}>
-                                  Tell the photographer your budget and what you need &mdash; you&apos;ll continue the conversation in your inbox.
+                                  Tell the photographer your budget and what you need, and you&apos;ll continue the conversation in your inbox.
                                 </p>
                               </div>
                             </div>

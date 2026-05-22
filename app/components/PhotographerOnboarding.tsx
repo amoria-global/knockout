@@ -306,7 +306,7 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
   // Same shape as outdoor `pkgs`, but every tier starts at price 0 so a
   // photographer who Skips the slide submits zero studio packages (the
   // payload builder filters those out). Currency reuses the outdoor
-  // pkgCurrencyId — clients typically price indoor in the same currency
+  // pkgCurrencyId. clients typically price indoor in the same currency
   // and asking them to re-pick mid-signup hurts the skip-friendly UX.
   const makeInitialStudioPkgs = (): Record<PackageTier, PkgFields> => ({
     Silver:  { price: 0, duration: 1, photos: 25,  videos: 5,  delivery: 7, description: '' },
@@ -522,7 +522,7 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
         // first), so all three stay up to date and editable. Split by
         // serviceType so a returning photographer's STUDIO packages
         // don't get merged into the OUTDOOR slide's state (and vice
-        // versa) — both sides are independent now.
+        // versa). both sides are independent now.
         if (Array.isArray(p.packages) && p.packages.length > 0) {
           let firstSavedTier: PackageTier | null = null;
           let firstSavedStudioTier: PackageTier | null = null;
@@ -674,7 +674,7 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
       })),
       serviceType: 'OUTDOOR',
     }));
-    // Studio packages are OPTIONAL — only ones the photographer actually
+    // Studio packages are OPTIONAL. only ones the photographer actually
     // priced (> 0) get sent. Skip → all three zero → empty array.
     const studioPackagesPayload: PackageEntry[] = (['Silver', 'Gold', 'Diamond'] as PackageTier[])
       .filter(t => studioPkgs[t].price && studioPkgs[t].price > 0)
@@ -813,7 +813,7 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
   // ─── SLIDE 6: Studio Packages (OPTIONAL) ───
   // Continue submits whatever studio prices the user filled in; Skip
   // submits the profile with zero studio packages. Either way, this is
-  // the final submission step — the API/onFinalize call moved here from
+  // the final submission step. the API/onFinalize call moved here from
   // handleCreatePackage so studio data joins the same persist run.
   const handleFinalSubmit = async () => {
     setSlideError('');
@@ -1586,7 +1586,7 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
 
             /* ── SLIDE 6: Optional Packages ──
                Visually identical to slide 5 (same TIER_GRADIENTS, same
-               PINK accents, same field layout) — the only difference is
+               PINK accents, same field layout). the only difference is
                that it's optional, hence the Skip button alongside
                Continue. Submission happens here for both buttons via
                handleFinalSubmit. */
@@ -1609,7 +1609,7 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
                     }}>Step 7 of 7 · Indoor / Studio Packages (Optional)</div>
                     <h3 style={{ color: TEXT_PRIMARY, fontSize: 19, fontWeight: 800, margin: 0, letterSpacing: '-0.015em' }}>Indoor / Studio Packages</h3>
                     <p style={{ color: TEXT_MUTED, fontSize: 12.5, margin: '2px 0 0' }}>
-                      Optional &mdash; price your indoor studio sessions or Skip if you don&apos;t offer them.
+                      Optional: price your indoor studio sessions or Skip if you don&apos;t offer them.
                     </p>
                   </div>
                 </div>
@@ -1622,7 +1622,7 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
                 )}
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                  {/* Tier selector — same Silver/Gold/Diamond gradients as slide 5 */}
+                  {/* Tier selector. same Silver/Gold/Diamond gradients as slide 5 */}
                   <div>
                     <label style={labelStyle}>Package Tier</label>
                     <div style={{ display: 'flex', gap: 8 }}>
@@ -1662,7 +1662,7 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
                     </p>
                   </div>
 
-                  {/* Active tier preview card — mirrors slide 5's "Selected tier" card */}
+                  {/* Active tier preview card. mirrors slide 5's "Selected tier" card */}
                   <div style={{
                     position: 'relative',
                     borderRadius: 14,

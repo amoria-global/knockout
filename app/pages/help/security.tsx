@@ -185,7 +185,7 @@ const SecurityHelp: React.FC = () => {
                       Follow the setup instructions to link your chosen method to your account
                     </li>
                     <li style={{ fontSize: '1.05rem', lineHeight: '1.7', color: '#374151' }}>
-                      <strong>Save your backup codes</strong> in a secure location (password manager or physical safe) – use these if you lose access to your 2FA device
+                      <strong>Save your backup codes</strong> in a secure location (password manager or physical safe). use these if you lose access to your 2FA device
                     </li>
                     <li style={{ fontSize: '1.05rem', lineHeight: '1.7', color: '#374151' }}>
                       Once enabled, you'll be prompted for a verification code every time you log in from a new device or browser

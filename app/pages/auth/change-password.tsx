@@ -12,13 +12,13 @@ import { getAuthToken, getRefreshToken } from '@/lib/api/client';
  *
  * Reached only when knockout's /user/auth/login flow detects
  * `mustChangePassword=true` in the login response (set by the backend
- * for any Customer with isPasswordChanged=false — i.e. team members
+ * for any Customer with isPasswordChanged=false. i.e. team members
  * who signed in with the temp password from their invitation email).
  *
  * Skips the dashboard hand-off entirely until the new password lands,
  * so the user never sees a flash of UI they can't fully use.
  *
- * POSTs to /api/remote/auth/set-new-password — same endpoint the
+ * POSTs to /api/remote/auth/set-new-password. same endpoint the
  * forgot-password / reset flow uses. The endpoint doesn't actually
  * read the `code` field server-side for this path, but the request
  * shape still includes it because the API helper requires it.
@@ -35,8 +35,8 @@ export default function ChangePasswordPage() {
   const [error, setError] = useState<string | null>(null);
 
   // If the user lands here without an email param (refresh / direct
-  // URL) they have no session context to change a password against —
-  // send them back to login.
+  // URL) they have no session context to change a password against,
+  // so send them back to login.
   useEffect(() => {
     if (!email) router.replace('/user/auth/login');
   }, [email, router]);
@@ -69,7 +69,7 @@ export default function ChangePasswordPage() {
       if (!resp.success || data?.action === 0) {
         throw new Error(data?.message || resp.error || 'Password change failed');
       }
-      // Done — hand off to the dashboard. The HttpOnly session cookie
+      // Done. hand off to the dashboard. The HttpOnly session cookie
       // set by login is scoped to .connekyt.com so it travels.
       const token = getAuthToken() ?? undefined;
       const refresh = getRefreshToken() ?? undefined;

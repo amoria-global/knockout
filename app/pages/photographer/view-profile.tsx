@@ -859,7 +859,7 @@ function ViewProfileContent(): React.JSX.Element {
                             <h3 className="vp-timeline-title">{exp.position}</h3>
                             <span className="vp-timeline-meta">
                               {exp.startDate}
-                              {exp.endDate ? ` – ${exp.endDate}` : ''}
+                              {exp.endDate ? `. ${exp.endDate}` : ''}
                             </span>
                           </div>
                           <p className="vp-timeline-sub">

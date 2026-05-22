@@ -89,7 +89,7 @@ export default function EcoDevelopersPage() {
               {secret && (
                 <div className="eco-note" style={{ marginTop: 14 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <strong style={{ fontSize: 14, color: '#92400e' }}><i className="bi bi-key-fill" /> Copy now — shown only once</strong>
+                    <strong style={{ fontSize: 14, color: '#92400e' }}><i className="bi bi-key-fill" /> Copy now, shown only once</strong>
                     <button onClick={() => setSecret(null)} style={{ background: 'none', border: 0, color: '#b45309', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>Dismiss</button>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 10 }}>
@@ -106,7 +106,7 @@ export default function EcoDevelopersPage() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 18 }}>
                 {loading && <div className="eco-empty">Loading…</div>}
                 {!loading && apps.length === 0 && (
-                  <div className="eco-empty"><i className="bi bi-rocket-takeoff i" /><p style={{ marginTop: 12 }}>No apps yet — create your first one above.</p></div>
+                  <div className="eco-empty"><i className="bi bi-rocket-takeoff i" /><p style={{ marginTop: 12 }}>No apps yet, create your first one above.</p></div>
                 )}
                 {apps.map(a => (
                   <div key={a.id} className="eco-card">

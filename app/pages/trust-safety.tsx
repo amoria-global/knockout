@@ -1100,7 +1100,7 @@ Operating a global platform means navigating a complex landscape of internationa
           If you believe your data protection rights have been violated by Amoria Connekyt, you have the right to lodge a complaint with the NCSA. You don't need to exhaust internal remedies with us first, you can complain to the authority at any time, though we encourage you to contact us first as we may be able to resolve concerns more quickly.
           <br /><br />
           National Cyber Security Authority (NCSA)<br />
-          Data Protection Office – Kigali, Rwanda<br />
+          Data Protection Office, Kigali, Rwanda<br />
           Website: <a href="https://www.ncsa.gov.rw" target="_blank" rel="noopener noreferrer" style={{ color: '#083A85', textDecoration: 'underline' }}>www.ncsa.gov.rw</a>
           <br /><br />
           The NCSA can investigate your complaint, require us to provide information and access, order us to take specific actions to remedy violations, and impose penalties for non-compliance. We cooperate fully with NCSA investigations and respect their authority to enforce Rwandan data protection law.
