@@ -7,6 +7,7 @@ import 'bootstrap-icons/font/bootstrap-icons.css';
 import Navbar from "../components/navbar";
 import Footer from "../components/footer";
 import XentriPayModal from "../components/XentriPayModal";
+import PurchaseSuccessModal from "../components/PurchaseSuccessModal";
 import type { MultiAlbumPurchaseItem } from "@/lib/APIs/payments/xentripay";
 
 /**
@@ -103,6 +104,21 @@ export default function BrowsePhotosPage() {
   const [purchaseRefid, setPurchaseRefid] = useState<string | null>(null);
   const [purchasedItems, setPurchasedItems] = useState<BrowseRow[]>([]);
   const [purchaseEmail, setPurchaseEmail] = useState('');
+
+  // First-visit welcome modal — localStorage-gated so it only opens
+  // once per browser. Pure flavour copy to orient the visitor before
+  // they dive into the grid. OK or X dismisses + remembers.
+  const [showWelcome, setShowWelcome] = useState(false);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      if (!window.localStorage.getItem('connekyt:browse:welcomed')) setShowWelcome(true);
+    } catch { /* incognito / disabled — silent */ }
+  }, []);
+  const dismissWelcome = () => {
+    setShowWelcome(false);
+    try { window.localStorage.setItem('connekyt:browse:welcomed', '1'); } catch {}
+  };
 
   // Mobile breakpoint watcher
   useEffect(() => {
@@ -273,9 +289,12 @@ export default function BrowsePhotosPage() {
           {/* Heading — compact so the filter row sits near the top fold */}
           <div style={{ marginBottom: 12 }}>
             <h1 style={{ margin: 0, fontSize: isMobile ? 22 : 26, fontWeight: 800, color: '#fff', letterSpacing: '-0.02em' }}>Browse photos</h1>
-            <p style={{ margin: '4px 0 0', fontSize: 13.5, color: 'rgba(255,255,255,0.72)', maxWidth: 720 }}>
-              Curated photography by category — press, nature, sport, luxury, diplomatic, more.
-              Per-photo paid download. Photos are emailed to you after purchase.
+            <p style={{ margin: '4px 0 0', fontSize: 13.5, color: 'rgba(255,255,255,0.72)', maxWidth: 760, lineHeight: 1.55 }}>
+              Welcome to Connekyt&apos;s curated photography library — built to support
+              professional photography art. Here you&apos;ll find exceptional work by
+              independent creators: press, nature, sport, luxury, diplomatic, fashion
+              and more. Per-photo paid download; everything is emailed to you straight
+              after checkout.
             </p>
           </div>
 
@@ -695,6 +714,53 @@ export default function BrowsePhotosPage() {
         </div>
       )}
 
+      {/* First-visit welcome modal — pure flavour. */}
+      {showWelcome && (
+        <div onClick={dismissWelcome} style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)',
+          backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 9998, padding: 18,
+        }}>
+          <div onClick={e => e.stopPropagation()} style={{
+            background: '#fff', borderRadius: 14, width: '100%', maxWidth: 460,
+            padding: 24, boxShadow: '0 20px 50px rgba(0,0,0,0.40)',
+            textAlign: 'center',
+          }}>
+            <div style={{
+              width: 56, height: 56, borderRadius: '50%',
+              background: 'linear-gradient(135deg, #083A85 0%, #F20C8F 130%)',
+              color: '#fff', margin: '0 auto 12px',
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 26,
+            }}>
+              <i className="bi bi-stars" />
+            </div>
+            <h3 style={{ margin: '0 0 6px', fontSize: 20, fontWeight: 800, color: '#0f172a' }}>
+              Welcome to Connekyt
+            </h3>
+            <p style={{ margin: '0 0 16px', fontSize: 13.5, color: '#4b5563', lineHeight: 1.6 }}>
+              You&apos;re inside a library of professional photography art —
+              curated for press, newspapers, luxury venues, magazine covers
+              and more. Every image is the work of a credited photographer.
+              Pick what you love, pay per photo, get the originals in your inbox.
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 8 }}>
+              <button onClick={dismissWelcome} style={{
+                padding: '10px 22px', background: '#fff', color: '#374151',
+                border: '1px solid #d1d5db', borderRadius: 8, fontWeight: 600,
+                fontSize: 14, cursor: 'pointer',
+              }}>Close</button>
+              <button onClick={dismissWelcome} style={{
+                padding: '10px 22px', background: '#F20C8F', color: '#fff',
+                border: 'none', borderRadius: 8, fontWeight: 700,
+                fontSize: 14, cursor: 'pointer',
+              }}>OK, let me browse</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* In-page purchase confirmation. Stays on the browse page; polls
           status; auto-downloads the ZIP on COMPLETED; gives a grid of
           purchased photos with per-image + select-all download. */}
@@ -769,241 +835,3 @@ const btnSecondary: React.CSSProperties = {
   border: '1px solid #d1d5db', borderRadius: 8, fontWeight: 600, fontSize: 14, cursor: 'pointer',
 };
 
-/**
- * In-page purchase confirmation modal — replaces the prior
- * /user/browse-photos/purchase/[refid] redirect. Polls the backend
- * status endpoint; once COMPLETED:
- *   • auto-triggers a one-time ZIP download to the buyer's device
- *   • shows a grid of every purchased photo with per-image download
- *     and a Select All / Download Selected control
- *   • surfaces the unlock code so the buyer can recover later
- *
- * Email delivery is handled server-side by ContentZipService (idempotent,
- * one mail per refid). This modal doesn't fire any additional emails.
- */
-function PurchaseSuccessModal({
-  refid, items, email, onClose,
-}: {
-  refid: string;
-  items: BrowseRow[];
-  email: string;
-  onClose: () => void;
-}) {
-  const [status, setStatus] = useState<'PENDING' | 'COMPLETED' | 'FAILED'>('PENDING');
-  const [unlockCode, setUnlockCode] = useState<string | undefined>(undefined);
-  const [timedOut, setTimedOut] = useState(false);
-  const [selected, setSelected] = useState<Set<string>>(() => new Set(items.map(i => i.imageId)));
-  const didAutoDownloadRef = useRef(false);
-
-  // Poll until COMPLETED / FAILED / timeout.
-  useEffect(() => {
-    let stopped = false;
-    let timer: ReturnType<typeof setTimeout> | null = null;
-    const start = Date.now();
-    const POLL_MS = 3000;
-    const TIMEOUT_MS = 10 * 60 * 1000;
-
-    const poll = async () => {
-      try {
-        const res = await fetch(`${BACKEND_BASE}/api/public/content/purchase/${refid}`, { cache: 'no-store' });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const j = await res.json();
-        if (j?.action !== 1 || !j.data) throw new Error(j?.message || 'Unknown');
-        if (stopped) return;
-        setStatus(j.data.status);
-        if (j.data.unlockCode) setUnlockCode(j.data.unlockCode);
-        if (j.data.status === 'COMPLETED' || j.data.status === 'FAILED') return;
-        if (Date.now() - start > TIMEOUT_MS) { setTimedOut(true); return; }
-        timer = setTimeout(poll, POLL_MS);
-      } catch {
-        if (stopped) return;
-        timer = setTimeout(poll, POLL_MS * 2);
-      }
-    };
-    void poll();
-    return () => { stopped = true; if (timer) clearTimeout(timer); };
-  }, [refid]);
-
-  // Trigger ZIP auto-download exactly once when COMPLETED.
-  useEffect(() => {
-    if (status !== 'COMPLETED' || didAutoDownloadRef.current) return;
-    didAutoDownloadRef.current = true;
-    const a = document.createElement('a');
-    a.href = `${BACKEND_BASE}/api/public/content/purchase/${refid}/download`;
-    a.download = `connekyt-photos-${refid}.zip`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-  }, [status, refid]);
-
-  const downloadOne = (it: BrowseRow) => {
-    const a = document.createElement('a');
-    a.href = it.fileUrl;
-    a.download = '';
-    a.target = '_blank';
-    a.rel = 'noopener';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-  };
-
-  const downloadSelected = () => {
-    // Browsers serialise rapid programmatic anchor clicks anyway, but
-    // chain a tiny await between them so the user actually sees N
-    // download notifications rather than one race-condition garble.
-    const targets = items.filter(i => selected.has(i.imageId));
-    let i = 0;
-    const fire = () => {
-      if (i >= targets.length) return;
-      downloadOne(targets[i++]);
-      setTimeout(fire, 200);
-    };
-    fire();
-  };
-
-  const toggleSel = (id: string) => {
-    setSelected(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-  const allChecked = selected.size === items.length && items.length > 0;
-  const toggleAll = () => {
-    if (allChecked) setSelected(new Set());
-    else setSelected(new Set(items.map(i => i.imageId)));
-  };
-
-  return (
-    <div onClick={onClose} style={{
-      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.78)',
-      backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 14,
-    }}>
-      <div onClick={e => e.stopPropagation()} style={{
-        background: '#fff', borderRadius: 14, width: '100%', maxWidth: 880,
-        maxHeight: '92vh', display: 'flex', flexDirection: 'column',
-        boxShadow: '0 20px 50px rgba(0,0,0,0.40)',
-      }}>
-        {/* Header */}
-        <div style={{ padding: '18px 22px', borderBottom: '1px solid #f0f2f5', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-          <div style={{ minWidth: 0 }}>
-            <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: '#0f172a' }}>
-              {status === 'COMPLETED' ? 'Payment confirmed — your photos are ready' :
-               status === 'FAILED' ? 'Payment didn\'t go through' :
-               'Waiting for payment confirmation…'}
-            </h3>
-            <p style={{ margin: '4px 0 0', fontSize: 12.5, color: '#6b7280' }}>
-              {status === 'COMPLETED'
-                ? <>A ZIP with all your photos was emailed to <strong>{email}</strong>. Your browser is also auto-downloading.</>
-                : status === 'PENDING'
-                  ? <>Once mobile money confirms, we&apos;ll prep everything. You don&apos;t need to keep this open — we&apos;ll email <strong>{email}</strong>.</>
-                  : <>You weren&apos;t charged. Close this and try again from your cart.</>}
-            </p>
-          </div>
-          <button onClick={onClose} aria-label="Close" style={{
-            width: 32, height: 32, borderRadius: '50%', background: '#f3f4f6',
-            border: 'none', cursor: 'pointer', fontSize: 18, color: '#374151', flexShrink: 0,
-          }}>×</button>
-        </div>
-
-        {/* Body */}
-        <div style={{ padding: 18, overflowY: 'auto' }}>
-          {status === 'PENDING' && (
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '40px 0' }}>
-              <div style={{ width: 36, height: 36, borderRadius: '50%', border: '3px solid #f3f4f6', borderTopColor: '#F20C8F', animation: 'spin 0.8s linear infinite' }} />
-            </div>
-          )}
-
-          {status === 'COMPLETED' && (
-            <>
-              {/* Action bar */}
-              <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10, marginBottom: 14, paddingBottom: 12, borderBottom: '1px solid #f0f2f5' }}>
-                <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: '#374151', cursor: 'pointer' }}>
-                  <input type="checkbox" checked={allChecked} onChange={toggleAll} />
-                  Select all ({items.length})
-                </label>
-                <span style={{ fontSize: 12, color: '#6b7280' }}>· {selected.size} selected</span>
-                <button onClick={downloadSelected} disabled={selected.size === 0}
-                  style={{
-                    marginLeft: 'auto',
-                    padding: '8px 14px', borderRadius: 8,
-                    background: selected.size === 0 ? '#e5e7eb' : '#F20C8F',
-                    color: selected.size === 0 ? '#9ca3af' : '#fff',
-                    border: 'none', fontWeight: 700, fontSize: 13, cursor: selected.size === 0 ? 'not-allowed' : 'pointer',
-                  }}>
-                  <i className="bi bi-download" style={{ marginRight: 6 }} /> Download selected
-                </button>
-                <a href={`${BACKEND_BASE}/api/public/content/purchase/${refid}/download`}
-                  download={`connekyt-photos-${refid}.zip`}
-                  style={{
-                    padding: '8px 14px', borderRadius: 8,
-                    background: '#083A85', color: '#fff', textDecoration: 'none',
-                    fontWeight: 700, fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 6,
-                  }}>
-                  <i className="bi bi-file-zip" /> Download ZIP again
-                </a>
-              </div>
-
-              {/* Photo grid */}
-              <div style={{
-                display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 10,
-              }}>
-                {items.map(it => {
-                  const isSel = selected.has(it.imageId);
-                  return (
-                    <div key={it.imageId} style={{
-                      position: 'relative', aspectRatio: '1', background: '#0a1a36',
-                      border: isSel ? '2px solid #F20C8F' : '2px solid transparent',
-                      overflow: 'hidden',
-                    }}>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={it.fileUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-                      <input type="checkbox" checked={isSel} onChange={() => toggleSel(it.imageId)}
-                        style={{ position: 'absolute', top: 6, left: 6, width: 16, height: 16, accentColor: '#F20C8F', cursor: 'pointer' }} />
-                      <button onClick={() => downloadOne(it)} title="Download this photo"
-                        style={{
-                          position: 'absolute', bottom: 6, right: 6,
-                          width: 30, height: 30, borderRadius: 6,
-                          background: 'rgba(0,0,0,0.65)', color: '#fff', border: 'none',
-                          cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        }}>
-                        <i className="bi bi-download" />
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {unlockCode && (
-                <div style={{
-                  marginTop: 14, padding: 10, background: '#f9fafb', border: '1px solid #f0f2f5', borderRadius: 8,
-                  fontSize: 12, color: '#6b7280',
-                }}>
-                  Unlock code: <code style={{ background: '#fff', padding: '2px 7px', borderRadius: 4, color: '#054d6f', fontWeight: 700 }}>{unlockCode}</code>
-                  &nbsp;— save this to re-download from any device via the recovery page.
-                </div>
-              )}
-            </>
-          )}
-
-          {status === 'FAILED' && (
-            <div style={{ padding: '32px 0', textAlign: 'center', color: '#dc2626', fontWeight: 600 }}>
-              Payment failed. Please close this and try again.
-            </div>
-          )}
-
-          {timedOut && status !== 'COMPLETED' && (
-            <div style={{ marginTop: 12, padding: 10, background: '#fffbeb', color: '#92400e', borderRadius: 8, fontSize: 12.5 }}>
-              Confirmation is taking longer than usual. We&apos;ll still email everything to <strong>{email}</strong> once
-              it clears.
-            </div>
-          )}
-        </div>
-      </div>
-
-      <style jsx>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
-    </div>
-  );
-}
