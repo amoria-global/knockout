@@ -241,7 +241,9 @@ export default function BrowsePhotosPage() {
         minHeight: '100vh',
         background: 'linear-gradient(to right, #052047, #052047, #103E83)',
         position: 'relative',
-        paddingTop: 80,
+        // Just enough to clear the fixed navbar (~64px). The page's own
+        // top padding handles the breathing room around the heading.
+        paddingTop: 64,
       }}>
         {/* Dotted background — same vibe as find-my-photos hero */}
         <div aria-hidden style={{
@@ -252,12 +254,12 @@ export default function BrowsePhotosPage() {
           WebkitMaskImage: 'radial-gradient(ellipse at top, black 50%, transparent 100%)',
         }} />
 
-        <div style={{ position: 'relative', zIndex: 1, maxWidth: 1400, margin: '0 auto', padding: isMobile ? '20px 14px 140px' : '32px 32px 160px' }}>
+        <div style={{ position: 'relative', zIndex: 1, maxWidth: 1400, margin: '0 auto', padding: isMobile ? '12px 14px 140px' : '14px 32px 160px' }}>
 
-          {/* Heading */}
-          <div style={{ marginBottom: 18 }}>
-            <h1 style={{ margin: 0, fontSize: isMobile ? 24 : 30, fontWeight: 800, color: '#fff', letterSpacing: '-0.02em' }}>Browse photos</h1>
-            <p style={{ margin: '6px 0 0', fontSize: 14, color: 'rgba(255,255,255,0.72)', maxWidth: 720 }}>
+          {/* Heading — compact so the filter row sits near the top fold */}
+          <div style={{ marginBottom: 12 }}>
+            <h1 style={{ margin: 0, fontSize: isMobile ? 22 : 26, fontWeight: 800, color: '#fff', letterSpacing: '-0.02em' }}>Browse photos</h1>
+            <p style={{ margin: '4px 0 0', fontSize: 13.5, color: 'rgba(255,255,255,0.72)', maxWidth: 720 }}>
               Curated photography by category — press, nature, sport, luxury, diplomatic, more.
               Per-photo paid download. Photos are emailed to you after purchase.
             </p>
