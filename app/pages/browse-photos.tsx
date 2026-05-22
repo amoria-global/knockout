@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import Navbar from "../components/navbar";
 import Footer from "../components/footer";
@@ -53,6 +54,7 @@ const CURRENCIES: CurrencyOption[] = [
 ];
 
 export default function BrowsePhotosPage() {
+  const router = useRouter();
   // ── State ────────────────────────────────────────────────────
   const [items, setItems] = useState<BrowseRow[]>([]);
   const [total, setTotal] = useState(0);
@@ -224,9 +226,11 @@ export default function BrowsePhotosPage() {
   const handlePurchaseSuccess = (refid: string) => {
     setShowXentri(false);
     clearCart();
-    if (typeof window !== 'undefined') {
-      window.location.href = `/user/browse-photos/purchase/${refid}`;
-    }
+    // router.push is a client-side SPA navigation — doesn't fire the
+    // window.beforeunload that XentriPayModal registers to guard
+    // mid-payment closes, so the buyer doesn't see a "Leave site?"
+    // dialog on a successful payment.
+    router.push(`/user/browse-photos/purchase/${refid}`);
   };
 
   const totalPages = Math.max(1, Math.ceil(total / size));

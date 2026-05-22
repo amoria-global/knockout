@@ -59,6 +59,8 @@ export default function BrowsePhotosSuccessPage({ refid }: { refid: string }) {
         if (j?.action !== 1 || !j.data) throw new Error(j?.message || 'Unknown response');
         if (stopped) return;
         setData(j.data);
+        // Clear any prior transient error now that we got a clean reply.
+        setError(null);
         if (j.data.status === 'COMPLETED' || j.data.status === 'FAILED') return;
         if (Date.now() - start > POLL_TIMEOUT_MS) { setTimedOut(true); return; }
         timer = setTimeout(poll, POLL_INTERVAL_MS);
@@ -174,7 +176,11 @@ export default function BrowsePhotosSuccessPage({ refid }: { refid: string }) {
               </div>
             )}
 
-            {error && (
+            {error && !data && (
+              // Only surface transient poll errors before we have any
+              // data at all — once status is in flight, mid-poll hiccups
+              // shouldn't replace the live pending/complete UI with a
+              // scary red HTTP code.
               <div style={{ marginTop: 12, fontSize: 12.5, color: '#dc2626' }}>{error}</div>
             )}
           </div>
