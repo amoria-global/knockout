@@ -2646,41 +2646,54 @@ const App = () => {
     const videoContainer = video?.parentElement;
     if (!video || !videoContainer) return;
 
-    // Check the live browser-side fullscreen state instead of the React
-    // isFullscreen flag. The flag is updated asynchronously by the
-    // fullscreenchange handler and can lag the actual document state by
-    // a frame (or stay stale if a prior call failed to fire the event),
-    // which would otherwise route the user into the wrong branch and
-    // make the button feel like it does nothing.
+    // Live document state. The React isFullscreen flag is async and
+    // can lag the actual state by a frame, which would route the user
+    // into the wrong branch and make the button feel inert.
     const fsEl = document.fullscreenElement
       || (document as any).webkitFullscreenElement
       || (document as any).mozFullScreenElement
       || (document as any).msFullscreenElement
       || null;
 
+    // iOS Safari has no element-level Fullscreen API; only
+    // <video>.webkitEnterFullscreen() works, and it requires the video
+    // to have at least loaded metadata. Kick load() if we're staring at
+    // a paused video with readyState 0 so the manual fullscreen entry
+    // is actually accepted.
+    const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
+    const isIosLike = /iPad|iPhone|iPod/.test(ua) ||
+      (ua.includes('Macintosh') && 'ontouchend' in (typeof document !== 'undefined' ? document : {}));
+
     const enterVideoFs = () => {
       const ios = (video as any).webkitEnterFullscreen;
-      if (ios) { try { ios.call(video); } catch {} return; }
+      if (ios) {
+        if (video.readyState === 0) {
+          try { video.load(); } catch {}
+        }
+        try { ios.call(video); } catch {}
+        return;
+      }
       const std = (video as any).requestFullscreen;
-      if (std) { try { std.call(video).catch(() => {}); } catch {} }
+      if (std) {
+        try {
+          const p = std.call(video);
+          if (p && typeof (p as any).catch === 'function') {
+            (p as Promise<void>).catch(() => {});
+          }
+        } catch {}
+      }
     };
 
     if (!fsEl) {
-      // iPhone Safari has no element-level Fullscreen API. Skip the
-      // container attempt so we don't burn the user-gesture token on a
-      // call that will throw, then have no token left for the video
-      // fallback.
-      const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
-      const isIosLike = /iPad|iPhone|iPod/.test(ua) ||
-        (ua.includes('Macintosh') && 'ontouchend' in (typeof document !== 'undefined' ? document : {}));
       if (isIosLike) { enterVideoFs(); return; }
 
-      // Pass navigationUI:'hide' as a hint so browsers that can drop
-      // their chrome (Chrome Android, recent Firefox) do so, giving the
-      // actual edge-to-edge fullscreen the user expects.
+      // No options object — some Chrome Android builds throw on unknown
+      // option keys (the navigationUI hint was nice-to-have, not needed
+      // for the fullscreen to engage). Bare call is the most compatible
+      // form across every modern browser.
       if (videoContainer.requestFullscreen) {
         try {
-          const p = videoContainer.requestFullscreen({ navigationUI: 'hide' });
+          const p = videoContainer.requestFullscreen();
           if (p && typeof (p as any).catch === 'function') {
             (p as Promise<void>).catch(() => enterVideoFs());
           }
@@ -2699,9 +2712,7 @@ const App = () => {
       return;
     }
 
-    // Exit. document.exitFullscreen returns a Promise but we don't need to
-    // await it; the change listener will resync state when the browser
-    // actually leaves fullscreen.
+    // Exit.
     try {
       if (document.exitFullscreen) {
         document.exitFullscreen().catch(() => {});
