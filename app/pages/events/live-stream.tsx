@@ -2618,10 +2618,11 @@ const App = ({ eventIdProp }: { eventIdProp?: string } = {}) => {
   }, []);
 
   // Handle emoji reaction. Renders the floating emoji locally for the
-  // sender immediately, then POSTs it through the same /chats endpoint
-  // as messages (with messageType:'REACTION' so the backend tags it).
-  // Every other viewer's pollChat picks the REACTION row up and triggers
-  // the same float-up animation on their screen, YouTube-Live style.
+  // sender immediately, then POSTs to the dedicated /reactions endpoint
+  // that any watcher (event owner, free viewer, paid anonymous viewer)
+  // can hit with just a deviceFingerprint — no viewerId, no payment,
+  // no ownership required. Every other viewer's pollChat picks the
+  // REACTION row up and fires the same float-up animation.
   const handleEmojiReaction = async (emoji: string) => {
     const newReaction = {
       id: Date.now() + Math.random(),
@@ -2637,38 +2638,27 @@ const App = ({ eventIdProp }: { eventIdProp?: string } = {}) => {
     try {
       const chatBase = typeof window !== 'undefined' && process.env.NODE_ENV === 'production'
         ? '/api/proxy' : (process.env.NEXT_PUBLIC_API_URL || 'https://backend.connekyt.com');
-      if (anonymousViewerId) {
-        // Paid anonymous viewer — same endpoint as chat sends.
-        const fingerprint = await getDeviceId();
-        const res = await fetch(
-          `${chatBase}/api/remote/public/events/${mainEvent.id}/chats`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              viewerId: anonymousViewerId,
-              message: emoji,
-              deviceFingerprint: fingerprint,
-              messageType: 'REACTION',
-            }),
-          }
-        );
-        // Pre-seed the saved row's ID into seenApiMessageIds so the
-        // next pollChat doesn't echo this back and double-render the
-        // sender's own reaction.
-        if (res.ok) {
-          const json = await res.json();
-          const savedId = json?.data?.id;
-          if (savedId) seenApiMessageIds.current.add(String(savedId));
+      const fingerprint = await getDeviceId();
+      const res = await fetch(
+        `${chatBase}/api/remote/public/events/${mainEvent.id}/reactions`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ emoji, deviceFingerprint: fingerprint }),
         }
+      );
+      // Pre-seed the saved row's ID into seenApiMessageIds so the next
+      // pollChat doesn't echo this back and double-render the sender's
+      // own reaction.
+      if (res.ok) {
+        const json = await res.json();
+        const savedId = json?.data?.id;
+        if (savedId) seenApiMessageIds.current.add(String(savedId));
       }
-      // Authenticated path intentionally skipped — paid attendees use
-      // the anonymousViewerId path; coordinators shouldn't need to
-      // spam reactions to their own stream.
     } catch {
-      // Network failure: reaction stays local-only. The user still
-      // sees their own emoji float, other viewers just miss it. No
-      // toast — reactions are fire-and-forget.
+      // Network failure: reaction stays local-only. Other viewers miss
+      // it but the sender still sees their own emoji float. No toast
+      // — reactions are fire-and-forget.
     }
   };
 
