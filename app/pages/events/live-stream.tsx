@@ -143,11 +143,13 @@ function getInitialEventId(): string {
 }
 
 // Main App Component
-const App = () => {
+const App = ({ eventIdProp }: { eventIdProp?: string } = {}) => {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { isAuthenticated, login: authLogin, user } = useAuth();
-  const initialId = searchParams.get('eventId') || searchParams.get('id') || getInitialEventId();
+  // Slug livestream route passes the resolved event id as a prop; the
+  // legacy /live-stream?eventId= entry point still works via URL params.
+  const initialId = eventIdProp || searchParams.get('eventId') || searchParams.get('id') || getInitialEventId();
 
   // State for multiple events (up to 3)
   const [events, setEvents] = useState<EventStream[]>([

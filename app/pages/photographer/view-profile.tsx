@@ -98,10 +98,12 @@ const formatJoinDate = (dateString: string): string => {
 // =================================================================
 // Main content component
 // =================================================================
-function ViewProfileContent(): React.JSX.Element {
+function ViewProfileContent({ photographerIdProp }: { photographerIdProp?: string }): React.JSX.Element {
   const t = useTranslations('viewProfile');
   const searchParams = useSearchParams();
-  const photographerId = searchParams.get('id');
+  // Slug-based route passes the id as a prop; legacy ?id= URLs keep using
+  // the search-params path.
+  const photographerId = photographerIdProp || searchParams.get('id');
   const toast = useToast();
 
   // ----- State (preserved 1:1) -----
@@ -2419,7 +2421,7 @@ function ProfileError({ message }: { message: string }) {
 // =================================================================
 // Default export with Suspense (preserved)
 // =================================================================
-export default function ViewProfilePage(): React.JSX.Element {
+export default function ViewProfilePage({ photographerId }: { photographerId?: string } = {}): React.JSX.Element {
   const t = useTranslations('viewProfile');
 
   return (
@@ -2443,7 +2445,7 @@ export default function ViewProfilePage(): React.JSX.Element {
         </div>
       }
     >
-      <ViewProfileContent />
+      <ViewProfileContent photographerIdProp={photographerId} />
     </Suspense>
   );
 }

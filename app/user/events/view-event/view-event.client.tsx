@@ -165,11 +165,14 @@ function getPhotographerName(event: PublicEvent): string | null {
 }
 
 // Component that uses useSearchParams - needs to be wrapped in Suspense
-function ViewEventContent(): React.JSX.Element {
+function ViewEventContent({ eventIdProp }: { eventIdProp?: string }): React.JSX.Element {
   const t = useTranslations('events.viewEvent');
   const tStatus = useTranslations('events.status');
   const searchParams = useSearchParams();
-  const eventId = searchParams.get('id') || searchParams.get('eventId');
+  // Prefer prop when the page came from a slug route (canonical SEO path).
+  // Fall back to URL params so the legacy ?id= entry point and any
+  // intra-app navigations keep working unchanged.
+  const eventId = eventIdProp || searchParams.get('id') || searchParams.get('eventId');
 
   const [isLoading, setIsLoading] = useState(true);
   const [selectedEvent, setSelectedEvent] = useState<PublicEvent | null>(null);
@@ -3413,10 +3416,10 @@ function LoadingFallback() {
 }
 
 // Main page component with Suspense boundary
-export default function ViewEventPage(): React.JSX.Element {
+export default function ViewEventPage({ eventId }: { eventId?: string } = {}): React.JSX.Element {
   return (
     <Suspense fallback={<LoadingFallback />}>
-      <ViewEventContent />
+      <ViewEventContent eventIdProp={eventId} />
     </Suspense>
   );
 }

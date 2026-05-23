@@ -108,6 +108,103 @@ export async function fetchPhotographersForSitemap(): Promise<SeoPhotographer[]>
   return listOf(await getJson('/api/remote/public/photographers/list?page=0&size=300')) as unknown as SeoPhotographer[];
 }
 
+// ─── Slug system (V267+) ───────────────────────────────────────────────────
+// New canonical URLs are slug-based. Legacy ?id= URLs still work via
+// middleware.ts which 301s them to /slug. Pages SSR through these helpers:
+
+export interface SlugResolution {
+  id: string;
+  slug: string;
+  /** Non-null when the inbound slug is historical; caller should 301 here. */
+  redirect: string | null;
+  type: string;
+  title?: string | null;
+  description?: string | null;
+}
+
+export type SluggableType = 'event' | 'photographer' | 'stream' | 'gallery';
+
+/**
+ * Translate a slug to {id, current-slug}. Used by every slug-based page's
+ * SSR loader. Returns null if the slug doesn't resolve at all (page should
+ * 404). When .redirect is set the slug is historical - caller should
+ * server-redirect to the canonical URL to consolidate SEO signal.
+ */
+export async function resolveSlug(type: SluggableType, slug: string): Promise<SlugResolution | null> {
+  const r = await getJson(`/api/remote/public/seo/resolve?type=${encodeURIComponent(type)}&slug=${encodeURIComponent(slug)}`);
+  if (!r || typeof r !== 'object') return null;
+  const o = r as Record<string, unknown>;
+  if (typeof o.id !== 'string' || typeof o.slug !== 'string') return null;
+  return {
+    id: o.id,
+    slug: o.slug,
+    redirect: (o.redirect as string | null | undefined) ?? null,
+    type: (o.type as string) || type,
+    title: (o.title as string | null | undefined) ?? null,
+    description: (o.description as string | null | undefined) ?? null,
+  };
+}
+
+export interface SeoStream {
+  id: string;
+  eventTitle?: string;
+  eventDate?: string;
+  eventTime?: string;
+  eventPhoto?: string;
+  streamStatus?: string;
+  slug?: string;
+  updatedAt?: string;
+}
+
+export interface SeoGallery {
+  id: string;
+  title?: string;
+  description?: string | null;
+  coverImage?: string | null;
+  slug?: string;
+  updatedAt?: string;
+}
+
+export async function fetchStreamForSeo(id: string): Promise<SeoStream | null> {
+  return unwrap<SeoStream>(await getJson(`/api/remote/public/events/${encodeURIComponent(id)}/stream`))
+      ?? unwrap<SeoStream>(await getJson(`/api/remote/public/streams/${encodeURIComponent(id)}`));
+}
+
+export async function fetchGalleryForSeo(slug: string): Promise<SeoGallery | null> {
+  return unwrap<SeoGallery>(await getJson(`/api/public/content/album-by-slug/${encodeURIComponent(slug)}`));
+}
+
+export interface SitemapFeed {
+  events: string[];
+  photographers: string[];
+  streams: string[];
+  galleries: string[];
+}
+
+/** One-shot sitemap data feed - returns every indexable slug grouped by type. */
+export async function fetchSitemapFeed(): Promise<SitemapFeed> {
+  const r = await getJson('/api/remote/public/seo/sitemap/data');
+  const o = (r ?? {}) as Record<string, unknown>;
+  const arr = (k: string): string[] => Array.isArray(o[k]) ? (o[k] as unknown[]).filter(x => typeof x === 'string') as string[] : [];
+  return { events: arr('events'), photographers: arr('photographers'), streams: arr('streams'), galleries: arr('galleries') };
+}
+
+// ─── URL builders ──────────────────────────────────────────────────────────
+// Centralised so a future re-org changes one place. All paths are slug-based.
+
+export function eventUrl(slug: string): string {
+  return `${SITE_URL}/user/events/${encodeURIComponent(slug)}`;
+}
+export function livestreamUrl(slug: string): string {
+  return `${SITE_URL}/user/events/livestream/${encodeURIComponent(slug)}`;
+}
+export function photographerUrl(slug: string): string {
+  return `${SITE_URL}/photographers/${encodeURIComponent(slug)}`;
+}
+export function galleryUrl(slug: string): string {
+  return `${SITE_URL}/user/browse-photos/${encodeURIComponent(slug)}`;
+}
+
 export function photographerDisplayName(p: SeoPhotographer): string {
   const u = (p.preferredUsername || '').trim();
   if (u) return u;
