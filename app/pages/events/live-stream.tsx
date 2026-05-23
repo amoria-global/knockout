@@ -1354,6 +1354,12 @@ const App = () => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   // Settings state
   const [showSettings, setShowSettings] = useState(false);
+  // Anchor for the settings dropdown when portalled to body. The menu
+  // would otherwise be clipped by .video-player-container's overflow:hidden
+  // and the section's overflow:auto, since absolute-positioning can't
+  // escape ancestor clipping. We re-measure on open + scroll/resize.
+  const settingsButtonRef = useRef<HTMLButtonElement | null>(null);
+  const [settingsMenuAnchor, setSettingsMenuAnchor] = useState<{ bottom: number; right: number } | null>(null);
 
   // ── Ad system state ──
   const [streamAds, setStreamAds] = useState<StreamAd[]>([]);
@@ -2767,6 +2773,29 @@ const App = () => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showSettings]);
+
+  // Re-measure the settings button while the menu is open so the
+  // portalled dropdown stays anchored even if the page scrolls or the
+  // viewport resizes (e.g. mobile address-bar collapse).
+  useEffect(() => {
+    if (!showSettings) { setSettingsMenuAnchor(null); return; }
+    const measure = () => {
+      const btn = settingsButtonRef.current;
+      if (!btn) return;
+      const rect = btn.getBoundingClientRect();
+      setSettingsMenuAnchor({
+        bottom: window.innerHeight - rect.top + 8,
+        right: window.innerWidth - rect.right,
+      });
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    window.addEventListener('scroll', measure, true);
+    return () => {
+      window.removeEventListener('resize', measure);
+      window.removeEventListener('scroll', measure, true);
     };
   }, [showSettings]);
 
@@ -5248,20 +5277,21 @@ const App = () => {
           cursor: none !important;
         }
 
-        /* Fullscreen specific cursor hiding */
-        .video-player-container:fullscreen.hide-cursor,
-        .video-player-container:-webkit-full-screen.hide-cursor,
-        .video-player-container:-moz-full-screen.hide-cursor,
-        .video-player-container:-ms-fullscreen.hide-cursor {
-          cursor: none !important;
-        }
-
-        .video-player-container:fullscreen.hide-cursor *,
-        .video-player-container:-webkit-full-screen.hide-cursor *,
-        .video-player-container:-moz-full-screen.hide-cursor *,
-        .video-player-container:-ms-fullscreen.hide-cursor * {
-          cursor: none !important;
-        }
+        /* Fullscreen specific cursor hiding. Each pseudo-class variant
+           MUST be in its own rule: per CSS spec, if any selector in a
+           comma-separated list is invalid in the user's browser, the
+           entire rule is discarded. Chrome doesn't understand
+           :-moz-full-screen, so grouping them all together would silently
+           drop the whole block (which is exactly why earlier fullscreen
+           rules weren't taking effect at all). */
+        .video-player-container:fullscreen.hide-cursor { cursor: none !important; }
+        .video-player-container:-webkit-full-screen.hide-cursor { cursor: none !important; }
+        .video-player-container:-moz-full-screen.hide-cursor { cursor: none !important; }
+        .video-player-container:-ms-fullscreen.hide-cursor { cursor: none !important; }
+        .video-player-container:fullscreen.hide-cursor * { cursor: none !important; }
+        .video-player-container:-webkit-full-screen.hide-cursor * { cursor: none !important; }
+        .video-player-container:-moz-full-screen.hide-cursor * { cursor: none !important; }
+        .video-player-container:-ms-fullscreen.hide-cursor * { cursor: none !important; }
 
         /* Make fullscreen take full height and ensure proper rendering.
            The base .video-player-container rules set border-radius,
@@ -5269,11 +5299,50 @@ const App = () => {
            with !important. Without explicitly resetting them here the
            browser-engaged fullscreen would render the container as a
            rounded, in-flow, max-height-capped box on top of a black
-           backdrop, which is why mobile viewers reported "fullscreen
-           doesn't work" — it engaged, it just didn't fill the screen. */
-        .video-player-container:fullscreen,
-        .video-player-container:-webkit-full-screen,
-        .video-player-container:-moz-full-screen,
+           backdrop. Split per pseudo-class (see comment above) so Chrome
+           and Safari both actually pick the rule up. */
+        .video-player-container:fullscreen {
+          position: fixed !important;
+          inset: 0 !important;
+          width: 100vw !important;
+          height: 100vh !important;
+          max-height: 100vh !important;
+          min-height: 100vh !important;
+          background: #000 !important;
+          border-radius: 0 !important;
+          box-shadow: none !important;
+          transform: none !important;
+          transition: none !important;
+          z-index: 2147483647 !important;
+        }
+        .video-player-container:-webkit-full-screen {
+          position: fixed !important;
+          inset: 0 !important;
+          width: 100vw !important;
+          height: 100vh !important;
+          max-height: 100vh !important;
+          min-height: 100vh !important;
+          background: #000 !important;
+          border-radius: 0 !important;
+          box-shadow: none !important;
+          transform: none !important;
+          transition: none !important;
+          z-index: 2147483647 !important;
+        }
+        .video-player-container:-moz-full-screen {
+          position: fixed !important;
+          inset: 0 !important;
+          width: 100vw !important;
+          height: 100vh !important;
+          max-height: 100vh !important;
+          min-height: 100vh !important;
+          background: #000 !important;
+          border-radius: 0 !important;
+          box-shadow: none !important;
+          transform: none !important;
+          transition: none !important;
+          z-index: 2147483647 !important;
+        }
         .video-player-container:-ms-fullscreen {
           position: fixed !important;
           inset: 0 !important;
@@ -5288,22 +5357,16 @@ const App = () => {
           transition: none !important;
           z-index: 2147483647 !important;
         }
-        .video-player-container:fullscreen:hover,
-        .video-player-container:-webkit-full-screen:hover,
-        .video-player-container:-moz-full-screen:hover,
-        .video-player-container:-ms-fullscreen:hover {
-          transform: none !important;
-        }
+        .video-player-container:fullscreen:hover { transform: none !important; }
+        .video-player-container:-webkit-full-screen:hover { transform: none !important; }
+        .video-player-container:-moz-full-screen:hover { transform: none !important; }
+        .video-player-container:-ms-fullscreen:hover { transform: none !important; }
 
-        /* Ensure video fills fullscreen container */
-        .video-player-container:fullscreen video,
-        .video-player-container:-webkit-full-screen video,
-        .video-player-container:-moz-full-screen video,
-        .video-player-container:-ms-fullscreen video {
-          width: 100% !important;
-          height: 100% !important;
-          object-fit: contain !important;
-        }
+        /* Ensure video fills fullscreen container (split per pseudo-class). */
+        .video-player-container:fullscreen video { width: 100% !important; height: 100% !important; object-fit: contain !important; }
+        .video-player-container:-webkit-full-screen video { width: 100% !important; height: 100% !important; object-fit: contain !important; }
+        .video-player-container:-moz-full-screen video { width: 100% !important; height: 100% !important; object-fit: contain !important; }
+        .video-player-container:-ms-fullscreen video { width: 100% !important; height: 100% !important; object-fit: contain !important; }
 
         @keyframes spin {
           from { transform: rotate(0deg); }
@@ -5862,23 +5925,65 @@ const App = () => {
             transform: translate(-50%, -50%) !important;
           }
 
-          /* The earlier rules in this block targeted classes that don't
-             exist in the JSX (.mobile-hidden-control, .volume-slider-wrapper,
-             .controls-bar, .fullscreen-btn). Real selectors below.
+          /* Mobile bottom-controls layout. The earlier rules in this
+             block targeted classes that don't exist in the JSX
+             (.mobile-hidden-control, .volume-slider-wrapper,
+             .controls-bar, .fullscreen-btn). Real class names below.
 
-             Mobile bottom-controls layout rules:
-               1. Hide emoji-reactions button (vjs-mobile-hidden).
-               2. Hide the volume popover entirely — touch devices have no
-                  real hover so the popover sticks open after the first tap,
-                  taking enough horizontal space to push fullscreen off
-                  screen. The mute/unmute toggle on the same button is the
-                  whole feature surface mobile needs.
-               3. Lock the buttons row to nowrap + horizontal-scroll
-                  fallback so the fullscreen button can't get clipped if a
-                  future addition pushes the row past viewport width.
-               4. Restore a sane tap target on every button. */
+             Goals:
+               1. Hide the emoji-reactions button — not enough room.
+               2. Pin the volume popover OPEN as a fixed inline slider
+                  next to the mute button (no hover sticking, always
+                  visible so users can adjust without a phantom menu).
+               3. Lock the buttons row to nowrap so the fullscreen
+                  button can never get clipped, with a hidden scrollbar
+                  fallback for ultra-narrow phones. */
           .vjs-mobile-hidden { display: none !important; }
-          .vjs-volume-popover { display: none !important; }
+          .vjs-volume-group { gap: 6px !important; }
+          .vjs-volume-popover {
+            position: static !important;
+            transform: none !important;
+            opacity: 1 !important;
+            pointer-events: auto !important;
+            display: flex !important;
+            flex-direction: row !important;
+            align-items: center !important;
+            gap: 6px !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            background: transparent !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            border: none !important;
+            box-shadow: none !important;
+            max-height: none !important;
+            bottom: auto !important;
+            left: auto !important;
+          }
+          .vjs-volume-popover .vjs-volume-slider-vertical {
+            width: 64px !important;
+            height: 4px !important;
+            writing-mode: horizontal-tb !important;
+          }
+          .vjs-volume-popover .vjs-volume-slider-fill {
+            bottom: auto !important;
+            left: 0 !important;
+            height: 100% !important;
+          }
+          .vjs-volume-popover .vjs-volume-slider-input {
+            writing-mode: horizontal-tb !important;
+            direction: ltr !important;
+            width: 100% !important;
+            height: 26px !important;
+            top: -11px !important;
+            left: 0 !important;
+          }
+          .vjs-volume-popover .vjs-volume-label {
+            font-size: 11px !important;
+            font-weight: 700 !important;
+            color: #fff !important;
+            min-width: 30px !important;
+          }
           .vjs-buttons-row {
             flex-wrap: nowrap !important;
             overflow-x: auto !important;
@@ -7266,6 +7371,7 @@ const App = () => {
                   <div className="vjs-buttons-row--right">
                     <div style={{ position: 'relative' }}>
                       <button
+                        ref={settingsButtonRef}
                         className="vjs-btn settings-button"
                         onClick={() => setShowSettings(!showSettings)}
                         title="Settings"
@@ -7274,12 +7380,15 @@ const App = () => {
                         <i className="bi bi-gear-fill" style={{ fontSize: 20 }}></i>
                       </button>
 
-                    {/* Settings Dropdown */}
-                    {showSettings && !showReportIssues && (
+                    {/* Settings Dropdown - portalled to body so it escapes
+                        .video-player-container's overflow:hidden and the
+                        section's overflow:auto. Without this the menu got
+                        clipped at the player's top edge. */}
+                    {showSettings && !showReportIssues && settingsMenuAnchor && typeof document !== 'undefined' && createPortal(
                       <div className="settings-menu" style={{
-                        position: 'absolute',
-                        bottom: 'calc(100% + 8px)',
-                        right: '0',
+                        position: 'fixed',
+                        bottom: `${settingsMenuAnchor.bottom}px`,
+                        right: `${settingsMenuAnchor.right}px`,
                         backgroundColor: '#18181b',
                         borderRadius: '16px',
                         padding: 'clamp(6px, 2vw, 8px)',
@@ -7288,7 +7397,7 @@ const App = () => {
                         maxHeight: 'min(60vh, 400px)',
                         boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)',
                         border: '1px solid rgba(255, 255, 255, 0.1)',
-                        zIndex: 100,
+                        zIndex: 2147483647,
                         overflowY: 'auto'
                       }}>
                         {/* Low Latency Mode */}
@@ -7385,23 +7494,26 @@ const App = () => {
                             <i className="bi bi-chevron-right"></i>
                           </button>
                         </div>
-                      </div>
+                      </div>,
+                      document.body
                     )}
 
-                    {/* Report Issues Submenu */}
-                    {showReportIssues && (
+                    {/* Report Issues Submenu - portalled for the same reason */}
+                    {showReportIssues && settingsMenuAnchor && typeof document !== 'undefined' && createPortal(
                       <div className="settings-menu" style={{
-                        position: 'absolute',
-                        bottom: 'calc(100% + 8px)',
-                        right: '0',
+                        position: 'fixed',
+                        bottom: `${settingsMenuAnchor.bottom}px`,
+                        right: `${settingsMenuAnchor.right}px`,
                         backgroundColor: '#18181b',
                         borderRadius: '16px',
                         padding: '8px',
                         minWidth: '240px',
-                        maxHeight: '400px',
+                        maxWidth: 'min(90vw, 320px)',
+                        maxHeight: 'min(60vh, 400px)',
                         boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)',
                         border: '1px solid rgba(255, 255, 255, 0.1)',
-                        zIndex: 100
+                        zIndex: 2147483647,
+                        overflowY: 'auto'
                       }}>
                         <div style={{
                           padding: '8px',
@@ -7479,7 +7591,8 @@ const App = () => {
                             </button>
                           ))}
                         </div>
-                      </div>
+                      </div>,
+                      document.body
                     )}
                   </div>
 
