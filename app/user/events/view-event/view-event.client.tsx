@@ -2236,6 +2236,18 @@ function ViewEventContent(): React.JSX.Element {
                  panel) past the hero edge. Keep the gap on the rail itself
                  instead, so the body geometry stays unchanged. */
               @media (max-width: 700px) { .ve-hero { min-height: 88vh; } .ve-hero-top { padding-top: 28px; padding-bottom: 16px; } .ve-hero-body { padding-bottom: 110px; } }
+              /* On desktop the hero is tall and content clusters at the
+                 bottom (margin-top:auto), leaving an obvious dead zone
+                 above the chips. Grow the inter-element gaps so the column
+                 spreads upward into that empty space without touching the
+                 body's bottom padding or the auto-margin anchor. */
+              @media (min-width: 701px) {
+                .ve-hero-chips { margin-bottom: clamp(20px, 2.5vw, 32px); }
+                .ve-hero-title { margin: 0 0 clamp(16px, 1.8vw, 24px); }
+                .ve-hero-tagline { margin: 0 0 clamp(20px, 2vw, 28px); }
+                .ve-hero-quick { margin-bottom: clamp(24px, 2.5vw, 36px); }
+                .ve-hero-group { margin-top: clamp(18px, 2vw, 26px); }
+              }
 
               /* Buttons */
               .ve-btn { display: inline-flex; align-items: center; justify-content: center; gap: 9px; font-family: inherit; font-weight: 700; letter-spacing: 0.01em; border-radius: 14px; border: 1px solid transparent; cursor: pointer; transition: transform 140ms ease, background 160ms ease, border-color 160ms ease, box-shadow 160ms ease; white-space: nowrap; }
