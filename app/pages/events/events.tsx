@@ -594,16 +594,24 @@ const Events: React.FC = () => {
           padding: clamp(20px, 2.5vw, 28px) clamp(0.75rem, 2vw, 1.5rem) clamp(34px, 4vw, 44px);
           z-index: 3;
         }
-        /* Subtle gradient line spanning behind the row - connects the pill
-           to the stories. Sits at the row's vertical center (which equals
-           the avatar center now that titles are absolutely positioned).
-           Vertical offset = section-top-padding + scroll-lane-top-padding
-           (16px) + half the avatar height. */
+        .ev-trends-row {
+          position: relative;
+          z-index: 1;
+          display: flex;
+          align-items: center;
+          gap: clamp(10px, 1.5vw, 14px);
+        }
+        /* Gradient line anchored inside the row at vertical center so it
+           tracks the avatar center on every viewport without recomputing
+           padding sums. z-index:-1 stays trapped in the row's stacking
+           context (the row owns one via position:relative + z-index:1),
+           so the line paints behind the pill and stories. */
         .ev-trends-line {
           position: absolute;
-          left: clamp(0.75rem, 2vw, 1.5rem);
-          right: clamp(0.75rem, 2vw, 1.5rem);
-          top: calc(clamp(20px, 2.5vw, 28px) + 16px + clamp(36px, 4.25vw, 44px));
+          left: 0;
+          right: 0;
+          top: 50%;
+          transform: translateY(-50%);
           height: 2px;
           background: linear-gradient(90deg,
             rgba(240,148,51,0) 0%,
@@ -611,15 +619,8 @@ const Events: React.FC = () => {
             rgba(204,35,102,0.55) 50%,
             rgba(188,24,136,0.55) 82%,
             rgba(188,24,136,0) 100%);
-          z-index: 0;
+          z-index: -1;
           pointer-events: none;
-        }
-        .ev-trends-row {
-          position: relative;
-          z-index: 1;
-          display: flex;
-          align-items: center;
-          gap: clamp(10px, 1.5vw, 14px);
         }
 
         /* "Hot Live Trends 🔥" pill on the far left */
@@ -885,9 +886,6 @@ const Events: React.FC = () => {
           .ev-trends-scroll {
             gap: clamp(12px, 3vw, 18px);
             padding: 12px 4px 14px;
-          }
-          .ev-trends-line {
-            top: calc(clamp(16px, 2vw, 20px) + 12px + clamp(30px, 9vw, 36px));
           }
           .ev-story-live { font-size: 7.5px; padding: 1px 5px; }
           .ev-story-live-dot { width: 4px; height: 4px; }
@@ -2059,10 +2057,14 @@ const Events: React.FC = () => {
           gradient story ring + LIVE badge. Clicking jumps to the event. */}
       {featuredLiveEvents.length > 0 && (
         <section className="ev-trends" aria-label="Live event stories">
-          {/* Decorative animated gradient line spanning the full strip */}
-          <div className="ev-trends-line" aria-hidden="true" />
-
           <div className="ev-trends-row">
+            {/* Decorative gradient line spanning behind the row. Anchored
+                inside the row so it always sits at the avatar's vertical
+                center via top:50% (avatar is the tallest row item, so the
+                row's vertical center == the avatar center). Used to be
+                positioned on the section with a fragile padding-sum that
+                drifted on mobile and bisected the ring. */}
+            <div className="ev-trends-line" aria-hidden="true" />
             {/* Hot Live Trends pill */}
             <div className="ev-trends-pill">
               <span className="ev-trends-flame" aria-hidden="true">🔥</span>
