@@ -2643,90 +2643,76 @@ const App = () => {
   // doesn't leave the UI lying about its own state.
   const toggleFullscreen = () => {
     const video = videoRefs.current[mainEvent.id];
-    const videoContainer = video?.parentElement;
-    if (!video || !videoContainer) return;
+    if (!video) return;
+    const videoContainer = video.parentElement;
 
-    // Live document state. The React isFullscreen flag is async and
-    // can lag the actual state by a frame, which would route the user
-    // into the wrong branch and make the button feel inert.
+    // Live document state (React isFullscreen lags by a frame so it'd
+    // route us into the wrong branch when polled synchronously).
     const fsEl = document.fullscreenElement
       || (document as any).webkitFullscreenElement
       || (document as any).mozFullScreenElement
       || (document as any).msFullscreenElement
       || null;
+    const iosFsOn = (video as any).webkitDisplayingFullscreen === true;
 
-    // iOS Safari has no element-level Fullscreen API; only
-    // <video>.webkitEnterFullscreen() works, and it requires the video
-    // to have at least loaded metadata. Kick load() if we're staring at
-    // a paused video with readyState 0 so the manual fullscreen entry
-    // is actually accepted.
-    const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
-    const isIosLike = /iPad|iPhone|iPod/.test(ua) ||
-      (ua.includes('Macintosh') && 'ontouchend' in (typeof document !== 'undefined' ? document : {}));
-
-    const enterVideoFs = () => {
-      const ios = (video as any).webkitEnterFullscreen;
-      if (ios) {
-        if (video.readyState === 0) {
-          try { video.load(); } catch {}
+    if (fsEl || iosFsOn) {
+      // Exit.
+      try {
+        if (document.exitFullscreen) {
+          document.exitFullscreen().catch(() => {});
+        } else if ((document as any).webkitExitFullscreen) {
+          (document as any).webkitExitFullscreen();
+        } else if ((document as any).mozCancelFullScreen) {
+          (document as any).mozCancelFullScreen();
+        } else if ((document as any).msExitFullscreen) {
+          (document as any).msExitFullscreen();
+        } else if ((video as any).webkitExitFullscreen) {
+          (video as any).webkitExitFullscreen();
         }
-        try { ios.call(video); } catch {}
-        return;
-      }
-      const std = (video as any).requestFullscreen;
-      if (std) {
-        try {
-          const p = std.call(video);
-          if (p && typeof (p as any).catch === 'function') {
-            (p as Promise<void>).catch(() => {});
-          }
-        } catch {}
-      }
-    };
-
-    if (!fsEl) {
-      if (isIosLike) { enterVideoFs(); return; }
-
-      // No options object — some Chrome Android builds throw on unknown
-      // option keys (the navigationUI hint was nice-to-have, not needed
-      // for the fullscreen to engage). Bare call is the most compatible
-      // form across every modern browser.
-      if (videoContainer.requestFullscreen) {
-        try {
-          const p = videoContainer.requestFullscreen();
-          if (p && typeof (p as any).catch === 'function') {
-            (p as Promise<void>).catch(() => enterVideoFs());
-          }
-        } catch {
-          enterVideoFs();
-        }
-        return;
-      }
-      const webkit = (videoContainer as any).webkitRequestFullscreen;
-      if (webkit) { try { webkit.call(videoContainer); } catch { enterVideoFs(); } return; }
-      const moz = (videoContainer as any).mozRequestFullScreen;
-      if (moz) { try { moz.call(videoContainer); } catch { enterVideoFs(); } return; }
-      const ms = (videoContainer as any).msRequestFullscreen;
-      if (ms) { try { ms.call(videoContainer); } catch { enterVideoFs(); } return; }
-      enterVideoFs();
+      } catch {}
       return;
     }
 
-    // Exit.
-    try {
-      if (document.exitFullscreen) {
-        document.exitFullscreen().catch(() => {});
-      } else if ((document as any).webkitExitFullscreen) {
-        (document as any).webkitExitFullscreen();
-      } else if ((document as any).mozCancelFullScreen) {
-        (document as any).mozCancelFullScreen();
-      } else if ((document as any).msExitFullscreen) {
-        (document as any).msExitFullscreen();
-      } else if ((video as any).webkitExitFullscreen) {
-        (video as any).webkitExitFullscreen();
+    // Enter. Feature-detect instead of UA-detect — if the video element
+    // exposes webkitEnterFullscreen, that's the iOS WebKit native player
+    // and it's the right path regardless of which browser shell the user
+    // is in (Safari, Chrome iOS, etc all use WebKit on iOS). On Android
+    // and desktop the video element doesn't expose that method, so we
+    // fall straight through to container fullscreen.
+    if ((video as any).webkitEnterFullscreen) {
+      if (video.readyState === 0) {
+        try { video.load(); } catch {}
       }
-    } catch {
-      // Already exited; change handler will resync.
+      try { (video as any).webkitEnterFullscreen(); return; } catch {}
+    }
+
+    // Container fullscreen — Android Chrome, Firefox, desktop browsers.
+    if (videoContainer?.requestFullscreen) {
+      try {
+        const p = videoContainer.requestFullscreen();
+        if (p && typeof (p as any).catch === 'function') {
+          (p as Promise<void>).catch(() => {
+            // Last-resort: try the video element's standard fullscreen.
+            if (video.requestFullscreen) {
+              try { video.requestFullscreen().catch(() => {}); } catch {}
+            }
+          });
+        }
+        return;
+      } catch {}
+    }
+    if ((videoContainer as any)?.webkitRequestFullscreen) {
+      try { (videoContainer as any).webkitRequestFullscreen(); return; } catch {}
+    }
+    if ((videoContainer as any)?.mozRequestFullScreen) {
+      try { (videoContainer as any).mozRequestFullScreen(); return; } catch {}
+    }
+    if ((videoContainer as any)?.msRequestFullscreen) {
+      try { (videoContainer as any).msRequestFullscreen(); return; } catch {}
+    }
+    // Absolute last resort: video element direct fullscreen.
+    if (video.requestFullscreen) {
+      try { video.requestFullscreen().catch(() => {}); } catch {}
     }
   };
 
@@ -7689,8 +7675,18 @@ const App = () => {
                     )}
                   </div>
 
-                    {/* Fullscreen */}
-                    <button className="vjs-btn" onClick={toggleFullscreen} title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}>
+                    {/* Fullscreen. touchAction:'manipulation' kills the
+                        legacy 300ms touch delay so the click fires inside
+                        the user-gesture window; stopPropagation stops the
+                        click from bubbling to the player container's
+                        togglePlay handler. */}
+                    <button
+                      className="vjs-btn"
+                      type="button"
+                      title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+                      onClick={(e) => { e.stopPropagation(); toggleFullscreen(); }}
+                      style={{ touchAction: 'manipulation' }}
+                    >
                       {isFullscreen ? <FullscreenExitIcon /> : <FullscreenEnterIcon />}
                     </button>
                   </div>
