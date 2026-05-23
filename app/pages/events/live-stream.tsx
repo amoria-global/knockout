@@ -76,9 +76,8 @@ interface Message {
   avatar: string;
   videoUrl?: string;
   apiMessageId?: string; // tracks the backend ID for deduplication
-  // Raw ISO timestamp preserved from the backend so we can filter out
-  // pre-event "wish" messages that were sent while the event was still
-  // upcoming (those are private to the host and shouldn't appear in chat).
+  // Raw ISO timestamp from the backend, used as a fallback when the
+  // pre-formatted `time` field isn't present.
   createdAt?: string;
   replyTo?: {
     id: number | string;
@@ -1012,10 +1011,16 @@ const App = () => {
         }
 
         if (chatMessages.length > 0) {
-          // Filter out already-seen API messages and blocked users
+          // Defense in depth: the public/coordinator/event GET /chats
+          // endpoints already strip WISH rows server-side, but if anything
+          // ever slips through (stale client, alternate endpoint, future
+          // regression) wishes still must not surface in the live chat,
+          // because they're private notes addressed to the organizer.
           const newApiMessages = chatMessages.filter(m => {
             const id = String(m.id);
             const sender = (m.viewerUsername || m.sender || '') as string;
+            const chatType = (m.chatType || '') as string;
+            if (chatType === 'WISH') return false;
             return !seenApiMessageIds.current.has(id) && !blockedUsers.has(sender);
           });
 
@@ -8232,29 +8237,8 @@ const App = () => {
               flexDirection: 'column',
               gap: '8px'
             }}>
-              {/* Filter out pre-event "wish" messages - those were sent while
-                  the event was still upcoming and are meant as private notes
-                  to the host, not for the live chat. We compare each
-                  message's createdAt against the event's scheduled start,
-                  hiding anything older. Optimistic local messages (no
-                  createdAt) and messages from the user themselves always show. */}
               {(() => {
-                // Resolve the event's go-live reference time. Prefer
-                // eventStartTime, fall back to eventDate. If neither is
-                // available, no filtering is applied.
-                const startRef = mainEvent.eventStartTime || mainEvent.eventDate;
-                const goLiveTime = startRef ? new Date(startRef).getTime() : 0;
-
-                const visibleMessages = mainEvent.messages.filter((m) => {
-                  // Keep optimistic local messages (no createdAt yet) and
-                  // anything sent without a known timestamp.
-                  if (!m.createdAt) return true;
-                  if (!goLiveTime) return true;
-                  const sentAt = new Date(m.createdAt).getTime();
-                  if (Number.isNaN(sentAt)) return true;
-                  // Hide messages older than the event's scheduled start
-                  return sentAt >= goLiveTime;
-                });
+                const visibleMessages = mainEvent.messages;
 
                 return (
                   <>
