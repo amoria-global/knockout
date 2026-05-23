@@ -2627,74 +2627,72 @@ const App = () => {
     }
   };
 
-  // Toggle fullscreen. The Fullscreen API is fiddly across mobile browsers:
-  //   * iPhone Safari has no Fullscreen API on arbitrary elements at all;
-  //     only <video>.webkitEnterFullscreen() works.
-  //   * Android Chrome can fullscreen the container, but the call returns a
-  //     Promise that rejects (silently, before this fix) when blocked by
-  //     orientation locks, missing user gesture etc.
-  // So: try the container first, await + catch the Promise, and fall back
-  // to the <video> element's own fullscreen on failure. Never flip
-  // isFullscreen state from here; the fullscreenchange / iOS
-  // webkitbeginfullscreen handlers below are authoritative.
-  const toggleFullscreen = async () => {
+  // Toggle fullscreen. MUST stay synchronous: iOS Safari and some Android
+  // builds consider the user-gesture token "spent" once the click handler
+  // hits an `await`, which then makes webkitEnterFullscreen() silently
+  // refuse to engage. So everything below is synchronous, and Promise
+  // rejection on the container path is handled via .catch() (which still
+  // runs in a microtask, but only as a last resort after the sync attempt
+  // already succeeded or hard-failed). State is never flipped from here —
+  // the fullscreenchange / iOS webkitbeginfullscreen listeners are
+  // authoritative, so a failed entry doesn't leave the UI lying.
+  const toggleFullscreen = () => {
     const video = videoRefs.current[mainEvent.id];
     const videoContainer = video?.parentElement;
     if (!video || !videoContainer) return;
 
+    const enterVideoFs = () => {
+      const ios = (video as any).webkitEnterFullscreen;
+      if (ios) { try { ios.call(video); } catch {} return; }
+      const std = (video as any).requestFullscreen;
+      if (std) { try { std.call(video).catch(() => {}); } catch {} }
+    };
+
     if (!isFullscreen) {
-      const tryContainer = async () => {
-        if (videoContainer.requestFullscreen) {
-          await videoContainer.requestFullscreen();
-          return true;
-        }
-        const webkit = (videoContainer as any).webkitRequestFullscreen;
-        if (webkit) { webkit.call(videoContainer); return true; }
-        const moz = (videoContainer as any).mozRequestFullScreen;
-        if (moz) { moz.call(videoContainer); return true; }
-        const ms = (videoContainer as any).msRequestFullscreen;
-        if (ms) { ms.call(videoContainer); return true; }
-        return false;
-      };
+      // iPhone Safari has no element-level Fullscreen API. Skip the
+      // container attempt so we don't burn the user-gesture token on a
+      // call that will throw, then have no token left for the video
+      // fallback.
+      const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
+      const isIosLike = /iPad|iPhone|iPod/.test(ua) ||
+        (ua.includes('Macintosh') && 'ontouchend' in (typeof document !== 'undefined' ? document : {}));
+      if (isIosLike) { enterVideoFs(); return; }
 
-      const tryVideo = () => {
-        // iOS Safari path. Also a sane fallback on Android when the
-        // container request was rejected.
-        const ios = (video as any).webkitEnterFullscreen;
-        if (ios) { ios.call(video); return true; }
-        if (video.requestFullscreen) {
-          video.requestFullscreen().catch(() => {});
-          return true;
+      if (videoContainer.requestFullscreen) {
+        const p = videoContainer.requestFullscreen();
+        if (p && typeof (p as any).catch === 'function') {
+          (p as Promise<void>).catch(() => enterVideoFs());
         }
-        return false;
-      };
+        return;
+      }
+      const webkit = (videoContainer as any).webkitRequestFullscreen;
+      if (webkit) { try { webkit.call(videoContainer); } catch { enterVideoFs(); } return; }
+      const moz = (videoContainer as any).mozRequestFullScreen;
+      if (moz) { try { moz.call(videoContainer); } catch { enterVideoFs(); } return; }
+      const ms = (videoContainer as any).msRequestFullscreen;
+      if (ms) { try { ms.call(videoContainer); } catch { enterVideoFs(); } return; }
+      // No container path available at all.
+      enterVideoFs();
+      return;
+    }
 
-      try {
-        const ok = await tryContainer();
-        if (!ok) tryVideo();
-      } catch {
-        // Container fullscreen was rejected (no user gesture, blocked,
-        // unsupported). Fall back to the video element directly so
-        // mobile viewers still get a fullscreen experience.
-        tryVideo();
+    // Exit. document.exitFullscreen returns a Promise but we don't need to
+    // await it; the change listener will resync state when the browser
+    // actually leaves fullscreen.
+    try {
+      if (document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+      } else if ((document as any).webkitExitFullscreen) {
+        (document as any).webkitExitFullscreen();
+      } else if ((document as any).mozCancelFullScreen) {
+        (document as any).mozCancelFullScreen();
+      } else if ((document as any).msExitFullscreen) {
+        (document as any).msExitFullscreen();
+      } else if ((video as any).webkitExitFullscreen) {
+        (video as any).webkitExitFullscreen();
       }
-    } else {
-      try {
-        if (document.exitFullscreen) {
-          await document.exitFullscreen();
-        } else if ((document as any).webkitExitFullscreen) {
-          (document as any).webkitExitFullscreen();
-        } else if ((document as any).mozCancelFullScreen) {
-          (document as any).mozCancelFullScreen();
-        } else if ((document as any).msExitFullscreen) {
-          (document as any).msExitFullscreen();
-        } else if ((video as any).webkitExitFullscreen) {
-          (video as any).webkitExitFullscreen();
-        }
-      } catch {
-        // Already exited or not in fullscreen; the change handler will
-        // resync state from document.fullscreenElement.
-      }
+    } catch {
+      // Already exited; change handler will resync.
     }
   };
 
@@ -5864,26 +5862,36 @@ const App = () => {
             transform: translate(-50%, -50%) !important;
           }
 
-          /* Hide secondary controls on mobile to prevent overflow */
-          .mobile-hidden-control {
-            display: none !important;
-          }
+          /* The earlier rules in this block targeted classes that don't
+             exist in the JSX (.mobile-hidden-control, .volume-slider-wrapper,
+             .controls-bar, .fullscreen-btn). Real selectors below.
 
-          /* Prevent volume slider from expanding on mobile */
-          .volume-slider-wrapper {
-            display: none !important;
-          }
-
-          /* Ensure controls bar doesn't overflow */
-          .controls-bar {
-            overflow: hidden !important;
+             Mobile bottom-controls layout rules:
+               1. Hide emoji-reactions button (vjs-mobile-hidden).
+               2. Hide the volume popover entirely — touch devices have no
+                  real hover so the popover sticks open after the first tap,
+                  taking enough horizontal space to push fullscreen off
+                  screen. The mute/unmute toggle on the same button is the
+                  whole feature surface mobile needs.
+               3. Lock the buttons row to nowrap + horizontal-scroll
+                  fallback so the fullscreen button can't get clipped if a
+                  future addition pushes the row past viewport width.
+               4. Restore a sane tap target on every button. */
+          .vjs-mobile-hidden { display: none !important; }
+          .vjs-volume-popover { display: none !important; }
+          .vjs-buttons-row {
             flex-wrap: nowrap !important;
+            overflow-x: auto !important;
+            overflow-y: visible !important;
+            scrollbar-width: none !important;
           }
-
-          /* Fullscreen always visible */
-          .fullscreen-btn {
+          .vjs-buttons-row::-webkit-scrollbar { display: none !important; }
+          .vjs-btn {
+            min-width: 40px !important;
+            min-height: 40px !important;
             flex-shrink: 0 !important;
           }
+          .vjs-live-badge { flex-shrink: 0 !important; }
         }
 
         /* iPhone SE and small phones (320px - 375px) */
@@ -7182,6 +7190,15 @@ const App = () => {
                 className={`vjs-controls ${showControls ? 'vjs-controls--visible' : ''}`}
                 onClick={(e) => e.stopPropagation()}
                 onMouseEnter={() => {
+                  setShowControls(true);
+                  if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
+                }}
+                onTouchStart={(e) => {
+                  // Touch on the controls bar: stop it bubbling up to the
+                  // player container (which would toggle play/pause and
+                  // start a 3s auto-hide timer), and keep controls visible
+                  // while the user is actively poking at buttons.
+                  e.stopPropagation();
                   setShowControls(true);
                   if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
                 }}
