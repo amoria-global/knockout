@@ -2229,11 +2229,13 @@ function ViewEventContent(): React.JSX.Element {
               @media (max-width: 560px) {
                 .ve-hero-group { max-width: 100%; }
               }
-              /* On phones the hero compresses enough that the body's status
-                 pills can ride up against the top action rail (back / share /
-                 bookmark). Add a guaranteed gap via min-height on the body
-                 spacer so the rail can never collide with HAPPENING NOW. */
-              @media (max-width: 700px) { .ve-hero { min-height: 88vh; } .ve-hero-top { padding-top: 28px; padding-bottom: 12px; } .ve-hero-body { padding-top: 80px; padding-bottom: 110px; } }
+              /* On phones the rail (back / share / bookmark) sits at the
+                 top while the body uses margin-top:auto to fall to the
+                 bottom. Padding inside the body grows its box and starves
+                 that auto-margin, pushing the bottom content (group-code
+                 panel) past the hero edge. Keep the gap on the rail itself
+                 instead, so the body geometry stays unchanged. */
+              @media (max-width: 700px) { .ve-hero { min-height: 88vh; } .ve-hero-top { padding-top: 28px; padding-bottom: 16px; } .ve-hero-body { padding-bottom: 110px; } }
 
               /* Buttons */
               .ve-btn { display: inline-flex; align-items: center; justify-content: center; gap: 9px; font-family: inherit; font-weight: 700; letter-spacing: 0.01em; border-radius: 14px; border: 1px solid transparent; cursor: pointer; transition: transform 140ms ease, background 160ms ease, border-color 160ms ease, box-shadow 160ms ease; white-space: nowrap; }
