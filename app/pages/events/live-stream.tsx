@@ -5959,8 +5959,11 @@ const App = () => {
                   overflows on the narrowest phones we'd rather shrink
                   the slider than make fullscreen require a scroll to
                   reach. */
-          .vjs-mobile-hidden { display: none !important; }
-          .vjs-volume-group { gap: 6px !important; min-width: 0 !important; }
+          /* Show the emoji button on mobile — the squeezed sizes below
+             reserve room for all six controls (play, LIVE, volume,
+             emoji, settings, fullscreen) on a 360px-wide viewport. */
+          .vjs-mobile-hidden { display: inline-flex !important; }
+          .vjs-volume-group { gap: 4px !important; min-width: 0 !important; }
           .vjs-volume-popover {
             position: static !important;
             transform: none !important;
@@ -5984,7 +5987,7 @@ const App = () => {
             min-width: 0 !important;
           }
           .vjs-volume-popover .vjs-volume-slider-vertical {
-            width: 60px !important;
+            width: 48px !important;
             height: 4px !important;
             writing-mode: horizontal-tb !important;
             position: relative !important;
@@ -6049,23 +6052,48 @@ const App = () => {
           .vjs-buttons-row {
             flex-wrap: nowrap !important;
             overflow: visible !important;
+            gap: 4px !important;
+            padding: 14px 8px 10px !important;
           }
+          /* Squeeze every button so all six (play, LIVE, mute, emoji,
+             settings, fullscreen) fit on a 360px viewport. 36px keeps
+             the tap target above the 32px iOS / 36px Android minimums. */
           .vjs-btn {
-            min-width: 40px !important;
-            min-height: 40px !important;
+            min-width: 36px !important;
+            min-height: 36px !important;
+            width: 36px !important;
+            height: 36px !important;
             flex-shrink: 0 !important;
+            padding: 0 !important;
           }
-          .vjs-live-badge { flex-shrink: 0 !important; }
+          .vjs-btn svg, .vjs-btn i { font-size: 16px !important; }
+          .vjs-btn--play svg { width: 18px !important; height: 18px !important; }
+          .vjs-live-badge {
+            flex-shrink: 0 !important;
+            padding: 3px 7px !important;
+            font-size: 9.5px !important;
+            gap: 4px !important;
+          }
+          .vjs-live-dot { width: 6px !important; height: 6px !important; }
           /* Final safety net: pin the right group (settings + fullscreen)
              so even if the volume slider grows unexpectedly the
              fullscreen button stays inside the viewport. */
-          .vjs-buttons-row--right { flex-shrink: 0 !important; }
+          .vjs-buttons-row--right { flex-shrink: 0 !important; gap: 4px !important; }
         }
         /* Ultra-narrow phones (iPhone SE class): shrink the slider
-           further so the row never overflows. */
+           further so the row never overflows even with the emoji
+           button reinstated. */
         @media (max-width: 380px) {
-          .vjs-volume-popover .vjs-volume-slider-vertical { width: 44px !important; }
-          .vjs-btn { min-width: 36px !important; min-height: 36px !important; }
+          .vjs-volume-popover .vjs-volume-slider-vertical { width: 32px !important; }
+          .vjs-btn {
+            min-width: 32px !important;
+            min-height: 32px !important;
+            width: 32px !important;
+            height: 32px !important;
+          }
+          .vjs-btn svg, .vjs-btn i { font-size: 14px !important; }
+          .vjs-live-badge { padding: 3px 5px !important; font-size: 9px !important; }
+          .vjs-buttons-row { gap: 3px !important; padding: 12px 6px 8px !important; }
         }
 
         /* iPhone SE and small phones (320px - 375px) */
