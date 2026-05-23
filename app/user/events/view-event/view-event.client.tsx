@@ -1595,11 +1595,6 @@ function ViewEventContent(): React.JSX.Element {
                   )}
                 </div>
 
-                {/* Scroll cue */}
-                <div className="ve-scroll-cue" aria-hidden="true">
-                  <span>Scroll for details</span>
-                  <i className="bi bi-chevron-down" />
-                </div>
               </section>
 
               {/* ── LIVE-NOW RIBBON for paid attendees ──
@@ -2234,10 +2229,11 @@ function ViewEventContent(): React.JSX.Element {
               @media (max-width: 560px) {
                 .ve-hero-group { max-width: 100%; }
               }
-              .ve-scroll-cue { position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 6; font-size: 11px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ve-text-mute); display: flex; flex-direction: column; align-items: center; gap: 6px; animation: veFloat 2.6s ease-in-out infinite; pointer-events: none; }
-              .ve-scroll-cue i { font-size: 18px; }
-              @keyframes veFloat { 0%,100% { transform: translate(-50%, 0); } 50% { transform: translate(-50%, 6px); } }
-              @media (max-width: 700px) { .ve-hero { min-height: 88vh; } .ve-hero-top { padding-top: 28px; } .ve-hero-body { padding-bottom: 110px; } .ve-scroll-cue { display: none; } }
+              /* On phones the hero compresses enough that the body's status
+                 pills can ride up against the top action rail (back / share /
+                 bookmark). Add a guaranteed gap via min-height on the body
+                 spacer so the rail can never collide with HAPPENING NOW. */
+              @media (max-width: 700px) { .ve-hero { min-height: 88vh; } .ve-hero-top { padding-top: 28px; padding-bottom: 12px; } .ve-hero-body { padding-top: 80px; padding-bottom: 110px; } }
 
               /* Buttons */
               .ve-btn { display: inline-flex; align-items: center; justify-content: center; gap: 9px; font-family: inherit; font-weight: 700; letter-spacing: 0.01em; border-radius: 14px; border: 1px solid transparent; cursor: pointer; transition: transform 140ms ease, background 160ms ease, border-color 160ms ease, box-shadow 160ms ease; white-space: nowrap; }
@@ -2627,7 +2623,7 @@ function ViewEventContent(): React.JSX.Element {
               /* Reduced motion */
               @media (prefers-reduced-motion: reduce) {
                 .ve-hero-bg { transform: none !important; }
-                .ve-pulse, .ve-scroll-cue, .ve-toast { animation: none !important; }
+                .ve-pulse, .ve-toast { animation: none !important; }
                 .ve-btn:hover:not(:disabled) { transform: none; }
               }
               .ve-btn:focus-visible, .ve-glass-btn:focus-visible, .ve-input:focus-visible, .ve-readmore:focus-visible {
