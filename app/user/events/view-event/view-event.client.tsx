@@ -1558,6 +1558,41 @@ function ViewEventContent(): React.JSX.Element {
                       <span className="ve-btn-label">Already paid? Verify access</span>
                     </button>
                   </div>
+
+                  {/* Group invite-code redemption surfaced right next to the
+                      primary CTAs so a viewer who was sent a shared code can
+                      redeem from the hero without scrolling to the ticket
+                      card. Matches the same condition as the duplicate that
+                      used to live inside the aside (paid + live + not yet
+                      purchased). */}
+                  {isPaid && !hasPurchasedAccess && isLive && (
+                    <div className="ve-hero-group">
+                      <div className="ve-hero-group-h">
+                        <i className="bi bi-ticket-detailed" aria-hidden="true" />
+                        Have a group invite code?
+                      </div>
+                      <div className="ve-hero-group-row">
+                        <input
+                          type="text"
+                          value={groupCode}
+                          onChange={e => { setGroupCode(e.target.value); setGroupCodeError(''); }}
+                          onKeyDown={e => { if (e.key === 'Enter' && groupCode.trim()) handleGroupCodeSubmit(); }}
+                          placeholder="Enter code"
+                          className={`ve-input ${groupCodeError ? 'is-error' : ''}`}
+                          aria-label="Group invite code"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleGroupCodeSubmit}
+                          disabled={groupCodeLoading || !groupCode.trim()}
+                          className="ve-btn ve-btn--reserve ve-btn--md"
+                        >
+                          {groupCodeLoading ? '…' : 'Redeem'}
+                        </button>
+                      </div>
+                      {groupCodeError && <span className="ve-msg ve-msg--err">{groupCodeError}</span>}
+                    </div>
+                  )}
                 </div>
 
                 {/* Scroll cue */}
@@ -1911,42 +1946,10 @@ function ViewEventContent(): React.JSX.Element {
                         )}
                       </div>
 
-                      {/* Group code redemption - LIVE events only */}
-                      {isPaid && !hasPurchasedAccess && isLive && (
-                        <div className="ve-ticket-aux">
-                          <div className="ve-ticket-aux-h">
-                            <i className="bi bi-ticket-detailed" aria-hidden="true" />
-                            Have a group invite code?
-                          </div>
-                          <div className="ve-ticket-group-row">
-                            <input
-                              type="text"
-                              value={groupCode}
-                              onChange={e => { setGroupCode(e.target.value); setGroupCodeError(''); }}
-                              onKeyDown={e => { if (e.key === 'Enter' && groupCode.trim()) handleGroupCodeSubmit(); }}
-                              placeholder="Enter code"
-                              className={`ve-input ${groupCodeError ? 'is-error' : ''}`}
-                            />
-                            <button
-                              type="button"
-                              onClick={handleGroupCodeSubmit}
-                              disabled={groupCodeLoading || !groupCode.trim()}
-                              className="ve-btn ve-btn--reserve ve-btn--md"
-                            >
-                              {groupCodeLoading ? '…' : 'Redeem'}
-                            </button>
-                          </div>
-                          {groupCodeError && <span className="ve-msg ve-msg--err">{groupCodeError}</span>}
-                          <button
-                            type="button"
-                            className="ve-ticket-already"
-                            onClick={() => { setVaError(null); setShowViewerAuth(true); }}
-                          >
-                            <i className="bi bi-person-check-fill" aria-hidden="true" />
-                            Already paid? Verify your access
-                          </button>
-                        </div>
-                      )}
+                      {/* Group code + verify-access used to live here as
+                          ve-ticket-aux. Both surfaces have been promoted to
+                          the hero CTA area so viewers spot them immediately
+                          without scrolling past the buy-access button. */}
 
                       <div className="ve-ticket-trust">
                         <span><i className="bi bi-shield-check" aria-hidden="true" /> Secure</span>
@@ -2048,11 +2051,25 @@ function ViewEventContent(): React.JSX.Element {
               .ve-sticky-dot--upcoming { background: var(--ve-brand-2); }
               .ve-sticky-dot--ended { background: var(--ve-red); box-shadow: 0 0 0 3px rgba(239,68,68,0.25); }
               .ve-sticky-dot--cancelled { background: var(--ve-red); }
+              /* Both action buttons must hold their own width. ve-btn--verify
+                 sets overflow:hidden for the animated gradient border, so any
+                 flex-shrink against them clips the label mid-character (saw
+                 "Already p…"). flex:none keeps the label intact and lets the
+                 .ve-sticky-info column truncate first instead. */
+              .ve-sticky-verify, .ve-sticky-cta { flex: none; }
               @media (max-width: 720px) {
                 .ve-sticky-inner { margin: 8px 12px 0; padding: 6px 8px 6px 6px; gap: 10px; }
                 .ve-sticky-poster { width: 40px; height: 40px; }
                 .ve-sticky-title { font-size: 14px; }
                 .ve-sticky-meta { font-size: 11px; }
+              }
+              /* On narrow viewports the row gets crowded: drop the poster and
+                 collapse verify-access to icon-only so the primary CTA + back
+                 + title still have room to breathe. */
+              @media (max-width: 560px) {
+                .ve-sticky-poster { display: none; }
+                .ve-sticky-verify { padding: 11px 12px; }
+                .ve-sticky-verify .ve-btn-label { display: none; }
               }
 
               /* Hero */
@@ -2194,6 +2211,34 @@ function ViewEventContent(): React.JSX.Element {
               .ve-hero-quick i { color: var(--ve-brand-2); font-size: 15px; }
               .ve-hero-quick-sep { color: var(--ve-text-mute); }
               .ve-hero-cta-row { display: flex; flex-wrap: wrap; gap: 12px; }
+              /* Hero-level group invite-code panel (promoted from the ticket
+                 aside). Sits directly under the Buy/Verify CTA row so a
+                 viewer who arrived with a shared code can redeem without
+                 hunting the page. Glassmorphism amber-tinted card mirrors
+                 the ticket card aesthetic. */
+              .ve-hero-group {
+                display: flex; flex-direction: column; gap: 10px;
+                margin-top: 14px;
+                padding: 12px 14px;
+                max-width: 540px;
+                background: rgba(7,8,13,0.55);
+                backdrop-filter: blur(14px) saturate(160%);
+                -webkit-backdrop-filter: blur(14px) saturate(160%);
+                border: 1px dashed rgba(245,158,11,0.45);
+                border-radius: 14px;
+                box-shadow: 0 8px 22px -10px rgba(0,0,0,0.55);
+              }
+              .ve-hero-group-h {
+                display: flex; align-items: center; gap: 8px;
+                font-size: 12px; font-weight: 800; letter-spacing: 0.06em;
+                text-transform: uppercase; color: #FDE68A;
+              }
+              .ve-hero-group-h i { color: var(--ve-amber); font-size: 14px; }
+              .ve-hero-group-row { display: flex; gap: 8px; }
+              .ve-hero-group-row .ve-input { flex: 1; min-width: 0; }
+              @media (max-width: 560px) {
+                .ve-hero-group { max-width: 100%; }
+              }
               .ve-scroll-cue { position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 6; font-size: 11px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ve-text-mute); display: flex; flex-direction: column; align-items: center; gap: 6px; animation: veFloat 2.6s ease-in-out infinite; pointer-events: none; }
               .ve-scroll-cue i { font-size: 18px; }
               @keyframes veFloat { 0%,100% { transform: translate(-50%, 0); } 50% { transform: translate(-50%, 6px); } }
@@ -2563,32 +2608,6 @@ function ViewEventContent(): React.JSX.Element {
               .ve-ticket-row > div strong { font-size: 14.5px; font-weight: 700; color: var(--ve-text); }
 
               .ve-ticket-cta { display: flex; flex-direction: column; gap: 10px; }
-              .ve-ticket-aux { padding: 14px; border-radius: 14px; background: rgba(255,255,255,0.04); border: 1px dashed var(--ve-line-strong); display: flex; flex-direction: column; gap: 10px; }
-              .ve-ticket-aux-h { display: flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ve-text-soft); }
-              .ve-ticket-aux-h i { color: var(--ve-amber); font-size: 14px; }
-              .ve-ticket-group-row { display: flex; gap: 8px; }
-              .ve-ticket-group-row .ve-input { flex: 1; }
-              .ve-ticket-already {
-                background: rgba(110,231,183,0.10);
-                border: 1px solid rgba(110,231,183,0.35);
-                color: #A7F3D0;
-                font-size: 12.5px; font-weight: 700;
-                cursor: pointer;
-                padding: 8px 14px;
-                border-radius: 10px;
-                display: inline-flex; align-items: center; gap: 8px;
-                align-self: stretch; justify-content: center;
-                transition: all 0.25s ease;
-                margin-top: 4px;
-              }
-              .ve-ticket-already:hover {
-                background: rgba(110,231,183,0.18);
-                color: #fff;
-                border-color: rgba(110,231,183,0.7);
-                transform: translateY(-1px);
-                box-shadow: 0 8px 18px -8px rgba(110,231,183,0.45);
-              }
-              .ve-ticket-already i { color: #6EE7B7; filter: drop-shadow(0 0 4px rgba(110,231,183,0.5)); }
               .ve-ticket-trust { display: flex; flex-wrap: wrap; gap: 12px 16px; padding-top: 8px; border-top: 1px solid var(--ve-line); font-size: 12px; color: var(--ve-text-mute); }
               .ve-ticket-trust span { display: inline-flex; align-items: center; gap: 5px; }
               .ve-ticket-trust i { color: var(--ve-live); font-size: 13px; }
@@ -2616,7 +2635,7 @@ function ViewEventContent(): React.JSX.Element {
                 .ve-pulse, .ve-scroll-cue, .ve-toast { animation: none !important; }
                 .ve-btn:hover:not(:disabled) { transform: none; }
               }
-              .ve-btn:focus-visible, .ve-glass-btn:focus-visible, .ve-input:focus-visible, .ve-readmore:focus-visible, .ve-ticket-already:focus-visible {
+              .ve-btn:focus-visible, .ve-glass-btn:focus-visible, .ve-input:focus-visible, .ve-readmore:focus-visible {
                 outline: 2px solid var(--ve-brand-2); outline-offset: 3px;
               }
             `}</style>
