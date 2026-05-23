@@ -692,8 +692,13 @@ const Events: React.FC = () => {
           display: flex;
           gap: clamp(16px, 2vw, 22px);
           overflow-x: auto;
+          /* overflow-y is automatically forced to auto by overflow-x:auto
+             (CSS spec), so the padding below has to cover every outward
+             extension of a story: -3px ring inset, 12px pulse box-shadow,
+             the LIVE badge that bleeds -2px past the avatar, and the
+             title absolutely positioned ~8+14px under the avatar. */
           overflow-y: visible;
-          padding: 16px 6px 18px;
+          padding: 18px 18px 32px;
           flex: 1;
           min-width: 0;
           scroll-snap-type: x proximity;
@@ -886,11 +891,16 @@ const Events: React.FC = () => {
             width: clamp(60px, 18vw, 72px);
             height: clamp(60px, 18vw, 72px);
           }
-          /* Tighter scroll lane on mobile but still enough vertical room
-             for the hover lift + pulse ring without clipping. */
+          /* Scroll lane must accommodate, without overflow clipping, the
+             ring (-3px inset), the 12px pulse, the LIVE badge that bleeds
+             -2px past the avatar, and the title absolutely positioned
+             ~6+13px below the avatar. overflow-x:auto silently forces
+             overflow-y to auto, which is why insufficient padding here
+             chopped the ring's bottom + left edges and required a stray
+             internal scroll to reveal them. */
           .ev-trends-scroll {
             gap: clamp(12px, 3vw, 18px);
-            padding: 12px 4px 14px;
+            padding: 18px 16px 36px;
           }
           .ev-story-live { font-size: 7.5px; padding: 1px 5px; }
           .ev-story-live-dot { width: 4px; height: 4px; }
