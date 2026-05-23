@@ -1357,6 +1357,12 @@ const App = () => {
   // Safari builds returns the wrong node when the video is inside an
   // overlay wrapper.
   const videoContainerRef = useRef<HTMLDivElement | null>(null);
+  // True once the main video has loaded enough metadata to be rendered.
+  // We disable the Fullscreen button until then because both the
+  // standard requestFullscreen and iPhone Safari's webkitEnterFullscreen
+  // silently no-op on a readyState-0 video (no stream connected yet),
+  // which looks like a broken button to testers.
+  const [isMainVideoReady, setIsMainVideoReady] = useState(false);
   // Settings state
   const [showSettings, setShowSettings] = useState(false);
   // Anchor for the settings dropdown when portalled to body. The menu
@@ -2742,6 +2748,29 @@ const App = () => {
       }
     };
   }, []);
+
+  // Track whether the main video has loaded metadata. Browsers don't
+  // emit a "readyState changed" event, so we listen to the events that
+  // actually move readyState across the 0 → 1 boundary (loadedmetadata
+  // raises it, emptied resets it). Also seed from the current value so
+  // we don't show "stream not started" against an already-ready video.
+  useEffect(() => {
+    const id = mainEvent?.id;
+    if (!id) { setIsMainVideoReady(false); return; }
+    const video = videoRefs.current[id];
+    if (!video) { setIsMainVideoReady(false); return; }
+    setIsMainVideoReady(video.readyState >= 1);
+    const ready = () => setIsMainVideoReady(true);
+    const empty = () => setIsMainVideoReady(false);
+    video.addEventListener('loadedmetadata', ready);
+    video.addEventListener('loadeddata', ready);
+    video.addEventListener('emptied', empty);
+    return () => {
+      video.removeEventListener('loadedmetadata', ready);
+      video.removeEventListener('loadeddata', ready);
+      video.removeEventListener('emptied', empty);
+    };
+  }, [mainEvent?.id]);
 
   // Close settings when clicking outside
   useEffect(() => {
@@ -7650,13 +7679,36 @@ const App = () => {
                         legacy 300ms touch delay so the click fires inside
                         the user-gesture window; stopPropagation stops the
                         click from bubbling to the player container's
-                        togglePlay handler. */}
+                        togglePlay handler. Disabled until the video has
+                        loaded metadata — both standard requestFullscreen
+                        and iPhone Safari's webkitEnterFullscreen no-op on
+                        a readyState-0 video, so an enabled button there
+                        would just feel broken. Always clickable while
+                        already in fullscreen so users can exit. */}
                     <button
                       className="vjs-btn"
                       type="button"
-                      title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+                      disabled={!isMainVideoReady && !isFullscreen}
+                      title={
+                        isFullscreen
+                          ? 'Exit fullscreen'
+                          : isMainVideoReady
+                            ? 'Fullscreen'
+                            : 'Stream not started yet'
+                      }
+                      aria-label={
+                        isFullscreen
+                          ? 'Exit fullscreen'
+                          : isMainVideoReady
+                            ? 'Fullscreen'
+                            : 'Fullscreen unavailable, stream not started yet'
+                      }
                       onClick={(e) => { e.stopPropagation(); toggleFullscreen(); }}
-                      style={{ touchAction: 'manipulation' }}
+                      style={{
+                        touchAction: 'manipulation',
+                        opacity: (!isMainVideoReady && !isFullscreen) ? 0.4 : undefined,
+                        cursor: (!isMainVideoReady && !isFullscreen) ? 'not-allowed' : undefined,
+                      }}
                     >
                       {isFullscreen ? <FullscreenExitIcon /> : <FullscreenEnterIcon />}
                     </button>
