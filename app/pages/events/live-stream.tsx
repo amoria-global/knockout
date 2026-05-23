@@ -2673,44 +2673,54 @@ const App = () => {
       return;
     }
 
-    // Enter. Feature-detect instead of UA-detect — if the video element
-    // exposes webkitEnterFullscreen, that's the iOS WebKit native player
-    // and it's the right path regardless of which browser shell the user
-    // is in (Safari, Chrome iOS, etc all use WebKit on iOS). On Android
-    // and desktop the video element doesn't expose that method, so we
-    // fall straight through to container fullscreen.
+    // iPhone Safari's webkitEnterFullscreen() silently no-ops when the
+    // video hasn't loaded enough content. Kick play() in the same
+    // gesture so the engine pulls metadata before we ask for fullscreen;
+    // we ignore the play() promise (it may reject if WHEP isn't
+    // connected yet — that's fine, fullscreen will still take the
+    // container path below). Calling play() costs nothing when the
+    // video is already playing.
+    try { const pp = video.play(); if (pp && typeof pp.catch === 'function') pp.catch(() => {}); } catch {}
+
+    // Try container fullscreen FIRST. iPad Safari (iOS 12+), Android
+    // Chrome, Firefox, and desktop browsers all accept this and it gives
+    // the user the full edge-to-edge experience our CSS is tuned for.
+    if (videoContainer?.requestFullscreen) {
+      try {
+        const p = videoContainer.requestFullscreen();
+        if (p && typeof (p as any).catch === 'function') {
+          (p as Promise<void>).catch(() => enterVideoNative(video));
+        }
+        return;
+      } catch {
+        enterVideoNative(video);
+        return;
+      }
+    }
+    if ((videoContainer as any)?.webkitRequestFullscreen) {
+      try { (videoContainer as any).webkitRequestFullscreen(); return; } catch { enterVideoNative(video); return; }
+    }
+    if ((videoContainer as any)?.mozRequestFullScreen) {
+      try { (videoContainer as any).mozRequestFullScreen(); return; } catch { enterVideoNative(video); return; }
+    }
+    if ((videoContainer as any)?.msRequestFullscreen) {
+      try { (videoContainer as any).msRequestFullscreen(); return; } catch { enterVideoNative(video); return; }
+    }
+
+    // Last resort: iPhone Safari path (no element-level Fullscreen API).
+    enterVideoNative(video);
+  };
+
+  // Drop iPhone Safari into its native video player. Tries webkitEnterFullscreen
+  // first (the iOS-native experience from the user's reference screenshot),
+  // then the standard requestFullscreen as a final fallback.
+  const enterVideoNative = (video: HTMLVideoElement) => {
     if ((video as any).webkitEnterFullscreen) {
       if (video.readyState === 0) {
         try { video.load(); } catch {}
       }
       try { (video as any).webkitEnterFullscreen(); return; } catch {}
     }
-
-    // Container fullscreen — Android Chrome, Firefox, desktop browsers.
-    if (videoContainer?.requestFullscreen) {
-      try {
-        const p = videoContainer.requestFullscreen();
-        if (p && typeof (p as any).catch === 'function') {
-          (p as Promise<void>).catch(() => {
-            // Last-resort: try the video element's standard fullscreen.
-            if (video.requestFullscreen) {
-              try { video.requestFullscreen().catch(() => {}); } catch {}
-            }
-          });
-        }
-        return;
-      } catch {}
-    }
-    if ((videoContainer as any)?.webkitRequestFullscreen) {
-      try { (videoContainer as any).webkitRequestFullscreen(); return; } catch {}
-    }
-    if ((videoContainer as any)?.mozRequestFullScreen) {
-      try { (videoContainer as any).mozRequestFullScreen(); return; } catch {}
-    }
-    if ((videoContainer as any)?.msRequestFullscreen) {
-      try { (videoContainer as any).msRequestFullscreen(); return; } catch {}
-    }
-    // Absolute last resort: video element direct fullscreen.
     if (video.requestFullscreen) {
       try { video.requestFullscreen().catch(() => {}); } catch {}
     }
