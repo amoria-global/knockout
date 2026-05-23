@@ -2627,41 +2627,74 @@ const App = () => {
     }
   };
 
-  // Toggle fullscreen - iOS only supports fullscreen on <video> directly
-  const toggleFullscreen = () => {
+  // Toggle fullscreen. The Fullscreen API is fiddly across mobile browsers:
+  //   * iPhone Safari has no Fullscreen API on arbitrary elements at all;
+  //     only <video>.webkitEnterFullscreen() works.
+  //   * Android Chrome can fullscreen the container, but the call returns a
+  //     Promise that rejects (silently, before this fix) when blocked by
+  //     orientation locks, missing user gesture etc.
+  // So: try the container first, await + catch the Promise, and fall back
+  // to the <video> element's own fullscreen on failure. Never flip
+  // isFullscreen state from here; the fullscreenchange / iOS
+  // webkitbeginfullscreen handlers below are authoritative.
+  const toggleFullscreen = async () => {
     const video = videoRefs.current[mainEvent.id];
     const videoContainer = video?.parentElement;
-    if (!videoContainer) return;
+    if (!video || !videoContainer) return;
 
     if (!isFullscreen) {
-      // Enter fullscreen - try container first, fall back to video element (iOS)
-      if (videoContainer.requestFullscreen) {
-        videoContainer.requestFullscreen();
-      } else if ((videoContainer as any).webkitRequestFullscreen) {
-        (videoContainer as any).webkitRequestFullscreen();
-      } else if ((videoContainer as any).mozRequestFullScreen) {
-        (videoContainer as any).mozRequestFullScreen();
-      } else if ((videoContainer as any).msRequestFullscreen) {
-        (videoContainer as any).msRequestFullscreen();
-      } else if (video && (video as any).webkitEnterFullscreen) {
-        // iOS Safari - only supports fullscreen on <video> element
-        (video as any).webkitEnterFullscreen();
+      const tryContainer = async () => {
+        if (videoContainer.requestFullscreen) {
+          await videoContainer.requestFullscreen();
+          return true;
+        }
+        const webkit = (videoContainer as any).webkitRequestFullscreen;
+        if (webkit) { webkit.call(videoContainer); return true; }
+        const moz = (videoContainer as any).mozRequestFullScreen;
+        if (moz) { moz.call(videoContainer); return true; }
+        const ms = (videoContainer as any).msRequestFullscreen;
+        if (ms) { ms.call(videoContainer); return true; }
+        return false;
+      };
+
+      const tryVideo = () => {
+        // iOS Safari path. Also a sane fallback on Android when the
+        // container request was rejected.
+        const ios = (video as any).webkitEnterFullscreen;
+        if (ios) { ios.call(video); return true; }
+        if (video.requestFullscreen) {
+          video.requestFullscreen().catch(() => {});
+          return true;
+        }
+        return false;
+      };
+
+      try {
+        const ok = await tryContainer();
+        if (!ok) tryVideo();
+      } catch {
+        // Container fullscreen was rejected (no user gesture, blocked,
+        // unsupported). Fall back to the video element directly so
+        // mobile viewers still get a fullscreen experience.
+        tryVideo();
       }
-      setIsFullscreen(true);
     } else {
-      // Exit fullscreen
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-      } else if ((document as any).webkitExitFullscreen) {
-        (document as any).webkitExitFullscreen();
-      } else if ((document as any).mozCancelFullScreen) {
-        (document as any).mozCancelFullScreen();
-      } else if ((document as any).msExitFullscreen) {
-        (document as any).msExitFullscreen();
-      } else if (video && (video as any).webkitExitFullscreen) {
-        (video as any).webkitExitFullscreen();
+      try {
+        if (document.exitFullscreen) {
+          await document.exitFullscreen();
+        } else if ((document as any).webkitExitFullscreen) {
+          (document as any).webkitExitFullscreen();
+        } else if ((document as any).mozCancelFullScreen) {
+          (document as any).mozCancelFullScreen();
+        } else if ((document as any).msExitFullscreen) {
+          (document as any).msExitFullscreen();
+        } else if ((video as any).webkitExitFullscreen) {
+          (video as any).webkitExitFullscreen();
+        }
+      } catch {
+        // Already exited or not in fullscreen; the change handler will
+        // resync state from document.fullscreenElement.
       }
-      setIsFullscreen(false);
     }
   };
 
@@ -5232,15 +5265,36 @@ const App = () => {
           cursor: none !important;
         }
 
-        /* Make fullscreen take full height and ensure proper rendering */
+        /* Make fullscreen take full height and ensure proper rendering.
+           The base .video-player-container rules set border-radius,
+           position:relative, box-shadow, transform-transition etc all
+           with !important. Without explicitly resetting them here the
+           browser-engaged fullscreen would render the container as a
+           rounded, in-flow, max-height-capped box on top of a black
+           backdrop, which is why mobile viewers reported "fullscreen
+           doesn't work" — it engaged, it just didn't fill the screen. */
         .video-player-container:fullscreen,
         .video-player-container:-webkit-full-screen,
         .video-player-container:-moz-full-screen,
         .video-player-container:-ms-fullscreen {
+          position: fixed !important;
+          inset: 0 !important;
           width: 100vw !important;
           height: 100vh !important;
           max-height: 100vh !important;
+          min-height: 100vh !important;
           background: #000 !important;
+          border-radius: 0 !important;
+          box-shadow: none !important;
+          transform: none !important;
+          transition: none !important;
+          z-index: 2147483647 !important;
+        }
+        .video-player-container:fullscreen:hover,
+        .video-player-container:-webkit-full-screen:hover,
+        .video-player-container:-moz-full-screen:hover,
+        .video-player-container:-ms-fullscreen:hover {
+          transform: none !important;
         }
 
         /* Ensure video fills fullscreen container */
