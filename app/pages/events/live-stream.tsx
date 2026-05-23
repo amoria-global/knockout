@@ -6429,6 +6429,17 @@ const App = () => {
             border-radius: 10px !important;
             min-height: 32px !important;
           }
+          /* On mobile the floating record-video + chat FABs already
+             occupy the right edge (right:20px). Pull the rate/leave
+             action row off the right edge with margin-right:88px (FAB
+             width 52 + right offset 20 + 16 breathing room) so the two
+             groups are horizontally separated. marginLeft:0 overrides
+             the inline auto so the row hugs the left of the
+             photographer info bar instead of stacking under the FABs. */
+          .stream-actions-row {
+            margin-left: 0 !important;
+            margin-right: 88px !important;
+          }
           /* Hide Stream ID on mobile - not useful for viewers */
           .desktop-only-stat {
             display: none !important;
@@ -8321,14 +8332,21 @@ const App = () => {
                 )}
                 <span className="photographer-name" style={{ fontSize: 'clamp(12px, 3vw, 14px)', fontWeight: 600, color: '#efeff1' }}>{mainEvent.photographer}</span>
 
-                {/* Action Buttons - pushed right */}
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 'clamp(6px, 2vw, 10px)',
-                  marginLeft: 'auto',
-                  flexWrap: 'wrap'
-                }}>
+                {/* Action Buttons - pushed right on desktop, but on mobile
+                    the .stream-actions-row class strips that auto-margin so
+                    the rate/leave pills sit on the LEFT, well clear of the
+                    floating record-video + chat FABs at the right edge.
+                    Without that, the two right-edge groups stacked on the
+                    same column and read as overlapping. */}
+                <div
+                  className="stream-actions-row"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 'clamp(6px, 2vw, 10px)',
+                    marginLeft: 'auto',
+                    flexWrap: 'wrap'
+                  }}>
                   <button
                     className="stream-action-btn"
                     onClick={() => { if (!userHasRated) setShowRatingModal(true); }}
