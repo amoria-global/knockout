@@ -550,7 +550,9 @@ const App = ({ eventIdProp }: { eventIdProp?: string } = {}) => {
 
   // Load real event metadata from API on mount if eventId is in URL
   useEffect(() => {
-    const eventId = searchParams.get('eventId') || searchParams.get('id');
+    // Slug livestream route passes the resolved id via eventIdProp -
+    // URL search params are empty in that case, so fall back to it.
+    const eventId = eventIdProp || searchParams.get('eventId') || searchParams.get('id');
     if (!eventId) return;
 
     const loadEventDetails = async () => {
@@ -784,7 +786,7 @@ const App = ({ eventIdProp }: { eventIdProp?: string } = {}) => {
 
   // Poll event status every 15s - detects status transitions
   useEffect(() => {
-    const eventId = searchParams.get('eventId') || searchParams.get('id');
+    const eventId = eventIdProp || searchParams.get('eventId') || searchParams.get('id');
     if (!eventId) return;
 
     const pollEventStatus = async () => {
@@ -850,7 +852,7 @@ const App = ({ eventIdProp }: { eventIdProp?: string } = {}) => {
 
   // Poll viewer count every 15s (public endpoint - no auth required)
   useEffect(() => {
-    const eventId = searchParams.get('eventId') || searchParams.get('id');
+    const eventId = eventIdProp || searchParams.get('eventId') || searchParams.get('id');
     if (!eventId) return;
     if (mainEvent?.eventStatus !== 'ONGOING') return;
 
@@ -876,7 +878,7 @@ const App = ({ eventIdProp }: { eventIdProp?: string } = {}) => {
 
   // Device access check + heartbeat every 30 seconds
   useEffect(() => {
-    const eventId = searchParams.get('eventId') || searchParams.get('id');
+    const eventId = eventIdProp || searchParams.get('eventId') || searchParams.get('id');
     if (!eventId || !isAuthenticated) return;
     const currentStatus = (mainEvent?.eventStatus || '').toUpperCase();
     if (currentStatus !== 'ONGOING') return;
@@ -923,7 +925,7 @@ const App = ({ eventIdProp }: { eventIdProp?: string } = {}) => {
 
   // Anonymous viewer: device check + heartbeat every 30s + deactivate on page unload
   useEffect(() => {
-    const eventId = searchParams.get('eventId') || searchParams.get('id');
+    const eventId = eventIdProp || searchParams.get('eventId') || searchParams.get('id');
     if (!eventId || isAuthenticated || !isAnonymousViewer || !anonymousViewerId) return;
     const currentStatus = (mainEvent?.eventStatus || '').toUpperCase();
     if (currentStatus !== 'ONGOING') return;
