@@ -2636,16 +2636,27 @@ const App = () => {
   // Toggle fullscreen. MUST stay synchronous: iOS Safari and some Android
   // builds consider the user-gesture token "spent" once the click handler
   // hits an `await`, which then makes webkitEnterFullscreen() silently
-  // refuse to engage. So everything below is synchronous, and Promise
-  // rejection on the container path is handled via .catch() (which still
-  // runs in a microtask, but only as a last resort after the sync attempt
-  // already succeeded or hard-failed). State is never flipped from here —
-  // the fullscreenchange / iOS webkitbeginfullscreen listeners are
-  // authoritative, so a failed entry doesn't leave the UI lying.
+  // refuse to engage. Promise rejection on the container path is handled
+  // via .catch() (still a microtask, used only as a last-resort fallback).
+  // State is never flipped from here — the fullscreenchange / iOS
+  // webkitbeginfullscreen listeners are authoritative, so a failed entry
+  // doesn't leave the UI lying about its own state.
   const toggleFullscreen = () => {
     const video = videoRefs.current[mainEvent.id];
     const videoContainer = video?.parentElement;
     if (!video || !videoContainer) return;
+
+    // Check the live browser-side fullscreen state instead of the React
+    // isFullscreen flag. The flag is updated asynchronously by the
+    // fullscreenchange handler and can lag the actual document state by
+    // a frame (or stay stale if a prior call failed to fire the event),
+    // which would otherwise route the user into the wrong branch and
+    // make the button feel like it does nothing.
+    const fsEl = document.fullscreenElement
+      || (document as any).webkitFullscreenElement
+      || (document as any).mozFullScreenElement
+      || (document as any).msFullscreenElement
+      || null;
 
     const enterVideoFs = () => {
       const ios = (video as any).webkitEnterFullscreen;
@@ -2654,7 +2665,7 @@ const App = () => {
       if (std) { try { std.call(video).catch(() => {}); } catch {} }
     };
 
-    if (!isFullscreen) {
+    if (!fsEl) {
       // iPhone Safari has no element-level Fullscreen API. Skip the
       // container attempt so we don't burn the user-gesture token on a
       // call that will throw, then have no token left for the video
@@ -2664,10 +2675,17 @@ const App = () => {
         (ua.includes('Macintosh') && 'ontouchend' in (typeof document !== 'undefined' ? document : {}));
       if (isIosLike) { enterVideoFs(); return; }
 
+      // Pass navigationUI:'hide' as a hint so browsers that can drop
+      // their chrome (Chrome Android, recent Firefox) do so, giving the
+      // actual edge-to-edge fullscreen the user expects.
       if (videoContainer.requestFullscreen) {
-        const p = videoContainer.requestFullscreen();
-        if (p && typeof (p as any).catch === 'function') {
-          (p as Promise<void>).catch(() => enterVideoFs());
+        try {
+          const p = videoContainer.requestFullscreen({ navigationUI: 'hide' });
+          if (p && typeof (p as any).catch === 'function') {
+            (p as Promise<void>).catch(() => enterVideoFs());
+          }
+        } catch {
+          enterVideoFs();
         }
         return;
       }
@@ -2677,7 +2695,6 @@ const App = () => {
       if (moz) { try { moz.call(videoContainer); } catch { enterVideoFs(); } return; }
       const ms = (videoContainer as any).msRequestFullscreen;
       if (ms) { try { ms.call(videoContainer); } catch { enterVideoFs(); } return; }
-      // No container path available at all.
       enterVideoFs();
       return;
     }
@@ -5990,12 +6007,47 @@ const App = () => {
             transform: translate(-50%, -50%) !important;
           }
           .vjs-volume-popover .vjs-volume-slider-input {
+            /* The base CSS pins -webkit-appearance:slider-vertical so
+               WebKit keeps treating the range as a vertical slider even
+               with writing-mode:horizontal-tb. Reset appearance + writing
+               mode so drags map to horizontal motion and onChange fires. */
+            -webkit-appearance: none !important;
+            -moz-appearance: none !important;
+            appearance: none !important;
             writing-mode: horizontal-tb !important;
             direction: ltr !important;
             width: 100% !important;
             height: 26px !important;
             top: -11px !important;
             left: 0 !important;
+            background: transparent !important;
+          }
+          .vjs-volume-popover .vjs-volume-slider-input::-webkit-slider-runnable-track {
+            -webkit-appearance: none !important;
+            appearance: none !important;
+            background: transparent !important;
+            height: 26px !important;
+            border: none !important;
+          }
+          .vjs-volume-popover .vjs-volume-slider-input::-webkit-slider-thumb {
+            -webkit-appearance: none !important;
+            appearance: none !important;
+            width: 26px !important;
+            height: 26px !important;
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+          }
+          .vjs-volume-popover .vjs-volume-slider-input::-moz-range-track {
+            background: transparent !important;
+            height: 26px !important;
+            border: none !important;
+          }
+          .vjs-volume-popover .vjs-volume-slider-input::-moz-range-thumb {
+            width: 26px !important;
+            height: 26px !important;
+            background: transparent !important;
+            border: none !important;
           }
           .vjs-volume-popover .vjs-volume-label { display: none !important; }
           .vjs-buttons-row {
