@@ -1352,6 +1352,11 @@ const App = () => {
   const [showParticipants, setShowParticipants] = useState(false);
   const [newEventId, setNewEventId] = useState("");
   const [isFullscreen, setIsFullscreen] = useState(false);
+  // Direct ref on the video player container — used by toggleFullscreen
+  // so we don't have to fish parentElement off the video, which on some
+  // Safari builds returns the wrong node when the video is inside an
+  // overlay wrapper.
+  const videoContainerRef = useRef<HTMLDivElement | null>(null);
   // Settings state
   const [showSettings, setShowSettings] = useState(false);
   // Anchor for the settings dropdown when portalled to body. The menu
@@ -2641,88 +2646,43 @@ const App = () => {
   // State is never flipped from here — the fullscreenchange / iOS
   // webkitbeginfullscreen listeners are authoritative, so a failed entry
   // doesn't leave the UI lying about its own state.
-  const toggleFullscreen = () => {
-    const video = videoRefs.current[mainEvent.id];
-    if (!video) return;
-    const videoContainer = video.parentElement;
+  // Simple Fullscreen API on the container ref. Safari Mac + iPad Safari
+  // + Android Chrome + desktop all support requestFullscreen (Safari via
+  // the webkit prefix). iPhone Safari is the only browser that has no
+  // element-level fullscreen — for that we fall through to the <video>
+  // element's webkitEnterFullscreen, which opens the iOS native player.
+  const toggleFullscreen = async () => {
+    const el = videoContainerRef.current;
+    if (!el) return;
 
-    // Live document state (React isFullscreen lags by a frame so it'd
-    // route us into the wrong branch when polled synchronously).
-    const fsEl = document.fullscreenElement
-      || (document as any).webkitFullscreenElement
-      || (document as any).mozFullScreenElement
-      || (document as any).msFullscreenElement
-      || null;
-    const iosFsOn = (video as any).webkitDisplayingFullscreen === true;
+    const fsEl = document.fullscreenElement || (document as any).webkitFullscreenElement;
 
-    if (fsEl || iosFsOn) {
-      // Exit.
+    if (fsEl) {
       try {
-        if (document.exitFullscreen) {
-          document.exitFullscreen().catch(() => {});
-        } else if ((document as any).webkitExitFullscreen) {
-          (document as any).webkitExitFullscreen();
-        } else if ((document as any).mozCancelFullScreen) {
-          (document as any).mozCancelFullScreen();
-        } else if ((document as any).msExitFullscreen) {
-          (document as any).msExitFullscreen();
-        } else if ((video as any).webkitExitFullscreen) {
-          (video as any).webkitExitFullscreen();
-        }
+        if (document.exitFullscreen) await document.exitFullscreen();
+        else if ((document as any).webkitExitFullscreen) (document as any).webkitExitFullscreen();
       } catch {}
       return;
     }
 
-    // iPhone Safari's webkitEnterFullscreen() silently no-ops when the
-    // video hasn't loaded enough content. Kick play() in the same
-    // gesture so the engine pulls metadata before we ask for fullscreen;
-    // we ignore the play() promise (it may reject if WHEP isn't
-    // connected yet — that's fine, fullscreen will still take the
-    // container path below). Calling play() costs nothing when the
-    // video is already playing.
-    try { const pp = video.play(); if (pp && typeof pp.catch === 'function') pp.catch(() => {}); } catch {}
-
-    // Try container fullscreen FIRST. iPad Safari (iOS 12+), Android
-    // Chrome, Firefox, and desktop browsers all accept this and it gives
-    // the user the full edge-to-edge experience our CSS is tuned for.
-    if (videoContainer?.requestFullscreen) {
-      try {
-        const p = videoContainer.requestFullscreen();
-        if (p && typeof (p as any).catch === 'function') {
-          (p as Promise<void>).catch(() => enterVideoNative(video));
-        }
-        return;
-      } catch {
-        enterVideoNative(video);
+    try {
+      if (el.requestFullscreen) {
+        await el.requestFullscreen();
         return;
       }
-    }
-    if ((videoContainer as any)?.webkitRequestFullscreen) {
-      try { (videoContainer as any).webkitRequestFullscreen(); return; } catch { enterVideoNative(video); return; }
-    }
-    if ((videoContainer as any)?.mozRequestFullScreen) {
-      try { (videoContainer as any).mozRequestFullScreen(); return; } catch { enterVideoNative(video); return; }
-    }
-    if ((videoContainer as any)?.msRequestFullscreen) {
-      try { (videoContainer as any).msRequestFullscreen(); return; } catch { enterVideoNative(video); return; }
-    }
-
-    // Last resort: iPhone Safari path (no element-level Fullscreen API).
-    enterVideoNative(video);
-  };
-
-  // Drop iPhone Safari into its native video player. Tries webkitEnterFullscreen
-  // first (the iOS-native experience from the user's reference screenshot),
-  // then the standard requestFullscreen as a final fallback.
-  const enterVideoNative = (video: HTMLVideoElement) => {
-    if ((video as any).webkitEnterFullscreen) {
-      if (video.readyState === 0) {
-        try { video.load(); } catch {}
+      if ((el as any).webkitRequestFullscreen) {
+        (el as any).webkitRequestFullscreen();
+        return;
       }
-      try { (video as any).webkitEnterFullscreen(); return; } catch {}
+    } catch {
+      // requestFullscreen rejected (iPhone Safari has no element-level API,
+      // and some webviews block it). Fall through to the video element.
     }
-    if (video.requestFullscreen) {
-      try { video.requestFullscreen().catch(() => {}); } catch {}
+
+    const video = videoRefs.current[mainEvent.id];
+    if (video && (video as any).webkitEnterFullscreen) {
+      try { video.play()?.catch(() => {}); } catch {}
+      try { (video as any).webkitEnterFullscreen(); } catch {}
     }
   };
 
@@ -6893,6 +6853,7 @@ const App = () => {
 
             {/* Main Video Player Container */}
             <div
+              ref={videoContainerRef}
               id="main-video-player"
               onClick={() => !isSwapping && togglePlay(mainEvent.id)}
               onMouseMove={handleMouseMove}
