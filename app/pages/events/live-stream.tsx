@@ -5798,7 +5798,11 @@ const App = () => {
 
           .stream-info-section {
             padding: 12px !important;
-            padding-bottom: 80px !important;
+            /* Bottom clearance must cover the floating action stack
+               (chat at 80px + video-msg at 152px + 52px button = ~204px
+               of fixed real estate on the bottom-right) so the action
+               row above doesn't sit under the FABs and overlap. */
+            padding-bottom: 230px !important;
             width: 100% !important;
             box-sizing: border-box !important;
             overflow-x: hidden !important;
@@ -6098,7 +6102,7 @@ const App = () => {
 
           .stream-info-section {
             padding: 8px !important;
-            padding-bottom: 70px !important;
+            padding-bottom: 220px !important;
           }
 
           .mobile-chat-toggle {
@@ -6249,7 +6253,7 @@ const App = () => {
           /* Better spacing for tablet */
           .stream-info-section {
             padding: 16px !important;
-            padding-bottom: 90px !important;
+            padding-bottom: 240px !important;
           }
         }
 
@@ -6313,7 +6317,7 @@ const App = () => {
             }
 
             .stream-info-section {
-              padding-bottom: calc(80px + env(safe-area-inset-bottom)) !important;
+              padding-bottom: calc(230px + env(safe-area-inset-bottom)) !important;
             }
 
             .chat-section {
@@ -6331,7 +6335,7 @@ const App = () => {
             }
 
             .stream-info-section {
-              padding-bottom: calc(70px + env(safe-area-inset-bottom)) !important;
+              padding-bottom: calc(220px + env(safe-area-inset-bottom)) !important;
             }
           }
         }
@@ -6390,13 +6394,16 @@ const App = () => {
           }
         }
 
-        /* Top button (video msg) - stacked above the chat button */
+        /* Top button (video msg) - stacked above the chat button. 16px gap
+           between the two 52px buttons (was 12px which read as touching
+           on tight screens), still inside thumb-reach without forcing the
+           camera up into the stream-info action-button row. */
         .floating-action-top {
-          bottom: 144px;
+          bottom: 152px;
         }
         @supports (bottom: max(0px)) {
           .floating-action-top {
-            bottom: max(144px, calc(env(safe-area-inset-bottom, 0px) + 144px));
+            bottom: max(152px, calc(env(safe-area-inset-bottom, 0px) + 152px));
           }
         }
 
@@ -6440,11 +6447,15 @@ const App = () => {
             border-radius: 0 !important;
           }
           /* Stream info section needs side padding on mobile so its content
-             (mini players + actions + stats) doesn't hit the edges */
+             (mini players + actions + stats) doesn't hit the edges. Bottom
+             padding clears the floating action stack (chat at bottom:80px
+             + video-msg at bottom:152px + 52px button height = ~204px of
+             dead zone on the right edge) so the rate/leave action buttons
+             above don't sit under the FABs and read as overlapping. */
           .stream-info-section {
             padding-left: 12px !important;
             padding-right: 12px !important;
-            padding-bottom: clamp(20px, 4vw, 28px) !important;
+            padding-bottom: clamp(220px, 32vw, 260px) !important;
           }
           /* Prevent any horizontal overflow on the page */
           .main-container,
