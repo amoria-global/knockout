@@ -5932,14 +5932,22 @@ const App = () => {
 
              Goals:
                1. Hide the emoji-reactions button — not enough room.
-               2. Pin the volume popover OPEN as a fixed inline slider
-                  next to the mute button (no hover sticking, always
-                  visible so users can adjust without a phantom menu).
-               3. Lock the buttons row to nowrap so the fullscreen
-                  button can never get clipped, with a hidden scrollbar
-                  fallback for ultra-narrow phones. */
+               2. Pin the volume popover OPEN as a permanent inline
+                  horizontal slider next to the mute button. The fill
+                  width and thumb position are driven by the --vol CSS
+                  variable set on the slider container in JSX (the
+                  inline height/bottom styles in JSX are for the
+                  desktop vertical layout and ignored here).
+               3. Drop the volume % label on phones — the slider
+                  itself is the feedback, and dropping the label
+                  reclaims ~30px so the fullscreen button is never
+                  pushed past the viewport edge.
+               4. No overflow-x scroll on the buttons row: if anything
+                  overflows on the narrowest phones we'd rather shrink
+                  the slider than make fullscreen require a scroll to
+                  reach. */
           .vjs-mobile-hidden { display: none !important; }
-          .vjs-volume-group { gap: 6px !important; }
+          .vjs-volume-group { gap: 6px !important; min-width: 0 !important; }
           .vjs-volume-popover {
             position: static !important;
             transform: none !important;
@@ -5959,16 +5967,27 @@ const App = () => {
             max-height: none !important;
             bottom: auto !important;
             left: auto !important;
+            flex-shrink: 1 !important;
+            min-width: 0 !important;
           }
           .vjs-volume-popover .vjs-volume-slider-vertical {
-            width: 64px !important;
+            width: 60px !important;
             height: 4px !important;
             writing-mode: horizontal-tb !important;
+            position: relative !important;
           }
           .vjs-volume-popover .vjs-volume-slider-fill {
             bottom: auto !important;
             left: 0 !important;
+            top: 0 !important;
             height: 100% !important;
+            width: var(--vol, 100%) !important;
+          }
+          .vjs-volume-popover .vjs-volume-slider-thumb {
+            bottom: auto !important;
+            top: 50% !important;
+            left: var(--vol, 100%) !important;
+            transform: translate(-50%, -50%) !important;
           }
           .vjs-volume-popover .vjs-volume-slider-input {
             writing-mode: horizontal-tb !important;
@@ -5978,25 +5997,27 @@ const App = () => {
             top: -11px !important;
             left: 0 !important;
           }
-          .vjs-volume-popover .vjs-volume-label {
-            font-size: 11px !important;
-            font-weight: 700 !important;
-            color: #fff !important;
-            min-width: 30px !important;
-          }
+          .vjs-volume-popover .vjs-volume-label { display: none !important; }
           .vjs-buttons-row {
             flex-wrap: nowrap !important;
-            overflow-x: auto !important;
-            overflow-y: visible !important;
-            scrollbar-width: none !important;
+            overflow: visible !important;
           }
-          .vjs-buttons-row::-webkit-scrollbar { display: none !important; }
           .vjs-btn {
             min-width: 40px !important;
             min-height: 40px !important;
             flex-shrink: 0 !important;
           }
           .vjs-live-badge { flex-shrink: 0 !important; }
+          /* Final safety net: pin the right group (settings + fullscreen)
+             so even if the volume slider grows unexpectedly the
+             fullscreen button stays inside the viewport. */
+          .vjs-buttons-row--right { flex-shrink: 0 !important; }
+        }
+        /* Ultra-narrow phones (iPhone SE class): shrink the slider
+           further so the row never overflows. */
+        @media (max-width: 380px) {
+          .vjs-volume-popover .vjs-volume-slider-vertical { width: 44px !important; }
+          .vjs-btn { min-width: 36px !important; min-height: 36px !important; }
         }
 
         /* iPhone SE and small phones (320px - 375px) */
@@ -7345,7 +7366,16 @@ const App = () => {
                           : <VolumeHighIcon />}
                     </button>
                     <div className={`vjs-volume-popover ${showVolumeSlider ? 'vjs-volume-popover--visible' : ''}`}>
-                      <div className="vjs-volume-slider-vertical">
+                      <div
+                        className="vjs-volume-slider-vertical"
+                        style={{ ['--vol' as string]: `${mainState.volume ?? 100}%` }}
+                      >
+                        {/* Fill + thumb positioning differs by orientation:
+                            vertical layout reads height/bottom, horizontal
+                            (mobile) reads width/left via the --vol CSS var
+                            set above. Inline styles cover the desktop
+                            vertical case; mobile CSS rules override using
+                            var(--vol). */}
                         <div className="vjs-volume-slider-fill" style={{ height: `${mainState.volume ?? 100}%` }} />
                         <div className="vjs-volume-slider-thumb" style={{ bottom: `${mainState.volume ?? 100}%` }} />
                         <input

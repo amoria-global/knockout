@@ -13,7 +13,11 @@ const SECURITY_HEADERS = [
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
   {
     key: 'Permissions-Policy',
-    value: 'camera=(self), microphone=(self), geolocation=(self), interest-cohort=()',
+    // fullscreen=(self) is the browser default for top-level docs but
+    // listing it explicitly guards against reverse-proxy / iframe
+    // contexts silently revoking it, which would make the live-stream
+    // player's Fullscreen button a no-op on tap.
+    value: 'camera=(self), microphone=(self), geolocation=(self), fullscreen=(self), interest-cohort=()',
   },
   {
     key: 'Content-Security-Policy',
