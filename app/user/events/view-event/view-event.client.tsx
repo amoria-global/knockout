@@ -1946,11 +1946,6 @@ function ViewEventContent(): React.JSX.Element {
                         )}
                       </div>
 
-                      {/* Group code + verify-access used to live here as
-                          ve-ticket-aux. Both surfaces have been promoted to
-                          the hero CTA area so viewers spot them immediately
-                          without scrolling past the buy-access button. */}
-
                       <div className="ve-ticket-trust">
                         <span><i className="bi bi-shield-check" aria-hidden="true" /> Secure</span>
                         <span><i className="bi bi-arrow-clockwise" aria-hidden="true" /> Refundable</span>
