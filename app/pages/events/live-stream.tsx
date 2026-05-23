@@ -1011,16 +1011,39 @@ const App = () => {
         }
 
         if (chatMessages.length > 0) {
+          // Pull REACTION rows out of the stream first — they're emoji
+          // float-ups, not chat bubbles. Each unseen REACTION fires the
+          // same floating-emoji animation other viewers see, smaller
+          // than the local sender's because they're observed rather
+          // than authored. Sender's own reactions are pre-seeded into
+          // seenApiMessageIds by handleEmojiReaction so they don't
+          // echo here.
+          const reactionRows = chatMessages.filter(m => (m.chatType as string) === 'REACTION');
+          for (const r of reactionRows) {
+            const id = String(r.id);
+            if (seenApiMessageIds.current.has(id)) continue;
+            seenApiMessageIds.current.add(id);
+            const emoji = String(r.message || r.content || '').trim();
+            if (!emoji) continue;
+            const reactionId = Date.now() + Math.random();
+            setActiveReactions(prev => [...prev, { id: reactionId, emoji, timestamp: Date.now() }]);
+            setTimeout(() => {
+              setActiveReactions(prev => prev.filter(x => x.id !== reactionId));
+            }, 3000);
+          }
+
           // Defense in depth: the public/coordinator/event GET /chats
           // endpoints already strip WISH rows server-side, but if anything
           // ever slips through (stale client, alternate endpoint, future
           // regression) wishes still must not surface in the live chat,
           // because they're private notes addressed to the organizer.
+          // REACTION rows also drop out here so they don't render as
+          // text bubbles in the chat panel.
           const newApiMessages = chatMessages.filter(m => {
             const id = String(m.id);
             const sender = (m.viewerUsername || m.sender || '') as string;
             const chatType = (m.chatType || '') as string;
-            if (chatType === 'WISH') return false;
+            if (chatType === 'WISH' || chatType === 'REACTION') return false;
             return !seenApiMessageIds.current.has(id) && !blockedUsers.has(sender);
           });
 
@@ -2592,20 +2615,59 @@ const App = () => {
     };
   }, []);
 
-  // Handle emoji reaction
-  const handleEmojiReaction = (emoji: string) => {
+  // Handle emoji reaction. Renders the floating emoji locally for the
+  // sender immediately, then POSTs it through the same /chats endpoint
+  // as messages (with messageType:'REACTION' so the backend tags it).
+  // Every other viewer's pollChat picks the REACTION row up and triggers
+  // the same float-up animation on their screen, YouTube-Live style.
+  const handleEmojiReaction = async (emoji: string) => {
     const newReaction = {
       id: Date.now() + Math.random(),
-      emoji: emoji,
-      timestamp: Date.now()
+      emoji,
+      timestamp: Date.now(),
     };
-
     setActiveReactions(prev => [...prev, newReaction]);
-
-    // Remove reaction after animation (3 seconds)
     setTimeout(() => {
       setActiveReactions(prev => prev.filter(r => r.id !== newReaction.id));
     }, 3000);
+
+    if (!mainEvent?.id) return;
+    try {
+      const chatBase = typeof window !== 'undefined' && process.env.NODE_ENV === 'production'
+        ? '/api/proxy' : (process.env.NEXT_PUBLIC_API_URL || 'https://backend.connekyt.com');
+      if (anonymousViewerId) {
+        // Paid anonymous viewer — same endpoint as chat sends.
+        const fingerprint = await getDeviceId();
+        const res = await fetch(
+          `${chatBase}/api/remote/public/events/${mainEvent.id}/chats`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              viewerId: anonymousViewerId,
+              message: emoji,
+              deviceFingerprint: fingerprint,
+              messageType: 'REACTION',
+            }),
+          }
+        );
+        // Pre-seed the saved row's ID into seenApiMessageIds so the
+        // next pollChat doesn't echo this back and double-render the
+        // sender's own reaction.
+        if (res.ok) {
+          const json = await res.json();
+          const savedId = json?.data?.id;
+          if (savedId) seenApiMessageIds.current.add(String(savedId));
+        }
+      }
+      // Authenticated path intentionally skipped — paid attendees use
+      // the anonymousViewerId path; coordinators shouldn't need to
+      // spam reactions to their own stream.
+    } catch {
+      // Network failure: reaction stays local-only. The user still
+      // sees their own emoji float, other viewers just miss it. No
+      // toast — reactions are fire-and-forget.
+    }
   };
 
   // Emoji list
@@ -7396,18 +7458,24 @@ const App = () => {
               )}
 
 
-              {/* Floating Emoji Reactions */}
+              {/* Floating Emoji Reactions. Anchored to the bottom-right
+                  corner of the player, popping up the right edge with a
+                  small jitter so consecutive reactions don't overlap
+                  perfectly. Smaller font than the picker preview so the
+                  player itself stays the focus — matches the YouTube Live
+                  pattern of light, ephemeral celebrations. */}
               {activeReactions.map((reaction) => (
                 <div
                   key={reaction.id}
                   style={{
                     position: 'absolute',
-                    right: `${Math.random() * 30 + 10}%`,
-                    bottom: '60px',
-                    fontSize: '48px',
+                    right: `${8 + Math.random() * 8}%`,
+                    bottom: '72px',
+                    fontSize: '28px',
                     animation: 'floatUp 3s ease-out forwards',
                     zIndex: 15,
-                    pointerEvents: 'none'
+                    pointerEvents: 'none',
+                    textShadow: '0 2px 8px rgba(0,0,0,0.45)',
                   }}
                 >
                   {reaction.emoji}
