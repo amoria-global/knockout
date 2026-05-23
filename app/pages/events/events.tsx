@@ -600,19 +600,24 @@ const Events: React.FC = () => {
           display: flex;
           align-items: center;
           gap: clamp(10px, 1.5vw, 14px);
+          /* Isolate so the ::before line's negative z-index can't escape
+             this stacking context and slide under the section background. */
+          isolation: isolate;
         }
-        /* Gradient line anchored inside the row at vertical center so it
-           tracks the avatar center on every viewport without recomputing
-           padding sums. z-index:-1 stays trapped in the row's stacking
-           context (the row owns one via position:relative + z-index:1),
-           so the line paints behind the pill and stories. */
-        .ev-trends-line {
+        /* Decorative gradient line. Rendered as the row's ::before so its
+           position is computed from the row's own box (top:50% = the
+           row's vertical center = the avatar's vertical center, since
+           the row uses align-items:center and the avatar is the tallest
+           item). Identical math on desktop and mobile, no padding-sum
+           gymnastics, ring never gets bisected. */
+        .ev-trends-row::before {
+          content: '';
           position: absolute;
           left: 0;
           right: 0;
           top: 50%;
-          transform: translateY(-50%);
           height: 2px;
+          transform: translateY(-50%);
           background: linear-gradient(90deg,
             rgba(240,148,51,0) 0%,
             rgba(220,39,67,0.55) 18%,
@@ -2057,14 +2062,11 @@ const Events: React.FC = () => {
           gradient story ring + LIVE badge. Clicking jumps to the event. */}
       {featuredLiveEvents.length > 0 && (
         <section className="ev-trends" aria-label="Live event stories">
+          {/* The gradient line that runs behind the pill + stories is
+              rendered as .ev-trends-row::before in the stylesheet below,
+              so it can use the row's geometry directly (top:50%) and
+              identically on every viewport, matching the desktop look. */}
           <div className="ev-trends-row">
-            {/* Decorative gradient line spanning behind the row. Anchored
-                inside the row so it always sits at the avatar's vertical
-                center via top:50% (avatar is the tallest row item, so the
-                row's vertical center == the avatar center). Used to be
-                positioned on the section with a fragile padding-sum that
-                drifted on mobile and bisected the ring. */}
-            <div className="ev-trends-line" aria-hidden="true" />
             {/* Hot Live Trends pill */}
             <div className="ev-trends-pill">
               <span className="ev-trends-flame" aria-hidden="true">🔥</span>
