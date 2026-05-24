@@ -143,13 +143,16 @@ function getInitialEventId(): string {
 }
 
 // Main App Component
-const App = ({ eventIdProp }: { eventIdProp?: string } = {}) => {
+const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp?: string } = {}) => {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { isAuthenticated, login: authLogin, user } = useAuth();
   // Slug livestream route passes the resolved event id as a prop; the
   // legacy /live-stream?eventId= entry point still works via URL params.
   const initialId = eventIdProp || searchParams.get('eventId') || searchParams.get('id') || getInitialEventId();
+  // Per-viewer "watch id" — when the path is /user/events/livestream/{slug}/{viewerId}
+  // we get it as a prop; legacy ?viewerId= URLs keep working via searchParams.
+  const initialViewerId = viewerIdProp || searchParams.get('viewerId') || '';
 
   // State for multiple events (up to 3)
   const [events, setEvents] = useState<EventStream[]>([
@@ -313,6 +316,7 @@ const App = ({ eventIdProp }: { eventIdProp?: string } = {}) => {
     const handleSessionExpired = (e: Event) => {
       e.preventDefault();
       const hasPaidViewerId =
+        !!viewerIdProp ||
         !!searchParams.get('viewerId') ||
         (typeof window !== 'undefined' &&
           !!Object.keys(localStorage).find(k => k.startsWith('anonymousViewer_')));
@@ -610,16 +614,21 @@ const App = ({ eventIdProp }: { eventIdProp?: string } = {}) => {
   }, [searchParams, isAuthenticated]);
 
 
-  // Stream access gate - determine flow based on streamType
-  // Access is ALWAYS verified from the database (whepUrl / checkAnonymousAccessStatus).
-  // The `from=payment` param only triggers a retry to handle post-payment race conditions.
+  // Stream access gate - determine flow based on streamType.
+  // Access is ALWAYS verified from the database (whepUrl /
+  // checkAnonymousAccessStatus). When access comes back denied on the
+  // first check we ALWAYS retry once after 2s - that absorbs the post-
+  // payment race condition without needing a `?from=payment` hint in
+  // the URL. The URL stays clean (path-only) and shareable.
   useEffect(() => {
     if (!mainEvent?.id || mainEvent.title === 'Loading...') return;
 
     const type = getStreamType(mainEvent);
-    const fromPayment = searchParams.get('from') === 'payment';
+    const fromPayment = true;  // always retry once on denial (was: searchParams.get('from') === 'payment')
     const urlToken = searchParams.get('inviteToken');
-    const urlViewerId = searchParams.get('viewerId');
+    // Prefer the path-based watch id (passed as prop from the slug
+    // route) over the legacy ?viewerId= query param.
+    const urlViewerId = viewerIdProp || searchParams.get('viewerId');
 
     if (type === 'entry_fee') {
       // Backend guards whepUrl for entry_fee streams:

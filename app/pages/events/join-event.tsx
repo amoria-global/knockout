@@ -284,7 +284,7 @@ export default function JoinEvent() {
           setDetectedEvent(eventData);
         } else if (hasPackageFromJoinPackage) {
           // Free event from join-package - skip payment, go directly to live stream
-          router.push(`/user/events/live-stream?eventId=${eventId}&from=payment`);
+          router.push(`/user/events/live-stream?eventId=${eventId}`);
         }
         // For upcoming, free, or non-paid category events without package param - show original content
       }
@@ -352,7 +352,7 @@ export default function JoinEvent() {
             const paymentId = (response.data as { data?: { id?: string } } | undefined)?.data?.id || '';
             router.push(`/user/event/${eid}?inviteToken=${encodeURIComponent(inviteToken)}${paymentId ? `&paymentId=${encodeURIComponent(paymentId)}` : ''}`);
           } else {
-            router.push(`/user/events/live-stream?eventId=${eid}&from=payment`);
+            router.push(`/user/events/live-stream?eventId=${eid}`);
           }
         }, 2000);
       } else if (response.statusCode === 402) {

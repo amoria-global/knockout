@@ -363,7 +363,7 @@ function ViewEventContent({ eventIdProp }: { eventIdProp?: string }): React.JSX.
     if (autoJoinSeconds === null || autoJoinDismissed) return;
     if (autoJoinSeconds <= 0) {
       if (selectedEvent?.id && typeof window !== 'undefined') {
-        window.location.href = `/user/events/live-stream?eventId=${selectedEvent.id}&from=payment`;
+        window.location.href = `/user/events/live-stream?eventId=${selectedEvent.id}`;
       }
       return;
     }
@@ -381,7 +381,7 @@ function ViewEventContent({ eventIdProp }: { eventIdProp?: string }): React.JSX.
 
   const joinLiveNow = useCallback(() => {
     if (!selectedEvent?.id || typeof window === 'undefined') return;
-    window.location.href = `/user/events/live-stream?eventId=${selectedEvent.id}&from=payment`;
+    window.location.href = `/user/events/live-stream?eventId=${selectedEvent.id}`;
   }, [selectedEvent?.id]);
 
   // Viewer auth modal state
@@ -618,7 +618,7 @@ function ViewEventContent({ eventIdProp }: { eventIdProp?: string }): React.JSX.
           localStorage.setItem(`anonymousViewer_${selectedEvent!.id}`, viewerId);
           localStorage.setItem(`anonymousViewerName_${selectedEvent!.id}`, name);
         }
-        window.location.href = `/user/events/live-stream?eventId=${selectedEvent!.id}&from=payment${viewerId ? `&viewerId=${viewerId}` : ''}`;
+        window.location.href = `/user/events/live-stream?eventId=${selectedEvent!.id}${viewerId ? `&viewerId=${viewerId}` : ''}`;
       } else {
         // REQUIRES_PAYMENT - not found as a paid viewer. Close inline modal & show popup.
         setShowViewerAuth(false);
@@ -755,7 +755,7 @@ function ViewEventContent({ eventIdProp }: { eventIdProp?: string }): React.JSX.
             const redeemData = await redeemRes.json();
             if (redeemData.action === 1 || redeemData.message?.toLowerCase().includes('access granted')) {
               setPendingGroupCode('');
-              window.location.href = `/user/events/live-stream?eventId=${selectedEvent.id}&from=payment&inviteToken=${encodeURIComponent(pendingGroupCode)}`;
+              window.location.href = `/user/events/live-stream?eventId=${selectedEvent.id}&inviteToken=${encodeURIComponent(pendingGroupCode)}`;
               return;
             } else {
               setGroupCodeError(redeemData.message || 'Failed to redeem group code.');
@@ -767,7 +767,7 @@ function ViewEventContent({ eventIdProp }: { eventIdProp?: string }): React.JSX.
         if (selectedEvent?.id) {
           const eventCheck = await getPublicEventById(selectedEvent.id);
           if (eventCheck.success && eventCheck.data?.hasPurchasedAccess) {
-            window.location.href = `/user/events/live-stream?eventId=${selectedEvent.id}&from=payment`;
+            window.location.href = `/user/events/live-stream?eventId=${selectedEvent.id}`;
             return;
           }
         }
@@ -949,7 +949,7 @@ function ViewEventContent({ eventIdProp }: { eventIdProp?: string }): React.JSX.
           localStorage.setItem(`anonymousViewerName_${selectedEvent!.id}`, name);
         }
         setShowGroupAuth(false);
-        window.location.href = `/user/events/live-stream?eventId=${selectedEvent!.id}&from=payment${viewerId ? `&viewerId=${viewerId}` : ''}`;
+        window.location.href = `/user/events/live-stream?eventId=${selectedEvent!.id}${viewerId ? `&viewerId=${viewerId}` : ''}`;
       } else {
         const msg = data.message || '';
         if (msg.includes('different email')) {
@@ -1065,7 +1065,7 @@ function ViewEventContent({ eventIdProp }: { eventIdProp?: string }): React.JSX.
             const redeemData = await redeemRes.json();
             if (redeemData.action === 1 || redeemData.message?.toLowerCase().includes('access granted')) {
               setPendingGroupCode('');
-              window.location.href = `/user/events/live-stream?eventId=${selectedEvent.id}&from=payment&inviteToken=${encodeURIComponent(pendingGroupCode)}`;
+              window.location.href = `/user/events/live-stream?eventId=${selectedEvent.id}&inviteToken=${encodeURIComponent(pendingGroupCode)}`;
               return;
             } else {
               setGroupCodeError(redeemData.message || 'Failed to redeem group code.');
@@ -1078,7 +1078,7 @@ function ViewEventContent({ eventIdProp }: { eventIdProp?: string }): React.JSX.
         if (selectedEvent?.id) {
           const eventCheck = await getPublicEventById(selectedEvent.id);
           if (eventCheck.success && eventCheck.data?.hasPurchasedAccess) {
-            window.location.href = `/user/events/live-stream?eventId=${selectedEvent.id}&from=payment`;
+            window.location.href = `/user/events/live-stream?eventId=${selectedEvent.id}`;
             return;
           }
         }
@@ -1155,7 +1155,7 @@ function ViewEventContent({ eventIdProp }: { eventIdProp?: string }): React.JSX.
               const redeemData = await redeemRes.json();
               if (redeemData.action === 1 || redeemData.message?.toLowerCase().includes('access granted')) {
                 setPendingGroupCode('');
-                window.location.href = `/user/events/live-stream?eventId=${selectedEvent.id}&from=payment&inviteToken=${encodeURIComponent(pendingGroupCode)}`;
+                window.location.href = `/user/events/live-stream?eventId=${selectedEvent.id}&inviteToken=${encodeURIComponent(pendingGroupCode)}`;
                 return;
               } else {
                 setGroupCodeError(redeemData.message || 'Failed to redeem group code.');
@@ -1167,7 +1167,7 @@ function ViewEventContent({ eventIdProp }: { eventIdProp?: string }): React.JSX.
           if (selectedEvent?.id) {
             const eventCheck = await getPublicEventById(selectedEvent.id);
             if (eventCheck.success && eventCheck.data?.hasPurchasedAccess) {
-              window.location.href = `/user/events/live-stream?eventId=${selectedEvent.id}&from=payment`;
+              window.location.href = `/user/events/live-stream?eventId=${selectedEvent.id}`;
               return;
             }
           }
@@ -1377,7 +1377,7 @@ function ViewEventContent({ eventIdProp }: { eventIdProp?: string }): React.JSX.
           if (isCompleted) return { label: 'Event ended', icon: 'bi-archive', onClick: () => {}, tone: 'ended' };
           if (isLive) {
             if (!isPaid) return { label: 'Watch live', icon: 'bi-play-circle-fill', onClick: () => { if (blockedByGeo()) return; window.location.href = `/user/events/join-event?id=${selectedEvent.id}`; }, tone: 'live' };
-            if (hasPurchasedAccess) return { label: 'Start watching', icon: 'bi-play-circle-fill', onClick: () => { if (blockedByGeo()) return; window.location.href = `/user/events/live-stream?eventId=${selectedEvent.id}&from=payment`; }, tone: 'live' };
+            if (hasPurchasedAccess) return { label: 'Start watching', icon: 'bi-play-circle-fill', onClick: () => { if (blockedByGeo()) return; window.location.href = `/user/events/live-stream?eventId=${selectedEvent.id}`; }, tone: 'live' };
             return { label: 'Buy access', sub: `${(selectedEvent.price || 0).toLocaleString()} ${selectedEvent.streamFeeCurrencyAbbreviation || 'RWF'}`, icon: 'bi-ticket-perforated-fill', onClick: () => handlePurchaseAccess(`/user/events/join-package?id=${selectedEvent.id}`), tone: 'live' };
           }
           if (isUpcoming) {
