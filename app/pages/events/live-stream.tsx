@@ -6315,90 +6315,13 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
              emoji, settings, fullscreen) on a 360px-wide viewport. */
           .vjs-mobile-hidden { display: inline-flex !important; }
           .vjs-volume-group { gap: 4px !important; min-width: 0 !important; }
-          .vjs-volume-popover {
-            position: static !important;
-            transform: none !important;
-            opacity: 1 !important;
-            pointer-events: auto !important;
-            display: flex !important;
-            flex-direction: row !important;
-            align-items: center !important;
-            gap: 6px !important;
-            padding: 0 !important;
-            margin: 0 !important;
-            background: transparent !important;
-            backdrop-filter: none !important;
-            -webkit-backdrop-filter: none !important;
-            border: none !important;
-            box-shadow: none !important;
-            max-height: none !important;
-            bottom: auto !important;
-            left: auto !important;
-            flex-shrink: 1 !important;
-            min-width: 0 !important;
-          }
-          .vjs-volume-popover .vjs-volume-slider-vertical {
-            width: 48px !important;
-            height: 4px !important;
-            writing-mode: horizontal-tb !important;
-            position: relative !important;
-          }
-          .vjs-volume-popover .vjs-volume-slider-fill {
-            bottom: auto !important;
-            left: 0 !important;
-            top: 0 !important;
-            height: 100% !important;
-            width: var(--vol, 100%) !important;
-          }
-          .vjs-volume-popover .vjs-volume-slider-thumb {
-            bottom: auto !important;
-            top: 50% !important;
-            left: var(--vol, 100%) !important;
-            transform: translate(-50%, -50%) !important;
-          }
-          .vjs-volume-popover .vjs-volume-slider-input {
-            /* The base CSS pins -webkit-appearance:slider-vertical so
-               WebKit keeps treating the range as a vertical slider even
-               with writing-mode:horizontal-tb. Reset appearance + writing
-               mode so drags map to horizontal motion and onChange fires. */
-            -webkit-appearance: none !important;
-            -moz-appearance: none !important;
-            appearance: none !important;
-            writing-mode: horizontal-tb !important;
-            direction: ltr !important;
-            width: 100% !important;
-            height: 26px !important;
-            top: -11px !important;
-            left: 0 !important;
-            background: transparent !important;
-          }
-          .vjs-volume-popover .vjs-volume-slider-input::-webkit-slider-runnable-track {
-            -webkit-appearance: none !important;
-            appearance: none !important;
-            background: transparent !important;
-            height: 26px !important;
-            border: none !important;
-          }
-          .vjs-volume-popover .vjs-volume-slider-input::-webkit-slider-thumb {
-            -webkit-appearance: none !important;
-            appearance: none !important;
-            width: 26px !important;
-            height: 26px !important;
-            background: transparent !important;
-            border: none !important;
-            box-shadow: none !important;
-          }
-          .vjs-volume-popover .vjs-volume-slider-input::-moz-range-track {
-            background: transparent !important;
-            height: 26px !important;
-            border: none !important;
-          }
-          .vjs-volume-popover .vjs-volume-slider-input::-moz-range-thumb {
-            width: 26px !important;
-            height: 26px !important;
-            background: transparent !important;
-            border: none !important;
-          }
+          /* Mobile keeps the volume slider VERTICAL (popping up above
+             the speaker icon) just like desktop - user feedback was
+             the inline horizontal bar ate too much of the row width
+             and didn't match the rest of the player. The popover only
+             shows when the user taps/long-presses the volume button
+             (the parent .vjs-volume-popover--visible class is toggled
+             in JSX), so the row stays compact when nothing's open. */
           .vjs-volume-popover .vjs-volume-label { display: none !important; }
           .vjs-buttons-row {
             flex-wrap: nowrap !important;
@@ -7898,15 +7821,15 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
                     </div>
                   </div>
 
-                  {/* Top-5 quick-tap reactions: tap once to fire the
-                      most-common emojis (fire/laugh/heart/thumbs/clap)
-                      without opening the picker. Visible on every
-                      viewport now (was previously vjs-mobile-hidden
-                      and disappeared on narrow players). */}
+                  {/* Top-5 quick-tap reactions: desktop only. They cram
+                      the mobile controls row and push pause/live/mute
+                      off-edge, so vjs-mobile-hidden hides them under
+                      640px - mobile users still get the full picker
+                      via the smiley button to the right. */}
                   {emojiList.slice(0, 5).map((item) => (
                     <button
                       key={`quick-${item.name}`}
-                      className="vjs-btn vjs-quick-emoji"
+                      className="vjs-btn vjs-quick-emoji vjs-mobile-hidden"
                       onClick={() => handleEmojiReaction(item.emoji)}
                       title={item.name}
                       style={{
@@ -7920,7 +7843,8 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
                   ))}
 
                   {/* Full picker: the grid + categories, behind the
-                      smiley icon. */}
+                      smiley icon. Always visible (incl. mobile) since
+                      it's the only emoji surface on small screens. */}
                   <button className="vjs-btn" onClick={() => setShowEmojiPicker(!showEmojiPicker)} title="More emoji reactions">
                     <EmojiIcon />
                   </button>
