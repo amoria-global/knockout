@@ -7801,28 +7801,13 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
                     </div>
                   </div>
 
-                  {/* Quick-tap emojis: top-5 most-used reactions live
-                      directly on the player controls so viewers can fire
-                      one without opening the picker. The full grid still
-                      lives behind the emoji button to its right. */}
-                  {emojiList.slice(0, 5).map((item) => (
-                    <button
-                      key={`quick-${item.name}`}
-                      className="vjs-btn vjs-mobile-hidden vjs-quick-emoji"
-                      onClick={() => handleEmojiReaction(item.emoji)}
-                      title={item.name}
-                      style={{
-                        fontSize: '18px',
-                        padding: '0 4px',
-                        lineHeight: 1,
-                      }}
-                    >
-                      {item.emoji}
-                    </button>
-                  ))}
-
-                  {/* Full picker (toggles the grid below the controls) */}
-                  <button className="vjs-btn vjs-mobile-hidden" onClick={() => setShowEmojiPicker(!showEmojiPicker)} title="More emoji reactions">
+                  {/* Emoji reactions toggle. Opens the popover picker
+                      above the controls — viewers pick from the full
+                      grid there. The inline 5 quick-tap emoji buttons
+                      that briefly lived here cluttered the controls
+                      row and were removed; the picker popover is the
+                      single emoji surface again. */}
+                  <button className="vjs-btn vjs-mobile-hidden" onClick={() => setShowEmojiPicker(!showEmojiPicker)} title="Emoji reactions">
                     <EmojiIcon />
                   </button>
 
