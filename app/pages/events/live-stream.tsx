@@ -6193,7 +6193,10 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
           }
 
           .emoji-picker-bar {
-            bottom: 60px !important;
+            /* Mobile buttons: 36px + 14/10 row pad + 12 vjs-controls
+               pad puts button top at ~58px, so 62px sits flush above
+               with a 4px gap. */
+            bottom: 62px !important;
             padding: 6px !important;
           }
 
@@ -6420,9 +6423,11 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
             padding: 16px !important;
           }
 
-          /* Optimize emoji picker for small screens */
+          /* Optimize emoji picker for small screens. Ultra-narrow
+             phones use 32px buttons + 12/8 row padding + 12 vjs-controls
+             pad → button top at ~52px, picker bottom 56px = 4px gap. */
           .emoji-picker-bar {
-            bottom: 55px !important;
+            bottom: 56px !important;
             padding: 4px !important;
             gap: 4px !important;
           }
@@ -6585,9 +6590,11 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
             padding: 6px !important;
           }
 
-          /* Compact emoji picker */
+          /* Compact emoji picker. Landscape phones have shorter
+             controls — 28-32px buttons + tight row padding put button
+             top around 46px, picker bottom 50px = 4px gap. */
           .emoji-picker-bar {
-            bottom: 45px !important;
+            bottom: 50px !important;
             padding: 3px !important;
             gap: 2px !important;
           }
@@ -6615,7 +6622,7 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
             }
 
             .emoji-picker-bar {
-              bottom: calc(60px + env(safe-area-inset-bottom)) !important;
+              bottom: calc(62px + env(safe-area-inset-bottom)) !important;
             }
           }
 
@@ -8090,14 +8097,20 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
                 </div>
               </div>
 
-              {/* Emoji Picker - Modern Style */}
+              {/* Emoji Picker - Modern Style. Bottom offset tuned to sit
+                  just above the visible button top edge so the picker
+                  hugs the controls without crossing into them. Desktop
+                  buttons (40px + 22/16 row padding + 12 vjs-controls
+                  bottom padding) put the button top at ~68px, so 72px
+                  leaves a tight 4px gap. Mobile overrides below shrink
+                  the offset further to track the smaller controls. */}
               {showEmojiPicker && (
                 <div
                   onClick={(e) => e.stopPropagation()}
                   className="emoji-picker-bar"
                   style={{
                     position: 'absolute',
-                    bottom: '80px',
+                    bottom: '72px',
                     left: '50%',
                     transform: 'translateX(-50%)',
                     backgroundColor: 'rgba(24, 24, 27, 0.95)',
