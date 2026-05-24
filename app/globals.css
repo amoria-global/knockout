@@ -26,7 +26,16 @@
 }
 
 html, body {
-  overflow-x: hidden;
+  /* `overflow-x: hidden` on html/body creates a new containing block
+     on iOS Safari (and any browser following the same scroll-anchoring
+     spec), which traps `position: fixed` descendants and makes them
+     behave like `position: absolute` — the navbar scrolled off-screen
+     as a result. `overflow-x: clip` clips overflowing children the
+     same way visually but does NOT create a containing block, so
+     the fixed navbar stays pinned to the viewport on every device.
+     Supported by all modern browsers (Safari 16+, Chrome 90+, FF 81+).
+  */
+  overflow-x: clip;
   max-width: 100vw;
 }
 
