@@ -1604,6 +1604,20 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
   const settingsButtonRef = useRef<HTMLButtonElement | null>(null);
   const [settingsMenuAnchor, setSettingsMenuAnchor] = useState<{ bottom: number; right: number } | null>(null);
 
+  // iOS Safari has video.volume hardware-locked — JS writes to it are
+  // silently ignored, so the slider would appear to drag without ever
+  // changing the audio. We hide the slider on iOS and rely on the mute
+  // button (which IS scriptable) + the device's hardware volume buttons.
+  // Detected once at mount because the UA doesn't change.
+  const [isIosVolumeLocked, setIsIosVolumeLocked] = useState(false);
+  useEffect(() => {
+    if (typeof navigator === 'undefined') return;
+    const ua = navigator.userAgent;
+    const isIos = /iPad|iPhone|iPod/.test(ua)
+      || (ua.includes('Macintosh') && typeof document !== 'undefined' && 'ontouchend' in document);
+    setIsIosVolumeLocked(isIos);
+  }, []);
+
   // ── Ad system state ──
   const [streamAds, setStreamAds] = useState<StreamAd[]>([]);
   const [adScheduleInterval, setAdScheduleInterval] = useState(300);
@@ -7775,7 +7789,15 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
                           ? <VolumeLowIcon />
                           : <VolumeHighIcon />}
                     </button>
-                    <div className={`vjs-volume-popover ${showVolumeSlider ? 'vjs-volume-popover--visible' : ''}`}>
+                    {/* On iOS the slider has no audio effect (video.volume
+                        is hardware-locked), so we skip the whole popover
+                        and leave just the mute toggle. On every other
+                        browser the popover renders as the inline mobile
+                        slider or the desktop vertical popup. */}
+                    <div
+                      className={`vjs-volume-popover ${showVolumeSlider ? 'vjs-volume-popover--visible' : ''}`}
+                      style={{ display: isIosVolumeLocked ? 'none' : undefined }}
+                    >
                       <div
                         className="vjs-volume-slider-vertical"
                         style={{ ['--vol' as string]: `${mainState.volume ?? 100}%` }}
@@ -7794,6 +7816,13 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
                           min="0"
                           max="100"
                           value={mainState.volume ?? 100}
+                          // onInput fires while dragging on every browser
+                          // (the spec event for range inputs); onChange
+                          // fires only on release in some Android Chrome
+                          // builds. Wiring both means a touch-drag on
+                          // mobile actually moves the volume in real
+                          // time instead of waiting for finger lift.
+                          onInput={(e) => handleVolumeChange(mainEvent.id, Number((e.target as HTMLInputElement).value))}
                           onChange={(e) => handleVolumeChange(mainEvent.id, Number(e.target.value))}
                         />
                       </div>
