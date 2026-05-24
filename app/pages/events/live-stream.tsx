@@ -1083,8 +1083,15 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
   // Authenticated users use coordinator endpoint; anonymous viewers use public endpoint
   useEffect(() => {
     if (!mainEvent?.streamId) return;
-    // Need either authentication or anonymous viewer status to poll chat
-    if (!isAuthenticated && !isAnonymousViewer) return;
+    // Need either authentication, anonymous viewer status, OR a viewerId
+    // in the URL path. On the slug route /livestream/{slug}/{viewerId}
+    // the prop is set immediately, but isAnonymousViewer only flips
+    // after the access-gate effect runs (entry_fee branch) - which is
+    // a few hundred ms later AND doesn't run at all for non-entry_fee
+    // streams. Without this third clause, the chat panel sat empty on
+    // the slug page even though the user clearly had a paid watch URL.
+    const hasViewerPath = !!viewerIdProp;
+    if (!isAuthenticated && !isAnonymousViewer && !hasViewerPath) return;
 
     // True for only the first poll after this effect mounts. Used to
     // prevent the page-load reaction storm: without it, every
@@ -1262,7 +1269,7 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
     const interval = setInterval(pollChat, 2000);
     return () => clearInterval(interval);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mainEvent?.streamId, mainEvent?.id, mainEventIndex, blockedUsers, isAuthenticated, isAnonymousViewer]);
+  }, [mainEvent?.streamId, mainEvent?.id, mainEventIndex, blockedUsers, isAuthenticated, isAnonymousViewer, viewerIdProp]);
 
   // Auto-scroll chat to bottom when new messages arrive
   useEffect(() => {
@@ -1581,6 +1588,25 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
   // toggles the popover above the chat composer input that inserts the
   // chosen emoji into the message text.
   const [showChatEmojiPicker, setShowChatEmojiPicker] = useState(false);
+  const chatEmojiPickerRef = useRef<HTMLDivElement | null>(null);
+
+  // Close the chat-emoji popover only when the user clicks outside it
+  // AND outside the trigger button. Clicks on emoji rows themselves
+  // stop propagation so the panel stays open for serial selection.
+  useEffect(() => {
+    if (!showChatEmojiPicker) return;
+    const onDocClick = (e: MouseEvent) => {
+      const target = e.target as Element | null;
+      if (!target) return;
+      if (chatEmojiPickerRef.current?.contains(target)) return;
+      // The trigger button has title="Add emoji"; its <i> child can be
+      // the actual click target so traverse upward.
+      if (target.closest('[title="Add emoji"]')) return;
+      setShowChatEmojiPicker(false);
+    };
+    document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
+  }, [showChatEmojiPicker]);
   const [showParticipants, setShowParticipants] = useState(false);
   const [newEventId, setNewEventId] = useState("");
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -9371,13 +9397,21 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
                   {/* Emoji insertion button - appends a chosen emoji to the
                       message text. Distinct from the player-controls
                       emoji reactions: this writes into the chat, those
-                      fire floating reactions on the video. */}
+                      fire floating reactions on the video.
+                      Hard-transparent (no blue tap-highlight on mobile,
+                      no outline ring on focus) so it never grows a
+                      background colour. */}
                   <button
                     onClick={() => setShowChatEmojiPicker(v => !v)}
                     title="Add emoji"
                     style={{
                       background: 'transparent',
+                      backgroundColor: 'transparent',
                       border: 'none',
+                      outline: 'none',
+                      boxShadow: 'none',
+                      WebkitAppearance: 'none',
+                      WebkitTapHighlightColor: 'transparent',
                       cursor: 'pointer',
                       padding: '2px 4px',
                       display: 'flex',
@@ -9414,6 +9448,8 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
                   </button>
                   {showChatEmojiPicker && (
                     <div
+                      ref={chatEmojiPickerRef}
+                      data-chat-emoji-picker
                       style={{
                         position: 'absolute',
                         bottom: 'calc(100% + 6px)',
@@ -9428,14 +9464,16 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
                         boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
                         zIndex: 60,
                       }}
-                      onMouseLeave={() => setShowChatEmojiPicker(false)}
                     >
                       {emojiList.map((item) => (
                         <button
                           key={`chat-${item.name}`}
-                          onClick={() => {
+                          onClick={(e) => {
+                            // Don't close - viewers usually fire 2-3 emojis in
+                            // a row. Stop propagation so the outside-click
+                            // handler doesn't fire and snap the panel shut.
+                            e.stopPropagation();
                             setNewMessage(prev => prev + item.emoji);
-                            setShowChatEmojiPicker(false);
                           }}
                           title={item.name}
                           style={{
