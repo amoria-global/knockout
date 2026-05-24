@@ -1424,33 +1424,46 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
   // alive but no frames arrive). Watch the video element's
   // currentTime - if it hasn't advanced in 5 s while overlay says
   // 'live', the source dropped silently and we have to remount the
-  // player. The previous behaviour was to freeze on the last frame
-  // forever, forcing viewers to reload the page.
+  // player.
+  //
+  // CRITICAL: this watchdog only runs on the HLS fallback path. WebRTC
+  // streams attached via srcObject don't advance currentTime reliably -
+  // it stays at 0 or jumps erratically - so checking against currentTime
+  // would false-positive on every working WHEP stream and remount it
+  // into a black screen every 5s. WHEP health is already monitored by
+  // WHEPClient's own peer-connectionState listener (failed /
+  // disconnected -> reconnect). The encoder-drops-but-peer-stays-alive
+  // case is what we have left, and the 15s status poller catches that
+  // via the paused -> live transition above.
   useEffect(() => {
     if (!mainEvent?.id) return;
     if (streamOverlay !== 'live') return;
+    // No HLS source means we're on WHEP / WebRTC - skip the watchdog.
+    if (!mainEvent.hlsManifestUrl) return;
+    // WHEP attached takes priority over HLS even when hlsManifestUrl
+    // is set, so don't run the watchdog if a WHEP client exists.
+    if (whepInstancesRef.current[mainEvent.id]) return;
     let lastTime = -1;
     let lastAdvancedAt = Date.now();
     const tick = () => {
       const el = videoRefs.current[mainEvent.id];
       if (!el) return;
+      if (el.srcObject) return;  // safety: srcObject means WebRTC, bail
       const t = el.currentTime;
       if (t > lastTime + 0.01) {
         lastTime = t;
         lastAdvancedAt = Date.now();
         return;
       }
-      // No advance. paused-by-user doesn't count - only stalls while
-      // the element thinks it's playing or buffering.
       const isStalledLikely = !el.paused || el.readyState < 3;
       if (isStalledLikely && Date.now() - lastAdvancedAt > 5000) {
-        lastAdvancedAt = Date.now();  // debounce - don't kick more than once / 5s
+        lastAdvancedAt = Date.now();
         setPlayerEpoch(e => e + 1);
       }
     };
     const id = setInterval(tick, 2000);
     return () => clearInterval(id);
-  }, [mainEvent?.id, streamOverlay]);
+  }, [mainEvent?.id, mainEvent?.hlsManifestUrl, mainEvent?.whepUrl, streamOverlay]);
 
   // Swap animation state
   const [isSwapping, setIsSwapping] = useState(false);
