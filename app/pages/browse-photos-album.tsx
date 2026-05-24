@@ -361,21 +361,32 @@ export default function BrowsePhotosAlbumPage({
                         transition: 'filter 0.1s linear',
                       }}
                     />
-                    {/* Repeating-tile CONNEKYT watermark - matches the
-                        paid-album style on /user/find-my-photos. */}
-                    <div aria-hidden style={{
-                      position: 'absolute', inset: 0, pointerEvents: 'none',
-                      backgroundImage:
-                        'url("data:image/svg+xml;utf8,' +
-                        encodeURIComponent(
-                          '<svg xmlns="http://www.w3.org/2000/svg" width="140" height="80" viewBox="0 0 140 80">' +
-                            '<text x="70" y="46" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="700" letter-spacing="2" fill="rgba(255,255,255,0.55)" text-anchor="middle" transform="rotate(-24 70 42)">CONNEKYT</text>' +
-                          '</svg>'
-                        ) +
-                        '")',
-                      backgroundRepeat: 'repeat',
-                      mixBlendMode: 'overlay',
-                    }} />
+                    {/* Repeating-tile watermark - tagged with the album
+                        OWNER PHOTOGRAPHER'S NAME instead of the platform
+                        brand. XML-escaped before embedding so unusual
+                        characters in the name don't break the SVG. */}
+                    {(() => {
+                      const raw = (it.photographerName || 'PREVIEW').toUpperCase();
+                      const safe = raw
+                        .replace(/&/g, '&amp;')
+                        .replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;');
+                      return (
+                        <div aria-hidden style={{
+                          position: 'absolute', inset: 0, pointerEvents: 'none',
+                          backgroundImage:
+                            'url("data:image/svg+xml;utf8,' +
+                            encodeURIComponent(
+                              '<svg xmlns="http://www.w3.org/2000/svg" width="140" height="80" viewBox="0 0 140 80">' +
+                                '<text x="70" y="46" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="700" letter-spacing="2" fill="rgba(255,255,255,0.55)" text-anchor="middle" transform="rotate(-24 70 42)">' + safe + '</text>' +
+                              '</svg>'
+                            ) +
+                            '")',
+                          backgroundRepeat: 'repeat',
+                          mixBlendMode: 'overlay',
+                        }} />
+                      );
+                    })()}
                     <div style={{
                       position: 'absolute', top: 8, right: 8,
                       background: isSelected ? '#F20C8F' : 'rgba(0,0,0,0.75)',

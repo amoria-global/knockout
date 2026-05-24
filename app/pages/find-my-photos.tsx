@@ -2151,7 +2151,7 @@ const FindMyPhotos = () => {
                           whiteSpace: 'nowrap',
                         }}
                       >
-                        PREVIEW · {freeAlbumPhotographer || 'CONNEKYT'}
+                        PREVIEW · {freeAlbumPhotographer || 'PHOTOGRAPHER'}
                       </div>
                     )}
                     {/* OWNED ribbon for returning users */}
@@ -3173,29 +3173,37 @@ const FindMyPhotos = () => {
                       loading="lazy"
                     />
                     {/* Repeating tile watermark - Shutterstock/Getty style.
-                        Small "AMORIA" text dotted diagonally across the whole
-                        image at low opacity. Visible enough to mark the photo
-                        as a preview without obscuring the subject. */}
-                    {isPaid && !isPurchased && (
-                      <div
-                        aria-hidden
-                        style={{
-                          position: 'absolute',
-                          inset: 0,
-                          pointerEvents: 'none',
-                          backgroundImage:
-                            'url("data:image/svg+xml;utf8,' +
-                            encodeURIComponent(
-                              '<svg xmlns="http://www.w3.org/2000/svg" width="140" height="80" viewBox="0 0 140 80">' +
-                                '<text x="70" y="46" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="700" letter-spacing="2" fill="rgba(255,255,255,0.55)" text-anchor="middle" transform="rotate(-24 70 42)">CONNEKYT</text>' +
-                              '</svg>',
-                            ) +
-                            '")',
-                          backgroundRepeat: 'repeat',
-                          mixBlendMode: 'overlay',
-                        }}
-                      />
-                    )}
+                        Tagged with the album OWNER PHOTOGRAPHER'S NAME
+                        (from freeAlbumPhotographer state) instead of the
+                        platform brand. Falls back to "PREVIEW" only if
+                        the photographer field hasn't loaded yet. */}
+                    {isPaid && !isPurchased && (() => {
+                      const raw = (freeAlbumPhotographer || 'PREVIEW').toUpperCase();
+                      const safe = raw
+                        .replace(/&/g, '&amp;')
+                        .replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;');
+                      return (
+                        <div
+                          aria-hidden
+                          style={{
+                            position: 'absolute',
+                            inset: 0,
+                            pointerEvents: 'none',
+                            backgroundImage:
+                              'url("data:image/svg+xml;utf8,' +
+                              encodeURIComponent(
+                                '<svg xmlns="http://www.w3.org/2000/svg" width="140" height="80" viewBox="0 0 140 80">' +
+                                  '<text x="70" y="46" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="700" letter-spacing="2" fill="rgba(255,255,255,0.55)" text-anchor="middle" transform="rotate(-24 70 42)">' + safe + '</text>' +
+                                '</svg>',
+                              ) +
+                              '")',
+                            backgroundRepeat: 'repeat',
+                            mixBlendMode: 'overlay',
+                          }}
+                        />
+                      );
+                    })()}
                   </div>
                   {/* Selection checkbox - appears on every actionable photo
                       so the bottom action bar can build a unified cart of

@@ -457,26 +457,35 @@ export default function BrowsePhotosPage() {
                       }}
                     />
 
-                    {/* Repeating tile watermark - matches the paid-album
-                        watermark on /user/find-my-photos. Many small
-                        rotated "CONNEKYT" labels tiled across the whole
-                        image, exactly the Shutterstock/Getty pattern.
-                        Replaces the single oversized PREVIEW · NAME
-                        overlay so content browse and paid-album browse
-                        feel consistent. */}
-                    <div aria-hidden style={{
-                      position: 'absolute', inset: 0, pointerEvents: 'none',
-                      backgroundImage:
-                        'url("data:image/svg+xml;utf8,' +
-                        encodeURIComponent(
-                          '<svg xmlns="http://www.w3.org/2000/svg" width="140" height="80" viewBox="0 0 140 80">' +
-                            '<text x="70" y="46" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="700" letter-spacing="2" fill="rgba(255,255,255,0.55)" text-anchor="middle" transform="rotate(-24 70 42)">CONNEKYT</text>' +
-                          '</svg>'
-                        ) +
-                        '")',
-                      backgroundRepeat: 'repeat',
-                      mixBlendMode: 'overlay',
-                    }} />
+                    {/* Repeating tile watermark - same Shutterstock/Getty
+                        pattern, but the label is the OWNER PHOTOGRAPHER'S
+                        NAME instead of the platform brand. Falls back to
+                        "PREVIEW" only when the photographer name hasn't
+                        loaded yet (server fields are async). XML-escape
+                        the name before embedding so the SVG stays valid
+                        for unusual characters like "&". */}
+                    {(() => {
+                      const raw = (it.photographerName || 'PREVIEW').toUpperCase();
+                      const safe = raw
+                        .replace(/&/g, '&amp;')
+                        .replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;');
+                      return (
+                        <div aria-hidden style={{
+                          position: 'absolute', inset: 0, pointerEvents: 'none',
+                          backgroundImage:
+                            'url("data:image/svg+xml;utf8,' +
+                            encodeURIComponent(
+                              '<svg xmlns="http://www.w3.org/2000/svg" width="140" height="80" viewBox="0 0 140 80">' +
+                                '<text x="70" y="46" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="700" letter-spacing="2" fill="rgba(255,255,255,0.55)" text-anchor="middle" transform="rotate(-24 70 42)">' + safe + '</text>' +
+                              '</svg>'
+                            ) +
+                            '")',
+                          backgroundRepeat: 'repeat',
+                          mixBlendMode: 'overlay',
+                        }} />
+                      );
+                    })()}
 
                     {/* Top-right: price chip - pill to match find-my-photos. */}
                     <div style={{
