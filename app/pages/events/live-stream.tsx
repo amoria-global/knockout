@@ -45,7 +45,12 @@ const FullEmojiPicker = dynamic(
 // we don't have to import the enums at runtime (they'd block the
 // chunk-split).
 const EMOJI_THEME_DARK = 'dark' as unknown as EmojiPickerThemeT;
-const EMOJI_STYLE_APPLE = 'apple' as unknown as EmojiPickerStyleT;
+// 'native' renders emojis using the browser/OS glyph instead of fetching
+// Apple PNG sprites from a CDN. Sprites were failing to load for some
+// users (CORS / network-blocked / slow) and the grid showed placeholder
+// torn-image icons - the screenshot bug we were just sent. Native loads
+// instantly, scales with the user's system font, and never 404s.
+const EMOJI_STYLE_NATIVE = 'native' as unknown as EmojiPickerStyleT;
 import { PlayIcon, PauseIcon, VolumeHighIcon, VolumeLowIcon, VolumeOffIcon, FullscreenEnterIcon, FullscreenExitIcon, PipEnterIcon, SpinnerIcon, EmojiIcon, PeopleIcon, GearIcon } from '@/app/components/player-icons';
 
 // Dynamically import VideoMessageRecorder to avoid SSR issues
@@ -1132,13 +1137,20 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
                 : [];
           }
         } else {
-          // Anonymous viewer: use public endpoint directly (no auth needed)
+          // Anonymous viewer: use public endpoint directly (no auth needed).
+          // Backend returns chat bubbles (TEXT/VIDEO) in `data` and the
+          // most-recent reaction burst in `reactions` - separate buckets
+          // so a reaction storm can't push chat messages out of the page
+          // window. Merge them here; the splitter below routes each row
+          // to its correct UI (REACTION → float-up, others → bubble).
           const chatBase = typeof window !== 'undefined' && process.env.NODE_ENV === 'production'
             ? '/api/proxy' : (process.env.NEXT_PUBLIC_API_URL || 'https://backend.connekyt.com');
           const res = await fetch(`${chatBase}/api/remote/public/events/${mainEvent.id}/chats?page=0&size=500`);
           if (res.ok) {
             const json = await res.json();
-            chatMessages = Array.isArray(json?.data) ? json.data : [];
+            const chats = Array.isArray(json?.data) ? json.data : [];
+            const reactions = Array.isArray(json?.reactions) ? json.reactions : [];
+            chatMessages = [...chats, ...reactions];
           }
         }
 
@@ -9498,7 +9510,7 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
                           setNewMessage(prev => prev + emojiData.emoji);
                         }}
                         theme={EMOJI_THEME_DARK}
-                        emojiStyle={EMOJI_STYLE_APPLE}
+                        emojiStyle={EMOJI_STYLE_NATIVE}
                         width={320}
                         height={380}
                         autoFocusSearch={false}
