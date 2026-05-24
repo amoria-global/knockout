@@ -1317,17 +1317,40 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
         const whepClient = new WHEPClient(whepUrl, videoEl);
         whepInstancesRef.current[eventId] = whepClient;
       } else if (hlsUrl && Hls.isSupported()) {
-        // Fallback: HLS playback (~10s latency)
-        console.log('[StreamPlayer] WHEP unavailable, falling back to HLS:', hlsUrl);
-        hlsInstance = new Hls({ liveSyncDurationCount: 3, liveMaxLatencyDurationCount: 5 });
+        // Fallback: HLS playback. The previous config
+        // (liveSyncDurationCount:3, liveMaxLatencyDurationCount:5) was
+        // landing viewers ~3 seconds behind real-time - exactly the
+        // delay being reported. Switch to LL-HLS (low-latency mode) and
+        // hug the live edge: stay one segment behind, cap latency at
+        // two segments, never grow a back-buffer that the player
+        // catches up against (which it almost never does on live).
+        console.log('[StreamPlayer] WHEP unavailable, falling back to LL-HLS:', hlsUrl);
+        hlsInstance = new Hls({
+          lowLatencyMode: true,
+          liveSyncDurationCount: 1,
+          liveMaxLatencyDurationCount: 2,
+          backBufferLength: 0,
+          maxLiveSyncPlaybackRate: 1.5,
+        });
         hlsInstance.loadSource(hlsUrl);
         hlsInstance.attachMedia(videoEl);
         hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
           videoEl.play().catch(() => {});
         });
       } else if (hlsUrl && videoEl.canPlayType('application/vnd.apple.mpegurl')) {
-        // Native HLS (Safari)
+        // Native HLS (Safari). currentTime jump to the live edge once
+        // metadata arrives is the only knob we have here - the player
+        // otherwise honours its own buffering policy which on Safari is
+        // ~6 seconds. Keeps Safari roughly in line with the LL-HLS path.
         videoEl.src = hlsUrl;
+        videoEl.addEventListener('loadedmetadata', () => {
+          try {
+            const seekable = videoEl.seekable;
+            if (seekable.length > 0) {
+              videoEl.currentTime = seekable.end(seekable.length - 1) - 1.5;
+            }
+          } catch { /* ignore */ }
+        }, { once: true });
         videoEl.play().catch(() => {});
       }
 
