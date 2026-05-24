@@ -806,6 +806,22 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
 
   // Stream status overlay - tracks ONGOING→PUBLISHED (paused) / ONGOING→COMPLETED (ended)
   const [streamOverlay, setStreamOverlay] = useState<'live' | 'paused' | 'ended' | 'scheduled' | null>(null);
+  // Bumping this forces the player-init effect to re-run and re-create
+  // the WHEP/HLS connection. Used by:
+  //   • the encoder-reconnect detector (paused → live transition)
+  //   • the stall watchdog (video.currentTime hasn't advanced for >5s
+  //     while we think we're live - source got hot-swapped without
+  //     dropping the WebRTC peer, so frames simply stopped)
+  const [playerEpoch, setPlayerEpoch] = useState(0);
+  const streamOverlayRef = useRef(streamOverlay);
+  useEffect(() => {
+    // Detect paused → live (encoder reconnected). Tear the player down
+    // and remount; viewers shouldn't have to reload.
+    if (streamOverlayRef.current === 'paused' && streamOverlay === 'live') {
+      setPlayerEpoch(e => e + 1);
+    }
+    streamOverlayRef.current = streamOverlay;
+  }, [streamOverlay]);
 
   // Poll event status every 15s - detects status transitions
   useEffect(() => {
@@ -1401,7 +1417,40 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
       }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mainEvent?.whepUrl, mainEvent?.hlsManifestUrl, mainEvent?.id]);
+  }, [mainEvent?.whepUrl, mainEvent?.hlsManifestUrl, mainEvent?.id, playerEpoch]);
+
+  // Stall watchdog: the WHEP peer can stay "connected" while the
+  // upstream encoder is offline (Cloudflare keeps the WebRTC session
+  // alive but no frames arrive). Watch the video element's
+  // currentTime - if it hasn't advanced in 5 s while overlay says
+  // 'live', the source dropped silently and we have to remount the
+  // player. The previous behaviour was to freeze on the last frame
+  // forever, forcing viewers to reload the page.
+  useEffect(() => {
+    if (!mainEvent?.id) return;
+    if (streamOverlay !== 'live') return;
+    let lastTime = -1;
+    let lastAdvancedAt = Date.now();
+    const tick = () => {
+      const el = videoRefs.current[mainEvent.id];
+      if (!el) return;
+      const t = el.currentTime;
+      if (t > lastTime + 0.01) {
+        lastTime = t;
+        lastAdvancedAt = Date.now();
+        return;
+      }
+      // No advance. paused-by-user doesn't count - only stalls while
+      // the element thinks it's playing or buffering.
+      const isStalledLikely = !el.paused || el.readyState < 3;
+      if (isStalledLikely && Date.now() - lastAdvancedAt > 5000) {
+        lastAdvancedAt = Date.now();  // debounce - don't kick more than once / 5s
+        setPlayerEpoch(e => e + 1);
+      }
+    };
+    const id = setInterval(tick, 2000);
+    return () => clearInterval(id);
+  }, [mainEvent?.id, streamOverlay]);
 
   // Swap animation state
   const [isSwapping, setIsSwapping] = useState(false);
@@ -8784,7 +8833,12 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
               gap: '8px'
             }}>
               {(() => {
-                const visibleMessages = mainEvent.messages;
+                // Show the most-recent 20 messages only. Earlier ones
+                // stay in state for reply-target resolution but are
+                // not painted (keeps the panel scrollback compact and
+                // lets the dense row layout fit ~20 on a typical
+                // viewport without overflow).
+                const visibleMessages = mainEvent.messages.slice(-20);
 
                 return (
                   <>
@@ -8808,11 +8862,16 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
                     {visibleMessages.map((message) => (
                 <div key={message.id} style={{
                   display: 'flex',
-                  gap: '8px',
-                  padding: '8px',
-                  borderRadius: '12px',
+                  gap: '6px',
+                  // Dense row layout - aiming for ~20 messages in the
+                  // chat panel viewport. Was 8px/12px (rows ~64px each,
+                  // ~5 visible); halving padding + shrinking avatar
+                  // drops each row to ~32-36px without truncating
+                  // anything (name + time + body + reply badge stay).
+                  padding: '3px 6px',
+                  borderRadius: '6px',
                   transition: 'background 0.2s',
-                  animation: 'slideIn 0.3s ease-out',
+                  animation: 'slideIn 0.25s ease-out',
                   position: 'relative'
                 }}
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)'}
@@ -8822,28 +8881,34 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
                     alt={message.sender}
                     onError={(e) => { (e.target as HTMLImageElement).src = DEFAULT_USER_AVATAR; }}
                     style={{
-                      width: '32px',
-                      height: '32px',
+                      width: '22px',
+                      height: '22px',
                       borderRadius: '50%',
                       objectFit: 'cover',
-                      flexShrink: 0
+                      flexShrink: 0,
+                      marginTop: '2px'
                     }}
                   />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{
                       display: 'flex',
                       alignItems: 'baseline',
-                      gap: '8px',
-                      marginBottom: '4px'
+                      gap: '6px',
+                      marginBottom: '1px'
                     }}>
                       <span style={{
-                        fontSize: '13px',
+                        fontSize: '12px',
                         fontWeight: '600',
-                        color: '#efeff1'
+                        color: '#efeff1',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        maxWidth: '50%'
                       }}>{message.sender}</span>
                       <span style={{
-                        fontSize: '11px',
-                        color: '#adadb8'
+                        fontSize: '10px',
+                        color: '#8b8b96',
+                        flexShrink: 0
                       }}>{message.time}</span>
                     </div>
                     {editingMessageId === message.id ? (
@@ -8929,11 +8994,12 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
                           </div>
                         ) : (
                           <p style={{
-                            fontSize: '13px',
-                            color: '#adadb8',
-                            lineHeight: '1.5',
+                            fontSize: '12px',
+                            color: '#d4d4d8',
+                            lineHeight: '1.35',
                             margin: 0,
-                            wordWrap: 'break-word'
+                            wordWrap: 'break-word',
+                            overflowWrap: 'anywhere'
                           }}>
                             {message.text}
                           </p>
@@ -8942,7 +9008,7 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
                     )}
                   </div>
 
-                  {/* Three-dot menu button */}
+                  {/* Three-dot menu button - compact for dense row layout */}
                   <div style={{ position: 'relative' }}>
                     <button
                       onClick={(e) => {
@@ -8952,10 +9018,11 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
                       style={{
                         background: 'transparent',
                         border: 'none',
-                        color: '#adadb8',
+                        color: '#8b8b96',
                         cursor: 'pointer',
-                        padding: '4px',
-                        fontSize: '16px',
+                        padding: '0 2px',
+                        fontSize: '13px',
+                        lineHeight: 1,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
