@@ -45,10 +45,14 @@ const FullEmojiPicker = dynamic(
 // we don't have to import the enums at runtime (they'd block the
 // chunk-split).
 const EMOJI_THEME_DARK = 'dark' as unknown as EmojiPickerThemeT;
-// 'apple' style — colorful Apple-design emoji sprites, matches the
-// reference screenshot the user shared. Loads PNGs from the picker's
-// bundled CDN.
-const EMOJI_STYLE_APPLE = 'apple' as unknown as EmojiPickerStyleT;
+// 'native' style — uses the browser/OS's own emoji glyphs instead of
+// loading PNG sprites from the picker's CDN. Permanently chosen over
+// 'apple' after the CDN failed for the second time and viewers saw a
+// grid full of torn-image placeholders. Native renders instantly,
+// works offline, never 404s, and uses the user's system font - so
+// the look isn't identical across devices but it always WORKS, which
+// matters more.
+const EMOJI_STYLE_NATIVE = 'native' as unknown as EmojiPickerStyleT;
 import { PlayIcon, PauseIcon, VolumeHighIcon, VolumeLowIcon, VolumeOffIcon, FullscreenEnterIcon, FullscreenExitIcon, PipEnterIcon, SpinnerIcon, EmojiIcon, PeopleIcon, GearIcon } from '@/app/components/player-icons';
 
 // Dynamically import VideoMessageRecorder to avoid SSR issues
@@ -1290,7 +1294,12 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
 
     // Initial fetch
     pollChat();
-    const interval = setInterval(pollChat, 2000);
+    // Tighter cadence (1s) - viewers reported that some messages from
+    // other devices took noticeably longer than the speaker's send
+    // animation to appear. 1s halves worst-case latency while still
+    // being comfortable for the backend (the public endpoint is
+    // read-only + paginated).
+    const interval = setInterval(pollChat, 1000);
     return () => clearInterval(interval);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mainEvent?.streamId, mainEvent?.id, mainEventIndex, blockedUsers, isAuthenticated, isAnonymousViewer, viewerIdProp]);
@@ -7450,24 +7459,46 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
                       </>
                     );
                   })()}
-                  <button
-                    onClick={() => { setDeviceError(null); window.location.reload(); }}
-                    style={{
-                      marginTop: '8px',
-                      padding: '12px 28px',
-                      background: 'linear-gradient(135deg, #083A85 0%, #0a4da3 100%)',
-                      border: '1px solid rgba(255,255,255,0.15)',
-                      borderRadius: '12px',
-                      color: '#fff',
-                      fontSize: '14px',
-                      fontWeight: '600',
-                      cursor: 'pointer',
-                      boxShadow: '0 4px 12px rgba(8,58,133,0.35)',
-                    }}
-                  >
-                    <i className="bi bi-arrow-clockwise" style={{ marginRight: '8px' }}></i>
-                    Try Again
-                  </button>
+                  {/* Soft 'Reconnecting…' state self-heals so it doesn't
+                      need a button. The hard 'Device Access Restricted'
+                      state gives a CTA that actually claims this device
+                      for the viewer (calls switchAnonymousDevice which
+                      rewrites the stored fingerprint server-side), then
+                      clears the error - so a second click never has to
+                      happen and the modal won't pop again on this
+                      device. The old behaviour ('Try Again' just
+                      reloaded the page and the access check immediately
+                      re-detected the same fingerprint mismatch) is the
+                      reason viewers reported seeing this modal in a
+                      loop. */}
+                  {deviceError !== 'Reconnecting…' && (
+                    <button
+                      onClick={async () => {
+                        try {
+                          await handleDeviceSwitchConfirm();
+                          setDeviceError(null);
+                        } catch {
+                          setDeviceError(null);
+                          if (typeof window !== 'undefined') window.location.reload();
+                        }
+                      }}
+                      style={{
+                        marginTop: '8px',
+                        padding: '12px 28px',
+                        background: 'linear-gradient(135deg, #083A85 0%, #0a4da3 100%)',
+                        border: '1px solid rgba(255,255,255,0.15)',
+                        borderRadius: '12px',
+                        color: '#fff',
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        boxShadow: '0 4px 12px rgba(8,58,133,0.35)',
+                      }}
+                    >
+                      <i className="bi bi-display" style={{ marginRight: '8px' }}></i>
+                      Watch on this device
+                    </button>
+                  )}
                 </div>
               )}
 
@@ -9454,7 +9485,7 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
                           setNewMessage(prev => prev + emojiData.emoji);
                         }}
                         theme={EMOJI_THEME_DARK}
-                        emojiStyle={EMOJI_STYLE_APPLE}
+                        emojiStyle={EMOJI_STYLE_NATIVE}
                         width={320}
                         height={380}
                         autoFocusSearch={false}
