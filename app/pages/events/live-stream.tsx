@@ -7852,31 +7852,12 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
                     </div>
                   </div>
 
-                  {/* Top-5 quick-tap reactions: desktop only. They cram
-                      the mobile controls row and push pause/live/mute
-                      off-edge, so vjs-mobile-hidden hides them under
-                      640px - mobile users still get the full picker
-                      via the smiley button to the right. */}
-                  {emojiList.slice(0, 5).map((item) => (
-                    <button
-                      key={`quick-${item.name}`}
-                      className="vjs-btn vjs-quick-emoji vjs-mobile-hidden"
-                      onClick={() => handleEmojiReaction(item.emoji)}
-                      title={item.name}
-                      style={{
-                        fontSize: '20px',
-                        padding: '0 4px',
-                        lineHeight: 1,
-                      }}
-                    >
-                      {item.emoji}
-                    </button>
-                  ))}
-
-                  {/* Full picker: the grid + categories, behind the
-                      smiley icon. Always visible (incl. mobile) since
-                      it's the only emoji surface on small screens. */}
-                  <button className="vjs-btn" onClick={() => setShowEmojiPicker(!showEmojiPicker)} title="More emoji reactions">
+                  {/* Emoji reactions toggle. Single picker-popover
+                      button — user explicitly rejected the inline 5
+                      quick-tap emojis on the controls row (this was
+                      re-added by a teammate and is being removed
+                      again). The full grid lives behind the popover. */}
+                  <button className="vjs-btn" onClick={() => setShowEmojiPicker(!showEmojiPicker)} title="Emoji reactions">
                     <EmojiIcon />
                   </button>
 
