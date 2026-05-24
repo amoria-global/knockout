@@ -1577,6 +1577,10 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
   // State for modals
   const [showAddEventModal, setShowAddEventModal] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  // Distinct from showEmojiPicker (player reactions overlay). This one
+  // toggles the popover above the chat composer input that inserts the
+  // chosen emoji into the message text.
+  const [showChatEmojiPicker, setShowChatEmojiPicker] = useState(false);
   const [showParticipants, setShowParticipants] = useState(false);
   const [newEventId, setNewEventId] = useState("");
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -7790,8 +7794,28 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
                     </div>
                   </div>
 
-                  {/* Emoji */}
-                  <button className="vjs-btn vjs-mobile-hidden" onClick={() => setShowEmojiPicker(!showEmojiPicker)} title="Emoji reactions">
+                  {/* Quick-tap emojis: top-5 most-used reactions live
+                      directly on the player controls so viewers can fire
+                      one without opening the picker. The full grid still
+                      lives behind the emoji button to its right. */}
+                  {emojiList.slice(0, 5).map((item) => (
+                    <button
+                      key={`quick-${item.name}`}
+                      className="vjs-btn vjs-mobile-hidden vjs-quick-emoji"
+                      onClick={() => handleEmojiReaction(item.emoji)}
+                      title={item.name}
+                      style={{
+                        fontSize: '18px',
+                        padding: '0 4px',
+                        lineHeight: 1,
+                      }}
+                    >
+                      {item.emoji}
+                    </button>
+                  ))}
+
+                  {/* Full picker (toggles the grid below the controls) */}
+                  <button className="vjs-btn vjs-mobile-hidden" onClick={() => setShowEmojiPicker(!showEmojiPicker)} title="More emoji reactions">
                     <EmojiIcon />
                   </button>
 
@@ -9293,12 +9317,13 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
 
               {canInteract ? (
                 <div className="ls-chat-input-row" style={{
+                  position: 'relative',
                   display: 'flex',
                   alignItems: 'center',
                   backgroundColor: '#2f2f35',
-                  borderRadius: '16px',
-                  padding: '8px 12px',
-                  gap: '8px'
+                  borderRadius: '14px',
+                  padding: '4px 8px',
+                  gap: '4px'
                 }}>
                   <input
                     type="text"
@@ -9312,9 +9337,33 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
                       border: 'none',
                       outline: 'none',
                       fontSize: '13px',
-                      color: '#efeff1'
+                      color: '#efeff1',
+                      padding: '4px 2px'
                     }}
                   />
+                  {/* Emoji insertion button - appends a chosen emoji to the
+                      message text. Distinct from the player-controls
+                      emoji reactions: this writes into the chat, those
+                      fire floating reactions on the video. */}
+                  <button
+                    onClick={() => setShowChatEmojiPicker(v => !v)}
+                    title="Add emoji"
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      padding: '2px 4px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      fontSize: '16px',
+                      color: '#adadb8',
+                      transition: 'transform 0.15s'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.15)'}
+                    onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                  >
+                    <i className="bi bi-emoji-smile"></i>
+                  </button>
                   <button
                     onClick={handleSendMessage}
                     style={{
@@ -9322,10 +9371,10 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
                       background: 'transparent',
                       border: 'none',
                       cursor: newMessage.trim() ? 'pointer' : 'default',
-                      padding: '4px',
+                      padding: '2px 4px',
                       display: 'flex',
                       alignItems: 'center',
-                      fontSize: '18px',
+                      fontSize: '16px',
                       transition: 'all 0.2s'
                     }}
                     onMouseEnter={(e) => {
@@ -9336,6 +9385,49 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
                   >
                     <i className="bi bi-send-fill"></i>
                   </button>
+                  {showChatEmojiPicker && (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        bottom: 'calc(100% + 6px)',
+                        right: 8,
+                        background: '#1f1f24',
+                        border: '1px solid #3a3a42',
+                        borderRadius: 10,
+                        padding: 6,
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(8, 1fr)',
+                        gap: 2,
+                        boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+                        zIndex: 60,
+                      }}
+                      onMouseLeave={() => setShowChatEmojiPicker(false)}
+                    >
+                      {emojiList.map((item) => (
+                        <button
+                          key={`chat-${item.name}`}
+                          onClick={() => {
+                            setNewMessage(prev => prev + item.emoji);
+                            setShowChatEmojiPicker(false);
+                          }}
+                          title={item.name}
+                          style={{
+                            background: 'transparent',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontSize: '18px',
+                            padding: '4px 6px',
+                            lineHeight: 1,
+                            borderRadius: 6,
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
+                          onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                        >
+                          {item.emoji}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <button
@@ -9355,53 +9447,39 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
                 </button>
               )}
 
-              {/* Send Video Message Button - restyled to brand-blue gradient
-                  via the .ls-video-msg-cta class (overrides inline green). */}
+              {/* Send Video Message Button - shrunk from a 12px/16px-radius
+                  hero-CTA to a compact toolbar action so the chat list
+                  above it gets back the ~40px of vertical real estate
+                  the old size was stealing. Still uses .ls-video-msg-cta
+                  for the brand-blue gradient theme. */}
               <button
                 onClick={() => canInteract ? setShowVideoMessageRecorder(true) : requireInteraction(() => {})}
                 className="ls-video-msg-cta"
                 style={{
                   width: '100%',
-                  marginTop: '12px',
-                  padding: '12px',
+                  marginTop: '6px',
+                  padding: '6px 10px',
                   backgroundColor: '#16a34a',
-                  border: '2px solid #22c55e',
-                  borderRadius: '16px',
+                  border: '1px solid #22c55e',
+                  borderRadius: '10px',
                   color: '#fff',
-                  fontSize: '13px',
+                  fontSize: '11px',
                   fontWeight: '600',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: '8px',
-                  transition: 'all 0.3s',
+                  gap: '6px',
+                  transition: 'transform 0.2s',
                   textTransform: 'uppercase',
-                  letterSpacing: '0.5px'
+                  letterSpacing: '0.4px'
                 }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '';
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = '';
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '';
-                }}
+                onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
               >
-                <i className="bi bi-camera-video-fill" style={{ fontSize: '16px' }}></i>
+                <i className="bi bi-camera-video-fill" style={{ fontSize: '12px' }}></i>
                 Send 1 Min Video Message
               </button>
-
-              <p style={{
-                fontSize: '11px',
-                color: '#adadb8',
-                margin: '8px 0 0 0',
-                textAlign: 'center'
-              }}>
-                Chat with other viewers watching the stream
-              </p>
             </div>
           </div>
         </div>
