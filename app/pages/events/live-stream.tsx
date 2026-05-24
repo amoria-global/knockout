@@ -303,17 +303,31 @@ const App = ({ eventIdProp }: { eventIdProp?: string } = {}) => {
     }
   };
 
-  // Listen for session expiry - show login modal instead of redirecting
+  // Listen for session expiry - show login modal instead of redirecting.
+  // BUT: a paid anonymous viewer (URL has ?viewerId=) doesn't need an auth
+  // session at all - their access is verified via fingerprint + viewerId in
+  // the gate effect below. Popping the login modal at them blocks a stream
+  // they already paid for, which is what users were hitting after the slug
+  // route deploy when a stale auth cookie 401'd in the background.
   useEffect(() => {
     const handleSessionExpired = (e: Event) => {
       e.preventDefault();
+      const hasPaidViewerId =
+        !!searchParams.get('viewerId') ||
+        (typeof window !== 'undefined' &&
+          !!Object.keys(localStorage).find(k => k.startsWith('anonymousViewer_')));
+      if (hasPaidViewerId) {
+        // Drop the stale auth state silently; the anonymous-viewer flow
+        // will pick the user up via fingerprint + viewerId.
+        return;
+      }
       setAuthStep('login');
       setAuthError('Your session has expired. Please log in again.');
       setShowAuthModal(true);
     };
     window.addEventListener('auth:session-expired', handleSessionExpired);
     return () => window.removeEventListener('auth:session-expired', handleSessionExpired);
-  }, []);
+  }, [searchParams]);
 
   // Restore anonymous viewer session from localStorage on mount.
   // Also pre-set accessCheckLoading so the "Stream is starting" overlay doesn't flash
