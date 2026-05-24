@@ -95,13 +95,31 @@ const VideoMessageRecorder: React.FC<VideoMessageRecorderProps> = ({ onClose, on
     }
   }, [facingMode]);
 
-  // Start recording (EXACT copy from record.tsx - no options for maximum compatibility)
+  // Start recording. iOS Safari only supports MP4 — Chrome/Firefox
+  // default to webm. Probe for the first supported mime type rather
+  // than forcing one, then carry that same type into the Blob so the
+  // <video> preview can actually decode it. The previous version
+  // always tagged the Blob 'video/webm', and on iOS that meant the
+  // MP4 bytes the recorder produced were wrapped in a webm container
+  // claim — the preview <video> threw a decode error (the broken
+  // play-icon you saw) and the upload landed unplayable too.
   const startRecording = async () => {
     if (!streamRef.current) return;
 
     try {
-      // Use default MediaRecorder settings - let browser decide best format
-      const mediaRecorder = new MediaRecorder(streamRef.current);
+      const candidates = [
+        'video/mp4;codecs=h264,aac',
+        'video/mp4',
+        'video/webm;codecs=vp9,opus',
+        'video/webm;codecs=vp8,opus',
+        'video/webm',
+      ];
+      const supported = candidates.find(t =>
+        typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported?.(t)
+      );
+      const mediaRecorder = supported
+        ? new MediaRecorder(streamRef.current, { mimeType: supported })
+        : new MediaRecorder(streamRef.current);
       mediaRecorderRef.current = mediaRecorder;
       chunksRef.current = [];
 
@@ -112,8 +130,12 @@ const VideoMessageRecorder: React.FC<VideoMessageRecorderProps> = ({ onClose, on
       };
 
       mediaRecorder.onstop = () => {
-        // Create blob from recorded chunks
-        const blob = new Blob(chunksRef.current, { type: 'video/webm' });
+        // Use the recorder's own mimeType (or the first chunk's type
+        // as a fallback) so the Blob tag matches the actual codec.
+        const blobType = mediaRecorder.mimeType
+          || chunksRef.current[0]?.type
+          || 'video/webm';
+        const blob = new Blob(chunksRef.current, { type: blobType });
         setRecordedBlob(blob);
       };
 
@@ -206,16 +228,36 @@ const VideoMessageRecorder: React.FC<VideoMessageRecorderProps> = ({ onClose, on
     return cleanup;
   }, [initializeCamera]);
 
-  // Switch to preview when recorded blob is ready (EXACT copy from record.tsx)
+  // Switch to preview when the recorded blob is ready. Wait for
+  // loadedmetadata before play() — iOS Safari won't start playback
+  // on a video whose source was just assigned, and the unhandled
+  // Promise rejection silently broke the preview before. Also
+  // revoke the object URL when the blob changes / component
+  // unmounts to avoid leaking blob memory across re-records.
   useEffect(() => {
-    if (recordedBlob && videoRef.current) {
-      // Switch to playback mode (exact method from record.tsx)
-      const url = URL.createObjectURL(recordedBlob);
-      videoRef.current.srcObject = null;
-      videoRef.current.src = url;
-      videoRef.current.muted = false;
-      videoRef.current.play();
-    }
+    if (!recordedBlob || !videoRef.current) return;
+    const video = videoRef.current;
+    const url = URL.createObjectURL(recordedBlob);
+    video.srcObject = null;
+    video.src = url;
+    video.muted = false;
+    const onReady = () => {
+      video.play().catch(() => {
+        // Autoplay was blocked (iOS gesture rules, etc). The
+        // <video controls> UI gives the viewer a tap-to-play
+        // fallback so the preview stays usable.
+      });
+    };
+    video.addEventListener('loadedmetadata', onReady, { once: true });
+    // Some browsers fire loadeddata before loadedmetadata when the
+    // source is a freshly-recorded Blob; listen for both to be safe.
+    video.addEventListener('loadeddata', onReady, { once: true });
+    video.load();
+    return () => {
+      video.removeEventListener('loadedmetadata', onReady);
+      video.removeEventListener('loadeddata', onReady);
+      URL.revokeObjectURL(url);
+    };
   }, [recordedBlob]);
 
   // Format time
