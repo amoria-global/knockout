@@ -1,31 +1,43 @@
 import FingerprintJS from '@fingerprintjs/fingerprintjs';
 
 /**
- * Stable device identifier for the *user's* browser/device.
+ * Cross-browser stable device identifier.
  *
- * Closest browser equivalent to `node-machine-id` (which can't run in a
- * web page — `/etc/machine-id`, `IOPlatformUUID`, and the equivalent
- * Windows registry key are off-limits to JS in a sandboxed browser):
+ * Goal: same machine = same id, even when the user switches between
+ * Chrome / Firefox / Safari / Edge. Browser-level signals (canvas,
+ * fonts, userAgent, localStorage anchors) are intentionally excluded
+ * because they differ across browsers on the same OS.
  *
- *   1. **Hardware fingerprint** via FingerprintJS — canvas + audio + GPU
- *      + screen + CPU concurrency. Stable across browser restarts on the
- *      same machine.
- *   2. **Persistent UUID** in localStorage — anchors the id to *this
- *      browser profile* so it survives FingerprintJS drift after a
- *      browser/OS update.
- *   3. Both are concatenated, SHA-256 hashed, and truncated to 16 hex
- *      chars (mirrors the node-machine-id snippet on the desktop app
- *      so server-side reasoning is symmetric).
+ * Signals used (all OS / hardware-bound, identical across browsers):
+ *   • navigator.hardwareConcurrency  — CPU logical cores
+ *   • navigator.deviceMemory         — RAM bucket (when exposed)
+ *   • screen resolution + colorDepth — display hardware
+ *   • Intl timezone                  — OS locale
+ *   • WebGL UNMASKED_RENDERER + VENDOR — GPU
+ *   • FingerprintJS audio component  — AudioContext fingerprint (OS audio stack)
  *
- * Format helpers below match the desktop app's XXXX-XXXX-XXXX-XXXX UI
- * display.
+ * Notably NOT used: canvas (browser-specific rendering), fonts
+ * (browser-specific font list), userAgent, languages, localStorage
+ * UUIDs - all of which would break cross-browser stability.
+ *
+ * Hashed with SHA-256, truncated to 16 hex chars to mirror the
+ * desktop app's node-machine-id format (XXXX-XXXX-XXXX-XXXX via
+ * formatDeviceId helper).
+ *
+ * Caveats:
+ *   • Two devices with literally identical hardware + locale collide.
+ *     Acceptable for this use case - the viewerId is the identity;
+ *     the device id only answers "is this the same device coming back?"
+ *   • Browsers with strict anti-fingerprinting (Tor Browser, Firefox
+ *     resistFingerprinting=true) return spoofed signals - same machine
+ *     will look like a different device. Acceptable; those users opt
+ *     into being unidentifiable.
  */
 
-const STORAGE_KEY = 'amoria_device_anchor';
 let cachedDeviceId: string | null = null;
 let loadPromise: Promise<string> | null = null;
 
-/** SHA-256 of `input` truncated to 16 hex chars (Web Crypto, browser-native). */
+/** SHA-256 → first 16 hex chars (Web Crypto, browser-native). */
 async function sha256Trunc16(input: string): Promise<string> {
   const buf = new TextEncoder().encode(input);
   const digest = await crypto.subtle.digest('SHA-256', buf);
@@ -35,41 +47,58 @@ async function sha256Trunc16(input: string): Promise<string> {
   return hex.slice(0, 16);
 }
 
+/** WebGL GPU vendor + renderer. Same hardware → same string regardless
+ *  of browser. Returns empty if WebGL isn't available or the debug ext
+ *  is blocked. */
+function readGpu(): string {
+  try {
+    const canvas = document.createElement('canvas');
+    const gl = (canvas.getContext('webgl') || canvas.getContext('experimental-webgl')) as WebGLRenderingContext | null;
+    if (!gl) return '';
+    const ext = gl.getExtension('WEBGL_debug_renderer_info');
+    if (!ext) return '';
+    const vendor = gl.getParameter(ext.UNMASKED_VENDOR_WEBGL) as string;
+    const renderer = gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) as string;
+    return `${vendor || ''}|${renderer || ''}`;
+  } catch {
+    return '';
+  }
+}
+
 /**
- * Get the unique device ID (hashed, 16 hex chars).
- * Equivalent in spirit to node-machine-id's `machineIdSync()` but
- * derived from browser-accessible signals.
+ * Get the cross-browser stable device ID (16 hex chars).
  */
 export async function getDeviceId(): Promise<string> {
   if (cachedDeviceId) return cachedDeviceId;
   if (loadPromise) return loadPromise;
 
   loadPromise = (async () => {
-    let visitorId = '';
+    // FingerprintJS gives us the audio component (the only browser
+    // signal we want - it's derived from the OS audio stack and
+    // matches across browsers). We discard its overall visitorId.
+    let audioSig = '';
     try {
       const fp = await FingerprintJS.load();
-      const result = await fp.get();
-      visitorId = result.visitorId;
-    } catch {
-      // FingerprintJS failed - we still proceed with the localStorage
-      // anchor alone. The id will be stable per-browser-profile but
-      // not cross-profile on the same machine.
-    }
+      const r = await fp.get();
+      const audioComp = (r.components as Record<string, { value?: unknown }>).audio;
+      const v = audioComp?.value;
+      if (typeof v === 'number') audioSig = String(v.toFixed(6));
+      else if (typeof v === 'string') audioSig = v;
+      else if (v != null) audioSig = JSON.stringify(v);
+    } catch { /* OS audio API blocked; degrade gracefully */ }
 
-    let anchor = '';
-    if (typeof window !== 'undefined') {
-      anchor = localStorage.getItem(STORAGE_KEY) || '';
-      if (!anchor) {
-        anchor = crypto.randomUUID();
-        try { localStorage.setItem(STORAGE_KEY, anchor); } catch { /* private mode */ }
-      }
-    } else {
-      // SSR safety — should never happen since getDeviceId is only
-      // called client-side, but guard against accidental imports.
-      anchor = 'ssr-no-anchor';
-    }
+    const hardwareSig = JSON.stringify({
+      cpu: typeof navigator !== 'undefined' ? navigator.hardwareConcurrency || 0 : 0,
+      mem: (typeof navigator !== 'undefined' && 'deviceMemory' in navigator)
+            ? (navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? 0 : 0,
+      scr: typeof screen !== 'undefined'
+            ? `${screen.width}x${screen.height}@${screen.colorDepth}` : '',
+      tz: typeof Intl !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone : '',
+      gpu: typeof document !== 'undefined' ? readGpu() : '',
+      audio: audioSig,
+    });
 
-    const id = await sha256Trunc16(visitorId + '|' + anchor);
+    const id = await sha256Trunc16(hardwareSig);
     cachedDeviceId = id;
     return id;
   })();
