@@ -1114,25 +1114,36 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
 
         if (chatMessages.length > 0) {
           // Pull REACTION rows out of the stream first — they're emoji
-          // float-ups, not chat bubbles. Each unseen REACTION fires the
-          // same floating-emoji animation other viewers see, smaller
-          // than the local sender's because they're observed rather
-          // than authored. Sender's own reactions are pre-seeded into
-          // seenApiMessageIds by handleEmojiReaction so they don't
-          // echo here.
+          // float-ups, not chat bubbles. Sender's own reactions are
+          // pre-seeded into seenApiMessageIds by handleEmojiReaction so
+          // they don't echo back here. STAGGER the rendering: receivers
+          // get every new reaction in a single 2s poll batch, so naive
+          // simultaneous setState would clump them all at the same
+          // bottom:72px start and look like 2-3 emojis instead of many.
+          // 120ms gap between staggered appearances reads as a natural
+          // celebration cascade and matches the sender's tap rhythm.
           const reactionRows = chatMessages.filter(m => (m.chatType as string) === 'REACTION');
+          const newReactions: Array<{ id: number; emoji: string; timestamp: number }> = [];
           for (const r of reactionRows) {
             const id = String(r.id);
             if (seenApiMessageIds.current.has(id)) continue;
             seenApiMessageIds.current.add(id);
             const emoji = String(r.message || r.content || '').trim();
             if (!emoji) continue;
-            const reactionId = Date.now() + Math.random();
-            setActiveReactions(prev => [...prev, { id: reactionId, emoji, timestamp: Date.now() }]);
-            setTimeout(() => {
-              setActiveReactions(prev => prev.filter(x => x.id !== reactionId));
-            }, 3000);
+            newReactions.push({
+              id: Date.now() + Math.random() + newReactions.length,
+              emoji,
+              timestamp: Date.now(),
+            });
           }
+          newReactions.forEach((reaction, idx) => {
+            setTimeout(() => {
+              setActiveReactions(prev => [...prev, reaction]);
+              setTimeout(() => {
+                setActiveReactions(prev => prev.filter(x => x.id !== reaction.id));
+              }, 3000);
+            }, idx * 120);
+          });
 
           // Defense in depth: the public/coordinator/event GET /chats
           // endpoints already strip WISH rows server-side, but if anything
