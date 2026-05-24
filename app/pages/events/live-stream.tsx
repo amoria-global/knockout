@@ -7660,11 +7660,11 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
               {/* Floating Emoji Reactions. Anchored to the bottom-right
                   corner of the player, popping up the right edge with a
                   small jitter so consecutive reactions don't overlap
-                  perfectly. The sender sees their own at 28px for tap
-                  feedback; reactions broadcast by OTHER viewers render
-                  at 16px (and slightly translucent) so an active
-                  reaction stream doesn't crowd the stage during a hype
-                  moment. */}
+                  perfectly. Sizes scale with viewport via clamp() so
+                  the mobile player (which is much smaller than desktop)
+                  also gets compact emojis that don't dominate the
+                  stage. Sender (fromMe) renders larger for tap feedback,
+                  received reactions render small + translucent. */}
               {activeReactions.map((reaction) => (
                 <div
                   key={reaction.id}
@@ -7672,12 +7672,15 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
                     position: 'absolute',
                     right: `${8 + Math.random() * 8}%`,
                     bottom: '72px',
-                    fontSize: reaction.fromMe ? '28px' : '16px',
+                    fontSize: reaction.fromMe
+                      ? 'clamp(20px, 4vw, 28px)'
+                      : 'clamp(12px, 2.5vw, 16px)',
                     opacity: reaction.fromMe ? 1 : 0.85,
                     animation: 'floatUp 3s ease-out forwards',
                     zIndex: 15,
                     pointerEvents: 'none',
                     textShadow: '0 2px 8px rgba(0,0,0,0.45)',
+                    lineHeight: 1,
                   }}
                 >
                   {reaction.emoji}
