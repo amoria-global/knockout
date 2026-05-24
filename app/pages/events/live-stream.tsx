@@ -1086,6 +1086,15 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
     // Need either authentication or anonymous viewer status to poll chat
     if (!isAuthenticated && !isAnonymousViewer) return;
 
+    // True for only the first poll after this effect mounts. Used to
+    // prevent the page-load reaction storm: without it, every
+    // historical REACTION row in the API response was new to the empty
+    // seenApiMessageIds set and got animated as a fresh float-up,
+    // making it look like hundreds of reactions were being sent the
+    // moment the viewer joined. We still record their IDs as "seen"
+    // so future polls don't re-trigger them.
+    let isInitialPoll = true;
+
     const pollChat = async () => {
       try {
         let chatMessages: Array<Record<string, unknown>> = [];
@@ -1122,12 +1131,18 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
           // bottom:72px start and look like 2-3 emojis instead of many.
           // 120ms gap between staggered appearances reads as a natural
           // celebration cascade and matches the sender's tap rhythm.
+          //
+          // On the FIRST poll after page load we still mark every
+          // historical REACTION row as seen, but we DON'T animate any
+          // of them — otherwise reloading mid-stream would replay the
+          // entire reaction history as a fresh storm of float-ups.
           const reactionRows = chatMessages.filter(m => (m.chatType as string) === 'REACTION');
           const newReactions: Array<{ id: number; emoji: string; timestamp: number }> = [];
           for (const r of reactionRows) {
             const id = String(r.id);
             if (seenApiMessageIds.current.has(id)) continue;
             seenApiMessageIds.current.add(id);
+            if (isInitialPoll) continue; // mark seen, skip animation
             const emoji = String(r.message || r.content || '').trim();
             if (!emoji) continue;
             newReactions.push({
@@ -1231,6 +1246,14 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
         }
       } catch {
         // Silent fail for polling
+      } finally {
+        // Whether or not the first poll succeeded, the next one is
+        // the "live" one and should animate new reactions normally.
+        // We flip this in finally rather than after the try so a
+        // first-poll network error doesn't trap us in initial-mode
+        // forever (subsequent recoveries would still suppress new
+        // animations).
+        isInitialPoll = false;
       }
     };
 
