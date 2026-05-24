@@ -198,6 +198,16 @@ export function eventUrl(slug: string): string {
 export function livestreamUrl(slug: string): string {
   return `${SITE_URL}/user/events/livestream/${encodeURIComponent(slug)}`;
 }
+/**
+ * Path-based watch URL. The viewerId is what the backend calls a "watch
+ * id" - one UUID that resolves to {event, paid-access, device, name,
+ * timestamps} via /api/remote/public/anonymous-viewer/{eventId}/access-status.
+ * Carrying it in the path (not a query string) keeps it as part of the
+ * canonical SEO URL and survives copy-paste / share-link flows.
+ */
+export function livestreamWatchUrl(slug: string, viewerId: string): string {
+  return `${SITE_URL}/user/events/livestream/${encodeURIComponent(slug)}/${encodeURIComponent(viewerId)}`;
+}
 export function photographerUrl(slug: string): string {
   return `${SITE_URL}/photographers/${encodeURIComponent(slug)}`;
 }

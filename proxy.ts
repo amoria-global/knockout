@@ -51,14 +51,30 @@ async function seoRedirect(request: NextRequest): Promise<NextResponse | null> {
     if (slug) redirectPath = `/photographers/${slug}`;
   } else if (path === '/user/events/live-stream') {
     const slug = await lookupSlug('stream', id);
-    if (slug) redirectPath = `/user/events/livestream/${slug}`;
+    if (slug) {
+      // If the legacy URL carries ?viewerId=<UUID>, push it into the path
+      // so the canonical /user/events/livestream/{slug}/{viewerId} watch
+      // URL becomes the indexable share link.
+      const vid = url.searchParams.get('viewerId');
+      const isValidVid = vid && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(vid);
+      redirectPath = isValidVid
+        ? `/user/events/livestream/${slug}/${vid}`
+        : `/user/events/livestream/${slug}`;
+    }
   }
   if (!redirectPath) return null;
 
-  // Preserve non-id query params (e.g. ?reserved=1, ?group=1).
+  // Preserve only query params the destination still needs (e.g.
+  // ?reserved=1, ?group=1). Strip the ones that have been promoted
+  // into the path (id, eventId, viewerId) and the ones that no longer
+  // mean anything to the new pages (from=payment - live-stream now
+  // always retries on access denial, no hint needed).
   const passthrough = new URLSearchParams();
   url.searchParams.forEach((v, k) => {
-    if (k !== 'id' && k !== 'eventId') passthrough.append(k, v);
+    if (k === 'id' || k === 'eventId') return;
+    if (k === 'viewerId' && redirectPath?.includes('/livestream/')) return;
+    if (k === 'from') return;
+    passthrough.append(k, v);
   });
   const finalUrl = new URL(
     redirectPath + (passthrough.toString() ? '?' + passthrough.toString() : ''),

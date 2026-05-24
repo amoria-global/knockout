@@ -266,7 +266,7 @@ function JoinPackageContent(): React.JSX.Element {
         const userName = userStr ? `${JSON.parse(userStr).firstName || ''} ${JSON.parse(userStr).lastName || ''}`.trim() : 'Viewer';
         const res = await redeemGroupCode(selectedEvent.id, { inviteCode: urlToken, viewerUsername: userName });
         if (res.success && res.data) {
-          router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&from=payment&inviteToken=${encodeURIComponent(urlToken)}`);
+          router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&inviteToken=${encodeURIComponent(urlToken)}`);
         } else {
           const msg = res.error || '';
           let title = 'Invite code problem';
@@ -337,7 +337,7 @@ function JoinPackageContent(): React.JSX.Element {
           const isLiveNow = (selectedEvent.eventStatus || '').toUpperCase() === 'ONGOING'
             && (selectedEvent as Record<string, unknown>).streamStatus !== 'ended';
           if (isLiveNow) {
-            router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&from=payment`);
+            router.push(`/user/events/live-stream?eventId=${selectedEvent.id}`);
           } else {
             router.push(`/user/events/view-event?id=${selectedEvent.id}`);
           }
@@ -556,7 +556,7 @@ function JoinPackageContent(): React.JSX.Element {
       if (status === 'ACCESS_GRANTED') {
         // Already paid - go to stream (skip packages entirely)
         setShowViewerInfoModal(false);
-        router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&from=payment`);
+        router.push(`/user/events/live-stream?eventId=${selectedEvent.id}`);
       } else if (status === 'DEVICE_CONFLICT') {
         // Active on another device - ask to switch
         setShowViewerInfoModal(false);
@@ -602,7 +602,7 @@ function JoinPackageContent(): React.JSX.Element {
       const res = await switchAnonymousDevice(selectedEvent.id, pendingViewerId, fingerprint);
       if (res.success) {
         setShowDeviceSwitchModal(false);
-        router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&from=payment`);
+        router.push(`/user/events/live-stream?eventId=${selectedEvent.id}`);
       } else {
         setShowDeviceSwitchModal(false);
         setViewerInfoError(res.error || 'Could not switch device.');
@@ -720,21 +720,21 @@ function JoinPackageContent(): React.JSX.Element {
             const res = await redeemGroupCode(selectedEvent.id, { inviteCode: code, viewerUsername: userName });
             const viewerSuffix = !isAuthenticated && pendingViewerId ? `&viewerId=${pendingViewerId}` : '';
             if (res.success && res.data) {
-              router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&from=payment&inviteToken=${encodeURIComponent(code)}${viewerSuffix}`);
+              router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&inviteToken=${encodeURIComponent(code)}${viewerSuffix}`);
             } else {
-              router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&from=payment${viewerSuffix}`);
+              router.push(`/user/events/live-stream?eventId=${selectedEvent.id}${viewerSuffix}`);
             }
           } catch {
             const viewerSuffix = !isAuthenticated && pendingViewerId ? `&viewerId=${pendingViewerId}` : '';
-            router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&from=payment${viewerSuffix}`);
+            router.push(`/user/events/live-stream?eventId=${selectedEvent.id}${viewerSuffix}`);
           }
         } else {
           const inviteToken = searchParams.get('inviteToken') || '';
           const viewerSuffix = !isAuthenticated && pendingViewerId ? `&viewerId=${pendingViewerId}` : '';
           if (inviteToken) {
-            router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&from=payment&inviteToken=${encodeURIComponent(inviteToken)}${viewerSuffix}`);
+            router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&inviteToken=${encodeURIComponent(inviteToken)}${viewerSuffix}`);
           } else {
-            router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&from=payment${viewerSuffix}`);
+            router.push(`/user/events/live-stream?eventId=${selectedEvent.id}${viewerSuffix}`);
           }
         }
       } else {
@@ -1888,7 +1888,7 @@ function JoinPackageContent(): React.JSX.Element {
                   const isLiveNow = (selectedEvent?.eventStatus || '').toUpperCase() === 'ONGOING'
                     && (selectedEvent as Record<string, unknown> | null)?.streamStatus !== 'ended';
                   if (isLiveNow && selectedEvent?.id) {
-                    router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&from=payment&inviteToken=${encodeURIComponent(groupShareCode)}`);
+                    router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&inviteToken=${encodeURIComponent(groupShareCode)}`);
                   } else if (selectedEvent?.id) {
                     router.push(`/user/events/view-event?id=${selectedEvent.id}&reserved=1&group=1`);
                   }
@@ -2031,7 +2031,7 @@ function JoinPackageContent(): React.JSX.Element {
                       setShowGroupCodeModal(false);
                       if (!selectedEvent?.id) return;
                       if (isLiveNow) {
-                        router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&from=payment&inviteToken=${encodeURIComponent(groupShareCode)}`);
+                        router.push(`/user/events/live-stream?eventId=${selectedEvent.id}&inviteToken=${encodeURIComponent(groupShareCode)}`);
                       } else {
                         router.push(`/user/events/view-event?id=${selectedEvent.id}&reserved=1&group=1`);
                       }
