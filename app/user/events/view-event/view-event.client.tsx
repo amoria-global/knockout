@@ -359,11 +359,18 @@ function ViewEventContent({ eventIdProp }: { eventIdProp?: string }): React.JSX.
   }, [selectedEvent, autoJoinDismissed]);
 
   // Tick the auto-join countdown - when it hits 0, redirect to the stream.
+  // The destination carries the viewerId in the path (the new
+  // /livestream/{slug}/{viewerId} watch URL) so the stream page can
+  // authenticate the viewer directly from the URL with no extra
+  // round-trip. Proxy redirects the legacy ?eventId= form, but
+  // populating the right URL here saves one redirect hop.
   useEffect(() => {
     if (autoJoinSeconds === null || autoJoinDismissed) return;
     if (autoJoinSeconds <= 0) {
       if (selectedEvent?.id && typeof window !== 'undefined') {
-        window.location.href = `/user/events/live-stream?eventId=${selectedEvent.id}`;
+        const vid = localStorage.getItem(`anonymousViewer_${selectedEvent.id}`);
+        const q = `eventId=${selectedEvent.id}${vid ? `&viewerId=${vid}` : ''}`;
+        window.location.href = `/user/events/live-stream?${q}`;
       }
       return;
     }
@@ -381,7 +388,9 @@ function ViewEventContent({ eventIdProp }: { eventIdProp?: string }): React.JSX.
 
   const joinLiveNow = useCallback(() => {
     if (!selectedEvent?.id || typeof window === 'undefined') return;
-    window.location.href = `/user/events/live-stream?eventId=${selectedEvent.id}`;
+    const vid = localStorage.getItem(`anonymousViewer_${selectedEvent.id}`);
+    const q = `eventId=${selectedEvent.id}${vid ? `&viewerId=${vid}` : ''}`;
+    window.location.href = `/user/events/live-stream?${q}`;
   }, [selectedEvent?.id]);
 
   // Viewer auth modal state
@@ -767,7 +776,10 @@ function ViewEventContent({ eventIdProp }: { eventIdProp?: string }): React.JSX.
         if (selectedEvent?.id) {
           const eventCheck = await getPublicEventById(selectedEvent.id);
           if (eventCheck.success && eventCheck.data?.hasPurchasedAccess) {
-            window.location.href = `/user/events/live-stream?eventId=${selectedEvent.id}`;
+            {
+              const __vid = typeof window !== 'undefined' ? localStorage.getItem(`anonymousViewer_${selectedEvent.id}`) : null;
+              window.location.href = `/user/events/live-stream?eventId=${selectedEvent.id}${__vid ? `&viewerId=${__vid}` : ''}`;
+            }
             return;
           }
         }
@@ -1078,7 +1090,10 @@ function ViewEventContent({ eventIdProp }: { eventIdProp?: string }): React.JSX.
         if (selectedEvent?.id) {
           const eventCheck = await getPublicEventById(selectedEvent.id);
           if (eventCheck.success && eventCheck.data?.hasPurchasedAccess) {
-            window.location.href = `/user/events/live-stream?eventId=${selectedEvent.id}`;
+            {
+              const __vid = typeof window !== 'undefined' ? localStorage.getItem(`anonymousViewer_${selectedEvent.id}`) : null;
+              window.location.href = `/user/events/live-stream?eventId=${selectedEvent.id}${__vid ? `&viewerId=${__vid}` : ''}`;
+            }
             return;
           }
         }
@@ -1167,7 +1182,10 @@ function ViewEventContent({ eventIdProp }: { eventIdProp?: string }): React.JSX.
           if (selectedEvent?.id) {
             const eventCheck = await getPublicEventById(selectedEvent.id);
             if (eventCheck.success && eventCheck.data?.hasPurchasedAccess) {
-              window.location.href = `/user/events/live-stream?eventId=${selectedEvent.id}`;
+              {
+              const __vid = typeof window !== 'undefined' ? localStorage.getItem(`anonymousViewer_${selectedEvent.id}`) : null;
+              window.location.href = `/user/events/live-stream?eventId=${selectedEvent.id}${__vid ? `&viewerId=${__vid}` : ''}`;
+            }
               return;
             }
           }
@@ -1377,7 +1395,10 @@ function ViewEventContent({ eventIdProp }: { eventIdProp?: string }): React.JSX.
           if (isCompleted) return { label: 'Event ended', icon: 'bi-archive', onClick: () => {}, tone: 'ended' };
           if (isLive) {
             if (!isPaid) return { label: 'Watch live', icon: 'bi-play-circle-fill', onClick: () => { if (blockedByGeo()) return; window.location.href = `/user/events/join-event?id=${selectedEvent.id}`; }, tone: 'live' };
-            if (hasPurchasedAccess) return { label: 'Start watching', icon: 'bi-play-circle-fill', onClick: () => { if (blockedByGeo()) return; window.location.href = `/user/events/live-stream?eventId=${selectedEvent.id}`; }, tone: 'live' };
+            if (hasPurchasedAccess) return { label: 'Start watching', icon: 'bi-play-circle-fill', onClick: () => { if (blockedByGeo()) return; {
+              const __vid = typeof window !== 'undefined' ? localStorage.getItem(`anonymousViewer_${selectedEvent.id}`) : null;
+              window.location.href = `/user/events/live-stream?eventId=${selectedEvent.id}${__vid ? `&viewerId=${__vid}` : ''}`;
+            } }, tone: 'live' };
             return { label: 'Buy access', sub: `${(selectedEvent.price || 0).toLocaleString()} ${selectedEvent.streamFeeCurrencyAbbreviation || 'RWF'}`, icon: 'bi-ticket-perforated-fill', onClick: () => handlePurchaseAccess(`/user/events/join-package?id=${selectedEvent.id}`), tone: 'live' };
           }
           if (isUpcoming) {

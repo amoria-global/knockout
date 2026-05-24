@@ -45,12 +45,10 @@ const FullEmojiPicker = dynamic(
 // we don't have to import the enums at runtime (they'd block the
 // chunk-split).
 const EMOJI_THEME_DARK = 'dark' as unknown as EmojiPickerThemeT;
-// 'native' renders emojis using the browser/OS glyph instead of fetching
-// Apple PNG sprites from a CDN. Sprites were failing to load for some
-// users (CORS / network-blocked / slow) and the grid showed placeholder
-// torn-image icons - the screenshot bug we were just sent. Native loads
-// instantly, scales with the user's system font, and never 404s.
-const EMOJI_STYLE_NATIVE = 'native' as unknown as EmojiPickerStyleT;
+// 'apple' style — colorful Apple-design emoji sprites, matches the
+// reference screenshot the user shared. Loads PNGs from the picker's
+// bundled CDN.
+const EMOJI_STYLE_APPLE = 'apple' as unknown as EmojiPickerStyleT;
 import { PlayIcon, PauseIcon, VolumeHighIcon, VolumeLowIcon, VolumeOffIcon, FullscreenEnterIcon, FullscreenExitIcon, PipEnterIcon, SpinnerIcon, EmojiIcon, PeopleIcon, GearIcon } from '@/app/components/player-icons';
 
 // Dynamically import VideoMessageRecorder to avoid SSR issues
@@ -1297,15 +1295,21 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mainEvent?.streamId, mainEvent?.id, mainEventIndex, blockedUsers, isAuthenticated, isAnonymousViewer, viewerIdProp]);
 
-  // Auto-scroll chat to bottom when new messages arrive
+  // Auto-scroll chat to bottom when new messages arrive.
+  // Previously this only ran when the user was already within 100px of
+  // the bottom; in practice that made the chat look frozen for any
+  // viewer who briefly scrolled to read an emoji float behind the
+  // bubble list. New messages now ALWAYS pin to the bottom so the
+  // panel feels live; users can scroll back to read, but the next
+  // message arriving snaps them forward to current.
+  // requestAnimationFrame defers one frame so the DOM has the new
+  // row laid out before we measure scrollHeight.
   useEffect(() => {
     const container = chatContainerRef.current;
     if (!container) return;
-    // Only auto-scroll if user is near the bottom (within 100px)
-    const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100;
-    if (isNearBottom) {
+    requestAnimationFrame(() => {
       container.scrollTop = container.scrollHeight;
-    }
+    });
   }, [mainEvent?.messages?.length]);
 
   // ── Fetch stream ads + poll for manual triggers ──
@@ -7894,13 +7898,30 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
                     </div>
                   </div>
 
-                  {/* Emoji reactions toggle. Opens the popover picker
-                      above the controls — viewers pick from the full
-                      grid there. The inline 5 quick-tap emoji buttons
-                      that briefly lived here cluttered the controls
-                      row and were removed; the picker popover is the
-                      single emoji surface again. */}
-                  <button className="vjs-btn vjs-mobile-hidden" onClick={() => setShowEmojiPicker(!showEmojiPicker)} title="Emoji reactions">
+                  {/* Top-5 quick-tap reactions: tap once to fire the
+                      most-common emojis (fire/laugh/heart/thumbs/clap)
+                      without opening the picker. Visible on every
+                      viewport now (was previously vjs-mobile-hidden
+                      and disappeared on narrow players). */}
+                  {emojiList.slice(0, 5).map((item) => (
+                    <button
+                      key={`quick-${item.name}`}
+                      className="vjs-btn vjs-quick-emoji"
+                      onClick={() => handleEmojiReaction(item.emoji)}
+                      title={item.name}
+                      style={{
+                        fontSize: '20px',
+                        padding: '0 4px',
+                        lineHeight: 1,
+                      }}
+                    >
+                      {item.emoji}
+                    </button>
+                  ))}
+
+                  {/* Full picker: the grid + categories, behind the
+                      smiley icon. */}
+                  <button className="vjs-btn" onClick={() => setShowEmojiPicker(!showEmojiPicker)} title="More emoji reactions">
                     <EmojiIcon />
                   </button>
 
@@ -9416,26 +9437,9 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
                   padding: '4px 8px',
                   gap: '4px'
                 }}>
-                  <input
-                    type="text"
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-                    placeholder={replyingTo ? `Reply to @${replyingTo.sender}...` : "Send a message..."}
-                    style={{
-                      flex: 1,
-                      backgroundColor: 'transparent',
-                      border: 'none',
-                      outline: 'none',
-                      fontSize: '13px',
-                      color: '#efeff1',
-                      padding: '4px 2px'
-                    }}
-                  />
-                  {/* Emoji insertion button - appends a chosen emoji to the
-                      message text. Distinct from the player-controls
-                      emoji reactions: this writes into the chat, those
-                      fire floating reactions on the video.
+                  {/* Emoji insertion button - sits BEFORE the text input
+                      (matches Messenger / WhatsApp / the reference
+                      screenshot's "smiley left of textbox" pattern).
                       Hard-transparent (no blue tap-highlight on mobile,
                       no outline ring on focus) so it never grows a
                       background colour. */}
@@ -9455,7 +9459,7 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
                       padding: '2px 4px',
                       display: 'flex',
                       alignItems: 'center',
-                      fontSize: '16px',
+                      fontSize: '18px',
                       color: '#adadb8',
                       transition: 'transform 0.15s'
                     }}
@@ -9464,6 +9468,22 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
                   >
                     <i className="bi bi-emoji-smile"></i>
                   </button>
+                  <input
+                    type="text"
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
+                    placeholder={replyingTo ? `Reply to @${replyingTo.sender}...` : "Send a message..."}
+                    style={{
+                      flex: 1,
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      outline: 'none',
+                      fontSize: '13px',
+                      color: '#efeff1',
+                      padding: '4px 2px'
+                    }}
+                  />
                   <button
                     onClick={handleSendMessage}
                     className="ls-chat-send"
@@ -9510,7 +9530,7 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
                           setNewMessage(prev => prev + emojiData.emoji);
                         }}
                         theme={EMOJI_THEME_DARK}
-                        emojiStyle={EMOJI_STYLE_NATIVE}
+                        emojiStyle={EMOJI_STYLE_APPLE}
                         width={320}
                         height={380}
                         autoFocusSearch={false}
