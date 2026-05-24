@@ -441,6 +441,17 @@ const AmoriaKNavbar = () => {
       className="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
       data-theme={isDarkHeroPage ? (isScrolled ? 'dark-solid' : 'dark-transparent') : (isScrolled ? 'light-solid' : 'light-flat')}
       style={{
+        // Inline position:fixed as a belt-and-suspenders override for
+        // the Tailwind `fixed` class above. On mobile some viewers were
+        // seeing the navbar only at scrollY=0 and disappearing on scroll,
+        // consistent with the utility class not taking effect (or being
+        // overridden) — explicit inline declarations win the cascade
+        // regardless of Tailwind layer order or purge gotchas.
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 50,
         fontFamily: "'Pragati Narrow', sans-serif",
         // Background:
         //  • dark-hero page over hero  → fully transparent (hero shows through)
