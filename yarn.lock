@@ -1801,6 +1801,13 @@ dunder-proto@^1.0.1:
     es-errors "^1.3.0"
     gopd "^1.2.0"
 
+emoji-picker-react@^4.19.1:
+  version "4.19.1"
+  resolved "https://registry.yarnpkg.com/emoji-picker-react/-/emoji-picker-react-4.19.1.tgz#b901e17c91612257c9bc99af861d0326c68a90bb"
+  integrity sha512-BmDdqInKFVYJpv7qS9WI6L9656cDAC+FkDvUjJds56nKHbaVTBNeDmLwKBytRnzu37zWHs9Isg7gt5PT43y6xA==
+  dependencies:
+    flairup "1.0.0"
+
 emoji-regex-xs@^1.0.0:
   version "1.0.0"
   resolved "https://registry.npmjs.org/emoji-regex-xs/-/emoji-regex-xs-1.0.0.tgz"
@@ -1865,6 +1872,11 @@ fflate@~0.8.2:
   version "0.8.2"
   resolved "https://registry.npmjs.org/fflate/-/fflate-0.8.2.tgz"
   integrity sha512-cPJU47OaAoCbg0pBvzsgpTPhmhqI5eJjh/JIu8tPj5q+T7iLvW/JAYUqmE7KOB4R1ZyEhzBaIQpQpardBF5z8A==
+
+flairup@1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/flairup/-/flairup-1.0.0.tgz#d3af0052ad02734c12d2446608a869498adb351b"
+  integrity sha512-IKlE+pNvL2R+kVL1kEhUYqRxVqeFnjiIvHWDMLFXNaqyUdFXQM2wte44EfMYJNHkW16X991t2Zg8apKkhv7OBA==
 
 form-data@^4.0.4:
   version "4.0.5"
