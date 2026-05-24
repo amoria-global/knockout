@@ -1595,8 +1595,12 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
   const [userHasRated, setUserHasRated] = useState(false);
   const [ratingSubmitting, setRatingSubmitting] = useState(false);
   const [ratingSuccess, setRatingSuccess] = useState(false);
-  // Emoji reactions state
-  const [activeReactions, setActiveReactions] = useState<Array<{ id: number; emoji: string; timestamp: number }>>([]);
+  // Emoji reactions state. fromMe distinguishes the sender's own
+  // float-up (rendered prominently for tap feedback) from incoming
+  // reactions broadcast by other viewers (rendered noticeably smaller
+  // so a stream of reactions doesn't dominate the player during a
+  // hype moment).
+  const [activeReactions, setActiveReactions] = useState<Array<{ id: number; emoji: string; timestamp: number; fromMe?: boolean }>>([]);
   // Recording state
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
@@ -2808,6 +2812,7 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
       id: Date.now() + Math.random(),
       emoji,
       timestamp: Date.now(),
+      fromMe: true,
     };
     setActiveReactions(prev => [...prev, newReaction]);
     setTimeout(() => {
@@ -7655,9 +7660,11 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
               {/* Floating Emoji Reactions. Anchored to the bottom-right
                   corner of the player, popping up the right edge with a
                   small jitter so consecutive reactions don't overlap
-                  perfectly. Smaller font than the picker preview so the
-                  player itself stays the focus — matches the YouTube Live
-                  pattern of light, ephemeral celebrations. */}
+                  perfectly. The sender sees their own at 28px for tap
+                  feedback; reactions broadcast by OTHER viewers render
+                  at 16px (and slightly translucent) so an active
+                  reaction stream doesn't crowd the stage during a hype
+                  moment. */}
               {activeReactions.map((reaction) => (
                 <div
                   key={reaction.id}
@@ -7665,7 +7672,8 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
                     position: 'absolute',
                     right: `${8 + Math.random() * 8}%`,
                     bottom: '72px',
-                    fontSize: '28px',
+                    fontSize: reaction.fromMe ? '28px' : '16px',
+                    opacity: reaction.fromMe ? 1 : 0.85,
                     animation: 'floatUp 3s ease-out forwards',
                     zIndex: 15,
                     pointerEvents: 'none',
