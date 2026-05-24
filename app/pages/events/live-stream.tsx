@@ -32,6 +32,20 @@ import { getStreamAds, pollAdTrigger, recordAdClick } from '@/lib/APIs/public/ge
 import { API_ENDPOINTS } from '@/lib/api/config';
 import Hls from 'hls.js';
 import '@/app/styles/live-stream-player.css';
+// Full category-tabbed emoji picker for the chat composer. Dynamic-imported
+// (ssr:false + chunk-split) because the library bundles a large unicode
+// dataset that we shouldn't ship on first paint.
+import type { Theme as EmojiPickerThemeT, EmojiStyle as EmojiPickerStyleT } from 'emoji-picker-react';
+const FullEmojiPicker = dynamic(
+  () => import('emoji-picker-react').then(m => m.default),
+  { ssr: false, loading: () => null }
+);
+// Library exposes Theme + EmojiStyle as TS enums whose values are the
+// matching lowercase string keys at runtime. Cast through the type so
+// we don't have to import the enums at runtime (they'd block the
+// chunk-split).
+const EMOJI_THEME_DARK = 'dark' as unknown as EmojiPickerThemeT;
+const EMOJI_STYLE_APPLE = 'apple' as unknown as EmojiPickerStyleT;
 import { PlayIcon, PauseIcon, VolumeHighIcon, VolumeLowIcon, VolumeOffIcon, FullscreenEnterIcon, FullscreenExitIcon, PipEnterIcon, SpinnerIcon, EmojiIcon, PeopleIcon, GearIcon } from '@/app/components/player-icons';
 
 // Dynamically import VideoMessageRecorder to avoid SSR issues
@@ -5321,8 +5335,11 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
         .ls-chat-input-row input[type="text"]::placeholder {
           color: rgba(244, 246, 251, 0.42) !important;
         }
-        /* Send button - circular brand-blue icon nested inside the pill */
-        .ls-chat-input-row > button {
+        /* Send button - circular brand-blue icon nested inside the pill.
+           Scoped to .ls-chat-send so the rule doesn't grab the emoji
+           button (or any future button we drop into this row) and paint
+           a blue circle behind it. */
+        .ls-chat-input-row > button.ls-chat-send {
           width: 38px;
           height: 38px;
           min-width: 38px;
@@ -5341,22 +5358,31 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
             inset 0 1px 0 rgba(255, 255, 255, 0.22);
           transition: transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1), filter 180ms ease, opacity 180ms ease;
         }
-        .ls-chat-input-row > button[disabled],
-        .ls-chat-input-row > button:disabled {
+        .ls-chat-input-row > button.ls-chat-send[disabled],
+        .ls-chat-input-row > button.ls-chat-send:disabled {
           opacity: 0.40;
           cursor: default;
           filter: none;
           box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.10);
         }
-        .ls-chat-input-row > button:not(:disabled):hover {
+        .ls-chat-input-row > button.ls-chat-send:not(:disabled):hover {
           transform: scale(1.06);
           filter: brightness(1.10);
           box-shadow:
             0 6px 18px -4px rgba(31, 107, 255, 0.70),
             inset 0 1px 0 rgba(255, 255, 255, 0.28);
         }
-        .ls-chat-input-row > button:not(:disabled):active {
+        .ls-chat-input-row > button.ls-chat-send:not(:disabled):active {
           transform: scale(0.94);
+        }
+        /* Emoji trigger button — explicitly stays bg-less so the
+           ls-chat-input-row > button rule above never inherits to it. */
+        .ls-chat-input-row > button.ls-chat-emoji {
+          background: transparent !important;
+          background-color: transparent !important;
+          border: none !important;
+          box-shadow: none !important;
+          padding: 2px 4px !important;
         }
 
         /* ═══════════════════════════════════════════════════════════════════════
@@ -9404,6 +9430,7 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
                   <button
                     onClick={() => setShowChatEmojiPicker(v => !v)}
                     title="Add emoji"
+                    className="ls-chat-emoji"
                     style={{
                       background: 'transparent',
                       backgroundColor: 'transparent',
@@ -9427,6 +9454,7 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
                   </button>
                   <button
                     onClick={handleSendMessage}
+                    className="ls-chat-send"
                     style={{
                       color: newMessage.trim() ? '#0a4da3' : '#adadb8',
                       background: 'transparent',
@@ -9450,47 +9478,33 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
                     <div
                       ref={chatEmojiPickerRef}
                       data-chat-emoji-picker
+                      // Stop mousedown bubbling so the document outside-click
+                      // listener doesn't fire for clicks landing inside the
+                      // picker (category tabs, search, scroll). Selections
+                      // go through onEmojiClick and don't close the picker.
+                      onMouseDown={(e) => e.stopPropagation()}
                       style={{
                         position: 'absolute',
                         bottom: 'calc(100% + 6px)',
                         right: 8,
-                        background: '#1f1f24',
-                        border: '1px solid #3a3a42',
-                        borderRadius: 10,
-                        padding: 6,
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(8, 1fr)',
-                        gap: 2,
-                        boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
                         zIndex: 60,
+                        borderRadius: 12,
+                        overflow: 'hidden',
+                        boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
                       }}
                     >
-                      {emojiList.map((item) => (
-                        <button
-                          key={`chat-${item.name}`}
-                          onClick={(e) => {
-                            // Don't close - viewers usually fire 2-3 emojis in
-                            // a row. Stop propagation so the outside-click
-                            // handler doesn't fire and snap the panel shut.
-                            e.stopPropagation();
-                            setNewMessage(prev => prev + item.emoji);
-                          }}
-                          title={item.name}
-                          style={{
-                            background: 'transparent',
-                            border: 'none',
-                            cursor: 'pointer',
-                            fontSize: '18px',
-                            padding: '4px 6px',
-                            lineHeight: 1,
-                            borderRadius: 6,
-                          }}
-                          onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
-                          onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                        >
-                          {item.emoji}
-                        </button>
-                      ))}
+                      <FullEmojiPicker
+                        onEmojiClick={(emojiData: { emoji: string }) => {
+                          setNewMessage(prev => prev + emojiData.emoji);
+                        }}
+                        theme={EMOJI_THEME_DARK}
+                        emojiStyle={EMOJI_STYLE_APPLE}
+                        width={320}
+                        height={380}
+                        autoFocusSearch={false}
+                        previewConfig={{ showPreview: false }}
+                        lazyLoadEmojis
+                      />
                     </div>
                   )}
                 </div>
