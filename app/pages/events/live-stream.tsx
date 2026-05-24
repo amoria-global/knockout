@@ -909,6 +909,17 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
     let heartbeatInterval: ReturnType<typeof setInterval>;
     let cancelled = false;
 
+    // Tolerate transient network failures - the user's wifi dropping
+    // for 10 seconds should NOT eject them from a paid stream. Only
+    // an EXPLICIT server rejection (HTTP 200 + action:0, e.g.
+    // device-mismatch) is treated as a real session conflict. HTTP
+    // 5xx / fetch failures count toward a tolerance budget; if the
+    // budget runs out we surface the error but keep retrying in the
+    // background so the moment connectivity returns the user gets
+    // bounced back into the stream.
+    let networkFailures = 0;
+    const MAX_NETWORK_FAILURES = 3;  // ~90s of dropped connectivity
+
     const initDeviceSession = async () => {
       try {
         const deviceId = await getDeviceId();
@@ -921,17 +932,40 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
           return;
         }
         setDeviceError(null);
-        // Start heartbeat every 30 seconds
+        networkFailures = 0;
+        // Heartbeat every 30 seconds
         heartbeatInterval = setInterval(async () => {
           if (cancelled) return;
-          try {
-            const hbRes = await sendHeartbeat(eventId, deviceId);
-            const hbData = hbRes.data as Record<string, unknown> | undefined;
-            if (!hbRes.success || hbData?.action === 0) {
-              setDeviceError((hbData?.message as string) || 'Session expired');
-              clearInterval(heartbeatInterval);
+          let hbRes: Awaited<ReturnType<typeof sendHeartbeat>> | null = null;
+          try { hbRes = await sendHeartbeat(eventId, deviceId); }
+          catch { /* fetch threw - count as network failure */ }
+          if (!hbRes) {
+            networkFailures++;
+            if (networkFailures >= MAX_NETWORK_FAILURES) {
+              setDeviceError('Reconnecting…');
             }
-          } catch { /* silent */ }
+            return;
+          }
+          const hbData = hbRes.data as Record<string, unknown> | undefined;
+          const explicitReject = hbRes.success && hbData?.action === 0;
+          if (explicitReject) {
+            // Real session conflict from the server - stop the loop,
+            // show the modal, let the user retry manually.
+            setDeviceError((hbData?.message as string) || 'Session expired');
+            clearInterval(heartbeatInterval);
+            return;
+          }
+          if (!hbRes.success) {
+            // HTTP non-2xx with no explicit rejection - transient.
+            networkFailures++;
+            if (networkFailures >= MAX_NETWORK_FAILURES) {
+              setDeviceError('Reconnecting…');
+            }
+            return;
+          }
+          // Healthy heartbeat - clear any soft-error and reset budget.
+          networkFailures = 0;
+          setDeviceError(prev => prev === 'Reconnecting…' ? null : prev);
         }, 30000);
       } catch {
         // Silent fail - don't block viewing on fingerprint errors
@@ -957,6 +991,13 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
     let cancelled = false;
     let deviceFingerprint = '';
 
+    // Same tolerance pattern as the authenticated heartbeat above:
+    // distinguish transient network failures from explicit server
+    // rejections, retry through brief outages, surface a soft
+    // "Reconnecting…" only after several consecutive misses.
+    let networkFailures = 0;
+    const MAX_NETWORK_FAILURES = 3;
+
     const initAnonSession = async () => {
       try {
         deviceFingerprint = await getDeviceId();
@@ -969,17 +1010,35 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
           return;
         }
         setDeviceError(null);
-        // Heartbeat every 30 seconds
+        networkFailures = 0;
         heartbeatInterval = setInterval(async () => {
           if (cancelled) return;
-          try {
-            const hbRes = await anonymousHeartbeat(eventId, anonymousViewerId, deviceFingerprint);
-            const hbData = hbRes.data as Record<string, unknown> | undefined;
-            if (!hbRes.success || hbData?.action === 0) {
-              setDeviceError((hbData?.message as string) || 'Session expired');
-              clearInterval(heartbeatInterval);
+          let hbRes: Awaited<ReturnType<typeof anonymousHeartbeat>> | null = null;
+          try { hbRes = await anonymousHeartbeat(eventId, anonymousViewerId, deviceFingerprint); }
+          catch { /* fetch threw */ }
+          if (!hbRes) {
+            networkFailures++;
+            if (networkFailures >= MAX_NETWORK_FAILURES) {
+              setDeviceError('Reconnecting…');
             }
-          } catch { /* silent */ }
+            return;
+          }
+          const hbData = hbRes.data as Record<string, unknown> | undefined;
+          const explicitReject = hbRes.success && hbData?.action === 0;
+          if (explicitReject) {
+            setDeviceError((hbData?.message as string) || 'Session expired');
+            clearInterval(heartbeatInterval);
+            return;
+          }
+          if (!hbRes.success) {
+            networkFailures++;
+            if (networkFailures >= MAX_NETWORK_FAILURES) {
+              setDeviceError('Reconnecting…');
+            }
+            return;
+          }
+          networkFailures = 0;
+          setDeviceError(prev => prev === 'Reconnecting…' ? null : prev);
         }, 30000);
       } catch { /* silent */ }
     };
@@ -7219,16 +7278,38 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
                   textAlign: 'center',
                   gap: '16px',
                 }}>
-                  <i className="bi bi-display" style={{ fontSize: '48px', color: '#93c5fd' }}></i>
-                  <h3 style={{ color: '#fff', fontSize: '20px', fontWeight: '600', margin: 0 }}>
-                    Device Access Restricted
-                  </h3>
-                  <p style={{ color: '#adadb8', fontSize: '14px', margin: 0, maxWidth: '360px', lineHeight: '1.6' }}>
-                    {deviceError}
-                  </p>
-                  <p style={{ color: '#71717a', fontSize: '12px', margin: 0, maxWidth: '320px' }}>
-                    Close the other session or wait 60 seconds for it to expire, then refresh this page.
-                  </p>
+                  {(() => {
+                    // 'Reconnecting…' is the soft, network-blip state - we
+                    // keep trying in the background and the overlay clears
+                    // automatically when the heartbeat lands again. Show a
+                    // spinner + friendly copy instead of the device-conflict
+                    // explainer.
+                    const reconnecting = deviceError === 'Reconnecting…';
+                    return reconnecting ? (
+                      <>
+                        <i className="bi bi-wifi" style={{ fontSize: '48px', color: '#93c5fd' }}></i>
+                        <h3 style={{ color: '#fff', fontSize: '20px', fontWeight: '600', margin: 0 }}>
+                          Reconnecting…
+                        </h3>
+                        <p style={{ color: '#adadb8', fontSize: '14px', margin: 0, maxWidth: '360px', lineHeight: '1.6' }}>
+                          We&apos;re re-establishing your live connection. This will clear on its own as soon as the network is back.
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <i className="bi bi-display" style={{ fontSize: '48px', color: '#93c5fd' }}></i>
+                        <h3 style={{ color: '#fff', fontSize: '20px', fontWeight: '600', margin: 0 }}>
+                          Device Access Restricted
+                        </h3>
+                        <p style={{ color: '#adadb8', fontSize: '14px', margin: 0, maxWidth: '360px', lineHeight: '1.6' }}>
+                          {deviceError}
+                        </p>
+                        <p style={{ color: '#71717a', fontSize: '12px', margin: 0, maxWidth: '320px' }}>
+                          Close the other session or wait 60 seconds for it to expire, then refresh this page.
+                        </p>
+                      </>
+                    );
+                  })()}
                   <button
                     onClick={() => { setDeviceError(null); window.location.reload(); }}
                     style={{
