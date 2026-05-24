@@ -12,9 +12,20 @@ export class WHEPClient {
   private resourceUrl: string | null = null;
   private remoteStream: MediaStream;
   private reconnectAttempts = 0;
-  private maxReconnectAttempts = 5;
+  private maxReconnectAttempts = 999;  // effectively unbounded; we never stop trying
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private destroyed = false;
+  // Stall detector — peerConnection.connectionState stays 'connected'
+  // even when the upstream encoder has stopped sending frames (CF keeps
+  // the WebRTC session warm so a reconnecting encoder can resume into
+  // it). We need a stat-based watchdog: if bytesReceived on the inbound
+  // video RTP doesn't grow for >5 s while we think we're connected, the
+  // source dropped silently and we have to tear this peer down and
+  // re-negotiate fresh.
+  private statsTimer: ReturnType<typeof setInterval> | null = null;
+  private lastBytesReceived = 0;
+  private lastByteAdvanceAt = 0;
+  private static STALL_THRESHOLD_MS = 5000;
 
   constructor(endpoint: string, videoElement: HTMLVideoElement) {
     this.endpoint = endpoint;
@@ -55,6 +66,9 @@ export class WHEPClient {
         }
         if (state === 'connected') {
           this.reconnectAttempts = 0;
+          // Connected - arm the stat-based stall watchdog now that we
+          // have a peer that can produce inbound RTP stats.
+          this.startStallWatchdog();
         }
       };
 
@@ -122,15 +136,64 @@ export class WHEPClient {
   private handleDisconnect(): void {
     if (this.destroyed) return;
 
+    this.stopStallWatchdog();
+
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++;
-      const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts - 1), 10000);
-      console.log(`[WHEPClient] Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+      // Capped exponential backoff that tops out at 5 s, so a reconnecting
+      // encoder is picked up quickly. The earlier max of 10 s with only
+      // 5 attempts gave up after ~30 s of outage; viewers reported the
+      // black-screen-needs-reload bug on shorter drops than that.
+      const delay = Math.min(1000 * Math.pow(2, Math.min(this.reconnectAttempts - 1, 3)), 5000);
+      console.log(`[WHEPClient] Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts})`);
 
       this.cleanupConnection();
       this.reconnectTimer = setTimeout(() => this.connect(), delay);
-    } else {
-      console.error('[WHEPClient] Max reconnection attempts reached');
+    }
+  }
+
+  /** Start polling getStats() every 2s once the peer is connected.
+   *  Looks at the first inbound video RTP stream's bytesReceived; if
+   *  that hasn't grown for STALL_THRESHOLD_MS, force a reconnect. */
+  private startStallWatchdog(): void {
+    this.stopStallWatchdog();
+    this.lastBytesReceived = 0;
+    this.lastByteAdvanceAt = Date.now();
+    this.statsTimer = setInterval(async () => {
+      if (this.destroyed || !this.peerConnection) return;
+      try {
+        const stats = await this.peerConnection.getStats();
+        let totalBytes = 0;
+        stats.forEach((report) => {
+          // Track every inbound RTP stream (video + audio). Either one
+          // growing means the source is alive.
+          if (report.type === 'inbound-rtp') {
+            const r = report as RTCInboundRtpStreamStats & { bytesReceived?: number };
+            if (typeof r.bytesReceived === 'number') totalBytes += r.bytesReceived;
+          }
+        });
+        if (totalBytes > this.lastBytesReceived) {
+          this.lastBytesReceived = totalBytes;
+          this.lastByteAdvanceAt = Date.now();
+          return;
+        }
+        // No growth. If the peer claims to be connected and we've been
+        // dry for >5 s, the upstream stopped sending - reconnect.
+        const isConnected = this.peerConnection.connectionState === 'connected';
+        if (isConnected && Date.now() - this.lastByteAdvanceAt > WHEPClient.STALL_THRESHOLD_MS) {
+          console.log('[WHEPClient] No inbound bytes for >5s — forcing reconnect');
+          this.handleDisconnect();
+        }
+      } catch {
+        // getStats can throw if the peer is mid-transition; ignore.
+      }
+    }, 2000);
+  }
+
+  private stopStallWatchdog(): void {
+    if (this.statsTimer) {
+      clearInterval(this.statsTimer);
+      this.statsTimer = null;
     }
   }
 
@@ -155,6 +218,8 @@ export class WHEPClient {
    */
   destroy(): void {
     this.destroyed = true;
+
+    this.stopStallWatchdog();
 
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
