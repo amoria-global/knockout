@@ -1452,19 +1452,23 @@ function ViewEventContent({ eventIdProp }: { eventIdProp?: string }): React.JSX.
                     {statusLabel} · {formatDate(selectedEvent.eventDate)}
                   </small>
                 </div>
-                {/* Verify-access shortcut in the sticky ribbon - always shown
-                    beside the primary CTA (same as the hero) so users who
-                    scrolled past can recover prior access without scrolling
-                    back up. */}
-                <button
-                  type="button"
-                  className="ve-btn ve-btn--verify ve-btn--md ve-sticky-verify"
-                  onClick={() => { setVaError(null); setShowViewerAuth(true); }}
-                  aria-label="Already paid? Verify access"
-                >
-                  <i className="bi bi-shield-fill-check" aria-hidden="true" />
-                  <span className="ve-btn-label">Already paid?</span>
-                </button>
+                {/* Verify-access shortcut in the sticky ribbon - shown
+                    beside the primary CTA so users who scrolled past can
+                    recover prior access without scrolling back up.
+                    Hidden once the event is COMPLETED or CANCELLED —
+                    there's nothing to verify access to, and the button
+                    misleads visitors into thinking they can still join. */}
+                {!isCompleted && !isCancelled && (
+                  <button
+                    type="button"
+                    className="ve-btn ve-btn--verify ve-btn--md ve-sticky-verify"
+                    onClick={() => { setVaError(null); setShowViewerAuth(true); }}
+                    aria-label="Already paid? Verify access"
+                  >
+                    <i className="bi bi-shield-fill-check" aria-hidden="true" />
+                    <span className="ve-btn-label">Already paid?</span>
+                  </button>
+                )}
                 {primaryCTA && renderPrimaryCTA('md', 've-sticky-cta')}
               </div>
             </div>
@@ -1570,17 +1574,22 @@ function ViewEventContent({ eventIdProp }: { eventIdProp?: string }): React.JSX.
 
                   <div className="ve-hero-cta-row">
                     {primaryCTA && renderPrimaryCTA('lg')}
-                    {/* Always pair the primary CTA with the verify-access
-                        button (replaces the old More-info button) so anyone
-                        who already paid can recover access from the same row. */}
-                    <button
-                      type="button"
-                      className="ve-btn ve-btn--verify ve-btn--lg"
-                      onClick={() => { setVaError(null); setShowViewerAuth(true); }}
-                    >
-                      <i className="bi bi-shield-fill-check" aria-hidden="true" />
-                      <span className="ve-btn-label">Already paid? Verify access</span>
-                    </button>
+                    {/* Pair the primary CTA with the verify-access button
+                        so anyone who already paid can recover access from
+                        the same row — but only for upcoming/live events.
+                        Once the event has COMPLETED or been CANCELLED
+                        there's nothing to verify access to, and the
+                        button confuses visitors. */}
+                    {!isCompleted && !isCancelled && (
+                      <button
+                        type="button"
+                        className="ve-btn ve-btn--verify ve-btn--lg"
+                        onClick={() => { setVaError(null); setShowViewerAuth(true); }}
+                      >
+                        <i className="bi bi-shield-fill-check" aria-hidden="true" />
+                        <span className="ve-btn-label">Already paid? Verify access</span>
+                      </button>
+                    )}
                   </div>
 
                   {/* Group invite-code redemption surfaced right next to the
