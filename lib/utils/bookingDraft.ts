@@ -21,7 +21,7 @@ export interface BookingDraft {
   selectedPhotographerId: string | null;
   selectedPackageId: string | null;
   paymentMilestone: {
-    option: 'full' | 'half' | 'thirty';
+    option: 'full' | 'half' | 'seventy';
     milestones: { label: string; percentage: number; amount: number }[];
   } | null;
   eventDetails: {
