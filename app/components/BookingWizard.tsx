@@ -64,7 +64,7 @@ interface EventDetails {
 }
 
 interface MilestoneConfig {
-  option: 'full' | 'half' | 'thirty';
+  option: 'full' | 'half' | 'seventy';
   milestones: { label: string; percentage: number; amount: number }[];
 }
 
@@ -780,7 +780,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
   const [customPendingAfterAuth, setCustomPendingAfterAuth] = useState(false);
 
   // ── Slide 4 milestone ──
-  const [milestoneOption, setMilestoneOption] = useState<'full' | 'half' | 'thirty'>('half');
+  const [milestoneOption, setMilestoneOption] = useState<'full' | 'half' | 'seventy'>('half');
 
   // ── Slide 5 local state ──
   const [evtDate, setEvtDate] = useState('');
@@ -956,7 +956,15 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
           if (draft.eventDetails.venueName) setEvtVenueName(draft.eventDetails.venueName);
         }
         if (draft.paymentMilestone) {
-          setMilestoneOption(draft.paymentMilestone.option);
+          const opt = draft.paymentMilestone.option as string;
+          // Old drafts may carry the deprecated 'thirty' key (30/70 split,
+          // since replaced by 70/30 'seventy'). Normalize to the default
+          // 'half' rather than crash on an unknown value.
+          if (opt === 'full' || opt === 'half' || opt === 'seventy') {
+            setMilestoneOption(opt);
+          } else {
+            setMilestoneOption('half');
+          }
         }
       }
     });
@@ -1111,11 +1119,11 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
   const effectiveCurrency = currencySymbol;
 
   // ── Milestone computation ──
-  const computeMilestones = (opt: 'full' | 'half' | 'thirty'): MilestoneConfig => {
+  const computeMilestones = (opt: 'full' | 'half' | 'seventy'): MilestoneConfig => {
     const splits: Record<string, { label: string; pct: number }[]> = {
       full: [{ label: 'Full payment upfront', pct: 100 }],
-      half: [{ label: 'Deposit (50%)', pct: 50 }, { label: 'After delivery (50%)', pct: 50 }],
-      thirty: [{ label: 'Deposit (30%)', pct: 30 }, { label: 'After delivery (70%)', pct: 70 }],
+      half: [{ label: 'Deposit (50%)', pct: 50 }, { label: 'Balance before event date (50%)', pct: 50 }],
+      seventy: [{ label: 'Deposit (70%)', pct: 70 }, { label: 'Balance before event date (30%)', pct: 30 }],
     };
     return {
       option: opt,
@@ -1385,7 +1393,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
         // Escrow percentage from milestone selection
         ...(state.paymentMilestone ? {
           escrowPercentage: state.paymentMilestone.option === 'full' ? 100
-            : state.paymentMilestone.option === 'half' ? 50 : 30,
+            : state.paymentMilestone.option === 'half' ? 50 : 70,
         } : {}),
       };
 
@@ -2561,9 +2569,9 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
                   {([
+                    { key: 'half' as const, label: '50% Deposit', desc: '50% now, 50% before the event date' },
+                    { key: 'seventy' as const, label: '70% Deposit', desc: '70% now, 30% before the event date' },
                     { key: 'full' as const, label: '100% Upfront', desc: 'Pay everything now' },
-                    { key: 'half' as const, label: '50 / 50 Split', desc: '50% deposit, 50% after delivery' },
-                    { key: 'thirty' as const, label: '30 / 70 Split', desc: '30% deposit, 70% after delivery' },
                   ]).map(opt => {
                     const sel = milestoneOption === opt.key;
                     return (
@@ -2930,7 +2938,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
           declarationId={paymentDeclarationId}
           eventId={paymentEventId || undefined}
           title="Complete Booking Payment"
-          subtitle={`First milestone payment (${state.paymentMilestone?.option === 'full' ? '100%' : state.paymentMilestone?.option === 'half' ? '50%' : '30%'})`}
+          subtitle={`First milestone payment (${state.paymentMilestone?.option === 'full' ? '100%' : state.paymentMilestone?.option === 'half' ? '50%' : '70%'})`}
         />
       )}
 
