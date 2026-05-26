@@ -612,7 +612,9 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>, type: 'profile' | 'cover' | 'project') => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { setSlideError('File must be under 5MB'); return; }
+    // No client-side image size cap — backend multipart + nginx
+    // client_max_body_size are the upstream limits now. Photographers
+    // were hitting the previous 5MB cap on routine portfolio shots.
     if (!file.type.startsWith('image/')) { setSlideError('Please select an image file'); return; }
     setSlideError('');
     const preview = URL.createObjectURL(file);
