@@ -566,7 +566,7 @@ function ViewEventContent({ eventIdProp }: { eventIdProp?: string }): React.JSX.
         const msg = data.message || '';
         if (msg.includes('only allowed before')) setWishError('The event is now live. Please join the stream to send messages.');
         else if (msg.includes('rate') || msg.includes('limit')) setWishError('You\u2019re sending wishes too quickly. Please wait a moment.');
-        else if (msg.includes('size') || msg.includes('large')) setWishError('Video is too large. Maximum size is 10 MB.');
+        else if (msg.includes('size') || msg.includes('large')) setWishError('Video upload failed. Please try a shorter clip.');
         else setWishError(msg || 'Could not send your video wish. Please try again.');
       }
     } catch {

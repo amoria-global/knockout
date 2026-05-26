@@ -242,9 +242,9 @@ const TechnicalSupportHelp: React.FC = () => {
                   <div style={{ display: 'flex', gap: '12px' }}>
                     <i className="bi bi-info-circle-fill" style={{ fontSize: '1.5rem', color: '#D97706', flexShrink: 0 }}></i>
                     <div>
-                      <p style={{ fontSize: '1rem', fontWeight: '600', color: '#92400E', marginBottom: '0.5rem' }}>File Size Limits</p>
+                      <p style={{ fontSize: '1rem', fontWeight: '600', color: '#92400E', marginBottom: '0.5rem' }}>File Formats</p>
                       <p style={{ fontSize: '0.95rem', lineHeight: '1.7', color: '#78350F' }}>
-                        Maximum file size: 50MB per image, 500MB per video. Supported formats: JPG, PNG, HEIC for photos; MP4, MOV for videos.
+                        Supported formats: JPG, PNG, HEIC for photos; MP4, MOV for videos. No file-size limit on uploads.
                       </p>
                     </div>
                   </div>
