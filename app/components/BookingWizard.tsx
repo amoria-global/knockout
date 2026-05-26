@@ -440,11 +440,31 @@ function BookingWizardStyles() {
         outline-offset: 2px;
       }
 
-      /* Mobile */
+      /* Mobile. Two issues forced the redesign here:
+           1. vh includes the area behind dynamic browser chrome (iOS
+              Safari URL bar, Android Chrome address bar at the bottom,
+              status bar / notch at the top). At 96vh the bottom-anchored
+              panel slid UNDER the top chrome on some devices and the
+              .bw-header (with the close X) was hidden, so viewers
+              couldn't exit the wizard.
+           2. Even without the chrome overlap, the panel touched the
+              very top edge / status bar so the close button was hard
+              to tap one-handed.
+         Fix: use dvh (dynamic viewport height; Safari 15.4+, Chrome
+         108+) which DOES exclude dynamic chrome, cap at 92dvh, and add
+         env(safe-area-inset-top) padding to the overlay so the panel
+         can never slide under the iOS notch / status bar. The double
+         max-height declaration provides a vh fallback for older
+         browsers that don't understand dvh. */
       @media (max-width: 600px) {
-        .bw-overlay { padding: 0; align-items: flex-end; }
+        .bw-overlay {
+          padding: 0;
+          padding-top: env(safe-area-inset-top, 0px);
+          align-items: flex-end;
+        }
         .bw-panel {
-          max-height: 96vh;
+          max-height: 92vh;
+          max-height: 92dvh;
           border-radius: 20px 20px 0 0;
           max-width: 100%;
         }
