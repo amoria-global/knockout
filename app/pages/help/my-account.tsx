@@ -274,7 +274,7 @@ const MyAccountHelp: React.FC = () => {
                     <div>
                       <p style={{ fontSize: '1rem', fontWeight: '600', color: '#111827', marginBottom: '0.5rem' }}>3. Upload Profile Picture</p>
                       <p style={{ fontSize: '0.95rem', lineHeight: '1.7', color: '#4B5563' }}>
-                        Use a professional, high-quality headshot (JPG, PNG, max 5MB). Photos with clear lighting and neutral backgrounds work best. Avoid group photos or heavily filtered images.
+                        Use a professional, high-quality headshot (JPG or PNG). Photos with clear lighting and neutral backgrounds work best. Avoid group photos or heavily filtered images.
                       </p>
                     </div>
                     <div>
@@ -885,7 +885,7 @@ const MyAccountHelp: React.FC = () => {
                       icon: 'bi-exclamation-triangle',
                       solutions: [
                         'Ensure all required fields are completed',
-                        'Check that uploaded images meet size requirements (max 5MB)',
+                        'Try the upload on a stable connection if it fails partway through',
                         'Disable browser extensions that might interfere',
                         'Try using a different browser',
                         'Wait for page to fully load before clicking Save',
