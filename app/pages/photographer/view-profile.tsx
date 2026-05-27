@@ -299,6 +299,12 @@ function ViewProfileContent({ photographerIdProp }: { photographerIdProp?: strin
     specialties: (photographer?.specialties || []).map((s: string | { id: string; name: string }) =>
       typeof s === 'string' ? s : s.name
     ),
+    // Spoken-language codes the photographer picked on the dashboard.
+    // The raw API response carries these on `photographer.spokenLanguages`;
+    // they were silently dropped by this hand-built mapping object before
+    // — so the "Speaks …" row in the trust panel was always empty for
+    // guests viewing the public profile.
+    spokenLanguages: photographer?.spokenLanguages || [],
     portfolio: {
       // Education and Certifications now live under one section. The backend
       // already returns both types via educationLevels (Education + Certification);
@@ -964,11 +970,10 @@ function ViewProfileContent({ photographerIdProp }: { photographerIdProp?: strin
                 <li>
                   <i className="bi bi-shield-lock-fill" aria-hidden="true" /> Secure on-platform payments
                 </li>
-                {Array.isArray((photographerData as { spokenLanguages?: string[] }).spokenLanguages)
-                  && ((photographerData as { spokenLanguages?: string[] }).spokenLanguages?.length ?? 0) > 0 && (
+                {photographerData.spokenLanguages.length > 0 && (
                   <li>
                     <i className="bi bi-translate" aria-hidden="true" />{' '}
-                    Speaks {((photographerData as { spokenLanguages?: string[] }).spokenLanguages || []).join(' · ')}
+                    Speaks {photographerData.spokenLanguages.join(' · ')}
                   </li>
                 )}
               </ul>
