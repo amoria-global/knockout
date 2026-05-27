@@ -17,6 +17,10 @@ export interface OnboardingPayload {
   tin: string;
   // Slide 1
   specialtyIds: string[];
+  // Slide 1 (same step as specialties). Required. Allowed codes:
+  // EN, FR, RW, SWA, SPA, CHI. Backend enforces non-empty + allowed
+  // set on /update-important-details.
+  spokenLanguages: string[];
   // Slide 2 - null is allowed in the completion flow when the photographer
   // already has a profile photo on the server (don't force a re-upload).
   profileFile: File | null;
@@ -244,6 +248,11 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
   const [companyName, setCompanyName] = useState('');
   const [tin, setTin] = useState('');
   const [selectedSpecialtyIds, setSelectedSpecialtyIds] = useState<string[]>([]);
+  // Spoken-language chips (EN, FR, RW, SWA, SPA, CHI). Required: the
+  // slide-1 "next" validator below blocks advance until at least one
+  // is picked. Same persistence path as specialties (update-important-
+  // details), so this rides the same autosave loop.
+  const [selectedLanguages, setSelectedLanguages] = useState<string[]>([]);
   const [slideError, setSlideError] = useState('');
 
   // ── Data ──
@@ -377,6 +386,8 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
         if (s('tin') !== undefined) setTin(d.tin as string);
         if (Array.isArray(d.selectedSpecialtyIds))
           setSelectedSpecialtyIds((d.selectedSpecialtyIds as unknown[]).filter(x => typeof x === 'string') as string[]);
+        if (Array.isArray(d.selectedLanguages))
+          setSelectedLanguages((d.selectedLanguages as unknown[]).filter(x => typeof x === 'string') as string[]);
 
         if (s('projTitle') !== undefined) setProjTitle(d.projTitle as string);
         if (s('projYear') !== undefined) setProjYear(d.projYear as string);
@@ -450,7 +461,7 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
       try {
         window.localStorage.setItem(draftStorageKey, JSON.stringify({
           address, about, businessType, companyName, tin,
-          selectedSpecialtyIds,
+          selectedSpecialtyIds, selectedLanguages,
           projTitle, projYear, projDescription,
           expPosition, expCompany, expLocation, expStartDate, expEndDate,
           expIsCurrent, expDescription,
@@ -465,7 +476,7 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
     return () => clearTimeout(t);
   }, [
     draftStorageKey, address, about, businessType, companyName, tin,
-    selectedSpecialtyIds, projTitle, projYear, projDescription,
+    selectedSpecialtyIds, selectedLanguages, projTitle, projYear, projDescription,
     expPosition, expCompany, expLocation, expStartDate, expEndDate,
     expIsCurrent, expDescription, pkgTier, pkgCurrencyId, pkgs,
     studioPkgTier, studioPkgs,
@@ -497,6 +508,13 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
         }
         if (Array.isArray(p.specialties) && p.specialties.length > 0) {
           setSelectedSpecialtyIds(p.specialties.map(s => s.id).filter(Boolean));
+        }
+        // Returning photographers shouldn't be forced to re-pick their
+        // languages. Server returns them as an upper-case string list;
+        // the chip UI just keys off membership so we feed it directly.
+        const langsFromServer = (p as { spokenLanguages?: string[] }).spokenLanguages;
+        if (Array.isArray(langsFromServer) && langsFromServer.length > 0) {
+          setSelectedLanguages(langsFromServer);
         }
 
         const proj = p.projects?.[0];
@@ -603,6 +621,7 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
 
   const handleSpecialtiesNext = () => {
     if (selectedSpecialtyIds.length < 2) { setSlideError('Please select at least two specialties'); return; }
+    if (selectedLanguages.length === 0) { setSlideError('Please select at least one spoken language'); return; }
     setSlideError('');
     dispatch({ type: 'SET_SLIDE', slide: 2 });
   };
@@ -699,6 +718,7 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
       companyName: companyName.trim(),
       tin: tin.trim(),
       specialtyIds: selectedSpecialtyIds,
+      spokenLanguages: selectedLanguages,
       profileFile,
       coverFile,
       projTitle: projTitle.trim(),
@@ -1174,6 +1194,51 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
                     );
                   })}
                   {categories.length === 0 && <p style={{ color: TEXT_MUTED, fontSize: 13 }}>Loading specialties…</p>}
+                </div>
+
+                {/* Spoken languages. Required — same hard validation as
+                    specialties. Backend (PhotographerImportantDetailDTO)
+                    accepts the literal codes EN / FR / RW / SWA / SPA /
+                    CHI; show friendly labels here, store the codes. */}
+                <label style={{ display: 'block', color: TEXT_PRIMARY, fontSize: 13, fontWeight: 700, margin: '6px 0 4px', letterSpacing: '-0.005em' }}>
+                  Languages you speak <span style={{ color: PINK }}>*</span>
+                </label>
+                <p style={{ color: TEXT_MUTED, fontSize: 12, margin: '0 0 8px' }}>
+                  Pick at least one. Clients see this on your public profile.
+                </p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 18 }}>
+                  {([
+                    { code: 'EN', label: 'English' },
+                    { code: 'FR', label: 'French' },
+                    { code: 'RW', label: 'Kinyarwanda' },
+                    { code: 'SWA', label: 'Swahili' },
+                    { code: 'SPA', label: 'Spanish' },
+                    { code: 'CHI', label: 'Chinese' },
+                  ] as { code: string; label: string }[]).map(opt => {
+                    const sel = selectedLanguages.includes(opt.code);
+                    return (
+                      <button
+                        type="button"
+                        key={opt.code}
+                        onClick={() => setSelectedLanguages(prev =>
+                          sel ? prev.filter(c => c !== opt.code) : [...prev, opt.code])}
+                        style={{
+                          padding: '8px 14px', borderRadius: 999,
+                          fontSize: 13, fontWeight: 700, letterSpacing: '-0.005em',
+                          cursor: 'pointer',
+                          background: sel ? BRAND_GRADIENT : '#f9fafb',
+                          border: sel ? 'none' : `1.5px solid ${INPUT_BORDER}`,
+                          color: sel ? '#fff' : TEXT_SECONDARY,
+                          boxShadow: sel ? '0 6px 14px -4px rgba(242,12,143,0.36)' : 'none',
+                          transition: 'all 0.15s',
+                          display: 'inline-flex', alignItems: 'center', gap: 5,
+                        }}
+                      >
+                        {sel && <i className="bi bi-check-circle-fill" style={{ fontSize: 12 }} />}
+                        {opt.label} <span style={{ opacity: 0.7, fontSize: 11 }}>({opt.code})</span>
+                      </button>
+                    );
+                  })}
                 </div>
 
                 <button onClick={handleSpecialtiesNext} disabled={state.isSubmitting} style={{ ...btnPrimary, opacity: state.isSubmitting ? 0.7 : 1, cursor: state.isSubmitting ? 'not-allowed' : 'pointer' }}

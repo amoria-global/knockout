@@ -57,6 +57,10 @@ export interface Photographer {
   // Indoor studio rate. Present only when the photographer opted in; absent
   // means they're outdoor/package-only and not offered for studio bookings.
   studioRate?: StudioRate | null;
+  // Language codes the photographer speaks (EN, FR, RW, SWA, SPA, CHI).
+  // Required on every important-details save going forward; legacy rows
+  // may still come back null/empty until the photographer next saves.
+  spokenLanguages?: string[];
 }
 
 export interface StudioRate {

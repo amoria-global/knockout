@@ -115,12 +115,14 @@ export async function syncPhotographerProfile(
       }
     } catch { /* offline - use sticky state below */ }
 
-    // ── 1. Important details (idempotent UPDATE; needs address+specialties) ──
+    // ── 1. Important details (idempotent UPDATE; needs address+specialties
+    //       + spokenLanguages — backend now rejects empty languages) ──
     const addr = payload.address.trim();
-    if (addr && payload.specialtyIds.length >= 1) {
+    const langs = (payload.spokenLanguages || []).filter(Boolean);
+    if (addr && payload.specialtyIds.length >= 1 && langs.length >= 1) {
       const sig = JSON.stringify([
         who.firstName, who.lastName, who.phone, payload.about, addr,
-        [...payload.specialtyIds].sort(), payload.businessType,
+        [...payload.specialtyIds].sort(), [...langs].sort(), payload.businessType,
         payload.companyName, payload.tin,
       ]);
       if (sig !== s.sigs.important) {
@@ -131,6 +133,7 @@ export async function syncPhotographerProfile(
           about: payload.about,
           address: addr,
           specialtyIds: payload.specialtyIds,
+          spokenLanguages: langs,
           businessType: payload.businessType,
           ...(payload.businessType === 'Registered Company'
             ? { organizationName: payload.companyName, taxId: payload.tin }

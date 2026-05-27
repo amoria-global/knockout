@@ -964,9 +964,13 @@ function ViewProfileContent({ photographerIdProp }: { photographerIdProp?: strin
                 <li>
                   <i className="bi bi-shield-lock-fill" aria-hidden="true" /> Secure on-platform payments
                 </li>
-                <li>
-                  <i className="bi bi-translate" aria-hidden="true" /> Speaks EN · FR · RW
-                </li>
+                {Array.isArray((photographerData as { spokenLanguages?: string[] }).spokenLanguages)
+                  && ((photographerData as { spokenLanguages?: string[] }).spokenLanguages?.length ?? 0) > 0 && (
+                  <li>
+                    <i className="bi bi-translate" aria-hidden="true" />{' '}
+                    Speaks {((photographerData as { spokenLanguages?: string[] }).spokenLanguages || []).join(' · ')}
+                  </li>
+                )}
               </ul>
             </div>
 
