@@ -1341,6 +1341,16 @@ const Photographers: React.FC = () => {
           .ph-chip { font-size: 0.6rem; padding: 2px 7px; }
           .ph-price-value { font-size: 0.78rem; }
           .ph-cta { padding: 0.4rem 0.65rem; font-size: 0.68rem; }
+          /* Squeeze the price slider on mobile so the "Get In Touch"
+             CTA can sit fully inside the card. The desktop 120px min
+             was reserving more than half the card body width on a 2-up
+             phone grid, pushing the CTA past the right edge where the
+             card's overflow:hidden chopped it off. 70px still fits
+             "RF150,000" comfortably; ph-cta-row gets min-width:0 so
+             the flex children can shrink instead of overflowing. */
+          .ph-cta-row { min-width: 0; gap: 4px; }
+          .ph-price-slider { min-width: 0; }
+          .ph-price { min-width: 0; flex: 1 1 auto; }
         }
 
         /* Skeleton */
