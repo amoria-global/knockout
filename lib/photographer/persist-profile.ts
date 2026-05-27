@@ -42,6 +42,7 @@ export async function persistPhotographerProfile(
     about: payload.about,
     address: payload.address,
     specialtyIds: payload.specialtyIds,
+    spokenLanguages: payload.spokenLanguages,
     businessType: payload.businessType,
     ...(payload.businessType === 'Registered Company'
       ? { organizationName: payload.companyName, taxId: payload.tin }

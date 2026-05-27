@@ -19,6 +19,9 @@ export interface UpdateImportantDetailsRequest {
   address: string;
   professionalPhilosophy?: string;
   specialtyIds: string[];
+  // Required by the backend (PhotographerImportantDetailDTO).
+  // Allowed codes: EN, FR, RW, SWA, SPA, CHI.
+  spokenLanguages?: string[];
   businessType?: string;
   organizationName?: string;
   taxId?: string;
