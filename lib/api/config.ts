@@ -197,6 +197,15 @@ export const API_ENDPOINTS = {
     RECORD_ALBUM_PURCHASE: '/api/remote/public/payments/record-album-purchase',
     XENTRIPAY_STATUS: (refid: string) => `/api/remote/payments/xentripay/status/${refid}`,
     XENTRIPAY_PUBLIC_STATUS: (refid: string) => `/api/remote/public/payments/xentripay/status/${refid}`,
+
+    // Multi-country payment-options endpoints. Drive the dynamic
+    // PaymentMethodPicker — replaces the hardcoded MTN/Airtel/Card
+    // grids. /country = IP-detect the caller's ISO-2; /options = list
+    // operators + currency for a given country; /options/all = full
+    // catalog for the country picker UI.
+    PAYMENT_COUNTRY: '/api/remote/public/payments/country',
+    PAYMENT_OPTIONS: (country: string) => `/api/remote/public/payments/options?country=${encodeURIComponent(country)}`,
+    PAYMENT_OPTIONS_ALL: '/api/remote/public/payments/options/all',
     ALBUM_PHOTO_DOWNLOAD: (albumId: string, photoId: string, token: { refid?: string; buyerId?: string }) => {
       const qs = token.buyerId
         ? `buyerId=${encodeURIComponent(token.buyerId)}`

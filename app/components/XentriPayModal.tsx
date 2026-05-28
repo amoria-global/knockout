@@ -18,6 +18,10 @@ import {
 } from '@/lib/APIs/payments/xentripay';
 import { useGeoPaymentStatus } from '@/app/hooks/useGeoPaymentStatus';
 import DonationPromptModal from './DonationPromptModal';
+import { usePaymentCountry } from '@/lib/payments/usePaymentCountry';
+import { usePaymentOptions } from '@/lib/payments/usePaymentOptions';
+import { CountryPicker } from './payments/CountryPicker';
+import { findCountry } from '@/lib/payments/supportedCountries';
 
 // ==================== Types ====================
 
@@ -83,12 +87,49 @@ type PaymentStep = 'method' | 'donation' | 'processing' | 'success' | 'failed';
 const FALLBACK_DONATION_TIERS = [500, 1000, 2000, 5000];
 
 // ==================== Payment Methods ====================
+//
+// The list used to be the three constants below (MTN/Airtel/Card,
+// Rwanda-only). It's now built at render time from
+// usePaymentOptions(country) so the same modal shows M-Pesa in Kenya,
+// MTN+AT+Vodafone in Ghana, etc. The shape is intentionally identical
+// (id / name / image / provider) so the existing tile rendering and
+// geo-check filters keep working untouched.
 
-const paymentMethods = [
+type PaymentMethodTile = {
+  id: string;        // lowercase, used for selection state ("mtn", "airtel", "card", "mpesa", …)
+  name: string;
+  image: string;     // /public icon path; "card" gets /cards.png, operators map by iconKey
+  provider: string;  // value sent to the backend ("MTN", "AIRTEL", "MPESA", "CARD")
+};
+
+const FALLBACK_RW_METHODS: PaymentMethodTile[] = [
   { id: 'mtn', name: 'MTN Mobile Money', image: '/mtn.png', provider: 'MTN' },
   { id: 'airtel', name: 'Airtel Money', image: '/airtel.png', provider: 'AIRTEL' },
   { id: 'card', name: 'VISA & Master Card', image: '/cards.png', provider: 'CARD' },
 ];
+
+function iconForOperator(iconKey: string): string {
+  // Map PawaPay operator iconKey to /public images we ship. Unknown
+  // operators fall through to a generic mobile-money icon so the UI
+  // doesn't 404 on a missing image.
+  switch (iconKey) {
+    case 'mtn': return '/mtn.png';
+    case 'airtel': return '/airtel.png';
+    case 'mpesa': return '/mpesa.png';
+    case 'vodafone': return '/vodafone.png';
+    case 'airteltigo': return '/airteltigo.png';
+    case 'orange': return '/orange.png';
+    case 'moov': return '/moov.png';
+    case 'wave': return '/wave.png';
+    case 'free': return '/free.png';
+    case 'tigo': return '/tigo.png';
+    case 'zamtel': return '/zamtel.png';
+    case 'halotel': return '/halotel.png';
+    case 'tnm': return '/tnm.png';
+    case 'movitel': return '/movitel.png';
+    default: return '/mobile-money.png';
+  }
+}
 
 // ==================== Component ====================
 
@@ -129,6 +170,30 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
   const [refid, setRefid] = useState<string | null>(null);
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
   const stopPollingRef = useRef<(() => void) | null>(null);
+
+  // Multi-country payment options. Country is IP-detected on first
+  // render (with localStorage cache for manual overrides), and the
+  // operator list is fetched from /api/remote/public/payments/options
+  // for that country. Falls back to the RW hardcoded list while the
+  // hooks resolve so the modal never flashes empty for the common path.
+  const { country: detectedCountry, setCountry } = usePaymentCountry();
+  const { options: paymentOptions, supported: countrySupported, loading: optionsLoading }
+      = usePaymentOptions(detectedCountry);
+  const [showCountryPicker, setShowCountryPicker] = useState(false);
+
+  const paymentMethods: PaymentMethodTile[] = React.useMemo(() => {
+    if (!paymentOptions) return FALLBACK_RW_METHODS;
+    const tiles: PaymentMethodTile[] = paymentOptions.operators.map(op => ({
+      id: op.id.toLowerCase(),
+      name: op.name,
+      image: iconForOperator(op.iconKey),
+      provider: op.id, // backend expects canonical UPPER provider name
+    }));
+    if (paymentOptions.supportsCard) {
+      tiles.push({ id: 'card', name: 'VISA & Master Card', image: '/cards.png', provider: 'CARD' });
+    }
+    return tiles;
+  }, [paymentOptions]);
 
   // Internal donation state (used when showDonationPrompt is true).
   // The donation tiers/exchange-rate state below is now legacy - the
@@ -411,6 +476,11 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
     try {
       let response: { success: boolean; data?: XentriPayResponse; error?: string };
 
+      // Country drives backend gateway routing: PawaPay for non-RW,
+      // XentriPay backup for RW. Spread conditionally so we don't send
+      // a `country: null` field — backend then falls back to IP geo.
+      const countryField = detectedCountry ? { country: detectedCountry } : {};
+
       if (paymentType === 'booking' && (declarationId || eventId)) {
         response = await initiateXentriPayment({
           declarationId,
@@ -419,6 +489,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
           ...(isCard ? {} : { phone, telecomProvider: method.provider }),
           paymentMethod: paymentMethodType,
           redirectUrl,
+          ...countryField,
         });
       } else if (paymentType === 'tip' && eventId) {
         response = await initiateXentriPayTip({
@@ -429,6 +500,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
           ...(isCard ? {} : { phone, telecomProvider: method.provider }),
           paymentMethod: paymentMethodType,
           redirectUrl,
+          ...countryField,
         });
       } else if (paymentType === 'streaming' && eventId) {
         if (viewerId) {
@@ -442,6 +514,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
             ...(isCard ? {} : { phone, telecomProvider: method.provider }),
             paymentMethod: paymentMethodType,
             redirectUrl,
+            ...countryField,
           });
         } else {
           response = await initiateXentriPayStreaming({
@@ -452,6 +525,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
             ...(isCard ? {} : { phone, telecomProvider: method.provider }),
             paymentMethod: paymentMethodType,
             redirectUrl,
+            ...countryField,
           });
         }
       } else if (paymentType === 'donation' && donationId) {
@@ -461,6 +535,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
           telecomProvider: method.provider,
           paymentMethod: paymentMethodType,
           redirectUrl,
+          ...countryField,
         });
       } else if (paymentType === 'photo_purchase' && eventId) {
         response = await initiateXentriPayPhotoPurchase({
@@ -471,6 +546,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
           ...(isCard ? {} : { phone, telecomProvider: method.provider }),
           paymentMethod: paymentMethodType,
           redirectUrl,
+          ...countryField,
         });
       } else if (paymentType === 'album_purchase' && albumId && photoIds && photoIds.length > 0 && buyerId) {
         response = await initiateXentriPayAlbumPurchase({
@@ -483,6 +559,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
           ...(isCard ? {} : { phone, telecomProvider: method.provider }),
           paymentMethod: paymentMethodType,
           redirectUrl,
+          ...countryField,
         });
       } else if (paymentType === 'multi_album_purchase' && multiAlbumItems && multiAlbumItems.length > 0) {
         // Cross-photographer purchase. The backend creates N PENDING
@@ -499,6 +576,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
           ...(isCard ? {} : { telecomProvider: method.provider }),
           paymentMethod: paymentMethodType,
           redirectUrl,
+          ...countryField,
         }) as typeof response;
       } else {
         throw new Error('Invalid payment configuration');
@@ -1154,6 +1232,53 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
                 textTransform: 'uppercase',
                 fontFamily: "'Pragati Narrow', sans-serif",
               }}>Select Payment Method</label>
+
+              {/* Country pill + "change" link. The operator list below is
+                  driven by usePaymentOptions(detectedCountry); changing
+                  country here re-fetches and re-renders the grid. */}
+              {detectedCountry && !showCountryPicker && (
+                <div style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  gap: '8px', marginBottom: '12px', flexWrap: 'wrap',
+                }}>
+                  <div style={{
+                    display: 'inline-flex', alignItems: 'center', gap: '6px',
+                    padding: '5px 10px', background: '#EFF6FF', border: '1px solid #BFDBFE',
+                    borderRadius: '999px', fontSize: '12px', color: '#083A85', fontWeight: 700,
+                  }}>
+                    {findCountry(detectedCountry)?.flag && <span style={{ fontSize: '13px' }}>{findCountry(detectedCountry)?.flag}</span>}
+                    <span>{findCountry(detectedCountry)?.name ?? detectedCountry}{paymentOptions?.currency ? ` · ${paymentOptions.currency}` : ''}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowCountryPicker(true)}
+                    style={{
+                      background: 'transparent', border: 'none', color: '#1f6bff',
+                      cursor: 'pointer', fontSize: '12px', fontWeight: 600, padding: '4px 6px',
+                    }}
+                  >
+                    Change country
+                  </button>
+                </div>
+              )}
+
+              {/* Country picker fallback: when detection failed, the
+                  detected country has no operators, or the user clicked
+                  "Change country". Shown in place of the method grid. */}
+              {(showCountryPicker || (detectedCountry && !optionsLoading && !countrySupported)) ? (
+                <CountryPicker
+                  value={detectedCountry}
+                  onChange={(iso2) => {
+                    setCountry(iso2);
+                    setSelectedMethod(null);
+                    setShowCountryPicker(false);
+                  }}
+                  title={showCountryPicker ? 'Pick a country' : 'Mobile money not yet available here'}
+                  hint={showCountryPicker
+                    ? "Choose the country your number belongs to."
+                    : `We don't have operators for ${detectedCountry} yet. Pick a country we support, or use a card.`}
+                />
+              ) : (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
                 {paymentMethods
                   .filter((method) => {
@@ -1164,8 +1289,10 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
                   })
                   .map((method) => {
                   const isSelected = selectedMethod === method.id;
-                  // Disable mobile money if blocked or restricted
-                  const isMobileMoneyMethod = method.id === 'mtn' || method.id === 'airtel';
+                  // Disable mobile money if blocked or restricted. Any tile
+                  // that isn't 'card' is treated as mobile money — covers
+                  // MTN/Airtel/M-Pesa/Wave/etc. uniformly.
+                  const isMobileMoneyMethod = method.id !== 'card';
                   const isDisabled = geoStatus.blocked || (isMobileMoneyMethod && geoStatus.disableMobileMoney);
 
                   return (
@@ -1265,6 +1392,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
                   );
                 })}
               </div>
+              )}
             </div>
 
             {/* Phone Input - shown for mobile money, and always for donations */}

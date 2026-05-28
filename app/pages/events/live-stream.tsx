@@ -8,6 +8,8 @@ import { WHEPClient } from '@/lib/streaming/WHEPClient';
 import { getCurrencies, type Currency as APICurrency } from '@/lib/APIs/public';
 import { recordTip, recordStreamingPayment } from '@/lib/APIs/payments/route';
 import { initiateXentriPayStreaming, pollXentriPayStatus, type XentriPayStatusResponse } from '@/lib/APIs/payments/xentripay';
+import { usePaymentCountry } from '@/lib/payments/usePaymentCountry';
+import { usePaymentOptions } from '@/lib/payments/usePaymentOptions';
 import { getPublicEventById } from '@/lib/APIs/public/get-events/route';
 import { useAuth } from '../../providers/AuthProvider';
 import { login } from '@/lib/APIs/auth/login/route';
@@ -1818,12 +1820,50 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
     setShowGiftModal(true);
   };
 
-  // Payment methods
-  const paymentMethods = [
-    { id: 'mtn', name: 'MTN Mobile Money', image: '/mtn.png' },
-    { id: 'airtel', name: 'Airtel Money', image: '/airtel.png' },
-    { id: 'card', name: 'VISA & Master Card', image: '/cards.png' }
-  ];
+  // Multi-country payment methods. Mirrors the same dynamic-options
+  // pattern XentriPayModal uses: usePaymentCountry → IP-detect ISO-2,
+  // usePaymentOptions → fetch operator list for that country. Falls
+  // back to the RW set while the hooks resolve so the gift modal never
+  // flashes empty for the common path.
+  const { country: giftCountry } = usePaymentCountry();
+  const { options: giftPaymentOptions } = usePaymentOptions(giftCountry);
+  const paymentMethods = React.useMemo(() => {
+    if (!giftPaymentOptions) {
+      return [
+        { id: 'mtn', name: 'MTN Mobile Money', image: '/mtn.png' },
+        { id: 'airtel', name: 'Airtel Money', image: '/airtel.png' },
+        { id: 'card', name: 'VISA & Master Card', image: '/cards.png' },
+      ];
+    }
+    const iconFor = (k: string) => {
+      switch (k) {
+        case 'mtn': return '/mtn.png';
+        case 'airtel': return '/airtel.png';
+        case 'mpesa': return '/mpesa.png';
+        case 'vodafone': return '/vodafone.png';
+        case 'airteltigo': return '/airteltigo.png';
+        case 'orange': return '/orange.png';
+        case 'moov': return '/moov.png';
+        case 'wave': return '/wave.png';
+        case 'free': return '/free.png';
+        case 'tigo': return '/tigo.png';
+        case 'zamtel': return '/zamtel.png';
+        case 'halotel': return '/halotel.png';
+        case 'tnm': return '/tnm.png';
+        case 'movitel': return '/movitel.png';
+        default: return '/mobile-money.png';
+      }
+    };
+    const tiles = giftPaymentOptions.operators.map(op => ({
+      id: op.id.toLowerCase(),
+      name: op.name,
+      image: iconFor(op.iconKey),
+    }));
+    if (giftPaymentOptions.supportsCard) {
+      tiles.push({ id: 'card', name: 'VISA & Master Card', image: '/cards.png' });
+    }
+    return tiles;
+  }, [giftPaymentOptions]);
 
   // Helper to reset all gift modal state (also clears donation from merged flow)
   const resetGiftModal = () => {
@@ -1872,7 +1912,13 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
 
     const targetEvent = giftTargetEvent || mainEvent;
     const isCard = selectedPaymentMethod === 'card';
+    // Provider name passed to the backend = the operator id upper-cased
+    // (MTN, AIRTEL, MPESA, WAVE, …). PawapayConfig.normalizeProvider on
+    // the backend handles common aliases (M-PESA, AIRTEL_MONEY, etc.).
     const providerMap: Record<string, string> = { mtn: 'MTN', airtel: 'AIRTEL' };
+    const provider = selectedPaymentMethod
+      ? (providerMap[selectedPaymentMethod] ?? selectedPaymentMethod.toUpperCase())
+      : undefined;
     const paymentMethodType = isCard ? 'CARD' : 'MOBILE_MONEY';
 
     // Open the card-payment tab synchronously, before any await. window.open
@@ -1903,6 +1949,8 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
     try {
       let response;
 
+      const giftCountryField = giftCountry ? { country: giftCountry } : {};
+
       if (isAuthenticated) {
         // Authenticated user - use standard streaming payment
         response = await initiateXentriPayStreaming({
@@ -1910,9 +1958,10 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
           amount: parseInt(giftAmount),
           currencyId,
           ...(donAmt > 0 ? { donationAmount: donAmt } : {}),
-          ...(isCard ? {} : { phone: paymentPhone, telecomProvider: providerMap[selectedPaymentMethod!] }),
+          ...(isCard ? {} : { phone: paymentPhone, telecomProvider: provider }),
           paymentMethod: paymentMethodType,
           ...(isCard ? { redirectUrl } : {}),
+          ...giftCountryField,
         });
       } else if (isAnonymousViewer && anonymousViewerId) {
         // Anonymous viewer - use public gift endpoint (works for both entry_fee and invite_token)
@@ -1928,10 +1977,11 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
             amount: parseInt(giftAmount),
             currencyId,
             ...(donAmt > 0 ? { donationAmount: donAmt } : {}),
-            ...(isCard ? {} : { phone: paymentPhone, telecomProvider: providerMap[selectedPaymentMethod!] }),
+            ...(isCard ? {} : { phone: paymentPhone, telecomProvider: provider }),
             paymentMethod: paymentMethodType,
             ...(isCard ? { redirectUrl } : {}),
             ...(giftMessage.trim() ? { giftMessage: giftMessage.trim() } : {}),
+            ...giftCountryField,
           }),
         });
         if (giftRes.ok) {
