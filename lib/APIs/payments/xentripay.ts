@@ -330,7 +330,16 @@ export async function checkXentriPayStatus(
 
 /**
  * Poll payment status until it settles (SUCCESS or FAILED)
- * Returns a cleanup function to stop polling
+ * Returns a cleanup function to stop polling.
+ *
+ * `gracePeriodMs`: ignore FAILED responses received before this much wall
+ * time has elapsed. Card payments need this — XentriPay returns FAILED on
+ * a freshly-created card session that the user hasn't finished paying yet,
+ * which used to flip the modal to "Payment Failed" before the user could
+ * even type their card number. With a grace period we keep polling through
+ * those early FAILEDs and only honor them after the user has had time to
+ * actually go through the gateway page. SUCCESS is always honored
+ * immediately.
  */
 export function pollXentriPayStatus(
   refid: string,
@@ -341,10 +350,12 @@ export function pollXentriPayStatus(
   },
   intervalMs: number = 2000,
   maxAttempts: number = 150, // ~5 minutes at 2s intervals
-  usePublic: boolean = false
+  usePublic: boolean = false,
+  gracePeriodMs: number = 0
 ): () => void {
   let attempts = 0;
   let stopped = false;
+  const startedAt = Date.now();
 
   const poll = async () => {
     if (stopped) return;
@@ -372,6 +383,16 @@ export function pollXentriPayStatus(
       }
 
       if (status === 'FAILED') {
+        // Inside the grace window, treat FAILED as "still pending" — the
+        // gateway often reports FAILED on a freshly-created card session.
+        if (Date.now() - startedAt < gracePeriodMs) {
+          if (attempts >= maxAttempts) {
+            callbacks.onError('Payment is taking longer than expected. Please check your payment history.');
+            return;
+          }
+          setTimeout(poll, intervalMs);
+          return;
+        }
         callbacks.onFailure(response.data!);
         return;
       }

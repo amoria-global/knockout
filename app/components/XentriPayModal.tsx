@@ -296,16 +296,28 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
     return phone.length >= 10;
   }, [selectedMethod, phone]);
 
-  // Start payment status polling
-  const startPolling = useCallback((paymentRefid: string) => {
+  // Start payment status polling. Card payments need a grace period:
+  // XentriPay reports FAILED on a freshly-created card session that the
+  // user hasn't paid yet — without the grace window, polling flips the
+  // modal to "Payment Failed" within seconds, before the user has even
+  // typed their card number on the gateway page. Mobile money does NOT
+  // need a grace period (user gets an SMS prompt and acts on it within
+  // seconds, so FAILED there really means declined).
+  const startPolling = useCallback((paymentRefid: string, isCard: boolean) => {
     if (stopPollingRef.current) {
       stopPollingRef.current();
     }
+
+    // 3 minutes of grace for card flows — covers the typical time to read
+    // the gateway page, type card details, and confirm. After that, FAILED
+    // is treated as real.
+    const cardGraceMs = 180_000;
 
     // Anonymous viewer: use public payment-status endpoint
     if (viewerId && eventId) {
       let attempts = 0;
       let stopped = false;
+      const startedAt = Date.now();
       const poll = async () => {
         if (stopped) return;
         attempts++;
@@ -314,7 +326,16 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
           if (stopped) return;
           if (res.success && res.data) {
             if (res.data.status === 'SUCCESS') { setStep('success'); setTimeout(() => onSuccess(paymentRefid), 500); return; }
-            if (res.data.status === 'FAILED') { setStep('failed'); setError('Payment was declined or timed out. Please check your balance and try again.'); return; }
+            if (res.data.status === 'FAILED') {
+              // Card grace: ignore early FAILEDs so the user gets time
+              // to complete the gateway checkout.
+              if (isCard && Date.now() - startedAt < cardGraceMs) {
+                if (attempts >= 150) { setError('Payment is taking longer than expected. Please check your payment history.'); setStep('failed'); return; }
+                setTimeout(poll, 2000);
+                return;
+              }
+              setStep('failed'); setError('Payment was declined or timed out. Please check your balance and try again.'); return;
+            }
           }
           if (attempts >= 150) { setError('Payment is taking longer than expected. Please check your payment history.'); setStep('failed'); return; }
           setTimeout(poll, 2000);
@@ -350,16 +371,14 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
       },
       2000,
       150,
-      usePublicStatus
+      usePublicStatus,
+      isCard ? cardGraceMs : 0
     );
   }, [onSuccess, paymentType, viewerId, eventId]);
 
   // Handle payment initiation
   const handlePay = async (overrideDonationAmount?: number) => {
     if (!isValid()) return;
-
-    setLoading(true);
-    setError(null);
 
     const method = paymentMethods.find(m => m.id === selectedMethod);
     if (!method) return;
@@ -369,6 +388,20 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
 
     const isCard = selectedMethod === 'card';
     const paymentMethodType = isCard ? 'CARD' : 'MOBILE_MONEY';
+
+    // Open the card-payment tab SYNCHRONOUSLY, before any await. Mobile
+    // browsers (iOS Safari, Chrome on Android) block window.open() that is
+    // called after a microtask boundary because the user-gesture chain is
+    // broken — that was the "popup blocked → payment failed" path users hit
+    // on phones when paying with Visa/Mastercard. We open about:blank now
+    // (still inside the click handler) and navigate it to the real gateway
+    // URL once the initiate-API responds below. If the browser refused even
+    // this sync open (aggressive blocker), we fall back to a same-tab
+    // redirect after the URL arrives — card flow leaves the page anyway.
+    const cardPaymentWindow: Window | null = isCard ? window.open('about:blank', '_blank') : null;
+
+    setLoading(true);
+    setError(null);
     // Use production URL for http (localhost), keep current URL for https (production)
     const currentUrl = window.location.href;
     const redirectUrl = isCard
@@ -476,6 +509,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
         const raw = response.data as unknown as { alreadyPurchased?: string[] } | undefined;
         if (paymentType === 'album_purchase' && raw?.alreadyPurchased?.length) {
           onAlreadyPurchased?.(raw.alreadyPurchased);
+          if (cardPaymentWindow && !cardPaymentWindow.closed) cardPaymentWindow.close();
           return;
         }
         throw new Error(response.error || 'Failed to initiate payment');
@@ -484,15 +518,33 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
       const data = response.data as XentriPayResponse;
       setRefid(data.refid);
 
-      // For card payments, open payment URL
-      if (selectedMethod === 'card' && data.paymentUrl) {
+      // For card payments, we need a paymentUrl to redirect to. If the
+      // backend signals success but omits it, fail loudly here instead of
+      // silently polling a refid that has no gateway session — that's what
+      // caused "Payment Failed" with no link ever shown.
+      if (isCard) {
+        if (!data.paymentUrl) {
+          if (cardPaymentWindow && !cardPaymentWindow.closed) cardPaymentWindow.close();
+          throw new Error('Payment session created but no checkout URL was returned. Please try again.');
+        }
         setPaymentUrl(data.paymentUrl);
-        window.open(data.paymentUrl, '_blank');
+        if (cardPaymentWindow && !cardPaymentWindow.closed) {
+          try {
+            cardPaymentWindow.location.href = data.paymentUrl;
+          } catch {
+            window.location.href = data.paymentUrl;
+            return;
+          }
+        } else {
+          window.location.href = data.paymentUrl;
+          return;
+        }
       }
 
       setStep('processing');
-      startPolling(data.refid);
+      startPolling(data.refid, isCard);
     } catch (err) {
+      if (cardPaymentWindow && !cardPaymentWindow.closed) cardPaymentWindow.close();
       const raw = err instanceof Error ? err.message : '';
       const lower = raw.toLowerCase();
       let msg: string;
@@ -1686,7 +1738,10 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
               <>
                 <p style={{ fontSize: '15px', color: '#6b7280', marginBottom: '16px', lineHeight: '1.5' }}>
                   A secure payment page has been opened in a new tab.
-                  Please complete the payment there.
+                  Please complete the payment there.{' '}
+                  <strong style={{ color: '#083A85' }}>
+                    If you don&apos;t see it, tap the button below.
+                  </strong>
                 </p>
                 {paymentUrl && (
                   <a
@@ -1695,14 +1750,16 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
                     rel="noopener noreferrer"
                     style={{
                       display: 'inline-block',
-                      padding: '10px 20px',
-                      backgroundColor: '#083A85',
+                      padding: '14px 28px',
+                      background: 'linear-gradient(135deg, #083A85 0%, #1f6bff 100%)',
                       color: '#fff',
-                      borderRadius: '10px',
+                      borderRadius: '12px',
                       textDecoration: 'none',
-                      fontSize: '14px',
-                      fontWeight: 500,
+                      fontSize: '16px',
+                      fontWeight: 700,
                       marginBottom: '16px',
+                      boxShadow: '0 10px 22px -8px rgba(8,58,133,0.55), 0 4px 10px -2px rgba(8,58,133,0.30)',
+                      letterSpacing: '0.01em',
                     }}
                   >
                     Open Payment Page
