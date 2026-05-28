@@ -399,7 +399,7 @@ export default function Footer() {
           <div className="footer-copyright">
             <p>{t('copyright', { year: new Date().getFullYear() })}</p>
             <span className="made-with">
-              Crafted with <span className="heart" aria-hidden="true">♥</span> by Amoria Global
+              Crafted by Amoria Global
             </span>
           </div>
         </div>
