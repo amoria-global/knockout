@@ -9,14 +9,23 @@ import type { ApiResponse } from '@/lib/api/types';
 
 // ==================== Types ====================
 
+/**
+ * `country` (ISO-2, e.g. "RW", "KE") is optional on every request.
+ * When omitted the backend falls back to IP geo + then "RW", which
+ * preserves pre-multi-country behavior. When present the router uses
+ * it to pick the right gateway (PawaPay for non-RW, XentriPay backup
+ * for RW only).
+ */
+
 export interface XentriPayInitiateRequest {
   declarationId?: string;
   eventId?: string;
   donationAmount?: number;
   phone?: string;
-  telecomProvider?: string; // 'MTN' | 'AIRTEL'
+  telecomProvider?: string; // 'MTN' | 'AIRTEL' | 'MPESA' | …
   paymentMethod: string;   // 'MOBILE_MONEY' | 'CARD'
   redirectUrl?: string;
+  country?: string;
 }
 
 export interface XentriPayDonationRequest {
@@ -25,6 +34,7 @@ export interface XentriPayDonationRequest {
   telecomProvider?: string;
   paymentMethod?: string;
   redirectUrl?: string;
+  country?: string;
 }
 
 export interface XentriPayPhotoPurchaseRequest {
@@ -36,6 +46,7 @@ export interface XentriPayPhotoPurchaseRequest {
   telecomProvider?: string;
   paymentMethod?: string;
   redirectUrl?: string;
+  country?: string;
 }
 
 export interface XentriPayAlbumPurchaseRequest {
@@ -49,6 +60,7 @@ export interface XentriPayAlbumPurchaseRequest {
   paymentMethod?: string;
   redirectUrl?: string;
   donationAmount?: number;
+  country?: string;
 }
 
 // Backend returns 409 with this shape when some photoIds are already owned
@@ -66,6 +78,7 @@ export interface XentriPayTipRequest {
   telecomProvider?: string;
   paymentMethod?: string;
   redirectUrl?: string;
+  country?: string;
 }
 
 export interface XentriPayStreamingRequest {
@@ -77,6 +90,7 @@ export interface XentriPayStreamingRequest {
   telecomProvider?: string;
   paymentMethod?: string;
   redirectUrl?: string;
+  country?: string;
 }
 
 export interface XentriPayResponse {
@@ -252,6 +266,7 @@ export async function initiateMultiAlbumPurchase(
     // never mixed into any photographer's 70/30 payout.
     donationAmount?: number;
     donationCurrency?: string;
+    country?: string;
   }
 ): Promise<ApiResponse<InitiateMultiAlbumResponse>> {
   return apiClient.post<InitiateMultiAlbumResponse>(
@@ -281,6 +296,7 @@ export async function initiateAnonymousStreamingPayment(
     telecomProvider?: string;
     paymentMethod: string;
     redirectUrl?: string;
+    country?: string;
   }
 ): Promise<ApiResponse<XentriPayResponse>> {
   return apiClient.post<XentriPayResponse>(
