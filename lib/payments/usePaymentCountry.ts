@@ -84,7 +84,7 @@ export function usePaymentCountry() {
           country: string | null;
           source: DetectedCountry['source'];
           supported: boolean;
-        }>(API_ENDPOINTS.PAYMENT_COUNTRY);
+        }>(API_ENDPOINTS.PAYMENTS.PAYMENT_COUNTRY);
         if (cancelled) return;
         const detected = res.data?.country ?? null;
         const detectedSource = res.data?.source ?? 'DEFAULT';

@@ -48,7 +48,7 @@ export function usePaymentOptions(country: string | null) {
 
     (async () => {
       try {
-        const res = await apiClient.get<PaymentOptions>(API_ENDPOINTS.PAYMENT_OPTIONS(country));
+        const res = await apiClient.get<PaymentOptions>(API_ENDPOINTS.PAYMENTS.PAYMENT_OPTIONS(country));
         if (cancelled) return;
         if (res.success && res.data?.operators) {
           memCache.set(country, res.data);
