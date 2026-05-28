@@ -1870,13 +1870,21 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
       return;
     }
 
-    setGiftLoading(true);
-    setGiftError(null);
-
     const targetEvent = giftTargetEvent || mainEvent;
     const isCard = selectedPaymentMethod === 'card';
     const providerMap: Record<string, string> = { mtn: 'MTN', airtel: 'AIRTEL' };
     const paymentMethodType = isCard ? 'CARD' : 'MOBILE_MONEY';
+
+    // Open the card-payment tab synchronously, before any await. window.open
+    // called after an await is treated as a popup by mobile browsers and
+    // blocked (was making Visa/Mastercard payments fail on phones). We
+    // navigate this tab to the real gateway URL once the API returns. If the
+    // browser refused the sync open, we redirect the current tab as a
+    // fallback — card payments leave the page anyway.
+    const cardPaymentWindow: Window | null = isCard ? window.open('about:blank', '_blank') : null;
+
+    setGiftLoading(true);
+    setGiftError(null);
 
     // Resolve currency - use event's currency, default to RWF
     const abbr = mainEvent?.streamFeeCurrencyAbbreviation;
@@ -1941,10 +1949,26 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
 
       const data = response.data;
 
-      // For card payments, open redirect URL
-      if (isCard && data.paymentUrl) {
+      // For card payments, the backend must return a paymentUrl. If it
+      // doesn't, fail loudly here instead of silently polling a refid that
+      // has no gateway session attached.
+      if (isCard) {
+        if (!data.paymentUrl) {
+          if (cardPaymentWindow && !cardPaymentWindow.closed) cardPaymentWindow.close();
+          throw new Error('Payment session created but no checkout URL was returned. Please try again.');
+        }
         setGiftPaymentUrl(data.paymentUrl);
-        window.open(data.paymentUrl, '_blank');
+        if (cardPaymentWindow && !cardPaymentWindow.closed) {
+          try {
+            cardPaymentWindow.location.href = data.paymentUrl;
+          } catch {
+            window.location.href = data.paymentUrl;
+            return;
+          }
+        } else {
+          window.location.href = data.paymentUrl;
+          return;
+        }
       }
 
       setGiftStep('processing');
@@ -1999,9 +2023,15 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
         },
         2000,
         150,
-        usePublicPolling
+        usePublicPolling,
+        // 3-minute grace window for card flows: XentriPay reports FAILED on
+        // a freshly-created card session that the user hasn't paid yet.
+        // Without this, polling flipped the gift modal to "Payment Failed"
+        // before the user finished typing card details on the gateway.
+        isCard ? 180_000 : 0
       );
     } catch (err) {
+      if (cardPaymentWindow && !cardPaymentWindow.closed) cardPaymentWindow.close();
       const raw = err instanceof Error ? err.message : '';
       const lower = raw.toLowerCase();
       let msg: string;
