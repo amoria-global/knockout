@@ -1237,7 +1237,11 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
               {/* Country pill + "change" link. The operator list below is
                   driven by usePaymentOptions(detectedCountry); changing
                   country here re-fetches and re-renders the grid. */}
-              {detectedCountry && !showCountryPicker && (
+              {/* Country pill + change/choose link. Always rendered (even
+                  when IP-detection returned null) so the user can ALWAYS pick
+                  a country — otherwise a failed/empty detection silently traps
+                  them on the Rwanda fallback list with no way to switch. */}
+              {!showCountryPicker && (
                 <div style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                   gap: '8px', marginBottom: '12px', flexWrap: 'wrap',
@@ -1247,8 +1251,14 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
                     padding: '5px 10px', background: '#EFF6FF', border: '1px solid #BFDBFE',
                     borderRadius: '999px', fontSize: '12px', color: '#083A85', fontWeight: 700,
                   }}>
-                    {findCountry(detectedCountry)?.flag && <span style={{ fontSize: '13px' }}>{findCountry(detectedCountry)?.flag}</span>}
-                    <span>{findCountry(detectedCountry)?.name ?? detectedCountry}{paymentOptions?.currency ? ` · ${paymentOptions.currency}` : ''}</span>
+                    {detectedCountry ? (
+                      <>
+                        {findCountry(detectedCountry)?.flag && <span style={{ fontSize: '13px' }}>{findCountry(detectedCountry)?.flag}</span>}
+                        <span>{findCountry(detectedCountry)?.name ?? detectedCountry}{paymentOptions?.currency ? ` · ${paymentOptions.currency}` : ''}</span>
+                      </>
+                    ) : (
+                      <span>🌍 Select your country</span>
+                    )}
                   </div>
                   <button
                     type="button"
@@ -1258,7 +1268,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
                       cursor: 'pointer', fontSize: '12px', fontWeight: 600, padding: '4px 6px',
                     }}
                   >
-                    Change country
+                    {detectedCountry ? 'Change country' : 'Choose country'}
                   </button>
                 </div>
               )}
