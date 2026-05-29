@@ -179,9 +179,10 @@ const MethodTile: React.FC<{
       width: '44px', height: '44px', borderRadius: '12px', overflow: 'hidden', flexShrink: 0,
       backgroundColor: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
       border: '1px solid rgba(8,58,133,0.10)', boxShadow: '0 1px 2px rgba(8,58,133,0.06)',
+      padding: '5px',
     }}>
       <img src={image} alt={label} onError={handleLogoError}
-        style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
     </div>
     <span style={{
       color: selected ? '#083A85' : '#475569',

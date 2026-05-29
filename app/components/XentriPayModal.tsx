@@ -115,14 +115,14 @@ function iconForOperator(iconKey: string): string {
   switch (iconKey) {
     case 'mtn': return '/mtn.png';
     case 'airtel': return '/airtel.png';
-    case 'mpesa': return '/mpesa.png';
-    case 'vodafone': return '/vodafone.png';
+    case 'mpesa': return '/mpesa.svg';
+    case 'vodafone': return '/vodafone.svg';
     case 'airteltigo': return '/airteltigo.png';
-    case 'orange': return '/orange.png';
+    case 'orange': return '/orange.svg';
     case 'moov': return '/moov.png';
     case 'wave': return '/wave.png';
     case 'free': return '/free.png';
-    case 'tigo': return '/tigo.png';
+    case 'tigo': return '/tigo.svg';
     case 'zamtel': return '/zamtel.png';
     case 'halotel': return '/halotel.png';
     case 'tnm': return '/tnm.png';
@@ -1379,7 +1379,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
               img.dataset.fallback = '1';
               img.src = '/mobile-money.svg';
             }}
-            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '5px' }}
           />
                       </div>
                       <span style={{
