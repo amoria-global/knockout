@@ -58,3 +58,31 @@ export function isPlausibleMobile(phone: string, iso2: string | null | undefined
   const national = e164.startsWith(dial) ? e164.slice(dial.length) : e164;
   return national.length >= 8 && national.length <= 12;
 }
+
+/**
+ * A human placeholder for the phone input, country-aware so it never
+ * shows a stale Rwanda "078…" example after the user switches country.
+ * Most PawaPay markets enter the national number with a leading 0 and a
+ * 9-digit body; a few (Kenya, etc.) drop the leading 0. We key the
+ * common ones explicitly and fall back to a dial-code hint otherwise.
+ */
+const PHONE_HINTS: Record<string, string> = {
+  RW: 'e.g. 078XXXXXXX',
+  KE: 'e.g. 7XXXXXXXX',
+  UG: 'e.g. 07XXXXXXXX',
+  TZ: 'e.g. 06XXXXXXXX',
+  ZM: 'e.g. 09XXXXXXXX',
+  GH: 'e.g. 02XXXXXXXX',
+  NG: 'e.g. 080XXXXXXXX',
+  MW: 'e.g. 08XXXXXXXX',
+  CI: 'e.g. 07XXXXXXXX',
+  SN: 'e.g. 7XXXXXXXX',
+  CM: 'e.g. 06XXXXXXXX',
+  CD: 'e.g. 08XXXXXXXXX',
+};
+
+export function phoneHintForCountry(iso2: string | null | undefined): string {
+  const code = (iso2 || '').toUpperCase().trim();
+  if (PHONE_HINTS[code]) return PHONE_HINTS[code];
+  return `+${dialCodeFor(iso2)} 7XXXXXXXX`;
+}
