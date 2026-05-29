@@ -1293,10 +1293,18 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
                 {paymentMethods
                   .filter((method) => {
-                    // Filter by per-country allowed payment methods from geo-check
+                    // Filter by the event geo-check's allowed methods — but at the
+                    // CATEGORY level (mobile-money vs card), not by exact provider
+                    // name. The backend defaults this list to RW providers
+                    // ["MTN","AIRTEL","CARD"], so matching exact names wrongly hid
+                    // every other country's operator (e.g. Kenya's MPESA) once the
+                    // user switched country, leaving only the card tile. Treat any
+                    // non-CARD entry as "mobile money allowed" so the selected
+                    // country's operators show regardless of their provider id.
                     const allowed = eventGeoCheck?.allowedPaymentMethods;
                     if (!allowed || allowed.length === 0) return true; // No restriction = show all
-                    return allowed.includes(method.provider);
+                    if (method.provider === 'CARD') return allowed.includes('CARD');
+                    return allowed.some((m) => m !== 'CARD');
                   })
                   .map((method) => {
                   const isSelected = selectedMethod === method.id;
