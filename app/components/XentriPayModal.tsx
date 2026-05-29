@@ -127,7 +127,7 @@ function iconForOperator(iconKey: string): string {
     case 'halotel': return '/halotel.png';
     case 'tnm': return '/tnm.png';
     case 'movitel': return '/movitel.png';
-    default: return '/mobile-money.png';
+    default: return '/mobile-money.svg';
   }
 }
 
@@ -1370,7 +1370,17 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
                         border: '1px solid rgba(8,58,133,0.10)',
                         boxShadow: '0 1px 2px rgba(8,58,133,0.06)',
                       }}>
-                        <img src={method.image} alt={method.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <img
+            src={method.image}
+            alt={method.name}
+            onError={(e) => {
+              const img = e.currentTarget;
+              if (img.dataset.fallback === '1') return;
+              img.dataset.fallback = '1';
+              img.src = '/mobile-money.svg';
+            }}
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          />
                       </div>
                       <span style={{
                         color: isSelected ? '#083A85' : (isDisabled ? '#9ca3af' : '#475569'),
