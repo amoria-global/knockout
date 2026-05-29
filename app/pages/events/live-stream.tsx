@@ -1351,7 +1351,13 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
       }
     }).catch(err => { console.log('[ADS] Fetch error:', err); });
 
-    // Poll for manual triggers every 5s
+    // Poll for manual triggers every 5s.
+    // The backend keeps each manual trigger visible for ~30s so EVERY viewer
+    // polling within that window sees it (the old "consume on first poll"
+    // behaviour meant only one viewer ever saw a manually-pushed banner).
+    // Dedup here by trigger.id so the same trigger reaching us 6× during the
+    // window doesn't re-fire the banner on every poll.
+    let lastTriggerId: string | null = null;
     const pollInterval = setInterval(async () => {
       if (cancelled) return;
       try {
@@ -1360,7 +1366,8 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const d = res.data as any;
           const trigger = d.trigger || d.data?.trigger;
-          if (trigger?.adId) {
+          if (trigger?.adId && trigger?.id && trigger.id !== lastTriggerId) {
+            lastTriggerId = trigger.id;
             const ad = streamAds.find(a => a.id === trigger.adId);
             if (ad) {
               // Force show this ad by temporarily prepending it
