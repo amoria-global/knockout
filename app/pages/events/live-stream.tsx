@@ -10,6 +10,8 @@ import { recordTip, recordStreamingPayment } from '@/lib/APIs/payments/route';
 import { initiateXentriPayStreaming, pollXentriPayStatus, type XentriPayStatusResponse } from '@/lib/APIs/payments/xentripay';
 import { usePaymentCountry } from '@/lib/payments/usePaymentCountry';
 import { usePaymentOptions } from '@/lib/payments/usePaymentOptions';
+import { phoneHintForCountry } from '@/lib/payments/formatPhone';
+import { iconForOperator, handleLogoError } from '@/lib/payments/operatorIcons';
 import { getPublicEventById } from '@/lib/APIs/public/get-events/route';
 import { useAuth } from '../../providers/AuthProvider';
 import { login } from '@/lib/APIs/auth/login/route';
@@ -1835,29 +1837,10 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
         { id: 'card', name: 'VISA & Master Card', image: '/cards.png' },
       ];
     }
-    const iconFor = (k: string) => {
-      switch (k) {
-        case 'mtn': return '/mtn.png';
-        case 'airtel': return '/airtel.png';
-        case 'mpesa': return '/mpesa.png';
-        case 'vodafone': return '/vodafone.png';
-        case 'airteltigo': return '/airteltigo.png';
-        case 'orange': return '/orange.png';
-        case 'moov': return '/moov.png';
-        case 'wave': return '/wave.png';
-        case 'free': return '/free.png';
-        case 'tigo': return '/tigo.png';
-        case 'zamtel': return '/zamtel.png';
-        case 'halotel': return '/halotel.png';
-        case 'tnm': return '/tnm.png';
-        case 'movitel': return '/movitel.png';
-        default: return '/mobile-money.png';
-      }
-    };
     const tiles = giftPaymentOptions.operators.map(op => ({
       id: op.id.toLowerCase(),
       name: op.name,
-      image: iconFor(op.iconKey),
+      image: iconForOperator(op.iconKey),
     }));
     if (giftPaymentOptions.supportsCard) {
       tiles.push({ id: 'card', name: 'VISA & Master Card', image: '/cards.png' });
@@ -10388,7 +10371,7 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
                         </span>
                       )}
                       <span className="gift-modal-payment-tile-logo">
-                        <img src={method.image} alt={method.name} />
+                        <img src={method.image} alt={method.name} onError={handleLogoError} />
                       </span>
                       <span className="gift-modal-payment-tile-label">
                         {method.name}
@@ -10423,7 +10406,7 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
                   type="tel"
                   value={paymentPhone}
                   onChange={(e) => setPaymentPhone(e.target.value.replace(/\D/g, '').slice(0, 12))}
-                  placeholder={selectedPaymentMethod === 'mtn' ? "e.g., 0781234567" : "e.g., 0721234567"}
+                  placeholder={phoneHintForCountry(giftCountry)}
                   style={{
                     width: '100%',
                     padding: '12px 16px',

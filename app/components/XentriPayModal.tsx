@@ -22,6 +22,7 @@ import { usePaymentCountry } from '@/lib/payments/usePaymentCountry';
 import { usePaymentOptions } from '@/lib/payments/usePaymentOptions';
 import { CountryPicker } from './payments/CountryPicker';
 import { findCountry } from '@/lib/payments/supportedCountries';
+import { phoneHintForCountry } from '@/lib/payments/formatPhone';
 
 // ==================== Types ====================
 
@@ -1430,7 +1431,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
                   type="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 12))}
-                  placeholder={selectedMethod === 'mtn' ? '078XXXXXXX' : '073XXXXXXX'}
+                  placeholder={phoneHintForCountry(detectedCountry).replace(/^e\.g\.\s*/, '')}
                   style={{
                     width: '100%',
                     padding: '13px 16px',
