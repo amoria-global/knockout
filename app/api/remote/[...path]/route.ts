@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL as string;
 
-// Only same-origin + sibling apps may use this proxy.
 const ALLOWED_ORIGINS = new Set<string>([
   'https://connekyt.com',
   'https://www.connekyt.com',
@@ -10,6 +9,17 @@ const ALLOWED_ORIGINS = new Set<string>([
   'http://localhost:3000',
   'http://localhost:3001',
 ]);
+
+/** Allow any http:// private-network origin in development (LAN mobile testing). */
+function isAllowedOrigin(origin: string | null): boolean {
+  if (!origin) return true;
+  if (ALLOWED_ORIGINS.has(origin)) return true;
+  if (process.env.NODE_ENV !== 'production') {
+    const lanPattern = /^http:\/\/(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.)\d+\.\d+(:\d+)?$/;
+    if (lanPattern.test(origin)) return true;
+  }
+  return false;
+}
 
 const REQUEST_TIMEOUT_MS = 30_000;
 
@@ -39,7 +49,7 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
 }
 
 function corsHeadersFor(origin: string | null): Record<string, string> {
-  if (origin && ALLOWED_ORIGINS.has(origin)) {
+  if (origin && isAllowedOrigin(origin)) {
     return {
       'Access-Control-Allow-Origin': origin,
       'Access-Control-Allow-Credentials': 'true',
@@ -64,7 +74,7 @@ async function proxyRequest(
   const origin = request.headers.get('origin');
   const cors = corsHeadersFor(origin);
 
-  if (origin && !ALLOWED_ORIGINS.has(origin)) {
+  if (origin && !isAllowedOrigin(origin)) {
     return NextResponse.json({ error: 'Origin not allowed' }, { status: 403 });
   }
 

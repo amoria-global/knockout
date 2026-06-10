@@ -14,10 +14,24 @@ const ALLOWED_ORIGINS = new Set<string>([
   'https://connekyt.com',
   'https://www.connekyt.com',
   'https://dashboard.connekyt.com',
-  // dev
+  // dev — localhost and any LAN origin (192.168.x.x, 10.x.x.x) so
+  // mobile devices on the same WiFi can reach the dev server.
   'http://localhost:3000',
   'http://localhost:3001',
 ]);
+
+/** Allow any http:// private-network origin in development (LAN mobile testing). */
+function isAllowedOrigin(origin: string | null): boolean {
+  if (!origin) return true; // server-side / curl — no origin header
+  if (ALLOWED_ORIGINS.has(origin)) return true;
+  if (process.env.NODE_ENV !== 'production') {
+    // Accept http://<LAN IP>:<any port> during dev so phones on the same
+    // WiFi can hit the Next.js dev server without being 403'd.
+    const lanPattern = /^http:\/\/(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.)\d+\.\d+(:\d+)?$/;
+    if (lanPattern.test(origin)) return true;
+  }
+  return false;
+}
 
 // Only backend paths under these prefixes are proxiable. Anything else → 403.
 // Keeps this route from being abused as a generic reverse proxy.
@@ -63,7 +77,7 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
 function corsHeadersFor(origin: string | null): Record<string, string> {
   // Echo back the specific Origin if allowed; never wildcard. If the origin is
   // not in the allow-list, return no CORS headers - browser will reject the response.
-  if (origin && ALLOWED_ORIGINS.has(origin)) {
+  if (origin && isAllowedOrigin(origin)) {
     return {
       'Access-Control-Allow-Origin': origin,
       'Access-Control-Allow-Credentials': 'true',
@@ -92,7 +106,7 @@ async function proxyRequest(
   // Reject cross-origin requests from disallowed origins (defense in depth;
   // browsers already enforce this via CORS preflight, but server-side rejection
   // stops non-browser clients too).
-  if (origin && !ALLOWED_ORIGINS.has(origin)) {
+  if (origin && !isAllowedOrigin(origin)) {
     return NextResponse.json({ error: 'Origin not allowed' }, { status: 403 });
   }
 
