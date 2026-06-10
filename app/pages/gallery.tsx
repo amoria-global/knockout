@@ -312,8 +312,19 @@ export default function Gallery() {
             {/* Bottom CTA */}
             <div className="hof-ov-cta">
               <div className="hof-ov-cta-left">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/pro1.png" alt="" aria-hidden="true" className="hof-ov-cta-img" />
+                <div className="hof-ov-motif" aria-hidden="true" />
+                <div className="hof-ov-lockup" aria-hidden="true">
+                  <span className="hof-ov-chip">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="/logo.png" alt="" />
+                  </span>
+                  <span className="hof-ov-x"><i className="bi bi-plus-lg" /></span>
+                  <span className="hof-ov-chip">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="/igihe_logo.png" alt="" />
+                  </span>
+                </div>
+                <span className="hof-ov-lockup-cap">Connekyt &times; its partners</span>
               </div>
               <div className="hof-ov-cta-right">
                 <p className="hof-kicker">Become a partner</p>
@@ -965,13 +976,43 @@ export default function Gallery() {
           position: relative;
           min-height: 320px;
           overflow: hidden;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 18px;
+          isolation: isolate;
+          background: linear-gradient(150deg, #06205a 0%, #0a2f73 45%, #7a1860 80%, #b3174e 100%);
         }
-        .hof-ov-cta-img {
-          width: 100%; height: 100%;
-          object-fit: cover; object-position: top center; display: block;
-          /* keep dark-panel aesthetic */
-          filter: grayscale(0.4) brightness(0.7) contrast(1.05);
-          pointer-events: none; user-select: none;
+        .hof-ov-motif {
+          position: absolute; inset: 0; z-index: 0; pointer-events: none;
+          background: repeating-linear-gradient(118deg, rgba(255,255,255,0.07) 0 2px, transparent 2px 16px);
+          -webkit-mask-image: radial-gradient(120% 80% at 50% 50%, #000 28%, transparent 82%);
+                  mask-image: radial-gradient(120% 80% at 50% 50%, #000 28%, transparent 82%);
+        }
+        .hof-ov-lockup {
+          position: relative; z-index: 1;
+          display: flex; align-items: center; gap: 14px;
+        }
+        .hof-ov-chip {
+          width: clamp(60px, 8vw, 76px); height: clamp(60px, 8vw, 76px);
+          border-radius: 18px;
+          background: #fff;
+          display: grid; place-items: center;
+          box-shadow: 0 14px 32px -12px rgba(0,0,0,0.55);
+        }
+        .hof-ov-chip img { width: 62%; height: 62%; object-fit: contain; }
+        .hof-ov-x {
+          width: 30px; height: 30px; border-radius: 50%;
+          display: grid; place-items: center;
+          color: #fff; font-size: 13px;
+          background: rgba(255,255,255,0.16);
+          border: 1px solid rgba(255,255,255,0.32);
+        }
+        .hof-ov-lockup-cap {
+          position: relative; z-index: 1;
+          font-size: 11px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase;
+          color: rgba(255,255,255,0.72);
         }
         .hof-ov-cta-right {
           padding: clamp(32px,4vw,56px) clamp(24px,3vw,48px) clamp(32px,4vw,56px) 0;
