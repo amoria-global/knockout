@@ -2,6 +2,7 @@
   "name": "connekt",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "yarn@4.14.1",
   "scripts": {
     "dev": "next dev --turbopack --hostname 0.0.0.0",
     "build": "next build --turbopack",
