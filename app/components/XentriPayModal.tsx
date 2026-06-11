@@ -1156,6 +1156,26 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
               )}
             </div>
 
+            {/* Escrow notice — booking deposits are held by the platform, not
+                paid to the photographer directly. Only shown for booking
+                payments (tips / donations / photo buys are not escrowed). */}
+            {paymentType === 'booking' && (
+              <div style={{
+                display: 'flex', gap: '10px', alignItems: 'flex-start',
+                background: 'linear-gradient(135deg, #f0f5ff 0%, #fafbff 100%)',
+                border: '1px solid rgba(8,58,133,0.14)', borderRadius: '12px',
+                padding: '12px 14px', marginBottom: '18px',
+              }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#083A85" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: '1px' }} aria-hidden="true">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+                <p style={{ margin: 0, fontSize: '12.5px', lineHeight: 1.5, color: '#475569' }}>
+                  <strong style={{ color: '#0f172a' }}>Held safely by Connekyt.</strong> This payment is not sent to the photographer directly. We hold it and release it to them only after your event is delivered.
+                </p>
+              </div>
+            )}
+
             {/* Geo-restriction Warning */}
             {!geoStatus.loading && geoStatus.blocked && (
               <div style={{

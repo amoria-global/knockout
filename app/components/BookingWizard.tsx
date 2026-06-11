@@ -1419,9 +1419,13 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
 
       const res = await createEvent(payload as Parameters<typeof createEvent>[0]);
       if (res.success) {
-        // Extract response data - server returns { data: { event, booking, declarationId, ... } }
-        const responseData = res.data as unknown as CreateEventResponse;
-        const innerData = responseData?.data;
+        // apiClient unwraps the backend { action, message, data } envelope, so
+        // res.data IS the inner { event, booking, declarationId, paymentAmount,
+        // ... } object. The old code read res.data.data (a double-unwrap) which
+        // always resolved to undefined, so declarationId/paymentAmount were lost
+        // and EVERY booking skipped the in-wizard payment modal and fell through
+        // to the "Booking Created" screen without ever collecting the deposit.
+        const innerData = (res.data ?? {}) as unknown as NonNullable<CreateEventResponse['data']>;
         const eventId = innerData?.event?.id || innerData?.id || undefined;
         const declarationId = innerData?.declarationId;
         const payAmount = innerData?.paymentAmount;
@@ -2627,6 +2631,16 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                       <span style={{ color: TEXT_PRIMARY, fontSize: 14, fontWeight: 600 }}>{fmtLive(m.amount)}</span>
                     </div>
                   ))}
+                </div>
+
+                {/* Escrow / buyer-protection notice. Many users assume the
+                    deposit goes straight to the photographer; make it explicit
+                    that Connekyt holds it and only releases after the event. */}
+                <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', background: '#f0f5ff', border: '1px solid #dbeafe', borderRadius: 12, padding: '12px 14px', marginBottom: 20 }}>
+                  <i className="bi bi-shield-lock-fill" style={{ color: ACCENT, fontSize: 18, marginTop: 1, flexShrink: 0 }}></i>
+                  <p style={{ margin: 0, fontSize: 12.5, lineHeight: 1.5, color: TEXT_SECONDARY }}>
+                    <strong style={{ color: TEXT_PRIMARY }}>Your money is protected.</strong> This payment is held securely by Connekyt, not paid to the photographer directly. We release it to them only after your event is delivered, so you&apos;re covered if anything goes wrong.
+                  </p>
                 </div>
 
                 <button onClick={handleMilestoneNext} style={btnPrimary}>
