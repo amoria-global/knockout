@@ -150,7 +150,7 @@ export default function Gallery() {
       <header className="hof-mast">
         <div className="hof-motif" aria-hidden="true" />
         <div className="hof-mast-inner">
-          <p className="hof-mast-super">Connekyt · Gallery</p>
+          <p className="hof-mast-super">Connekyt · Hall of fame</p>
           <h1 className="hof-title">Hall of Fame</h1>
           <p className="hof-mast-sub">
             Honouring the exclusive partners who stand with Connekyt.
