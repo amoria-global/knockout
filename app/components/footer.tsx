@@ -258,7 +258,7 @@ export default function Footer() {
         { text: t('links.findPhotographer'), href: '/user/photographers' },
         ...(isLandingPage ? [{ text: t('links.howItWorks'), href: '/#how-it-works', onClick: (e: React.MouseEvent<HTMLAnchorElement>) => handleScrollToSection(e, 'how-it-works') }] : []),
         { text: t('links.browseEvents'), href: '/user/events' },
-        { text: 'Gallery', href: '/user/gallery' },
+        { text: 'Hall of fame', href: '/user/hall-of-fame' },
       ],
     },
     {
