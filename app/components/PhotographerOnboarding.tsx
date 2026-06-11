@@ -286,10 +286,17 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
 
   // ── Slide 5: Packages (all three tiers kept independently) ──
   type PkgFields = { price: number; duration: number; photos: number; videos: number; delivery: number; description: string };
+  // All zero. The numeric fields render the TIER_PRESETS values as
+  // *placeholder* text (see the JSX below) so the photographer sees the
+  // recommended starting point but must consciously type their own number.
+  // Pre-filling with the preset value used to slip the platform's
+  // "recommended" numbers into the saved package whenever a photographer
+  // tabbed past a field — now an untouched field stays at 0 and is filtered
+  // out at submit-time (the sync layer already skips packages with price ≤ 0).
   const makeInitialPkgs = (): Record<PackageTier, PkgFields> => ({
-    Silver: { price: TIER_PRESETS.Silver.price, duration: TIER_PRESETS.Silver.duration, photos: TIER_PRESETS.Silver.photos, videos: TIER_PRESETS.Silver.videos, delivery: TIER_PRESETS.Silver.delivery, description: '' },
-    Gold: { price: TIER_PRESETS.Gold.price, duration: TIER_PRESETS.Gold.duration, photos: TIER_PRESETS.Gold.photos, videos: TIER_PRESETS.Gold.videos, delivery: TIER_PRESETS.Gold.delivery, description: '' },
-    Diamond: { price: TIER_PRESETS.Diamond.price, duration: TIER_PRESETS.Diamond.duration, photos: TIER_PRESETS.Diamond.photos, videos: TIER_PRESETS.Diamond.videos, delivery: TIER_PRESETS.Diamond.delivery, description: '' },
+    Silver: { price: 0, duration: 0, photos: 0, videos: 0, delivery: 0, description: '' },
+    Gold: { price: 0, duration: 0, photos: 0, videos: 0, delivery: 0, description: '' },
+    Diamond: { price: 0, duration: 0, photos: 0, videos: 0, delivery: 0, description: '' },
   });
   // `pkgTier` is only WHICH tier the form is currently showing - switching
   // it never wipes data because every tier has its own record in `pkgs`.
@@ -317,10 +324,13 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
   // payload builder filters those out). Currency reuses the outdoor
   // pkgCurrencyId. clients typically price indoor in the same currency
   // and asking them to re-pick mid-signup hurts the skip-friendly UX.
+  // Same all-zero policy as the outdoor packages: the photographer sees the
+  // recommended starting numbers as placeholders (see studio JSX below),
+  // but every field must be consciously typed before it lands in the DB.
   const makeInitialStudioPkgs = (): Record<PackageTier, PkgFields> => ({
-    Silver:  { price: 0, duration: 1, photos: 25,  videos: 5,  delivery: 7, description: '' },
-    Gold:    { price: 0, duration: 2, photos: 60,  videos: 12, delivery: 5, description: '' },
-    Diamond: { price: 0, duration: 3, photos: 120, videos: 25, delivery: 3, description: '' },
+    Silver:  { price: 0, duration: 0, photos: 0, videos: 0, delivery: 0, description: '' },
+    Gold:    { price: 0, duration: 0, photos: 0, videos: 0, delivery: 0, description: '' },
+    Diamond: { price: 0, duration: 0, photos: 0, videos: 0, delivery: 0, description: '' },
   });
   const [studioPkgTier, setStudioPkgTier] = useState<PackageTier>('Silver');
   const [studioPkgs, setStudioPkgs] = useState<Record<PackageTier, PkgFields>>(makeInitialStudioPkgs);
@@ -1536,7 +1546,8 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
                       <select value={pkgCurrencyId} onChange={e => setPkgCurrencyId(e.target.value)} style={{ ...inputStyle, width: 'auto', minWidth: 96, flex: '0 0 auto', appearance: 'auto' as const, fontWeight: 700, color: PINK }}>
                         {currencies.map(c => <option key={c.id} value={c.id} style={{ color: TEXT_PRIMARY }}>{c.code}</option>)}
                       </select>
-                      <input type="number" value={pkgPrice || ''} onChange={e => setPkgPrice(parseInt(e.target.value) || 0)} placeholder="Price"
+                      <input type="number" value={pkgPrice || ''} onChange={e => setPkgPrice(parseInt(e.target.value) || 0)} placeholder={`e.g. ${TIER_PRESETS[pkgTier].price.toLocaleString()}`}
+                        required
                         style={{ ...inputStyle, flex: 1, fontWeight: 700, fontSize: 15 }}
                         onFocus={(e) => { e.currentTarget.style.borderColor = PINK; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(242,12,143,0.12)'; }}
                         onBlur={(e) => { e.currentTarget.style.borderColor = INPUT_BORDER; e.currentTarget.style.boxShadow = 'none'; }}
@@ -1550,7 +1561,8 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
                         <i className="bi bi-clock-fill" style={{ fontSize: 10, marginRight: 4 }} />
                         Duration (hours)
                       </label>
-                      <input type="number" value={pkgDuration || ''} onChange={e => setPkgDuration(parseInt(e.target.value) || 0)} style={inputStyle}
+                      <input type="number" value={pkgDuration || ''} onChange={e => setPkgDuration(parseInt(e.target.value) || 0)} placeholder={`e.g. ${TIER_PRESETS[pkgTier].duration}`}
+                        required style={inputStyle}
                         onFocus={(e) => { e.currentTarget.style.borderColor = PINK; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(242,12,143,0.12)'; }}
                         onBlur={(e) => { e.currentTarget.style.borderColor = INPUT_BORDER; e.currentTarget.style.boxShadow = 'none'; }}
                       />
@@ -1560,7 +1572,8 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
                         <i className="bi bi-truck" style={{ fontSize: 10, marginRight: 4 }} />
                         Delivery (days)
                       </label>
-                      <input type="number" value={pkgDelivery || ''} onChange={e => setPkgDelivery(parseInt(e.target.value) || 0)} style={inputStyle}
+                      <input type="number" value={pkgDelivery || ''} onChange={e => setPkgDelivery(parseInt(e.target.value) || 0)} placeholder={`e.g. ${TIER_PRESETS[pkgTier].delivery}`}
+                        required style={inputStyle}
                         onFocus={(e) => { e.currentTarget.style.borderColor = PINK; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(242,12,143,0.12)'; }}
                         onBlur={(e) => { e.currentTarget.style.borderColor = INPUT_BORDER; e.currentTarget.style.boxShadow = 'none'; }}
                       />
@@ -1573,7 +1586,8 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
                         <i className="bi bi-camera-fill" style={{ fontSize: 10, marginRight: 4 }} />
                         Included Photos
                       </label>
-                      <input type="number" value={pkgPhotos || ''} onChange={e => setPkgPhotos(parseInt(e.target.value) || 0)} style={inputStyle}
+                      <input type="number" value={pkgPhotos || ''} onChange={e => setPkgPhotos(parseInt(e.target.value) || 0)} placeholder={`e.g. ${TIER_PRESETS[pkgTier].photos}`}
+                        required style={inputStyle}
                         onFocus={(e) => { e.currentTarget.style.borderColor = PINK; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(242,12,143,0.12)'; }}
                         onBlur={(e) => { e.currentTarget.style.borderColor = INPUT_BORDER; e.currentTarget.style.boxShadow = 'none'; }}
                       />
@@ -1583,7 +1597,8 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
                         <i className="bi bi-camera-reels-fill" style={{ fontSize: 10, marginRight: 4 }} />
                         Included Videos
                       </label>
-                      <input type="number" value={pkgVideos || ''} onChange={e => setPkgVideos(parseInt(e.target.value) || 0)} style={inputStyle}
+                      <input type="number" value={pkgVideos || ''} onChange={e => setPkgVideos(parseInt(e.target.value) || 0)} placeholder={`e.g. ${TIER_PRESETS[pkgTier].videos}`}
+                        style={inputStyle}
                         onFocus={(e) => { e.currentTarget.style.borderColor = PINK; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(242,12,143,0.12)'; }}
                         onBlur={(e) => { e.currentTarget.style.borderColor = INPUT_BORDER; e.currentTarget.style.boxShadow = 'none'; }}
                       />
