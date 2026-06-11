@@ -126,12 +126,32 @@ const PARTNERS = [
   },
 ];
 
-type Tab = "overview" | "partners" | "faqs";
+// ─── Inducted Milestones ────────────────────────────────────────────────────
+const UMUDENDE_PILLARS = [
+  {
+    icon: "bi-globe-americas",
+    title: "A global beacon for Gakondo",
+    body: "Umudende 2026 wasn't just a local performance — it was a borderless celebration of Gakondo, traditional Rwandan music. Streamed live to thousands across the globe, it broke geographical barriers, letting the diaspora and international art lovers experience the Ingoma drums, the dancers and Rwandan storytelling in real time.",
+  },
+  {
+    icon: "bi-lightning-charge-fill",
+    title: "Where tradition met tomorrow",
+    body: "Its magic lay in a groundbreaking fusion of genres. The collaboration of Jules Sentore and Masamba proved that safeguarding culture doesn't mean keeping it stagnant — weaving ancient Rwandan poetry with contemporary sound sparked a wave of pride among Gen Z and millennial viewers, making traditional art viral, trendy and relevant.",
+  },
+  {
+    icon: "bi-trophy-fill",
+    title: "Why it belongs in the Hall of Fame",
+    body: "We induct Umudende 2026 for fulfilling the ultimate mission of art advocacy: global access — democratising Rwandan culture by bringing an authentic Kigali stage to global screens; and intergenerational dialogue — uniting musical elders and youth icons on one stage, passing Rwanda's creative flame securely to the next generation.",
+  },
+];
+
+type Tab = "overview" | "partners" | "milestones" | "faqs";
 
 const TABS: { id: Tab; label: string }[] = [
-  { id: "overview",  label: "Overview"  },
-  { id: "partners",  label: "Partners"  },
-  { id: "faqs",      label: "FAQs"      },
+  { id: "overview",   label: "Overview"   },
+  { id: "partners",   label: "Partners"   },
+  { id: "milestones", label: "Milestones" },
+  { id: "faqs",       label: "FAQs"       },
 ];
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -457,6 +477,69 @@ export default function Gallery() {
                 Get in touch
               </a>
             </div>
+          </section>
+        )}
+
+        {/* ════ MILESTONES ══════════════════════════════════════════════ */}
+        {tab === "milestones" && (
+          <section className="hof-view" aria-label="Inducted Milestones">
+            <div className="hof-view-head">
+              <p className="hof-kicker">Inducted Milestones</p>
+              <h2 className="hof-h2">Moments that made history.</h2>
+              <p className="hof-lead">
+                Beyond people and brands, the Hall of Fame honours the landmark events that
+                push Rwandan culture forward — the moments we&rsquo;ll never forget.
+              </p>
+            </div>
+
+            <article className="hof-ms">
+              <div className="hof-ms-hero">
+                <div className="hof-ms-visual">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/umudende.PNG" alt="Jules Sentore performing at the Umudende Live Concert 2026" />
+                  <span className="hof-ms-ribbon"><i className="bi bi-trophy-fill" aria-hidden="true" /> Inducted 2026</span>
+                  <div className="hof-ms-cap">
+                    <strong>Jules Sentore</strong>
+                    <span>Umudende Live Concert · Kigali Universe · May 29, 2026</span>
+                  </div>
+                </div>
+
+                <div className="hof-ms-intro">
+                  <span className="hof-ms-eyebrow">Hall of Fame · Cultural Milestone</span>
+                  <h3 className="hof-ms-title">Umudende 2026</h3>
+                  <p className="hof-ms-sub">Giving history wings to fly across the digital universe — bridging eras.</p>
+                  <p className="hof-ms-lead">
+                    On May 29, 2026, the digital and physical worlds collided at Kigali Universe for a
+                    historic milestone in Rwandan heritage — the Umudende Live Concert. Led by the
+                    visionary Jules Sentore alongside cultural icons Masamba Intore, it enters our
+                    Hall of Fame as the first masterclass in cultural preservation for the modern era.
+                  </p>
+                  <div className="hof-ms-chips">
+                    <span><i className="bi bi-mic-fill" aria-hidden="true" /> Jules Sentore</span>
+                    <span><i className="bi bi-people-fill" aria-hidden="true" /> Masamba Intore</span>
+                    <span><i className="bi bi-geo-alt-fill" aria-hidden="true" /> Kigali Universe</span>
+                    <span><i className="bi bi-broadcast" aria-hidden="true" /> Streamed live</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="hof-ms-pillars">
+                {UMUDENDE_PILLARS.map((p) => (
+                  <div key={p.title} className="hof-ms-pillar">
+                    <div className="hof-ms-pillar-icon"><i className={`bi ${p.icon}`} aria-hidden="true" /></div>
+                    <h4>{p.title}</h4>
+                    <p>{p.body}</p>
+                  </div>
+                ))}
+              </div>
+
+              <blockquote className="hof-ms-closing">
+                Umudende 2026 proved that culture is not a relic of the past — it is a living force
+                capable of inspiring the future. By embracing digital innovation while honouring
+                tradition, Rwanda showed the world that its history is not merely preserved; it is
+                empowered to travel beyond borders, generations, and time itself.
+              </blockquote>
+            </article>
           </section>
         )}
 
@@ -1125,6 +1208,107 @@ export default function Gallery() {
           transition: opacity 0.25s ease, transform 0.25s cubic-bezier(0.22,1,0.36,1);
         }
         .hof-tile:hover .hof-tile-go { opacity: 1; transform: none; }
+
+        /* ════════════════════════════════════════════════════════════════
+           MILESTONES TAB
+        ════════════════════════════════════════════════════════════════ */
+        .hof-ms { max-width: 1100px; }
+        .hof-ms-hero {
+          display: grid;
+          grid-template-columns: minmax(0, 0.82fr) 1fr;
+          gap: clamp(24px, 4vw, 56px);
+          align-items: stretch;
+        }
+        .hof-ms-visual {
+          position: relative;
+          border-radius: 20px;
+          overflow: hidden;
+          background: #0b1020;
+          aspect-ratio: 4 / 5;
+          isolation: isolate;
+        }
+        .hof-ms-visual img {
+          width: 100%; height: 100%; object-fit: cover; object-position: top center; display: block;
+        }
+        .hof-ms-visual::after {
+          content: ""; position: absolute; inset: 0; pointer-events: none;
+          background: linear-gradient(180deg, rgba(5,8,18,0) 45%, rgba(5,8,18,0.5) 72%, rgba(5,8,18,0.92) 100%);
+        }
+        .hof-ms-ribbon {
+          position: absolute; top: 16px; left: 16px; z-index: 1;
+          display: inline-flex; align-items: center; gap: 7px;
+          padding: 7px 14px; border-radius: 999px;
+          font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase;
+          color: #2a200d; background: linear-gradient(180deg, #fbf2d6, #d9b876);
+          box-shadow: 0 8px 20px -6px rgba(0,0,0,0.5);
+        }
+        .hof-ms-ribbon i { color: #a87f1f; }
+        .hof-ms-cap {
+          position: absolute; left: 0; right: 0; bottom: 0; z-index: 1;
+          display: flex; flex-direction: column; gap: 3px;
+          padding: clamp(16px, 2vw, 22px);
+        }
+        .hof-ms-cap strong { font-family: "Pragati Narrow", Impact, sans-serif; font-size: clamp(20px, 2.4vw, 28px); font-weight: 900; color: #fff; }
+        .hof-ms-cap span { font-size: 12.5px; color: rgba(255,255,255,0.78); }
+        .hof-ms-intro { display: flex; flex-direction: column; justify-content: center; gap: 12px; }
+        .hof-ms-eyebrow { font-size: 12px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: #f20c8f; }
+        .hof-ms-title {
+          margin: 0;
+          font-family: "Pragati Narrow", Impact, sans-serif;
+          font-size: clamp(34px, 5vw, 60px); font-weight: 900; line-height: 0.98;
+          letter-spacing: -0.02em; color: #0b1020;
+        }
+        .hof-ms-sub { margin: 0; font-size: clamp(16px, 1.8vw, 21px); font-weight: 600; color: #334155; }
+        .hof-ms-lead { margin: 6px 0 0; font-size: clamp(15px, 1.5vw, 17px); line-height: 1.6; color: #475569; }
+        .hof-ms-chips { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 6px; }
+        .hof-ms-chips span {
+          display: inline-flex; align-items: center; gap: 6px;
+          padding: 6px 12px; border-radius: 999px;
+          font-size: 12.5px; font-weight: 600; color: #334155;
+          background: rgba(8,58,133,0.06); border: 1px solid rgba(8,58,133,0.1);
+        }
+        .hof-ms-chips i { color: #083a85; }
+
+        .hof-ms-pillars {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: clamp(16px, 2vw, 24px);
+          margin-top: clamp(36px, 5vw, 56px);
+        }
+        .hof-ms-pillar {
+          background: #fff;
+          border: 1px solid rgba(8,16,32,0.08);
+          border-radius: 16px;
+          padding: clamp(20px, 2.4vw, 28px);
+          box-shadow: 0 10px 28px -18px rgba(8,16,32,0.22);
+        }
+        .hof-ms-pillar-icon {
+          width: 48px; height: 48px; border-radius: 13px;
+          display: grid; place-items: center; margin-bottom: 14px;
+          font-size: 22px; color: #fff;
+          background: linear-gradient(135deg, #083a85, #f20c8f);
+        }
+        .hof-ms-pillar h4 { margin: 0 0 8px; font-size: 17px; font-weight: 800; line-height: 1.25; color: #0b1020; }
+        .hof-ms-pillar p { margin: 0; font-size: 14px; line-height: 1.6; color: #475569; }
+
+        .hof-ms-closing {
+          margin: clamp(32px, 4vw, 48px) 0 0;
+          padding: clamp(24px, 3vw, 36px) clamp(24px, 3vw, 40px);
+          border-left: 4px solid #f20c8f;
+          background: linear-gradient(120deg, rgba(8,58,133,0.05), rgba(242,12,143,0.05));
+          border-radius: 0 16px 16px 0;
+          font-size: clamp(16px, 1.8vw, 21px);
+          font-style: italic;
+          line-height: 1.55;
+          color: #1e293b;
+          max-width: 70ch;
+        }
+
+        @media (max-width: 860px) {
+          .hof-ms-hero { grid-template-columns: 1fr; }
+          .hof-ms-visual { aspect-ratio: 16 / 11; }
+          .hof-ms-pillars { grid-template-columns: 1fr; }
+        }
 
         /* ════════════════════════════════════════════════════════════════
            FAQs TAB
