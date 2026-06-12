@@ -9,44 +9,27 @@ import { syncPhotographerProfile, initialSyncState, type SyncState } from '@/lib
 // ─── Types ───
 
 export interface OnboardingPayload {
-  // Slide 0
   address: string;
   about: string;
   businessType: 'Freelancer' | 'Registered Company';
   companyName: string;
   tin: string;
-  // Slide 1
   specialtyIds: string[];
-  // Slide 1 (same step as specialties). Required. Allowed codes:
-  // EN, FR, RW, SWA, SPA, CHI. Backend enforces non-empty + allowed
-  // set on /update-important-details.
   spokenLanguages: string[];
-  // Slide 2 - null is allowed in the completion flow when the photographer
-  // already has a profile photo on the server (don't force a re-upload).
   profileFile: File | null;
   coverFile: File | null;
-  // Slide 3
   projTitle: string;
   projYear: number;
   projDescription: string;
   projFile: File | null;
-  // Slide 4
   expPosition: string;
   expCompany: string;
   expLocation: string;
   expStartDate: string;
   expEndDate: string;
   expDescription: string;
-  // Slide 5 - all three tiers are kept independently and pushed together;
-  // switching tier never wipes another tier's edits. POST /packages upserts
-  // by name on the backend, so re-pushing the same tier just updates it.
   pkgCurrencyId: string;
   packages: PackageEntry[];
-  // Set by the completion flow from GET /profile-summary so the persist
-  // step is idempotent - it SKIPS the add-only endpoints (project / work
-  // experience) for sections the photographer already has, instead of
-  // creating duplicate rows. Undefined on fresh signup → add all.
-  // (Packages are always upserted by name, so they're not gated here.)
   existing?: {
     profilePhoto: boolean;
     coverPhoto: boolean;
@@ -67,9 +50,6 @@ export interface PackageEntry {
   delivery: number;
   description: string;
   features: { featureName: string; isIncluded: boolean; displayOrder: number }[];
-  // OUTDOOR (default event packages) or STUDIO (optional indoor packages,
-  // skipped on signup → empty array, edited later from the profile). Missing
-  // is treated as OUTDOOR by the persisters so older clients keep working.
   serviceType?: 'OUTDOOR' | 'STUDIO';
 }
 
@@ -77,25 +57,12 @@ interface PhotographerOnboardingProps {
   isOpen: boolean;
   onClose: () => void;
   onComplete: () => void;
-  // Called when the user finishes every slide. Parent runs the real
-  // signup() + all profile API saves here. Resolving means the customer
-  // record is created and OTP is sent; rejecting means nothing was
-  // stored and the wizard surfaces the error so the user can retry.
   onFinalize: (payload: OnboardingPayload) => Promise<void>;
   firstName: string;
   lastName: string;
   phone: string;
-  // Completion flow only: fetch GET /profile-summary on open and pre-fill
-  // every already-saved field so a returning photographer never re-enters
-  // data. Omitted (false) for fresh signup - there's no server record yet.
   prefillFromServer?: boolean;
-  // Progressive server autosave: every section is debounced-saved to the DB
-  // 5s after the user stops editing, so onboarding survives a dropped
-  // network and resumes from the server on return.
   serverSync?: boolean;
-  // Signup flow only: lazily create the account (signup → token) the first
-  // time autosave needs a session. Memoised by the caller so it runs once.
-  // Omitted in the completion flow (the session already exists).
   ensureSession?: () => Promise<{ success: boolean; error?: string }>;
 }
 
@@ -171,10 +138,6 @@ const errorBoxStyle: React.CSSProperties = {
   display: 'flex', alignItems: 'flex-start', gap: 8,
 };
 
-// Tier gradients matched 1:1 with the connekyt booking wizard package step
-// so the badges look consistent across onboarding + booking. Used by both
-// the required-packages slide and the optional-packages slide (same look,
-// no outdoor/indoor visual divergence).
 const TIER_GRADIENTS: Record<'Silver' | 'Gold' | 'Diamond', { gradient: string; glow: string; icon: string }> = {
   Silver: {
     gradient: 'linear-gradient(135deg, #94A3B8 0%, #CBD5E1 45%, #64748B 100%)',
@@ -193,73 +156,40 @@ const TIER_GRADIENTS: Record<'Silver' | 'Gold' | 'Diamond', { gradient: string; 
   },
 };
 
-const TIER_PRESETS: Record<string, { price: number; duration: number; photos: number; videos: number; delivery: number; features: string[] }> = {
-  Silver: { price: 50000, duration: 2, photos: 50, videos: 0, delivery: 7, features: ['Online gallery storage', 'Digital Memory Sharing Experience', 'Same-day preview', 'Custom branding'] },
-  Gold: { price: 100000, duration: 4, photos: 100, videos: 1, delivery: 5, features: ['Online gallery storage', 'Digital Memory Sharing Experience', 'Same-day preview', 'Custom branding', 'Fast processing', 'Outdoor photography', 'Event coverage'] },
-  Diamond: { price: 200000, duration: 8, photos: 200, videos: 3, delivery: 3, features: ['Online gallery storage', 'Digital Memory Sharing Experience', 'Same-day preview', 'Custom branding', 'Fast processing', 'Outdoor photography', 'Event coverage', 'Live-streaming', 'Unlimited photos & videos'] },
-};
-
 // ─── Component ───
 
 const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
   isOpen, onClose, onComplete, onFinalize, firstName, lastName, phone,
   prefillFromServer = false, serverSync = false, ensureSession,
 }) => {
-  // firstName / lastName / phone identify the photographer for the
-  // important-details save (used by the progressive autosave and passed
-  // back through onFinalize alongside the parent's credentials state).
   const [state, dispatch] = useReducer(reducer, initialState);
 
-  // ── Draft auto-save (localStorage) ──
-  // A returning user finds their typed answers pre-filled. Keyed by phone so
-  // two people sharing a browser don't clobber each other. Files (profile /
-  // cover / project image) are NOT serialisable so they're never persisted -
-  // that's why the restored slide is capped at the Photos step (see below).
   const draftStorageKey =
     'connekyt:onb-draft:v1:' + (phone ? phone.replace(/\D/g, '') || 'default' : 'default');
   const draftHydratedRef = useRef(false);
   const draftFinalizedRef = useRef(false);
 
-  // ── Server prefill (completion flow) ──
-  // True until GET /profile-summary resolves, so the wizard shows a brief
-  // loader instead of flashing blank fields that then fill (and to avoid
-  // overwriting anything the user just typed mid-fetch).
   const [prefillLoading, setPrefillLoading] = useState(prefillFromServer);
-  // What's ALREADY saved server-side. Drives (a) relaxing the profile-photo
-  // requirement and (b) the idempotent persist so we never duplicate the
-  // add-only project / work-experience / package rows.
   const [serverHas, setServerHas] = useState({
     profilePhoto: false, coverPhoto: false, project: false, workExp: false, pkg: false,
   });
 
-  // ── Progressive server autosave (5s debounce) ──
   const syncStateRef = useRef<SyncState>(initialSyncState());
-  // Memoise the one-time signup (signup flow): the first tick that needs a
-  // session creates the account; everyone after awaits the same promise.
   const sessionPromiseRef = useRef<Promise<{ success: boolean; error?: string }> | null>(null);
-  // Serialise sync runs so a slow tick can't overlap the next one (which
-  // would race the create/update decisions).
   const syncInFlightRef = useRef(false);
 
-  // ── Shared state across slides ──
   const [address, setAddress] = useState('');
   const [about, setAbout] = useState('');
   const [businessType, setBusinessType] = useState<'Freelancer' | 'Registered Company'>('Freelancer');
   const [companyName, setCompanyName] = useState('');
   const [tin, setTin] = useState('');
   const [selectedSpecialtyIds, setSelectedSpecialtyIds] = useState<string[]>([]);
-  // Spoken-language chips (EN, FR, RW, SWA, SPA, CHI). Required: the
-  // slide-1 "next" validator below blocks advance until at least one
-  // is picked. Same persistence path as specialties (update-important-
-  // details), so this rides the same autosave loop.
   const [selectedLanguages, setSelectedLanguages] = useState<string[]>([]);
   const [slideError, setSlideError] = useState('');
 
-  // ── Data ──
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const [currencies, setCurrenciesList] = useState<Currency[]>([]);
 
-  // ── Slide 2: Photos ──
   const [profileFile, setProfileFile] = useState<File | null>(null);
   const [profilePreview, setProfilePreview] = useState('');
   const [coverFile, setCoverFile] = useState<File | null>(null);
@@ -267,7 +197,6 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
   const profileInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
 
-  // ── Slide 3: First featured project ──
   const [projTitle, setProjTitle] = useState('');
   const [projYear, setProjYear] = useState<string>(String(new Date().getFullYear()));
   const [projDescription, setProjDescription] = useState('');
@@ -275,7 +204,6 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
   const [projPreview, setProjPreview] = useState('');
   const projInputRef = useRef<HTMLInputElement>(null);
 
-  // ── Slide 4: First work experience ──
   const [expPosition, setExpPosition] = useState('');
   const [expCompany, setExpCompany] = useState('');
   const [expLocation, setExpLocation] = useState('');
@@ -284,28 +212,18 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
   const [expIsCurrent, setExpIsCurrent] = useState(false);
   const [expDescription, setExpDescription] = useState('');
 
-  // ── Slide 5: Packages (all three tiers kept independently) ──
   type PkgFields = { price: number; duration: number; photos: number; videos: number; delivery: number; description: string };
-  // All zero. The numeric fields render the TIER_PRESETS values as
-  // *placeholder* text (see the JSX below) so the photographer sees the
-  // recommended starting point but must consciously type their own number.
-  // Pre-filling with the preset value used to slip the platform's
-  // "recommended" numbers into the saved package whenever a photographer
-  // tabbed past a field — now an untouched field stays at 0 and is filtered
-  // out at submit-time (the sync layer already skips packages with price ≤ 0).
+
   const makeInitialPkgs = (): Record<PackageTier, PkgFields> => ({
-    Silver: { price: 0, duration: 0, photos: 0, videos: 0, delivery: 0, description: '' },
-    Gold: { price: 0, duration: 0, photos: 0, videos: 0, delivery: 0, description: '' },
+    Silver:  { price: 0, duration: 0, photos: 0, videos: 0, delivery: 0, description: '' },
+    Gold:    { price: 0, duration: 0, photos: 0, videos: 0, delivery: 0, description: '' },
     Diamond: { price: 0, duration: 0, photos: 0, videos: 0, delivery: 0, description: '' },
   });
-  // `pkgTier` is only WHICH tier the form is currently showing - switching
-  // it never wipes data because every tier has its own record in `pkgs`.
+
   const [pkgTier, setPkgTier] = useState<PackageTier>('Silver');
   const [pkgCurrencyId, setPkgCurrencyId] = useState('');
   const [pkgs, setPkgs] = useState<Record<PackageTier, PkgFields>>(makeInitialPkgs);
 
-  // Derived views + per-tier setters so the existing slide JSX (which reads
-  // pkgPrice / setPkgPrice / …) keeps working but edits the current tier.
   const cur = pkgs[pkgTier];
   const pkgPrice = cur.price, pkgDuration = cur.duration, pkgPhotos = cur.photos,
         pkgVideos = cur.videos, pkgDelivery = cur.delivery, pkgDescription = cur.description;
@@ -318,15 +236,6 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
   const setPkgDelivery = (v: number) => setPkgField('delivery', v);
   const setPkgDescription = (v: string) => setPkgField('description', v);
 
-  // ── Slide 6: Optional Packages (sent as STUDIO serviceType) ──
-  // Same shape as outdoor `pkgs`, but every tier starts at price 0 so a
-  // photographer who Skips the slide submits zero studio packages (the
-  // payload builder filters those out). Currency reuses the outdoor
-  // pkgCurrencyId. clients typically price indoor in the same currency
-  // and asking them to re-pick mid-signup hurts the skip-friendly UX.
-  // Same all-zero policy as the outdoor packages: the photographer sees the
-  // recommended starting numbers as placeholders (see studio JSX below),
-  // but every field must be consciously typed before it lands in the DB.
   const makeInitialStudioPkgs = (): Record<PackageTier, PkgFields> => ({
     Silver:  { price: 0, duration: 0, photos: 0, videos: 0, delivery: 0, description: '' },
     Gold:    { price: 0, duration: 0, photos: 0, videos: 0, delivery: 0, description: '' },
@@ -338,7 +247,6 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
   const setStudioPkgField = (k: keyof PkgFields, v: number | string) =>
     setStudioPkgs(p => ({ ...p, [studioPkgTier]: { ...p[studioPkgTier], [k]: v } }));
 
-  // ── Fetch data (eagerly on mount so specialties are ready when modal opens) ──
   useEffect(() => {
     apiClient.get<{ data: { id: string; name: string }[] }>('/api/remote/photographer-categories', { skipAuth: true, retries: 2 }).then(r => {
       if (r.success && r.data) {
@@ -351,16 +259,12 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
       if (r.success && Array.isArray(r.data)) {
         const list = r.data;
         setCurrenciesList(list);
-        // `prev || …` so a currency restored from a saved draft (or the
-        // server prefill) wins over the RWF default - this fetch resolves
-        // after draft hydration.
         const fallbackId = (list.find(c => c.code === 'RWF') || list[0])?.id;
         if (fallbackId) setPkgCurrencyId(prev => prev || fallbackId);
       }
     }).catch(() => {});
   }, []);
 
-  // ── Body scroll lock ──
   useEffect(() => {
     if (isOpen) {
       const scrollY = window.scrollY;
@@ -376,11 +280,6 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
     }
   }, [isOpen]);
 
-  // No tier-preset effect: every tier has its own record in `pkgs`
-  // (seeded from TIER_PRESETS once), so switching tier just changes which
-  // record the form shows - it never overwrites another tier's edits.
-
-  // ── Hydrate from a saved draft (once, on mount) ──
   useEffect(() => {
     try {
       const raw = window.localStorage.getItem(draftStorageKey);
@@ -415,8 +314,6 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
           setPkgTier(d.pkgTier);
         }
         if (s('pkgCurrencyId') !== undefined) setPkgCurrencyId(d.pkgCurrencyId as string);
-        // Restore all three tiers' edits; merge over presets so a partial
-        // / older draft still yields a valid record per tier.
         if (d.pkgs && typeof d.pkgs === 'object') {
           const draftPkgs = d.pkgs as Record<string, Partial<PkgFields>>;
           setPkgs(base => {
@@ -430,9 +327,6 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
           });
         }
 
-        // Restore the optional studio packages too. Same shape as outdoor
-        // pkgs; missing → keep the (zero-priced) defaults so a draft from
-        // before this field existed still hydrates cleanly.
         if (d.studioPkgs && typeof d.studioPkgs === 'object') {
           const draftStudioPkgs = d.studioPkgs as Record<string, Partial<PkgFields>>;
           setStudioPkgs(base => {
@@ -449,23 +343,17 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
           setStudioPkgTier(d.studioPkgTier);
         }
 
-        // Files aren't persisted, and slides 3-5 hard-require the profile
-        // photo, so send a returning user back to (at most) the Photos step
-        // to re-pick their images. Never restore the success slide (7).
         const savedSlide = typeof d.currentSlide === 'number' ? d.currentSlide : 0;
         const restoredSlide = Math.max(0, Math.min(savedSlide, 2));
         if (restoredSlide > 0) dispatch({ type: 'SET_SLIDE', slide: restoredSlide });
       }
     } catch {
-      // Corrupt / unavailable storage - start fresh, never block the wizard.
+      // Corrupt / unavailable storage - start fresh.
     }
     draftHydratedRef.current = true;
   }, [draftStorageKey]);
 
-  // ── Persist the draft (debounced) on every serialisable change ──
   useEffect(() => {
-    // Don't write until hydration ran (avoids defaults clobbering a draft),
-    // and stop once the profile has been finalised / cleared.
     if (!draftHydratedRef.current || draftFinalizedRef.current) return;
     const t = setTimeout(() => {
       try {
@@ -480,7 +368,7 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
           currentSlide: state.currentSlide,
         }));
       } catch {
-        // Quota / private-mode - auto-save is best-effort, never block.
+        // Quota / private-mode - best-effort.
       }
     }, 400);
     return () => clearTimeout(t);
@@ -493,12 +381,6 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
     state.currentSlide,
   ]);
 
-  // ── Server prefill (completion flow): pre-fill EVERY already-saved field ──
-  // Runs last (after the localStorage hydration) so the server - the source
-  // of truth for persisted data - wins. A returning photographer never
-  // re-enters address / specialties / business identity / project / work
-  // experience / package / photos that important-details (and the other
-  // saves) already stored.
   useEffect(() => {
     if (!prefillFromServer) return;
     let cancelled = false;
@@ -519,9 +401,6 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
         if (Array.isArray(p.specialties) && p.specialties.length > 0) {
           setSelectedSpecialtyIds(p.specialties.map(s => s.id).filter(Boolean));
         }
-        // Returning photographers shouldn't be forced to re-pick their
-        // languages. Server returns them as an upper-case string list;
-        // the chip UI just keys off membership so we feed it directly.
         const langsFromServer = (p as { spokenLanguages?: string[] }).spokenLanguages;
         if (Array.isArray(langsFromServer) && langsFromServer.length > 0) {
           setSelectedLanguages(langsFromServer);
@@ -546,11 +425,6 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
           if (exp.description) setExpDescription(exp.description);
         }
 
-        // Pre-fill EVERY saved tier into its own record (not just the
-        // first), so all three stay up to date and editable. Split by
-        // serviceType so a returning photographer's STUDIO packages
-        // don't get merged into the OUTDOOR slide's state (and vice
-        // versa). both sides are independent now.
         if (Array.isArray(p.packages) && p.packages.length > 0) {
           let firstSavedTier: PackageTier | null = null;
           let firstSavedStudioTier: PackageTier | null = null;
@@ -586,8 +460,6 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
           if (firstSavedStudioTier) setStudioPkgTier(firstSavedStudioTier);
         }
 
-        // Existing images: show them as the preview so the photographer sees
-        // their photo is already on file and isn't forced to re-upload.
         if (p.profilePicture) setProfilePreview(p.profilePicture);
         if (p.coverPicture) setCoverPreview(p.coverPicture);
 
@@ -599,8 +471,7 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
           pkg: (p.packages?.length ?? 0) > 0,
         });
       } catch {
-        // Network / auth hiccup - fall back to a blank (or draft) wizard
-        // rather than blocking the user behind a spinner forever.
+        // Network hiccup - fall back to blank wizard.
       } finally {
         if (!cancelled) setPrefillLoading(false);
       }
@@ -608,12 +479,7 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
     return () => { cancelled = true; };
   }, [prefillFromServer]);
 
-  // No skip path - photographers must finish every slide before they reach
-  // the OTP / dashboard. onClose stays on the props for type-compat with
-  // the parent, but the wizard never calls it.
-
-  // ─── SLIDE 0: Location & About ───
-
+  // ─── SLIDE 0 ───
   const handleLocationNext = () => {
     if (!address.trim()) { setSlideError('Please enter your working area/location'); return; }
     if (businessType === 'Registered Company') {
@@ -622,13 +488,9 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
     }
     setSlideError('');
     dispatch({ type: 'SET_SLIDE', slide: 1 });
-    // No backend save here - the customer record doesn't exist yet. Every
-    // field is buffered in component state and posted at the final
-    // "Continue to Dashboard" step via onFinalize.
   };
 
-  // ─── SLIDE 1: Specialties ───
-
+  // ─── SLIDE 1 ───
   const handleSpecialtiesNext = () => {
     if (selectedSpecialtyIds.length < 2) { setSlideError('Please select at least two specialties'); return; }
     if (selectedLanguages.length === 0) { setSlideError('Please select at least one spoken language'); return; }
@@ -636,14 +498,10 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
     dispatch({ type: 'SET_SLIDE', slide: 2 });
   };
 
-  // ─── SLIDE 2: Photos ───
-
+  // ─── SLIDE 2 ───
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>, type: 'profile' | 'cover' | 'project') => {
     const file = e.target.files?.[0];
     if (!file) return;
-    // No client-side image size cap — backend multipart + nginx
-    // client_max_body_size are the upstream limits now. Photographers
-    // were hitting the previous 5MB cap on routine portfolio shots.
     if (!file.type.startsWith('image/')) { setSlideError('Please select an image file'); return; }
     setSlideError('');
     const preview = URL.createObjectURL(file);
@@ -653,8 +511,6 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
   };
 
   const handlePhotosNext = () => {
-    // A photographer who already has a profile photo on the server isn't
-    // forced to re-upload one (the existing one shows as the preview).
     if (!profileFile && !serverHas.profilePhoto) {
       setSlideError('Please upload a profile photo'); return;
     }
@@ -662,8 +518,7 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
     dispatch({ type: 'SET_SLIDE', slide: 3 });
   };
 
-  // ─── SLIDE 3: First featured project ───
-
+  // ─── SLIDE 3 ───
   const handleProjectNext = () => {
     if (!projTitle.trim()) { setSlideError('Please enter a project title'); return; }
     if (!projDescription.trim() || projDescription.trim().length < 10) {
@@ -674,8 +529,7 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
     dispatch({ type: 'SET_SLIDE', slide: 4 });
   };
 
-  // ─── SLIDE 4: First work experience ───
-
+  // ─── SLIDE 4 ───
   const handleExperienceNext = () => {
     if (!expPosition.trim()) { setSlideError('Please enter your role / position'); return; }
     if (!expCompany.trim()) { setSlideError('Please enter the company or studio name'); return; }
@@ -687,10 +541,7 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
     dispatch({ type: 'SET_SLIDE', slide: 5 });
   };
 
-  // ─── Payload + progressive server autosave ───
-
-  // Single source of the OnboardingPayload (minus `existing`), shared by the
-  // 5s autosave and the final finalize so they can never disagree.
+  // ─── Payload builder ───
   const buildPayload = (): OnboardingPayload => {
     const outdoorPackages: PackageEntry[] = (['Silver', 'Gold', 'Diamond'] as PackageTier[]).map(t => ({
       tier: t,
@@ -700,13 +551,9 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
       videos: pkgs[t].videos,
       delivery: pkgs[t].delivery,
       description: pkgs[t].description,
-      features: (TIER_PRESETS[t]?.features || []).map((f, i) => ({
-        featureName: f, isIncluded: true, displayOrder: i,
-      })),
+      features: [],
       serviceType: 'OUTDOOR',
     }));
-    // Studio packages are OPTIONAL. only ones the photographer actually
-    // priced (> 0) get sent. Skip → all three zero → empty array.
     const studioPackagesPayload: PackageEntry[] = (['Silver', 'Gold', 'Diamond'] as PackageTier[])
       .filter(t => studioPkgs[t].price && studioPkgs[t].price > 0)
       .map(t => ({
@@ -720,7 +567,6 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
         features: [],
         serviceType: 'STUDIO',
       }));
-    const allPackages: PackageEntry[] = [...outdoorPackages, ...studioPackagesPayload];
     return {
       address: address.trim(),
       about: about.trim(),
@@ -742,22 +588,17 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
       expEndDate: expIsCurrent ? '' : expEndDate.trim(),
       expDescription: expDescription.trim(),
       pkgCurrencyId,
-      packages: allPackages,
+      packages: [...outdoorPackages, ...studioPackagesPayload],
     };
   };
 
   const who = { firstName, lastName, phone };
 
-  // Create the account once (signup flow); a no-op when the session already
-  // exists (completion flow passes no ensureSession).
   const ensureSessionOnce = async (): Promise<{ success: boolean; error?: string }> => {
     if (!ensureSession) return { success: true };
     if (!sessionPromiseRef.current) sessionPromiseRef.current = ensureSession();
     try {
       const r = await sessionPromiseRef.current;
-      // Cache ONLY a success. A failed/transient attempt must NOT be cached
-      // (ensureSession resolves {success:false} rather than throwing) - else
-      // one early hiccup poisons every later tick AND the final finalize.
       if (!r || !r.success) sessionPromiseRef.current = null;
       return r;
     } catch (e) {
@@ -766,11 +607,6 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
     }
   };
 
-  // Synchronous view of what's saved server-side, read straight from the
-  // sync ref (updated atomically by runServerSync) OR'd with the prefill
-  // snapshot. Used for the idempotent `existing` at finalize - React state
-  // (serverHas) lags a tick, so reading it right after an awaited sync would
-  // be stale and could let persist duplicate a just-saved section.
   const presenceFromRef = () => ({
     profilePhoto: !!syncStateRef.current.uploadedProfileFile || serverHas.profilePhoto,
     coverPhoto: !!syncStateRef.current.uploadedCoverFile || serverHas.coverPhoto,
@@ -779,22 +615,16 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
     pkg: syncStateRef.current.created.pkg || serverHas.pkg,
   });
 
-  // One best-effort sync pass. `flush` (used at finalize) waits for any
-  // in-flight pass instead of skipping, so the very latest edits land.
   const runServerSync = async (flush = false): Promise<void> => {
     if (!serverSync || draftFinalizedRef.current) return;
     const sess = await ensureSessionOnce();
     if (!sess.success) return;
     if (syncInFlightRef.current) {
       if (!flush) return;
-      // crude wait-for-idle so flush doesn't race the running pass
       let waited = 0;
       while (syncInFlightRef.current && waited < 12000) {
         await new Promise(r => setTimeout(r, 200)); waited += 200;
       }
-      // Still running after the wait - don't start an overlapping pass
-      // (that risks a double create); finalize falls back to the last
-      // good presence from the ref.
       if (syncInFlightRef.current) return;
     }
     syncInFlightRef.current = true;
@@ -805,14 +635,12 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
       syncStateRef.current = nextState;
       setServerHas(presence);
     } catch {
-      // never throw - resilient layer
+      // resilient - never throw
     } finally {
       syncInFlightRef.current = false;
     }
   };
 
-  // 5s debounce: re-armed on every serialisable change, so a section is
-  // saved ~5s after the user stops editing it.
   useEffect(() => {
     if (!serverSync || draftFinalizedRef.current || state.currentSlide === 7) return;
     const t = setTimeout(() => { void runServerSync(false); }, 5000);
@@ -826,11 +654,7 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
     pkgCurrencyId, pkgs, studioPkgs, state.currentSlide,
   ]);
 
-  // ─── SLIDE 5: Outdoor Packages ───
-  // Continue validates the three required outdoor tiers and advances to
-  // the new optional studio-packages slide. The actual API submit moved
-  // to handleFinalSubmit below so the studio packages can ride along.
-
+  // ─── SLIDE 5 ───
   const handleCreatePackage = () => {
     const badTier = (['Silver', 'Gold', 'Diamond'] as PackageTier[]).find(t => !pkgs[t].price || pkgs[t].price <= 0);
     if (badTier) { setSlideError(`Please enter a valid price for the ${badTier} package`); return; }
@@ -842,31 +666,21 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
     dispatch({ type: 'SET_SLIDE', slide: 6 });
   };
 
-  // ─── SLIDE 6: Studio Packages (OPTIONAL) ───
-  // Continue submits whatever studio prices the user filled in; Skip
-  // submits the profile with zero studio packages. Either way, this is
-  // the final submission step. the API/onFinalize call moved here from
-  // handleCreatePackage so studio data joins the same persist run.
+  // ─── SLIDE 6 + final submit ───
   const handleFinalSubmit = async () => {
     setSlideError('');
     dispatch({ type: 'SET_SUBMITTING', value: true });
     try {
-      // Make sure the account exists (signup flow) before the final save.
       if (serverSync) {
         const sess = await ensureSessionOnce();
         if (!sess.success) {
           throw new Error(sess.error || 'Could not start your session. Please try again.');
         }
-        // Flush the latest edits through the idempotent autosave so the
-        // final persist only has to fill gaps + submit (no duplicates).
         await runServerSync(true);
       }
 
       const payload: OnboardingPayload = {
         ...buildPayload(),
-        // With a session (autosave or completion) persist must be
-        // idempotent - skip whatever the flush just saved. Read from the
-        // sync ref (synchronous & fresh), not serverHas (a render behind).
         existing: (serverSync || prefillFromServer) ? presenceFromRef() : undefined,
       };
 
@@ -883,9 +697,6 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
 
   if (!isOpen) return null;
 
-  // Completion flow: hold the wizard behind a brief loader until the saved
-  // profile is fetched, so fields never flash blank then fill (and a slow
-  // fetch can't overwrite something the user already started typing).
   if (prefillFromServer && prefillLoading) {
     return (
       <>
@@ -918,11 +729,6 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
 
   const currencyCode = currencies.find(c => c.id === pkgCurrencyId)?.code || 'RWF';
 
-  // ─── RENDER ───
-
-  // Total slides (0–5; 6 = success). Used for the progress strip.
-  // Slides 0..6 are inputs (with slide 6 being the OPTIONAL studio packages
-  // step); slide 7 is the success screen.
   const TOTAL_INPUT_SLIDES = 7;
   const isSuccessSlide = state.currentSlide === 7;
   const progressPct = isSuccessSlide
@@ -960,31 +766,23 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
           display: 'flex', flexDirection: 'column', overflow: 'hidden',
           animation: 'ck-onboarding-card-in 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
         }}>
-          {/* Brand top stripe */}
           <span aria-hidden style={{
             position: 'absolute', top: 0, left: 0, right: 0, height: 3,
-            background: BRAND_STRIPE,
-            zIndex: 5,
+            background: BRAND_STRIPE, zIndex: 5,
           }} />
 
-          {/* Slide progress strip (under the top stripe) */}
           <div style={{
             position: 'absolute', top: 3, left: 0, right: 0, height: 3,
-            background: 'rgba(8,58,133,0.06)',
-            zIndex: 4,
+            background: 'rgba(8,58,133,0.06)', zIndex: 4,
           }}>
             <div style={{
-              height: '100%',
-              width: `${progressPct}%`,
+              height: '100%', width: `${progressPct}%`,
               background: BRAND_STRIPE,
               boxShadow: '0 0 10px rgba(242,12,143,0.45)',
               transition: 'width 0.4s ease',
             }} />
           </div>
 
-          {/* Close button - dismisses the wizard but does NOT advance to OTP.
-              Only slide 6's "Continue to Dashboard" button (onComplete) is
-              allowed to push the user toward the verify-OTP page. */}
           <button
             onClick={onClose}
             aria-label="Close"
@@ -1004,24 +802,19 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
             <i className="bi bi-x-lg"></i>
           </button>
 
-          {/* Content */}
           <div style={{ flex: 1, overflowY: 'auto', padding: '34px 24px 24px' }}>
 
+            {/* ── SLIDE 0 ── */}
             {state.currentSlide === 0 ? (
               <div>
                 <div style={{ textAlign: 'center', marginBottom: 22 }}>
-                  {/* Gradient-ring icon tile */}
                   <div style={{
-                    width: 60, height: 60,
-                    borderRadius: 18,
-                    padding: 2.5,
-                    background: BRAND_GRADIENT,
-                    margin: '0 auto 14px',
+                    width: 60, height: 60, borderRadius: 18, padding: 2.5,
+                    background: BRAND_GRADIENT, margin: '0 auto 14px',
                     boxShadow: '0 12px 26px -6px rgba(242,12,143,0.34)',
                   }}>
                     <div style={{
-                      width: '100%', height: '100%',
-                      borderRadius: 15,
+                      width: '100%', height: '100%', borderRadius: 15,
                       background: 'linear-gradient(135deg, #083A85 0%, #1e4fb8 100%)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}>
@@ -1030,13 +823,11 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
                   </div>
                   <div style={{
                     fontSize: '0.66rem', fontWeight: 700,
-                    color: PINK, letterSpacing: '0.08em', textTransform: 'uppercase',
-                    marginBottom: 4,
+                    color: PINK, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4,
                   }}>Step 1 of 7 · Basics</div>
-                  <h3 style={{
-                    color: TEXT_PRIMARY, fontSize: 22, fontWeight: 800,
-                    margin: '0 0 6px', letterSpacing: '-0.015em',
-                  }}>Welcome, {firstName}!</h3>
+                  <h3 style={{ color: TEXT_PRIMARY, fontSize: 22, fontWeight: 800, margin: '0 0 6px', letterSpacing: '-0.015em' }}>
+                    Welcome, {firstName}!
+                  </h3>
                   <p style={{ color: TEXT_MUTED, fontSize: 13.5, margin: 0, lineHeight: 1.5 }}>
                     Let&rsquo;s set up your profile so clients can find you.
                   </p>
@@ -1052,29 +843,21 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                   <div>
                     <label style={labelStyle}>Working Area / Location <span style={{ color: '#DC2626' }}>*</span></label>
-                    <input
-                      type="text" value={address}
-                      onChange={e => setAddress(e.target.value)}
-                      placeholder="e.g. Kigali, Rwanda"
-                      style={inputStyle}
+                    <input type="text" value={address} onChange={e => setAddress(e.target.value)}
+                      placeholder="e.g. Kigali, Rwanda" style={inputStyle}
                       onFocus={(e) => { e.currentTarget.style.borderColor = PINK; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(242,12,143,0.12)'; }}
                       onBlur={(e) => { e.currentTarget.style.borderColor = INPUT_BORDER; e.currentTarget.style.boxShadow = 'none'; }}
                     />
                   </div>
                   <div>
                     <label style={labelStyle}>About You</label>
-                    <textarea
-                      value={about}
-                      onChange={e => setAbout(e.target.value)}
+                    <textarea value={about} onChange={e => setAbout(e.target.value)}
                       placeholder="Tell clients about your experience and style…"
-                      rows={3}
-                      style={{ ...inputStyle, resize: 'vertical' as const, fontFamily: 'inherit', lineHeight: 1.5 }}
+                      rows={3} style={{ ...inputStyle, resize: 'vertical' as const, fontFamily: 'inherit', lineHeight: 1.5 }}
                       onFocus={(e) => { e.currentTarget.style.borderColor = PINK; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(242,12,143,0.12)'; }}
                       onBlur={(e) => { e.currentTarget.style.borderColor = INPUT_BORDER; e.currentTarget.style.boxShadow = 'none'; }}
                     />
                   </div>
-
-                  {/* Business Type */}
                   <div>
                     <label style={labelStyle}>Business Type <span style={{ color: '#DC2626' }}>*</span></label>
                     <div style={{ display: 'flex', gap: 8 }}>
@@ -1082,34 +865,17 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
                         const sel = businessType === type;
                         const icon = type === 'Freelancer' ? 'bi-person-fill' : 'bi-building-fill';
                         return (
-                          <button
-                            key={type}
-                            type="button"
-                            onClick={() => setBusinessType(type)}
-                            style={{
-                              position: 'relative',
-                              flex: 1, padding: '12px 8px',
-                              borderRadius: 12,
-                              fontSize: 13.5, fontWeight: 700,
-                              letterSpacing: '-0.005em',
-                              cursor: 'pointer',
-                              background: sel
-                                ? 'linear-gradient(135deg, rgba(8,58,133,0.06) 0%, rgba(242,12,143,0.05) 100%)'
-                                : '#f9fafb',
-                              border: sel ? `1.5px solid ${PINK}` : `1.5px solid ${INPUT_BORDER}`,
-                              color: sel ? PINK : TEXT_SECONDARY,
-                              boxShadow: sel ? '0 6px 16px -6px rgba(242,12,143,0.30)' : 'none',
-                              overflow: 'hidden',
-                              transition: 'all 0.15s',
-                              display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7,
-                            }}
-                          >
-                            {sel && (
-                              <span aria-hidden style={{
-                                position: 'absolute', top: 0, left: 0, right: 0, height: 2,
-                                background: BRAND_STRIPE,
-                              }} />
-                            )}
+                          <button key={type} type="button" onClick={() => setBusinessType(type)} style={{
+                            position: 'relative', flex: 1, padding: '12px 8px', borderRadius: 12,
+                            fontSize: 13.5, fontWeight: 700, letterSpacing: '-0.005em', cursor: 'pointer',
+                            background: sel ? 'linear-gradient(135deg, rgba(8,58,133,0.06) 0%, rgba(242,12,143,0.05) 100%)' : '#f9fafb',
+                            border: sel ? `1.5px solid ${PINK}` : `1.5px solid ${INPUT_BORDER}`,
+                            color: sel ? PINK : TEXT_SECONDARY,
+                            boxShadow: sel ? '0 6px 16px -6px rgba(242,12,143,0.30)' : 'none',
+                            overflow: 'hidden', transition: 'all 0.15s',
+                            display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7,
+                          }}>
+                            {sel && <span aria-hidden style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: BRAND_STRIPE }} />}
                             <i className={`bi ${icon}`} style={{ fontSize: 14, color: sel ? PINK : TEXT_SECONDARY }} />
                             {type}
                           </button>
@@ -1122,22 +888,16 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
                     <>
                       <div>
                         <label style={labelStyle}>Company Name <span style={{ color: '#DC2626' }}>*</span></label>
-                        <input
-                          type="text" value={companyName}
-                          onChange={e => setCompanyName(e.target.value)}
-                          placeholder="e.g. Studio Kigali Ltd"
-                          style={inputStyle}
+                        <input type="text" value={companyName} onChange={e => setCompanyName(e.target.value)}
+                          placeholder="e.g. Studio Kigali Ltd" style={inputStyle}
                           onFocus={(e) => { e.currentTarget.style.borderColor = PINK; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(242,12,143,0.12)'; }}
                           onBlur={(e) => { e.currentTarget.style.borderColor = INPUT_BORDER; e.currentTarget.style.boxShadow = 'none'; }}
                         />
                       </div>
                       <div>
                         <label style={labelStyle}>TIN (Tax Identification Number) <span style={{ color: '#DC2626' }}>*</span></label>
-                        <input
-                          type="text" value={tin}
-                          onChange={e => setTin(e.target.value)}
-                          placeholder="e.g. 123456789"
-                          style={inputStyle}
+                        <input type="text" value={tin} onChange={e => setTin(e.target.value)}
+                          placeholder="e.g. 123456789" style={inputStyle}
                           onFocus={(e) => { e.currentTarget.style.borderColor = PINK; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(242,12,143,0.12)'; }}
                           onBlur={(e) => { e.currentTarget.style.borderColor = INPUT_BORDER; e.currentTarget.style.boxShadow = 'none'; }}
                         />
@@ -1145,19 +905,16 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
                     </>
                   )}
 
-                  <button
-                    onClick={handleLocationNext}
-                    disabled={state.isSubmitting}
+                  <button onClick={handleLocationNext} disabled={state.isSubmitting}
                     style={{ ...btnPrimary, marginTop: 8, opacity: state.isSubmitting ? 0.7 : 1, cursor: state.isSubmitting ? 'not-allowed' : 'pointer' }}
                     onMouseEnter={(e) => { if (!state.isSubmitting) { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 12px 28px -6px rgba(242,12,143,0.55)'; }}}
-                    onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = BRAND_SHADOW; }}
-                  >
+                    onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = BRAND_SHADOW; }}>
                     {state.isSubmitting ? 'Saving…' : <>Continue <i className="bi bi-arrow-right"></i></>}
                   </button>
                 </div>
               </div>
 
-            /* ── SLIDE 1: Specialties ── */
+            /* ── SLIDE 1 ── */
             ) : state.currentSlide === 1 ? (
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
@@ -1183,21 +940,18 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
                   {categories.map(cat => {
                     const sel = selectedSpecialtyIds.includes(cat.id);
                     return (
-                      <button
-                        key={cat.id}
+                      <button key={cat.id}
                         onClick={() => setSelectedSpecialtyIds(prev => sel ? prev.filter(id => id !== cat.id) : [...prev, cat.id])}
                         style={{
                           padding: '8px 14px', borderRadius: 999,
-                          fontSize: 13, fontWeight: 700, letterSpacing: '-0.005em',
-                          cursor: 'pointer',
+                          fontSize: 13, fontWeight: 700, letterSpacing: '-0.005em', cursor: 'pointer',
                           background: sel ? BRAND_GRADIENT : '#f9fafb',
                           border: sel ? 'none' : `1.5px solid ${INPUT_BORDER}`,
                           color: sel ? '#fff' : TEXT_SECONDARY,
                           boxShadow: sel ? '0 6px 14px -4px rgba(242,12,143,0.36)' : 'none',
                           transition: 'all 0.15s',
                           display: 'inline-flex', alignItems: 'center', gap: 5,
-                        }}
-                      >
+                        }}>
                         {sel && <i className="bi bi-check-circle-fill" style={{ fontSize: 12 }} />}
                         {cat.name}
                       </button>
@@ -1206,10 +960,6 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
                   {categories.length === 0 && <p style={{ color: TEXT_MUTED, fontSize: 13 }}>Loading specialties…</p>}
                 </div>
 
-                {/* Spoken languages. Required — same hard validation as
-                    specialties. Backend (PhotographerImportantDetailDTO)
-                    accepts the literal codes EN / FR / RW / SWA / SPA /
-                    CHI; show friendly labels here, store the codes. */}
                 <label style={{ display: 'block', color: TEXT_PRIMARY, fontSize: 13, fontWeight: 700, margin: '6px 0 4px', letterSpacing: '-0.005em' }}>
                   Languages you speak <span style={{ color: PINK }}>*</span>
                 </label>
@@ -1227,23 +977,18 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
                   ] as { code: string; label: string }[]).map(opt => {
                     const sel = selectedLanguages.includes(opt.code);
                     return (
-                      <button
-                        type="button"
-                        key={opt.code}
-                        onClick={() => setSelectedLanguages(prev =>
-                          sel ? prev.filter(c => c !== opt.code) : [...prev, opt.code])}
+                      <button type="button" key={opt.code}
+                        onClick={() => setSelectedLanguages(prev => sel ? prev.filter(c => c !== opt.code) : [...prev, opt.code])}
                         style={{
                           padding: '8px 14px', borderRadius: 999,
-                          fontSize: 13, fontWeight: 700, letterSpacing: '-0.005em',
-                          cursor: 'pointer',
+                          fontSize: 13, fontWeight: 700, letterSpacing: '-0.005em', cursor: 'pointer',
                           background: sel ? BRAND_GRADIENT : '#f9fafb',
                           border: sel ? 'none' : `1.5px solid ${INPUT_BORDER}`,
                           color: sel ? '#fff' : TEXT_SECONDARY,
                           boxShadow: sel ? '0 6px 14px -4px rgba(242,12,143,0.36)' : 'none',
                           transition: 'all 0.15s',
                           display: 'inline-flex', alignItems: 'center', gap: 5,
-                        }}
-                      >
+                        }}>
                         {sel && <i className="bi bi-check-circle-fill" style={{ fontSize: 12 }} />}
                         {opt.label} <span style={{ opacity: 0.7, fontSize: 11 }}>({opt.code})</span>
                       </button>
@@ -1251,14 +996,15 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
                   })}
                 </div>
 
-                <button onClick={handleSpecialtiesNext} disabled={state.isSubmitting} style={{ ...btnPrimary, opacity: state.isSubmitting ? 0.7 : 1, cursor: state.isSubmitting ? 'not-allowed' : 'pointer' }}
+                <button onClick={handleSpecialtiesNext} disabled={state.isSubmitting}
+                  style={{ ...btnPrimary, opacity: state.isSubmitting ? 0.7 : 1, cursor: state.isSubmitting ? 'not-allowed' : 'pointer' }}
                   onMouseEnter={(e) => { if (!state.isSubmitting) { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 12px 28px -6px rgba(242,12,143,0.55)'; }}}
                   onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = BRAND_SHADOW; }}>
                   {state.isSubmitting ? 'Saving...' : <>Continue <i className="bi bi-arrow-right"></i></>}
                 </button>
               </div>
 
-            /* ── SLIDE 2: Photos ── */
+            /* ── SLIDE 2 ── */
             ) : state.currentSlide === 2 ? (
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
@@ -1281,25 +1027,24 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
                 )}
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 20 }}>
-                  {/* Profile Photo */}
                   <div>
                     <label style={labelStyle}>Profile Photo</label>
                     <input type="file" ref={profileInputRef} accept="image/*" onChange={e => handleFileSelect(e, 'profile')} style={{ display: 'none' }} />
                     <div onClick={() => profileInputRef.current?.click()} style={{
-                      width: 100, height: 100, borderRadius: '50%', border: `1.5px dashed ${profilePreview ? PINK : 'rgba(8,58,133,0.32)'}`,
+                      width: 100, height: 100, borderRadius: '50%',
+                      border: `1.5px dashed ${profilePreview ? PINK : 'rgba(8,58,133,0.32)'}`,
                       background: profilePreview ? `url(${profilePreview}) center/cover` : INPUT_BG,
                       display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden',
                     }}>
                       {!profilePreview && <i className="bi bi-camera" style={{ fontSize: 24, color: TEXT_MUTED }}></i>}
                     </div>
                   </div>
-
-                  {/* Cover Photo */}
                   <div>
                     <label style={labelStyle}>Cover Photo</label>
                     <input type="file" ref={coverInputRef} accept="image/*" onChange={e => handleFileSelect(e, 'cover')} style={{ display: 'none' }} />
                     <div onClick={() => coverInputRef.current?.click()} style={{
-                      width: '100%', height: 140, borderRadius: 12, border: `1.5px dashed ${coverPreview ? PINK : 'rgba(8,58,133,0.32)'}`,
+                      width: '100%', height: 140, borderRadius: 12,
+                      border: `1.5px dashed ${coverPreview ? PINK : 'rgba(8,58,133,0.32)'}`,
                       background: coverPreview ? `url(${coverPreview}) center/cover` : INPUT_BG,
                       display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden',
                     }}>
@@ -1313,14 +1058,15 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
                   </div>
                 </div>
 
-                <button onClick={handlePhotosNext} disabled={state.isSubmitting} style={{ ...btnPrimary, opacity: state.isSubmitting ? 0.7 : 1, cursor: state.isSubmitting ? 'not-allowed' : 'pointer' }}
+                <button onClick={handlePhotosNext} disabled={state.isSubmitting}
+                  style={{ ...btnPrimary, opacity: state.isSubmitting ? 0.7 : 1, cursor: state.isSubmitting ? 'not-allowed' : 'pointer' }}
                   onMouseEnter={(e) => { if (!state.isSubmitting) { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 12px 28px -6px rgba(242,12,143,0.55)'; }}}
                   onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = BRAND_SHADOW; }}>
                   {state.isSubmitting ? 'Uploading...' : <>Continue <i className="bi bi-arrow-right"></i></>}
                 </button>
               </div>
 
-            /* ── SLIDE 3: First featured project ── */
+            /* ── SLIDE 3 ── */
             ) : state.currentSlide === 3 ? (
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
@@ -1345,21 +1091,26 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 20 }}>
                   <div>
                     <label style={labelStyle}>Project Title *</label>
-                    <input type="text" value={projTitle} onChange={e => setProjTitle(e.target.value)} placeholder="e.g. Bella & Eric's Wedding" style={inputStyle} />
+                    <input type="text" value={projTitle} onChange={e => setProjTitle(e.target.value)}
+                      placeholder="e.g. Bella & Eric's Wedding" style={inputStyle} />
                   </div>
                   <div>
                     <label style={labelStyle}>Year *</label>
-                    <input type="number" min="1990" max={String(new Date().getFullYear())} value={projYear} onChange={e => setProjYear(e.target.value)} style={inputStyle} />
+                    <input type="number" min="1990" max={String(new Date().getFullYear())}
+                      value={projYear} onChange={e => setProjYear(e.target.value)} style={inputStyle} />
                   </div>
                   <div>
                     <label style={labelStyle}>Description *</label>
-                    <textarea value={projDescription} onChange={e => setProjDescription(e.target.value)} placeholder="What was the brief? Where was it? What made it memorable?" rows={3} style={{ ...inputStyle, resize: 'vertical' as const }} />
+                    <textarea value={projDescription} onChange={e => setProjDescription(e.target.value)}
+                      placeholder="What was the brief? Where was it? What made it memorable?"
+                      rows={3} style={{ ...inputStyle, resize: 'vertical' as const }} />
                   </div>
                   <div>
                     <label style={labelStyle}>Cover Image (optional)</label>
                     <input type="file" ref={projInputRef} accept="image/*" onChange={e => handleFileSelect(e, 'project')} style={{ display: 'none' }} />
                     <div onClick={() => projInputRef.current?.click()} style={{
-                      width: '100%', height: 120, borderRadius: 12, border: `1.5px dashed ${projPreview ? PINK : 'rgba(8,58,133,0.32)'}`,
+                      width: '100%', height: 120, borderRadius: 12,
+                      border: `1.5px dashed ${projPreview ? PINK : 'rgba(8,58,133,0.32)'}`,
                       background: projPreview ? `url(${projPreview}) center/cover` : INPUT_BG,
                       display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden',
                     }}>
@@ -1373,14 +1124,15 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
                   </div>
                 </div>
 
-                <button onClick={handleProjectNext} disabled={state.isSubmitting} style={{ ...btnPrimary, opacity: state.isSubmitting ? 0.7 : 1, cursor: state.isSubmitting ? 'not-allowed' : 'pointer' }}
+                <button onClick={handleProjectNext} disabled={state.isSubmitting}
+                  style={{ ...btnPrimary, opacity: state.isSubmitting ? 0.7 : 1, cursor: state.isSubmitting ? 'not-allowed' : 'pointer' }}
                   onMouseEnter={(e) => { if (!state.isSubmitting) { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 12px 28px -6px rgba(242,12,143,0.55)'; }}}
                   onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = BRAND_SHADOW; }}>
                   {state.isSubmitting ? 'Saving...' : <>Continue <i className="bi bi-arrow-right"></i></>}
                 </button>
               </div>
 
-            /* ── SLIDE 4: First work experience ── */
+            /* ── SLIDE 4 ── */
             ) : state.currentSlide === 4 ? (
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
@@ -1405,15 +1157,18 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 20 }}>
                   <div>
                     <label style={labelStyle}>Role / Position *</label>
-                    <input type="text" value={expPosition} onChange={e => setExpPosition(e.target.value)} placeholder="e.g. Lead Photographer" style={inputStyle} />
+                    <input type="text" value={expPosition} onChange={e => setExpPosition(e.target.value)}
+                      placeholder="e.g. Lead Photographer" style={inputStyle} />
                   </div>
                   <div>
                     <label style={labelStyle}>Company / Studio *</label>
-                    <input type="text" value={expCompany} onChange={e => setExpCompany(e.target.value)} placeholder="e.g. Studio Kigali" style={inputStyle} />
+                    <input type="text" value={expCompany} onChange={e => setExpCompany(e.target.value)}
+                      placeholder="e.g. Studio Kigali" style={inputStyle} />
                   </div>
                   <div>
                     <label style={labelStyle}>Location</label>
-                    <input type="text" value={expLocation} onChange={e => setExpLocation(e.target.value)} placeholder="e.g. Kigali, Rwanda" style={inputStyle} />
+                    <input type="text" value={expLocation} onChange={e => setExpLocation(e.target.value)}
+                      placeholder="e.g. Kigali, Rwanda" style={inputStyle} />
                   </div>
                   <div style={{ display: 'flex', gap: 10 }}>
                     <div style={{ flex: 1 }}>
@@ -1422,7 +1177,8 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
                     </div>
                     <div style={{ flex: 1 }}>
                       <label style={labelStyle}>End date</label>
-                      <input type="month" value={expEndDate} onChange={e => setExpEndDate(e.target.value)} disabled={expIsCurrent} style={{ ...inputStyle, opacity: expIsCurrent ? 0.5 : 1 }} />
+                      <input type="month" value={expEndDate} onChange={e => setExpEndDate(e.target.value)}
+                        disabled={expIsCurrent} style={{ ...inputStyle, opacity: expIsCurrent ? 0.5 : 1 }} />
                     </div>
                   </div>
                   <label style={{ display: 'flex', alignItems: 'center', gap: 8, color: TEXT_SECONDARY, fontSize: 13, cursor: 'pointer' }}>
@@ -1431,462 +1187,327 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
                   </label>
                   <div>
                     <label style={labelStyle}>What did you do? *</label>
-                    <textarea value={expDescription} onChange={e => setExpDescription(e.target.value)} placeholder="Describe the work, kinds of shoots, scale, results... (50+ characters)" rows={4} style={{ ...inputStyle, resize: 'vertical' as const }} />
+                    <textarea value={expDescription} onChange={e => setExpDescription(e.target.value)}
+                      placeholder="Describe the work, kinds of shoots, scale, results... (50+ characters)"
+                      rows={4} style={{ ...inputStyle, resize: 'vertical' as const }} />
                     <p style={{ color: TEXT_MUTED, fontSize: 11, margin: '4px 0 0' }}>{expDescription.length} / 50 minimum</p>
                   </div>
                 </div>
 
-                <button onClick={handleExperienceNext} disabled={state.isSubmitting} style={{ ...btnPrimary, opacity: state.isSubmitting ? 0.7 : 1, cursor: state.isSubmitting ? 'not-allowed' : 'pointer' }}
+                <button onClick={handleExperienceNext} disabled={state.isSubmitting}
+                  style={{ ...btnPrimary, opacity: state.isSubmitting ? 0.7 : 1, cursor: state.isSubmitting ? 'not-allowed' : 'pointer' }}
                   onMouseEnter={(e) => { if (!state.isSubmitting) { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 12px 28px -6px rgba(242,12,143,0.55)'; }}}
                   onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = BRAND_SHADOW; }}>
                   {state.isSubmitting ? 'Saving...' : <>Continue <i className="bi bi-arrow-right"></i></>}
                 </button>
               </div>
 
-            /* ── SLIDE 5: Package ── */
+            /* ── SLIDE 5: Outdoor Packages ── */
             ) : state.currentSlide === 5 ? (
               (() => {
                 const activeTier = TIER_GRADIENTS[pkgTier];
                 return (
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
-                  <button onClick={() => dispatch({ type: 'SET_SLIDE', slide: 4 })} style={backBtnStyle}
-                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = PINK; e.currentTarget.style.color = PINK; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = INPUT_BORDER; e.currentTarget.style.color = TEXT_SECONDARY; }}>
-                    <i className="bi bi-arrow-left"></i>
-                  </button>
                   <div>
-                    <div style={{
-                      fontSize: 10.5, fontWeight: 700,
-                      color: PINK, letterSpacing: '0.08em', textTransform: 'uppercase',
-                      marginBottom: 2,
-                    }}>Step 6 of 7 · Outdoor Packages</div>
-                    <h3 style={{ color: TEXT_PRIMARY, fontSize: 19, fontWeight: 800, margin: 0, letterSpacing: '-0.015em' }}>Outdoor Packages</h3>
-                    <p style={{ color: TEXT_MUTED, fontSize: 12.5, margin: '2px 0 0' }}>Set your Silver / Gold / Diamond pricing for outdoor event bookings.</p>
-                  </div>
-                </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
+                      <button onClick={() => dispatch({ type: 'SET_SLIDE', slide: 4 })} style={backBtnStyle}
+                        onMouseEnter={(e) => { e.currentTarget.style.borderColor = PINK; e.currentTarget.style.color = PINK; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.borderColor = INPUT_BORDER; e.currentTarget.style.color = TEXT_SECONDARY; }}>
+                        <i className="bi bi-arrow-left"></i>
+                      </button>
+                      <div>
+                        <div style={{ fontSize: 10.5, fontWeight: 700, color: PINK, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 2 }}>
+                          Step 6 of 7 · Outdoor Packages
+                        </div>
+                        <h3 style={{ color: TEXT_PRIMARY, fontSize: 19, fontWeight: 800, margin: 0, letterSpacing: '-0.015em' }}>Outdoor Packages</h3>
+                        <p style={{ color: TEXT_MUTED, fontSize: 12.5, margin: '2px 0 0' }}>
+                          Set your Silver / Gold / Diamond pricing for outdoor event bookings.
+                        </p>
+                      </div>
+                    </div>
 
-                {slideError && (
-                  <div style={errorBoxStyle}>
-                    <i className="bi bi-exclamation-circle-fill" style={{ fontSize: 14, marginTop: 1, flexShrink: 0 }} />
-                    <span>{slideError}</span>
-                  </div>
-                )}
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                  {/* Tier selector - matches Connekyt booking wizard gradients */}
-                  <div>
-                    <label style={labelStyle}>Package Tier</label>
-                    <div style={{ display: 'flex', gap: 8 }}>
-                      {(['Silver', 'Gold', 'Diamond'] as const).map(tier => {
-                        const sel = pkgTier === tier;
-                        const t = TIER_GRADIENTS[tier];
-                        return (
-                          <button
-                            key={tier}
-                            onClick={() => setPkgTier(tier)}
-                            style={{
-                              flex: 1,
-                              padding: '12px 8px',
-                              borderRadius: 12,
-                              fontSize: 13.5,
-                              fontWeight: 800,
-                              letterSpacing: '-0.005em',
-                              cursor: 'pointer',
-                              background: sel ? t.gradient : '#f9fafb',
-                              border: sel ? 'none' : `1.5px solid ${INPUT_BORDER}`,
-                              color: sel ? '#fff' : TEXT_SECONDARY,
-                              boxShadow: sel ? `0 8px 20px -6px ${t.glow}` : 'none',
-                              textShadow: sel ? '0 1px 2px rgba(0,0,0,0.18)' : 'none',
-                              transition: 'all 0.2s',
-                              display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                            }}
-                          >
-                            <i className={`bi ${t.icon}`} style={{ fontSize: 13 }} />
-                            {tier}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Active tier preview card - mirrors the booking wizard tier card */}
-                  <div style={{
-                    position: 'relative',
-                    borderRadius: 14,
-                    padding: '12px 14px',
-                    background: 'linear-gradient(135deg, rgba(8,58,133,0.04) 0%, rgba(242,12,143,0.04) 100%)',
-                    border: `1.5px solid ${INPUT_BORDER}`,
-                    overflow: 'hidden',
-                    display: 'flex', alignItems: 'center', gap: 12,
-                  }}>
-                    <span aria-hidden style={{
-                      position: 'absolute', top: 0, left: 0, right: 0, height: 2,
-                      background: activeTier.gradient,
-                    }} />
-                    <div style={{
-                      width: 38, height: 38, borderRadius: 10,
-                      background: activeTier.gradient,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      flexShrink: 0,
-                      boxShadow: `0 6px 14px -4px ${activeTier.glow}`,
-                    }}>
-                      <i className={`bi ${activeTier.icon}`} style={{ fontSize: 18, color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,0.18)' }} />
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 10, fontWeight: 700, color: PINK, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Selected tier</div>
-                      <div style={{ fontSize: 15, fontWeight: 800, color: TEXT_PRIMARY, letterSpacing: '-0.01em' }}>{pkgTier} package</div>
-                    </div>
-                  </div>
-
-                  {/* Price + Currency */}
-                  <div>
-                    <label style={labelStyle}>Price <span style={{ color: '#DC2626' }}>*</span></label>
-                    <div style={{ display: 'flex', gap: 8 }}>
-                      <select value={pkgCurrencyId} onChange={e => setPkgCurrencyId(e.target.value)} style={{ ...inputStyle, width: 'auto', minWidth: 96, flex: '0 0 auto', appearance: 'auto' as const, fontWeight: 700, color: PINK }}>
-                        {currencies.map(c => <option key={c.id} value={c.id} style={{ color: TEXT_PRIMARY }}>{c.code}</option>)}
-                      </select>
-                      <input type="number" value={pkgPrice || ''} onChange={e => setPkgPrice(parseInt(e.target.value) || 0)} placeholder={`e.g. ${TIER_PRESETS[pkgTier].price.toLocaleString()}`}
-                        required
-                        style={{ ...inputStyle, flex: 1, fontWeight: 700, fontSize: 15 }}
-                        onFocus={(e) => { e.currentTarget.style.borderColor = PINK; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(242,12,143,0.12)'; }}
-                        onBlur={(e) => { e.currentTarget.style.borderColor = INPUT_BORDER; e.currentTarget.style.boxShadow = 'none'; }}
-                      />
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'flex', gap: 10 }}>
-                    <div style={{ flex: 1 }}>
-                      <label style={labelStyle}>
-                        <i className="bi bi-clock-fill" style={{ fontSize: 10, marginRight: 4 }} />
-                        Duration (hours)
-                      </label>
-                      <input type="number" value={pkgDuration || ''} onChange={e => setPkgDuration(parseInt(e.target.value) || 0)} placeholder={`e.g. ${TIER_PRESETS[pkgTier].duration}`}
-                        required style={inputStyle}
-                        onFocus={(e) => { e.currentTarget.style.borderColor = PINK; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(242,12,143,0.12)'; }}
-                        onBlur={(e) => { e.currentTarget.style.borderColor = INPUT_BORDER; e.currentTarget.style.boxShadow = 'none'; }}
-                      />
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <label style={labelStyle}>
-                        <i className="bi bi-truck" style={{ fontSize: 10, marginRight: 4 }} />
-                        Delivery (days)
-                      </label>
-                      <input type="number" value={pkgDelivery || ''} onChange={e => setPkgDelivery(parseInt(e.target.value) || 0)} placeholder={`e.g. ${TIER_PRESETS[pkgTier].delivery}`}
-                        required style={inputStyle}
-                        onFocus={(e) => { e.currentTarget.style.borderColor = PINK; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(242,12,143,0.12)'; }}
-                        onBlur={(e) => { e.currentTarget.style.borderColor = INPUT_BORDER; e.currentTarget.style.boxShadow = 'none'; }}
-                      />
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'flex', gap: 10 }}>
-                    <div style={{ flex: 1 }}>
-                      <label style={labelStyle}>
-                        <i className="bi bi-camera-fill" style={{ fontSize: 10, marginRight: 4 }} />
-                        Included Photos
-                      </label>
-                      <input type="number" value={pkgPhotos || ''} onChange={e => setPkgPhotos(parseInt(e.target.value) || 0)} placeholder={`e.g. ${TIER_PRESETS[pkgTier].photos}`}
-                        required style={inputStyle}
-                        onFocus={(e) => { e.currentTarget.style.borderColor = PINK; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(242,12,143,0.12)'; }}
-                        onBlur={(e) => { e.currentTarget.style.borderColor = INPUT_BORDER; e.currentTarget.style.boxShadow = 'none'; }}
-                      />
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <label style={labelStyle}>
-                        <i className="bi bi-camera-reels-fill" style={{ fontSize: 10, marginRight: 4 }} />
-                        Included Videos
-                      </label>
-                      <input type="number" value={pkgVideos || ''} onChange={e => setPkgVideos(parseInt(e.target.value) || 0)} placeholder={`e.g. ${TIER_PRESETS[pkgTier].videos}`}
-                        style={inputStyle}
-                        onFocus={(e) => { e.currentTarget.style.borderColor = PINK; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(242,12,143,0.12)'; }}
-                        onBlur={(e) => { e.currentTarget.style.borderColor = INPUT_BORDER; e.currentTarget.style.boxShadow = 'none'; }}
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label style={labelStyle}>Description</label>
-                    <textarea value={pkgDescription} onChange={e => setPkgDescription(e.target.value)} placeholder={`${pkgTier} photography package`} rows={2}
-                      style={{ ...inputStyle, resize: 'vertical' as const, fontFamily: 'inherit', lineHeight: 1.5 }}
-                      onFocus={(e) => { e.currentTarget.style.borderColor = PINK; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(242,12,143,0.12)'; }}
-                      onBlur={(e) => { e.currentTarget.style.borderColor = INPUT_BORDER; e.currentTarget.style.boxShadow = 'none'; }}
-                    />
-                  </div>
-
-                  {/* Features preview - branded */}
-                  <div style={{
-                    position: 'relative',
-                    background: 'linear-gradient(135deg, rgba(8,58,133,0.04) 0%, rgba(242,12,143,0.04) 100%)',
-                    border: `1.5px solid rgba(8,58,133,0.12)`,
-                    borderRadius: 12,
-                    padding: '12px 14px',
-                    overflow: 'hidden',
-                  }}>
-                    <span aria-hidden style={{
-                      position: 'absolute', top: 0, left: 0, right: 0, height: 2,
-                      background: 'linear-gradient(90deg, #083A85 0%, #F20C8F 100%)',
-                    }} />
-                    <div style={{
-                      fontSize: 10.5, fontWeight: 700,
-                      color: PINK, letterSpacing: '0.08em', textTransform: 'uppercase',
-                      marginBottom: 8,
-                      display: 'inline-flex', alignItems: 'center', gap: 5,
-                    }}>
-                      <i className="bi bi-stars" style={{ fontSize: 11 }} />
-                      Included Features
-                    </div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 14px' }}>
-                      {(TIER_PRESETS[pkgTier]?.features || []).map((f, i) => (
-                        <span key={i} style={{ color: '#10b981', fontSize: 12.5, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                          <i className="bi bi-check-circle-fill" style={{ fontSize: 12 }} />
-                          {f}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={handleCreatePackage}
-                    disabled={state.isSubmitting}
-                    style={{ ...btnPrimary, marginTop: 4, opacity: state.isSubmitting ? 0.7 : 1, cursor: state.isSubmitting ? 'not-allowed' : 'pointer' }}
-                    onMouseEnter={(e) => { if (!state.isSubmitting) { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 12px 28px -6px rgba(242,12,143,0.55)'; }}}
-                    onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = BRAND_SHADOW; }}
-                  >
-                    {state.isSubmitting ? (
-                      <>Saving&hellip;</>
-                    ) : (
-                      <>
-                        Continue <i className="bi bi-arrow-right"></i>
-                      </>
+                    {slideError && (
+                      <div style={errorBoxStyle}>
+                        <i className="bi bi-exclamation-circle-fill" style={{ fontSize: 14, marginTop: 1, flexShrink: 0 }} />
+                        <span>{slideError}</span>
+                      </div>
                     )}
-                  </button>
-                </div>
-              </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                      {/* Tier selector */}
+                      <div>
+                        <label style={labelStyle}>Package Tier</label>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                          {(['Silver', 'Gold', 'Diamond'] as const).map(tier => {
+                            const sel = pkgTier === tier;
+                            const t = TIER_GRADIENTS[tier];
+                            return (
+                              <button key={tier} onClick={() => setPkgTier(tier)} style={{
+                                flex: 1, padding: '12px 8px', borderRadius: 12,
+                                fontSize: 13.5, fontWeight: 800, letterSpacing: '-0.005em', cursor: 'pointer',
+                                background: sel ? t.gradient : '#f9fafb',
+                                border: sel ? 'none' : `1.5px solid ${INPUT_BORDER}`,
+                                color: sel ? '#fff' : TEXT_SECONDARY,
+                                boxShadow: sel ? `0 8px 20px -6px ${t.glow}` : 'none',
+                                textShadow: sel ? '0 1px 2px rgba(0,0,0,0.18)' : 'none',
+                                transition: 'all 0.2s',
+                                display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                              }}>
+                                <i className={`bi ${t.icon}`} style={{ fontSize: 13 }} />
+                                {tier}{pkgs[tier].price > 0 ? ' ✓' : ''}
+                              </button>
+                            );
+                          })}
+                        </div>
+                        <p style={{ fontSize: 11, color: TEXT_MUTED, margin: '6px 0 0' }}>
+                          The ✓ shows which tiers you&apos;ve priced. All three are required.
+                        </p>
+                      </div>
+
+                      {/* Active tier card */}
+                      <div style={{
+                        position: 'relative', borderRadius: 14, padding: '12px 14px',
+                        background: 'linear-gradient(135deg, rgba(8,58,133,0.04) 0%, rgba(242,12,143,0.04) 100%)',
+                        border: `1.5px solid ${INPUT_BORDER}`, overflow: 'hidden',
+                        display: 'flex', alignItems: 'center', gap: 12,
+                      }}>
+                        <span aria-hidden style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: activeTier.gradient }} />
+                        <div style={{
+                          width: 38, height: 38, borderRadius: 10, background: activeTier.gradient,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                          boxShadow: `0 6px 14px -4px ${activeTier.glow}`,
+                        }}>
+                          <i className={`bi ${activeTier.icon}`} style={{ fontSize: 18, color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,0.18)' }} />
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 10, fontWeight: 700, color: PINK, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Selected tier</div>
+                          <div style={{ fontSize: 15, fontWeight: 800, color: TEXT_PRIMARY, letterSpacing: '-0.01em' }}>{pkgTier} package</div>
+                        </div>
+                      </div>
+
+                      {/* Price + Currency */}
+                      <div>
+                        <label style={labelStyle}>Price <span style={{ color: '#DC2626' }}>*</span></label>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                          <select value={pkgCurrencyId} onChange={e => setPkgCurrencyId(e.target.value)}
+                            style={{ ...inputStyle, width: 'auto', minWidth: 96, flex: '0 0 auto', appearance: 'auto' as const, fontWeight: 700, color: PINK }}>
+                            {currencies.map(c => <option key={c.id} value={c.id} style={{ color: TEXT_PRIMARY }}>{c.code}</option>)}
+                          </select>
+                          <input type="number" value={pkgPrice || ''} onChange={e => setPkgPrice(parseInt(e.target.value) || 0)}
+                            placeholder="Enter your price" required
+                            style={{ ...inputStyle, flex: 1, fontWeight: 700, fontSize: 15 }}
+                            onFocus={(e) => { e.currentTarget.style.borderColor = PINK; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(242,12,143,0.12)'; }}
+                            onBlur={(e) => { e.currentTarget.style.borderColor = INPUT_BORDER; e.currentTarget.style.boxShadow = 'none'; }}
+                          />
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: 10 }}>
+                        <div style={{ flex: 1 }}>
+                          <label style={labelStyle}><i className="bi bi-clock-fill" style={{ fontSize: 10, marginRight: 4 }} />Duration (hours)</label>
+                          <input type="number" value={pkgDuration || ''} onChange={e => setPkgDuration(parseInt(e.target.value) || 0)}
+                            placeholder="Hours of coverage" required style={inputStyle}
+                            onFocus={(e) => { e.currentTarget.style.borderColor = PINK; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(242,12,143,0.12)'; }}
+                            onBlur={(e) => { e.currentTarget.style.borderColor = INPUT_BORDER; e.currentTarget.style.boxShadow = 'none'; }}
+                          />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <label style={labelStyle}><i className="bi bi-truck" style={{ fontSize: 10, marginRight: 4 }} />Delivery (days)</label>
+                          <input type="number" value={pkgDelivery || ''} onChange={e => setPkgDelivery(parseInt(e.target.value) || 0)}
+                            placeholder="Days to deliver" required style={inputStyle}
+                            onFocus={(e) => { e.currentTarget.style.borderColor = PINK; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(242,12,143,0.12)'; }}
+                            onBlur={(e) => { e.currentTarget.style.borderColor = INPUT_BORDER; e.currentTarget.style.boxShadow = 'none'; }}
+                          />
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: 10 }}>
+                        <div style={{ flex: 1 }}>
+                          <label style={labelStyle}><i className="bi bi-camera-fill" style={{ fontSize: 10, marginRight: 4 }} />Included Photos</label>
+                          <input type="number" value={pkgPhotos || ''} onChange={e => setPkgPhotos(parseInt(e.target.value) || 0)}
+                            placeholder="Number of photos" required style={inputStyle}
+                            onFocus={(e) => { e.currentTarget.style.borderColor = PINK; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(242,12,143,0.12)'; }}
+                            onBlur={(e) => { e.currentTarget.style.borderColor = INPUT_BORDER; e.currentTarget.style.boxShadow = 'none'; }}
+                          />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <label style={labelStyle}><i className="bi bi-camera-reels-fill" style={{ fontSize: 10, marginRight: 4 }} />Included Videos</label>
+                          <input type="number" value={pkgVideos || ''} onChange={e => setPkgVideos(parseInt(e.target.value) || 0)}
+                            placeholder="Number of videos" style={inputStyle}
+                            onFocus={(e) => { e.currentTarget.style.borderColor = PINK; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(242,12,143,0.12)'; }}
+                            onBlur={(e) => { e.currentTarget.style.borderColor = INPUT_BORDER; e.currentTarget.style.boxShadow = 'none'; }}
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label style={labelStyle}>Description</label>
+                        <textarea value={pkgDescription} onChange={e => setPkgDescription(e.target.value)}
+                          placeholder="Briefly describe what's included in this package"
+                          rows={2} style={{ ...inputStyle, resize: 'vertical' as const, fontFamily: 'inherit', lineHeight: 1.5 }}
+                          onFocus={(e) => { e.currentTarget.style.borderColor = PINK; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(242,12,143,0.12)'; }}
+                          onBlur={(e) => { e.currentTarget.style.borderColor = INPUT_BORDER; e.currentTarget.style.boxShadow = 'none'; }}
+                        />
+                      </div>
+
+                      <button onClick={handleCreatePackage} disabled={state.isSubmitting}
+                        style={{ ...btnPrimary, marginTop: 4, opacity: state.isSubmitting ? 0.7 : 1, cursor: state.isSubmitting ? 'not-allowed' : 'pointer' }}
+                        onMouseEnter={(e) => { if (!state.isSubmitting) { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 12px 28px -6px rgba(242,12,143,0.55)'; }}}
+                        onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = BRAND_SHADOW; }}>
+                        {state.isSubmitting ? <>Saving&hellip;</> : <>Continue <i className="bi bi-arrow-right"></i></>}
+                      </button>
+                    </div>
+                  </div>
                 );
               })()
 
-            /* ── SLIDE 6: Optional Packages ──
-               Visually identical to slide 5 (same TIER_GRADIENTS, same
-               PINK accents, same field layout). the only difference is
-               that it's optional, hence the Skip button alongside
-               Continue. Submission happens here for both buttons via
-               handleFinalSubmit. */
+            /* ── SLIDE 6: Indoor Packages (optional) ── */
             ) : state.currentSlide === 6 ? (
               (() => {
                 const activeStudioTier = TIER_GRADIENTS[studioPkgTier];
                 return (
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
-                  <button onClick={() => dispatch({ type: 'SET_SLIDE', slide: 5 })} style={backBtnStyle}
-                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = PINK; e.currentTarget.style.color = PINK; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = INPUT_BORDER; e.currentTarget.style.color = TEXT_SECONDARY; }}>
-                    <i className="bi bi-arrow-left"></i>
-                  </button>
                   <div>
-                    <div style={{
-                      fontSize: 10.5, fontWeight: 700,
-                      color: PINK, letterSpacing: '0.08em', textTransform: 'uppercase',
-                      marginBottom: 2,
-                    }}>Step 7 of 7 · Indoor Packages (Optional)</div>
-                    <h3 style={{ color: TEXT_PRIMARY, fontSize: 19, fontWeight: 800, margin: 0, letterSpacing: '-0.015em' }}>Indoor Packages</h3>
-                    <p style={{ color: TEXT_MUTED, fontSize: 12.5, margin: '2px 0 0' }}>
-                      Optional: price your indoor sessions or Skip if you don&apos;t offer them.
-                    </p>
-                  </div>
-                </div>
-
-                {slideError && (
-                  <div style={errorBoxStyle}>
-                    <i className="bi bi-exclamation-circle-fill" style={{ fontSize: 14, marginTop: 1, flexShrink: 0 }} />
-                    <span>{slideError}</span>
-                  </div>
-                )}
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                  {/* Tier selector. same Silver/Gold/Diamond gradients as slide 5 */}
-                  <div>
-                    <label style={labelStyle}>Package Tier</label>
-                    <div style={{ display: 'flex', gap: 8 }}>
-                    {(['Silver', 'Gold', 'Diamond'] as const).map(tier => {
-                      const sel = studioPkgTier === tier;
-                      const t = TIER_GRADIENTS[tier];
-                      return (
-                        <button
-                          key={tier}
-                          onClick={() => setStudioPkgTier(tier)}
-                          type="button"
-                          style={{
-                            flex: 1,
-                            padding: '12px 8px',
-                            borderRadius: 12,
-                            fontSize: 13.5,
-                            fontWeight: 800,
-                            letterSpacing: '-0.005em',
-                            cursor: 'pointer',
-                            background: sel ? t.gradient : '#f9fafb',
-                            border: sel ? 'none' : `1.5px solid ${INPUT_BORDER}`,
-                            color: sel ? '#fff' : TEXT_SECONDARY,
-                            boxShadow: sel ? `0 8px 20px -6px ${t.glow}` : 'none',
-                            textShadow: sel ? '0 1px 2px rgba(0,0,0,0.18)' : 'none',
-                            transition: 'all 0.2s',
-                            display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                          }}
-                        >
-                          <i className={`bi ${t.icon}`} style={{ fontSize: 13 }} />
-                          {tier}{studioPkgs[tier].price > 0 ? ' ✓' : ''}
-                        </button>
-                      );
-                    })}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
+                      <button onClick={() => dispatch({ type: 'SET_SLIDE', slide: 5 })} style={backBtnStyle}
+                        onMouseEnter={(e) => { e.currentTarget.style.borderColor = PINK; e.currentTarget.style.color = PINK; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.borderColor = INPUT_BORDER; e.currentTarget.style.color = TEXT_SECONDARY; }}>
+                        <i className="bi bi-arrow-left"></i>
+                      </button>
+                      <div>
+                        <div style={{ fontSize: 10.5, fontWeight: 700, color: PINK, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 2 }}>
+                          Step 7 of 7 · Indoor Packages (Optional)
+                        </div>
+                        <h3 style={{ color: TEXT_PRIMARY, fontSize: 19, fontWeight: 800, margin: 0, letterSpacing: '-0.015em' }}>Indoor Packages</h3>
+                        <p style={{ color: TEXT_MUTED, fontSize: 12.5, margin: '2px 0 0' }}>
+                          Optional: price your indoor sessions or Skip if you don&apos;t offer them.
+                        </p>
+                      </div>
                     </div>
-                    <p style={{ fontSize: 11, color: TEXT_MUTED, margin: '6px 0 0' }}>
-                      The ✓ shows which tiers you&apos;ve priced. Tiers left at 0 are skipped on submit.
-                    </p>
-                  </div>
 
-                  {/* Active tier preview card. mirrors slide 5's "Selected tier" card */}
-                  <div style={{
-                    position: 'relative',
-                    borderRadius: 14,
-                    padding: '12px 14px',
-                    background: `linear-gradient(135deg, rgba(8,58,133,0.04) 0%, rgba(242,12,143,0.04) 100%)`,
-                    border: `1.5px solid rgba(8,58,133,0.12)`,
-                    display: 'flex', alignItems: 'center', gap: 12,
-                    overflow: 'hidden',
-                  }}>
-                    <span aria-hidden style={{
-                      position: 'absolute', top: 0, left: 0, right: 0, height: 2,
-                      background: 'linear-gradient(90deg, #083A85 0%, #F20C8F 100%)',
-                    }} />
-                    <div style={{
-                      width: 38, height: 38, borderRadius: 11,
-                      background: activeStudioTier.gradient,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      color: '#fff', fontSize: 16,
-                      boxShadow: `0 8px 18px -6px ${activeStudioTier.glow}`,
-                    }}>
-                      <i className={`bi ${activeStudioTier.icon}`} />
-                    </div>
-                    <div>
-                      <div style={{ fontSize: 10.5, fontWeight: 700, color: PINK, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Selected tier</div>
-                      <div style={{ fontSize: 15, fontWeight: 800, color: TEXT_PRIMARY, letterSpacing: '-0.01em' }}>{studioPkgTier} package</div>
-                    </div>
-                  </div>
-
-                {/* Compact form for the currently-selected studio tier */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12, marginBottom: 14 }}>
-                  <div>
-                    <label style={labelStyle}>Price ({currencyCode || 'select on prev step'})</label>
-                    <input
-                      type="number" min={0}
-                      value={studioCur.price || ''}
-                      onChange={e => setStudioPkgField('price', Math.max(0, parseInt(e.target.value, 10) || 0))}
-                      placeholder="e.g. 50000"
-                      style={inputStyle}
-                    />
-                  </div>
-                  <div>
-                    <label style={labelStyle}>Duration (hrs)</label>
-                    <input
-                      type="number" min={0}
-                      value={studioCur.duration || ''}
-                      onChange={e => setStudioPkgField('duration', Math.max(0, parseInt(e.target.value, 10) || 0))}
-                      placeholder="e.g. 2"
-                      style={inputStyle}
-                    />
-                  </div>
-                  <div>
-                    <label style={labelStyle}>Photos</label>
-                    <input
-                      type="number" min={0}
-                      value={studioCur.photos || ''}
-                      onChange={e => setStudioPkgField('photos', Math.max(0, parseInt(e.target.value, 10) || 0))}
-                      placeholder="e.g. 50"
-                      style={inputStyle}
-                    />
-                  </div>
-                  <div>
-                    <label style={labelStyle}>Videos</label>
-                    <input
-                      type="number" min={0}
-                      value={studioCur.videos || ''}
-                      onChange={e => setStudioPkgField('videos', Math.max(0, parseInt(e.target.value, 10) || 0))}
-                      placeholder="e.g. 5"
-                      style={inputStyle}
-                    />
-                  </div>
-                  <div>
-                    <label style={labelStyle}>Delivery (days)</label>
-                    <input
-                      type="number" min={1}
-                      value={studioCur.delivery || ''}
-                      onChange={e => setStudioPkgField('delivery', Math.max(1, parseInt(e.target.value, 10) || 1))}
-                      placeholder="e.g. 5"
-                      style={inputStyle}
-                    />
-                  </div>
-                </div>
-
-                <div style={{ marginBottom: 18 }}>
-                  <label style={labelStyle}>Description</label>
-                  <textarea
-                    value={studioCur.description}
-                    onChange={e => setStudioPkgField('description', e.target.value)}
-                    placeholder={`${studioPkgTier} indoor studio session`}
-                    rows={2}
-                    style={{ ...inputStyle, resize: 'vertical' }}
-                  />
-                </div>
-
-                {/* Action row: Skip on the left, Continue on the right */}
-                <div style={{ display: 'flex', gap: 10 }}>
-                  <button
-                    type="button"
-                    onClick={handleFinalSubmit}
-                    disabled={state.isSubmitting}
-                    style={{
-                      flex: '0 0 auto',
-                      padding: '12px 18px',
-                      borderRadius: 12,
-                      border: `1.5px solid ${INPUT_BORDER}`,
-                      background: '#ffffff',
-                      color: TEXT_SECONDARY,
-                      fontSize: 14,
-                      fontWeight: 700,
-                      cursor: state.isSubmitting ? 'not-allowed' : 'pointer',
-                      opacity: state.isSubmitting ? 0.6 : 1,
-                      transition: 'border-color 0.15s, color 0.15s',
-                    }}
-                    onMouseEnter={(e) => { if (!state.isSubmitting) { e.currentTarget.style.borderColor = PINK; e.currentTarget.style.color = PINK; } }}
-                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = INPUT_BORDER; e.currentTarget.style.color = TEXT_SECONDARY; }}
-                  >
-                    Skip
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleFinalSubmit}
-                    disabled={state.isSubmitting}
-                    style={{
-                      ...btnPrimary,
-                      flex: 1,
-                      opacity: state.isSubmitting ? 0.7 : 1,
-                      cursor: state.isSubmitting ? 'not-allowed' : 'pointer',
-                    }}
-                    onMouseEnter={(e) => { if (!state.isSubmitting) { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 12px 28px -6px rgba(242,12,143,0.55)'; } }}
-                    onMouseLeave={(e) => { if (!state.isSubmitting) { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = BRAND_SHADOW; } }}
-                  >
-                    {state.isSubmitting ? (
-                      <>Submitting profile&hellip;</>
-                    ) : (
-                      <>
-                        <i className="bi bi-check-circle-fill"></i>
-                        Continue &amp; Submit Profile
-                      </>
+                    {slideError && (
+                      <div style={errorBoxStyle}>
+                        <i className="bi bi-exclamation-circle-fill" style={{ fontSize: 14, marginTop: 1, flexShrink: 0 }} />
+                        <span>{slideError}</span>
+                      </div>
                     )}
-                  </button>
-                </div>
-                </div>
-              </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                      {/* Tier selector */}
+                      <div>
+                        <label style={labelStyle}>Package Tier</label>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                          {(['Silver', 'Gold', 'Diamond'] as const).map(tier => {
+                            const sel = studioPkgTier === tier;
+                            const t = TIER_GRADIENTS[tier];
+                            return (
+                              <button key={tier} onClick={() => setStudioPkgTier(tier)} type="button" style={{
+                                flex: 1, padding: '12px 8px', borderRadius: 12,
+                                fontSize: 13.5, fontWeight: 800, letterSpacing: '-0.005em', cursor: 'pointer',
+                                background: sel ? t.gradient : '#f9fafb',
+                                border: sel ? 'none' : `1.5px solid ${INPUT_BORDER}`,
+                                color: sel ? '#fff' : TEXT_SECONDARY,
+                                boxShadow: sel ? `0 8px 20px -6px ${t.glow}` : 'none',
+                                textShadow: sel ? '0 1px 2px rgba(0,0,0,0.18)' : 'none',
+                                transition: 'all 0.2s',
+                                display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                              }}>
+                                <i className={`bi ${t.icon}`} style={{ fontSize: 13 }} />
+                                {tier}{studioPkgs[tier].price > 0 ? ' ✓' : ''}
+                              </button>
+                            );
+                          })}
+                        </div>
+                        <p style={{ fontSize: 11, color: TEXT_MUTED, margin: '6px 0 0' }}>
+                          The ✓ shows which tiers you&apos;ve priced. Tiers left at 0 are skipped on submit.
+                        </p>
+                      </div>
+
+                      {/* Active tier card */}
+                      <div style={{
+                        position: 'relative', borderRadius: 14, padding: '12px 14px',
+                        background: 'linear-gradient(135deg, rgba(8,58,133,0.04) 0%, rgba(242,12,143,0.04) 100%)',
+                        border: `1.5px solid rgba(8,58,133,0.12)`,
+                        display: 'flex', alignItems: 'center', gap: 12, overflow: 'hidden',
+                      }}>
+                        <span aria-hidden style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg, #083A85 0%, #F20C8F 100%)' }} />
+                        <div style={{
+                          width: 38, height: 38, borderRadius: 11, background: activeStudioTier.gradient,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 16,
+                          boxShadow: `0 8px 18px -6px ${activeStudioTier.glow}`,
+                        }}>
+                          <i className={`bi ${activeStudioTier.icon}`} />
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 10.5, fontWeight: 700, color: PINK, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Selected tier</div>
+                          <div style={{ fontSize: 15, fontWeight: 800, color: TEXT_PRIMARY, letterSpacing: '-0.01em' }}>{studioPkgTier} package</div>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12, marginBottom: 14 }}>
+                        <div>
+                          <label style={labelStyle}>Price ({currencyCode})</label>
+                          <input type="number" min={0} value={studioCur.price || ''}
+                            onChange={e => setStudioPkgField('price', Math.max(0, parseInt(e.target.value, 10) || 0))}
+                            placeholder="Enter your price" style={inputStyle} />
+                        </div>
+                        <div>
+                          <label style={labelStyle}>Duration (hrs)</label>
+                          <input type="number" min={0} value={studioCur.duration || ''}
+                            onChange={e => setStudioPkgField('duration', Math.max(0, parseInt(e.target.value, 10) || 0))}
+                            placeholder="Hours of coverage" style={inputStyle} />
+                        </div>
+                        <div>
+                          <label style={labelStyle}>Photos</label>
+                          <input type="number" min={0} value={studioCur.photos || ''}
+                            onChange={e => setStudioPkgField('photos', Math.max(0, parseInt(e.target.value, 10) || 0))}
+                            placeholder="Number of photos" style={inputStyle} />
+                        </div>
+                        <div>
+                          <label style={labelStyle}>Videos</label>
+                          <input type="number" min={0} value={studioCur.videos || ''}
+                            onChange={e => setStudioPkgField('videos', Math.max(0, parseInt(e.target.value, 10) || 0))}
+                            placeholder="Number of videos" style={inputStyle} />
+                        </div>
+                        <div>
+                          <label style={labelStyle}>Delivery (days)</label>
+                          <input type="number" min={1} value={studioCur.delivery || ''}
+                            onChange={e => setStudioPkgField('delivery', Math.max(1, parseInt(e.target.value, 10) || 1))}
+                            placeholder="Days to deliver" style={inputStyle} />
+                        </div>
+                      </div>
+
+                      <div style={{ marginBottom: 18 }}>
+                        <label style={labelStyle}>Description</label>
+                        <textarea value={studioCur.description}
+                          onChange={e => setStudioPkgField('description', e.target.value)}
+                          placeholder="Briefly describe what's included in this package"
+                          rows={2} style={{ ...inputStyle, resize: 'vertical' }} />
+                      </div>
+
+                      <div style={{ display: 'flex', gap: 10 }}>
+                        <button type="button" onClick={handleFinalSubmit} disabled={state.isSubmitting} style={{
+                          flex: '0 0 auto', padding: '12px 18px', borderRadius: 12,
+                          border: `1.5px solid ${INPUT_BORDER}`, background: '#ffffff',
+                          color: TEXT_SECONDARY, fontSize: 14, fontWeight: 700,
+                          cursor: state.isSubmitting ? 'not-allowed' : 'pointer',
+                          opacity: state.isSubmitting ? 0.6 : 1,
+                          transition: 'border-color 0.15s, color 0.15s',
+                        }}
+                          onMouseEnter={(e) => { if (!state.isSubmitting) { e.currentTarget.style.borderColor = PINK; e.currentTarget.style.color = PINK; } }}
+                          onMouseLeave={(e) => { e.currentTarget.style.borderColor = INPUT_BORDER; e.currentTarget.style.color = TEXT_SECONDARY; }}>
+                          Skip
+                        </button>
+                        <button type="button" onClick={handleFinalSubmit} disabled={state.isSubmitting} style={{
+                          ...btnPrimary, flex: 1,
+                          opacity: state.isSubmitting ? 0.7 : 1,
+                          cursor: state.isSubmitting ? 'not-allowed' : 'pointer',
+                        }}
+                          onMouseEnter={(e) => { if (!state.isSubmitting) { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 12px 28px -6px rgba(242,12,143,0.55)'; } }}
+                          onMouseLeave={(e) => { if (!state.isSubmitting) { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = BRAND_SHADOW; } }}>
+                          {state.isSubmitting ? <>Submitting profile&hellip;</> : <><i className="bi bi-check-circle-fill"></i> Continue &amp; Submit Profile</>}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 );
               })()
 
@@ -1894,42 +1515,30 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
             ) : state.currentSlide === 7 ? (
               <div style={{ textAlign: 'center', padding: '40px 20px' }}>
                 <div style={{
-                  width: 72, height: 72, borderRadius: 22,
-                  padding: 3,
+                  width: 72, height: 72, borderRadius: 22, padding: 3,
                   background: 'linear-gradient(135deg, #10b981 0%, #F20C8F 130%)',
                   margin: '0 auto 20px',
                   boxShadow: '0 14px 30px -6px rgba(16,185,129,0.36)',
                 }}>
                   <div style={{
-                    width: '100%', height: '100%',
-                    borderRadius: 19,
+                    width: '100%', height: '100%', borderRadius: 19,
                     background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                   }}>
                     <i className="bi bi-check-lg" style={{ fontSize: 34, color: '#fff' }} />
                   </div>
                 </div>
-                <div style={{
-                  fontSize: '0.66rem', fontWeight: 700,
-                  color: '#10b981', letterSpacing: '0.08em', textTransform: 'uppercase',
-                  marginBottom: 4,
-                }}>All done</div>
-                <h2 style={{
-                  color: TEXT_PRIMARY, fontSize: 24, fontWeight: 800,
-                  margin: '0 0 10px', letterSpacing: '-0.015em',
-                }}>Profile Submitted!</h2>
+                <div style={{ fontSize: '0.66rem', fontWeight: 700, color: '#10b981', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4 }}>All done</div>
+                <h2 style={{ color: TEXT_PRIMARY, fontSize: 24, fontWeight: 800, margin: '0 0 10px', letterSpacing: '-0.015em' }}>Profile Submitted!</h2>
                 <p style={{ color: TEXT_SECONDARY, fontSize: 14, margin: '0 0 6px', lineHeight: 1.5 }}>
                   Your <strong>Silver</strong>, <strong>Gold</strong> &amp; <strong>Diamond</strong> packages (from <strong>{currencyCode} {pkgs.Silver.price.toLocaleString()}</strong>) have been saved.
                 </p>
                 <p style={{ color: TEXT_MUTED, fontSize: 13, margin: '0 auto 24px', lineHeight: 1.55, maxWidth: 360 }}>
                   Your profile is now under review. Once approved, clients will be able to find and book you.
                 </p>
-                <button
-                  onClick={onComplete}
-                  style={btnPrimary}
+                <button onClick={onComplete} style={btnPrimary}
                   onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 12px 28px -6px rgba(242,12,143,0.55)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = BRAND_SHADOW; }}
-                >
+                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = BRAND_SHADOW; }}>
                   Continue to Dashboard <i className="bi bi-arrow-right"></i>
                 </button>
               </div>
