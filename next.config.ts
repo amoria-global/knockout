@@ -34,7 +34,11 @@ const SECURITY_HEADERS = [
       //   unpkg          - three-globe Earth texture images (HalfEarth component)
       //   googleusercontent - Google profile picture after OAuth login
       //   ui-avatars     - auto-generated participant avatar fallback in live-stream
-      "img-src 'self' data: blob: https://backend.connekyt.com https://*.cloudflarestream.com https://lh3.googleusercontent.com https://flagcdn.com https://images.unsplash.com https://i.pinimg.com https://www.svgrepo.com https://www.gstatic.com https://unpkg.com https://ui-avatars.com",
+      // *.r2.cloudflarestorage.com - media now lives in Cloudflare R2; the backend
+      //                              302-redirects /uploads/** to a presigned R2 URL
+      //                              when the file is not on local disk, so the
+      //                              browser's final image request hits R2.
+      "img-src 'self' data: blob: https://backend.connekyt.com https://*.r2.cloudflarestorage.com https://*.cloudflarestream.com https://lh3.googleusercontent.com https://flagcdn.com https://images.unsplash.com https://i.pinimg.com https://www.svgrepo.com https://www.gstatic.com https://unpkg.com https://ui-avatars.com",
       "font-src 'self' data: https://fonts.gstatic.com",
       // cdn.jsdelivr.net          - world-atlas TopoJSON fetched by Rotating/HalfEarth globes
       // unpkg.com                 - three-globe texture URLs are also fetched via JS, not only rendered as <img>
@@ -45,7 +49,7 @@ const SECURITY_HEADERS = [
       // *.cloudflarestream.com    - WHEP HTTP SDP exchange in WHEPClient, used by
       //                             events/live-stream.tsx to play paid live streams.
       "connect-src 'self' https://backend.connekyt.com https://dashboard.connekyt.com https://accounts.google.com https://www.googleapis.com wss://backend.connekyt.com https://cdn.jsdelivr.net https://unpkg.com https://*.cloudflarestream.com",
-      "media-src 'self' blob: https://*.cloudflarestream.com",
+      "media-src 'self' blob: https://*.r2.cloudflarestorage.com https://*.cloudflarestream.com",
       // www.google.com - Google Maps embed iframe on the contact page.
       "frame-src 'self' https://accounts.google.com https://customer-ngk2huwatflljurq.cloudflarestream.com https://*.cloudflarestream.com https://www.google.com",
       "frame-ancestors 'self'",
