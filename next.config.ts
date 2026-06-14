@@ -75,6 +75,13 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'backend.connekyt.com',
       },
+      {
+        // next/image follows the backend's /uploads/** 302 to a presigned R2
+        // URL server-side and validates the final host - allow R2 or R2-served
+        // photos fail optimization and render broken.
+        protocol: 'https',
+        hostname: '**.r2.cloudflarestorage.com',
+      },
     ],
   },
   async headers() {
