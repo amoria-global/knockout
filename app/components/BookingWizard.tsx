@@ -1384,7 +1384,10 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
         // serviceType=STUDIO. The serviceType tag below is the only signal
         // distinguishing the two flows server-side.
         packageId: state.selectedPackageId || undefined,
-        guestCount: details.guestCount || undefined,
+        // The backend booking DTO (and the whole app) stores expected guests as
+        // maxGuests; sending guestCount silently dropped the value, so the
+        // dashboard edit modal showed it empty. Send the field the API reads.
+        maxGuests: details.guestCount || undefined,
         notes: details.notes || undefined,
         price: effectiveTotal || undefined,
         priceCurrency: selectedPkg?.currencyAbbreviation || 'RWF',
