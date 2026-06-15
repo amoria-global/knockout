@@ -2183,65 +2183,66 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@videojs/core@npm:10.0.0-beta.22":
-  version: 10.0.0-beta.22
-  resolution: "@videojs/core@npm:10.0.0-beta.22"
+"@videojs/core@npm:10.0.0-beta.24":
+  version: 10.0.0-beta.24
+  resolution: "@videojs/core@npm:10.0.0-beta.24"
   dependencies:
-    "@videojs/spf": "npm:10.0.0-beta.22"
-    "@videojs/store": "npm:10.0.0-beta.22"
-    "@videojs/utils": "npm:10.0.0-beta.22"
+    "@videojs/spf": "npm:10.0.0-beta.24"
+    "@videojs/store": "npm:10.0.0-beta.24"
+    "@videojs/utils": "npm:10.0.0-beta.24"
     dashjs: "npm:^5.0.0"
     hls.js: "npm:^1.6.7"
     mux-embed: "npm:^5.17.10"
-  checksum: 10c0/d45be02878592233aba6df3d640ed7b3fd1a0099626f9c18ab046a9a46935167e657fca8bc9e9ab84621469ce05863cc0e817a046064e3bbc3394a5613a5a15d
+  checksum: 10c0/e0b7ff3acb6b5e396f9a9f6aab82a4bdd08f14fade5571fbf58e80cfaf6cd08ef5600084b15df4bd729de6ab46c3b770df5b88155bef100b8184406cee98573a
   languageName: node
   linkType: hard
 
-"@videojs/react@npm:10.0.0-beta.22":
-  version: 10.0.0-beta.22
-  resolution: "@videojs/react@npm:10.0.0-beta.22"
+"@videojs/react@npm:10.0.0-beta.24":
+  version: 10.0.0-beta.24
+  resolution: "@videojs/react@npm:10.0.0-beta.24"
   dependencies:
-    "@videojs/core": "npm:10.0.0-beta.22"
-    "@videojs/spf": "npm:10.0.0-beta.22"
-    "@videojs/store": "npm:10.0.0-beta.22"
-    "@videojs/utils": "npm:10.0.0-beta.22"
+    "@videojs/core": "npm:10.0.0-beta.24"
+    "@videojs/spf": "npm:10.0.0-beta.24"
+    "@videojs/store": "npm:10.0.0-beta.24"
+    "@videojs/utils": "npm:10.0.0-beta.24"
   peerDependencies:
     react: ^18.0.0 || ^19.0.0
-  checksum: 10c0/85bab9a682fef360d4aedb902cc736371ded8aa2b796db0863b938c4834421e5e8aa866fc420c7f86388a535e2063cd527aaf58fa00fe077b43f907d5e1a9ada
+    react-dom: ^18.0.0 || ^19.0.0
+  checksum: 10c0/9fee0158a40255f8bce12744bd6ba3bc1edc42e4b4c2dc74c0bdcdfe6be3674d13070f4e2393b0591b8a6c5ff208fd6f07fe2babdbad2071410bc586c0e5e2ed
   languageName: node
   linkType: hard
 
-"@videojs/spf@npm:10.0.0-beta.22":
-  version: 10.0.0-beta.22
-  resolution: "@videojs/spf@npm:10.0.0-beta.22"
+"@videojs/spf@npm:10.0.0-beta.24":
+  version: 10.0.0-beta.24
+  resolution: "@videojs/spf@npm:10.0.0-beta.24"
   dependencies:
-    "@videojs/utils": "npm:10.0.0-beta.22"
+    "@videojs/utils": "npm:10.0.0-beta.24"
     signal-polyfill: "npm:^0.2.2"
-  checksum: 10c0/39da4fb380c3516afe5a17a77ca94f5b69b7e379e7632ee0fa715f65899c5d3c1a816c9b02bbead3514c416eb67fc2d93a1dec9d7bf1d96ecac3f772ca3d823d
+  checksum: 10c0/cbe53b3bfa40f791f1a87779b4bd730a79d2622663899ca46e4be9e6ed3c42f0ea873e0f387456c89b20fdd4b908f8ccd3511a80de12182fa68c56800eaca55b
   languageName: node
   linkType: hard
 
-"@videojs/store@npm:10.0.0-beta.22":
-  version: 10.0.0-beta.22
-  resolution: "@videojs/store@npm:10.0.0-beta.22"
+"@videojs/store@npm:10.0.0-beta.24":
+  version: 10.0.0-beta.24
+  resolution: "@videojs/store@npm:10.0.0-beta.24"
   dependencies:
-    "@videojs/utils": "npm:10.0.0-beta.22"
+    "@videojs/utils": "npm:10.0.0-beta.24"
   peerDependencies:
-    "@videojs/element": 10.0.0-beta.22
+    "@videojs/element": 10.0.0-beta.24
     react: ^18.0.0 || ^19.0.0
   peerDependenciesMeta:
     "@videojs/element":
       optional: true
     react:
       optional: true
-  checksum: 10c0/285ea428f88b6a2afd992030c5a153d0f1a54153442a4230e247b2cc7497b7145ef2a51a9a7f2370806964cf3f4c33a28a4e8db2007f81b0efb8a6902a302c2d
+  checksum: 10c0/5230f6177e2a5075c32e7e65191e60804b5caddb646e9c9e3545e28c1cf6673288345a049075de4854b2ac3eda2a05f34c795f2fa556444acce6d75925c994f0
   languageName: node
   linkType: hard
 
-"@videojs/utils@npm:10.0.0-beta.22":
-  version: 10.0.0-beta.22
-  resolution: "@videojs/utils@npm:10.0.0-beta.22"
-  checksum: 10c0/ebeba429657af3af0e99411ca1c6358ef6fcab1febdf3335f3058f52b9c2e75210ab2f4d4ad5698540ab9db50a2abcf1980284ae2c30872e666d4bf3d49569a1
+"@videojs/utils@npm:10.0.0-beta.24":
+  version: 10.0.0-beta.24
+  resolution: "@videojs/utils@npm:10.0.0-beta.24"
+  checksum: 10c0/9ce4dd05fc370cea0cea273347d9574fd0e373c10cc2986b339de061237423630b777881b1c6c50d6b8ad22aaaeb0f148be0dd0f891f06c9ad655d9f8dc605cb
   languageName: node
   linkType: hard
 
@@ -2535,7 +2536,7 @@ __metadata:
     "@types/react-simple-maps": "npm:^3.0.6"
     "@types/three": "npm:^0.184.0"
     "@types/topojson-client": "npm:^3.1.5"
-    "@videojs/react": "npm:10.0.0-beta.22"
+    "@videojs/react": "npm:10.0.0-beta.24"
     baseline-browser-mapping: "npm:^2.10.20"
     bootstrap-icons: "npm:^1.13.1"
     d3-geo: "npm:^3.1.1"
