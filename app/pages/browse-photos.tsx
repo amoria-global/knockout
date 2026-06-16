@@ -86,10 +86,35 @@ export default function BrowsePhotosPage() {
   // Cart (map keyed by imageId so toggle is O(1))
   const [cart, setCart] = useState<Record<string, BrowseRow>>({});
   const cartItems = useMemo(() => Object.values(cart), [cart]);
-  const cartTotal = useMemo(
-    () => cartItems.reduce((s, i) => s + Number(i.buyerPrice || 0), 0),
+
+  // When every cart item shares one listing currency (the common case) we show
+  // AND charge the EXACT listing total in that currency. Summing per-item
+  // buyerPrice (USD, rounded to 2dp) loses precision and round-trips back to a
+  // wrong figure (e.g. 3000 RWF -> 2.04 USD -> RF 2,994), which mismatched the
+  // photographer's real price. Only mixed-currency carts fall back to the
+  // USD-summed total. The actual charge is per-item (multiAlbumItems carry the
+  // listing price + currency), so this keeps the displayed amount aligned with
+  // what the buyer is really charged.
+  // Only currencies the checkout modal's preview panel can render natively.
+  // Single-currency carts in these show the exact listing total; anything
+  // else (mixed carts, or exotic listing currencies) keeps the USD total.
+  const PREVIEW_CCYS = ['USD', 'RWF', 'EUR', 'KES', 'UGX', 'TZS'];
+  const cartSingleCurrency = useMemo(
+    () => new Set(cartItems.map(i => i.listingCurrency || 'USD')).size <= 1,
     [cartItems]
   );
+  const cartListingCcy = cartSingleCurrency && cartItems.length > 0 ? (cartItems[0].listingCurrency || 'USD') : 'USD';
+  const cartNative = cartSingleCurrency && PREVIEW_CCYS.includes(cartListingCcy);
+  const cartCurrency = cartNative ? cartListingCcy : 'USD';
+  const cartDisplayTotal = useMemo(
+    () => cartNative
+      ? cartItems.reduce((s, i) => s + Number(i.listingPrice || 0), 0)
+      : cartItems.reduce((s, i) => s + Number(i.buyerPrice || 0), 0),
+    [cartItems, cartNative]
+  );
+  const cartSym = cartCurrency === 'USD' ? '$' : cartCurrency === 'EUR' ? '€' : cartCurrency === 'GBP' ? '£' : `${cartCurrency} `;
+  const cartDp = (cartCurrency === 'USD' || cartCurrency === 'EUR' || cartCurrency === 'GBP') ? 2 : 0;
+  const cartTotalStr = `${cartSym}${cartDisplayTotal.toLocaleString('en-US', { minimumFractionDigits: cartDp, maximumFractionDigits: cartDp })}`;
 
   // Lightbox + checkout
   const [previewing, setPreviewing] = useState<BrowseRow | null>(null);
@@ -224,8 +249,6 @@ export default function BrowsePhotosPage() {
     setCart(prev => { const n = { ...prev }; delete n[imageId]; return n; });
   };
   const clearCart = () => setCart({});
-
-  const sym = '$'; // USD only for the cart total (display only)
 
   const fmtListing = (it: BrowseRow) => {
     const code = it.listingCurrency || 'USD';
@@ -602,7 +625,7 @@ export default function BrowsePhotosPage() {
                 {cartItems.length} photo{cartItems.length === 1 ? '' : 's'} in cart
               </div>
               <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13, fontWeight: 600 }}>
-                Total: <strong>{sym} {cartTotal.toFixed(2)}</strong>
+                Total: <strong>{cartTotalStr}</strong>
               </span>
             </div>
             <button onClick={clearCart}
@@ -630,7 +653,7 @@ export default function BrowsePhotosPage() {
               onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 12px 28px -6px rgba(242,12,143,0.55)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 22px -6px rgba(242,12,143,0.45)'; }}
             >
-              <i className="bi bi-credit-card-2-front" /> Checkout · {sym} {cartTotal.toFixed(2)}
+              <i className="bi bi-credit-card-2-front" /> Checkout · {cartTotalStr}
             </button>
           </div>
         </div>
@@ -840,9 +863,9 @@ export default function BrowsePhotosPage() {
           onClose={() => setShowXentri(false)}
           onSuccess={handlePurchaseSuccess}
           paymentType="multi_album_purchase"
-          amount={cartTotal}
-          currencyCode={buyerCurrency}
-          currencyId={buyerCurrencyId}
+          amount={cartDisplayTotal}
+          currencyCode={cartCurrency}
+          currencyId={cartCurrency}
           multiAlbumItems={multiAlbumItems}
           viewerEmail={email}
           // Show the donation step between method-select and pay so the

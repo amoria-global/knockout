@@ -75,10 +75,29 @@ export default function BrowsePhotosAlbumPage({
   // Cart
   const [cart, setCart] = useState<Record<string, BrowseRow>>({});
   const cartItems = useMemo(() => Object.values(cart), [cart]);
-  const cartTotal = useMemo(
-    () => cartItems.reduce((s, i) => s + Number(i.buyerPrice || 0), 0),
+
+  // Single-currency carts (in a preview-supported currency) show + charge the
+  // exact listing total in that currency; summing per-item USD (buyerPrice,
+  // 2dp) loses precision and mismatched the photographer's real price
+  // (3000 RWF -> RF 2,994). The charge is per-item via multiAlbumItems, so this
+  // only aligns the display.
+  const PREVIEW_CCYS = ['USD', 'RWF', 'EUR', 'KES', 'UGX', 'TZS'];
+  const cartSingleCurrency = useMemo(
+    () => new Set(cartItems.map(i => i.listingCurrency || 'USD')).size <= 1,
     [cartItems]
   );
+  const cartListingCcy = cartSingleCurrency && cartItems.length > 0 ? (cartItems[0].listingCurrency || 'USD') : 'USD';
+  const cartNative = cartSingleCurrency && PREVIEW_CCYS.includes(cartListingCcy);
+  const cartCurrency = cartNative ? cartListingCcy : 'USD';
+  const cartDisplayTotal = useMemo(
+    () => cartNative
+      ? cartItems.reduce((s, i) => s + Number(i.listingPrice || 0), 0)
+      : cartItems.reduce((s, i) => s + Number(i.buyerPrice || 0), 0),
+    [cartItems, cartNative]
+  );
+  const cartSym = cartCurrency === 'USD' ? '$' : cartCurrency === 'EUR' ? '€' : cartCurrency === 'GBP' ? '£' : `${cartCurrency} `;
+  const cartDp = (cartCurrency === 'USD' || cartCurrency === 'EUR' || cartCurrency === 'GBP') ? 2 : 0;
+  const cartTotalStr = `${cartSym}${cartDisplayTotal.toLocaleString('en-US', { minimumFractionDigits: cartDp, maximumFractionDigits: cartDp })}`;
 
   // Lightbox
   const [previewing, setPreviewing] = useState<BrowseRow | null>(null);
@@ -471,7 +490,7 @@ export default function BrowsePhotosAlbumPage({
                 {cartItems.length} photo{cartItems.length === 1 ? '' : 's'} in cart
               </div>
               <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13, fontWeight: 600 }}>
-                Total: <strong>$ {cartTotal.toFixed(2)}</strong>
+                Total: <strong>{cartTotalStr}</strong>
               </span>
             </div>
             <button onClick={clearCart}
@@ -487,7 +506,7 @@ export default function BrowsePhotosAlbumPage({
                 background: 'linear-gradient(135deg, #083A85 0%, #F20C8F 130%)',
                 border: 'none', color: '#fff', fontSize: 13.5, fontWeight: 700,
                 cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 7,
-              }}><i className="bi bi-credit-card-2-front" /> Checkout · $ {cartTotal.toFixed(2)}</button>
+              }}><i className="bi bi-credit-card-2-front" /> Checkout · {cartTotalStr}</button>
           </div>
         </div>
       )}
@@ -598,9 +617,9 @@ export default function BrowsePhotosAlbumPage({
           onClose={() => setShowXentri(false)}
           onSuccess={handlePurchaseSuccess}
           paymentType="multi_album_purchase"
-          amount={cartTotal}
-          currencyCode="USD"
-          currencyId="USD"
+          amount={cartDisplayTotal}
+          currencyCode={cartCurrency}
+          currencyId={cartCurrency}
           multiAlbumItems={multiAlbumItems}
           viewerEmail={email}
           showDonationPrompt
