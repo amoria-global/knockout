@@ -775,7 +775,7 @@ Reportable concerns include links to malicious websites containing malware, phis
 
 Our team reviews reported cases promptly, typically within 24-48 hours for standard reports and faster for urgent security concerns. Based on our investigation, we may take various actions including removing harmful links from the platform, issuing warnings to users who shared problematic links, suspending or terminating accounts involved in malicious linking, notifying affected users who may have clicked dangerous links, reporting severe violations to appropriate authorities, and implementing platform-wide protections against similar threats.
 
-You can report concerns through multiple channels. The in-platform "Report" feature is available on most content where you see external links, look for report options in menus or near the content. Our support desk can be reached directly via the Help Center for detailed reports or urgent concerns. Email reports can be sent to support@amoriaconnekyt.com with "External Link Concern" in the subject line. When reporting, please include the URL of the problematic link, where you encountered it on our platform, what concern it raised, and any other relevant details.
+You can report concerns through multiple channels. The in-platform "Report" feature is available on most content where you see external links, look for report options in menus or near the content. Our support desk can be reached directly via the Help Center for detailed reports or urgent concerns. Email reports can be sent to support@connekyt.com with "External Link Concern" in the subject line. When reporting, please include the URL of the problematic link, where you encountered it on our platform, what concern it raised, and any other relevant details.
 
 We appreciate every report and take each one seriously. Community vigilance is essential to maintaining a safe platform, and we're grateful to users who take the time to help protect others.
 
@@ -840,7 +840,7 @@ If we ever introduce new features, marketing campaigns, or content strategies, o
 5. Reporting Underage Users - Community Partnership
 Protecting children requires partnership between platform operators and community members. Our users are often best positioned to identify potential underage users through interactions, profile content, or behavioral patterns that might not be visible to automated systems. We encourage and facilitate reporting of suspected underage users as an essential component of our children's safety program.
 
-If you believe a user may be under 18 years of age, please report this concern immediately. Reports can be submitted through multiple channels to ensure accessibility. Email reports should be sent to privacy@amoriaconnekyt.com with "Underage User Report" in the subject line. The in-platform reporting feature allows you to flag concerning profiles or users directly. Our support desk via the Help Center can receive reports along with questions about our process.
+If you believe a user may be under 18 years of age, please report this concern immediately. Reports can be submitted through multiple channels to ensure accessibility. Email reports should be sent to privacy@connekyt.com with "Underage User Report" in the subject line. The in-platform reporting feature allows you to flag concerning profiles or users directly. Our support desk via the Help Center can receive reports along with questions about our process.
 
 When submitting a report, please include information that helps us investigate effectively: the username or profile URL of the suspected underage user, what led you to believe the user might be under 18 (profile content, communication content, behavior patterns, direct statements, etc.), any relevant screenshots or documentation (if available and appropriate to share), your contact information in case we need clarification, and any urgency factors that might require expedited review.
 
@@ -1086,7 +1086,7 @@ Operating a global platform means navigating a complex landscape of internationa
           We've designed accessible processes for exercising your rights under Rwandan data protection law. You don't need legal expertise or formal documentation, we respond to straightforward requests submitted through convenient channels.
           <br /><br />
           To exercise any of your rights, please contact:<br />
-          Email: <a href="mailto:privacy@amoriaconnekyt.com" style={{ color: '#083A85', textDecoration: 'underline' }}>privacy@amoriaconnekyt.com</a><br />
+          Email: <a href="mailto:privacy@connekyt.com" style={{ color: '#083A85', textDecoration: 'underline' }}>privacy@connekyt.com</a><br />
           Subject line: "Rwanda Data Privacy Request"<br /><br />
           In your request, please include your full name and email address associated with your account, the specific right you're exercising (access, rectification, erasure, restriction, portability, objection, or automated decision-making), details about your request, what data, what correction, what objection grounds, etc., and any supporting documentation if relevant to your request.
           <br /><br />
@@ -1208,9 +1208,9 @@ This Privacy Policy is a living document that evolves alongside our platform, th
           For all privacy-related questions, concerns, and requests, our Privacy Office serves as your primary point of contact. This dedicated team handles privacy inquiries with the specialized knowledge and attention these matters deserve.
           <br /><br />
           <strong>Amoria Connekyt Privacy Office</strong><br />
-          Email: <a href="mailto:privacy@amoriaconnekyt.com" style={{ color: '#083A85', textDecoration: 'underline' }}>privacy@amoriaconnekyt.com</a><br />
+          Email: <a href="mailto:privacy@connekyt.com" style={{ color: '#083A85', textDecoration: 'underline' }}>privacy@connekyt.com</a><br />
           Phone: <a href="tel:+250788437347" style={{ color: '#083A85', textDecoration: 'underline' }}>+250 788 437 347</a><br />
-          Website: <a href="https://www.amoriaconnekyt.com" target="_blank" rel="noopener noreferrer" style={{ color: '#083A85', textDecoration: 'underline' }}>www.amoriaconnekyt.com</a>
+          Website: <a href="https://www.connekyt.com" target="_blank" rel="noopener noreferrer" style={{ color: '#083A85', textDecoration: 'underline' }}>www.connekyt.com</a>
           <br /><br />
           The Privacy Office handles a wide range of inquiries including questions about this Privacy Policy or how specific provisions apply to your situation, requests to exercise your privacy rights (access, correction, deletion, portability, objection, restriction), concerns about how your data has been collected, used, or shared, questions about specific data processing activities or third-party integrations, reports of potential privacy violations or security incidents, inquiries about international data transfers and applicable safeguards, questions about children's privacy or age verification, and feedback on our privacy practices or suggestions for improvement.
           <br /><br />
@@ -1221,7 +1221,7 @@ This Privacy Policy is a living document that evolves alongside our platform, th
           <strong>2. General Support - Platform and Account Assistance</strong><br />
           For general inquiries about using the Amoria Connekyt platform, account issues, technical problems, or questions not specifically related to privacy, our General Support team is available to help.
           <br /><br />
-          Email: <a href="mailto:support@amoriaconnekyt.com" style={{ color: '#083A85', textDecoration: 'underline' }}>support@amoriaconnekyt.com</a><br />
+          Email: <a href="mailto:support@connekyt.com" style={{ color: '#083A85', textDecoration: 'underline' }}>support@connekyt.com</a><br />
           Response time: Within 24-48 hours for standard inquiries
           <br /><br />
           General Support handles account access and authentication issues, platform functionality questions and technical troubleshooting, booking and transaction inquiries, general questions about our services and features, feedback on user experience and platform improvements, and issues with other users or content concerns (which may be escalated to Trust & Safety).
@@ -1233,7 +1233,7 @@ This Privacy Policy is a living document that evolves alongside our platform, th
           <strong>3. Data Protection Officer - Specialized Privacy Oversight</strong><br />
           For specific privacy and data protection matters requiring specialized expertise, particularly those involving regulatory compliance, complex legal questions, or formal complaints, our Data Protection Officer (DPO) provides independent oversight and guidance.
           <br /><br />
-          Email: <a href="mailto:dpo@amoriaconnekyt.com" style={{ color: '#083A85', textDecoration: 'underline' }}>dpo@amoriaconnekyt.com</a>
+          Email: <a href="mailto:dpo@connekyt.com" style={{ color: '#083A85', textDecoration: 'underline' }}>dpo@connekyt.com</a>
           <br /><br />
           The DPO is available for GDPR-related inquiries from users in the European Economic Area, United Kingdom, or Switzerland, including questions about EU-specific rights, international data transfers, and adequacy safeguards. CCPA and state privacy law inquiries from California residents and users in other US states with comprehensive privacy laws. Formal privacy complaints when you believe your rights have been violated and initial responses haven't resolved your concerns. Complex cross-border privacy issues involving multiple jurisdictions or international data flows. Questions about our compliance with Rwanda's Data Protection and Privacy Law. Inquiries from regulatory authorities, including data protection supervisory authorities. And requests for information about our data protection impact assessments or privacy program governance.
           <br /><br />
@@ -1829,7 +1829,7 @@ This channel handles service quality issues, booking disputes, general policy qu
 Legal & Safety for serious violations and legal matters: legal@amoriaglobal.com
 This channel handles reports of fraud, harassment, threats, illegal activity, severe policy violations, legal notices, and issues requiring urgent attention. Reports to this channel receive priority handling with initial response typically within 24 hours.
 
-Trust & Safety emergencies for immediate safety threats: safety@amoriaconnekyt.com
+Trust & Safety emergencies for immediate safety threats: safety@connekyt.com
 For situations involving imminent physical danger, active harassment campaigns, ongoing fraud, or other time-sensitive safety concerns, this dedicated channel ensures rapid response from senior Trust & Safety personnel.
 
 When reporting via email, include your name and account email (or indicate if you wish to remain anonymous), the specific issue you're reporting with as much detail as possible, user accounts or content involved (usernames, URLs, booking IDs, etc.), relevant dates and times, any evidence you can attach (screenshots, message exports, documents), and the impact on you or others and any immediate concerns.
@@ -2072,7 +2072,7 @@ Trust and safety work is never finished. As long as Amoria Connekyt serves users
           When contacting Legal & Compliance, please provide as much relevant detail as possible, including your account information (if applicable), a clear description of the matter, any supporting documentation or evidence, and the outcome you're seeking or the assistance you need. Detailed initial communications help us respond more effectively and avoid delays from back-and-forth clarification requests.
           <br /><br />
           <strong>3. Trust & Safety Emergencies - Immediate Threats and Urgent Concerns</strong><br />
-          <a href="mailto:safety@amoriaconnekyt.com" style={{ color: '#083A85', textDecoration: 'underline' }}>safety@amoriaconnekyt.com</a>
+          <a href="mailto:safety@connekyt.com" style={{ color: '#083A85', textDecoration: 'underline' }}>safety@connekyt.com</a>
           <br /><br />
           For situations requiring immediate Trust & Safety intervention, our emergency channel provides direct access to senior Trust & Safety personnel. Use this channel for imminent physical safety threats to yourself or others, active harassment campaigns or coordinated abuse, ongoing fraud or scams affecting multiple users, discovery of child safety concerns or CSAM, security breaches or compromised accounts with active unauthorized access, and any situation where delay could result in serious harm.
           <br /><br />
@@ -2110,7 +2110,7 @@ Trust and safety work is never finished. As long as Amoria Connekyt serves users
           <br /><br />
           Investigation and resolution timelines vary based on complexity. Simple questions may be answered immediately. Standard concerns typically receive substantive responses within 3-5 business days. Complex investigations involving multiple parties or extensive evidence review may take longer, with proactive updates on progress.
           <br /><br />
-          If you're not satisfied with a response or believe your concern hasn't been adequately addressed, escalation options are available. You may request supervisory review by replying to indicate you'd like escalation. You may contact Legal & Compliance directly for independent assessment. For data protection matters, you may contact our Data Protection Officer at dpo@amoriaconnekyt.com. And you may lodge complaints with relevant regulatory authorities if you believe your rights have been violated.
+          If you're not satisfied with a response or believe your concern hasn't been adequately addressed, escalation options are available. You may request supervisory review by replying to indicate you'd like escalation. You may contact Legal & Compliance directly for independent assessment. For data protection matters, you may contact our Data Protection Officer at dpo@connekyt.com. And you may lodge complaints with relevant regulatory authorities if you believe your rights have been violated.
           <br /><br />
           <strong>9. Language and Accessibility</strong><br />
           Our primary communication languages are English and French. If you need to communicate in another language, please let us know and we'll make reasonable efforts to accommodate your needs.

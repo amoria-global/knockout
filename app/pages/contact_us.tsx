@@ -20,7 +20,7 @@ const CHANNELS: Array<{
   external?: boolean;
 }> = [
   { key: 'phone', icon: 'bi-telephone-fill', label: 'Phone', value: '+250 788 437 347', href: 'tel:+250788437347' },
-  { key: 'email', icon: 'bi-envelope-fill', label: 'Email', value: 'info@amoriaconnekyt.com', href: 'mailto:info@amoriaconnekyt.com' },
+  { key: 'email', icon: 'bi-envelope-fill', label: 'Email', value: 'info@connekyt.com', href: 'mailto:info@connekyt.com' },
   { key: 'whatsapp', icon: 'bi-whatsapp', label: 'WhatsApp', value: '+250 788 437 347', href: 'https://wa.me/250788437347', external: true },
   { key: 'office', icon: 'bi-geo-alt-fill', label: 'Office', value: 'EVA PLAZA, KK 84B St, Kicukiro, Kigali', href: 'https://maps.google.com/?q=EVA+PLAZA+Kigali', external: true },
 ];

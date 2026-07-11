@@ -1268,7 +1268,7 @@ const HelpSupportCenter: React.FC = () => {
                 </div>
                 <div className="flex-1">
                   <h3 className="font-bold text-gray-900 text-lg mb-2">Email Support</h3>
-                  <p className="text-base text-[#083A85] font-semibold mb-2">support@amoriaconnekyt.com</p>
+                  <p className="text-base text-[#083A85] font-semibold mb-2">support@connekyt.com</p>
                   <div className="flex items-center gap-2 text-sm text-gray-600">
                     <i className="bi bi-clock-fill"></i>
                     <span>Response within 24 hours</span>

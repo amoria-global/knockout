@@ -873,7 +873,7 @@ const MyAccountHelp: React.FC = () => {
                       icon: 'bi-envelope-x',
                       solutions: [
                         'Check your spam/junk folder',
-                        'Add noreply@amoriaconnekyt.com to your contacts',
+                        'Add noreply@connekyt.com to your contacts',
                         'Wait 5 minutes, then request a new verification email',
                         'Verify the email address in your account settings is correct',
                         'Try adding a backup email address',
@@ -975,7 +975,7 @@ const MyAccountHelp: React.FC = () => {
                   <div>
                     <p style={{ fontSize: '1rem', fontWeight: '600', color: '#1E3A8A', marginBottom: '0.5rem' }}>Need Further Assistance?</p>
                     <p style={{ fontSize: '0.95rem', lineHeight: '1.7', color: '#1E40AF', margin: 0 }}>
-                      If you've tried these solutions and still experience issues, contact our support team via live chat, email at support@amoriaconnekyt.com, or submit a ticket through your account dashboard. Include screenshots and detailed error messages for faster resolution.
+                      If you've tried these solutions and still experience issues, contact our support team via live chat, email at support@connekyt.com, or submit a ticket through your account dashboard. Include screenshots and detailed error messages for faster resolution.
                     </p>
                   </div>
                 </div>
