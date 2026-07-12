@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import AmoriaKNavbar from '../../components/navbar';
 import { useRouter } from 'next/navigation';
 import { getPublicEventById, type PublicEvent, getCurrencies, type Currency as APICurrency } from '@/lib/APIs/public';
+import { getEffectivePrice, type EffectivePrice } from '@/lib/geoPricing';
 import XentriPayModal from '../../components/XentriPayModal';
 import { generateGroupAccess, redeemGroupCode } from '@/lib/APIs/streams/route';
 import { useAuth } from '../../providers/AuthProvider';
@@ -29,6 +30,18 @@ function JoinPackageContent(): React.JSX.Element {
   const [showPeopleInput, setShowPeopleInput] = useState(false);
   const [peopleInputError, setPeopleInputError] = useState('');
   const [selectedEvent, setSelectedEvent] = useState<PublicEvent | null>(null);
+  // Location-aware effective price for this event (geo-pricing).
+  const [geoPrice, setGeoPrice] = useState<EffectivePrice | null>(null);
+  useEffect(() => {
+    if (!eventId) return;
+    let cancelled = false;
+    getEffectivePrice(eventId).then((e) => {
+      if (!cancelled) setGeoPrice(e);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [eventId]);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
@@ -351,12 +364,15 @@ function JoinPackageContent(): React.JSX.Element {
 
   // Calculate group discount from API (dynamic)
   const discountPercentage = selectedEvent?.groupDiscountPercentage || 0;
-  const individualFee = selectedEvent?.price || 0;
+  // Prefer the visitor's geo-resolved price; fall back to the event default.
+  const individualFee =
+    geoPrice?.price != null && geoPrice.price > 0 ? geoPrice.price : selectedEvent?.price || 0;
   const discountedFeePerPerson = individualFee * (1 - discountPercentage / 100);
   const peopleCount = typeof numberOfPeople === 'number' ? numberOfPeople : 0;
   const totalGroupFee = discountedFeePerPerson * peopleCount;
   const totalSavings = (individualFee * peopleCount) - totalGroupFee;
-  const currencyLabel = selectedEvent?.streamFeeCurrencyAbbreviation || 'RWF';
+  const currencyLabel =
+    geoPrice?.currencyAbbreviation || selectedEvent?.streamFeeCurrencyAbbreviation || 'RWF';
 
   const packages = [
     {
@@ -421,7 +437,7 @@ function JoinPackageContent(): React.JSX.Element {
   };
 
   const getPaymentFee = () => {
-    const price = selectedEvent?.price || 0;
+    const price = individualFee; // geo-resolved per the visitor's location
     if (selectedPackage === 'group' && isGroupInputValid()) {
       const count = typeof numberOfPeople === 'number' ? numberOfPeople : 1;
       return Math.round(price * (1 - discountPercentage / 100) * count);
