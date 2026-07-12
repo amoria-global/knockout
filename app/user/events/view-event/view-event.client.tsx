@@ -10,6 +10,7 @@ import ErrorPopup, { type PopupSeverity } from '../../../components/ErrorPopup';
 import { useTranslations } from 'next-intl';
 import { useGoogleLogin } from '@react-oauth/google';
 import { getPublicEventById, type PublicEvent } from '@/lib/APIs/public';
+import { getEffectivePrice, type EffectivePrice } from '@/lib/geoPricing';
 import { isAuthenticated } from '@/lib/api/client';
 import { registerAnonymousViewer } from '@/lib/APIs/streams/anonymous-viewer';
 import { getDeviceId } from '@/lib/fingerprint';
@@ -175,6 +176,18 @@ function ViewEventContent({ eventIdProp }: { eventIdProp?: string }): React.JSX.
   const eventId = eventIdProp || searchParams.get('id') || searchParams.get('eventId');
 
   const [isLoading, setIsLoading] = useState(true);
+  // Location-aware effective price for this event (geo-pricing).
+  const [geoPrice, setGeoPrice] = useState<EffectivePrice | null>(null);
+  useEffect(() => {
+    if (!eventId) return;
+    let cancelled = false;
+    getEffectivePrice(eventId).then((e) => {
+      if (!cancelled) setGeoPrice(e);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [eventId]);
   const [selectedEvent, setSelectedEvent] = useState<PublicEvent | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [msUntilStart, setMsUntilStart] = useState<number | null>(null);
@@ -1212,6 +1225,13 @@ function ViewEventContent({ eventIdProp }: { eventIdProp?: string }): React.JSX.
   const isUpcoming = !isLive && !isCompleted && !isCancelled; // PUBLISHED or UPCOMING
   const streamFee = selectedEvent.streamFee || 0;
   const isPaid = streamFee > 0 || (selectedEvent.price || 0) > 0;
+  // Geo-resolved price/currency to display (falls back to the event default).
+  const displayPrice =
+    geoPrice?.price != null && geoPrice.price > 0
+      ? geoPrice.price
+      : selectedEvent.price || streamFee || 0;
+  const displayCurrency =
+    geoPrice?.currencyAbbreviation || selectedEvent.streamFeeCurrencyAbbreviation || 'RWF';
   // Defensive ownership check - require PER-EVENT local proof of purchase.
   // The backend's hasPurchasedAccess flag alone isn't trusted because it can
   // come back stale/misconfigured (e.g. a cached "true" for an authenticated
@@ -1399,12 +1419,12 @@ function ViewEventContent({ eventIdProp }: { eventIdProp?: string }): React.JSX.
               const __vid = typeof window !== 'undefined' ? localStorage.getItem(`anonymousViewer_${selectedEvent.id}`) : null;
               window.location.href = `/user/events/live-stream?eventId=${selectedEvent.id}${__vid ? `&viewerId=${__vid}` : ''}`;
             } }, tone: 'live' };
-            return { label: 'Buy access', sub: `${(selectedEvent.price || 0).toLocaleString()} ${selectedEvent.streamFeeCurrencyAbbreviation || 'RWF'}`, icon: 'bi-ticket-perforated-fill', onClick: () => handlePurchaseAccess(`/user/events/join-package?id=${selectedEvent.id}`), tone: 'live' };
+            return { label: 'Buy access', sub: `${displayPrice.toLocaleString()} ${displayCurrency}`, icon: 'bi-ticket-perforated-fill', onClick: () => handlePurchaseAccess(`/user/events/join-package?id=${selectedEvent.id}`), tone: 'live' };
           }
           if (isUpcoming) {
             if (!isPaid) return { label: 'Get notified', icon: 'bi-bell-fill', onClick: () => toggleSaved(), tone: 'reserve' };
             if (hasPurchasedAccess) return { label: 'Access reserved', icon: 'bi-check-circle-fill', onClick: () => {}, tone: 'owned' };
-            return { label: 'Reserve your spot', sub: `${(selectedEvent.price || 0).toLocaleString()} ${selectedEvent.streamFeeCurrencyAbbreviation || 'RWF'}`, icon: 'bi-ticket-perforated-fill', onClick: () => handlePurchaseAccess(`/user/events/join-package?id=${selectedEvent.id}`), tone: 'reserve' };
+            return { label: 'Reserve your spot', sub: `${displayPrice.toLocaleString()} ${displayCurrency}`, icon: 'bi-ticket-perforated-fill', onClick: () => handlePurchaseAccess(`/user/events/join-package?id=${selectedEvent.id}`), tone: 'reserve' };
           }
           return null;
         })();
@@ -1900,8 +1920,8 @@ function ViewEventContent({ eventIdProp }: { eventIdProp?: string }): React.JSX.
                         <div className={`ve-ticket-price ${isCompleted || isCancelled ? 'is-dim' : ''}`}>
                           <small>{hasPurchasedAccess ? 'Your access' : isCompleted ? 'Sales closed' : isCancelled ? 'Event cancelled' : 'From'}</small>
                           <div className="ve-ticket-price-row">
-                            <span className="ve-ticket-price-num">{(selectedEvent.price || 0).toLocaleString()}</span>
-                            <span className="ve-ticket-price-cur">{selectedEvent.streamFeeCurrencyAbbreviation || 'RWF'}</span>
+                            <span className="ve-ticket-price-num">{displayPrice.toLocaleString()}</span>
+                            <span className="ve-ticket-price-cur">{displayCurrency}</span>
                           </div>
                         </div>
                       )}
@@ -1995,7 +2015,7 @@ function ViewEventContent({ eventIdProp }: { eventIdProp?: string }): React.JSX.
                 {isPaid && !hasPurchasedAccess && primaryCTA.tone !== 'ended' && primaryCTA.tone !== 'cancelled' && (
                   <div className="ve-dock-price">
                     <small>From</small>
-                    <strong>{(selectedEvent.price || 0).toLocaleString()} <span>{selectedEvent.streamFeeCurrencyAbbreviation || 'RWF'}</span></strong>
+                    <strong>{displayPrice.toLocaleString()} <span>{displayCurrency}</span></strong>
                   </div>
                 )}
                 <div className="ve-dock-cta-wrap">
