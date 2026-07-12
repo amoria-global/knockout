@@ -115,6 +115,20 @@ async function proxyRequest(
       headers['Cookie'] = cookieHeader;
     }
 
+    // Forward the real client IP so the backend can geo-resolve the visitor's
+    // country (geo-pricing + geo-restriction). Without this the backend only
+    // sees this proxy server's IP and every web visitor would resolve to the
+    // server's region. CountryResolver reads the first X-Forwarded-For hop.
+    const forwardedFor = request.headers.get('x-forwarded-for');
+    const realIp = request.headers.get('x-real-ip');
+    const clientIp = forwardedFor || realIp;
+    if (clientIp) {
+      headers['X-Forwarded-For'] = clientIp;
+    }
+    if (realIp) {
+      headers['X-Real-IP'] = realIp;
+    }
+
     const fetchOptions: RequestInit = {
       method,
       headers,

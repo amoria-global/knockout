@@ -11,6 +11,7 @@ import {
 } from '../../utils/locationUtils';
 import { getPublicEvents, type PublicEvent } from '@/lib/APIs/public';
 import { getStreamVideo } from '@/lib/APIs/streams/route';
+import { getEffectivePrices, type EffectivePrice } from '@/lib/geoPricing';
 
 const BRAND = '#083A85';
 const BRAND_DARK = '#062a63';
@@ -263,6 +264,8 @@ const Events: React.FC = () => {
 
   // API-driven events data
   const [eventsData, setEventsData] = useState<PublicEvent[]>([]);
+  // Location-aware prices keyed by eventId (geo-pricing). Empty → default prices.
+  const [geoPrices, setGeoPrices] = useState<Record<string, EffectivePrice>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [apiTotalPages, setApiTotalPages] = useState(0);
@@ -341,6 +344,11 @@ const Events: React.FC = () => {
         // explicitly flagged for display. Backend's response is the source of
         // truth: if it returned the event, render it.
         setEventsData(events);
+        // Localize each card's price to the visitor's country (falls back to
+        // the event default when there's no geo rule or the lookup fails).
+        getEffectivePrices(events.map((e) => e.id))
+          .then((map) => setGeoPrices((prev) => ({ ...prev, ...map })))
+          .catch(() => {});
         setLiveStreamIds(trulyLiveIds);
         setApiTotalPages(response.data.totalPages);
         let changed = false;
@@ -2361,6 +2369,12 @@ const Events: React.FC = () => {
                 // currency-resolution rule as the view-event page so the
                 // listing card and the detail page stay in sync.
                 const priceText = (() => {
+                  // Prefer the visitor's geo-resolved price when available.
+                  const geo = geoPrices[event.id];
+                  if (geo && geo.price != null && geo.price > 0) {
+                    const gCode = geo.currencyAbbreviation || event.streamFeeCurrencyAbbreviation || 'RWF';
+                    return { label: 'From', amount: `${gCode} ${geo.price.toLocaleString()}` };
+                  }
                   const code = event.streamFeeCurrencyAbbreviation || 'RWF';
                   if (event.streamFee && event.streamFee > 0) {
                     return { label: 'From', amount: `${code} ${event.streamFee.toLocaleString()}` };
