@@ -371,8 +371,19 @@ function JoinPackageContent(): React.JSX.Element {
   const peopleCount = typeof numberOfPeople === 'number' ? numberOfPeople : 0;
   const totalGroupFee = discountedFeePerPerson * peopleCount;
   const totalSavings = (individualFee * peopleCount) - totalGroupFee;
+  // Currency to display + charge. Priority: geo-resolved (what the backend
+  // actually charges) → the event's stream-fee currency → its package currency
+  // (some events only carry the package currency) → RWF as a last resort.
   const currencyLabel =
-    geoPrice?.currencyAbbreviation || selectedEvent?.streamFeeCurrencyAbbreviation || 'RWF';
+    geoPrice?.currencyAbbreviation ||
+    selectedEvent?.streamFeeCurrencyAbbreviation ||
+    (selectedEvent as { packageCurrencyAbbreviation?: string | null } | null)?.packageCurrencyAbbreviation ||
+    'RWF';
+  const currencyIdForModal =
+    geoPrice?.currencyId ||
+    currencies.find((c) => c.code === currencyLabel)?.id ||
+    currencies.find((c) => c.code === 'RWF')?.id ||
+    '490c5ab1-a150-459e-be6b-d45131a1e13a';
 
   const packages = [
     {
@@ -1832,8 +1843,8 @@ function JoinPackageContent(): React.JSX.Element {
         onClose={() => { setShowPaymentModal(false); setPendingDonationAmount(0); }}
         onSuccess={handlePaymentSuccess}
         amount={getPaymentFee()}
-        currencyCode={selectedEvent?.streamFeeCurrencyAbbreviation || selectedEvent?.streamFeeCurrencySymbol || 'RWF'}
-        currencyId={currencies.find(c => c.code === (selectedEvent?.streamFeeCurrencyAbbreviation || 'RWF'))?.id || currencies.find(c => c.code === 'RWF')?.id || '490c5ab1-a150-459e-be6b-d45131a1e13a'}
+        currencyCode={currencyLabel}
+        currencyId={currencyIdForModal}
         paymentType="streaming"
         eventId={selectedEvent?.id || ''}
         viewerId={!isAuthenticated ? (pendingViewerId || undefined) : undefined}
@@ -1842,7 +1853,7 @@ function JoinPackageContent(): React.JSX.Element {
         showDonationPrompt
         onDonationAmountChange={(amt) => setPendingDonationAmount(amt)}
         title={`Stream Access · ${selectedEvent?.title || 'Event'}`}
-        subtitle={`${selectedPackage === 'group' ? `Group (${typeof numberOfPeople === 'number' ? numberOfPeople : 1} people)` : 'Individual'} · ${getPaymentFee().toLocaleString()} ${selectedEvent?.streamFeeCurrencyAbbreviation || selectedEvent?.streamFeeCurrencySymbol || (currencies.length > 0 ? currencies[0].code : 'RWF')}`}
+        subtitle={`${selectedPackage === 'group' ? `Group (${typeof numberOfPeople === 'number' ? numberOfPeople : 1} people)` : 'Individual'} · ${getPaymentFee().toLocaleString()} ${currencyLabel}`}
         darkMode
         // Geo-restriction is for spot reservers (upcoming events) only.
         // Once the event is live, anyone who has paid may join regardless
