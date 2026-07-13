@@ -49,6 +49,30 @@ export async function getEffectivePrice(eventId: string): Promise<EffectivePrice
   }
 }
 
+/** Localized effective price for one photographer package. Returns null on failure (caller uses the default). */
+export async function getPackageEffectivePrice(packageId: string): Promise<EffectivePrice | null> {
+  try {
+    const res = await fetch(`/api/remote/public/packages/${encodeURIComponent(packageId)}/effective-price`, {
+      credentials: 'include',
+    });
+    if (!res.ok) return null;
+    const json = (await res.json()) as { data?: Raw };
+    return toEffective(json?.data ?? {}, packageId);
+  } catch {
+    return null;
+  }
+}
+
+/** Effective prices for several packages, keyed by packageId. */
+export async function getPackageEffectivePrices(packageIds: string[]): Promise<Record<string, EffectivePrice>> {
+  const out: Record<string, EffectivePrice> = {};
+  const results = await Promise.all(
+    packageIds.map(async (id) => [id, await getPackageEffectivePrice(id)] as const),
+  );
+  for (const [id, e] of results) if (e) out[id] = e;
+  return out;
+}
+
 /** Batch effective prices for a listing grid, keyed by eventId. Missing ids simply won't appear. */
 export async function getEffectivePrices(eventIds: string[]): Promise<Record<string, EffectivePrice>> {
   const out: Record<string, EffectivePrice> = {};
