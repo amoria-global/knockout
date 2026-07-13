@@ -6,6 +6,7 @@ import AmoriaKNavbar from '../../components/navbar';
 import { useAuth } from '@/app/providers/AuthProvider';
 import { getAuthToken } from '@/lib/api/client';
 import { getPublicPhotographerPackages, type PublicPackage } from '@/lib/APIs/packages/get-packages/route';
+import { getPackageEffectivePrices, type EffectivePrice } from '@/lib/geoPricing';
 import { getPhotographerById, type Photographer, getCurrencies, type Currency } from '@/lib/APIs/public';
 
 
@@ -22,6 +23,19 @@ function BookNowContent(): React.JSX.Element {
   const [validationError, setValidationError] = useState<string | null>(null);
   const [showBookingBanner, setShowBookingBanner] = useState(false);
   const [apiPackages, setApiPackages] = useState<PublicPackage[]>([]);
+  // Location-aware package prices keyed by packageId (geo-pricing).
+  const [geoPkgPrices, setGeoPkgPrices] = useState<Record<string, EffectivePrice>>({});
+  useEffect(() => {
+    const ids = apiPackages.map((p) => p.id).filter(Boolean);
+    if (ids.length === 0) return;
+    let cancelled = false;
+    getPackageEffectivePrices(ids).then((m) => {
+      if (!cancelled) setGeoPkgPrices((prev) => ({ ...prev, ...m }));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [apiPackages]);
   const [apiPackagesLoaded, setApiPackagesLoaded] = useState(false);
   const [currencyMap, setCurrencyMap] = useState<Map<string, Currency>>(new Map());
 
@@ -225,9 +239,15 @@ function BookNowContent(): React.JSX.Element {
       return {
         id: pkg.id,
         name: pkg.packageName,
-        basePrice: pkg.price,
+        // Geo-priced for the visitor's location, falling back to the default.
+        basePrice:
+          geoPkgPrices[pkg.id]?.price != null && (geoPkgPrices[pkg.id]!.price as number) > 0
+            ? (geoPkgPrices[pkg.id]!.price as number)
+            : pkg.price,
         currencyId: pkg.currencyId,
-        currencySymbol: pkg.currencySymbol || (pkg.currencyId ? getCurrencySymbol(pkg.currencyId) : '') || pkg.currencyAbbreviation || '',
+        currencySymbol:
+          geoPkgPrices[pkg.id]?.currencySymbol ||
+          pkg.currencySymbol || (pkg.currencyId ? getCurrencySymbol(pkg.currencyId) : '') || pkg.currencyAbbreviation || '',
         currencyAbbreviation: pkg.currencyAbbreviation || '',
         includedPhotos: pkg.includedPhotos ?? null,
         includedVideos: pkg.includedVideos ?? null,
