@@ -432,7 +432,7 @@ const AmoriaKNavbar = () => {
   const getDashboardUrl = () => {
     const token = getAuthToken();
     // Use type-based URL with user's customerType (token-only, no email needed)
-    return getDashboardUrlWithToken(user?.customerType, token || undefined) || '/user/dashboard';
+    return getDashboardUrlWithToken(user?.customerType, token || undefined) || '/user/photographers';
   };
 
   return (

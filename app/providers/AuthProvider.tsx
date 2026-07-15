@@ -140,7 +140,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Initialize auth state from localStorage on mount
   useEffect(() => {
-    const initializeAuth = () => {
+    const initializeAuth = async () => {
       const hasToken = checkAuth();
       const storedUser = getStoredUser();
 
@@ -174,10 +174,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
           });
         }
-      } else if (!hasToken) {
-        // No token, clear any stale user data
-        clearStoredUser();
-        setUser(null);
+      } else {
+        // No usable local session. A session may still exist via the shared
+        // amoria_auth HttpOnly cookie scoped to .connekyt.com (e.g. the user
+        // signed in on the dashboard app, or the browser-signup flow set only
+        // the cookie). Probe profile-summary — apiClient sends credentials, so
+        // the cookie authenticates it. If it resolves, hydrate so knockout and
+        // the dashboard BOTH reflect the logged-in state.
+        const profile = await fetchUserProfile();
+        if (profile && profile.id) {
+          const hydrated: AuthUser = {
+            id: profile.id,
+            firstName: profile.firstName || '',
+            lastName: profile.lastName || '',
+            email: profile.email || '',
+            phone: profile.phone || '',
+            customerId: profile.customerId || profile.id,
+            customerType: profile.customerType || '',
+            profilePicture: profile.profilePicture,
+          };
+          const token = getAuthToken();
+          if (token) setAuthCookies(token, getRefreshToken() || undefined, hydrated.customerType);
+          storeUser(hydrated);
+          setUser(hydrated);
+        } else {
+          clearStoredUser();
+          setUser(null);
+        }
       }
 
       setIsLoading(false);
@@ -306,7 +329,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const value: AuthContextType = {
     user,
-    isAuthenticated: !!user && checkAuth(),
+    // `user` is only ever set for a verified session (localStorage token OR a
+    // cookie session confirmed via profile-summary), so its presence is the
+    // authoritative signal. Requiring a localStorage token here previously hid
+    // the logged-in state for cookie-only sessions (e.g. signed in on the
+    // dashboard app), showing Log In / Sign Up on knockout while logged in.
+    isAuthenticated: !!user,
     isLoading,
     login,
     logout,
