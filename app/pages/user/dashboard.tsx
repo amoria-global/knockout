@@ -11,10 +11,11 @@
  * Brand tokens: navy #083A85, pink #F20C8F. Fully responsive, with designed
  * loading + empty states so a brand-new User still lands on a polished page.
  */
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Navbar from '../../components/navbar';
+import XentriPayModal from '../../components/XentriPayModal';
 import {
   getAnalytics,
   getCompletedStreams,
@@ -46,6 +47,13 @@ export default function UserDashboard(): React.JSX.Element {
   const [albums, setAlbums] = useState<DashAlbum[]>([]);
   const [streams, setStreams] = useState<DashStream[]>([]);
   const [pending, setPending] = useState<DashPending[]>([]);
+
+  // In-page pay modal (booking declaration) for a pending payment.
+  const [payTarget, setPayTarget] = useState<DashPending | null>(null);
+
+  const reloadPending = useCallback(async () => {
+    setPending(await getPendingPayments());
+  }, []);
 
   useEffect(() => {
     // Greeting from the persisted auth user.
@@ -289,13 +297,13 @@ export default function UserDashboard(): React.JSX.Element {
                     {p.status === 'failed' ? ' · Failed' : p.status === 'partially_paid' ? ' · Partially paid' : ''}
                   </p>
                 </div>
-                <Link
-                  href={p.eventName ? `/user/events` : '/user/events'}
+                <button
+                  onClick={() => setPayTarget(p)}
                   className="shrink-0 rounded-full px-4 py-2 text-sm font-bold text-white"
                   style={{ backgroundColor: p.status === 'failed' ? '#dc2626' : NAVY }}
                 >
                   {p.status === 'failed' ? 'Retry' : 'Pay'}
-                </Link>
+                </button>
               </div>
             ))}
           </div>
@@ -303,10 +311,10 @@ export default function UserDashboard(): React.JSX.Element {
 
         {/* Settings & Help */}
         <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Link href="/user/auth/change-password" className="rounded-2xl bg-white border border-gray-200 p-5 shadow-sm transition hover:shadow-md">
+          <Link href="/user/settings" className="rounded-2xl bg-white border border-gray-200 p-5 shadow-sm transition hover:shadow-md">
             <i className="bi bi-gear text-xl text-[#083A85]" />
             <h3 className="mt-2 text-sm font-bold text-gray-900">Settings</h3>
-            <p className="text-xs text-gray-500">Account & security</p>
+            <p className="text-xs text-gray-500">Profile, security & privacy</p>
           </Link>
           <Link href="/user/help-center" className="rounded-2xl bg-white border border-gray-200 p-5 shadow-sm transition hover:shadow-md">
             <i className="bi bi-life-preserver text-xl text-[#083A85]" />
@@ -323,6 +331,27 @@ export default function UserDashboard(): React.JSX.Element {
           </button>
         </div>
       </main>
+
+      {/* In-page pay modal for a pending booking declaration. The backend
+          recomputes the charge from the declaration, so amount/currency here
+          are for display; USD matches the dashboard's shown figures. */}
+      {payTarget ? (
+        <XentriPayModal
+          isOpen={!!payTarget}
+          onClose={() => setPayTarget(null)}
+          onSuccess={() => {
+            setPayTarget(null);
+            void reloadPending();
+          }}
+          amount={Math.max(0, payTarget.amount - payTarget.paidAmount)}
+          currencyCode="USD"
+          currencyId=""
+          paymentType="booking"
+          declarationId={payTarget.id}
+          title="Complete payment"
+          subtitle={payTarget.eventName}
+        />
+      ) : null}
     </div>
   );
 }
