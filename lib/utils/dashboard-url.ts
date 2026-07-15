@@ -7,6 +7,10 @@ function getRouteForType(customerType?: string): string {
     case 'event-coordinator':
     case 'coordinator': return '/user/event-coordinator/home';
     case 'photographer': return '/user/photographer/dashboard';
+    // The consumer `User` role has its dashboard on the landing app itself
+    // (/user/dashboard), not on the cross-app dashboard host — return '' so
+    // callers fall back to that in-app route.
+    case 'user': return '';
     case 'viewer': return '';  // Viewers don't have a dashboard
     default: return '/'; // Role selection page
   }
@@ -18,8 +22,12 @@ function getRouteForType(customerType?: string): string {
  * @returns Full dashboard URL with appropriate route
  */
 export function getDashboardUrl(customerType?: string): string {
+  const route = getRouteForType(customerType);
+  // Roles without a cross-app dashboard (user, viewer) resolve to '' so callers
+  // use their in-app fallback (e.g. `|| '/user/dashboard'`).
+  if (!route) return '';
   const baseUrl = process.env.NEXT_PUBLIC_DASHBOARD_URL || '';
-  return `${baseUrl}${getRouteForType(customerType)}`;
+  return `${baseUrl}${route}`;
 }
 
 /**

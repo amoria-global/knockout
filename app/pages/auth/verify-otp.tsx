@@ -209,6 +209,13 @@ function VerifyOtpContent(): React.JSX.Element {
             setTimeout(() => returnToApp(token, token ? 'success' : 'registered'), 1500);
             return;
           }
+          // The consumer `User` role's dashboard lives on the landing app.
+          const ctForRoute = (d?.customerType || searchParams.get('customerType') || '').toLowerCase();
+          if (ctForRoute === 'user') {
+            showSuccess('Account verified! Redirecting to your dashboard...');
+            setTimeout(() => { window.location.href = '/user/dashboard'; }, 1500);
+            return;
+          }
           if (token) {
             showSuccess('Account verified! Redirecting to dashboard...');
             setTimeout(() => goToDashboard(token), 2000);
