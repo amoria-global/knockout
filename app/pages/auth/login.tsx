@@ -88,6 +88,13 @@ function OverlayPanel({ isLogin, onToggle, userType }: { isLogin: boolean; onTog
 
   // Role-specific content for signup view
   const roleContent: Record<string, { heading: string; subtitle: string; topIcon: React.ReactNode; leftIcon: React.ReactNode; rightIcon: React.ReactNode }> = {
+    User: {
+      heading: 'Welcome to Connekyt!',
+      subtitle: 'Create your account to watch live streams, buy photos, and book photographers',
+      topIcon: <svg width="40" height="40" viewBox="0 0 24 24" fill="none"><path d="M12 3l1.9 4.6L19 9l-4 3.3L16.2 18 12 15.3 7.8 18 9 12.3 5 9l5.1-1.4L12 3z" fill="#fff"/></svg>,
+      leftIcon: <svg width="36" height="36" viewBox="0 0 24 24" fill="none"><path d="M8 5v14l11-7L8 5z" fill="#fff"/></svg>,
+      rightIcon: <svg width="36" height="36" viewBox="0 0 24 24" fill="none"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="#fff"/></svg>,
+    },
     Photographer: {
       heading: 'Welcome back, creative!',
       subtitle: 'Sign in to manage your portfolio, accept bookings, and showcase your work',
@@ -213,7 +220,7 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
 
   // ── User type (needed before toggle handler) ──
   const rawUserType = searchParams.get('userType');
-  const allowedSignupTypes = ['Photographer', 'Client', 'Coordinator'];
+  const allowedSignupTypes = ['Photographer', 'Client', 'Coordinator', 'User'];
   const urlUserType = rawUserType && allowedSignupTypes.includes(rawUserType) ? rawUserType : null;
   const [selectedUserType, setSelectedUserType] = useState<string | null>(urlUserType);
   const [showUserTypeModal, setShowUserTypeModal] = useState(!urlUserType && initialView === 'signup');
@@ -252,6 +259,33 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
   // ── LOGIN STATE & HANDLERS ────────────────────────────────────
   // ═══════════════════════════════════════════════════════════════
   const redirectUrl = searchParams.get('redirect');
+  // When the mobile app launches signup in the browser it passes a custom-scheme
+  // deep link (connekt://auth-callback / exp://…) as `redirect`. Google sign-up
+  // mints a session immediately (no OTP), so bounce straight back into the app
+  // with the token instead of a web `router.push` (which can't do custom schemes).
+  const appRedirect =
+    redirectUrl && !/^https?:\/\//i.test(redirectUrl) && !redirectUrl.startsWith('/')
+      ? redirectUrl
+      : '';
+  const returnToAppWithSession = (token: string, data?: {
+    refreshToken?: string | null; customerId?: string | null; email?: string | null;
+    firstName?: string | null; lastName?: string | null; phone?: string | null;
+    customerType?: string | null;
+  }) => {
+    const sep = appRedirect.includes('?') ? '&' : '?';
+    const p = new URLSearchParams();
+    p.set('status', 'success');
+    if (token) p.set('token', token);
+    if (data?.refreshToken) p.set('refreshToken', String(data.refreshToken));
+    if (data?.customerId) p.set('customerId', String(data.customerId));
+    if (data?.email) p.set('email', String(data.email));
+    if (data?.firstName) p.set('firstName', String(data.firstName));
+    if (data?.lastName) p.set('lastName', String(data.lastName));
+    if (data?.phone) p.set('phone', String(data.phone));
+    const ct = data?.customerType || signupUserType;
+    if (ct) p.set('customerType', String(ct));
+    window.location.href = `${appRedirect}${sep}${p.toString()}`;
+  };
   const loggedOut = searchParams.get('loggedOut') === 'true' || searchParams.get('logged_out') === 'true';
   const sessionExpired = searchParams.get('session_expired') === 'true';
   const [showLoggedOutBanner, setShowLoggedOutBanner] = useState(false);
@@ -558,7 +592,7 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
       try {
         const br = await googleAuth({ email: userInfo.email, firstName: userInfo.given_name || '', lastName: userInfo.family_name || '', customerType: signupUserType });
         if (br.success && br.data?.twoFactorRequired && br.data?.customerId) { showInfo('Please enter your authenticator code.'); router.push(`/user/auth/verify-totp?customerId=${encodeURIComponent(String(br.data.customerId))}`); return; }
-        if (br.success && br.data?.token) { setAuthToken(br.data.token); showSuccess('Welcome back! Redirecting...'); if (isBookingRedirect) { setTimeout(() => redirectToBookingDashboard(br.data?.customerType), 300); } else { router.push(redirectUrl || '/user'); } return; }
+        if (br.success && br.data?.token) { setAuthToken(br.data.token); showSuccess(appRedirect ? 'Welcome! Returning to the app…' : 'Welcome back! Redirecting...'); if (appRedirect) { setTimeout(() => returnToAppWithSession(br.data!.token as string, br.data), 300); } else if (isBookingRedirect) { setTimeout(() => redirectToBookingDashboard(br.data?.customerType), 300); } else { router.push(redirectUrl || '/user'); } return; }
       } catch { /* continue with form pre-fill */ }
       if (userInfo.given_name) setFirstName(userInfo.given_name);
       if (userInfo.family_name) setLastName(userInfo.family_name);
