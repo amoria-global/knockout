@@ -36,6 +36,20 @@ export default function UserTypeModal({
 
   const userOptions = [
     {
+      id: 'User',
+      icon: (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 3l1.9 4.6L19 9l-4 3.3L16.2 18 12 15.3 7.8 18 9 12.3 5 9l5.1-1.4L12 3z" />
+        </svg>
+      ),
+      title: 'User',
+      description: 'Watch live streams, buy photos & book photographers',
+      tagline: 'For fans & guests',
+      gradient: 'linear-gradient(135deg, #06B6D4 0%, #0EA5E9 50%, #3B82F6 100%)',
+      glow: 'rgba(14, 165, 233, 0.45)',
+      tag: '#0EA5E9',
+    },
+    {
       id: 'Photographer',
       icon: (
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

@@ -20,6 +20,39 @@ function VerifyOtpContent(): React.JSX.Element {
   const emailFromQuery = searchParams.get('email');
   const [applicantId, setApplicantId] = useState(applicantIdFromQuery || '');
   const [email, setEmail] = useState(emailFromQuery || '');
+
+  // If the signup was launched FROM the mobile app, it passes a custom-scheme
+  // deep link (e.g. connekt://auth-callback or exp://…) as `redirect`. After
+  // verification we bounce back into the app via that link — carrying the
+  // freshly minted session so the app can log the user straight in — instead
+  // of redirecting to the web dashboard.
+  const redirectParam = searchParams.get('redirect') || '';
+  const appRedirect =
+    redirectParam && !/^https?:\/\//i.test(redirectParam) && !redirectParam.startsWith('/')
+      ? redirectParam
+      : '';
+  const verifiedDataRef = useRef<{
+    token?: string; refreshToken?: string; customerId?: string; email?: string;
+    firstName?: string; lastName?: string; phone?: string; customerType?: string;
+  } | null>(null);
+
+  const returnToApp = (token: string | undefined, status: 'success' | 'registered') => {
+    const d = verifiedDataRef.current || {};
+    const sep = appRedirect.includes('?') ? '&' : '?';
+    const p = new URLSearchParams();
+    p.set('status', status);
+    if (token) p.set('token', token);
+    const rt = d.refreshToken || getRefreshToken();
+    if (rt) p.set('refreshToken', rt);
+    if (d.customerId) p.set('customerId', String(d.customerId));
+    const em = d.email || email;
+    if (em) p.set('email', String(em));
+    if (d.firstName) p.set('firstName', String(d.firstName));
+    if (d.lastName) p.set('lastName', String(d.lastName));
+    if (d.phone) p.set('phone', String(d.phone));
+    if (d.customerType) p.set('customerType', String(d.customerType));
+    window.location.href = `${appRedirect}${sep}${p.toString()}`;
+  };
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -132,7 +165,8 @@ function VerifyOtpContent(): React.JSX.Element {
 
         if (response.success) {
           const d = response.data;
-          const token = d?.token || getAuthToken();
+          const token = d?.token || getAuthToken() || undefined;
+          verifiedDataRef.current = { ...(d || {}), token };
 
           // PROFILE-COMPLETION GATE - right after verification. A photographer
           // whose profile isn't 100% (everything except KYC) must finish it
@@ -157,6 +191,16 @@ function VerifyOtpContent(): React.JSX.Element {
           }
 
           setSuccess(true);
+          // Launched from the mobile app → hand the session back to it.
+          if (appRedirect) {
+            showSuccess(
+              token
+                ? 'Account verified! Returning to the app…'
+                : 'Account verified! Open the app to sign in.',
+            );
+            setTimeout(() => returnToApp(token, token ? 'success' : 'registered'), 1500);
+            return;
+          }
           if (token) {
             showSuccess('Account verified! Redirecting to dashboard...');
             setTimeout(() => goToDashboard(token), 2000);
@@ -249,6 +293,11 @@ function VerifyOtpContent(): React.JSX.Element {
         onComplete={() => {
           setShowCompletionWizard(false);
           setSuccess(true);
+          if (appRedirect) {
+            showSuccess('Profile complete! Returning to the app…');
+            setTimeout(() => returnToApp(dashboardUrl, 'success'), 1500);
+            return;
+          }
           showSuccess('Profile complete! Redirecting to dashboard...');
           setTimeout(() => {
             if (dashboardUrl) goToDashboard(dashboardUrl);
