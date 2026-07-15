@@ -44,13 +44,21 @@ function VerifyOtpContent(): React.JSX.Element {
     if (token) p.set('token', token);
     const rt = d.refreshToken || getRefreshToken();
     if (rt) p.set('refreshToken', rt);
-    if (d.customerId) p.set('customerId', String(d.customerId));
+    if (d.customerId || applicantId) p.set('customerId', String(d.customerId || applicantId));
     const em = d.email || email;
     if (em) p.set('email', String(em));
-    if (d.firstName) p.set('firstName', String(d.firstName));
-    if (d.lastName) p.set('lastName', String(d.lastName));
-    if (d.phone) p.set('phone', String(d.phone));
-    if (d.customerType) p.set('customerType', String(d.customerType));
+    // The OTP response doesn't always echo profile fields, so fall back to the
+    // values signup threaded through the URL. customerType is critical: without
+    // it the app's useRole defaults to 'Client', so a 'User' would land on the
+    // wrong dashboard.
+    const firstName = d.firstName || searchParams.get('firstName') || '';
+    const lastName = d.lastName || searchParams.get('lastName') || '';
+    const phone = d.phone || searchParams.get('phone') || '';
+    const customerType = d.customerType || searchParams.get('customerType') || '';
+    if (firstName) p.set('firstName', firstName);
+    if (lastName) p.set('lastName', lastName);
+    if (phone) p.set('phone', phone);
+    if (customerType) p.set('customerType', customerType);
     window.location.href = `${appRedirect}${sep}${p.toString()}`;
   };
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
