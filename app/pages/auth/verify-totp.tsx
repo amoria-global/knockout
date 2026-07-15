@@ -147,7 +147,7 @@ function VerifyTotpContent(): React.JSX.Element {
     if (dashboardUrl && storedTokenRef.current) {
       window.open(dashboardUrl, '_blank');
     } else {
-      window.open('/user/dashboard', '_blank');
+      window.open('/user/photographers', '_blank');
     }
     router.push('/user/photographers');
   };

@@ -377,7 +377,7 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
         const refreshTokenValue = getRefreshToken();
         const dashboardUrl = getDashboardUrlWithToken(loggedInUserType, token || undefined, refreshTokenValue || undefined);
         if (dashboardUrl && token) window.open(dashboardUrl, '_blank');
-        else window.open('/user/dashboard', '_blank');
+        else window.open('/user/photographers', '_blank');
         router.push(returnTo);
       }
     }

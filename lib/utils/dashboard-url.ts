@@ -7,10 +7,9 @@ function getRouteForType(customerType?: string): string {
     case 'event-coordinator':
     case 'coordinator': return '/user/event-coordinator/home';
     case 'photographer': return '/user/photographer/dashboard';
-    // The consumer `User` role has its dashboard on the landing app itself
-    // (/user/dashboard), not on the cross-app dashboard host — return '' so
-    // callers fall back to that in-app route.
-    case 'user': return '';
+    // The consumer `User` role has its own dedicated dashboard section on the
+    // cross-app dashboard host.
+    case 'user': return '/user/user/home';
     case 'viewer': return '';  // Viewers don't have a dashboard
     default: return '/'; // Role selection page
   }

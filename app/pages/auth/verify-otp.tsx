@@ -7,6 +7,7 @@ import { verifyOtp } from '@/lib/APIs/auth/verify-otp/route';
 import { resendOtp } from '@/lib/APIs/auth/resend-otp/route';
 import { useToast } from '@/lib/notifications/ToastProvider';
 import { getAuthToken, getRefreshToken, setAuthToken } from '@/lib/api/client';
+import { getDashboardUrlWithToken } from '@/lib/utils/dashboard-url';
 import { persistPhotographerProfile } from '@/lib/photographer/persist-profile';
 
 const PhotographerOnboarding = dynamic(() => import('@/app/components/PhotographerOnboarding'), { ssr: false });
@@ -199,6 +200,16 @@ function VerifyOtpContent(): React.JSX.Element {
           }
 
           setSuccess(true);
+          // The consumer `User` role has its dedicated dashboard on the
+          // cross-app dashboard host. Bounce there (auth rides the shared
+          // .connekyt.com cookie); skip when returning to the mobile app.
+          const ctForRoute = (d?.customerType || searchParams.get('customerType') || '').toLowerCase();
+          if (ctForRoute === 'user' && !appRedirect) {
+            const dash = getDashboardUrlWithToken('User');
+            showSuccess('Account verified! Redirecting to your dashboard...');
+            setTimeout(() => { window.location.href = dash || '/user/photographers'; }, 1500);
+            return;
+          }
           // Launched from the mobile app → hand the session back to it.
           if (appRedirect) {
             showSuccess(
@@ -207,13 +218,6 @@ function VerifyOtpContent(): React.JSX.Element {
                 : 'Account verified! Open the app to sign in.',
             );
             setTimeout(() => returnToApp(token, token ? 'success' : 'registered'), 1500);
-            return;
-          }
-          // The consumer `User` role's dashboard lives on the landing app.
-          const ctForRoute = (d?.customerType || searchParams.get('customerType') || '').toLowerCase();
-          if (ctForRoute === 'user') {
-            showSuccess('Account verified! Redirecting to your dashboard...');
-            setTimeout(() => { window.location.href = '/user/dashboard'; }, 1500);
             return;
           }
           if (token) {
