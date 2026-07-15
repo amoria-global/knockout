@@ -32,6 +32,7 @@ import { initiateAnonymousStreamingPayment, checkAnonymousPaymentStatus } from '
 import { contactUs } from '@/lib/APIs/public/contact-us/route';
 import { apiClient } from '@/lib/api/client';
 import { StreamAdManager, type StreamAd } from '@/app/components/StreamAdBanners';
+import { StreamWatermark } from '@/app/components/StreamWatermark';
 import { getStreamAds, pollAdTrigger, recordAdClick } from '@/lib/APIs/public/get-stream-ads/route';
 import { API_ENDPOINTS } from '@/lib/api/config';
 import Hls from 'hls.js';
@@ -7604,6 +7605,9 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
                 {!mainEvent.whepUrl && mainEvent.videoSrc && <source src={mainEvent.videoSrc} type="video/mp4" />}
               </video>
 
+              {/* ── Brand watermark (all viewers, low opacity) ── */}
+              <StreamWatermark variant="full" position="top-left" />
+
               {/* ── Live Stream Ad Banners ── */}
               {streamAds.length > 0 && (
                 <StreamAdManager
@@ -8602,6 +8606,9 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
                             >
                               {!event.whepUrl && <source src={event.videoSrc} type="video/mp4" />}
                             </video>
+
+                            {/* Brand watermark (logo bug on the tile) */}
+                            <StreamWatermark variant="mark" position="top-left" />
 
                             {/* Overlay */}
                             <div style={{
