@@ -18,6 +18,11 @@
  *   • full — both layers, for the main stage.
  *   • mark — logo-only corner bug, for the small multi-view grid tiles.
  */
+// High z-index so the mark always sits ON TOP of the video, ad banners and
+// state overlays. It's still scoped to the video-stage stacking context, so it
+// never escapes over unrelated page-level modals.
+const WM_Z = 999999;
+
 export function StreamWatermark({
   variant = 'full',
   position = 'top-left',
@@ -33,7 +38,9 @@ export function StreamWatermark({
 
   return (
     <>
-      {/* Layer 1 — faint full-frame diagonal wordmark (main stage only). */}
+      {/* Layer 1 — faint full-frame diagonal wordmark (main stage only).
+          Burned into the frame at very low opacity; always ON TOP (zIndex
+          beats ad banners + state overlays) so it's never covered. */}
       {!mark && (
         <div
           aria-hidden
@@ -46,20 +53,20 @@ export function StreamWatermark({
             overflow: 'hidden',
             pointerEvents: 'none',
             userSelect: 'none',
-            zIndex: 6,
+            zIndex: WM_Z,
           }}
         >
           <span
             style={{
               transform: 'rotate(-22deg)',
               color: '#fff',
-              opacity: 0.14,
+              opacity: 0.08,
               fontSize: 'clamp(26px, 6.5vw, 84px)',
               fontWeight: 900,
               letterSpacing: 4,
               textTransform: 'uppercase',
               whiteSpace: 'nowrap',
-              textShadow: '0 2px 14px rgba(0,0,0,0.45)',
+              textShadow: '0 2px 14px rgba(0,0,0,0.35)',
             }}
           >
             Amoria Connekyt
@@ -67,7 +74,8 @@ export function StreamWatermark({
         </div>
       )}
 
-      {/* Layer 2 — legible corner bug. */}
+      {/* Layer 2 — corner bug, burned-in (no pill) so it reads as part of the
+          video. Low opacity, always on top. */}
       <div
         aria-hidden
         style={{
@@ -77,15 +85,10 @@ export function StreamWatermark({
           display: 'flex',
           alignItems: 'center',
           gap: mark ? 0 : 7,
-          padding: mark ? 0 : '5px 10px',
-          borderRadius: 999,
-          background: mark ? 'transparent' : 'rgba(0,0,0,0.34)',
-          backdropFilter: mark ? undefined : 'blur(2px)',
-          WebkitBackdropFilter: mark ? undefined : 'blur(2px)',
-          opacity: 0.9,
+          opacity: mark ? 0.4 : 0.5,
           pointerEvents: 'none',
           userSelect: 'none',
-          zIndex: 30,
+          zIndex: WM_Z,
         }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -94,7 +97,7 @@ export function StreamWatermark({
           alt=""
           width={logoSize}
           height={logoSize}
-          style={{ display: 'block', objectFit: 'contain', filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.7))' }}
+          style={{ display: 'block', objectFit: 'contain', filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.8))' }}
         />
         {!mark && (
           <span
@@ -104,7 +107,7 @@ export function StreamWatermark({
               fontWeight: 800,
               letterSpacing: 1.2,
               textTransform: 'uppercase',
-              textShadow: '0 1px 4px rgba(0,0,0,0.85)',
+              textShadow: '0 1px 5px rgba(0,0,0,0.95)',
               whiteSpace: 'nowrap',
             }}
           >
