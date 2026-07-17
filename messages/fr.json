@@ -146,7 +146,8 @@
       "privacyPolicy": "Politique de Confidentialité",
       "termsOfService": "Conditions d'Utilisation",
       "trustSafety": "Confiance & Sécurité",
-      "donations": "Dons"
+      "donations": "Dons",
+      "deleteAccount": "Supprimer votre compte"
     },
     "copyright": "© {year} Amoria Connekyt. Tous droits réservés."
   },

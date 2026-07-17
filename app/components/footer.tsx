@@ -284,6 +284,7 @@ export default function Footer() {
         { text: t('links.privacyPolicy'), href: '/user/privacy-policy' },
         { text: t('links.termsOfService'), href: '/user/terms-of-service' },
         { text: t('links.trustSafety'), href: '/user/trust-safety' },
+        { text: t('links.deleteAccount'), href: '/user/delete-account' },
       ],
     },
   ];
