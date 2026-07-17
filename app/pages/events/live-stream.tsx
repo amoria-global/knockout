@@ -22,7 +22,7 @@ import { useGoogleLogin } from '@react-oauth/google';
 import { getStreamChats, type StreamChatMessage } from '@/lib/APIs/streams/chat/route';
 import { sendStreamChat, sendStreamVideoChat, getStreamViewerCount, getPublicViewerCount, requestStreamAccess, checkDeviceAccess, sendHeartbeat, reportStreamIssue, blockUserInStream } from '@/lib/APIs/streams/route';
 import { getDeviceId } from '@/lib/fingerprint';
-import { checkAnonymousAccessStatus, anonymousDeviceCheck, anonymousHeartbeat, deactivateAnonymousSession, getAnonymousViewerCount, registerAnonymousViewer, switchAnonymousDevice, sendAnonymousChatMessage, sendAnonymousVideoChat } from '@/lib/APIs/streams/anonymous-viewer';
+import { checkAnonymousAccessStatus, anonymousDeviceCheck, anonymousHeartbeat, deactivateAnonymousSession, getAnonymousViewerCount, registerAnonymousViewer, sendAnonymousChatMessage, sendAnonymousVideoChat } from '@/lib/APIs/streams/anonymous-viewer';
 import ViewerInfoModal from '../../components/ViewerInfoModal';
 import type { ViewerInfoData } from '../../components/ViewerInfoModal';
 import DeviceSwitchModal from '../../components/DeviceSwitchModal';
@@ -569,29 +569,37 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
     }
   };
 
-  // Handle device switch confirmation for anonymous viewers
+  // Retry access for anonymous viewers after a DEVICE_MISMATCH conflict.
+  // Forced switching isn't supported anymore - this only succeeds once the
+  // other device has gone idle 60s+ (same rule anonymousDeviceCheck already
+  // enforces server-side). On failure we keep the conflict modal open with
+  // its own accurate copy rather than bouncing back to the registration
+  // form, which used to make "still watching elsewhere" look like a
+  // registration failure.
+  const [deviceSwitchError, setDeviceSwitchError] = useState<string | null>(null);
   const handleDeviceSwitchConfirm = async () => {
     if (!mainEvent?.id || !anonymousViewerId) return;
     setDeviceSwitchLoading(true);
+    setDeviceSwitchError(null);
     try {
       const fingerprint = await getDeviceId();
-      const res = await switchAnonymousDevice(mainEvent.id, anonymousViewerId, fingerprint);
-      if (res.success) {
-        setShowDeviceSwitchModal(false);
-        const whepUrl = (res.data as Record<string, unknown>)?.whepUrl as string;
-        if (whepUrl) {
-          setEvents(prev => [{ ...prev[0], whepUrl }, ...prev.slice(1)]);
+      const check = await anonymousDeviceCheck(mainEvent.id, anonymousViewerId, fingerprint);
+      if (check.success) {
+        const status = await checkAnonymousAccessStatus(mainEvent.id, fingerprint, anonymousViewerId);
+        if (status.success && status.data?.hasAccess && status.data?.whepUrl) {
+          setShowDeviceSwitchModal(false);
+          setEvents(prev => [{ ...prev[0], whepUrl: status.data!.whepUrl as string }, ...prev.slice(1)]);
           setStreamAccessGranted(true);
+        } else {
+          setDeviceSwitchError("Access confirmed, but the stream isn't live yet — try again in a moment.");
         }
       } else {
-        setShowDeviceSwitchModal(false);
-        setViewerInfoError(res.error || 'Could not switch device.');
-        setShowViewerInfoModal(true);
+        // Still active elsewhere - keep the modal open with its own copy;
+        // the message here is the same "already watching elsewhere" fact.
+        setDeviceSwitchError(null);
       }
     } catch {
-      setShowDeviceSwitchModal(false);
-      setViewerInfoError('Connection error.');
-      setShowViewerInfoModal(true);
+      setDeviceSwitchError('Connection error - please try again.');
     } finally {
       setDeviceSwitchLoading(false);
     }
@@ -7541,16 +7549,14 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
                   })()}
                   {/* Soft 'Reconnecting…' state self-heals so it doesn't
                       need a button. The hard 'Device Access Restricted'
-                      state gives a CTA that actually claims this device
-                      for the viewer (calls switchAnonymousDevice which
-                      rewrites the stored fingerprint server-side), then
-                      clears the error - so a second click never has to
-                      happen and the modal won't pop again on this
-                      device. The old behaviour ('Try Again' just
-                      reloaded the page and the access check immediately
-                      re-detected the same fingerprint mismatch) is the
-                      reason viewers reported seeing this modal in a
-                      loop. */}
+                      state gives a CTA that calls handleDeviceSwitchConfirm,
+                      which only succeeds once the other device has gone
+                      idle 60s+ (forced switching isn't supported - see
+                      that function's own comment). The old behaviour
+                      ('Try Again' just reloaded the page and the access
+                      check immediately re-detected the same fingerprint
+                      mismatch) is the reason viewers reported seeing this
+                      modal in a loop. */}
                   {deviceError !== 'Reconnecting…' && (
                     <button
                       onClick={async () => {
@@ -10909,12 +10915,13 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
         error={viewerInfoError}
       />
 
-      {/* Device switch confirmation modal */}
+      {/* Device conflict / retry modal */}
       <DeviceSwitchModal
         isOpen={showDeviceSwitchModal}
         onConfirm={handleDeviceSwitchConfirm}
         onCancel={() => setShowDeviceSwitchModal(false)}
         loading={deviceSwitchLoading}
+        error={deviceSwitchError}
       />
     </>
   );

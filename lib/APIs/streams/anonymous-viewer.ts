@@ -117,6 +117,11 @@ export async function deactivateAnonymousSession(
   );
 }
 
+/** @deprecated The backend now rejects this unconditionally - a purchase is
+ *  locked to whichever device is actively watching, no on-demand override.
+ *  Use anonymousDeviceCheck instead, which succeeds only once the other
+ *  device has gone idle 60s+. Kept so any remaining caller gets a clear
+ *  rejection message instead of a broken request shape. */
 export async function switchAnonymousDevice(
   eventId: string,
   viewerId: string,
