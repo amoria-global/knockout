@@ -179,6 +179,11 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
   // Per-viewer "watch id" — when the path is /user/events/livestream/{slug}/{viewerId}
   // we get it as a prop; legacy ?viewerId= URLs keep working via searchParams.
   const initialViewerId = viewerIdProp || searchParams.get('viewerId') || '';
+  // Chat-only mode: used by the smartTv QR-code flow, where a viewer scans
+  // a code on the TV to reply in chat from their phone. Without this, the
+  // page auto-plays the live stream with sound the instant it loads,
+  // creating a second audio/video source right next to the TV.
+  const chatOnly = searchParams.get('mode') === 'chat';
 
   // State for multiple events (up to 3)
   const [events, setEvents] = useState<EventStream[]>([
@@ -1391,6 +1396,10 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
     if (!eventId || (!whepUrl && !hlsUrl)) {
       return;
     }
+    // Chat-only mode (smartTv QR flow): never attach/play the stream.
+    if (chatOnly) {
+      return;
+    }
 
     let cancelled = false;
     let retryTimer: ReturnType<typeof setTimeout> | null = null;
@@ -1509,7 +1518,7 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
       }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mainEvent?.whepUrl, mainEvent?.hlsManifestUrl, mainEvent?.id, playerEpoch]);
+  }, [mainEvent?.whepUrl, mainEvent?.hlsManifestUrl, mainEvent?.id, playerEpoch, chatOnly]);
 
   // Stall watchdog: the WHEP peer can stay "connected" while the
   // upstream encoder is offline (Cloudflare keeps the WebRTC session
@@ -7573,37 +7582,59 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
                 </div>
               )}
 
-              <video
-                key={mainEvent.id}
-                ref={mainVideoRefCallback}
-                playsInline
-                muted
-                style={{ pointerEvents: 'none' }}
-                onPlay={() => {
-                  const vid = videoRefs.current[mainEvent.id];
-                  const actualMuted = vid ? vid.muted : true;
-                  setPlaybackState(prev => ({
-                    ...prev,
-                    [mainEvent.id]: { ...prev[mainEvent.id], isPlaying: true, isMuted: actualMuted }
-                  }));
-                  playbackStateRef.current = {
-                    ...playbackStateRef.current,
-                    [mainEvent.id]: { ...playbackStateRef.current[mainEvent.id], isPlaying: true, isMuted: actualMuted }
-                  };
-                }}
-                onPause={() => {
-                  setPlaybackState(prev => ({
-                    ...prev,
-                    [mainEvent.id]: { ...prev[mainEvent.id], isPlaying: false }
-                  }));
-                  playbackStateRef.current = {
-                    ...playbackStateRef.current,
-                    [mainEvent.id]: { ...playbackStateRef.current[mainEvent.id], isPlaying: false }
-                  };
-                }}
-              >
-                {!mainEvent.whepUrl && mainEvent.videoSrc && <source src={mainEvent.videoSrc} type="video/mp4" />}
-              </video>
+              {!chatOnly && (
+                <video
+                  key={mainEvent.id}
+                  ref={mainVideoRefCallback}
+                  playsInline
+                  muted
+                  style={{ pointerEvents: 'none' }}
+                  onPlay={() => {
+                    const vid = videoRefs.current[mainEvent.id];
+                    const actualMuted = vid ? vid.muted : true;
+                    setPlaybackState(prev => ({
+                      ...prev,
+                      [mainEvent.id]: { ...prev[mainEvent.id], isPlaying: true, isMuted: actualMuted }
+                    }));
+                    playbackStateRef.current = {
+                      ...playbackStateRef.current,
+                      [mainEvent.id]: { ...playbackStateRef.current[mainEvent.id], isPlaying: true, isMuted: actualMuted }
+                    };
+                  }}
+                  onPause={() => {
+                    setPlaybackState(prev => ({
+                      ...prev,
+                      [mainEvent.id]: { ...prev[mainEvent.id], isPlaying: false }
+                    }));
+                    playbackStateRef.current = {
+                      ...playbackStateRef.current,
+                      [mainEvent.id]: { ...playbackStateRef.current[mainEvent.id], isPlaying: false }
+                    };
+                  }}
+                >
+                  {!mainEvent.whepUrl && mainEvent.videoSrc && <source src={mainEvent.videoSrc} type="video/mp4" />}
+                </video>
+              )}
+
+              {chatOnly && (
+                <div
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '10px',
+                    color: 'rgba(255,255,255,0.72)',
+                  }}
+                >
+                  <i className="bi bi-chat-dots-fill" style={{ fontSize: '32px', opacity: 0.6 }}></i>
+                  <span style={{ fontSize: '14px', fontWeight: 600, letterSpacing: '0.01em' }}>
+                    Chat mode — video hidden
+                  </span>
+                </div>
+              )}
 
               {/* ── Brand watermark (all viewers, low opacity) ── */}
               <StreamWatermark variant="full" position="top-left" />
