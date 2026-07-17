@@ -7,6 +7,10 @@ interface DeviceSwitchModalProps {
   onConfirm: () => void;
   onCancel: () => void;
   loading?: boolean;
+  /** Shown when a retry attempt itself errors (network/etc.) - a plain
+   *  "still watching elsewhere" retry failure has no separate message,
+   *  since the modal's own copy already says that. */
+  error?: string | null;
 }
 
 const DeviceSwitchModal: React.FC<DeviceSwitchModalProps> = ({
@@ -14,6 +18,7 @@ const DeviceSwitchModal: React.FC<DeviceSwitchModalProps> = ({
   onConfirm,
   onCancel,
   loading = false,
+  error = null,
 }) => {
   if (!isOpen) return null;
 
@@ -26,11 +31,15 @@ const DeviceSwitchModal: React.FC<DeviceSwitchModalProps> = ({
         </div>
 
         <h3 style={{ color: '#fff', fontSize: 18, fontWeight: 700, margin: '0 0 8px' }}>
-          Switch Device?
+          Already watching on another device
         </h3>
-        <p style={{ color: '#9ca3af', fontSize: 14, margin: '0 0 24px', lineHeight: 1.5 }}>
-          You&apos;re currently watching on another device. Would you like to switch to this one? The other device will lose access.
+        <p style={{ color: '#9ca3af', fontSize: 14, margin: '0 0 16px', lineHeight: 1.5 }}>
+          Only one device can watch on the same ticket at a time. It&apos;ll free up automatically
+          once the other device stops watching — tap retry to check.
         </p>
+        {error ? (
+          <p style={{ color: '#F87171', fontSize: 13, margin: '0 0 16px', lineHeight: 1.4 }}>{error}</p>
+        ) : null}
 
         <div style={{ display: 'flex', gap: 10 }}>
           <button
@@ -72,10 +81,10 @@ const DeviceSwitchModal: React.FC<DeviceSwitchModalProps> = ({
             {loading ? (
               <>
                 <div style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-                Switching...
+                Checking...
               </>
             ) : (
-              'Switch Device'
+              'Retry'
             )}
           </button>
         </div>

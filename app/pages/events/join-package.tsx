@@ -16,7 +16,7 @@ import { googleAuth } from '@/lib/APIs/auth/google/route';
 import { useGoogleLogin } from '@react-oauth/google';
 import ViewerInfoModal, { type ViewerInfoData } from '../../components/ViewerInfoModal';
 import DeviceSwitchModal from '../../components/DeviceSwitchModal';
-import { registerAnonymousViewer, confirmAnonymousPayment, switchAnonymousDevice, checkAnonymousAccessStatus } from '@/lib/APIs/streams/anonymous-viewer';
+import { registerAnonymousViewer, confirmAnonymousPayment, anonymousDeviceCheck, checkAnonymousAccessStatus } from '@/lib/APIs/streams/anonymous-viewer';
 import { getDeviceId } from '@/lib/fingerprint';
 
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';
@@ -130,6 +130,7 @@ function JoinPackageContent(): React.JSX.Element {
   const [viewerInfoError, setViewerInfoError] = useState('');
   const [showDeviceSwitchModal, setShowDeviceSwitchModal] = useState(false);
   const [deviceSwitchLoading, setDeviceSwitchLoading] = useState(false);
+  const [deviceSwitchError, setDeviceSwitchError] = useState<string | null>(null);
   const [pendingViewerId, setPendingViewerId] = useState<string | null>(null);
   const [pendingViewerEmail, setPendingViewerEmail] = useState('');
   const [pendingViewerName, setPendingViewerName] = useState('');
@@ -621,24 +622,26 @@ function JoinPackageContent(): React.JSX.Element {
   };
 
   // Device switch confirmation handler
+  // Forced switching isn't supported anymore - this only succeeds once the
+  // other device has gone idle 60s+ (same rule anonymousDeviceCheck already
+  // enforces server-side). On failure we keep the conflict modal open
+  // instead of bouncing back to the registration form.
   const handleDeviceSwitchConfirm = async () => {
     if (!selectedEvent || !pendingViewerId) return;
     setDeviceSwitchLoading(true);
+    setDeviceSwitchError(null);
     try {
       const fingerprint = await getDeviceId();
-      const res = await switchAnonymousDevice(selectedEvent.id, pendingViewerId, fingerprint);
-      if (res.success) {
+      const check = await anonymousDeviceCheck(selectedEvent.id, pendingViewerId, fingerprint);
+      if (check.success) {
         setShowDeviceSwitchModal(false);
         router.push(`/user/events/live-stream?eventId=${selectedEvent.id}`);
       } else {
-        setShowDeviceSwitchModal(false);
-        setViewerInfoError(res.error || 'Could not switch device.');
-        setShowViewerInfoModal(true);
+        // Still active elsewhere - keep the modal open with its own copy.
+        setDeviceSwitchError(null);
       }
     } catch {
-      setShowDeviceSwitchModal(false);
-      setViewerInfoError('Connection error. Please try again.');
-      setShowViewerInfoModal(true);
+      setDeviceSwitchError('Connection error - please try again.');
     } finally {
       setDeviceSwitchLoading(false);
     }
@@ -2202,12 +2205,13 @@ function JoinPackageContent(): React.JSX.Element {
         error={viewerInfoError}
       />
 
-      {/* Device Switch Confirmation Modal */}
+      {/* Device conflict / retry modal */}
       <DeviceSwitchModal
         isOpen={showDeviceSwitchModal}
         onConfirm={handleDeviceSwitchConfirm}
         onCancel={() => setShowDeviceSwitchModal(false)}
         loading={deviceSwitchLoading}
+        error={deviceSwitchError}
       />
 
       {/* CSS Animations */}
