@@ -65,7 +65,7 @@ const TrustSafetyPage = () => {
 
 We've designed our privacy practices around core principles of transparency, data minimization, purpose limitation, and user control. We only collect information necessary to provide our services effectively, we use it only for specified legitimate purposes, we protect it with industry-leading security measures, and we give you meaningful control over your data through accessible rights and choices.
 
-This privacy policy summary provides essential information about our data practices. For comprehensive details about every aspect of privacy on our platform, please refer to our complete Privacy Policy available at www.amoriaconnect.com/privacy-policy or within your account dashboard.
+This privacy policy summary provides essential information about our data practices. For comprehensive details about every aspect of privacy on our platform, please refer to our complete Privacy Policy available at www.connekyt.com/user/privacy-policy or within your account dashboard.
 
 1. Information Collection - What We Gather and Why
 Understanding what information we collect and why helps you assess whether you're comfortable using our services. We collect several categories of information, each serving specific purposes that enable platform functionality and improve your experience.
@@ -110,7 +110,7 @@ We comply with all applicable data protection regulations to ensure the highest 
 Our compliance includes lawful bases for all processing activities, enhanced consent mechanisms for sensitive data, data protection by design and default in all systems, privacy impact assessments for high-risk processing, data breach notification within 72 hours as required, and comprehensive documentation of all data processing activities.
 
 For Complete Privacy Information:
-This summary covers essential privacy practices, but for comprehensive details about all aspects of data protection, your rights, international transfers, cookies, security measures, and contact information for privacy requests, please review our complete Privacy Policy at www.amoriaconnect.com/privacy-policy or contact privacy@amoriaglobal.com with any questions or concerns.`
+This summary covers essential privacy practices, but for comprehensive details about all aspects of data protection, your rights, international transfers, cookies, security measures, and contact information for privacy requests, please review our complete Privacy Policy at www.connekyt.com/user/privacy-policy or contact privacy@amoriaglobal.com with any questions or concerns.`
     },
     {
       id: 'information-collection',
@@ -338,7 +338,7 @@ Be alert for phishing attacks attempting to steal your credentials. Phishing typ
 
 Never click links in suspicious emails, instead, navigate directly to our website by typing the address into your browser. Amoria Connekyt will never ask you to provide your password via email or unsolicited messages.
 
-Reporting suspicious activity immediately enables us to investigate and respond before significant harm occurs. Report concerning signs including unauthorized login notifications or password reset requests you didn't initiate, unexpected changes to your account settings or profile, messages or bookings you didn't send or create, transactions you don't recognize, contacts from supposed "Amoria Connekyt support" requesting sensitive information, or any other activity suggesting your account has been compromised. Report security concerns to support@amoriaconnect.com with "Security Concern" in the subject line, including as much detail as possible about the suspicious activity.
+Reporting suspicious activity immediately enables us to investigate and respond before significant harm occurs. Report concerning signs including unauthorized login notifications or password reset requests you didn't initiate, unexpected changes to your account settings or profile, messages or bookings you didn't send or create, transactions you don't recognize, contacts from supposed "Amoria Connekyt support" requesting sensitive information, or any other activity suggesting your account has been compromised. Report security concerns to support@connekyt.com with "Security Concern" in the subject line, including as much detail as possible about the suspicious activity.
 
 Using secure internet connections protects your data during transmission. Avoid accessing your Amoria Connekyt account (especially for sensitive operations like payments) over public Wi-Fi networks in cafes, airports, hotels, or other public spaces. Public Wi-Fi is often unencrypted and vulnerable to eavesdropping. If you must use public Wi-Fi, consider using a reputable VPN (Virtual Private Network) service to encrypt your connection. Always ensure your home Wi-Fi is secured with strong encryption (WPA3 or at minimum WPA2) and a strong password.
 
@@ -1544,7 +1544,7 @@ Our human moderators are trained professionals who understand the creative indus
 5. Emergency Support
 We recognize that safety concerns can't always wait for standard business-hour responses. When you encounter threats, fraud attempts, harassment, or other serious safety issues, you need immediate support. Our emergency reporting systems are designed for rapid response to protect you and prevent harm to others.
 
-You can report urgent safety concerns through multiple channels including our in-app "Trust & Safety" form accessible from any page, direct email to support@amoriaconnect.com for general safety issues, or legal@amoriaglobal.com for serious violations requiring legal attention. When you submit an urgent report, it's prioritized for review within 72 hours, often much faster for high-severity issues involving imminent threats, active fraud, or ongoing harassment.
+You can report urgent safety concerns through multiple channels including our in-app "Trust & Safety" form accessible from any page, direct email to support@connekyt.com for general safety issues, or legal@amoriaglobal.com for serious violations requiring legal attention. When you submit an urgent report, it's prioritized for review within 72 hours, often much faster for high-severity issues involving imminent threats, active fraud, or ongoing harassment.
 
 We maintain 24/7 monitoring for critical issues including active security breaches, payment fraud in progress, threats of violence or self-harm, and child safety concerns. While not all issues require immediate action, having round-the-clock monitoring ensures that truly urgent situations receive appropriate attention regardless of when they occur. Our goal is not just reactive response but proactive protection, identifying and addressing threats before they can cause harm to our community members.`
     },
@@ -1795,7 +1795,7 @@ We'll also notify Rwanda's National Cyber Security Authority (NCSA) and other re
 
 For Full Details - Comprehensive Privacy Information
 
-This Data Protection & Confidentiality section provides essential information about our legal compliance and confidentiality practices. For comprehensive details about all aspects of data protection, your rights, security measures, international transfers, and contact information for privacy requests, please refer to our complete Privacy Policy sections above or visit www.amoriaconnect.com/privacy-policy.
+This Data Protection & Confidentiality section provides essential information about our legal compliance and confidentiality practices. For comprehensive details about all aspects of data protection, your rights, security measures, international transfers, and contact information for privacy requests, please refer to our complete Privacy Policy sections above or visit www.connekyt.com/user/privacy-policy.
 
 Our Commitment:
 Data protection and confidentiality aren't just legal requirements, they're fundamental to the trust that makes our platform possible. We're committed to exceeding minimum compliance standards, implementing industry-leading security, respecting your privacy rights, and maintaining transparency about our practices. Your data is yours, and we're privileged custodians responsible for protecting it with the utmost care.`
@@ -1823,7 +1823,7 @@ For users who prefer not to create a record associated with their account, anony
 2. Email Reporting - Alternative Channels for Detailed Concerns
 While in-platform reporting is preferred for most situations, email reporting provides an alternative channel for users who need to provide extensive documentation, prefer to communicate outside the platform, or are reporting issues that prevent them from accessing their accounts.
 
-General Support for platform-related concerns: support@amoriaconnect.com
+General Support for platform-related concerns: support@connekyt.com
 This channel handles service quality issues, booking disputes, general policy questions, and concerns that don't rise to the level of safety emergencies. Response times are typically within 24-48 hours for initial acknowledgment.
 
 Legal & Safety for serious violations and legal matters: legal@amoriaglobal.com
@@ -2054,7 +2054,7 @@ Trust and safety work is never finished. As long as Amoria Connekyt serves users
           Amoria Connekyt is operated by Amoria Global Tech Ltd., a company registered and headquartered in Kigali, Rwanda. As a Rwandan company, we operate under Rwandan law and regulatory oversight, while serving users across Africa and beyond with consistent high standards of trust, safety, and user protection.
           <br /><br />
           <strong>1. General Support - Platform Assistance and User Help</strong><br />
-          <a href="mailto:support@amoriaconnect.com" style={{ color: '#083A85', textDecoration: 'underline' }}>support@amoriaconnect.com</a>
+          <a href="mailto:support@connekyt.com" style={{ color: '#083A85', textDecoration: 'underline' }}>support@connekyt.com</a>
           <br /><br />
           Our general support team handles the broadest range of inquiries and serves as your first point of contact for most platform-related matters. This channel is appropriate for account access issues and authentication problems, platform functionality questions and technical troubleshooting, booking and transaction inquiries, general questions about our services and features, user experience feedback and suggestions, initial reports of concerns that may require Trust & Safety review, and questions about policies or procedures.
           <br /><br />
@@ -2091,7 +2091,7 @@ Trust and safety work is never finished. As long as Amoria Connekyt serves users
           In-platform reports automatically capture relevant context (which user or content you're reporting, your account information, timestamps) and route directly to appropriate team members. For many concerns, in-platform reporting is the fastest and most efficient option.
           <br /><br />
           <strong>6. Website and Online Resources</strong><br />
-          <a href="https://www.amoriaconnect.com" target="_blank" rel="noopener noreferrer" style={{ color: '#083A85', textDecoration: 'underline' }}>www.amoriaconnect.com</a>
+          <a href="https://www.connekyt.com" target="_blank" rel="noopener noreferrer" style={{ color: '#083A85', textDecoration: 'underline' }}>www.connekyt.com</a>
           <br /><br />
           Our website provides access to this Trust & Safety Policy and all related documentation, help center articles answering common questions, account management and self-service tools, community guidelines and policy explanations, and contact forms for various inquiry types.
           <br /><br />
