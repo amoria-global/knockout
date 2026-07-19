@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { Suspense, useState, useEffect, useRef, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import Navbar from "../components/navbar";
 import ErrorPopup, { type PopupSeverity } from "../components/ErrorPopup";
@@ -272,7 +273,12 @@ const AmountButton = ({
 );
 
 
-const Donations = () => {
+const DonationsContent = () => {
+  // Optional ?eventId= ties the donation to a specific event (deep links
+  // from event pages / the mobile app). Forwarded to createPublicDonation.
+  const searchParams = useSearchParams();
+  const eventId = searchParams.get('eventId') || undefined;
+
   const [activeCategory, setActiveCategory] = useState(0);
   const [tierAmounts, setTierAmounts] = useState<number[]>(FALLBACK_TIER_AMOUNTS);
   const [exchangeRateMap, setExchangeRateMap] = useState<Record<string, ExchangeRate>>({});
@@ -389,6 +395,7 @@ const Donations = () => {
         donorName: donorFullName,
         donorEmail: isAnonymous ? undefined : donorEmail || undefined,
         message,
+        eventId,
       });
 
       if (!response.success || !response.data) {
@@ -1893,5 +1900,12 @@ const Donations = () => {
     </div>
   );
 };
+
+// useSearchParams requires a Suspense boundary for static prerendering
+const Donations = () => (
+  <Suspense fallback={<div className="donations-page" style={{ minHeight: '100vh' }} />}>
+    <DonationsContent />
+  </Suspense>
+);
 
 export default Donations;
