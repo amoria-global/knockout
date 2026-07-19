@@ -134,6 +134,24 @@ export async function switchAnonymousDevice(
   );
 }
 
+/**
+ * Looks up the viewerId already registered under a given device fingerprint,
+ * without requiring name/email/phone - lets pay-to-watch recognize a
+ * returning device (e.g. re-scanning the TV's QR after already paying) and
+ * skip straight to the access check instead of re-asking for identity
+ * details it doesn't actually need. Mirrors smartTv's
+ * resolveViewerIdByFingerprint, same read-only/no-access-granting endpoint.
+ */
+export async function resolveAnonymousViewerByFingerprint(
+  eventId: string,
+  fingerprint: string
+): Promise<ApiResponse<{ action: number; viewerId: string | null }>> {
+  return apiClient.get<{ action: number; viewerId: string | null }>(
+    `${API_ENDPOINTS.PUBLIC.ANONYMOUS_VIEWER_RESOLVE_BY_FINGERPRINT(eventId)}?fingerprint=${encodeURIComponent(fingerprint)}`,
+    { skipAuth: true, retries: 1 }
+  );
+}
+
 export async function checkAnonymousAccessStatus(
   eventId: string,
   fingerprint: string,

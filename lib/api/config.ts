@@ -144,6 +144,7 @@ export const API_ENDPOINTS = {
     ANONYMOUS_VIEWER_DEACTIVATE: (eventId: string) => `/api/remote/public/anonymous-viewer/${eventId}/deactivate`,
     ANONYMOUS_VIEWER_SWITCH_DEVICE: (eventId: string) => `/api/remote/public/anonymous-viewer/${eventId}/switch-device`,
     ANONYMOUS_VIEWER_ACCESS_STATUS: (eventId: string) => `/api/remote/public/anonymous-viewer/${eventId}/access-status`,
+    ANONYMOUS_VIEWER_RESOLVE_BY_FINGERPRINT: (eventId: string) => `/api/remote/public/anonymous-viewer/${eventId}/resolve-by-fingerprint`,
     ANONYMOUS_VIEWER_COUNT: (eventId: string) => `/api/remote/public/anonymous-viewer/${eventId}/viewer-count`,
     ANONYMOUS_VIEWER_CHAT: (eventId: string) => `/api/remote/public/anonymous-viewer/${eventId}/chat`,
     ANONYMOUS_VIEWER_CHAT_VIDEO: (eventId: string) => `/api/remote/public/anonymous-viewer/${eventId}/chat/video`,
