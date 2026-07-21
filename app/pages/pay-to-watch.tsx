@@ -4,7 +4,12 @@ import React, { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import { getPublicEventById, type PublicEvent, getCurrencies, type Currency as APICurrency } from '@/lib/APIs/public';
-import { registerAnonymousViewer, confirmAnonymousPayment } from '@/lib/APIs/streams/anonymous-viewer';
+import {
+  registerAnonymousViewer,
+  confirmAnonymousPayment,
+  resolveAnonymousViewerByFingerprint,
+  checkAnonymousAccessStatus,
+} from '@/lib/APIs/streams/anonymous-viewer';
 import XentriPayModal from '../components/XentriPayModal';
 
 /**
@@ -75,6 +80,23 @@ function PayToWatchContent(): React.JSX.Element {
       }
       setEvent(eventRes.data);
       if (currencyRes.success && currencyRes.data) setCurrencies(currencyRes.data);
+
+      // Re-scanning the TV's QR after already paying shouldn't re-ask for
+      // name/email/phone - this device's fingerprint alone is enough to
+      // recognize a completed purchase and skip straight to "granted".
+      const resolveRes = await resolveAnonymousViewerByFingerprint(eventId, device);
+      if (cancelled) return;
+      const existingViewerId = resolveRes.success ? resolveRes.data?.viewerId : null;
+      if (existingViewerId) {
+        const statusRes = await checkAnonymousAccessStatus(eventId, device, existingViewerId);
+        if (cancelled) return;
+        if (statusRes.success && statusRes.data?.hasAccess) {
+          setViewerId(existingViewerId);
+          setStep('granted');
+          return;
+        }
+      }
+
       setStep('identity');
     })();
     return () => {
