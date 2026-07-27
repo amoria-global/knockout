@@ -1976,9 +1976,12 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
     }
   };
 
-  // Validate payment details based on selected method
+  // Validate payment details based on selected method. A catalog gift
+  // (selectedGift) satisfies the amount requirement just like a typed
+  // free-form amount — without this, the send button stayed disabled
+  // even with a gift tile selected.
   const isPaymentDetailsValid = () => {
-    if (!selectedPaymentMethod || !giftAmount) return false;
+    if (!selectedPaymentMethod || (!selectedGift && !giftAmount)) return false;
 
     switch (selectedPaymentMethod) {
       case 'mtn':
@@ -9768,7 +9771,15 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
       <DonationPromptModal
         isOpen={showGiftDonationOverlay}
         currencyCode={mainEvent?.streamFeeCurrencyAbbreviation || 'RWF'}
-        paymentAmount={parseInt(giftAmount) || 0}
+        paymentAmount={(() => {
+          // Catalog gifts are USD-priced; show the donation prompt the
+          // approximate value in the event currency (what donations are
+          // denominated in). Falls back to the raw USD number if no rate.
+          if (!selectedGift) return parseInt(giftAmount) || 0;
+          const abbr = mainEvent?.streamFeeCurrencyAbbreviation;
+          const rate = abbr ? giftRates[abbr]?.rateToUsd : null;
+          return rate ? Math.round(selectedGift.amountUsd * rate) : selectedGift.amountUsd;
+        })()}
         onSkip={() => {
           setShowGiftDonationOverlay(false);
           setDonationAmount('');
@@ -10559,8 +10570,9 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
             </div>
 
             {/* Payment Details Input - MTN/Airtel Mobile Money */}
-            {/* Amount reminder - shown for all methods when no amount is entered */}
-            {selectedPaymentMethod && (!giftAmount || parseInt(giftAmount) <= 0) && (
+            {/* Amount reminder - shown for all methods when neither a catalog
+                gift is selected nor a custom amount entered */}
+            {selectedPaymentMethod && !selectedGift && (!giftAmount || parseInt(giftAmount) <= 0) && (
               <div style={{ padding: '12px 16px', marginBottom: '20px', backgroundColor: 'rgba(8,58,133,0.06)', border: '1.5px solid rgba(8,58,133,0.2)', borderRadius: '12px' }}>
                 <p style={{ fontSize: '13px', color: '#083A85', margin: 0 }}>
                   <i className="bi bi-info-circle-fill" style={{ marginRight: 8 }}></i>
