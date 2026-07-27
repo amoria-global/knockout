@@ -5,9 +5,11 @@ import { createPortal } from "react-dom";
 import { useSearchParams, useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { WHEPClient } from '@/lib/streaming/WHEPClient';
-import { getCurrencies, type Currency as APICurrency } from '@/lib/APIs/public';
+import { getCurrencies, getGiftCatalog, type Currency as APICurrency, type GiftCatalogItem } from '@/lib/APIs/public';
 import { recordTip, recordStreamingPayment } from '@/lib/APIs/payments/route';
-import { initiateXentriPayStreaming, pollXentriPayStatus, type XentriPayStatusResponse } from '@/lib/APIs/payments/xentripay';
+import { initiateXentriPayStreaming, initiateXentriPayGift, pollXentriPayStatus, type XentriPayStatusResponse } from '@/lib/APIs/payments/xentripay';
+import GiftGrid from '@/app/components/gifting/GiftGrid';
+import GiftOverlay, { parseGiftChatRow, type LiveGiftEvent } from '@/app/components/gifting/GiftOverlay';
 import { usePaymentCountry } from '@/lib/payments/usePaymentCountry';
 import { usePaymentOptions } from '@/lib/payments/usePaymentOptions';
 import { phoneHintForCountry } from '@/lib/payments/formatPhone';
@@ -1213,6 +1215,35 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
             }, idx * 120);
           });
 
+          // GIFT rows: confirmed gifts the backend reflected into the chat
+          // stream. Each row renders BOTH as a chat line (via the bubble
+          // pipeline below — GIFT isn't filtered out there) AND as a
+          // TikTok-style banner/takeover via GiftOverlay. seenGiftEventIds
+          // dedupes the animation independently of seenApiMessageIds; the
+          // first poll marks history as seen without animating so a page
+          // reload mid-stream doesn't replay every past gift.
+          const giftRows = chatMessages.filter(m => String(m.chatType || '') === 'GIFT');
+          const newGiftEvents: LiveGiftEvent[] = [];
+          for (const g of giftRows) {
+            const gid = String(g.id);
+            if (seenGiftEventIds.current.has(gid)) continue;
+            seenGiftEventIds.current.add(gid);
+            if (isInitialPoll) continue; // mark seen, skip animation
+            const ev = parseGiftChatRow({
+              id: gid,
+              chatType: 'GIFT',
+              viewerUsername: (g.viewerUsername || g.sender || '') as string,
+              message: (g.message || g.content || '') as string,
+              giftMeta: (g.giftMeta as string) || null,
+            });
+            if (ev) newGiftEvents.push(ev);
+          }
+          if (newGiftEvents.length > 0) {
+            // Cap retained events so an hours-long stream can't grow state
+            // unboundedly; GiftOverlay consumes each id exactly once.
+            setLiveGiftEvents(prev => [...prev.slice(-40), ...newGiftEvents]);
+          }
+
           // Defense in depth: the public/coordinator/event GET /chats
           // endpoints already strip WISH rows server-side, but if anything
           // ever slips through (stale client, alternate endpoint, future
@@ -1790,6 +1821,40 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
   const [giftPaymentUrl, setGiftPaymentUrl] = useState<string | null>(null);
   const stopGiftPollingRef = useRef<(() => void) | null>(null);
 
+  // ── TikTok-style gift catalog (each gift = exact USD amount) ──
+  const [giftCatalog, setGiftCatalog] = useState<GiftCatalogItem[]>([]);
+  const [giftCatalogLoading, setGiftCatalogLoading] = useState(true);
+  const [giftCatalogError, setGiftCatalogError] = useState<string | null>(null);
+  const [selectedGift, setSelectedGift] = useState<GiftCatalogItem | null>(null);
+  // "1 USD = X units" per currency, from the catalog payload — used only for
+  // the ≈local price hint on tiles (charging is always exact USD server-side)
+  const [giftRates, setGiftRates] = useState<Record<string, { symbol: string; rateToUsd: number | null }>>({});
+  // Confirmed gifts arriving through the chat poll → banner/takeover overlay
+  const [liveGiftEvents, setLiveGiftEvents] = useState<LiveGiftEvent[]>([]);
+  // Animation dedupe only — separate from seenApiMessageIds so the same row
+  // still renders once as a chat line AND once as an animation.
+  const seenGiftEventIds = useRef<Set<string>>(new Set());
+  // ?gift=CODE deep link (mobile app hands off here with a preselected gift)
+  const pendingGiftDeepLink = useRef<boolean>(true);
+
+  const loadGiftCatalog = useCallback(() => {
+    setGiftCatalogLoading(true);
+    setGiftCatalogError(null);
+    getGiftCatalog()
+      .then(res => {
+        if (res.success && res.data && Array.isArray(res.data.gifts)) {
+          setGiftCatalog(res.data.gifts);
+          if (res.data.exchangeRates) setGiftRates(res.data.exchangeRates);
+        } else {
+          setGiftCatalogError('Could not load gifts.');
+        }
+      })
+      .catch(() => setGiftCatalogError('Could not load gifts.'))
+      .finally(() => setGiftCatalogLoading(false));
+  }, []);
+
+  useEffect(() => { loadGiftCatalog(); }, [loadGiftCatalog]);
+
   // Fetch currencies on mount
   useEffect(() => {
     getCurrencies()
@@ -1832,6 +1897,24 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
     setDonationAmount("");
     setShowGiftModal(true);
   };
+
+  // ?gift=CODE deep link: the mobile app hands off to this page with a
+  // preselected catalog gift. Fires once, when catalog + event are both ready.
+  useEffect(() => {
+    if (!pendingGiftDeepLink.current || giftCatalog.length === 0 || !mainEvent?.id) return;
+    pendingGiftDeepLink.current = false;
+    try {
+      const code = new URLSearchParams(window.location.search).get('gift');
+      if (!code) return;
+      const gift = giftCatalog.find(g => g.code.toUpperCase() === code.toUpperCase());
+      if (gift) {
+        setSelectedGift(gift);
+        setGiftAmount('');
+        openGiftModal(mainEvent);
+      }
+    } catch { /* invalid URL state — ignore */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [giftCatalog, mainEvent?.id]);
 
   // Handle donation prompt responses
   const handleDonationPromptYes = () => {
@@ -1879,6 +1962,7 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
     setGiftTargetEvent(null);
     setSelectedPaymentMethod(null);
     setGiftAmount("");
+    setSelectedGift(null);
     setGiftMessage("");
     setPaymentPhone("");
     setIncludeDonation(false);
@@ -1913,8 +1997,9 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
       requireInteraction(() => {});
       return;
     }
-    if (!giftAmount || parseInt(giftAmount) <= 0) {
-      alert('Please enter a gift amount');
+    // Catalog gift (selectedGift) OR legacy free-form amount — one must be set.
+    if (!selectedGift && (!giftAmount || parseInt(giftAmount) <= 0)) {
+      alert('Please choose a gift');
       return;
     }
 
@@ -1959,8 +2044,23 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
 
       const giftCountryField = giftCountry ? { country: giftCountry } : {};
 
-      if (isAuthenticated) {
-        // Authenticated user - use standard streaming payment
+      if (isAuthenticated && selectedGift) {
+        // Authenticated + catalog gift → dedicated gift endpoint. The backend
+        // derives the exact USD amount from the giftCode; currencyId only
+        // tells it what currency the optional donation is denominated in.
+        response = await initiateXentriPayGift({
+          eventId: targetEvent.id,
+          giftCode: selectedGift.code,
+          currencyId,
+          ...(donAmt > 0 ? { donationAmount: donAmt } : {}),
+          ...(giftMessage.trim() ? { message: giftMessage.trim() } : {}),
+          ...(isCard ? {} : { phone: paymentPhone, telecomProvider: provider }),
+          paymentMethod: paymentMethodType,
+          ...(isCard ? { redirectUrl } : {}),
+          ...giftCountryField,
+        });
+      } else if (isAuthenticated) {
+        // Authenticated + legacy free-form amount - use standard streaming payment
         response = await initiateXentriPayStreaming({
           eventId: targetEvent.id,
           amount: parseInt(giftAmount),
@@ -1982,7 +2082,9 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
           body: JSON.stringify({
             viewerId: anonymousViewerId,
             deviceFingerprint: fingerprint,
-            amount: parseInt(giftAmount),
+            // Catalog gift: giftCode is server-priced (USD); the amount field
+            // is ignored by the backend when giftCode is present.
+            ...(selectedGift ? { giftCode: selectedGift.code } : { amount: parseInt(giftAmount) }),
             currencyId,
             ...(donAmt > 0 ? { donationAmount: donAmt } : {}),
             ...(isCard ? {} : { phone: paymentPhone, telecomProvider: provider }),
@@ -2037,10 +2139,12 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
         data.refid,
         {
           onSuccess: (_data: XentriPayStatusResponse) => {
-            // Capture gift + donation totals BEFORE resetting modal state
-            const sentGift = parseInt(giftAmount) || 0;
+            // Capture gift + donation totals BEFORE resetting modal state.
+            // Catalog gifts are USD-denominated; free-form gifts use the
+            // event's stream currency (legacy behavior).
+            const sentGift = selectedGift ? selectedGift.amountUsd : (parseInt(giftAmount) || 0);
             const sentDonation = donAmt;
-            const sentCurrency = mainEvent?.streamFeeCurrencyAbbreviation || 'RWF';
+            const sentCurrency = selectedGift ? 'USD' : (mainEvent?.streamFeeCurrencyAbbreviation || 'RWF');
             const sentRecipient = targetEvent.photographer || mainEvent?.photographer;
 
             setGiftStep('success');
@@ -7868,6 +7972,11 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
                 </div>
               ))}
 
+              {/* ── TikTok-style gift banners + big-gift takeover. Fed by
+                  confirmed GIFT rows from the chat poll; pointer-events-none
+                  so it never blocks the player controls. ── */}
+              <GiftOverlay events={liveGiftEvents} />
+
               {/* ── video.js-styled Controls ── */}
               <div
                 className={`vjs-controls ${showControls ? 'vjs-controls--visible' : ''}`}
@@ -10370,33 +10479,49 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
             </div>
             )}{/* end of disabled inline donation section */}
 
-            {/* Gift Amount Panel - wraps the input + tier buttons in a single
-                brand-blue tinted card, matching the XentriPayModal Amount
-                Panel design language (gradient bg + left accent stripe). */}
-            <div className="gift-modal-amount-panel">
+            {/* TikTok-style gift picker: catalog gifts with exact USD prices.
+                Selecting a tile is the primary path; a collapsible custom
+                amount keeps the legacy free-form gift working. */}
+            <div className="gift-modal-amount-panel" style={{ background: '#10131c', border: '1px solid rgba(255,255,255,0.08)' }}>
               <span className="gift-modal-amount-stripe" aria-hidden="true" />
-              <label className="gift-modal-amount-label">
-                Gift Amount ({mainEvent?.streamFeeCurrencyAbbreviation || 'RWF'})
+              <label className="gift-modal-amount-label" style={{ color: 'rgba(255,255,255,0.85)' }}>
+                Choose a gift
               </label>
-              <input
-                type="number"
-                value={giftAmount}
-                onChange={(e) => setGiftAmount(e.target.value)}
-                placeholder="Enter amount"
-                className="gift-modal-amount-input"
+              <GiftGrid
+                gifts={giftCatalog}
+                loading={giftCatalogLoading}
+                error={giftCatalogError}
+                selectedCode={selectedGift?.code ?? null}
+                onSelect={(g) => {
+                  setSelectedGift(prev => (prev?.code === g.code ? null : g));
+                  setGiftAmount('');
+                }}
+                displayCurrency={(() => {
+                  const abbr = mainEvent?.streamFeeCurrencyAbbreviation;
+                  if (!abbr || abbr === 'USD') return null;
+                  const r = giftRates[abbr];
+                  return r?.rateToUsd
+                    ? { abbreviation: abbr, symbol: r.symbol || abbr, perUsd: r.rateToUsd }
+                    : null;
+                })()}
+                onRetry={loadGiftCatalog}
               />
-              <div className="gift-modal-tiers">
-                {['10000', '20000', '50000', '100000'].map((amount) => (
-                  <button
-                    key={amount}
-                    onClick={() => setGiftAmount(amount)}
-                    className={`gift-tier-btn ${giftAmount === amount ? 'is-selected' : ''}`}
-                    type="button"
-                  >
-                    {parseInt(amount).toLocaleString()}
-                  </button>
-                ))}
-              </div>
+              <details style={{ marginTop: '12px' }}>
+                <summary style={{ fontSize: '12px', color: 'rgba(255,255,255,0.55)', cursor: 'pointer' }}>
+                  Or enter a custom amount ({mainEvent?.streamFeeCurrencyAbbreviation || 'RWF'})
+                </summary>
+                <input
+                  type="number"
+                  value={giftAmount}
+                  onChange={(e) => {
+                    setGiftAmount(e.target.value);
+                    if (e.target.value) setSelectedGift(null);
+                  }}
+                  placeholder="Enter amount"
+                  className="gift-modal-amount-input"
+                  style={{ marginTop: '8px' }}
+                />
+              </details>
             </div>
 
             {/* Payment Method Selection - 3-column grid mirrors XentriPayModal */}
@@ -10483,7 +10608,7 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
             )}
 
             {/* Card redirect info */}
-            {selectedPaymentMethod === 'card' && giftAmount && parseInt(giftAmount) > 0 && (
+            {selectedPaymentMethod === 'card' && (selectedGift || (giftAmount && parseInt(giftAmount) > 0)) && (
               <div style={{ padding: '12px 16px', marginBottom: '20px', backgroundColor: 'rgba(8,58,133,0.06)', border: '1.5px solid rgba(8,58,133,0.2)', borderRadius: '12px' }}>
                 <p style={{ fontSize: '13px', color: '#083A85', margin: 0 }}>
                   <i className="bi bi-info-circle-fill" style={{ marginRight: 8 }}></i>
@@ -10541,7 +10666,7 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
             )}
 
             {/* Sub-total breakdown when donation is included */}
-            {donationAmount && parseInt(donationAmount) > 0 && giftAmount && parseInt(giftAmount) > 0 && (
+            {donationAmount && parseInt(donationAmount) > 0 && (selectedGift || (giftAmount && parseInt(giftAmount) > 0)) && (
               <div style={{
                 marginBottom: '20px',
                 padding: '16px',
@@ -10551,7 +10676,11 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '14px' }}>
                   <span style={{ color: '#6b7280' }}>Gift</span>
-                  <span style={{ color: '#0f172a', fontWeight: '500' }}>{(mainEvent?.streamFeeCurrencyAbbreviation || 'RWF')} {parseInt(giftAmount).toLocaleString()}</span>
+                  <span style={{ color: '#0f172a', fontWeight: '500' }}>
+                    {selectedGift
+                      ? `${selectedGift.emoji} ${selectedGift.name} · $${selectedGift.amountUsd}`
+                      : `${mainEvent?.streamFeeCurrencyAbbreviation || 'RWF'} ${parseInt(giftAmount).toLocaleString()}`}
+                  </span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', fontSize: '14px' }}>
                   <span style={{ color: '#6b7280' }}>Donation</span>
@@ -10559,7 +10688,11 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
                 </div>
                 <div style={{ borderTop: '1.5px solid rgba(8,58,133,0.1)', paddingTop: '10px', display: 'flex', justifyContent: 'space-between', fontSize: '15px' }}>
                   <span style={{ color: '#0f172a', fontWeight: '700' }}>Total</span>
-                  <span style={{ color: '#083A85', fontWeight: '700' }}>{(mainEvent?.streamFeeCurrencyAbbreviation || 'RWF')} {(parseInt(giftAmount) + parseInt(donationAmount)).toLocaleString()}</span>
+                  <span style={{ color: '#083A85', fontWeight: '700' }}>
+                    {selectedGift
+                      ? `$${selectedGift.amountUsd} + ${mainEvent?.streamFeeCurrencyAbbreviation || 'RWF'} ${parseInt(donationAmount).toLocaleString()}`
+                      : `${mainEvent?.streamFeeCurrencyAbbreviation || 'RWF'} ${(parseInt(giftAmount) + parseInt(donationAmount)).toLocaleString()}`}
+                  </span>
                 </div>
               </div>
             )}
@@ -10571,8 +10704,8 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
             <button
               onClick={() => {
                 if (!canInteract) { requireInteraction(() => {}); return; }
-                if (!giftAmount || parseInt(giftAmount) <= 0) {
-                  alert('Please enter a gift amount');
+                if (!selectedGift && (!giftAmount || parseInt(giftAmount) <= 0)) {
+                  alert('Please choose a gift');
                   return;
                 }
                 // Reset any previous donation selection then open the prompt
@@ -10612,6 +10745,12 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
             >
               <i className={selectedPaymentMethod === 'card' ? 'bi bi-credit-card-fill' : 'bi bi-gift-fill'} style={{ fontSize: '18px' }}></i>
               {giftLoading ? 'Processing...' : (() => {
+                // Catalog gifts are priced in USD (exact, server-side);
+                // free-form gifts keep the event's stream currency.
+                if (selectedGift) {
+                  const verb = selectedPaymentMethod === 'card' ? 'Proceed to Pay' : `Send ${selectedGift.name}`;
+                  return `${verb} (${selectedGift.emoji} $${selectedGift.amountUsd})`;
+                }
                 const currency = mainEvent?.streamFeeCurrencyAbbreviation || 'RWF';
                 const gift = parseInt(giftAmount) || 0;
                 const donation = parseInt(donationAmount) || 0;

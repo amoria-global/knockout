@@ -93,6 +93,26 @@ export interface XentriPayStreamingRequest {
   country?: string;
 }
 
+/**
+ * TikTok-style live gift. Send `giftCode` (catalog gift, server derives the
+ * exact USD amount from gift_types) OR a free-form `amount` + `currencyId`.
+ * `currencyId` should still accompany giftCode when a donationAmount rides
+ * along, so the backend knows what currency the donation is denominated in.
+ */
+export interface XentriPayGiftRequest {
+  eventId: string;
+  giftCode?: string;
+  amount?: number;
+  currencyId?: string;
+  message?: string;
+  donationAmount?: number;
+  phone?: string;
+  telecomProvider?: string;
+  paymentMethod?: string;
+  redirectUrl?: string;
+  country?: string;
+}
+
 export interface XentriPayResponse {
   refid: string;
   tid: string;
@@ -157,6 +177,24 @@ export async function initiateXentriPayStreaming(
 
   return apiClient.post<XentriPayResponse>(
     API_ENDPOINTS.PAYMENTS.XENTRIPAY_INITIATE_STREAMING,
+    data,
+    { retries: 1 }
+  );
+}
+
+/**
+ * Initiate a live gift payment (authenticated viewer). Catalog gifts send
+ * giftCode and the backend charges the exact catalog USD amount.
+ */
+export async function initiateXentriPayGift(
+  data: XentriPayGiftRequest
+): Promise<ApiResponse<XentriPayResponse>> {
+  if (!isAuthenticated()) {
+    return { success: false, error: 'Authentication required' };
+  }
+
+  return apiClient.post<XentriPayResponse>(
+    API_ENDPOINTS.PAYMENTS.XENTRIPAY_INITIATE_GIFT,
     data,
     { retries: 1 }
   );
