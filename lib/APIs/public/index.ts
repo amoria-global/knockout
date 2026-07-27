@@ -134,6 +134,15 @@ export {
   getDonationTiers,
 } from './get-donation-tiers/route';
 
+// Live Gift Catalog (TikTok-style gifting)
+export {
+  getGiftCatalog,
+} from './get-gift-catalog/route';
+export type {
+  GiftCatalogItem,
+  GiftCatalogResponse,
+} from './get-gift-catalog/route';
+
 // Live Currency Rates
 export {
   getCurrencyRates,

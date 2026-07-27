@@ -118,6 +118,8 @@ export const API_ENDPOINTS = {
     ALBUM_BY_CODE: '/api/remote/public/albums',
     PHOTOGRAPHER_BOOKED_DATES: (id: string) => `/api/remote/public/photographers/${id}/booked-dates`,
     DONATION_TIERS: '/api/remote/public/donation-tiers',
+    // TikTok-style live-gift catalog: [{code,name,emoji,amountUsd,tier,bigAnimation}]
+    GIFT_CATALOG: '/api/remote/public/gift-catalog',
     CURRENCY_RATES: '/api/remote/public/currencies/rates',
     EVENT_BY_ID: (id: string) => `/api/remote/public/events/${id}`,
     FACE_SEARCH: '/api/remote/public/face-search',
@@ -187,6 +189,8 @@ export const API_ENDPOINTS = {
     XENTRIPAY_INITIATE: '/api/remote/payments/xentripay/initiate',
     XENTRIPAY_INITIATE_TIP: '/api/remote/payments/xentripay/initiate-tip',
     XENTRIPAY_INITIATE_STREAMING: '/api/remote/payments/xentripay/initiate-streaming',
+    // Live gift (catalog giftCode or free-form amount) for authenticated viewers
+    XENTRIPAY_INITIATE_GIFT: '/api/remote/payments/xentripay/initiate-gift',
     XENTRIPAY_INITIATE_DONATION: '/api/remote/public/payments/xentripay/initiate-donation',
     XENTRIPAY_INITIATE_PHOTO_PURCHASE: '/api/remote/payments/xentripay/initiate-photo-purchase',
     XENTRIPAY_INITIATE_ALBUM_PURCHASE: '/api/remote/public/payments/xentripay/initiate-album-purchase',
