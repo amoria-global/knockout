@@ -6,6 +6,7 @@ import 'bootstrap-icons/font/bootstrap-icons.css';
 import Navbar from '../components/navbar';
 import Footer from '../components/footer';
 import { pollXentriPayStatus } from '@/lib/APIs/payments/xentripay';
+import InternationalPhoneInput, { type PhoneValue } from '../components/phone/InternationalPhoneInput';
 
 /**
  * Sessionless payment receiver. The mobile app hands a buyer off here with a
@@ -74,7 +75,7 @@ function CompletePaymentContent(): React.JSX.Element {
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const [selectedMethod, setSelectedMethod] = useState<MethodTile['id'] | null>(null);
-  const [phone, setPhone] = useState('');
+  const [phoneVal, setPhoneVal] = useState<PhoneValue | null>(null);
   const [payError, setPayError] = useState<string | null>(null);
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
 
@@ -113,7 +114,7 @@ function CompletePaymentContent(): React.JSX.Element {
   useEffect(() => () => { stopPollingRef.current?.(); }, []);
 
   const isCard = selectedMethod === 'card';
-  const canPay = !!selectedMethod && (isCard || phone.trim().length >= 10);
+  const canPay = !!selectedMethod && (isCard || !!phoneVal?.isValid);
 
   const startPolling = (refid: string, card: boolean) => {
     stopPollingRef.current?.();
@@ -157,7 +158,7 @@ function CompletePaymentContent(): React.JSX.Element {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ...(isCard ? {} : { phone: phone.trim(), telecomProvider: method.provider }),
+          ...(isCard ? {} : { phone: phoneVal?.digits ?? '', telecomProvider: method.provider }),
           paymentMethod: isCard ? 'CARD' : 'MOBILE_MONEY',
         }),
       });
@@ -358,17 +359,10 @@ function CompletePaymentContent(): React.JSX.Element {
                       <span style={{ display: 'block', fontSize: 12.5, fontWeight: 700, color: '#374151', marginBottom: 6 }}>
                         Mobile money number
                       </span>
-                      <input
-                        type="tel"
-                        placeholder="07XX XXX XXX"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
+                      <InternationalPhoneInput
+                        onChange={setPhoneVal}
                         disabled={step === 'initiating'}
-                        style={{
-                          width: '100%', padding: '12px 14px', borderRadius: 10,
-                          border: '1.5px solid #e5e7eb', fontSize: 14, outline: 'none',
-                          boxSizing: 'border-box', fontFamily: 'inherit',
-                        }}
+                        ariaLabel="Mobile money number"
                       />
                     </label>
                   )}

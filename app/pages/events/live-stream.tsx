@@ -12,7 +12,7 @@ import GiftGrid from '@/app/components/gifting/GiftGrid';
 import GiftOverlay, { parseGiftChatRow, type LiveGiftEvent } from '@/app/components/gifting/GiftOverlay';
 import { usePaymentCountry } from '@/lib/payments/usePaymentCountry';
 import { usePaymentOptions } from '@/lib/payments/usePaymentOptions';
-import { phoneHintForCountry } from '@/lib/payments/formatPhone';
+import InternationalPhoneInput, { type PhoneValue } from '@/app/components/phone/InternationalPhoneInput';
 import { iconForOperator, handleLogoError } from '@/lib/payments/operatorIcons';
 import { getPublicEventById } from '@/lib/APIs/public/get-events/route';
 import { useAuth } from '../../providers/AuthProvider';
@@ -308,7 +308,7 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
   const [signupFirstName, setSignupFirstName] = useState('');
   const [signupLastName, setSignupLastName] = useState('');
   const [signupEmail, setSignupEmail] = useState('');
-  const [signupPhone, setSignupPhone] = useState('');
+  const [signupPhoneVal, setSignupPhoneVal] = useState<PhoneValue | null>(null);
   const [signupPassword, setSignupPassword] = useState('');
   const [otpCustomerId, setOtpCustomerId] = useState('');
   const [otpValue, setOtpValue] = useState('');
@@ -415,7 +415,7 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
   };
 
   const handleAuthSignup = async () => {
-    if (!signupFirstName || !signupLastName || !signupEmail || !signupPhone || !signupPassword) {
+    if (!signupFirstName || !signupLastName || !signupEmail || !signupPhoneVal?.isValid || !signupPassword) {
       setAuthError('Please fill in all fields');
       return;
     }
@@ -426,7 +426,7 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
         firstName: signupFirstName,
         lastName: signupLastName,
         email: signupEmail,
-        phone: signupPhone,
+        phone: signupPhoneVal?.digits ?? '',
         password: signupPassword,
         customerType: 'Viewer',
       });
@@ -460,7 +460,7 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
             firstName: d.firstName || signupFirstName,
             lastName: d.lastName || signupLastName,
             email: d.email || signupEmail,
-            phone: d.phone || signupPhone,
+            phone: d.phone || (signupPhoneVal?.digits ?? ''),
             customerId: d.customerId || '',
             customerType: d.customerType || 'Viewer',
           }, d.token!);
@@ -1811,8 +1811,8 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
     currency: string;
     recipient?: string;
   }>({ open: false, type: 'gift', amount: 0, currency: 'RWF' });
-  // Payment details state
-  const [paymentPhone, setPaymentPhone] = useState("");
+  // Payment details state (international phone component value)
+  const [paymentPhoneVal, setPaymentPhoneVal] = useState<PhoneValue | null>(null);
   // API currencies & gift/donation loading state
   const [streamCurrencies, setStreamCurrencies] = useState<APICurrency[]>([]);
   const [giftLoading, setGiftLoading] = useState(false);
@@ -1989,7 +1989,7 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
     setGiftAmount("");
     setSelectedGift(null);
     setGiftMessage("");
-    setPaymentPhone("");
+    setPaymentPhoneVal(null);
     setIncludeDonation(false);
     setDonationAmount("");
     setGiftStep('form');
@@ -2011,7 +2011,7 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
     switch (selectedPaymentMethod) {
       case 'mtn':
       case 'airtel':
-        return paymentPhone.length >= 10;
+        return !!paymentPhoneVal?.isValid;
       case 'card':
         return true;
       default:
@@ -2086,7 +2086,7 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
           currencyId,
           ...(donAmt > 0 ? { donationAmount: donAmt } : {}),
           ...(giftMessage.trim() ? { message: giftMessage.trim() } : {}),
-          ...(isCard ? {} : { phone: paymentPhone, telecomProvider: provider }),
+          ...(isCard ? {} : { phone: paymentPhoneVal?.digits ?? '', telecomProvider: provider }),
           paymentMethod: paymentMethodType,
           ...(isCard ? { redirectUrl } : {}),
           ...giftCountryField,
@@ -2098,7 +2098,7 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
           amount: parseInt(giftAmount),
           currencyId,
           ...(donAmt > 0 ? { donationAmount: donAmt } : {}),
-          ...(isCard ? {} : { phone: paymentPhone, telecomProvider: provider }),
+          ...(isCard ? {} : { phone: paymentPhoneVal?.digits ?? '', telecomProvider: provider }),
           paymentMethod: paymentMethodType,
           ...(isCard ? { redirectUrl } : {}),
           ...giftCountryField,
@@ -2119,7 +2119,7 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
             ...(selectedGift ? { giftCode: selectedGift.code } : { amount: parseInt(giftAmount) }),
             currencyId,
             ...(donAmt > 0 ? { donationAmount: donAmt } : {}),
-            ...(isCard ? {} : { phone: paymentPhone, telecomProvider: provider }),
+            ...(isCard ? {} : { phone: paymentPhoneVal?.digits ?? '', telecomProvider: provider }),
             paymentMethod: paymentMethodType,
             ...(isCard ? { redirectUrl } : {}),
             ...(giftMessage.trim() ? { giftMessage: giftMessage.trim() } : {}),
@@ -10634,25 +10634,11 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
                   color: '#374151',
                   marginBottom: '8px'
                 }}>Your Phone Number *</label>
-                <input
-                  type="tel"
-                  value={paymentPhone}
-                  onChange={(e) => setPaymentPhone(e.target.value.replace(/\D/g, '').slice(0, 12))}
-                  placeholder={phoneHintForCountry(giftCountry)}
-                  style={{
-                    width: '100%',
-                    padding: '12px 16px',
-                    backgroundColor: '#f9fafb',
-                    border: '1.5px solid rgba(8,58,133,0.15)',
-                    borderRadius: '12px',
-                    color: '#0f172a',
-                    fontSize: '14px',
-                    outline: 'none',
-                    transition: 'all 0.2s',
-                    boxSizing: 'border-box'
-                  }}
-                  onFocus={(e) => { e.currentTarget.style.borderColor = '#083A85'; e.currentTarget.style.backgroundColor = '#fff'; }}
-                  onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(8,58,133,0.15)'; e.currentTarget.style.backgroundColor = '#f9fafb'; }}
+                <InternationalPhoneInput
+                  defaultIso2={giftCountry}
+                  onChange={setPaymentPhoneVal}
+                  disabled={giftLoading}
+                  ariaLabel="Mobile money phone number"
                 />
                 <p style={{
                   fontSize: '11px',
@@ -11072,7 +11058,7 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
                 </div>
                 <div>
                   <label style={{ display: 'block', color: '#d1d5db', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Phone</label>
-                  <input type="tel" value={signupPhone} onChange={e => setSignupPhone(e.target.value.replace(/[^0-9+]/g, ''))} placeholder="+250 700 000 000" style={{ width: '100%', padding: '11px 14px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 9, color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} onFocus={e => { e.currentTarget.style.borderColor = '#03969c'; }} onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }} />
+                  <InternationalPhoneInput dark onChange={setSignupPhoneVal} disabled={authLoading} ariaLabel="Phone number" />
                 </div>
                 <div>
                   <label style={{ display: 'block', color: '#d1d5db', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Password</label>

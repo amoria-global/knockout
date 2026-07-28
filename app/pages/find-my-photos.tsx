@@ -23,6 +23,8 @@ import {
 } from '@/lib/APIs/public/get-free-album/route';
 import { API_ENDPOINTS } from '@/lib/api/config';
 import { API_CONFIG } from '@/lib/api/config';
+import InternationalPhoneInput, { type PhoneValue } from '../components/phone/InternationalPhoneInput';
+import { parsePhone } from '@/lib/phone/phoneKit';
 
 // Photo shape used throughout the page, augmented with album-purchase fields
 type PhotoItem = {
@@ -147,7 +149,9 @@ const FindMyPhotos = () => {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [detailsName, setDetailsName] = useState('');
   const [detailsEmail, setDetailsEmail] = useState('');
-  const [detailsPhone, setDetailsPhone] = useState('');
+  const [detailsPhoneVal, setDetailsPhoneVal] = useState<PhoneValue | null>(null);
+  // Saved-buyer prefill for the phone component (parsed from localStorage)
+  const [detailsPhonePrefill, setDetailsPhonePrefill] = useState<{ iso2: string | null; nsn: string } | null>(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [detailsError, setDetailsError] = useState<string | null>(null);
   // Pending photos to buy, held while details modal is open
@@ -196,7 +200,7 @@ const FindMyPhotos = () => {
   const [showDownloadModal, setShowDownloadModal] = useState(false);
   const [downloadTarget, setDownloadTarget] = useState<PhotoItem | null>(null);
   const [dlPaymentMethod, setDlPaymentMethod] = useState<string | null>(null);
-  const [dlPhone, setDlPhone] = useState('');
+  const [dlPhoneVal, setDlPhoneVal] = useState<PhoneValue | null>(null);
   const [dlCardNumber, setDlCardNumber] = useState('');
   const [dlCardExpiry, setDlCardExpiry] = useState('');
   const [dlCardCvv, setDlCardCvv] = useState('');
@@ -378,7 +382,17 @@ const FindMyPhotos = () => {
         const parsed = JSON.parse(details) as { name?: string; email?: string; phone?: string };
         if (parsed.name && !detailsName) setDetailsName(parsed.name);
         if (parsed.email && !detailsEmail) setDetailsEmail(parsed.email);
-        if (parsed.phone && !detailsPhone) setDetailsPhone(parsed.phone);
+        if (parsed.phone && !detailsPhonePrefill) {
+          // Stored as trunk-national ("0788…", legacy) or international
+          // digits ("250788…", current format) - parse either into the
+          // component's country + national-number prefill.
+          const raw = parsed.phone.trim();
+          const p = parsePhone(
+            raw.startsWith('0') || raw.startsWith('+') ? raw : `+${raw}`,
+            'RW'
+          );
+          setDetailsPhonePrefill({ iso2: p.country?.iso2 ?? null, nsn: p.nsn });
+        }
       }
     } catch {}
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -959,7 +973,7 @@ const FindMyPhotos = () => {
     setShowDownloadModal(false);
     setDownloadTarget(null);
     setDlPaymentMethod(null);
-    setDlPhone('');
+    setDlPhoneVal(null);
     setDlCardNumber('');
     setDlCardExpiry('');
     setDlCardCvv('');
@@ -974,7 +988,7 @@ const FindMyPhotos = () => {
     switch (dlPaymentMethod) {
       case 'mtn':
       case 'airtel':
-        return dlPhone.length >= 10;
+        return !!dlPhoneVal?.isValid;
       case 'card':
         return dlCardNumber.length >= 16 && dlCardExpiry.length >= 4 && dlCardCvv.length >= 3 && dlCardHolderName.trim() !== '';
       default:
@@ -1408,10 +1422,10 @@ const FindMyPhotos = () => {
     setDetailsError(null);
     const name = detailsName.trim();
     const email = detailsEmail.trim();
-    const phone = detailsPhone.trim();
+    const phone = detailsPhoneVal?.digits ?? '';
     if (!name) { setDetailsError('Please enter your name.'); return; }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setDetailsError('Please enter a valid email.'); return; }
-    if (!phone || phone.length < 9) { setDetailsError('Please enter a valid phone number.'); return; }
+    if (!detailsPhoneVal?.isValid) { setDetailsError('Please enter a valid phone number.'); return; }
 
     const photos = pendingBuyRef.current || [];
     const ctx = getPurchaseContext(photos);
@@ -3758,19 +3772,11 @@ const FindMyPhotos = () => {
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#efeff1', marginBottom: '8px' }}>
                   Your Phone Number *
                 </label>
-                <input
-                  type="tel"
-                  value={dlPhone}
-                  onChange={(e) => setDlPhone(e.target.value.replace(/\D/g, '').slice(0, 12))}
-                  placeholder={dlPaymentMethod === 'mtn' ? 'e.g., 0781234567' : 'e.g., 0721234567'}
-                  style={{
-                    width: '100%', padding: '12px 16px',
-                    backgroundColor: '#27272a', border: '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: '12px', color: '#efeff1', fontSize: '14px',
-                    outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.2s',
-                  }}
-                  onFocus={(e) => e.currentTarget.style.borderColor = '#03969c'}
-                  onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'}
+                <InternationalPhoneInput
+                  dark
+                  onChange={setDlPhoneVal}
+                  disabled={dlLoading}
+                  ariaLabel="Mobile money phone number"
                 />
                 <p style={{ fontSize: '11px', color: '#71717a', marginTop: '6px', marginBottom: 0 }}>
                   You will receive a payment confirmation SMS on this number
@@ -4560,20 +4566,20 @@ const FindMyPhotos = () => {
               We use these to send your receipt and to recognize you next time so you never pay twice for the same photo.
             </p>
 
-            {(['name', 'email', 'phone'] as const).map((field) => {
-              const labels = { name: 'Full Name', email: 'Email', phone: 'Phone Number' };
-              const placeholders = { name: 'Jane Doe', email: 'jane@example.com', phone: '0791234567' };
-              const value = field === 'name' ? detailsName : field === 'email' ? detailsEmail : detailsPhone;
-              const setter = field === 'name' ? setDetailsName : field === 'email' ? setDetailsEmail : setDetailsPhone;
+            {(['name', 'email'] as const).map((field) => {
+              const labels = { name: 'Full Name', email: 'Email' };
+              const placeholders = { name: 'Jane Doe', email: 'jane@example.com' };
+              const value = field === 'name' ? detailsName : detailsEmail;
+              const setter = field === 'name' ? setDetailsName : setDetailsEmail;
               return (
                 <div key={field} style={{ marginBottom: '14px' }}>
                   <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#d1d5db', marginBottom: '6px' }}>
                     {labels[field]}
                   </label>
                   <input
-                    type={field === 'email' ? 'email' : field === 'phone' ? 'tel' : 'text'}
+                    type={field === 'email' ? 'email' : 'text'}
                     value={value}
-                    onChange={(e) => setter(field === 'phone' ? e.target.value.replace(/\D/g, '').slice(0, 12) : e.target.value)}
+                    onChange={(e) => setter(e.target.value)}
                     placeholder={placeholders[field]}
                     disabled={detailsLoading}
                     style={{
@@ -4589,6 +4595,20 @@ const FindMyPhotos = () => {
                 </div>
               );
             })}
+
+            <div style={{ marginBottom: '14px' }}>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#d1d5db', marginBottom: '6px' }}>
+                Phone Number
+              </label>
+              <InternationalPhoneInput
+                dark
+                defaultIso2={detailsPhonePrefill?.iso2}
+                initialNsn={detailsPhonePrefill?.nsn ?? ''}
+                onChange={setDetailsPhoneVal}
+                disabled={detailsLoading}
+                ariaLabel="Phone number"
+              />
+            </div>
 
             {detailsError && (
               <div style={{

@@ -22,7 +22,7 @@ import { usePaymentCountry } from '@/lib/payments/usePaymentCountry';
 import { usePaymentOptions } from '@/lib/payments/usePaymentOptions';
 import { CountryPicker } from './payments/CountryPicker';
 import { findCountry } from '@/lib/payments/supportedCountries';
-import { phoneHintForCountry } from '@/lib/payments/formatPhone';
+import InternationalPhoneInput, { type PhoneValue } from './phone/InternationalPhoneInput';
 
 // ==================== Types ====================
 
@@ -165,7 +165,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
   // State
   const [step, setStep] = useState<PaymentStep>('method');
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
-  const [phone, setPhone] = useState('');
+  const [phoneVal, setPhoneVal] = useState<PhoneValue | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [refid, setRefid] = useState<string | null>(null);
@@ -255,7 +255,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
     if (isOpen) {
       setStep('method');
       setSelectedMethod(null);
-      setPhone('');
+      setPhoneVal(null);
       setLoading(false);
       setError(null);
       setRefid(null);
@@ -359,8 +359,8 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
   const isValid = useCallback(() => {
     if (!selectedMethod) return false;
     if (selectedMethod === 'card') return true;
-    return phone.length >= 10;
-  }, [selectedMethod, phone]);
+    return !!phoneVal?.isValid;
+  }, [selectedMethod, phoneVal]);
 
   // Start payment status polling. Card payments need a grace period:
   // XentriPay reports FAILED on a freshly-created card session that the
@@ -465,6 +465,10 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
     // this sync open (aggressive blocker), we fall back to a same-tab
     // redirect after the URL arrives — card flow leaves the page anyway.
     const cardPaymentWindow: Window | null = isCard ? window.open('about:blank', '_blank') : null;
+
+    // Wire format per the backend audit: international digits, no '+'
+    // (e.g. "250788123456"). Every request body below sends this as `phone`.
+    const phone = phoneVal?.digits ?? '';
 
     setLoading(true);
     setError(null);
@@ -1465,36 +1469,11 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
                   </svg>
                   Phone Number <span style={{ color: '#ef4444', letterSpacing: 0 }}>*</span>
                 </label>
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 12))}
-                  placeholder={phoneHintForCountry(detectedCountry).replace(/^e\.g\.\s*/, '')}
-                  style={{
-                    width: '100%',
-                    padding: '13px 16px',
-                    backgroundColor: '#f8fafc',
-                    border: '1.5px solid rgba(8,58,133,0.14)',
-                    borderRadius: '12px',
-                    color: '#0f172a',
-                    fontSize: '15px',
-                    fontWeight: 600,
-                    outline: 'none',
-                    transition: 'border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease',
-                    boxSizing: 'border-box' as const,
-                    fontFamily: "'Pragati Narrow', sans-serif",
-                    letterSpacing: '0.02em',
-                  }}
-                  onFocus={(e) => {
-                    e.currentTarget.style.borderColor = '#083A85';
-                    e.currentTarget.style.backgroundColor = '#ffffff';
-                    e.currentTarget.style.boxShadow = '0 0 0 4px rgba(8,58,133,0.12)';
-                  }}
-                  onBlur={(e) => {
-                    e.currentTarget.style.borderColor = 'rgba(8,58,133,0.14)';
-                    e.currentTarget.style.backgroundColor = '#f8fafc';
-                    e.currentTarget.style.boxShadow = 'none';
-                  }}
+                <InternationalPhoneInput
+                  defaultIso2={detectedCountry}
+                  onChange={setPhoneVal}
+                  disabled={loading}
+                  ariaLabel="Mobile money phone number"
                 />
                 <p style={{
                   fontSize: '12px',

@@ -7,6 +7,7 @@ import AmoriaKNavbar from '../../../components/navbar';
 
 const VideoMessageRecorder = dynamic(() => import('../../../components/VideoMessageRecorder'), { ssr: false });
 import ErrorPopup, { type PopupSeverity } from '../../../components/ErrorPopup';
+import InternationalPhoneInput, { type PhoneValue } from '../../../components/phone/InternationalPhoneInput';
 import { useTranslations } from 'next-intl';
 import { useGoogleLogin } from '@react-oauth/google';
 import { getPublicEventById, type PublicEvent } from '@/lib/APIs/public';
@@ -418,7 +419,7 @@ function ViewEventContent({ eventIdProp }: { eventIdProp?: string }): React.JSX.
   const [signupFirstName, setSignupFirstName] = useState('');
   const [signupLastName, setSignupLastName] = useState('');
   const [signupEmail, setSignupEmail] = useState('');
-  const [signupPhone, setSignupPhone] = useState('');
+  const [signupPhoneVal, setSignupPhoneVal] = useState<PhoneValue | null>(null);
   const [signupPassword, setSignupPassword] = useState('');
   // OTP step
   const [otpCustomerId, setOtpCustomerId] = useState('');
@@ -436,7 +437,7 @@ function ViewEventContent({ eventIdProp }: { eventIdProp?: string }): React.JSX.
   const [showViewerAuth, setShowViewerAuth] = useState(false);
   const [vaName, setVaName] = useState('');
   const [vaEmail, setVaEmail] = useState('');
-  const [vaPhone, setVaPhone] = useState('');
+  const [vaPhoneVal, setVaPhoneVal] = useState<PhoneValue | null>(null);
   const [vaLoading, setVaLoading] = useState(false);
   const [vaError, setVaError] = useState<string | null>(null);
 
@@ -456,7 +457,7 @@ function ViewEventContent({ eventIdProp }: { eventIdProp?: string }): React.JSX.
   const [showGroupAuth, setShowGroupAuth] = useState(false);
   const [gaName, setGaName] = useState('');
   const [gaEmail, setGaEmail] = useState('');
-  const [gaPhone, setGaPhone] = useState('');
+  const [gaPhoneVal, setGaPhoneVal] = useState<PhoneValue | null>(null);
   const [gaLoading, setGaLoading] = useState(false);
   const [gaError, setGaError] = useState<string | null>(null);
   const [pendingInviteCode, setPendingInviteCode] = useState('');
@@ -592,7 +593,7 @@ function ViewEventContent({ eventIdProp }: { eventIdProp?: string }): React.JSX.
   const handleViewerAuth = async () => {
     const name = vaName.trim();
     const email = vaEmail.trim();
-    const phone = vaPhone.trim();
+    const phone = vaPhoneVal?.digits ?? '';
     if (!name) { setVaError('Please enter your name.'); return; }
     if (!email && !phone) { setVaError('Please enter the email or phone you used to purchase.'); return; }
     if (geoCheck && geoCheck.allowed === false) {
@@ -951,7 +952,7 @@ function ViewEventContent({ eventIdProp }: { eventIdProp?: string }): React.JSX.
   const handleGroupViewerAuth = async () => {
     const name = gaName.trim();
     const email = gaEmail.trim();
-    const phone = gaPhone.trim();
+    const phone = gaPhoneVal?.digits ?? '';
     if (!name) { setGaError('Please enter your name.'); return; }
     if (!email) { setGaError(gaEmailRestricted ? 'Please enter the email you were invited on.' : 'Please enter your email.'); return; }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setGaError('Please enter a valid email address.'); return; }
@@ -1122,7 +1123,7 @@ function ViewEventContent({ eventIdProp }: { eventIdProp?: string }): React.JSX.
   };
 
   const handleSignup = async () => {
-    if (!signupFirstName || !signupLastName || !signupEmail || !signupPhone || !signupPassword) {
+    if (!signupFirstName || !signupLastName || !signupEmail || !signupPhoneVal?.isValid || !signupPassword) {
       setAuthError('Please fill in all required fields.');
       return;
     }
@@ -1133,7 +1134,7 @@ function ViewEventContent({ eventIdProp }: { eventIdProp?: string }): React.JSX.
         firstName: signupFirstName,
         lastName: signupLastName,
         email: signupEmail,
-        phone: signupPhone,
+        phone: signupPhoneVal?.digits ?? '',
         password: signupPassword,
         customerType: 'Viewer',
       });
@@ -2981,16 +2982,10 @@ function ViewEventContent({ eventIdProp }: { eventIdProp?: string }): React.JSX.
                   <i className="bi bi-phone" style={{ marginRight: 6, color: '#083A85' }}></i>
                   Phone <span style={{ color: '#ef4444' }}>*</span>
                 </label>
-                <input
-                  type="tel"
-                  value={vaPhone}
-                  onChange={(e) => setVaPhone(e.target.value.replace(/\D/g, '').slice(0, 12))}
-                  onKeyDown={(e) => e.key === 'Enter' && handleViewerAuth()}
-                  placeholder="078XXXXXXX"
+                <InternationalPhoneInput
+                  onChange={setVaPhoneVal}
                   disabled={vaLoading}
-                  style={{ width: '100%', padding: '12px 14px', background: '#f9fafb', border: '1.5px solid rgba(8,58,133,0.15)', borderRadius: 10, color: '#0f172a', fontSize: 14, outline: 'none', boxSizing: 'border-box', transition: 'all 0.2s' }}
-                  onFocus={(e) => { e.currentTarget.style.borderColor = '#083A85'; e.currentTarget.style.background = '#fff'; }}
-                  onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(8,58,133,0.15)'; e.currentTarget.style.background = '#f9fafb'; }}
+                  ariaLabel="Phone number"
                 />
               </div>
             </div>
@@ -3246,14 +3241,11 @@ function ViewEventContent({ eventIdProp }: { eventIdProp?: string }): React.JSX.
 
             <div style={{ marginBottom: 14 }}>
               <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#d1d5db', marginBottom: 6 }}>Phone Number <span style={{ color: '#6b7280', fontWeight: 400 }}>(optional)</span></label>
-              <input
-                type="tel" value={gaPhone}
-                onChange={(e) => setGaPhone(e.target.value.replace(/\D/g, '').slice(0, 12))}
-                onKeyDown={(e) => e.key === 'Enter' && handleGroupViewerAuth()}
-                placeholder="Your phone number" disabled={gaLoading}
-                style={{ width: '100%', padding: '12px 14px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10, color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
-                onFocus={(e) => { e.currentTarget.style.borderColor = '#03969c'; }}
-                onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }}
+              <InternationalPhoneInput
+                dark
+                onChange={setGaPhoneVal}
+                disabled={gaLoading}
+                ariaLabel="Phone number"
               />
             </div>
 
@@ -3376,7 +3368,7 @@ function ViewEventContent({ eventIdProp }: { eventIdProp?: string }): React.JSX.
                 </div>
                 <div>
                   <label style={{ display: 'block', color: '#d1d5db', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Phone</label>
-                  <input type="tel" value={signupPhone} onChange={e => setSignupPhone(e.target.value.replace(/[^0-9+]/g, ''))} placeholder="+250 700 000 000" style={{ width: '100%', padding: '11px 14px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 9, color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} onFocus={e => { e.currentTarget.style.borderColor = '#083A85'; }} onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }} />
+                  <InternationalPhoneInput dark onChange={setSignupPhoneVal} disabled={authLoading} ariaLabel="Phone number" />
                 </div>
                 <div>
                   <label style={{ display: 'block', color: '#d1d5db', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Password</label>

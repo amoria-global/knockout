@@ -4,6 +4,7 @@ import Navbar from '../components/navbar';
 import Footer from '../components/footer';
 import { contactUs } from '@/lib/APIs/public';
 import { useToast } from '@/lib/notifications/ToastProvider';
+import InternationalPhoneInput, { type PhoneValue } from '../components/phone/InternationalPhoneInput';
 
 const BRAND = '#083A85';
 const BRAND_DARK = '#062a63';
@@ -31,10 +32,12 @@ export default function ContactUsPage(): React.JSX.Element {
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
-    phone: '',
     subject: '',
     message: '',
   });
+  // Optional international phone. Empty stays allowed - submit falls back
+  // to the '-' blank convention the backend already expects.
+  const [phoneVal, setPhoneVal] = useState<PhoneValue | null>(null);
   const [focused, setFocused] = useState<FieldKey | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
@@ -87,7 +90,7 @@ export default function ContactUsPage(): React.JSX.Element {
       const response = await contactUs({
         fullName: formData.fullName.trim(),
         email: formData.email.trim(),
-        phone: formData.phone.trim() || '-',
+        phone: phoneVal?.digits || '-',
         subject: formData.subject.trim(),
         message: formData.message.trim(),
       });
@@ -95,7 +98,7 @@ export default function ContactUsPage(): React.JSX.Element {
       if (response.success) {
         setSubmitStatus('success');
         showSuccess("Message sent! We'll get back to you within 24 hours.");
-        setFormData({ fullName: '', email: '', phone: '', subject: '', message: '' });
+        setFormData({ fullName: '', email: '', subject: '', message: '' });
         setTimeout(() => setSubmitStatus('idle'), 5000);
       } else {
         const msg = response.error || 'Failed to send message. Please try again later.';
@@ -328,8 +331,13 @@ export default function ContactUsPage(): React.JSX.Element {
                     <Field name="fullName" label="Full name *" focused={focused} setFocused={setFocused} value={formData.fullName} onChange={handleInputChange} autoComplete="name" />
                     <Field name="email" type="email" label="Email *" focused={focused} setFocused={setFocused} value={formData.email} onChange={handleInputChange} autoComplete="email" />
                   </div>
-                  <div className="cu-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem' }}>
-                    <Field name="phone" type="tel" label="Phone (optional)" focused={focused} setFocused={setFocused} value={formData.phone} onChange={handleInputChange} autoComplete="tel" />
+                  <div className="cu-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem', alignItems: 'start' }}>
+                    <div>
+                      <span style={{ display: 'block', fontSize: '0.62rem', color: BRAND, fontWeight: 700, letterSpacing: '0.7px', textTransform: 'uppercase', margin: '0 0 5px 2px' }}>
+                        Phone (optional)
+                      </span>
+                      <InternationalPhoneInput onChange={setPhoneVal} disabled={isSubmitting} ariaLabel="Phone (optional)" />
+                    </div>
                     <Field name="subject" label="Subject *" focused={focused} setFocused={setFocused} value={formData.subject} onChange={handleInputChange} autoComplete="off" />
                   </div>
                   <Field name="message" label="How can we help? *" textarea focused={focused} setFocused={setFocused} value={formData.message} onChange={handleInputChange} />

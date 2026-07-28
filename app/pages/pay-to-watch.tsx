@@ -11,6 +11,7 @@ import {
   checkAnonymousAccessStatus,
 } from '@/lib/APIs/streams/anonymous-viewer';
 import XentriPayModal from '../components/XentriPayModal';
+import InternationalPhoneInput, { type PhoneValue } from '../components/phone/InternationalPhoneInput';
 
 /**
  * Lands the buyer here after scanning the QR code a smart-TV shows when it
@@ -55,7 +56,7 @@ function PayToWatchContent(): React.JSX.Element {
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
+  const [phoneVal, setPhoneVal] = useState<PhoneValue | null>(null);
   const [fieldError, setFieldError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -115,7 +116,7 @@ function PayToWatchContent(): React.JSX.Element {
     if (!event) return;
     if (!name.trim()) { setFieldError('Name is required'); return; }
     if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { setFieldError('Please enter a valid email address'); return; }
-    if (!phone.trim()) { setFieldError('Phone number is required'); return; }
+    if (!phoneVal?.isValid) { setFieldError('Please enter a valid phone number'); return; }
     setFieldError('');
     setSubmitting(true);
     setStep('checking');
@@ -123,7 +124,7 @@ function PayToWatchContent(): React.JSX.Element {
       const res = await registerAnonymousViewer(event.id, {
         name: name.trim(),
         email: email.trim(),
-        phone: phone.trim(),
+        phone: phoneVal?.digits ?? '',
         deviceFingerprint: device,
       });
       if (!res.success || !res.data) {
@@ -258,7 +259,10 @@ function PayToWatchContent(): React.JSX.Element {
 
                 <Field label="Full name" placeholder="Jane Uwase" value={name} onChange={setName} />
                 <Field label="Email address" placeholder="jane@example.com" type="email" value={email} onChange={setEmail} />
-                <Field label="Phone number" placeholder="+250 78 123 4567" type="tel" value={phone} onChange={setPhone} />
+                <div style={{ marginBottom: 14 }}>
+                  <span style={{ display: 'block', fontSize: 12.5, fontWeight: 700, color: '#374151', marginBottom: 6 }}>Phone number</span>
+                  <InternationalPhoneInput onChange={setPhoneVal} disabled={submitting} ariaLabel="Phone number" />
+                </div>
 
                 {fieldError && <ErrorText>{fieldError}</ErrorText>}
 
