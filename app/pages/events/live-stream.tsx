@@ -9749,10 +9749,12 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
                 </button>
               )}
 
-              {/* Send Video Message Button - shrunk from a 12px/16px-radius
-                  hero-CTA to a compact toolbar action so the chat list
-                  above it gets back the ~40px of vertical real estate
-                  the old size was stealing. Still uses .ls-video-msg-cta
+              {/* Send Video Message Button - sized to match the chat
+                  composer row above it (same ~34px height + 14px radius)
+                  so the two form one visual control group. The messages
+                  list above is flex:1 + overflow, so the extra button
+                  height shrinks the list instead of growing the panel
+                  or introducing page scroll. Still uses .ls-video-msg-cta
                   for the brand-blue gradient theme. */}
               <button
                 onClick={() => canInteract ? setShowVideoMessageRecorder(true) : requireInteraction(() => {})}
@@ -9760,10 +9762,11 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
                 style={{
                   width: '100%',
                   marginTop: '6px',
-                  padding: '6px 10px',
+                  padding: '8px 12px',
+                  minHeight: '34px',
                   backgroundColor: '#16a34a',
                   border: '1px solid #22c55e',
-                  borderRadius: '10px',
+                  borderRadius: '14px',
                   color: '#fff',
                   fontSize: '11px',
                   fontWeight: '600',
