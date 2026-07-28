@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Navbar from '../../components/navbar';
 import ErrorPopup, { type PopupSeverity } from '../../components/ErrorPopup';
 import PaymentCurrencyPreview, { type CurrencyCode, useLiveRates } from '../../components/PaymentCurrencyPreview';
+import InternationalPhoneInput, { type PhoneValue } from '../../components/phone/InternationalPhoneInput';
 import { getPublicEvents, getPublicEventById, type PublicEvent } from '@/lib/APIs/public';
 import { joinEvent } from '@/lib/APIs/events/join-event/route';
 import { validateStreamToken } from '@/lib/APIs/streams/route';
@@ -107,7 +108,7 @@ export default function JoinEvent() {
   // Payment state for big LIVE events
   const [detectedEvent, setDetectedEvent] = useState<{ id: string; title: string; category: string; fee: number; currency: string; location: string; image: string; status: string } | null>(null);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string | null>(null);
-  const [paymentPhone, setPaymentPhone] = useState('');
+  const [paymentPhoneVal, setPaymentPhoneVal] = useState<PhoneValue | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
 
@@ -140,21 +141,6 @@ export default function JoinEvent() {
   const { format: formatLive } = useLiveRates();
   const eventCurrency = (detectedEvent?.currency || 'RWF') as CurrencyCode;
   const fmtFee = (amount: number) => formatLive(amount, eventCurrency, displayCurrency);
-
-  // Input validation error states
-  const [phoneError, setPhoneError] = useState('');
-
-  // Input validation handlers
-  const handlePhoneChange = (value: string) => {
-    // Only allow digits
-    const digitsOnly = value.replace(/[^0-9]/g, '');
-    if (value !== digitsOnly) {
-      setPhoneError('Only numbers allowed');
-    } else {
-      setPhoneError('');
-    }
-    setPaymentPhone(digitsOnly);
-  };
 
   // Payment methods
   const paymentMethods = [
@@ -305,7 +291,7 @@ export default function JoinEvent() {
     switch (selectedPaymentMethod) {
       case 'mtn':
       case 'airtel':
-        return paymentPhone.length >= 10;
+        return !!paymentPhoneVal?.isValid;
       case 'card':
         return true;
       default:
@@ -317,7 +303,7 @@ export default function JoinEvent() {
   const resetPaymentForm = () => {
     setDetectedEvent(null);
     setSelectedPaymentMethod(null);
-    setPaymentPhone('');
+    setPaymentPhoneVal(null);
     setIsProcessing(false);
     setPaymentSuccess(false);
     setPaymentError('');
@@ -819,41 +805,12 @@ export default function JoinEvent() {
                         <i className="bi bi-phone" style={{ marginRight: '6px', color: '#10b981' }}></i>
                         Phone Number
                       </label>
-                      <input
-                        type="tel"
-                        value={paymentPhone}
-                        onChange={(e) => handlePhoneChange(e.target.value)}
-                        placeholder="Enter your phone number"
-                        style={{
-                          width: '100%',
-                          padding: '12px 14px',
-                          fontSize: '14px',
-                          backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                          border: `2px solid ${phoneError ? '#ef4444' : 'rgba(255, 255, 255, 0.1)'}`,
-                          borderRadius: '10px',
-                          color: '#fff',
-                          outline: 'none',
-                          transition: 'all 0.3s ease',
-                          boxSizing: 'border-box',
-                        }}
-                        onFocus={(e) => {
-                          if (!phoneError) {
-                            e.currentTarget.style.borderColor = '#10b981';
-                            e.currentTarget.style.boxShadow = '0 0 20px rgba(16, 185, 129, 0.2)';
-                          }
-                        }}
-                        onBlur={(e) => {
-                          if (!phoneError) {
-                            e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
-                          }
-                          e.currentTarget.style.boxShadow = 'none';
-                        }}
+                      <InternationalPhoneInput
+                        dark
+                        onChange={setPaymentPhoneVal}
+                        disabled={isProcessing}
+                        ariaLabel="Mobile money phone number"
                       />
-                      {phoneError && (
-                        <p style={{ color: '#ef4444', fontSize: '11px', marginTop: '4px', margin: '4px 0 0 0' }}>
-                          {phoneError}
-                        </p>
-                      )}
                     </div>
                   )}
 

@@ -18,6 +18,7 @@ import ViewerInfoModal, { type ViewerInfoData } from '../../components/ViewerInf
 import DeviceSwitchModal from '../../components/DeviceSwitchModal';
 import { registerAnonymousViewer, confirmAnonymousPayment, anonymousDeviceCheck, checkAnonymousAccessStatus } from '@/lib/APIs/streams/anonymous-viewer';
 import { getDeviceId } from '@/lib/fingerprint';
+import InternationalPhoneInput, { type PhoneValue } from '../../components/phone/InternationalPhoneInput';
 
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';
 
@@ -118,7 +119,7 @@ function JoinPackageContent(): React.JSX.Element {
   const [signupFirstName, setSignupFirstName] = useState('');
   const [signupLastName, setSignupLastName] = useState('');
   const [signupEmail, setSignupEmail] = useState('');
-  const [signupPhone, setSignupPhone] = useState('');
+  const [signupPhoneVal, setSignupPhoneVal] = useState<PhoneValue | null>(null);
   const [signupPassword, setSignupPassword] = useState('');
   const [otpCustomerId, setOtpCustomerId] = useState('');
   const [otpValue, setOtpValue] = useState('');
@@ -186,7 +187,7 @@ function JoinPackageContent(): React.JSX.Element {
     if (!signupFirstName || !signupLastName || !signupEmail || !signupPassword) { setAuthError('Please fill in all required fields.'); return; }
     setAuthLoading(true); setAuthError('');
     try {
-      const res = await apiSignup({ firstName: signupFirstName, lastName: signupLastName, email: signupEmail, phone: signupPhone, password: signupPassword, customerType: 'Client' });
+      const res = await apiSignup({ firstName: signupFirstName, lastName: signupLastName, email: signupEmail, phone: signupPhoneVal?.digits ?? '', password: signupPassword, customerType: 'Client' });
       if (res.success && res.data) {
         const d = res.data as unknown as Record<string, string>;
         if (d.customerId) {
@@ -204,7 +205,7 @@ function JoinPackageContent(): React.JSX.Element {
       const res = await verifyOtp({ customerId: otpCustomerId, otp: Number(otpValue) });
       if (res.success && res.data?.token) {
         const d = res.data as unknown as Record<string, string>;
-        await authLogin({ id: d.id || d.customerId || otpCustomerId, firstName: d.firstName || signupFirstName, lastName: d.lastName || signupLastName, email: d.email || signupEmail, phone: d.phone || signupPhone, customerId: d.customerId || otpCustomerId, customerType: d.customerType || 'Viewer' }, d.token);
+        await authLogin({ id: d.id || d.customerId || otpCustomerId, firstName: d.firstName || signupFirstName, lastName: d.lastName || signupLastName, email: d.email || signupEmail, phone: d.phone || (signupPhoneVal?.digits ?? ''), customerId: d.customerId || otpCustomerId, customerType: d.customerType || 'Viewer' }, d.token);
         setShowAuthModal(false);
         if ((selectedEvent?.price || 0) > 0) { openPaymentFlow(); } else { handleProceed(); }
       } else { setAuthError((res.data as unknown as Record<string, string>)?.message || res.error || 'The verification code is incorrect or has expired.'); }
@@ -2157,7 +2158,7 @@ function JoinPackageContent(): React.JSX.Element {
                 </div>
                 <div>
                   <label style={{ display: 'block', color: '#d1d5db', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Phone (optional)</label>
-                  <input type="tel" value={signupPhone} onChange={e => setSignupPhone(e.target.value)} placeholder="078XXXXXXX" style={{ width: '100%', padding: '11px 14px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 9, color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} onFocus={e => { e.currentTarget.style.borderColor = '#083A85'; }} onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }} />
+                  <InternationalPhoneInput dark onChange={setSignupPhoneVal} disabled={authLoading} ariaLabel="Phone number" />
                 </div>
                 <div>
                   <label style={{ display: 'block', color: '#d1d5db', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Password</label>

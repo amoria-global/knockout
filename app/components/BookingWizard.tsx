@@ -21,6 +21,7 @@ import { sendCustomPackageRequest } from '@/lib/APIs/messages/custom-package-req
 import { createEvent, type CreateEventResponse } from '@/lib/APIs/events/create-event/route';
 import { revokeUnpaidEvent } from '@/lib/APIs/events/revoke-unpaid/route';
 import XentriPayModal from './XentriPayModal';
+import InternationalPhoneInput, { type PhoneValue } from './phone/InternationalPhoneInput';
 import { login } from '@/lib/APIs/auth/login/route';
 import { signup } from '@/lib/APIs/auth/signup/route';
 import { verifyOtp } from '@/lib/APIs/auth/verify-otp/route';
@@ -911,7 +912,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
   const [signupFirst, setSignupFirst] = useState('');
   const [signupLast, setSignupLast] = useState('');
   const [signupEmail, setSignupEmail] = useState('');
-  const [signupPhone, setSignupPhone] = useState('');
+  const [signupPhoneVal, setSignupPhoneVal] = useState<PhoneValue | null>(null);
   const [signupPassword, setSignupPassword] = useState('');
   const [otpCustomerId, setOtpCustomerId] = useState('');
   const [otpValue, setOtpValue] = useState('');
@@ -1544,14 +1545,14 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
   };
 
   const handleAuthSignup = async () => {
-    if (!signupFirst || !signupLast || !signupEmail || !signupPhone || !signupPassword) {
+    if (!signupFirst || !signupLast || !signupEmail || !signupPhoneVal?.isValid || !signupPassword) {
       setAuthError('Please fill in all fields'); return;
     }
     setAuthLoading(true); setAuthError('');
     try {
       const res = await signup({
         firstName: signupFirst, lastName: signupLast, email: signupEmail,
-        phone: signupPhone, password: signupPassword, customerType: 'Client',
+        phone: signupPhoneVal?.digits ?? '', password: signupPassword, customerType: 'Client',
       });
       if (res.success && res.data) {
         setOtpCustomerId(res.data.customerId || '');
@@ -1580,7 +1581,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
           await authLogin({
             id: d.id || d.customerId || '', firstName: d.firstName || signupFirst,
             lastName: d.lastName || signupLast, email: d.email || signupEmail,
-            phone: d.phone || signupPhone, customerId: d.customerId || '',
+            phone: d.phone || (signupPhoneVal?.digits ?? ''), customerId: d.customerId || '',
             customerType: d.customerType || 'Client',
           }, d.token!);
           dispatch({ type: 'SHOW_AUTH', value: false });
@@ -2005,7 +2006,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                       <input type="text" value={signupLast} onChange={e => setSignupLast(e.target.value)} placeholder="Last name" style={inputStyle} />
                     </div>
                     <input type="email" value={signupEmail} onChange={e => setSignupEmail(e.target.value)} placeholder="Email" style={inputStyle} />
-                    <input type="tel" value={signupPhone} onChange={e => setSignupPhone(e.target.value)} placeholder="Phone (078...)" style={inputStyle} />
+                    <InternationalPhoneInput onChange={setSignupPhoneVal} disabled={authLoading} ariaLabel="Phone number" />
                     <div style={{ position: 'relative' }}>
                       <input type={showSignupPassword ? 'text' : 'password'} value={signupPassword} onChange={e => setSignupPassword(e.target.value)} placeholder="Password" style={{ ...inputStyle, width: '100%', paddingRight: 44 }} onKeyDown={e => e.key === 'Enter' && handleAuthSignup()} />
                       <button type="button" onClick={() => setShowSignupPassword(v => !v)} aria-label={showSignupPassword ? 'Hide password' : 'Show password'} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', padding: 6, cursor: 'pointer', color: TEXT_MUTED, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

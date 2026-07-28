@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import InternationalPhoneInput, { type PhoneValue } from './phone/InternationalPhoneInput';
 
 export interface ViewerInfoData {
   name: string;
@@ -25,7 +26,7 @@ const ViewerInfoModal: React.FC<ViewerInfoModalProps> = ({
 }) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
+  const [phoneVal, setPhoneVal] = useState<PhoneValue | null>(null);
   const [validationError, setValidationError] = useState('');
 
   if (!isOpen) return null;
@@ -39,12 +40,12 @@ const ViewerInfoModal: React.FC<ViewerInfoModalProps> = ({
       setValidationError('Please enter a valid email address');
       return;
     }
-    if (!phone.trim()) {
-      setValidationError('Phone number is required');
+    if (!phoneVal?.isValid) {
+      setValidationError('Please enter a valid phone number');
       return;
     }
     setValidationError('');
-    onSubmit({ name: name.trim(), email: email.trim(), phone: phone.trim() });
+    onSubmit({ name: name.trim(), email: email.trim(), phone: phoneVal.digits });
   };
 
   const displayError = error || validationError;
@@ -115,21 +116,17 @@ const ViewerInfoModal: React.FC<ViewerInfoModalProps> = ({
                 onBlur={e => { e.currentTarget.style.borderColor = 'rgba(8,58,133,0.1)'; e.currentTarget.style.boxShadow = 'none'; }}
               />
             </div>
-            <div style={{ flex: 1 }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#64748b', fontSize: 12, fontWeight: 600, marginBottom: 5 }}>
-                <i className="bi bi-phone" style={{ fontSize: 12 }}></i> Phone <span style={{ color: '#ef4444' }}>*</span>
-              </label>
-              <input
-                type="tel"
-                value={phone}
-                onChange={e => { setPhone(e.target.value); setValidationError(''); }}
-                placeholder="078XXXXXXX"
-                onKeyDown={e => e.key === 'Enter' && handleSubmit()}
-                style={{ width: '100%', padding: '11px 14px', background: '#f8fafc', border: '1.5px solid rgba(8,58,133,0.1)', borderRadius: 10, color: '#0f172a', fontSize: 14, outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.2s' }}
-                onFocus={e => { e.currentTarget.style.borderColor = '#083A85'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(8,58,133,0.08)'; }}
-                onBlur={e => { e.currentTarget.style.borderColor = 'rgba(8,58,133,0.1)'; e.currentTarget.style.boxShadow = 'none'; }}
-              />
-            </div>
+          </div>
+
+          <div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#64748b', fontSize: 12, fontWeight: 600, marginBottom: 5 }}>
+              <i className="bi bi-phone" style={{ fontSize: 12 }}></i> Phone <span style={{ color: '#ef4444' }}>*</span>
+            </label>
+            <InternationalPhoneInput
+              onChange={v => { setPhoneVal(v); }}
+              disabled={loading}
+              ariaLabel="Phone number"
+            />
           </div>
 
           <button
