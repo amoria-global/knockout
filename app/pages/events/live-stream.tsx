@@ -10413,8 +10413,10 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
             {/* Currency switcher — same affordance as the other payment
                 modals (PaymentCurrencyPreview pill). Converts every displayed
                 amount in this modal; catalog gifts remain exact USD
-                server-side regardless of the pick. */}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
+                server-side regardless of the pick. position+zIndex lift the
+                open dropdown above the gift panel below it, which is
+                position:relative and otherwise paints over the menu. */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px', position: 'relative', zIndex: 60 }}>
               <PaymentCurrencyPreview
                 title="View in"
                 fromCurrency={selectedGift ? 'USD' : giftViewCurrency}
