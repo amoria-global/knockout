@@ -38,6 +38,15 @@ export function formatGiftLocalAmount(
   return `≈ ${cur.symbol}${local.toLocaleString()}`;
 }
 
+/** Whole-unit converted amount in the display currency, null when N/A. */
+export function convertGiftAmount(
+  amountUsd: number,
+  cur: GiftDisplayCurrency | null | undefined
+): number | null {
+  if (!cur || !cur.perUsd || cur.abbreviation === 'USD') return null;
+  return Math.round(amountUsd * cur.perUsd);
+}
+
 export default function GiftGrid({
   gifts,
   loading,
@@ -110,14 +119,22 @@ export default function GiftGrid({
       <div className="ckgift-grid" role="listbox" aria-label="Gifts">
         {visible.map((g) => {
           const isSel = selectedCode === g.code;
-          const local = formatGiftLocalAmount(g.amountUsd, displayCurrency);
+          // When a non-USD display currency is active, the CONVERTED amount
+          // is the primary price and USD drops to the secondary line —
+          // switching currency must visibly convert the cards, not just
+          // annotate them. (Charging stays exact USD server-side.)
+          const converted = convertGiftAmount(g.amountUsd, displayCurrency);
+          const primary = converted != null && displayCurrency
+            ? `${displayCurrency.symbol}${converted.toLocaleString()}`
+            : `$${g.amountUsd}`;
+          const secondary = converted != null ? `$${g.amountUsd} USD` : null;
           return (
             <button
               key={g.code}
               type="button"
               role="option"
               aria-selected={isSel}
-              aria-label={`${g.name}, $${g.amountUsd}`}
+              aria-label={`${g.name}, ${primary}`}
               className={`ckgift-tile${isSel ? ' is-selected' : ''}`}
               onClick={() => onSelect(g)}
             >
@@ -125,8 +142,8 @@ export default function GiftGrid({
                 {g.emoji}
               </span>
               <span className="ckgift-name">{g.name}</span>
-              <span className="ckgift-price">${g.amountUsd}</span>
-              {local && <span className="ckgift-local">{local}</span>}
+              <span className="ckgift-price">{primary}</span>
+              {secondary && <span className="ckgift-local">{secondary}</span>}
             </button>
           );
         })}
