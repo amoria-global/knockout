@@ -30,6 +30,7 @@ import type { ViewerInfoData } from '../../components/ViewerInfoModal';
 import DeviceSwitchModal from '../../components/DeviceSwitchModal';
 import DonationPromptModal from '../../components/DonationPromptModal';
 import AppreciationModal from '../../components/AppreciationModal';
+import PaymentCurrencyPreview, { type CurrencyCode } from '../../components/PaymentCurrencyPreview';
 import { initiateAnonymousStreamingPayment, checkAnonymousPaymentStatus } from '@/lib/APIs/payments/xentripay';
 import { contactUs } from '@/lib/APIs/public/contact-us/route';
 import { apiClient } from '@/lib/api/client';
@@ -1829,6 +1830,26 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
   // "1 USD = X units" per currency, from the catalog payload — used only for
   // the ≈local price hint on tiles (charging is always exact USD server-side)
   const [giftRates, setGiftRates] = useState<Record<string, { symbol: string; rateToUsd: number | null }>>({});
+  // Viewer-chosen display currency for the gift modal — same affordance as
+  // the other payment modals (PaymentCurrencyPreview pill). Converts every
+  // displayed amount; also denominates the custom amount + donation add-on.
+  // Catalog gifts stay exact USD server-side no matter what is picked here.
+  const [giftViewCurrency, setGiftViewCurrency] = useState<CurrencyCode>('USD');
+  const GIFT_VIEW_CODES = React.useMemo(() => ['USD', 'RWF', 'EUR', 'KES', 'UGX', 'TZS'], []);
+  const giftView = React.useMemo(() => {
+    if (giftViewCurrency === 'USD') return { code: 'USD' as CurrencyCode, symbol: '$', perUsd: 1 };
+    const r = giftRates[giftViewCurrency];
+    return {
+      code: giftViewCurrency,
+      symbol: r?.symbol || giftViewCurrency,
+      perUsd: r?.rateToUsd && r.rateToUsd > 0 ? r.rateToUsd : null,
+    };
+  }, [giftViewCurrency, giftRates]);
+  // USD → view-currency (whole units), null when no usable rate
+  const giftUsdToView = React.useCallback(
+    (usd: number) => (giftView.perUsd ? Math.round(usd * giftView.perUsd) : null),
+    [giftView],
+  );
   // Confirmed gifts arriving through the chat poll → banner/takeover overlay
   const [liveGiftEvents, setLiveGiftEvents] = useState<LiveGiftEvent[]>([]);
   // Animation dedupe only — separate from seenApiMessageIds so the same row
@@ -1895,6 +1916,10 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
     setGiftTargetEvent(event);
     setIncludeDonation(true);
     setDonationAmount("");
+    // Default the display currency to the event's stream currency when the
+    // switcher supports it, otherwise USD (the catalog's base).
+    const evAbbr = event.streamFeeCurrencyAbbreviation || 'RWF';
+    setGiftViewCurrency((GIFT_VIEW_CODES.includes(evAbbr) ? evAbbr : 'USD') as CurrencyCode);
     setShowGiftModal(true);
   };
 
@@ -2028,9 +2053,13 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
     setGiftLoading(true);
     setGiftError(null);
 
-    // Resolve currency - use event's currency, default to RWF
-    const abbr = mainEvent?.streamFeeCurrencyAbbreviation;
-    const matchedCurrency = abbr ? streamCurrencies.find(c => c.code === abbr) : null;
+    // Resolve currency: the viewer's chosen display currency denominates
+    // the free-form amount and the donation add-on (catalog gifts are
+    // charged in exact USD server-side regardless). Falls back to the
+    // event's stream currency, then RWF, then the first known currency.
+    const eventAbbr = mainEvent?.streamFeeCurrencyAbbreviation;
+    const matchedCurrency = streamCurrencies.find(c => c.code === giftViewCurrency)
+      || (eventAbbr ? streamCurrencies.find(c => c.code === eventAbbr) : null);
     const currencyId = matchedCurrency?.id
       || streamCurrencies.find(c => c.code === 'RWF')?.id
       || (streamCurrencies.length > 0 ? streamCurrencies[0].id : '');
@@ -2144,10 +2173,10 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
           onSuccess: (_data: XentriPayStatusResponse) => {
             // Capture gift + donation totals BEFORE resetting modal state.
             // Catalog gifts are USD-denominated; free-form gifts use the
-            // event's stream currency (legacy behavior).
+            // viewer's chosen display currency (which denominated the input).
             const sentGift = selectedGift ? selectedGift.amountUsd : (parseInt(giftAmount) || 0);
             const sentDonation = donAmt;
-            const sentCurrency = selectedGift ? 'USD' : (mainEvent?.streamFeeCurrencyAbbreviation || 'RWF');
+            const sentCurrency = selectedGift ? 'USD' : giftViewCurrency;
             const sentRecipient = targetEvent.photographer || mainEvent?.photographer;
 
             setGiftStep('success');
@@ -9770,15 +9799,14 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
           handleSendGift to actually process the gift payment. */}
       <DonationPromptModal
         isOpen={showGiftDonationOverlay}
-        currencyCode={mainEvent?.streamFeeCurrencyAbbreviation || 'RWF'}
+        currencyCode={giftViewCurrency}
         paymentAmount={(() => {
-          // Catalog gifts are USD-priced; show the donation prompt the
-          // approximate value in the event currency (what donations are
-          // denominated in). Falls back to the raw USD number if no rate.
+          // Donations are denominated in the viewer's chosen display
+          // currency (the same currencyId the send request carries).
+          // Catalog gifts are USD-priced, so convert for display; falls
+          // back to the raw USD number if no usable rate.
           if (!selectedGift) return parseInt(giftAmount) || 0;
-          const abbr = mainEvent?.streamFeeCurrencyAbbreviation;
-          const rate = abbr ? giftRates[abbr]?.rateToUsd : null;
-          return rate ? Math.round(selectedGift.amountUsd * rate) : selectedGift.amountUsd;
+          return giftUsdToView(selectedGift.amountUsd) ?? selectedGift.amountUsd;
         })()}
         onSkip={() => {
           setShowGiftDonationOverlay(false);
@@ -10382,6 +10410,22 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
               Send a gift to <strong>{giftTargetEvent?.photographer || mainEvent.photographer}</strong>
             </p>
 
+            {/* Currency switcher — same affordance as the other payment
+                modals (PaymentCurrencyPreview pill). Converts every displayed
+                amount in this modal; catalog gifts remain exact USD
+                server-side regardless of the pick. */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
+              <PaymentCurrencyPreview
+                title="View in"
+                fromCurrency={selectedGift ? 'USD' : giftViewCurrency}
+                defaultCurrency={giftViewCurrency}
+                onCurrencyChange={setGiftViewCurrency}
+                amounts={selectedGift
+                  ? [{ label: `${selectedGift.emoji} ${selectedGift.name}`, amount: selectedGift.amountUsd }]
+                  : (parseInt(giftAmount) > 0 ? [{ label: 'Gift', amount: parseInt(giftAmount) }] : [])}
+              />
+            </div>
+
             {/* Donation Section - REMOVED from inline. Donation is now
                 surfaced via the standalone DonationPromptModal that pops up
                 AFTER the user clicks "Send Gift" (see overlay below). The
@@ -10507,19 +10551,14 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
                   setSelectedGift(prev => (prev?.code === g.code ? null : g));
                   setGiftAmount('');
                 }}
-                displayCurrency={(() => {
-                  const abbr = mainEvent?.streamFeeCurrencyAbbreviation;
-                  if (!abbr || abbr === 'USD') return null;
-                  const r = giftRates[abbr];
-                  return r?.rateToUsd
-                    ? { abbreviation: abbr, symbol: r.symbol || abbr, perUsd: r.rateToUsd }
-                    : null;
-                })()}
+                displayCurrency={giftView.code !== 'USD' && giftView.perUsd
+                  ? { abbreviation: giftView.code, symbol: giftView.symbol, perUsd: giftView.perUsd }
+                  : null}
                 onRetry={loadGiftCatalog}
               />
               <details style={{ marginTop: '12px' }}>
                 <summary style={{ fontSize: '12px', color: 'rgba(255,255,255,0.55)', cursor: 'pointer' }}>
-                  Or enter a custom amount ({mainEvent?.streamFeeCurrencyAbbreviation || 'RWF'})
+                  Or enter a custom amount ({giftViewCurrency})
                 </summary>
                 <input
                   type="number"
@@ -10690,20 +10729,33 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
                   <span style={{ color: '#6b7280' }}>Gift</span>
                   <span style={{ color: '#0f172a', fontWeight: '500' }}>
                     {selectedGift
-                      ? `${selectedGift.emoji} ${selectedGift.name} · $${selectedGift.amountUsd}`
-                      : `${mainEvent?.streamFeeCurrencyAbbreviation || 'RWF'} ${parseInt(giftAmount).toLocaleString()}`}
+                      ? (() => {
+                          const local = giftUsdToView(selectedGift.amountUsd);
+                          const hint = giftView.code !== 'USD' && local != null
+                            ? ` ≈ ${giftView.symbol}${local.toLocaleString()}`
+                            : '';
+                          return `${selectedGift.emoji} ${selectedGift.name} · $${selectedGift.amountUsd}${hint}`;
+                        })()
+                      : `${giftViewCurrency} ${parseInt(giftAmount).toLocaleString()}`}
                   </span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', fontSize: '14px' }}>
                   <span style={{ color: '#6b7280' }}>Donation</span>
-                  <span style={{ color: '#d97706', fontWeight: '500' }}>{(mainEvent?.streamFeeCurrencyAbbreviation || 'RWF')} {parseInt(donationAmount).toLocaleString()}</span>
+                  <span style={{ color: '#d97706', fontWeight: '500' }}>{giftViewCurrency} {parseInt(donationAmount).toLocaleString()}</span>
                 </div>
                 <div style={{ borderTop: '1.5px solid rgba(8,58,133,0.1)', paddingTop: '10px', display: 'flex', justifyContent: 'space-between', fontSize: '15px' }}>
                   <span style={{ color: '#0f172a', fontWeight: '700' }}>Total</span>
                   <span style={{ color: '#083A85', fontWeight: '700' }}>
-                    {selectedGift
-                      ? `$${selectedGift.amountUsd} + ${mainEvent?.streamFeeCurrencyAbbreviation || 'RWF'} ${parseInt(donationAmount).toLocaleString()}`
-                      : `${mainEvent?.streamFeeCurrencyAbbreviation || 'RWF'} ${(parseInt(giftAmount) + parseInt(donationAmount)).toLocaleString()}`}
+                    {(() => {
+                      const donation = parseInt(donationAmount) || 0;
+                      if (!selectedGift) {
+                        return `${giftViewCurrency} ${((parseInt(giftAmount) || 0) + donation).toLocaleString()}`;
+                      }
+                      const local = giftUsdToView(selectedGift.amountUsd);
+                      return giftView.code !== 'USD' && local != null
+                        ? `≈ ${giftView.symbol}${(local + donation).toLocaleString()}`
+                        : `$${selectedGift.amountUsd} + ${giftViewCurrency} ${donation.toLocaleString()}`;
+                    })()}
                   </span>
                 </div>
               </div>
@@ -10757,20 +10809,24 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
             >
               <i className={selectedPaymentMethod === 'card' ? 'bi bi-credit-card-fill' : 'bi bi-gift-fill'} style={{ fontSize: '18px' }}></i>
               {giftLoading ? 'Processing...' : (() => {
-                // Catalog gifts are priced in USD (exact, server-side);
-                // free-form gifts keep the event's stream currency.
+                // Catalog gifts are priced in USD (exact, server-side) with
+                // an ≈hint in the chosen view currency; free-form gifts are
+                // denominated directly in the view currency.
                 if (selectedGift) {
                   const verb = selectedPaymentMethod === 'card' ? 'Proceed to Pay' : `Send ${selectedGift.name}`;
-                  return `${verb} (${selectedGift.emoji} $${selectedGift.amountUsd})`;
+                  const local = giftUsdToView(selectedGift.amountUsd);
+                  const hint = giftView.code !== 'USD' && local != null
+                    ? ` ≈ ${giftView.symbol}${local.toLocaleString()}`
+                    : '';
+                  return `${verb} (${selectedGift.emoji} $${selectedGift.amountUsd}${hint})`;
                 }
-                const currency = mainEvent?.streamFeeCurrencyAbbreviation || 'RWF';
                 const gift = parseInt(giftAmount) || 0;
                 const donation = parseInt(donationAmount) || 0;
                 const total = gift + donation;
                 if (selectedPaymentMethod === 'card') {
-                  return total > 0 ? `Proceed to Pay (${currency} ${total.toLocaleString()})` : 'Proceed to Pay';
+                  return total > 0 ? `Proceed to Pay (${giftViewCurrency} ${total.toLocaleString()})` : 'Proceed to Pay';
                 }
-                return total > 0 ? `Send Gift (${currency} ${total.toLocaleString()})` : 'Send Gift';
+                return total > 0 ? `Send Gift (${giftViewCurrency} ${total.toLocaleString()})` : 'Send Gift';
               })()}
             </button>
             </>)}
