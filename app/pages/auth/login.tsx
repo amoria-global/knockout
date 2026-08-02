@@ -395,8 +395,10 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
         const userData = { id: data.id || data.customerId || '', firstName: data.firstName || userInfo.given_name, lastName: data.lastName || userInfo.family_name, email: data.email || userInfo.email, phone: data.phone || '', customerId: data.customerId || '', customerType };
         loginUser(userData, data.token);
         setLoggedInUserName(userData.firstName || 'User'); setLoggedInUserType(customerType); showSuccess('Welcome back!');
+        // Desktop/mobile app sign-in: hand the session back and stop here.
+        if (appRedirect) { setTimeout(() => returnToAppWithSession(data.token as string, { refreshToken: (data as { refreshToken?: string }).refreshToken, customerId: userData.customerId, email: userData.email, firstName: userData.firstName, lastName: userData.lastName, phone: userData.phone, customerType }), 300); }
         // Auto-redirect for booking flows - skip the PostLoginModal
-        if (isBookingRedirect) { setTimeout(() => redirectToBookingDashboard(customerType), 300); }
+        else if (isBookingRedirect) { setTimeout(() => redirectToBookingDashboard(customerType), 300); }
         else { setShowPostLoginModal(true); }
       } else { const msg = response.error || data?.message || 'Google login failed.'; setLoginError(msg); showError(msg); }
     } catch (err) { const msg = err instanceof Error ? err.message : 'An error occurred during Google login.'; setLoginError(msg); showError(msg); }
@@ -482,8 +484,10 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
           const userData = { id: data.id || data.user?.id || '', firstName: data.firstName || data.user?.firstName || '', lastName: data.lastName || data.user?.lastName || '', email: data.email || data.user?.email || loginEmail, phone: data.phone || '', customerId: data.customerId || '', customerType };
           loginUser(userData, data.token || '');
           setLoggedInUserName(userData.firstName || 'User'); setLoggedInUserType(customerType); showSuccess('Welcome back!');
+          // Desktop/mobile app sign-in: hand the session back and stop here.
+          if (appRedirect) { setTimeout(() => returnToAppWithSession(data.token || '', { refreshToken: (data as { refreshToken?: string }).refreshToken, customerId: userData.customerId, email: userData.email, firstName: userData.firstName, lastName: userData.lastName, phone: userData.phone, customerType }), 300); }
           // Auto-redirect for booking flows - skip the PostLoginModal
-          if (isBookingRedirect) { setTimeout(() => redirectToBookingDashboard(customerType), 300); }
+          else if (isBookingRedirect) { setTimeout(() => redirectToBookingDashboard(customerType), 300); }
           else { setShowPostLoginModal(true); }
         } else { const msg = response.error || data?.message || 'Login failed.'; setLoginError(msg); showError(msg); }
       } catch (err) { const msg = err instanceof Error ? err.message : 'An error occurred.'; setLoginError(msg); showError(msg); }
@@ -971,7 +975,8 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
             setLoggedInUserName(ctx.firstName || 'User');
             setLoggedInUserType(ctx.customerType);
             showSuccess('Profile complete! Welcome back.');
-            if (isBookingRedirect) { setTimeout(() => redirectToBookingDashboard(ctx.customerType), 300); }
+            if (appRedirect) { setTimeout(() => returnToAppWithSession(getAuthToken() || '', { customerId: ctx.customerId, email: ctx.email, firstName: ctx.firstName, lastName: ctx.lastName, phone: ctx.phone, customerType: ctx.customerType }), 300); }
+            else if (isBookingRedirect) { setTimeout(() => redirectToBookingDashboard(ctx.customerType), 300); }
             else { setShowPostLoginModal(true); }
           }}
           firstName={completionCtx.firstName}
