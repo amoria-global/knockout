@@ -256,12 +256,18 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
   // ── LOGIN STATE & HANDLERS ────────────────────────────────────
   // ═══════════════════════════════════════════════════════════════
   const redirectUrl = searchParams.get('redirect');
-  // When the mobile app launches signup in the browser it passes a custom-scheme
-  // deep link (connekt://auth-callback / exp://…) as `redirect`. Google sign-up
-  // mints a session immediately (no OTP), so bounce straight back into the app
-  // with the token instead of a web `router.push` (which can't do custom schemes).
+  // When a native app launches sign-in in the browser it passes its callback
+  // as `redirect`: either a custom-scheme deep link (connekt://auth-callback,
+  // connektstudio://…, exp://…) or a loopback HTTP listener
+  // (http://127.0.0.1:<port>/…, RFC 8252 §7.3). Connekt Studio uses loopback
+  // because Chrome on Windows silently drops custom-scheme navigations in
+  // several cases. Only literal loopback hosts pass the http exception, so
+  // ?redirect= still can't become an open redirector or leak a token to a
+  // foreign origin.
+  const isLoopbackRedirect =
+    !!redirectUrl && /^http:\/\/(127\.0\.0\.1|\[::1\]|localhost)(:\d+)?\//i.test(redirectUrl);
   const appRedirect =
-    redirectUrl && !/^https?:\/\//i.test(redirectUrl) && !redirectUrl.startsWith('/')
+    redirectUrl && (isLoopbackRedirect || (!/^https?:\/\//i.test(redirectUrl) && !redirectUrl.startsWith('/')))
       ? redirectUrl
       : '';
   const returnToAppWithSession = (token: string, data?: {
@@ -1004,7 +1010,7 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
             </p>
             <button type="button" onClick={() => { window.location.href = appHandbackUrl; }}
               style={{ width: '100%', padding: '14px', fontSize: '16px', borderRadius: '10px', fontWeight: 600, cursor: 'pointer', background: 'linear-gradient(90deg, #083A85 0%, #0a4da3 100%)', color: '#fff', border: 'none', letterSpacing: '0.5px', boxShadow: '0 4px 12px rgba(8,58,133,0.25)' }}>
-              Open {appHandbackUrl.startsWith('connektstudio') ? 'Connekt Studio' : 'the Connekt app'}
+              Open {/^(connektstudio:|http:\/\/(127\.0\.0\.1|localhost))/i.test(appHandbackUrl) ? 'Connekt Studio' : 'the Connekt app'}
             </button>
             <p style={{ fontSize: '12px', color: '#94a3b8', margin: '16px 0 0' }}>You can close this tab once the app opens.</p>
           </div>
