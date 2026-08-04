@@ -434,7 +434,9 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
         // is shown right AFTER verification (on the verify-otp page), not
         // before - per product: "right after verification should come back
         // and show the modal".
-        if (data?.otpVerified === false && data?.customerId) { showWarning(data?.message || 'Please verify your phone number.'); setLoginLoading(false); router.push(`/user/auth/verify-otp?applicantId=${encodeURIComponent(String(data.customerId))}&email=${encodeURIComponent(loginEmail)}`); return; }
+        // The app redirect (Studio loopback / mobile deep link) rides along so
+        // verification can still hand the session back to the calling app.
+        if (data?.otpVerified === false && data?.customerId) { showWarning(data?.message || 'Please verify your phone number.'); setLoginLoading(false); const otpExtras = `${data?.customerType ? `&customerType=${encodeURIComponent(String(data.customerType))}` : ''}${data?.firstName ? `&firstName=${encodeURIComponent(String(data.firstName))}` : ''}${data?.lastName ? `&lastName=${encodeURIComponent(String(data.lastName))}` : ''}${data?.phone ? `&phone=${encodeURIComponent(String(data.phone))}` : ''}${redirectUrl ? `&redirect=${encodeURIComponent(redirectUrl)}` : ''}`; router.push(`/user/auth/verify-otp?applicantId=${encodeURIComponent(String(data.customerId))}&email=${encodeURIComponent(loginEmail)}${otpExtras}`); return; }
 
         // FORCED FIRST-LOGIN PASSWORD CHANGE.
         // TeamService.inviteTeamMember persists invited members with
