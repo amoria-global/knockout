@@ -28,8 +28,14 @@ function VerifyOtpContent(): React.JSX.Element {
   // freshly minted session so the app can log the user straight in — instead
   // of redirecting to the web dashboard.
   const redirectParam = searchParams.get('redirect') || '';
+  // Loopback HTTP redirects (http://127.0.0.1:<port>/…, RFC 8252 §7.3) are
+  // also app hand-backs: Connekt Studio listens locally because Chrome on
+  // Windows silently drops custom-scheme navigations. Only literal loopback
+  // hosts pass the http exception, so this stays closed to open redirects.
+  const isLoopbackRedirect =
+    !!redirectParam && /^http:\/\/(127\.0\.0\.1|\[::1\]|localhost)(:\d+)?\//i.test(redirectParam);
   const appRedirect =
-    redirectParam && !/^https?:\/\//i.test(redirectParam) && !redirectParam.startsWith('/')
+    redirectParam && (isLoopbackRedirect || (!/^https?:\/\//i.test(redirectParam) && !redirectParam.startsWith('/')))
       ? redirectParam
       : '';
   const verifiedDataRef = useRef<{
@@ -60,8 +66,14 @@ function VerifyOtpContent(): React.JSX.Element {
     if (lastName) p.set('lastName', lastName);
     if (phone) p.set('phone', phone);
     if (customerType) p.set('customerType', customerType);
-    window.location.href = `${appRedirect}${sep}${p.toString()}`;
+    const url = `${appRedirect}${sep}${p.toString()}`;
+    setAppHandbackUrl(url); // keep the manual fallback visible if the auto-launch is blocked
+    window.location.href = url;
   };
+  // Set when a verified session is ready to hand back to a desktop/mobile app.
+  // Renders the return-to-app overlay: the button re-fires the redirect with a
+  // fresh user gesture, mirroring the login page's fallback.
+  const [appHandbackUrl, setAppHandbackUrl] = useState('');
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -483,6 +495,23 @@ function VerifyOtpContent(): React.JSX.Element {
           </form>
         </div>
       </div>
+
+      {appHandbackUrl && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(255,255,255,0.98)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+          <div style={{ maxWidth: '420px', width: '100%', textAlign: 'center' }}>
+            <img src="/logo.png" alt="" style={{ width: '52px', height: '52px', objectFit: 'contain', marginBottom: '16px' }} />
+            <h2 style={{ fontSize: '22px', fontWeight: 700, color: '#0f172a', margin: '0 0 8px' }}>You&apos;re verified</h2>
+            <p style={{ fontSize: '14px', color: '#64748b', margin: '0 0 24px', lineHeight: 1.6 }}>
+              Returning you to the app. If nothing happens, use the button below.
+            </p>
+            <button type="button" onClick={() => { window.location.href = appHandbackUrl; }}
+              style={{ width: '100%', padding: '14px', fontSize: '16px', borderRadius: '10px', fontWeight: 600, cursor: 'pointer', background: 'linear-gradient(90deg, #083A85 0%, #0a4da3 100%)', color: '#fff', border: 'none', letterSpacing: '0.5px', boxShadow: '0 4px 12px rgba(8,58,133,0.25)' }}>
+              Open {/^(connektstudio:|http:\/\/(127\.0\.0\.1|localhost))/i.test(appHandbackUrl) ? 'Connekt Studio' : 'the Connekt app'}
+            </button>
+            <p style={{ fontSize: '12px', color: '#94a3b8', margin: '16px 0 0' }}>You can close this tab once the app opens.</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
