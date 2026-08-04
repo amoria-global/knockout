@@ -281,7 +281,9 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
     if (data?.phone) p.set('phone', String(data.phone));
     const ct = data?.customerType || signupUserType;
     if (ct) p.set('customerType', String(ct));
-    window.location.href = `${appRedirect}${sep}${p.toString()}`;
+    const url = `${appRedirect}${sep}${p.toString()}`;
+    setAppHandbackUrl(url); // keep the manual fallback visible if the auto-launch is blocked
+    window.location.href = url;
   };
   const loggedOut = searchParams.get('loggedOut') === 'true' || searchParams.get('logged_out') === 'true';
   const sessionExpired = searchParams.get('session_expired') === 'true';
@@ -293,6 +295,11 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
   const [loginError, setLoginError] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
   const [showPostLoginModal, setShowPostLoginModal] = useState(false);
+  // Set when a signed-in session is ready to hand back to a desktop/mobile app.
+  // Renders the return-to-app overlay: the button re-fires the redirect with a
+  // fresh user gesture, because Chrome refuses custom-scheme navigations once
+  // the login round-trip has consumed or outlived the submit click's activation.
+  const [appHandbackUrl, setAppHandbackUrl] = useState('');
   const [loggedInUserName, setLoggedInUserName] = useState('');
   const [loggedInUserType, setLoggedInUserType] = useState<string | undefined>(undefined);
   const [googleLoginLoading, setGoogleLoginLoading] = useState(false);
@@ -985,6 +992,23 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
           prefillFromServer
           serverSync
         />
+      )}
+
+      {appHandbackUrl && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(255,255,255,0.98)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+          <div style={{ maxWidth: '420px', width: '100%', textAlign: 'center' }}>
+            <img src="/logo.png" alt="" style={{ width: '52px', height: '52px', objectFit: 'contain', marginBottom: '16px' }} />
+            <h2 style={{ fontSize: '22px', fontWeight: 700, color: '#0f172a', margin: '0 0 8px' }}>You&apos;re signed in</h2>
+            <p style={{ fontSize: '14px', color: '#64748b', margin: '0 0 24px', lineHeight: 1.6 }}>
+              Returning you to the app. If nothing happens, use the button below.
+            </p>
+            <button type="button" onClick={() => { window.location.href = appHandbackUrl; }}
+              style={{ width: '100%', padding: '14px', fontSize: '16px', borderRadius: '10px', fontWeight: 600, cursor: 'pointer', background: 'linear-gradient(90deg, #083A85 0%, #0a4da3 100%)', color: '#fff', border: 'none', letterSpacing: '0.5px', boxShadow: '0 4px 12px rgba(8,58,133,0.25)' }}>
+              Open {appHandbackUrl.startsWith('connektstudio') ? 'Connekt Studio' : 'the Connekt app'}
+            </button>
+            <p style={{ fontSize: '12px', color: '#94a3b8', margin: '16px 0 0' }}>You can close this tab once the app opens.</p>
+          </div>
+        </div>
       )}
     </>
   );
