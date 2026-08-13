@@ -38,7 +38,11 @@ const SECURITY_HEADERS = [
       //                              302-redirects /uploads/** to a presigned R2 URL
       //                              when the file is not on local disk, so the
       //                              browser's final image request hits R2.
-      "img-src 'self' data: blob: https://backend.connekyt.com https://*.r2.cloudflarestorage.com https://*.cloudflarestream.com https://lh3.googleusercontent.com https://flagcdn.com https://images.unsplash.com https://i.pinimg.com https://www.svgrepo.com https://www.gstatic.com https://unpkg.com https://ui-avatars.com",
+      // www.connekyt.com / connekyt.com - static brand assets (e.g. /connekytlogo.png) are
+      //                              sometimes referenced by absolute URL so the same link
+      //                              works off-site. 'self' only covers whichever of the two
+      //                              hosts served the page, so allow both explicitly.
+      "img-src 'self' data: blob: https://www.connekyt.com https://connekyt.com https://backend.connekyt.com https://*.r2.cloudflarestorage.com https://*.cloudflarestream.com https://lh3.googleusercontent.com https://flagcdn.com https://images.unsplash.com https://i.pinimg.com https://www.svgrepo.com https://www.gstatic.com https://unpkg.com https://ui-avatars.com",
       "font-src 'self' data: https://fonts.gstatic.com",
       // cdn.jsdelivr.net          - world-atlas TopoJSON fetched by Rotating/HalfEarth globes
       // unpkg.com                 - three-globe texture URLs are also fetched via JS, not only rendered as <img>
