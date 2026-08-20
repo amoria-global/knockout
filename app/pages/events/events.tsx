@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo, useRef, Suspense } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef, useId, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import AmoriaKNavbar from '../../components/navbar';
 import { useTranslations } from 'next-intl';
@@ -84,6 +84,7 @@ function FilterSelect({
   const [activeIndex, setActiveIndex] = useState(0);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
+  const listboxId = useId();
 
   useEffect(() => {
     if (!open) return;
@@ -154,6 +155,7 @@ function FilterSelect({
           ref={listRef}
           role="listbox"
           aria-label={ariaLabel}
+          aria-activedescendant={`${listboxId}-opt-${activeIndex}`}
           className="ev-select-list"
           tabIndex={-1}
           onKeyDown={handleListKey}
@@ -164,6 +166,7 @@ function FilterSelect({
             return (
               <li
                 key={opt.value}
+                id={`${listboxId}-opt-${i}`}
                 role="option"
                 aria-selected={isSelected}
                 className={`ev-select-option${isSelected ? ' is-selected' : ''}${isActive ? ' is-active' : ''}`}
@@ -205,6 +208,24 @@ const Events: React.FC = () => {
   const [userLocation, setUserLocation] = useState<LocationData | null>(null);
   const [availableDistricts, setAvailableDistricts] = useState<string[]>([]);
   const itemsPerPage = 12;
+
+  // Debounced search: the API fetch fires ~350ms after the user stops
+  // typing instead of on every keystroke (which previously caused one
+  // full refetch + skeleton flash per character).
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  useEffect(() => {
+    const id = setTimeout(() => {
+      setDebouncedSearch(searchTerm.trim());
+      setCurrentPage(1);
+    }, 350);
+    return () => clearTimeout(id);
+  }, [searchTerm]);
+
+  // Stale-response guard: only the most recent fetch may commit state,
+  // so a slow earlier response can't overwrite a newer one.
+  const fetchSeqRef = useRef(0);
+  // Anchor for scrolling back to the results after a page change.
+  const resultStripRef = useRef<HTMLDivElement>(null);
 
   // userLocation kept for future use (set by useEffect, not directly read)
   void userLocation;
@@ -300,6 +321,7 @@ const Events: React.FC = () => {
   };
 
   const fetchEvents = useCallback(async () => {
+    const seq = ++fetchSeqRef.current;
     setIsLoading(true);
     setLoadError(null);
     try {
@@ -318,8 +340,9 @@ const Events: React.FC = () => {
         location:  selectedLocation  !== 'all' ? selectedLocation  : undefined,
         status:    effectiveStatus,
         dateRange: selectedDate      !== 'all' ? selectedDate      : undefined,
-        search:    searchTerm.trim() || undefined,
+        search:    debouncedSearch || undefined,
       });
+      if (seq !== fetchSeqRef.current) return; // superseded by a newer fetch
       if (response.success && response.data) {
         const events = response.data.content;
         // Verify which "ongoing" events have an active Cloudflare stream
@@ -329,6 +352,7 @@ const Events: React.FC = () => {
           const checks = await Promise.allSettled(
             ongoingEvents.map(e => getStreamVideo(e.id))
           );
+          if (seq !== fetchSeqRef.current) return;
           checks.forEach((result, i) => {
             if (result.status === 'fulfilled' && result.value.success) {
               const d = result.value.data as { data?: { connectionStatus?: string }; connectionStatus?: string };
@@ -366,12 +390,13 @@ const Events: React.FC = () => {
         setLoadError(response.error || 'Failed to fetch events');
       }
     } catch (err) {
+      if (seq !== fetchSeqRef.current) return;
       setLoadError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
-      setIsLoading(false);
+      if (seq === fetchSeqRef.current) setIsLoading(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPage, itemsPerPage, selectedCategory, selectedLocation, selectedStatus, selectedDate, searchTerm, activeTab]);
+  }, [currentPage, itemsPerPage, selectedCategory, selectedLocation, selectedStatus, selectedDate, debouncedSearch, activeTab]);
 
   useEffect(() => {
     fetchEvents();
@@ -421,6 +446,8 @@ const Events: React.FC = () => {
   // ───── Handlers ─────
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
+    // Submit bypasses the debounce delay.
+    setDebouncedSearch(searchTerm.trim());
     setCurrentPage(1);
   };
 
@@ -431,9 +458,15 @@ const Events: React.FC = () => {
     setCurrentPage(1);
   };
 
-  const goToPage = (n: number) => setCurrentPage(n);
-  const goToNext = () => setCurrentPage(p => Math.min(p + 1, apiTotalPages));
-  const goToPrev = () => setCurrentPage(p => Math.max(p - 1, 1));
+  // After a page change the new results render above the pager, so bring
+  // the reader back to the top of the results.
+  const scrollToResults = () => {
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    resultStripRef.current?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+  };
+  const goToPage = (n: number) => { setCurrentPage(n); scrollToResults(); };
+  const goToNext = () => { setCurrentPage(p => Math.min(p + 1, apiTotalPages)); scrollToResults(); };
+  const goToPrev = () => { setCurrentPage(p => Math.max(p - 1, 1)); scrollToResults(); };
 
   // Pagination ranges (compact on mobile)
   const getPageNumbers = (): (number | string)[] => {
@@ -926,132 +959,12 @@ const Events: React.FC = () => {
           .ev-story:hover { transform: none; }
         }
 
-        /* ===== Single full-width live banner (LEGACY - used elsewhere) ===== */
-        .ev-featured {
-          position: relative;
-          display: block;
-          width: 100%;
-          aspect-ratio: 5 / 1;
-          min-height: 160px;
-          max-height: 240px;
-          border-radius: 22px;
-          overflow: hidden;
-          text-decoration: none;
-          color: #fff;
-          background: #0f172a;
-          border: 2px solid rgba(220,38,38,0.85);
-          animation: ev-featured-twinkle 1s ease-out infinite;
-        }
-        @media (max-width: 700px) {
-          .ev-featured { aspect-ratio: 16 / 9; min-height: 200px; max-height: 280px; }
-        }
-        .ev-featured:hover {
-          transform: translateY(-3px);
-          animation-play-state: paused;
-          border-color: rgba(248,113,113,1);
-          box-shadow:
-            0 36px 70px -25px rgba(8,28,60,0.55),
-            0 0 0 4px rgba(220,38,38,0.35),
-            0 0 50px 0 rgba(220,38,38,0.55);
-        }
-        @keyframes ev-featured-twinkle {
-          0%, 100% {
-            border-color: rgba(220,38,38,0.85);
-            box-shadow:
-              0 30px 60px -25px rgba(8,28,60,0.45),
-              0 0 0 0 rgba(220,38,38,0.75),
-              0 0 0 0 rgba(220,38,38,0.5);
-          }
-          25% {
-            box-shadow:
-              0 30px 60px -25px rgba(8,28,60,0.45),
-              0 0 0 8px rgba(220,38,38,0.35),
-              0 0 0 18px rgba(220,38,38,0.18);
-          }
-          50% {
-            border-color: rgba(248,113,113,1);
-            box-shadow:
-              0 30px 60px -25px rgba(8,28,60,0.45),
-              0 0 0 18px rgba(220,38,38,0.10),
-              0 0 0 32px rgba(220,38,38,0.05);
-          }
-          75% {
-            box-shadow:
-              0 30px 60px -25px rgba(8,28,60,0.45),
-              0 0 0 26px rgba(220,38,38,0),
-              0 0 0 44px rgba(220,38,38,0);
-          }
-        }
-        @media (prefers-reduced-motion: reduce) {
-          .ev-featured {
-            animation: none;
-            box-shadow:
-              0 30px 60px -25px rgba(8,28,60,0.45),
-              0 0 0 3px rgba(220,38,38,0.55);
-          }
-        }
-        .ev-featured-img {
-          position: absolute; inset: 0;
-          background-size: cover;
-          background-position: center;
-          transition: transform 0.5s cubic-bezier(0.22,1,0.36,1);
-        }
-        .ev-featured:hover .ev-featured-img { transform: scale(1.04); }
-        .ev-featured-tint {
-          position: absolute; inset: 0;
-          /* Deep-navy base differentiates the featured banner from the
-             brand-blue hero above - reads as a separate "premiere stage"
-             rather than a continuation of the hero. */
-          background:
-            linear-gradient(180deg, rgba(15,23,42,0.10) 0%, rgba(15,23,42,0.30) 40%, rgba(15,23,42,0.78) 80%, rgba(15,23,42,0.92) 100%),
-            linear-gradient(90deg, rgba(15,23,42,0.40) 0%, rgba(15,23,42,0) 60%);
-        }
-        .ev-featured-content {
-          position: absolute;
-          left: 0; right: 0; bottom: 0;
-          padding: clamp(0.75rem, 2vw, 1.25rem) clamp(0.875rem, 2.5vw, 1.5rem);
-          display: flex; align-items: flex-end; justify-content: space-between;
-          gap: 1rem;
-        }
-        .ev-featured-meta {
-          flex: 1; min-width: 0;
-        }
-        .ev-featured-title {
-          font-size: clamp(1.1rem, 2.2vw, 1.6rem);
-          font-weight: 800;
-          line-height: 1.15;
-          margin: 6px 0 4px;
-          text-shadow: 0 2px 8px rgba(0,0,0,0.4);
-          display: -webkit-box;
-          -webkit-line-clamp: 1;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-        }
-        .ev-featured-meta-row {
-          display: flex; flex-wrap: wrap; gap: 10px;
-          font-size: 0.8rem;
-          color: rgba(255,255,255,0.92);
-        }
-        .ev-featured-meta-row > span {
-          display: inline-flex; align-items: center; gap: 5px;
-        }
-        .ev-featured-cta {
-          display: inline-flex; align-items: center; gap: 6px;
-          padding: 0.5rem 1rem;
-          border-radius: 999px;
-          background: linear-gradient(135deg, ${BRAND}, ${BRAND_DARK});
-          color: #fff; font-weight: 700; font-size: 0.85rem;
-          box-shadow: 0 10px 24px -8px rgba(8,58,133,0.7);
-          flex-shrink: 0;
-        }
-        .ev-featured:hover .ev-featured-cta { transform: translateY(-1px); }
-
-
         /* ===== Tab segment ===== */
-        /* Sticky tabs - stay visible as the grid scrolls so switching is one tap */
+        /* Sticky tabs - stay visible as the grid scrolls so switching is
+           one tap. Offset clears the fixed 64px navbar above. */
         .ev-tabs-wrap {
           position: sticky;
-          top: 8px;
+          top: 72px;
           z-index: 20;
           max-width: 1280px;
           margin: 1.5rem auto 0;
@@ -1097,6 +1010,7 @@ const Events: React.FC = () => {
           .ev-tab {
             flex: 1 1 0;
             min-width: 0;
+            min-height: 44px; /* touch-target floor */
             padding: 0.55rem 0.4rem;
             font-size: 0.75rem;
             gap: 5px;
@@ -1135,24 +1049,11 @@ const Events: React.FC = () => {
           padding: 0 7px;
           border-radius: 999px;
           background: rgba(239,68,68,0.18);
-          color: #ef4444;
+          color: #b91c1c; /* darker red: keeps AA contrast on the light tint */
           font-size: 0.7rem;
           font-weight: 800;
         }
         .ev-tab.is-active .ev-tab-count { background: rgba(255,255,255,0.20); color: #fff; }
-        .ev-tab-pulse {
-          width: 8px; height: 8px;
-          border-radius: 50%;
-          background: #ef4444;
-          box-shadow: 0 0 0 0 rgba(239,68,68,0.6);
-          animation: ev-pulse 1.6s ease-out infinite;
-          flex: none;
-        }
-        @keyframes ev-pulse {
-          0%   { box-shadow: 0 0 0 0 rgba(239,68,68,0.6); }
-          70%  { box-shadow: 0 0 0 8px rgba(239,68,68,0); }
-          100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); }
-        }
 
         /* ===== Filter control card ===== */
         .ev-controls {
@@ -1186,6 +1087,12 @@ const Events: React.FC = () => {
           transition: border-color 0.18s, box-shadow 0.18s, background 0.18s;
         }
         .ev-search-input::placeholder { color: #94a3b8; }
+        /* Suppress the native WebKit clear control so it can't double up
+           with our custom clear button in the same corner. */
+        .ev-search-input::-webkit-search-cancel-button {
+          -webkit-appearance: none;
+          display: none;
+        }
         .ev-search-input:focus {
           border-color: ${BRAND};
           background: #fff;
@@ -1195,6 +1102,7 @@ const Events: React.FC = () => {
           position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
           background: transparent; border: none; cursor: pointer;
           color: #94a3b8; padding: 6px; border-radius: 50%;
+          transition: color 0.18s, background 0.18s;
         }
         .ev-search-clear:hover { color: ${BRAND}; background: rgba(8,58,133,0.08); }
 
@@ -1317,29 +1225,6 @@ const Events: React.FC = () => {
           display: inline-flex; align-items: center; gap: 8px;
         }
         .ev-result-count strong { color: ${BRAND}; font-weight: 800; }
-        .ev-result-pulse {
-          display: inline-flex; align-items: center; gap: 6px;
-          color: #ef4444;
-          font-weight: 700;
-          font-size: 0.82rem;
-          letter-spacing: 0.04em;
-          text-transform: uppercase;
-          margin-right: 4px;
-        }
-        .ev-result-pulse::before {
-          content: '';
-          width: 8px; height: 8px;
-          border-radius: 50%;
-          background: #ef4444;
-          box-shadow: 0 0 0 0 rgba(239,68,68,0.6);
-          animation: ev-pulse-mini 1.6s ease-out infinite;
-          flex: none;
-        }
-        @keyframes ev-pulse-mini {
-          0%   { box-shadow: 0 0 0 0 rgba(239,68,68,0.6); }
-          70%  { box-shadow: 0 0 0 8px rgba(239,68,68,0); }
-          100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); }
-        }
         .ev-clear-btn {
           padding: 0.5rem 0.85rem;
           border-radius: 10px;
@@ -1369,7 +1254,11 @@ const Events: React.FC = () => {
           /* Bigger cards - was 260px min, now 320px → fewer per row, more poster real estate */
           grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
           gap: 1.75rem;
+          transition: opacity 0.2s ease;
         }
+        /* While a refine-fetch (search/filter change) is in flight the
+           previous results stay rendered, just dimmed - no skeleton flash. */
+        .ev-grid.is-refining { opacity: 0.55; pointer-events: none; }
         @media (max-width: 700px) {
           .ev-grid { grid-template-columns: repeat(2, 1fr); gap: 1rem; }
         }
@@ -1480,10 +1369,23 @@ const Events: React.FC = () => {
           pointer-events: none;
         }
 
-        /* Top-left / top-right overlay rails */
+        /* Stretched link: the card itself is an <article>; this overlay
+           anchor makes the whole card clickable while keeping the bookmark
+           a valid sibling button (interactive content inside an <a> is
+           invalid HTML and unreliable for assistive tech). */
+        .ev-card-link {
+          position: absolute;
+          inset: 0;
+          z-index: 2;
+          border-radius: 18px;
+          cursor: pointer;
+        }
+
+        /* Top-left / top-right overlay rails (above the stretched link so
+           the bookmark stays clickable) */
         .ev-card-tl, .ev-card-tr {
           position: absolute; top: 14px;
-          z-index: 2;
+          z-index: 3;
           display: flex; gap: 8px; align-items: center;
         }
         .ev-card-tl { left: 14px; }
@@ -1600,16 +1502,16 @@ const Events: React.FC = () => {
           color: #ffffff;
           border-color: rgba(255,255,255,0.18);
         }
+        /* The fill stays pinned at #dc2626 (white text keeps AA contrast
+           through the whole cycle); only the outer halo animates. */
         @keyframes ev-status-live-pulse {
           0%, 100% {
-            background: #dc2626;
             box-shadow:
               0 0 0 0 rgba(220,38,38,0.55),
               0 1px 2px rgba(0,0,0,0.30),
               0 6px 16px -6px rgba(0,0,0,0.45);
           }
           50% {
-            background: #ef4444;
             box-shadow:
               0 0 0 6px rgba(220,38,38,0),
               0 1px 2px rgba(0,0,0,0.30),
@@ -1656,7 +1558,10 @@ const Events: React.FC = () => {
         }
         .ev-bookmark:hover { background: rgba(15,18,22,0.78); }
         .ev-bookmark:active { transform: scale(0.94); }
-        .ev-bookmark.is-saved { color: ${BRAND}; }
+        /* Saved = solid white fill (navy was near-invisible on the dark
+           glass); unsaved stays a white outline, so the two states read
+           clearly apart. */
+        .ev-bookmark.is-saved { color: #ffffff; }
 
         /* Meta block - in normal flow at the bottom of the card (NOT
            absolute), so it contributes its natural height and the card's
@@ -1882,9 +1787,12 @@ const Events: React.FC = () => {
           border-color: rgba(255,255,255,0.10);
         }
 
-        /* Reduced motion - keep the brand cues but stop the breathing glow. */
+        /* Reduced motion - the remaining always-on loops (status pulse,
+           dot fade, skeleton shimmer) stop too; static cues survive. */
         @media (prefers-reduced-motion: reduce) {
-          .ev-card.is-live { animation: none; box-shadow: 0 0 0 1px rgba(220,38,38,0.55), 0 12px 32px -8px rgba(0,0,0,0.55); }
+          .ev-card-status--live { animation: none; }
+          .ev-pulse-dot { animation: none; }
+          .ev-skel-media { animation: none; background: #eef2f7; }
         }
 
         @media (max-width: 700px) {
@@ -1903,6 +1811,13 @@ const Events: React.FC = () => {
           .ev-card-chip-org { font-size: 11px; }
           .ev-card-chip-org-avatar { width: 20px; height: 20px; font-size: 10px; }
           .ev-card-price { font-size: 13px; padding: 6px 10px; }
+        }
+
+        /* In the forced-2-up band cards run ~220px wide from 481-560px too,
+           so the TL date pill and horizontal TR rail can nearly collide.
+           Stack the TR rail through that whole band. */
+        @media (max-width: 560px) {
+          .ev-card-tr { flex-direction: column; align-items: flex-end; gap: 6px; }
         }
 
         /* 2-up at phone widths - cards become ~170px wide.
@@ -1948,19 +1863,32 @@ const Events: React.FC = () => {
           .ev-card-footer { flex-wrap: wrap; gap: 4px; }
         }
 
-        /* ===== Skeleton - matches the new full-bleed poster card ===== */
+        /* ===== Skeleton - same light shimmer, but shaped like the real
+           card (4:3 media region + natural-height meta stub) so the page
+           doesn't jump when data resolves. ===== */
         .ev-skel {
-          aspect-ratio: 3/4;
           border-radius: 18px;
           overflow: hidden;
           border: 1px solid rgba(15,23,42,0.10);
+          background: #fff;
+        }
+        .ev-skel-media {
+          aspect-ratio: 4 / 3;
           background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 37%, #f1f5f9 63%);
           background-size: 400% 100%;
           animation: ev-shimmer 1.4s linear infinite;
         }
-        /* (skeleton no longer needs separate poster + info sub-elements
-           since the card body is now a single continuous image surface) */
-        .ev-skel-poster, .ev-skel-info, .ev-skel-line { display: none; }
+        .ev-skel-body {
+          padding: 14px 16px 16px;
+          display: flex; flex-direction: column; gap: 10px;
+        }
+        .ev-skel-line {
+          height: 12px; border-radius: 6px;
+          background: #eef2f7;
+        }
+        .ev-skel-line--venue { width: 60%; }
+        .ev-skel-line--title { width: 85%; height: 18px; }
+        .ev-skel-line--foot { width: 40%; }
         @keyframes ev-shimmer {
           0%   { background-position: 100% 0; }
           100% { background-position: -100% 0; }
@@ -2033,11 +1961,19 @@ const Events: React.FC = () => {
         }
         .ev-pager-ellipsis { color: #94a3b8; padding: 0 6px; }
 
-        /* ===== A11y ===== */
+        /* ===== A11y =====
+           The outline follows each element's own border-radius; forcing a
+           radius here deformed circular controls when tabbing. */
         .ev-root :where(a, button, input, select, [tabindex]):focus-visible {
           outline: 2px solid ${BRAND};
           outline-offset: 2px;
-          border-radius: 8px;
+        }
+        /* Keyboard parity: focused cards get the same lift as hover. */
+        .ev-card:focus-within {
+          transform: translateY(-2px);
+          box-shadow:
+            0 2px 4px rgba(0,0,0,0.45),
+            0 24px 48px -10px rgba(0,0,0,0.70);
         }
       `}</style>
 
@@ -2150,13 +2086,14 @@ const Events: React.FC = () => {
         </section>
       )}
 
-      {/* Tab segment */}
+      {/* Tab segment. These are status filters, not ARIA tabs (no
+          tabpanel/arrow-key contract), so they are toggle buttons with
+          aria-pressed - honest semantics for screen readers. */}
       <div className="ev-tabs-wrap">
-        <div className="ev-tabs" role="tablist" aria-label="Event status">
+        <div className="ev-tabs" aria-label="Event status filters">
           <button
             type="button"
-            role="tab"
-            aria-selected={activeTab === 'all'}
+            aria-pressed={activeTab === 'all'}
             className={`ev-tab ${activeTab === 'all' ? 'is-active' : ''}`}
             onClick={() => switchTab('all')}
           >
@@ -2166,8 +2103,7 @@ const Events: React.FC = () => {
           </button>
           <button
             type="button"
-            role="tab"
-            aria-selected={activeTab === 'live'}
+            aria-pressed={activeTab === 'live'}
             className={`ev-tab ${activeTab === 'live' ? 'is-active' : ''}`}
             onClick={() => switchTab('live')}
           >
@@ -2178,8 +2114,7 @@ const Events: React.FC = () => {
           </button>
           <button
             type="button"
-            role="tab"
-            aria-selected={activeTab === 'upcoming'}
+            aria-pressed={activeTab === 'upcoming'}
             className={`ev-tab ${activeTab === 'upcoming' ? 'is-active' : ''}`}
             onClick={() => switchTab('upcoming')}
           >
@@ -2189,8 +2124,7 @@ const Events: React.FC = () => {
           </button>
           <button
             type="button"
-            role="tab"
-            aria-selected={activeTab === 'completed'}
+            aria-pressed={activeTab === 'completed'}
             className={`ev-tab ${activeTab === 'completed' ? 'is-active' : ''}`}
             onClick={() => switchTab('completed')}
           >
@@ -2267,9 +2201,12 @@ const Events: React.FC = () => {
         </div>
       </div>
 
-      {/* Result strip */}
-      <div className="ev-result">
-        <p className="ev-result-count">
+      {/* Result strip. This persistent node is the aria-live region, so
+          screen readers hear both "Searching" and the final count (the
+          old live region sat on the skeleton grid, which unmounts before
+          it can announce anything). */}
+      <div className="ev-result" ref={resultStripRef}>
+        <p className="ev-result-count" aria-live="polite" aria-busy={isLoading}>
           {isLoading ? (
             'Searching events…'
           ) : (
@@ -2298,9 +2235,18 @@ const Events: React.FC = () => {
 
       {/* Grid */}
       <main className="ev-grid-wrap">
-        {isLoading ? (
-          <div className="ev-grid" aria-busy="true" aria-live="polite">
-            {Array.from({ length: 8 }).map((_, i) => <div key={i} className="ev-skel" />)}
+        {isLoading && eventsData.length === 0 ? (
+          <div className="ev-grid" aria-hidden="true">
+            {Array.from({ length: itemsPerPage }).map((_, i) => (
+              <div key={i} className="ev-skel">
+                <div className="ev-skel-media" />
+                <div className="ev-skel-body">
+                  <span className="ev-skel-line ev-skel-line--venue" />
+                  <span className="ev-skel-line ev-skel-line--title" />
+                  <span className="ev-skel-line ev-skel-line--foot" />
+                </div>
+              </div>
+            ))}
           </div>
         ) : loadError ? (
           <div className="ev-empty" role="alert">
@@ -2347,7 +2293,7 @@ const Events: React.FC = () => {
           </div>
         ) : (
           <>
-            <div className="ev-grid">
+            <div className={`ev-grid${isLoading ? ' is-refining' : ''}`}>
               {eventsData.map(event => {
                 const live = isEventLive(event);
                 const ended = isEventEnded(event);
@@ -2396,12 +2342,12 @@ const Events: React.FC = () => {
                   };
                 })();
 
+                const stateLabel = live ? 'live now' : ended ? 'ended' : 'upcoming';
+
                 return (
-                  <a
+                  <article
                     key={event.id}
-                    href={href}
                     className={`ev-card${live ? ' is-live' : ''}${ended ? ' is-ended' : ''}`}
-                    aria-label={event.title}
                   >
                     {/* Media area - full-bleed image with TL/TR overlay rails */}
                     <div className="ev-card-media">
@@ -2449,7 +2395,7 @@ const Events: React.FC = () => {
                         <button
                           type="button"
                           className={`ev-bookmark${isSaved ? ' is-saved' : ''}`}
-                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleSaved(event.id); }}
+                          onClick={() => toggleSaved(event.id)}
                           aria-label={isSaved ? 'Remove from saved' : 'Save event'}
                           aria-pressed={isSaved}
                         >
@@ -2496,7 +2442,14 @@ const Events: React.FC = () => {
                         </span>
                       </div>
                     </div>
-                  </a>
+                    {/* Stretched link rendered last so it sits above the
+                        meta; the TL/TR rails (z-index 3) stay clickable. */}
+                    <a
+                      href={href}
+                      className="ev-card-link"
+                      aria-label={`${event.title}${dateParts ? `, ${dateParts.mo} ${dateParts.day}` : ''}, ${stateLabel}`}
+                    />
+                  </article>
                 );
               })}
             </div>
