@@ -558,10 +558,11 @@ function JoinPackageContent(): React.JSX.Element {
     setPendingViewerName(data.name);
     try {
       const fingerprint = await getDeviceId();
+      // Identity is name + email only; the payment step collects the
+      // mobile-money number where it is actually charged.
       const res = await registerAnonymousViewer(selectedEvent.id, {
         name: data.name.trim(),
         email: data.email.trim(),
-        phone: data.phone.trim(),
         deviceFingerprint: fingerprint,
       });
 

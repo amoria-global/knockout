@@ -12,7 +12,13 @@ import type { ApiResponse } from '@/lib/api/types';
 export interface IdentifyBuyerRequest {
   name: string;
   email: string;
-  phone: string;
+  /**
+   * Optional and no longer collected at verification. Identity is keyed on
+   * (album, email) server-side; the payment step gathers the mobile-money
+   * number where it is actually needed. Collecting it twice made buyers
+   * think they were two different people paying twice.
+   */
+  phone?: string;
   deviceFingerprint: string;
 }
 
