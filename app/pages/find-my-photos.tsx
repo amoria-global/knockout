@@ -24,7 +24,6 @@ import {
 import { API_ENDPOINTS } from '@/lib/api/config';
 import { API_CONFIG } from '@/lib/api/config';
 import InternationalPhoneInput, { type PhoneValue } from '../components/phone/InternationalPhoneInput';
-import { parsePhone } from '@/lib/phone/phoneKit';
 
 // Photo shape used throughout the page, augmented with album-purchase fields
 type PhotoItem = {
@@ -149,9 +148,9 @@ const FindMyPhotos = () => {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [detailsName, setDetailsName] = useState('');
   const [detailsEmail, setDetailsEmail] = useState('');
-  const [detailsPhoneVal, setDetailsPhoneVal] = useState<PhoneValue | null>(null);
-  // Saved-buyer prefill for the phone component (parsed from localStorage)
-  const [detailsPhonePrefill, setDetailsPhonePrefill] = useState<{ iso2: string | null; nsn: string } | null>(null);
+  // Phone is deliberately NOT collected here any more: identity is name +
+  // email only, and the payment step asks for the mobile-money number where
+  // it is actually charged. Asking twice read as two separate payments.
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [detailsError, setDetailsError] = useState<string | null>(null);
   // Pending photos to buy, held while details modal is open
@@ -379,20 +378,10 @@ const FindMyPhotos = () => {
     try {
       const details = localStorage.getItem('album_buyer_details');
       if (details) {
+        // Older saves may carry a phone; it is read-tolerated and ignored.
         const parsed = JSON.parse(details) as { name?: string; email?: string; phone?: string };
         if (parsed.name && !detailsName) setDetailsName(parsed.name);
         if (parsed.email && !detailsEmail) setDetailsEmail(parsed.email);
-        if (parsed.phone && !detailsPhonePrefill) {
-          // Stored as trunk-national ("0788…", legacy) or international
-          // digits ("250788…", current format) - parse either into the
-          // component's country + national-number prefill.
-          const raw = parsed.phone.trim();
-          const p = parsePhone(
-            raw.startsWith('0') || raw.startsWith('+') ? raw : `+${raw}`,
-            'RW'
-          );
-          setDetailsPhonePrefill({ iso2: p.country?.iso2 ?? null, nsn: p.nsn });
-        }
       }
     } catch {}
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1422,10 +1411,8 @@ const FindMyPhotos = () => {
     setDetailsError(null);
     const name = detailsName.trim();
     const email = detailsEmail.trim();
-    const phone = detailsPhoneVal?.digits ?? '';
     if (!name) { setDetailsError('Please enter your name.'); return; }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setDetailsError('Please enter a valid email.'); return; }
-    if (!detailsPhoneVal?.isValid) { setDetailsError('Please enter a valid phone number.'); return; }
 
     const photos = pendingBuyRef.current || [];
     const ctx = getPurchaseContext(photos);
@@ -1434,7 +1421,7 @@ const FindMyPhotos = () => {
     setDetailsLoading(true);
     try {
       const fp = await getDeviceId();
-      const res = await identifyAlbumBuyer(ctx.albumId, { name, email, phone, deviceFingerprint: fp });
+      const res = await identifyAlbumBuyer(ctx.albumId, { name, email, deviceFingerprint: fp });
       if (!res.success || !res.data) {
         throw new Error(res.error || 'Could not verify your details.');
       }
@@ -1445,7 +1432,7 @@ const FindMyPhotos = () => {
       // Persist
       try {
         localStorage.setItem(`album_buyer_id:${ctx.albumId}`, newBuyerId);
-        localStorage.setItem('album_buyer_details', JSON.stringify({ name, email, phone }));
+        localStorage.setItem('album_buyer_details', JSON.stringify({ name, email }));
         const urlObj = new URL(window.location.href);
         urlObj.searchParams.set('buyerId', newBuyerId);
         urlObj.searchParams.set('albumId', ctx.albumId);
@@ -4595,20 +4582,6 @@ const FindMyPhotos = () => {
                 </div>
               );
             })}
-
-            <div style={{ marginBottom: '14px' }}>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#d1d5db', marginBottom: '6px' }}>
-                Phone Number
-              </label>
-              <InternationalPhoneInput
-                dark
-                defaultIso2={detailsPhonePrefill?.iso2}
-                initialNsn={detailsPhonePrefill?.nsn ?? ''}
-                onChange={setDetailsPhoneVal}
-                disabled={detailsLoading}
-                ariaLabel="Phone number"
-              />
-            </div>
 
             {detailsError && (
               <div style={{

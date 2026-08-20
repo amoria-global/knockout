@@ -12,7 +12,12 @@ import type { ApiResponse } from '@/lib/api/types';
 export interface AnonymousViewerRegistration {
   name: string;
   email: string;
-  phone: string;
+  /**
+   * Optional and no longer collected at verification — the backend dedups
+   * viewers by email alone, and the payment gate gathers the mobile-money
+   * number where it is actually charged.
+   */
+  phone?: string;
   deviceFingerprint: string;
 }
 

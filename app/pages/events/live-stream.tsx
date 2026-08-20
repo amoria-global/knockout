@@ -529,10 +529,12 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
     setViewerInfoError('');
     try {
       const fingerprint = await getDeviceId();
+      // Identity is name + email only (the backend dedups by email alone);
+      // the payment gate collects the mobile-money number where it is
+      // actually charged. Collecting a phone here too read as two payments.
       const res = await registerAnonymousViewer(mainEvent.id, {
         name: data.name.trim(),
         email: data.email.trim(),
-        phone: data.phone.trim(),
         deviceFingerprint: fingerprint,
       });
       if (!res.success) {

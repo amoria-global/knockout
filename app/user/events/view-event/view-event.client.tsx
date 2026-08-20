@@ -457,7 +457,6 @@ function ViewEventContent({ eventIdProp }: { eventIdProp?: string }): React.JSX.
   const [showGroupAuth, setShowGroupAuth] = useState(false);
   const [gaName, setGaName] = useState('');
   const [gaEmail, setGaEmail] = useState('');
-  const [gaPhoneVal, setGaPhoneVal] = useState<PhoneValue | null>(null);
   const [gaLoading, setGaLoading] = useState(false);
   const [gaError, setGaError] = useState<string | null>(null);
   const [pendingInviteCode, setPendingInviteCode] = useState('');
@@ -952,7 +951,6 @@ function ViewEventContent({ eventIdProp }: { eventIdProp?: string }): React.JSX.
   const handleGroupViewerAuth = async () => {
     const name = gaName.trim();
     const email = gaEmail.trim();
-    const phone = gaPhoneVal?.digits ?? '';
     if (!name) { setGaError('Please enter your name.'); return; }
     if (!email) { setGaError(gaEmailRestricted ? 'Please enter the email you were invited on.' : 'Please enter your email.'); return; }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setGaError('Please enter a valid email address.'); return; }
@@ -965,7 +963,9 @@ function ViewEventContent({ eventIdProp }: { eventIdProp?: string }): React.JSX.
       const res = await fetch(`${chatBase}/api/remote/public/streams/${selectedEvent!.id}/identify-group-viewer`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ inviteCode: pendingInviteCode, name, email, phone, deviceFingerprint: fp }),
+        // Identity is name + email only; the payment step collects the
+        // mobile-money number where it is actually charged.
+        body: JSON.stringify({ inviteCode: pendingInviteCode, name, email, deviceFingerprint: fp }),
       });
       const data = await res.json();
       if (data.action === 1 && data.status === 'ACCESS_GRANTED') {
@@ -3236,16 +3236,6 @@ function ViewEventContent({ eventIdProp }: { eventIdProp?: string }): React.JSX.
                 style={{ width: '100%', padding: '12px 14px', background: 'rgba(255,255,255,0.06)', border: `1px solid ${gaEmailRestricted ? 'rgba(245,158,11,0.3)' : 'rgba(255,255,255,0.12)'}`, borderRadius: 10, color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
                 onFocus={(e) => { e.currentTarget.style.borderColor = '#03969c'; }}
                 onBlur={(e) => { e.currentTarget.style.borderColor = gaEmailRestricted ? 'rgba(245,158,11,0.3)' : 'rgba(255,255,255,0.12)'; }}
-              />
-            </div>
-
-            <div style={{ marginBottom: 14 }}>
-              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#d1d5db', marginBottom: 6 }}>Phone Number <span style={{ color: '#6b7280', fontWeight: 400 }}>(optional)</span></label>
-              <InternationalPhoneInput
-                dark
-                onChange={setGaPhoneVal}
-                disabled={gaLoading}
-                ariaLabel="Phone number"
               />
             </div>
 
