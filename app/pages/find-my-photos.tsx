@@ -247,6 +247,28 @@ const FindMyPhotos = () => {
   const [freeCapWarnShown, setFreeCapWarnShown] = useState(false);
   const [freeCapWarnOpen, setFreeCapWarnOpen] = useState(false);
 
+  // Links sent before this change carry ?email=<recipient>. It is captured
+  // once here and then taken off the address bar, because leaving it there
+  // keeps a real person's email in browser history, in the referrer of every
+  // outbound request, and in whatever the link gets pasted into.
+  //
+  // The capture is a ref rather than a re-read of the URL: the auto-verify
+  // below reads this inside an async callback, long after the scrub has run,
+  // and it must not depend on how the framework snapshots search params.
+  // replaceState edits the entry in place, so Back does not restore it.
+  const legacyEmailRef = useRef<string | null>(
+    typeof window === 'undefined'
+      ? null
+      : new URL(window.location.href).searchParams.get('email'),
+  );
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has('email')) return;
+    url.searchParams.delete('email');
+    window.history.replaceState(null, '', url.toString());
+  }, []);
+
   // Auto-fill invite code from URL param and load album (e.g. /find-my-photos?code=ABC123)
   useEffect(() => {
     const codeFromUrl = searchParams.get('code');
@@ -259,14 +281,20 @@ const FindMyPhotos = () => {
             setFreeAlbumId(response.data.albumId || response.data.eventId || '');
             setFreeAlbumTitle(response.data.eventTitle || response.data.title || '');
             setFreeAlbumPhotographer(response.data.photographerName || '');
-            // If email is in URL (from email link), auto-verify using access code as OTP
-            const emailFromUrl = searchParams.get('email');
-            if (emailFromUrl) {
-              setFreeAlbumEmail(emailFromUrl);
+            // The access code IS the proof of ownership — it was emailed to
+            // the recipient, and the server resolves who that is. Invitation
+            // links no longer carry an email, so auto-verify runs on the code
+            // alone. Links already in inboxes still carry one: it is honoured
+            // for this verification and then scrubbed from the address bar
+            // below, so a real person's email stops travelling through
+            // history, referrers and pasted links.
+            const emailFromUrl = legacyEmailRef.current;
+            {
+              if (emailFromUrl) setFreeAlbumEmail(emailFromUrl);
               setFreeAlbumFlow('otp');
               setFreeAlbumLoading(true);
               // Auto-submit: use the access code itself as the OTP (proves email ownership)
-              verifyFreeAlbumAccess(codeFromUrl, emailFromUrl, codeFromUrl).then((verifyRes) => {
+              verifyFreeAlbumAccess(codeFromUrl, emailFromUrl ?? '', codeFromUrl).then((verifyRes) => {
                 if (verifyRes.success && verifyRes.data) {
                   // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   const d = verifyRes.data as any;
@@ -297,8 +325,6 @@ const FindMyPhotos = () => {
                 }
                 setFreeAlbumLoading(false);
               }).catch(() => { setFreeAlbumLoading(false); });
-            } else {
-              setFreeAlbumFlow('email');
             }
             return;
           }
