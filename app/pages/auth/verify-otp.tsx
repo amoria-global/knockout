@@ -8,6 +8,7 @@ import { resendOtp } from '@/lib/APIs/auth/resend-otp/route';
 import { useToast } from '@/lib/notifications/ToastProvider';
 import { getAuthToken, getRefreshToken, setAuthToken } from '@/lib/api/client';
 import { getDashboardUrlWithToken } from '@/lib/utils/dashboard-url';
+import { readOtpHandoff, scrubOtpUrl } from '@/lib/utils/otp-handoff';
 import { persistPhotographerProfile } from '@/lib/photographer/persist-profile';
 
 const PhotographerOnboarding = dynamic(() => import('@/app/components/PhotographerOnboarding'), { ssr: false });
@@ -18,9 +19,26 @@ function VerifyOtpContent(): React.JSX.Element {
   const { success: showSuccess, error: showError, warning: showWarning, isOnline } = useToast();
 
   const applicantIdFromQuery = searchParams.get('applicantId');
-  const emailFromQuery = searchParams.get('email');
+  // The identity record now arrives out of band (sessionStorage keyed by
+  // applicantId) rather than in the query string. The query is still read as
+  // a fallback so links minted before that change keep working, and any
+  // personal params that do arrive are scrubbed from the address bar below.
+  const handoffRef = useRef(
+    readOtpHandoff(applicantIdFromQuery || '', {
+      email: searchParams.get('email') || undefined,
+      customerType: searchParams.get('customerType') || undefined,
+      firstName: searchParams.get('firstName') || undefined,
+      lastName: searchParams.get('lastName') || undefined,
+      phone: searchParams.get('phone') || undefined,
+    }),
+  );
+  const emailFromQuery = handoffRef.current.email || null;
   const [applicantId, setApplicantId] = useState(applicantIdFromQuery || '');
   const [email, setEmail] = useState(emailFromQuery || '');
+
+  useEffect(() => {
+    scrubOtpUrl();
+  }, []);
 
   // If the signup was launched FROM the mobile app, it passes a custom-scheme
   // deep link (e.g. connekt://auth-callback or exp://…) as `redirect`. After
@@ -58,10 +76,10 @@ function VerifyOtpContent(): React.JSX.Element {
     // values signup threaded through the URL. customerType is critical: without
     // it the app's useRole defaults to 'Client', so a 'User' would land on the
     // wrong dashboard.
-    const firstName = d.firstName || searchParams.get('firstName') || '';
-    const lastName = d.lastName || searchParams.get('lastName') || '';
-    const phone = d.phone || searchParams.get('phone') || '';
-    const customerType = d.customerType || searchParams.get('customerType') || '';
+    const firstName = d.firstName || handoffRef.current.firstName || '';
+    const lastName = d.lastName || handoffRef.current.lastName || '';
+    const phone = d.phone || handoffRef.current.phone || '';
+    const customerType = d.customerType || handoffRef.current.customerType || '';
     if (firstName) p.set('firstName', firstName);
     if (lastName) p.set('lastName', lastName);
     if (phone) p.set('phone', phone);
@@ -88,13 +106,25 @@ function VerifyOtpContent(): React.JSX.Element {
   } | null>(null);
   const [dashboardUrl, setDashboardUrl] = useState('');
 
-  const goToDashboard = (token: string) => {
-    const base = process.env.NEXT_PUBLIC_DASHBOARD_URL || '';
-    const refreshTkn = getRefreshToken();
-    const params = new URLSearchParams();
-    params.set('token', token);
-    if (refreshTkn) params.set('refreshToken', refreshTkn);
-    window.location.href = `${base}/?${params.toString()}`;
+  /**
+   * Hand off to the cross-app dashboard.
+   *
+   * This used to navigate to `${base}/?token=<JWT>&refreshToken=<JWT>`. A
+   * token in a query string lands in browser history, in the Referer of
+   * anything the next page requests, and in access logs, and a refresh
+   * token in particular is an account-takeover primitive rather than merely
+   * personal data.
+   *
+   * It is also unnecessary: the backend issues the JWT as an HttpOnly
+   * cookie scoped to `.connekyt.com`, which travels on its own to
+   * dashboard.connekyt.com. `getDashboardUrlWithToken` documents exactly
+   * that and drops any token handed to it; the `user` role below and the
+   * change-password screen already go through it.
+   */
+  const goToDashboard = () => {
+    const d = verifiedDataRef.current || {};
+    const ct = d.customerType || handoffRef.current.customerType || '';
+    window.location.href = getDashboardUrlWithToken(ct) || '/user/photographers';
   };
 
   // Create refs for each input box
@@ -215,7 +245,7 @@ function VerifyOtpContent(): React.JSX.Element {
           // The consumer `User` role has its dedicated dashboard on the
           // cross-app dashboard host. Bounce there (auth rides the shared
           // .connekyt.com cookie); skip when returning to the mobile app.
-          const ctForRoute = (d?.customerType || searchParams.get('customerType') || '').toLowerCase();
+          const ctForRoute = (d?.customerType || handoffRef.current.customerType || '').toLowerCase();
           if (ctForRoute === 'user' && !appRedirect) {
             const dash = getDashboardUrlWithToken('User');
             showSuccess('Account verified! Redirecting to your dashboard...');
@@ -234,7 +264,7 @@ function VerifyOtpContent(): React.JSX.Element {
           }
           if (token) {
             showSuccess('Account verified! Redirecting to dashboard...');
-            setTimeout(() => goToDashboard(token), 2000);
+            setTimeout(() => goToDashboard(), 2000);
           } else {
             // No token - redirect to login so user can authenticate
             showSuccess('Account verified! Please log in to continue.');
@@ -331,7 +361,9 @@ function VerifyOtpContent(): React.JSX.Element {
           }
           showSuccess('Profile complete! Redirecting to dashboard...');
           setTimeout(() => {
-            if (dashboardUrl) goToDashboard(dashboardUrl);
+            // dashboardUrl holds the session token, not a URL: here it is
+            // simply the "do we have a session" flag. Without one, log in.
+            if (dashboardUrl) goToDashboard();
             else window.location.href = '/user/auth/login';
           }, 1500);
         }}
