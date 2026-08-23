@@ -318,13 +318,28 @@ const FindMyPhotos = () => {
                   } else {
                     // No photos in response - fall back to OTP screen
                     setFreeAlbumOtp(codeFromUrl);
+                    if (!emailFromUrl) setFreeAlbumFlow('email');
                   }
                 } else {
-                  // Auto-verify failed - fall back to manual OTP entry
-                  setFreeAlbumError('');
+                  // Auto-verify failed. With an address in hand the OTP
+                  // screen is usable — it can show the masked address and
+                  // resend to it. Without one it is a dead end: nothing to
+                  // mask, and Resend has nowhere to send. Links no longer
+                  // carry an email, so that is now the common case; fall
+                  // back to the email-entry screen, which works, and say
+                  // what actually went wrong instead of blanking it.
+                  if (emailFromUrl) {
+                    setFreeAlbumError(verifyRes.error || '');
+                  } else {
+                    setFreeAlbumFlow('email');
+                  }
                 }
                 setFreeAlbumLoading(false);
-              }).catch(() => { setFreeAlbumLoading(false); });
+              }).catch(() => {
+                // Same dead end on a network failure.
+                if (!emailFromUrl) setFreeAlbumFlow('email');
+                setFreeAlbumLoading(false);
+              });
             }
             return;
           }
