@@ -44,8 +44,10 @@ export default function ChangePasswordPage() {
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (!password || password.length < 8) {
-      setError('Use at least 8 characters.');
+    // Same rule the server enforces (letter + digit + symbol), so the
+    // screen cannot promise less than the backend requires.
+    if (!/^(?=.*[A-Za-z])(?=.*\d)(?=.*[@!#$%^&*=+]).{8,}$/.test(password || '')) {
+      setError('Use at least 8 characters, including a letter, a number and one of @!#$%^&*=+');
       return;
     }
     if (password !== confirm) {
@@ -121,7 +123,7 @@ export default function ChangePasswordPage() {
               minLength={8}
               autoComplete="new-password"
               style={inp}
-              placeholder="At least 8 characters"
+              placeholder="8+ chars, a letter, a number and a symbol"
             />
           </label>
           <label style={lbl}>Confirm new password

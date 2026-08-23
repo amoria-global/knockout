@@ -43,9 +43,12 @@ function ResetPasswordContent(): React.JSX.Element {
         return;
       }
 
-      // Validate password strength (at least 8 characters)
-      if (newPassword.length < 8) {
-        const errMsg = 'Password must be at least 8 characters long';
+      // Mirror the server's policy so nobody is rejected by a rule this
+      // screen never mentioned: 8+ characters, a letter, a digit and one
+      // symbol. Signup already states and enforces the same thing.
+      if (!/^(?=.*[A-Za-z])(?=.*\d)(?=.*[@!#$%^&*=+]).{8,}$/.test(newPassword)) {
+        const errMsg =
+          'Use at least 8 characters, including a letter, a number and one of @!#$%^&*=+';
         setError(errMsg);
         showError(errMsg);
         return;
@@ -230,7 +233,7 @@ function ResetPasswordContent(): React.JSX.Element {
             {/* Password Requirements */}
             <div style={{ marginBottom: window.innerWidth < 640 ? '10px' : '12px', padding: window.innerWidth < 640 ? '5px 10px' : '6px 10px', backgroundColor: '#f3f4f6', borderRadius: '8px' }}>
               <p style={{ fontSize: window.innerWidth < 640 ? '10.5px' : '14.5px', color: '#6b7280', margin: 0 }}>
-                Password must contain: <span style={{ fontWeight: '500' }}>At least 8 characters</span>
+                Password must contain: <span style={{ fontWeight: '500' }}>At least 8 characters, a letter, a number and one of @!#$%^&amp;*=+</span>
               </p>
             </div>
 
