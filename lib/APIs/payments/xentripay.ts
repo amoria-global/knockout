@@ -372,8 +372,16 @@ export async function checkXentriPayStatus(
     );
   }
 
+  // Reading a payment's status is not privileged, and the caller may be an
+  // anonymous buyer who has already been charged. Refusing here used to make
+  // the poller spin until it timed out and then report a successful payment
+  // as failed. Fall through to the public endpoint instead, which resolves
+  // the same refid, so a missing token can never strand a paid buyer.
   if (!isAuthenticated()) {
-    return { success: false, error: 'Authentication required' };
+    return apiClient.get<XentriPayStatusResponse>(
+      API_ENDPOINTS.PAYMENTS.XENTRIPAY_PUBLIC_STATUS(refid),
+      { skipAuth: true, retries: 1 }
+    );
   }
 
   return apiClient.get<XentriPayStatusResponse>(
