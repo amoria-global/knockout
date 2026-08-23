@@ -54,15 +54,14 @@ export default function ChangePasswordPage() {
     }
     setBusy(true);
     try {
-      const resp = await setNewPassword({
-        email,
-        // Required by the helper but ignored by this code path on the
-        // backend (the endpoint only reads email + password + confirm).
-        code: '',
-        password,
-        newPassword: password,
-        confirmPassword: confirm,
-      });
+      // No reset code here: this is the forced first change, and the proof
+      // is the session the user just signed in with. `authenticated` makes
+      // the helper actually send it — the backend resolves the account from
+      // that session and will not touch any other.
+      const resp = await setNewPassword(
+        { email, password, newPassword: password, confirmPassword: confirm },
+        { authenticated: true },
+      );
       // Backend convention: { action: 1, message } on success.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const data: any = resp.data;

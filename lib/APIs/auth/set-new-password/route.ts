@@ -14,11 +14,13 @@ import { API_ENDPOINTS } from '@/lib/api/config';
 import type { ApiResponse } from '@/lib/api/types';
 
 export interface SetNewPasswordRequest {
-  email: string;
-  code: string; // Verification code from forgot-password email
-  password: string; // Backend requires 'password'
-  newPassword: string; // Backend also requires 'newPassword'
-  confirmPassword: string; // Password confirmation
+  /** Advisory. The backend picks the account from `code` or the session, never from this. */
+  email?: string;
+  /** Reset token from the forgot-password email. Omit for an authenticated change. */
+  code?: string;
+  password: string;
+  newPassword?: string;
+  confirmPassword: string;
 }
 
 export interface SetNewPasswordResponse {
@@ -30,13 +32,23 @@ export interface SetNewPasswordResponse {
  * Set New Password
  * Uses enhanced API client with automatic retry and error handling
  */
-export async function setNewPassword(data: SetNewPasswordRequest): Promise<ApiResponse<SetNewPasswordResponse>> {
+export async function setNewPassword(
+  data: SetNewPasswordRequest,
+  opts: { authenticated?: boolean } = {},
+): Promise<ApiResponse<SetNewPasswordResponse>> {
   const response = await apiClient.post<SetNewPasswordResponse>(
     API_ENDPOINTS.AUTH.SET_NEW_PASSWORD,
     data,
     {
-      skipAuth: true,
-      retries: 2,
+      // The backend now resolves the account from proof: the reset token in
+      // `code`, or the caller's own session. The forgot-password screen is
+      // logged out and carries the token; the forced-change screen holds a
+      // JWT and must actually send it, which `skipAuth` was suppressing.
+      skipAuth: !opts.authenticated,
+      // Reset tokens are single-use. A retry after a request that committed
+      // but timed out would burn the token and report failure for a change
+      // that actually succeeded.
+      retries: 0,
     }
   );
 
