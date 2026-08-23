@@ -19,6 +19,7 @@ import dynamic from 'next/dynamic';
 
 const PhotographerOnboarding = dynamic(() => import('@/app/components/PhotographerOnboarding'), { ssr: false });
 import { getDashboardUrlWithToken } from '@/lib/utils/dashboard-url';
+import { buildVerifyOtpUrl } from '@/lib/utils/otp-handoff';
 import InternationalPhoneInput, { type PhoneValue } from '@/app/components/phone/InternationalPhoneInput';
 
 // ─── Google Login Button ────────────────────────────────────────────
@@ -436,7 +437,7 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
         // and show the modal".
         // The app redirect (Studio loopback / mobile deep link) rides along so
         // verification can still hand the session back to the calling app.
-        if (data?.otpVerified === false && data?.customerId) { showWarning(data?.message || 'Please verify your phone number.'); setLoginLoading(false); const otpExtras = `${data?.customerType ? `&customerType=${encodeURIComponent(String(data.customerType))}` : ''}${data?.firstName ? `&firstName=${encodeURIComponent(String(data.firstName))}` : ''}${data?.lastName ? `&lastName=${encodeURIComponent(String(data.lastName))}` : ''}${data?.phone ? `&phone=${encodeURIComponent(String(data.phone))}` : ''}${redirectUrl ? `&redirect=${encodeURIComponent(redirectUrl)}` : ''}`; router.push(`/user/auth/verify-otp?applicantId=${encodeURIComponent(String(data.customerId))}&email=${encodeURIComponent(loginEmail)}${otpExtras}`); return; }
+        if (data?.otpVerified === false && data?.customerId) { showWarning(data?.message || 'Please verify your phone number.'); setLoginLoading(false); router.push(buildVerifyOtpUrl(String(data.customerId), { email: loginEmail, customerType: data?.customerType ? String(data.customerType) : undefined, firstName: data?.firstName ? String(data.firstName) : undefined, lastName: data?.lastName ? String(data.lastName) : undefined, phone: data?.phone ? String(data.phone) : undefined }, redirectUrl || undefined)); return; }
 
         // FORCED FIRST-LOGIN PASSWORD CHANGE.
         // TeamService.inviteTeamMember persists invited members with
@@ -692,7 +693,7 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
             return;
           }
           setAuthToken(resp.data.token);
-          const otpUrl = `/user/auth/verify-otp?applicantId=${encodeURIComponent(String(resp.data.customerId))}&email=${encodeURIComponent(signupEmail)}&customerType=${encodeURIComponent(signupUserType)}&firstName=${encodeURIComponent(firstName)}&lastName=${encodeURIComponent(lastName)}&phone=${encodeURIComponent(phoneDigits)}${redirectUrl ? `&redirect=${encodeURIComponent(redirectUrl)}` : ''}`;
+          const otpUrl = buildVerifyOtpUrl(String(resp.data.customerId), { email: signupEmail, customerType: signupUserType, firstName, lastName, phone: phoneDigits }, redirectUrl || undefined);
           setPendingOtpRedirectUrl(otpUrl);
           // Account already exists → the wizard's ensureSession is a no-op.
           photographerSessionRef.current = Promise.resolve({ success: true });
@@ -714,7 +715,7 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
           const customerId = response.data.customerId;
           if (!customerId) { setSignupErrors({ email: 'Missing customer ID.' }); showError('Missing customer ID.'); setSignupLoading(false); return; }
           showSuccess('Account created!');
-          const otpUrl = `/user/auth/verify-otp?applicantId=${encodeURIComponent(String(customerId))}&email=${encodeURIComponent(signupEmail)}&customerType=${encodeURIComponent(signupUserType)}&firstName=${encodeURIComponent(firstName)}&lastName=${encodeURIComponent(lastName)}&phone=${encodeURIComponent(phoneDigits)}${redirectUrl ? `&redirect=${encodeURIComponent(redirectUrl)}` : ''}`;
+          const otpUrl = buildVerifyOtpUrl(String(customerId), { email: signupEmail, customerType: signupUserType, firstName, lastName, phone: phoneDigits }, redirectUrl || undefined);
           showInfo('Check your phone for the SMS code.');
           router.push(otpUrl);
         } else { const msg = response.error || 'Signup failed.'; setSignupErrors({ email: msg }); showError(msg); }
@@ -751,7 +752,7 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
         return { success: false, error: 'Signup did not return a session token - profile could not be saved. Please try again.' };
       }
       setAuthToken(response.data.token);
-      const otpUrl = `/user/auth/verify-otp?applicantId=${encodeURIComponent(String(customerId))}&email=${encodeURIComponent(signupEmail)}&customerType=${encodeURIComponent(signupUserType)}&firstName=${encodeURIComponent(firstName)}&lastName=${encodeURIComponent(lastName)}&phone=${encodeURIComponent(phoneDigits)}${redirectUrl ? `&redirect=${encodeURIComponent(redirectUrl)}` : ''}`;
+      const otpUrl = buildVerifyOtpUrl(String(customerId), { email: signupEmail, customerType: signupUserType, firstName, lastName, phone: phoneDigits }, redirectUrl || undefined);
       setPendingOtpRedirectUrl(otpUrl);
       return { success: true };
     })();
@@ -981,7 +982,7 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
             if (!ctx) { router.push('/user/auth/login'); return; }
             if (!ctx.otpVerified) {
               // Profile is now 100%; the account still needs OTP.
-              router.push(`/user/auth/verify-otp?applicantId=${encodeURIComponent(ctx.customerId)}&email=${encodeURIComponent(ctx.email)}`);
+              router.push(buildVerifyOtpUrl(ctx.customerId, { email: ctx.email }));
               return;
             }
             // Verified + complete → proceed to the normal post-login modal.
