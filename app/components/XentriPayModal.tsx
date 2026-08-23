@@ -416,6 +416,8 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
       return;
     }
 
+    // ⚠ ADDING A PaymentType? Add it here too. See docs/PAYMENTS.md.
+    //
     // Every buyer-facing purchase type must poll the PUBLIC status endpoint:
     // these buyers are anonymous, so the authenticated endpoint is refused
     // client-side before a request is even made. Omitting
