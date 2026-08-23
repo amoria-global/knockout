@@ -416,7 +416,16 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
       return;
     }
 
-    const usePublicStatus = paymentType === 'donation' || paymentType === 'album_purchase';
+    // Every buyer-facing purchase type must poll the PUBLIC status endpoint:
+    // these buyers are anonymous, so the authenticated endpoint is refused
+    // client-side before a request is even made. Omitting
+    // 'multi_album_purchase' here meant the entire browse-photos checkout
+    // polled the authenticated route, spun for five minutes, and then told a
+    // buyer whose money had already been taken that their payment failed -
+    // and offered them a Retry button that charges them again.
+    const usePublicStatus = paymentType === 'donation'
+      || paymentType === 'album_purchase'
+      || paymentType === 'multi_album_purchase';
     stopPollingRef.current = pollXentriPayStatus(
       paymentRefid,
       {
