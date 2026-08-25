@@ -1710,6 +1710,16 @@ const FindMyPhotos = () => {
     }
   };
 
+  // The persistent "Already paid? Unlock" pill in the sticky dock. Buyers were
+  // scrolling past the gallery header without ever seeing the unlock action,
+  // so it now lives in the always-visible dock - but only once an album is in
+  // scope, because handleUnlockSubmit resolves the albumId from loaded photos
+  // and would otherwise error. Deep links (?code=) auto-verify the album, so
+  // paid buyers arriving from their email see the pill immediately.
+  const unlockAlbumInScope = Boolean(
+    displayedPhotos.find(p => p.albumId) || allPhotos.find(p => p.albumId)
+  );
+
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#052047' }}>
       <style>{`
@@ -1798,12 +1808,87 @@ const FindMyPhotos = () => {
           .fmp-step.is-active .fmp-step-text { display: flex; }
           .fmp-step-divider { width: 10px; }
         }
+
+        /* ── Dock row: stepper centered + persistent unlock pill ── */
+        .fmp-dock-row {
+          pointer-events: none;
+          position: relative;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+          max-width: 1100px;
+          width: 100%;
+        }
+        .fmp-dock-row > * { pointer-events: auto; }
+        .fmp-unlock-pill {
+          position: absolute; right: 0; top: 50%; transform: translateY(-50%);
+          display: inline-flex; align-items: center; gap: 8px;
+          min-height: 44px; padding: 8px 16px;
+          border-radius: 999px; cursor: pointer;
+          background: rgba(4,42,45,0.72);
+          border: 1px solid rgba(45,212,218,0.55);
+          color: #7be0e5; font-size: 13.5px; font-weight: 700;
+          font-family: inherit;
+          backdrop-filter: blur(14px);
+          -webkit-backdrop-filter: blur(14px);
+          box-shadow: 0 10px 26px -12px rgba(0,0,0,0.6);
+          transition: background 200ms ease, border-color 200ms ease;
+          animation: fmp-unlock-pulse 2.4s ease-out 0.6s 2;
+        }
+        .fmp-unlock-pill:hover { background: rgba(6,64,68,0.85); border-color: rgba(45,212,218,0.85); }
+        .fmp-unlock-pill:focus-visible { outline: 2px solid #7be0e5; outline-offset: 2px; }
+        .fmp-unlock-pill-text { display: flex; flex-direction: column; align-items: flex-start; line-height: 1.15; }
+        .fmp-unlock-pill-sub { font-size: 10px; font-weight: 600; color: rgba(123,224,229,0.7); letter-spacing: 0.06em; text-transform: uppercase; }
+        @keyframes fmp-unlock-pulse {
+          0% { box-shadow: 0 10px 26px -12px rgba(0,0,0,0.6), 0 0 0 0 rgba(45,212,218,0.45); }
+          70% { box-shadow: 0 10px 26px -12px rgba(0,0,0,0.6), 0 0 0 12px rgba(45,212,218,0); }
+          100% { box-shadow: 0 10px 26px -12px rgba(0,0,0,0.6), 0 0 0 0 rgba(45,212,218,0); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .fmp-unlock-pill { animation: none; }
+        }
+        @media (max-width: 720px) {
+          .fmp-dock-row { justify-content: space-between; }
+          .fmp-unlock-pill { position: static; transform: none; padding: 8px 12px; }
+          .fmp-unlock-pill-sub { display: none; }
+        }
+
+        /* ── Connect-phase entry cards ── */
+        .fmp-entry-card {
+          background: rgba(255,255,255,0.05);
+          border: 1px solid rgba(255,255,255,0.1);
+          border-radius: 20px;
+          padding: 26px 24px;
+          text-align: left;
+          transition: border-color 200ms ease;
+        }
+        .fmp-entry-card:hover { border-color: rgba(255,255,255,0.2); }
+        .fmp-entry-card-head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+        .fmp-entry-card-icon {
+          width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0;
+          display: inline-flex; align-items: center; justify-content: center;
+        }
+        .fmp-entry-card-title { color: #fff; font-size: 17px; font-weight: 800; margin: 0; }
+        .fmp-entry-card-copy { color: rgba(255,255,255,0.55); font-size: 13.5px; line-height: 1.55; margin: 0 0 16px; }
+
+        /* ── Discover toolbar chips ── */
+        .fmp-chip {
+          display: inline-flex; align-items: center; gap: 6px;
+          padding: 5px 12px; border-radius: 999px;
+          font-size: 12.5px; font-weight: 600;
+          background: rgba(255,255,255,0.08);
+          color: rgba(255,255,255,0.75);
+          border: 1px solid rgba(255,255,255,0.1);
+          white-space: nowrap;
+        }
       `}</style>
 
       <Navbar />
 
-      {/* ── Phase Stepper - visible across all phases, click to navigate back ── */}
+      {/* ── Phase Stepper + persistent unlock - visible across all phases ── */}
       <div className="fmp-stepper" aria-label="Phase navigation">
+        <div className="fmp-dock-row">
         <nav className="fmp-stepper-inner">
           {phases.map((p, i) => {
             const isActive = i === currentPhaseIndex;
@@ -1833,6 +1918,26 @@ const FindMyPhotos = () => {
             );
           })}
         </nav>
+
+        {/* Already-paid buyers kept missing the unlock action below the fold.
+            This pill rides the sticky dock, so it is visible at every scroll
+            depth in every phase once an album is loaded. Same modal, both
+            doors (code + email) - see docs/PAYMENTS.md rule 6. */}
+        {unlockAlbumInScope && (
+          <button
+            type="button"
+            className="fmp-unlock-pill"
+            onClick={() => { setUnlockError(null); setUnlockOpen(true); }}
+            title="Already paid? Unlock with the code we emailed you, or with your email."
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
+            <span className="fmp-unlock-pill-text">
+              <span className="fmp-unlock-pill-sub">Already paid?</span>
+              <span>Unlock</span>
+            </span>
+          </button>
+        )}
+        </div>
       </div>
 
       {freeAlbumFlow !== 'idle' ? (
@@ -1857,7 +1962,14 @@ const FindMyPhotos = () => {
               width: '100%',
               textAlign: 'center',
             }}>
-              <div style={{ fontSize: '40px', marginBottom: '16px' }}>📸</div>
+              <div style={{
+                width: '64px', height: '64px', borderRadius: '18px',
+                background: 'rgba(255,107,107,0.14)', color: '#FF6B6B',
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                marginBottom: '16px',
+              }}>
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+              </div>
               <h2 style={{ color: '#fff', fontSize: '22px', fontWeight: 700, marginBottom: '6px' }}>Free Album Access</h2>
               {freeAlbumTitle && <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '14px', marginBottom: '4px' }}>{freeAlbumTitle}</p>}
               {freeAlbumPhotographer && <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px', marginBottom: '20px' }}>by {freeAlbumPhotographer}</p>}
@@ -2412,14 +2524,14 @@ const FindMyPhotos = () => {
           </div>
 
           <div style={{
-            maxWidth: '720px',
+            maxWidth: '1000px',
             width: '100%',
             textAlign: 'center',
             position: 'relative',
             zIndex: 2,
             background: 'linear-gradient(135deg, rgba(5, 32, 71, 0.95) 0%, rgba(16, 62, 131, 0.92) 100%)',
             borderRadius: '28px',
-            padding: isMobile ? '48px 28px' : '56px 52px',
+            padding: isMobile ? '36px 22px' : '44px 44px',
             border: '1px solid rgba(255,255,255,0.08)',
             boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
           }}>
@@ -2441,28 +2553,30 @@ const FindMyPhotos = () => {
               }}>Face Recognition</span>
             </div>
 
-            {/* Headline */}
+            {/* Headline - clamped down from 59px so both entry cards land
+                above the fold; the old size alone pushed the invite-code
+                input a full viewport below the headline. */}
             <h1 style={{
-              fontSize: isMobile ? '32px' : '59px',
+              fontSize: isMobile ? '30px' : 'clamp(34px, 4.5vw, 48px)',
               fontWeight: 800,
               color: '#ffffff',
-              lineHeight: 1.15,
-              marginBottom: '16px',
+              lineHeight: 1.12,
+              marginBottom: '10px',
               fontFamily: "'Pragati Narrow', sans-serif",
             }}>
               Find <span style={{ color: '#FF6B6B' }}>Your Photos</span>
             </h1>
 
             <p style={{
-              fontSize: isMobile ? '16px' : '18px',
+              fontSize: isMobile ? '15px' : '17px',
               color: 'rgba(255,255,255,0.7)',
               lineHeight: 1.6,
-              marginBottom: '36px',
-              maxWidth: '520px',
+              marginBottom: '28px',
+              maxWidth: '540px',
               marginLeft: 'auto',
               marginRight: 'auto',
             }}>
-              Search for your photos across all events on the platform using facial recognition, or use an invite code to access a specific event gallery.
+              Use the invite code your photographer shared, or scan your face to find every photo of you across the platform.
             </p>
 
             {/* Hidden canvas for camera capture */}
@@ -2475,29 +2589,101 @@ const FindMyPhotos = () => {
               style={{ display: 'none' }}
             />
 
-            {/* === Facial Recognition Scan Section === */}
+            {/* Two entry cards: invite code first (the direct path buyers
+                arrive with), face scan second. Both sit above the fold - the
+                code input used to live below the entire scan section, a full
+                viewport of scrolling away. While scanning or the camera is
+                active, the invite card hides and the scan card centers. */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: (isMobile || isScanning || isCameraActive) ? '1fr' : '1fr 1fr',
+              gap: '18px',
+              textAlign: 'left',
+              alignItems: 'stretch',
+            }}>
             {!isScanning && !isCameraActive && (
-              <div style={{ marginBottom: '20px' }}>
-                <h3 style={{
-                  fontSize: '16px',
-                  fontWeight: 700,
-                  color: '#ffffff',
-                  marginBottom: '6px',
-                }}>
-                  Facial Recognition Scan
-                </h3>
-                <p style={{
-                  fontSize: '13px',
-                  color: 'rgba(255,255,255,0.5)',
-                  lineHeight: 1.5,
-                  maxWidth: '420px',
-                  marginLeft: 'auto',
-                  marginRight: 'auto',
-                  marginBottom: '0',
-                }}>
-                  {`Don't have an invite code? No problem. Take a selfie or upload your photo and we'll scan all event photos on the platform to find every photo you appear in.`}
+              <div className="fmp-entry-card">
+                <div className="fmp-entry-card-head">
+                  <span className="fmp-entry-card-icon" style={{ background: 'rgba(255,107,107,0.16)', color: '#FF6B6B' }}>
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+                  </span>
+                  <h3 className="fmp-entry-card-title">Have an invite code?</h3>
+                </div>
+                <p className="fmp-entry-card-copy">
+                  Enter the code your photographer or event owner shared to open that event gallery.
+                </p>
+                <input
+                  type="text"
+                  value={inviteCode}
+                  onChange={(e) => { setInviteCode(e.target.value); setInviteError(''); }}
+                  onKeyDown={(e) => e.key === 'Enter' && handleInviteSubmit()}
+                  placeholder="Enter invite code"
+                  aria-label="Invite code"
+                  style={{
+                    width: '100%',
+                    padding: '15px 18px',
+                    borderRadius: '12px',
+                    border: inviteError ? '2px solid #FF6B6B' : '2px solid rgba(255,255,255,0.15)',
+                    background: 'rgba(255,255,255,0.06)',
+                    color: '#ffffff',
+                    fontSize: '16px',
+                    outline: 'none',
+                    transition: 'all 0.3s ease',
+                    textAlign: 'center',
+                    letterSpacing: '2px',
+                    fontWeight: 600,
+                  }}
+                  onFocus={(e) => { e.target.style.borderColor = '#FF6B6B'; e.target.style.background = 'rgba(255,255,255,0.1)'; }}
+                  onBlur={(e) => { if (!inviteError) { e.target.style.borderColor = 'rgba(255,255,255,0.15)'; e.target.style.background = 'rgba(255,255,255,0.06)'; } }}
+                />
+                <button
+                  onClick={handleInviteSubmit}
+                  disabled={isLoadingAlbum}
+                  style={{
+                    width: '100%',
+                    marginTop: '12px',
+                    padding: '15px 24px',
+                    borderRadius: '12px',
+                    background: isLoadingAlbum ? 'rgba(255,107,107,0.6)' : '#FF6B6B',
+                    color: '#ffffff',
+                    fontSize: '16px',
+                    fontWeight: 700,
+                    border: 'none',
+                    cursor: isLoadingAlbum ? 'not-allowed' : 'pointer',
+                    transition: 'all 0.3s ease',
+                  }}
+                  onMouseEnter={(e) => { if (!isLoadingAlbum) { (e.target as HTMLButtonElement).style.background = '#ff5252'; } }}
+                  onMouseLeave={(e) => { if (!isLoadingAlbum) { (e.target as HTMLButtonElement).style.background = '#FF6B6B'; } }}
+                >
+                  {isLoadingAlbum ? 'Loading...' : 'Access Gallery'}
+                </button>
+                {inviteError && (
+                  <p style={{ color: '#FF6B6B', fontSize: '14px', marginTop: '12px', marginBottom: 0 }}>{inviteError}</p>
+                )}
+                <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '12.5px', marginTop: '14px', marginBottom: 0 }}>
+                  Your photographer or event owner can share the invite code after the event.
                 </p>
               </div>
+            )}
+
+            <div
+              className="fmp-entry-card"
+              style={(isScanning || isCameraActive)
+                ? { maxWidth: '560px', width: '100%', margin: '0 auto', textAlign: 'center' }
+                : undefined}
+            >
+            {!isScanning && !isCameraActive && (
+              <>
+                <div className="fmp-entry-card-head">
+                  <span className="fmp-entry-card-icon" style={{ background: 'rgba(123,224,229,0.14)', color: '#7be0e5' }}>
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="10" r="3"/><path d="M8 17a4 4 0 0 1 8 0"/></svg>
+                  </span>
+                  <h3 className="fmp-entry-card-title">No code? Scan your face</h3>
+                </div>
+                <p className="fmp-entry-card-copy">
+                  {`Take a selfie or upload your photo and we'll scan all event photos on the platform to find every photo you appear in.`}
+                </p>
+              </>
             )}
             {isScanning ? (
               <div style={{ textAlign: 'center', padding: '20px 0' }}>
@@ -2822,118 +3008,12 @@ const FindMyPhotos = () => {
               </>
             )}
 
-            {/* OR Divider */}
-            {!isScanning && !isCameraActive && (
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                margin: '32px 0 28px',
-                gap: '16px',
-              }}>
-                <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.15)' }} />
-                <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '14px', fontWeight: 600, letterSpacing: '1px' }}>OR</span>
-                <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.15)' }} />
-              </div>
-            )}
+            </div>
+            </div>
 
-            {/* Invite Code Section */}
-            {!isScanning && !isCameraActive && (
-              <>
-                <h3 style={{
-                  fontSize: '16px',
-                  fontWeight: 700,
-                  color: '#ffffff',
-                  marginBottom: '6px',
-                }}>
-                  Enter Invite Code
-                </h3>
-                <p style={{
-                  fontSize: '13px',
-                  color: 'rgba(255,255,255,0.5)',
-                  lineHeight: 1.5,
-                  maxWidth: '420px',
-                  marginLeft: 'auto',
-                  marginRight: 'auto',
-                  marginBottom: '16px',
-                }}>
-                  Received an invite code from your photographer or event owner? Enter it below to go directly to that specific event gallery.
-                </p>
-
-                <div style={{
-                  display: 'flex',
-                  flexDirection: isMobile ? 'column' : 'row',
-                  gap: '12px',
-                  maxWidth: '460px',
-                  margin: '0 auto',
-                }}>
-                  <input
-                    type="text"
-                    value={inviteCode}
-                    onChange={(e) => { setInviteCode(e.target.value); setInviteError(''); }}
-                    onKeyDown={(e) => e.key === 'Enter' && handleInviteSubmit()}
-                    placeholder="Enter invite code"
-                    style={{
-                      flex: 1,
-                      padding: '16px 20px',
-                      borderRadius: '12px',
-                      border: inviteError ? '2px solid #FF6B6B' : '2px solid rgba(255,255,255,0.15)',
-                      background: 'rgba(255,255,255,0.06)',
-                      color: '#ffffff',
-                      fontSize: '16px',
-                      outline: 'none',
-                      transition: 'all 0.3s ease',
-                      textAlign: 'center',
-                      letterSpacing: '2px',
-                      fontWeight: 600,
-                    }}
-                    onFocus={(e) => { e.target.style.borderColor = '#FF6B6B'; e.target.style.background = 'rgba(255,255,255,0.1)'; }}
-                    onBlur={(e) => { if (!inviteError) { e.target.style.borderColor = 'rgba(255,255,255,0.15)'; e.target.style.background = 'rgba(255,255,255,0.06)'; } }}
-                  />
-                  <button
-                    onClick={handleInviteSubmit}
-                    disabled={isLoadingAlbum}
-                    style={{
-                      padding: '16px 32px',
-                      borderRadius: '12px',
-                      background: isLoadingAlbum ? 'rgba(255,107,107,0.6)' : '#FF6B6B',
-                      color: '#ffffff',
-                      fontSize: '16px',
-                      fontWeight: 700,
-                      border: 'none',
-                      cursor: isLoadingAlbum ? 'not-allowed' : 'pointer',
-                      transition: 'all 0.3s ease',
-                      whiteSpace: 'nowrap',
-                    }}
-                    onMouseEnter={(e) => { if (!isLoadingAlbum) { (e.target as HTMLButtonElement).style.background = '#ff5252'; (e.target as HTMLButtonElement).style.transform = 'translateY(-2px)'; } }}
-                    onMouseLeave={(e) => { if (!isLoadingAlbum) { (e.target as HTMLButtonElement).style.background = '#FF6B6B'; (e.target as HTMLButtonElement).style.transform = 'translateY(0)'; } }}
-                  >
-                    {isLoadingAlbum ? 'Loading...' : 'Access Gallery'}
-                  </button>
-                </div>
-
-                {inviteError && (
-                  <p style={{
-                    color: '#FF6B6B',
-                    fontSize: '14px',
-                    marginTop: '12px',
-                  }}>{inviteError}</p>
-                )}
-
-                {/* Dashed decorative border */}
-                <div style={{
-                  marginTop: '40px',
-                  borderTop: '1px dashed rgba(255,255,255,0.15)',
-                  paddingTop: '24px',
-                }}>
-                  <p style={{
-                    color: 'rgba(255,255,255,0.4)',
-                    fontSize: '13px',
-                  }}>
-                    Your photographer or event owner can share the invite code after the event
-                  </p>
-                </div>
-              </>
-            )}
+            <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '12.5px', marginTop: '24px', marginBottom: 0 }}>
+              Bought photos here before? Open your album, then use the Unlock button to re-download them free.
+            </p>
           </div>
         </div>
       ) : (
@@ -2946,7 +3026,7 @@ const FindMyPhotos = () => {
             onMouseLeave={() => setHeaderMousePos(null)}
             style={{
               background: 'linear-gradient(to right, #052047, #052047, #103E83)',
-              padding: isMobile ? '100px 20px 40px' : '120px 40px 50px',
+              padding: isMobile ? '100px 20px 26px' : '120px 40px 32px',
               textAlign: 'center',
               position: 'relative',
               overflow: 'hidden',
@@ -3006,45 +3086,72 @@ const FindMyPhotos = () => {
               />
             </div>
 
+            {/* Compact toolbar - the old panel stacked a 59px title over
+                centered buttons and pushed every action below the fold on
+                phones; buyers never saw "Already paid? Unlock" without
+                scrolling. Title + meta chips on one row, actions on the
+                next, everything visible on a 667px-tall viewport. */}
             <div style={{
               position: 'relative',
               zIndex: 2,
               background: 'linear-gradient(135deg, rgba(5, 32, 71, 0.95) 0%, rgba(16, 62, 131, 0.92) 100%)',
-              borderRadius: '28px',
-              padding: isMobile ? '32px 24px' : '40px 48px',
+              borderRadius: '22px',
+              padding: isMobile ? '22px 20px' : '24px 28px',
               border: '1px solid rgba(255,255,255,0.08)',
               boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
-              maxWidth: '700px',
+              maxWidth: '1100px',
               margin: '0 auto',
+              textAlign: 'left',
             }}>
-            <h2 style={{
-              fontSize: isMobile ? '28px' : '59px',
-              fontWeight: 800,
-              color: '#ffffff',
-              marginBottom: '8px',
-              fontFamily: "'Pragati Narrow', sans-serif",
+            <div style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              alignItems: 'center',
+              gap: '10px',
+              marginBottom: '16px',
             }}>
-              Event Gallery
-            </h2>
-            <p style={{
-              color: 'rgba(255,255,255,0.6)',
-              fontSize: '16px',
-              marginBottom: '24px',
-            }}>
-              {displayedPhotos.length} photo{displayedPhotos.length !== 1 ? 's' : ''}{isFiltered ? ' matched' : ' available'}
-            </p>
+              <h2 style={{
+                fontSize: isMobile ? '24px' : 'clamp(26px, 3.2vw, 34px)',
+                fontWeight: 800,
+                color: '#ffffff',
+                margin: 0,
+                marginRight: 'auto',
+                fontFamily: "'Pragati Narrow', sans-serif",
+              }}>
+                Event Gallery
+              </h2>
+              <span className="fmp-chip">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                {displayedPhotos.length} photo{displayedPhotos.length !== 1 ? 's' : ''}{isFiltered ? ' matched' : ''}
+              </span>
+              {(() => {
+                // Uniform-price chip: only when every priced photo agrees on
+                // price and currency, so the chip can never misquote.
+                const priced = displayedPhotos.filter(p => typeof p.price === 'number' && p.price > 0);
+                if (priced.length === 0) return null;
+                const first = priced[0];
+                const uniform = priced.every(p => p.price === first.price
+                  && (p.currencyAbbreviation || '') === (first.currencyAbbreviation || ''));
+                if (!uniform) return null;
+                return (
+                  <span className="fmp-chip">
+                    {first.currencyAbbreviation ? `${first.currencyAbbreviation} ` : ''}{first.price} / photo
+                  </span>
+                );
+              })()}
+            </div>
 
             <div style={{
               display: 'flex',
-              gap: '12px',
-              justifyContent: 'center',
+              gap: '10px',
               flexWrap: 'wrap',
             }}>
               <button
                 onClick={() => setIsScanModalOpen(true)}
                 className="scan-btn"
                 style={{
-                  padding: '14px 28px',
+                  padding: '13px 24px',
+                  minHeight: '48px',
                   borderRadius: '50px',
                   background: '#FF6B6B',
                   color: '#ffffff',
@@ -3056,19 +3163,49 @@ const FindMyPhotos = () => {
                   display: 'flex',
                   alignItems: 'center',
                   gap: '8px',
+                  flex: isMobile ? '1 1 100%' : '0 1 auto',
+                  justifyContent: 'center',
                 }}
-                onMouseEnter={(e) => { (e.target as HTMLButtonElement).style.background = '#ff5252'; (e.target as HTMLButtonElement).style.transform = 'translateY(-2px)'; }}
-                onMouseLeave={(e) => { (e.target as HTMLButtonElement).style.background = '#FF6B6B'; (e.target as HTMLButtonElement).style.transform = 'translateY(0)'; }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = '#ff5252'; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = '#FF6B6B'; }}
               >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/><circle cx="12" cy="10" r="3"/><path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662"/></svg>
-                Find Your Photo Using Facial Recognition Scan
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/><circle cx="12" cy="10" r="3"/><path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662"/></svg>
+                Find my photos with a selfie
+              </button>
+
+              <button
+                onClick={() => { setUnlockError(null); setUnlockOpen(true); }}
+                style={{
+                  padding: '13px 24px',
+                  minHeight: '48px',
+                  borderRadius: '50px',
+                  background: 'rgba(3,150,156,0.16)',
+                  color: '#7be0e5',
+                  fontSize: '15px',
+                  fontWeight: 700,
+                  border: '1.5px solid rgba(3,150,156,0.55)',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  flex: isMobile ? '1 1 100%' : '0 1 auto',
+                  justifyContent: 'center',
+                }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(3,150,156,0.3)'; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(3,150,156,0.16)'; }}
+                title="Already paid? Unlock with the code we emailed you, or with your email."
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0"/></svg>
+                Already paid? Unlock
               </button>
 
               {isFiltered && allPhotos.length > 0 && (
                 <button
                   onClick={handleShowAll}
                   style={{
-                    padding: '14px 28px',
+                    padding: '13px 24px',
+                    minHeight: '48px',
                     borderRadius: '50px',
                     background: 'rgba(255,255,255,0.1)',
                     color: '#ffffff',
@@ -3077,37 +3214,14 @@ const FindMyPhotos = () => {
                     border: '1px solid rgba(255,255,255,0.2)',
                     cursor: 'pointer',
                     transition: 'all 0.3s ease',
+                    flex: isMobile ? '1 1 100%' : '0 1 auto',
                   }}
-                  onMouseEnter={(e) => { (e.target as HTMLButtonElement).style.background = 'rgba(255,255,255,0.18)'; }}
-                  onMouseLeave={(e) => { (e.target as HTMLButtonElement).style.background = 'rgba(255,255,255,0.1)'; }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.18)'; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.1)'; }}
                 >
                   Show All Photos
                 </button>
               )}
-
-              <button
-                onClick={() => { setUnlockError(null); setUnlockOpen(true); }}
-                style={{
-                  padding: '14px 28px',
-                  borderRadius: '50px',
-                  background: 'rgba(3,150,156,0.15)',
-                  color: '#7be0e5',
-                  fontSize: '15px',
-                  fontWeight: 600,
-                  border: '1px solid rgba(3,150,156,0.45)',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                }}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(3,150,156,0.28)'; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(3,150,156,0.15)'; }}
-                title="Already paid? Unlock with the code we emailed you, or with your email."
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0"/></svg>
-                Already paid? Unlock
-              </button>
             </div>
             </div>
           </div>
