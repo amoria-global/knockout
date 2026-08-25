@@ -344,6 +344,13 @@ const FindMyPhotos = () => {
             return;
           }
           setAlbumEventId(response.data.eventId ?? response.data.albumId);
+          // The verify response carries the gallery title + photographer for
+          // every album type, but only the free flow captured them. The paid
+          // path dropped both - so the gallery hero said "Event Gallery" and
+          // the preview watermark fell back to "PREVIEW" instead of the
+          // photographer's name.
+          if (response.data.title) setFreeAlbumTitle(response.data.title);
+          if (response.data.photographerName) setFreeAlbumPhotographer(response.data.photographerName);
           if (response.data.pricing?.currencyId) setAlbumCurrencyId(response.data.pricing.currencyId);
           if (response.data.pricing?.currencySymbol) setAlbumCurrencySymbol(response.data.pricing.currencySymbol);
           const perPhotoPrice = response.data.pricing?.pricePerImage ?? response.data.pricePerPhoto;
@@ -460,6 +467,10 @@ const FindMyPhotos = () => {
         if (response.data.pricing?.currencyId) setAlbumCurrencyId(response.data.pricing.currencyId);
         if (response.data.pricing?.currencySymbol) setAlbumCurrencySymbol(response.data.pricing.currencySymbol);
         const perPhotoPrice = response.data.pricing?.pricePerImage ?? response.data.pricePerPhoto;
+        // Same capture as the auto-verify path: title + photographer feed the
+        // gallery hero and the preview watermark.
+        if (response.data.title) setFreeAlbumTitle(response.data.title);
+        if (response.data.photographerName) setFreeAlbumPhotographer(response.data.photographerName);
         // Carry album-level identifiers onto every PhotoItem. Without these the
         // Download button's purchased-photo branch can't fire (it requires
         // photo.albumId), and the buy flow can't resolve a currency/album.
@@ -1666,6 +1677,53 @@ const FindMyPhotos = () => {
     }, 'image/jpeg', 0.9);
   };
 
+  // ─── Photo-first grid: natural aspect ratios + blur-up ────────────
+  // The grid used to force every photo into a 4:3 crop. Ratios are captured
+  // per image as it loads so the masonry columns can respect portrait and
+  // panorama shots, and each image fades in over a shimmer placeholder.
+  const [photoRatios, setPhotoRatios] = useState<Record<string, number>>({});
+  const [loadedPhotoIds, setLoadedPhotoIds] = useState<Set<string>>(new Set());
+  const markPhotoLoaded = (id: string, el: HTMLImageElement | null) => {
+    if (!el || !el.complete || el.naturalWidth === 0) return;
+    setPhotoRatios(prev => (prev[id] ? prev : { ...prev, [id]: el.naturalWidth / el.naturalHeight }));
+    setLoadedPhotoIds(prev => {
+      if (prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
+  };
+
+  // ─── Lightbox navigation ──────────────────────────────────────────
+  // The viewer used to be open-one, close, open-the-next. Browse the whole
+  // set instead: prev/next arrows, arrow keys, swipe, and a position counter.
+  // Navigation walks whichever list the open photo belongs to (the free-album
+  // strip or the main gallery).
+  const lightboxList: PhotoItem[] = selectedPhoto && freeAlbumPhotos.some(p => p.id === selectedPhoto.id)
+    ? (freeAlbumPhotos as unknown as PhotoItem[])
+    : displayedPhotos;
+  const lightboxIndex = selectedPhoto ? lightboxList.findIndex(p => p.id === selectedPhoto.id) : -1;
+  const stepLightbox = (delta: number) => {
+    if (lightboxIndex < 0) return;
+    const next = lightboxList[lightboxIndex + delta];
+    if (next) setSelectedPhoto(next);
+  };
+  const lightboxTouchX = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!selectedPhoto) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSelectedPhoto(null);
+      else if (e.key === 'ArrowRight') stepLightbox(1);
+      else if (e.key === 'ArrowLeft') stepLightbox(-1);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  // stepLightbox closes over lightboxIndex/lightboxList, both derived from
+  // these deps, so the listener always sees the current position.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPhoto, displayedPhotos, freeAlbumPhotos]);
+
   // ─── Phase navigation ─────────────────────────────────────────────
   // Three logical phases the user moves through. The stepper below makes the
   // current phase visible AND lets the user click prior phases to navigate back.
@@ -1871,6 +1929,46 @@ const FindMyPhotos = () => {
         }
         .fmp-entry-card-title { color: #fff; font-size: 17px; font-weight: 800; margin: 0; }
         .fmp-entry-card-copy { color: rgba(255,255,255,0.55); font-size: 13.5px; line-height: 1.55; margin: 0 0 16px; }
+
+        /* ── Grid image shimmer while loading ── */
+        .fmp-skel {
+          background: linear-gradient(100deg,
+            rgba(255,255,255,0.045) 40%,
+            rgba(255,255,255,0.12) 50%,
+            rgba(255,255,255,0.045) 60%);
+          background-size: 200% 100%;
+          animation: fmp-shimmer 1.4s ease-in-out infinite;
+        }
+        @keyframes fmp-shimmer {
+          0% { background-position: 120% 0; }
+          100% { background-position: -80% 0; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .fmp-skel { animation: none; background: rgba(255,255,255,0.06); }
+        }
+
+        /* ── Lightbox navigation arrows ── */
+        .fmp-lb-arrow {
+          position: fixed; top: 50%; transform: translateY(-50%);
+          width: 48px; height: 48px; border-radius: 50%;
+          background: rgba(255,255,255,0.12);
+          border: 1px solid rgba(255,255,255,0.22);
+          color: #fff; cursor: pointer;
+          display: flex; align-items: center; justify-content: center;
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          transition: background 200ms ease;
+          z-index: 2002;
+        }
+        .fmp-lb-arrow:hover { background: rgba(255,255,255,0.28); }
+        .fmp-lb-arrow:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+        .fmp-lb-arrow.prev { left: 18px; }
+        .fmp-lb-arrow.next { right: 18px; }
+        @media (max-width: 720px) {
+          .fmp-lb-arrow { width: 42px; height: 42px; }
+          .fmp-lb-arrow.prev { left: 8px; }
+          .fmp-lb-arrow.next { right: 8px; }
+        }
 
         /* ── Discover toolbar chips ── */
         .fmp-chip {
@@ -3071,20 +3169,31 @@ const FindMyPhotos = () => {
               <i className="bi bi-arrow-left" style={{ fontSize: 13 }} />
               Back to Connect
             </button>
-            {/* Interactive DotGrid - matches the footer's pattern */}
-            <div style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none' }} aria-hidden="true">
-              <DotGrid
-                dotSize={2}
-                gap={15}
-                baseColor="#1E3A78"
-                activeColor="#3B82F6"
-                proximity={120}
-                shockRadius={180}
-                shockStrength={4}
-                resistance={750}
-                returnDuration={1.4}
-              />
-            </div>
+            {/* Album cover backdrop - the event's own imagery replaces the
+                animated dot canvas, so the gallery header feels like THIS
+                album rather than generic platform chrome. Heavy blur + a
+                dark scrim keep the toolbar readable and the preview
+                worthless to screenshot. */}
+            {displayedPhotos[0]?.url && (
+              <div style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none', overflow: 'hidden' }} aria-hidden="true">
+                <img
+                  src={stampPreviewUrl(displayedPhotos[0].url, viewerId, { buyerId, refid: purchaseRefid })}
+                  alt=""
+                  draggable={false}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    filter: 'blur(26px) brightness(0.55) saturate(1.1)',
+                    transform: 'scale(1.15)',
+                  }}
+                />
+                <div style={{
+                  position: 'absolute', inset: 0,
+                  background: 'linear-gradient(180deg, rgba(5,32,71,0.82) 0%, rgba(5,32,71,0.55) 45%, rgba(5,32,71,0.94) 100%)',
+                }} />
+              </div>
+            )}
 
             {/* Compact toolbar - the old panel stacked a 59px title over
                 centered buttons and pushed every action below the fold on
@@ -3110,16 +3219,30 @@ const FindMyPhotos = () => {
               gap: '10px',
               marginBottom: '16px',
             }}>
-              <h2 style={{
-                fontSize: isMobile ? '24px' : 'clamp(26px, 3.2vw, 34px)',
-                fontWeight: 800,
-                color: '#ffffff',
-                margin: 0,
-                marginRight: 'auto',
-                fontFamily: "'Pragati Narrow', sans-serif",
-              }}>
-                Event Gallery
-              </h2>
+              <div style={{ marginRight: 'auto', minWidth: 0 }}>
+                <h2 style={{
+                  fontSize: isMobile ? '24px' : 'clamp(26px, 3.2vw, 34px)',
+                  fontWeight: 800,
+                  color: '#ffffff',
+                  margin: 0,
+                  fontFamily: "'Pragati Narrow', sans-serif",
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}>
+                  {freeAlbumTitle || 'Event Gallery'}
+                </h2>
+                {freeAlbumPhotographer && (
+                  <p style={{
+                    margin: '2px 0 0',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    color: 'rgba(255,255,255,0.6)',
+                  }}>
+                    by {freeAlbumPhotographer}
+                  </p>
+                )}
+              </div>
               <span className="fmp-chip">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
                 {displayedPhotos.length} photo{displayedPhotos.length !== 1 ? 's' : ''}{isFiltered ? ' matched' : ''}
@@ -3241,33 +3364,22 @@ const FindMyPhotos = () => {
               scrollMarginTop: '120px',
             }}
           >
-            {/* Interactive DotGrid - matches the footer's pattern */}
-            <div style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none' }} aria-hidden="true">
-              <DotGrid
-                dotSize={2}
-                gap={15}
-                baseColor="#1E3A78"
-                activeColor="#3B82F6"
-                proximity={120}
-                shockRadius={180}
-                shockStrength={4}
-                resistance={750}
-                returnDuration={1.4}
-              />
-            </div>
-
+          {/* No canvas animation behind the grid - the photos are the hero,
+              and the dot field cost battery while competing with them. */}
           <div style={{
             maxWidth: '1200px',
             margin: '0 auto',
             position: 'relative',
             zIndex: 2,
           }}>
+            {/* Masonry columns instead of a uniform crop grid: each photo
+                keeps its own aspect ratio (captured on load), so portraits
+                and panoramas render whole instead of force-cropped to 4:3. */}
             <div style={{
-              display: 'grid',
-              gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',
-              gap: isMobile ? '12px' : '20px',
+              columnCount: isMobile ? 2 : 3,
+              columnGap: isMobile ? '12px' : '18px',
             }}>
-              {displayedPhotos.map((photo) => {
+              {displayedPhotos.map((photo, photoIndex) => {
                 const isPaid = (photo.price ?? 0) > 0;
                 const isPurchased = !!photo.isPurchased;
                 // Any photo the user can act on (download or buy) is now
@@ -3301,32 +3413,49 @@ const FindMyPhotos = () => {
                     boxShadow: isSelected
                       ? `0 0 0 3px ${selectAccent}, 0 4px 20px rgba(0,0,0,0.08)`
                       : '0 4px 20px rgba(0,0,0,0.08)',
-                    transition: 'all 0.3s ease',
-                    background: '#ffffff',
+                    transition: 'box-shadow 0.3s ease',
+                    background: '#0b2a56',
                     position: 'relative',
+                    breakInside: 'avoid',
+                    marginBottom: isMobile ? '12px' : '18px',
                   }}
                 >
                   <div
-                    style={{ aspectRatio: '4/3', overflow: 'hidden', position: 'relative' }}
+                    className={loadedPhotoIds.has(photo.id) ? undefined : 'fmp-skel'}
+                    style={{
+                      // Hold 4:3 until the real ratio is known so the masonry
+                      // column doesn't jump; release to the photo's own shape
+                      // as soon as it loads.
+                      aspectRatio: photoRatios[photo.id] ? `${photoRatios[photo.id]}` : '4/3',
+                      overflow: 'hidden',
+                      position: 'relative',
+                    }}
                     onClick={() => setSelectedPhoto(photo)}
                   >
                     <img
                       src={stampPreviewUrl(photo.url, viewerId, { buyerId, refid: purchaseRefid })}
                       alt={photo.alt}
                       draggable={false}
+                      ref={(el) => markPhotoLoaded(photo.id, el)}
+                      onLoad={(e) => markPhotoLoaded(photo.id, e.currentTarget)}
                       onDragStart={(e) => e.preventDefault()}
                       onContextMenu={(e) => e.preventDefault()}
                       style={{
                         width: '100%',
                         height: '100%',
                         objectFit: 'cover',
-                        transition: 'transform 0.4s ease, filter 0.1s linear',
+                        transition: 'opacity 0.45s ease, filter 0.1s linear',
+                        opacity: loadedPhotoIds.has(photo.id) ? 1 : 0,
                         userSelect: 'none',
                         WebkitUserSelect: 'none',
                         pointerEvents: 'none',
                         filter: isOccluded ? 'brightness(0)' : undefined,
                       }}
-                      loading="lazy"
+                      // First two rows load eagerly so the gallery paints
+                      // immediately; everything below the fold stays lazy.
+                      loading={photoIndex < 6 ? 'eager' : 'lazy'}
+                      fetchPriority={photoIndex < 3 ? 'high' : undefined}
+                      decoding="async"
                     />
                     {/* Repeating tile watermark - Shutterstock/Getty style.
                         Tagged with the album OWNER PHOTOGRAPHER'S NAME
@@ -3582,6 +3711,14 @@ const FindMyPhotos = () => {
       {selectedPhoto && (
         <div
           onClick={() => setSelectedPhoto(null)}
+          onTouchStart={(e) => { lightboxTouchX.current = e.touches[0].clientX; }}
+          onTouchEnd={(e) => {
+            const startX = lightboxTouchX.current;
+            lightboxTouchX.current = null;
+            if (startX == null) return;
+            const dx = e.changedTouches[0].clientX - startX;
+            if (Math.abs(dx) > 48) stepLightbox(dx < 0 ? 1 : -1);
+          }}
           style={{
             position: 'fixed',
             top: 0,
@@ -3597,7 +3734,42 @@ const FindMyPhotos = () => {
             padding: '20px',
           }}
         >
-          {/* Top bar: close + download */}
+          {/* Preload the neighbours so arrow/swipe navigation feels instant */}
+          {[lightboxList[lightboxIndex - 1], lightboxList[lightboxIndex + 1]]
+            .filter((p): p is PhotoItem => !!p)
+            .map((p) => (
+              <img
+                key={`preload-${p.id}`}
+                src={stampPreviewUrl(p.url, viewerId, { buyerId, refid: purchaseRefid })}
+                alt=""
+                aria-hidden
+                style={{ display: 'none' }}
+              />
+            ))}
+
+          {/* Prev / next - arrow keys and swipe work too */}
+          {lightboxIndex > 0 && (
+            <button
+              type="button"
+              className="fmp-lb-arrow prev"
+              aria-label="Previous photo"
+              onClick={(e) => { e.stopPropagation(); stepLightbox(-1); }}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+          )}
+          {lightboxIndex >= 0 && lightboxIndex < lightboxList.length - 1 && (
+            <button
+              type="button"
+              className="fmp-lb-arrow next"
+              aria-label="Next photo"
+              onClick={(e) => { e.stopPropagation(); stepLightbox(1); }}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          )}
+
+          {/* Top bar: position counter + download + close */}
           <div
             onClick={(e) => e.stopPropagation()}
             style={{
@@ -3606,11 +3778,25 @@ const FindMyPhotos = () => {
               left: '20px',
               right: '20px',
               display: 'flex',
-              justifyContent: 'flex-end',
+              justifyContent: 'space-between',
+              alignItems: 'center',
               gap: '10px',
               zIndex: 2001,
             }}
           >
+            <span style={{
+              padding: '8px 14px',
+              borderRadius: '50px',
+              background: 'rgba(255,255,255,0.1)',
+              border: '1px solid rgba(255,255,255,0.18)',
+              color: 'rgba(255,255,255,0.85)',
+              fontSize: '13px',
+              fontWeight: 700,
+              fontVariantNumeric: 'tabular-nums',
+            }}>
+              {lightboxIndex + 1} / {lightboxList.length}
+            </span>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
             {/* When the previewed photo belongs to the current free album,
                 the lightbox is preview-only. the user must add it to the
                 cart and route through handleFreeCappedDownload so the cap
@@ -3684,6 +3870,7 @@ const FindMyPhotos = () => {
             >
               &times;
             </button>
+            </div>
           </div>
           {(() => {
             const isLocked = (selectedPhoto.price ?? 0) > 0 && !selectedPhoto.isPurchased;
