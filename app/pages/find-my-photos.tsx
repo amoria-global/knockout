@@ -2057,7 +2057,31 @@ const FindMyPhotos = () => {
           justifyContent: 'center',
           padding: isMobile ? '100px 20px 40px' : '80px 20px 40px',
           scrollMarginTop: '120px',
+          position: 'relative',
+          overflow: 'hidden',
         }}>
+          {/* Album cover backdrop once verified - same treatment as the paid
+              gallery hero, so a free album feels like THAT event too. */}
+          {freeAlbumFlow === 'verified' && (freeAlbumPhotos[0]?.thumbnailUrl || freeAlbumPhotos[0]?.url) && (
+            <div style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none' }} aria-hidden="true">
+              <img
+                src={stampPreviewUrl(freeAlbumPhotos[0].thumbnailUrl || freeAlbumPhotos[0].url, viewerId, { buyerId, refid: purchaseRefid })}
+                alt=""
+                draggable={false}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  filter: 'blur(26px) brightness(0.5) saturate(1.1)',
+                  transform: 'scale(1.15)',
+                }}
+              />
+              <div style={{
+                position: 'absolute', inset: 0,
+                background: 'linear-gradient(180deg, rgba(5,32,71,0.85) 0%, rgba(5,32,71,0.6) 40%, rgba(5,32,71,0.95) 100%)',
+              }} />
+            </div>
+          )}
           {freeAlbumFlow === 'email' && (
             <div style={{
               background: 'rgba(255,255,255,0.06)',
@@ -2228,7 +2252,7 @@ const FindMyPhotos = () => {
           )}
 
           {freeAlbumFlow === 'verified' && (
-            <div style={{ width: '100%', maxWidth: '1200px', margin: '0 auto', paddingBottom: selectedFreePhotoIds.size > 0 ? 100 : 0 }}>
+            <div style={{ width: '100%', maxWidth: '1200px', margin: '0 auto', paddingBottom: selectedFreePhotoIds.size > 0 ? 100 : 0, position: 'relative', zIndex: 1 }}>
               {/* Album header */}
               <div style={{ textAlign: 'center', marginBottom: '32px' }}>
                 {/* Pink uppercase eyebrow */}
@@ -2325,26 +2349,31 @@ const FindMyPhotos = () => {
                 )}
               </div>
 
-              {/* Photo grid */}
+              {/* Photo grid - same masonry + blur-up language as the main
+                  gallery: natural aspect ratios captured on load, shimmer
+                  placeholders, first rows eager. */}
               <div style={{
-                display: 'grid',
-                gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(auto-fill, minmax(240px, 1fr))',
-                gap: '12px',
+                columnCount: isMobile ? 2 : 3,
+                columnGap: isMobile ? '12px' : '16px',
               }}>
-                {freeAlbumPhotos.map((photo) => {
+                {freeAlbumPhotos.map((photo, freeIndex) => {
                   const isSelected = selectedFreePhotoIds.has(photo.id);
                   const isOwned = freeAcquiredIds.has(photo.id);
                   const isCappedAlbum = freeAlbumMax !== null || freeAlbumPricePerExtra > 0;
                   return (
                   <div
                     key={photo.id}
+                    className={loadedPhotoIds.has(photo.id) ? undefined : 'fmp-skel'}
                     onContextMenu={(e) => { if (isCappedAlbum) e.preventDefault(); }}
                     style={{
                       position: 'relative',
                       borderRadius: '14px',
                       overflow: 'hidden',
-                      aspectRatio: '1',
+                      breakInside: 'avoid',
+                      marginBottom: isMobile ? '12px' : '16px',
+                      aspectRatio: photoRatios[photo.id] ? `${photoRatios[photo.id]}` : '1',
                       cursor: 'pointer',
+                      background: '#0b2a56',
                       border: isOwned
                         ? '1px solid rgba(16,185,129,0.55)'
                         : isSelected ? '1px solid rgba(242,12,143,0.45)' : '1px solid rgba(255,255,255,0.08)',
@@ -2365,19 +2394,24 @@ const FindMyPhotos = () => {
                     <img
                       src={stampPreviewUrl(photo.thumbnailUrl || photo.url, viewerId, { buyerId, refid: purchaseRefid })}
                       alt={photo.caption || 'Free album photo'}
-                      loading="lazy"
+                      loading={freeIndex < 6 ? 'eager' : 'lazy'}
+                      fetchPriority={freeIndex < 3 ? 'high' : undefined}
+                      decoding="async"
                       draggable={false}
+                      ref={(el) => markPhotoLoaded(photo.id, el)}
+                      onLoad={(e) => markPhotoLoaded(photo.id, e.currentTarget)}
                       onDragStart={(e) => e.preventDefault()}
                       onContextMenu={(e) => e.preventDefault()}
                       style={{
                         width: '100%',
                         height: '100%',
                         objectFit: 'cover',
+                        opacity: loadedPhotoIds.has(photo.id) ? 1 : 0,
                         userSelect: 'none',
                         WebkitUserSelect: 'none',
                         pointerEvents: 'none',
                         filter: isOccluded ? 'brightness(0)' : undefined,
-                        transition: 'filter 0.1s linear',
+                        transition: 'opacity 0.45s ease, filter 0.1s linear',
                       }}
                     />
                     {/* Visible watermark overlay on capped/priced albums,
@@ -3601,11 +3635,26 @@ const FindMyPhotos = () => {
             {displayedPhotos.length === 0 && (
               <div style={{
                 textAlign: 'center',
-                padding: '60px 20px',
+                padding: '64px 24px',
+                maxWidth: '440px',
+                margin: '0 auto',
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px dashed rgba(255,255,255,0.16)',
+                borderRadius: '20px',
                 color: 'rgba(255,255,255,0.5)',
               }}>
-                <p style={{ fontSize: '18px', fontWeight: 600, color: 'rgba(255,255,255,0.7)' }}>No photos found</p>
-                <p style={{ fontSize: '14px', marginTop: '8px' }}>Try scanning again or show all photos</p>
+                <span style={{
+                  width: '56px', height: '56px', borderRadius: '16px',
+                  background: 'rgba(255,107,107,0.12)', color: '#FF6B6B',
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                  marginBottom: '16px',
+                }}>
+                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                </span>
+                <p style={{ fontSize: '18px', fontWeight: 700, color: 'rgba(255,255,255,0.85)', margin: 0 }}>No photos matched</p>
+                <p style={{ fontSize: '14px', marginTop: '8px', lineHeight: 1.6 }}>
+                  Try another selfie, or use Show All Photos to browse the whole gallery.
+                </p>
               </div>
             )}
           </div>
@@ -3639,7 +3688,7 @@ const FindMyPhotos = () => {
               aria-labelledby="cap-warn-title"
               style={{
                 width: 'min(440px, 100%)',
-                background: '#15151a',
+                background: 'linear-gradient(160deg, #0a2148 0%, #071634 100%)',
                 border: '1px solid rgba(255,255,255,0.10)',
                 borderRadius: 18,
                 padding: 24,
@@ -3987,7 +4036,8 @@ const FindMyPhotos = () => {
           <div
             onMouseDown={(e) => e.stopPropagation()}
             style={{
-              backgroundColor: '#18181b',
+              backgroundColor: '#0a2148',
+              backgroundImage: 'linear-gradient(160deg, #0a2148 0%, #071634 100%)',
               borderRadius: '20px',
               padding: 'clamp(20px, 5vw, 32px)',
               paddingTop: 'clamp(40px, 8vw, 50px)',
@@ -4232,7 +4282,7 @@ const FindMyPhotos = () => {
           <div
             onClick={(e) => e.stopPropagation()}
             style={{
-              background: '#ffffff',
+              background: 'linear-gradient(160deg, #0a2148 0%, #071634 100%)',
               borderRadius: '24px',
               padding: isMobile ? '28px 20px' : '36px 32px',
               maxWidth: '500px',
@@ -4252,9 +4302,9 @@ const FindMyPhotos = () => {
                   width: '36px',
                   height: '36px',
                   borderRadius: '50%',
-                  background: '#f3f4f6',
+                  background: 'rgba(255,255,255,0.10)',
                   border: 'none',
-                  color: '#6b7280',
+                  color: 'rgba(255,255,255,0.6)',
                   fontSize: '20px',
                   cursor: 'pointer',
                   display: 'flex',
@@ -4262,8 +4312,8 @@ const FindMyPhotos = () => {
                   justifyContent: 'center',
                   transition: 'all 0.3s ease',
                 }}
-                onMouseEnter={(e) => { (e.target as HTMLButtonElement).style.background = '#e5e7eb'; }}
-                onMouseLeave={(e) => { (e.target as HTMLButtonElement).style.background = '#f3f4f6'; }}
+                onMouseEnter={(e) => { (e.target as HTMLButtonElement).style.background = 'rgba(255,255,255,0.18)'; }}
+                onMouseLeave={(e) => { (e.target as HTMLButtonElement).style.background = 'rgba(255,255,255,0.10)'; }}
               >
                 &times;
               </button>
@@ -4272,7 +4322,7 @@ const FindMyPhotos = () => {
             <h3 style={{
               fontSize: '22px',
               fontWeight: 700,
-              color: '#1f2937',
+              color: '#ffffff',
               marginBottom: '8px',
               textAlign: 'center',
             }}>
@@ -4280,7 +4330,7 @@ const FindMyPhotos = () => {
             </h3>
             <p style={{
               fontSize: '14px',
-              color: '#6b7280',
+              color: 'rgba(255,255,255,0.6)',
               textAlign: 'center',
               marginBottom: '28px',
               lineHeight: 1.5,
@@ -4349,11 +4399,11 @@ const FindMyPhotos = () => {
                 <p style={{
                   fontSize: '16px',
                   fontWeight: 600,
-                  color: '#1f2937',
+                  color: '#ffffff',
                 }}>Scanning...</p>
                 <p style={{
                   fontSize: '13px',
-                  color: '#9ca3af',
+                  color: 'rgba(255,255,255,0.45)',
                   marginTop: '8px',
                 }}>Matching your face across event photos</p>
               </div>
@@ -4382,7 +4432,7 @@ const FindMyPhotos = () => {
                     }}
                   />
                 </div>
-                <p style={{ fontSize: '13px', color: '#6b7280', marginBottom: '16px' }}>
+                <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)', marginBottom: '16px' }}>
                   Position your face in the circle
                 </p>
                 <div style={{ display: 'flex', gap: '12px' }}>
@@ -4392,8 +4442,8 @@ const FindMyPhotos = () => {
                       flex: 1,
                       padding: '14px',
                       borderRadius: '12px',
-                      background: '#f3f4f6',
-                      color: '#374151',
+                      background: 'rgba(255,255,255,0.10)',
+                      color: 'rgba(255,255,255,0.85)',
                       fontSize: '15px',
                       fontWeight: 600,
                       border: 'none',
@@ -4463,10 +4513,10 @@ const FindMyPhotos = () => {
                         padding: '6px 16px',
                         borderRadius: '8px',
                         background: 'transparent',
-                        color: '#6b7280',
+                        color: 'rgba(255,255,255,0.6)',
                         fontSize: '13px',
                         fontWeight: 500,
-                        border: '1px solid #d1d5db',
+                        border: '1px solid rgba(255,255,255,0.22)',
                         cursor: 'pointer',
                         transition: 'all 0.3s ease',
                       }}
@@ -4486,7 +4536,7 @@ const FindMyPhotos = () => {
                       onClick={startCamera}
                       style={{
                         flex: 1,
-                        border: '2px dashed #d1d5db',
+                        border: '2px dashed rgba(255,255,255,0.22)',
                         borderRadius: '16px',
                         padding: '28px 12px',
                         textAlign: 'center',
@@ -4494,7 +4544,7 @@ const FindMyPhotos = () => {
                         transition: 'all 0.3s ease',
                       }}
                       onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#FF6B6B'; e.currentTarget.style.background = 'rgba(255,107,107,0.03)'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#d1d5db'; e.currentTarget.style.background = 'transparent'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.22)'; e.currentTarget.style.background = 'transparent'; }}
                     >
                       <div style={{
                         width: '48px',
@@ -4511,8 +4561,8 @@ const FindMyPhotos = () => {
                           <circle cx="12" cy="13" r="4"/>
                         </svg>
                       </div>
-                      <p style={{ fontSize: '14px', fontWeight: 600, color: '#374151' }}>Take Selfie</p>
-                      <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: '2px' }}>Use camera</p>
+                      <p style={{ fontSize: '14px', fontWeight: 600, color: 'rgba(255,255,255,0.85)' }}>Take Selfie</p>
+                      <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.45)', marginTop: '2px' }}>Use camera</p>
                     </div>
 
                     {/* Upload Photo button */}
@@ -4520,7 +4570,7 @@ const FindMyPhotos = () => {
                       onClick={() => fileInputRef.current?.click()}
                       style={{
                         flex: 1,
-                        border: '2px dashed #d1d5db',
+                        border: '2px dashed rgba(255,255,255,0.22)',
                         borderRadius: '16px',
                         padding: '28px 12px',
                         textAlign: 'center',
@@ -4528,7 +4578,7 @@ const FindMyPhotos = () => {
                         transition: 'all 0.3s ease',
                       }}
                       onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#083A85'; e.currentTarget.style.background = 'rgba(8,58,133,0.03)'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#d1d5db'; e.currentTarget.style.background = 'transparent'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.22)'; e.currentTarget.style.background = 'transparent'; }}
                     >
                       <div style={{
                         width: '48px',
@@ -4546,8 +4596,8 @@ const FindMyPhotos = () => {
                           <line x1="12" y1="3" x2="12" y2="15"/>
                         </svg>
                       </div>
-                      <p style={{ fontSize: '14px', fontWeight: 600, color: '#374151' }}>Upload Photo</p>
-                      <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: '2px' }}>From gallery</p>
+                      <p style={{ fontSize: '14px', fontWeight: 600, color: 'rgba(255,255,255,0.85)' }}>Upload Photo</p>
+                      <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.45)', marginTop: '2px' }}>From gallery</p>
                     </div>
 
                     {/* Browse Photos - routes to the public stock catalog. */}
@@ -4556,7 +4606,7 @@ const FindMyPhotos = () => {
                       style={{
                         flex: 1,
                         position: 'relative',
-                        border: '2px dashed #d1d5db',
+                        border: '2px dashed rgba(255,255,255,0.22)',
                         borderRadius: '16px',
                         padding: '28px 12px',
                         textAlign: 'center',
@@ -4564,7 +4614,7 @@ const FindMyPhotos = () => {
                         transition: 'all 0.3s ease',
                       }}
                       onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#F20C8F'; e.currentTarget.style.background = 'rgba(242,12,143,0.03)'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#d1d5db'; e.currentTarget.style.background = 'transparent'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.22)'; e.currentTarget.style.background = 'transparent'; }}
                     >
                       <span
                         title="Built to support professional photography art - usable on press, newspapers, luxury venues, magazine covers, etc."
@@ -4594,8 +4644,8 @@ const FindMyPhotos = () => {
                           <rect x="3" y="14" width="7" height="7" />
                         </svg>
                       </div>
-                      <p style={{ fontSize: '14px', fontWeight: 600, color: '#374151' }}>Browse Photos</p>
-                      <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: '2px' }}>Stock library</p>
+                      <p style={{ fontSize: '14px', fontWeight: 600, color: 'rgba(255,255,255,0.85)' }}>Browse Photos</p>
+                      <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.45)', marginTop: '2px' }}>Stock library</p>
                     </div>
                   </div>
                 )}
@@ -4608,8 +4658,8 @@ const FindMyPhotos = () => {
                     width: '100%',
                     padding: '16px',
                     borderRadius: '12px',
-                    background: uploadedFile ? '#FF6B6B' : '#e5e7eb',
-                    color: uploadedFile ? '#ffffff' : '#9ca3af',
+                    background: uploadedFile ? '#FF6B6B' : 'rgba(255,255,255,0.10)',
+                    color: uploadedFile ? '#ffffff' : 'rgba(255,255,255,0.35)',
                     fontSize: '16px',
                     fontWeight: 700,
                     border: 'none',
@@ -4891,7 +4941,7 @@ const FindMyPhotos = () => {
           <div
             onMouseDown={(e) => e.stopPropagation()}
             style={{
-              background: 'linear-gradient(145deg, #141418 0%, #1a1a24 100%)',
+              background: 'linear-gradient(160deg, #0a2148 0%, #071634 100%)',
               borderRadius: '20px',
               padding: 'clamp(24px, 5vw, 36px)',
               maxWidth: '460px', width: '100%',
@@ -4988,7 +5038,7 @@ const FindMyPhotos = () => {
           <div
             onMouseDown={(e) => e.stopPropagation()}
             style={{
-              background: 'linear-gradient(145deg, #141418 0%, #1a1a24 100%)',
+              background: 'linear-gradient(160deg, #0a2148 0%, #071634 100%)',
               borderRadius: '20px',
               padding: 'clamp(24px, 5vw, 36px)',
               maxWidth: '460px', width: '100%',
