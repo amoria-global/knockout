@@ -28,7 +28,10 @@ import InternationalPhoneInput, { type PhoneValue } from '../components/phone/In
 // Photo shape used throughout the page, augmented with album-purchase fields
 type PhotoItem = {
   id: string;
+  /** Grid-sized image (server thumbnail when one exists). */
   url: string;
+  /** Full-resolution image for the lightbox; falls back to url. */
+  fullUrl?: string;
   alt: string;
   price?: number;
   albumId?: string;
@@ -359,7 +362,11 @@ const FindMyPhotos = () => {
           const resolvedAlbumId = response.data.albumId;
           const photos = (response.data.photos ?? []).map((p: AlbumPhoto) => ({
             id: p.id,
-            url: p.url || p.thumbnailUrl || '',
+            // Grid loads the server thumbnail; the lightbox gets the
+            // original. Locked paid photos have url=null, so both resolve
+            // to the thumb - originals only leave via the purchase path.
+            url: p.thumbnailUrl || p.url || '',
+            fullUrl: p.url || p.thumbnailUrl || '',
             alt: p.alt || p.eventTitle || 'Event photo',
             price: p.price ?? perPhotoPrice,
             albumId: resolvedAlbumId,
@@ -480,7 +487,8 @@ const FindMyPhotos = () => {
         const currencyAbbreviation = response.data.pricing?.currencyAbbreviation;
         const photos = (response.data.photos ?? []).map((p: AlbumPhoto) => ({
           id: p.id,
-          url: p.url || p.thumbnailUrl || '',
+          url: p.thumbnailUrl || p.url || '',
+          fullUrl: p.url || p.thumbnailUrl || '',
           alt: p.alt || p.eventTitle || 'Event photo',
           price: p.price ?? perPhotoPrice,
           albumId,
@@ -534,7 +542,8 @@ const FindMyPhotos = () => {
         {
           const mapped: PhotoItem[] = photos.map((p: MatchedPhoto) => ({
             id: p.id,
-            url: p.url || p.thumbnailUrl || '',
+            url: p.thumbnailUrl || p.url || '',
+            fullUrl: p.url || p.thumbnailUrl || '',
             alt: p.alt || p.eventTitle || 'Event photo',
             price: p.pricePerImage,
             albumId: p.albumId,
@@ -2348,12 +2357,13 @@ const FindMyPhotos = () => {
                     }}
                     onClick={() => setSelectedPhoto({
                       id: photo.id,
-                      url: photo.url || photo.thumbnailUrl,
+                      url: photo.thumbnailUrl || photo.url,
+                      fullUrl: photo.url || photo.thumbnailUrl,
                       alt: photo.caption || 'Free album photo',
                     })}
                   >
                     <img
-                      src={stampPreviewUrl(photo.url || photo.thumbnailUrl, viewerId, { buyerId, refid: purchaseRefid })}
+                      src={stampPreviewUrl(photo.thumbnailUrl || photo.url, viewerId, { buyerId, refid: purchaseRefid })}
                       alt={photo.caption || 'Free album photo'}
                       loading="lazy"
                       draggable={false}
@@ -3740,7 +3750,7 @@ const FindMyPhotos = () => {
             .map((p) => (
               <img
                 key={`preload-${p.id}`}
-                src={stampPreviewUrl(p.url, viewerId, { buyerId, refid: purchaseRefid })}
+                src={stampPreviewUrl(p.fullUrl || p.url, viewerId, { buyerId, refid: purchaseRefid })}
                 alt=""
                 aria-hidden
                 style={{ display: 'none' }}
@@ -3882,7 +3892,7 @@ const FindMyPhotos = () => {
                 style={{ position: 'relative', maxWidth: '90vw', maxHeight: '85vh', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}
               >
                 <img
-                  src={stampPreviewUrl(selectedPhoto.url, viewerId, { buyerId, refid: purchaseRefid })}
+                  src={stampPreviewUrl(selectedPhoto.fullUrl || selectedPhoto.url, viewerId, { buyerId, refid: purchaseRefid })}
                   alt={selectedPhoto.alt}
                   draggable={false}
                   onDragStart={(e) => e.preventDefault()}
