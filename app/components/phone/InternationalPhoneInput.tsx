@@ -113,14 +113,23 @@ export default function InternationalPhoneInput({
   const handleInput = (raw: string) => {
     userTouched.current = true;
     let digits = onlyDigits(raw);
-    // The dial code is part of the visible value; whatever leading digits
-    // remain decide the country. Editing/deleting "+250" therefore flips
-    // the picker to whichever plan the remaining prefix matches.
+    // The visible value holds ONLY the national number - the dial code
+    // lives in the flag chip (it used to be inside the value too, which
+    // read as "+250 | +250"). International pastes still flip the picker,
+    // but dial-code matching only runs when the input actually looks
+    // international: it contains a '+', or it overflows the national plan
+    // while starting with a plausible dial prefix. Typing a national
+    // number can therefore never be misread as a dial code (e.g. a
+    // leading "7" flipping the country).
     let next = country;
-    const m = matchDialCode(digits, country.iso2);
-    if (m) {
-      next = m;
-      digits = digits.slice(m.dial.length);
+    const looksInternational =
+      raw.includes('+') || digits.length > nsnMaxLen(country) + 1;
+    if (looksInternational) {
+      const m = matchDialCode(digits, country.iso2);
+      if (m) {
+        next = m;
+        digits = digits.slice(m.dial.length);
+      }
     }
     if (next.trunkPrefix && digits.startsWith(next.trunkPrefix)) {
       digits = digits.slice(next.trunkPrefix.length);
@@ -151,7 +160,8 @@ export default function InternationalPhoneInput({
   const { isValid, hint } = validateNsn(country, nsn);
   const maxLen = nsnMaxLen(country);
   const showInvalid = nsn.length > 0 && !isValid && nsn.length >= maxLen;
-  const displayValue = `+${country.dial}${nsn ? ' ' + formatNsn(country, nsn) : ' '}`;
+  // National number only - the dial code is shown once, in the chip.
+  const displayValue = nsn ? formatNsn(country, nsn) : '';
   const exampleNsn = useMemo(
     () => formatNsn(country, '7'.padEnd(country.nsnLengths[0] ?? 9, '8')),
     [country]
@@ -192,6 +202,7 @@ export default function InternationalPhoneInput({
           autoComplete="tel"
           aria-label={ariaLabel}
           value={displayValue}
+          placeholder={exampleNsn}
           onChange={(e) => handleInput(e.target.value)}
           disabled={disabled}
         />
@@ -271,6 +282,8 @@ export default function InternationalPhoneInput({
           font-variant-numeric: tabular-nums; letter-spacing: 0.02em; min-width: 0;
         }
         .ckph--dark .ckph-row input { color: #fff; }
+        .ckph-row input::placeholder { color: #b6bfce; }
+        .ckph--dark .ckph-row input::placeholder { color: rgba(255,255,255,0.32); }
         .ckph-state {
           position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
           font-size: 14px; pointer-events: none;
@@ -286,7 +299,7 @@ export default function InternationalPhoneInput({
           background: #fff; border: 1.5px solid #e2e6ee; border-radius: 14px;
           box-shadow: 0 18px 50px rgba(15,23,42,0.18); padding: 6px;
         }
-        .ckph--dark .ckph-menu { background: #1a1f2c; border-color: rgba(255,255,255,0.15); }
+        .ckph--dark .ckph-menu { background: linear-gradient(160deg, #0a2148 0%, #071634 100%); border-color: rgba(255,255,255,0.15); }
         .ckph-search {
           width: 100%; border: 1px solid #e2e6ee; border-radius: 9px;
           padding: 8px 10px; font-size: 12.5px; margin-bottom: 6px; outline: 0;
