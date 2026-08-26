@@ -986,6 +986,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
               {(showCountryPicker || (detectedCountry && !optionsLoading && !countrySupported)) ? (
                 <CountryPicker
                   value={detectedCountry}
+                  dark={darkMode}
                   onChange={(iso2) => {
                     setCountry(iso2);
                     setSelectedMethod(null);
