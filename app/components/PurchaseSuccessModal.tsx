@@ -80,9 +80,17 @@ export default function PurchaseSuccessModal({
     a.remove();
   }, [status, refid]);
 
+  /**
+   * Originals of sold-per-photo albums are gated server-side
+   * (PaidMediaAccessGuard), so every request for one has to carry this
+   * purchase's refid. Without it the buyer's own photos come back 403.
+   */
+  const withRefid = (url: string) =>
+    !url || url.includes('refid=') ? url : `${url}${url.includes('?') ? '&' : '?'}refid=${encodeURIComponent(refid)}`;
+
   const downloadOne = (it: PurchasedItem) => {
     const a = document.createElement('a');
-    a.href = it.fileUrl;
+    a.href = withRefid(it.fileUrl);
     a.download = '';
     a.target = '_blank';
     a.rel = 'noopener';
@@ -215,7 +223,7 @@ export default function PurchaseSuccessModal({
                       borderRadius: 12, overflow: 'hidden',
                     }}>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={it.fileUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                      <img src={withRefid(it.fileUrl)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                       <input type="checkbox" checked={isSel} onChange={() => toggleSel(it.imageId)}
                         style={{ position: 'absolute', top: 7, left: 7, width: 16, height: 16, accentColor: '#F20C8F', cursor: 'pointer' }} />
                       <button onClick={() => downloadOne(it)} title="Download this photo"
