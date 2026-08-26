@@ -45,6 +45,10 @@ const ALLOWED_PATH_PREFIXES = [
   // served as raw JPEG bytes by the backend; without this entry the proxy
   // would 403-with-JSON and the JSON would get saved as a .jpg.
   'api/photos/',
+  // Anonymous storefront feeds (browse-photos catalog, categories,
+  // photographers). Public, unauthenticated backend endpoints - proxied so
+  // local dev (which routes everything through this proxy) sees real data.
+  'api/public/content/',
 ];
 
 const REQUEST_TIMEOUT_MS = 30_000;
