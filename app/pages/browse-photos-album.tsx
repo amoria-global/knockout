@@ -34,6 +34,9 @@ interface BrowseRow {
   category: string | null;
   categoryLabel: string | null;
   fileUrl: string;
+  /** Grid-sized variant from the thumbnail pipeline; the preview everywhere.
+   *  Originals of priced albums are released only after purchase. */
+  thumbnailUrl?: string;
   photographerId: string | null;
   photographerName: string;
   photographerLogo: string | null;
@@ -369,7 +372,7 @@ export default function BrowsePhotosAlbumPage({
                     }}
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={it.fileUrl} alt=""
+                    <img src={it.thumbnailUrl || it.fileUrl} alt=""
                       loading="lazy" draggable={false}
                       onDragStart={(e) => e.preventDefault()}
                       onContextMenu={(e) => e.preventDefault()}
@@ -544,7 +547,7 @@ export default function BrowsePhotosAlbumPage({
           <div onClick={(e) => e.stopPropagation()} onContextMenu={(e) => e.preventDefault()}
             style={{ position: 'relative', maxWidth: '90vw', maxHeight: '85vh', borderRadius: 12, overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={previewing!.fileUrl} alt="" draggable={false}
+            <img src={previewing!.thumbnailUrl || previewing!.fileUrl} alt="" draggable={false}
               onDragStart={(e) => e.preventDefault()}
               onContextMenu={(e) => e.preventDefault()}
               style={{
