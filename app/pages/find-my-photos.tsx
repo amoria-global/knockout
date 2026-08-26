@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Navbar from '../components/navbar';
-import DotGrid from '../components/DotGrid';
 import XentriPayModal from '../components/XentriPayModal';
 import { getAlbumByCode, type AlbumPhoto } from '@/lib/APIs/public/get-album/route';
 import { uploadSelfieForRecognition, type MatchedPhoto } from '@/lib/APIs/customer/facial-recognition/route';
@@ -1788,391 +1787,372 @@ const FindMyPhotos = () => {
   );
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#052047' }}>
+    <div style={{ minHeight: '100vh', background: '#040d1f' }}>
+      {/* ═══ "The Reel" - film / contact-sheet architecture ═══ */}
       <style>{`
-        /* ── Phase stepper (floating, glassmorphism) ── */
-        .fmp-stepper {
-          position: sticky;
-          top: 76px;
-          z-index: 30;
-          padding: 14px 16px 0;
-          display: flex;
-          justify-content: center;
-          pointer-events: none;
+        @import url('https://fonts.googleapis.com/css2?family=Libre+Bodoni:ital,wght@0,500;0,600;0,700;1,500&display=swap');
+        .fr-serif { font-family: 'Libre Bodoni', Georgia, 'Times New Roman', serif; }
+        .fr-gate {
+          position: relative; overflow: hidden;
+          background:
+            radial-gradient(1000px 460px at 14% -8%, rgba(8,58,133,0.55), transparent 60%),
+            radial-gradient(820px 400px at 90% 4%, rgba(255,107,107,0.14), transparent 55%),
+            #040d1f;
         }
-        .fmp-stepper-inner {
-          pointer-events: auto;
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          padding: 8px 12px;
-          background: rgba(8,12,28,0.55);
-          border: 1px solid rgba(255,255,255,0.10);
-          border-radius: 999px;
-          backdrop-filter: blur(14px);
-          -webkit-backdrop-filter: blur(14px);
-          box-shadow: 0 14px 30px -14px rgba(0,0,0,0.55), 0 4px 10px -2px rgba(0,0,0,0.25);
+        .fr-sprockets {
+          height: 14px; margin: 0 auto; max-width: 1200px;
+          background-image: radial-gradient(rgba(255,255,255,0.16) 2.6px, transparent 2.8px);
+          background-size: 26px 14px; background-position: center;
+          -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+          mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+          opacity: 0.85;
         }
-        .fmp-step {
-          appearance: none; background: transparent; border: 0; cursor: pointer;
-          color: rgba(255,255,255,0.55);
-          padding: 6px 10px;
-          border-radius: 999px;
-          display: inline-flex; align-items: center; gap: 8px;
-          transition: all 0.3s ease;
-          font-family: inherit;
+        .fr-door {
+          position: relative; border-radius: 20px; padding: 26px;
+          background: rgba(255,255,255,0.035);
+          border: 1px solid rgba(255,255,255,0.1);
+          transition: border-color 220ms ease, transform 220ms ease, box-shadow 220ms ease;
         }
-        .fmp-step:hover:not(:disabled) {
-          color: rgba(255,255,255,0.92);
-          background: rgba(255,255,255,0.06);
+        .fr-door:hover { border-color: rgba(255,255,255,0.24); transform: translateY(-3px); box-shadow: 0 30px 60px -30px rgba(0,0,0,0.8); }
+        .fr-door-tag {
+          position: absolute; top: -11px; left: 22px; padding: 3px 12px; border-radius: 999px;
+          font-size: 10.5px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase;
+          background: #0a2148;
         }
-        .fmp-step:disabled {
-          cursor: not-allowed;
-          opacity: 0.55;
+        .fr-code {
+          display: flex; gap: 8px; background: rgba(255,255,255,0.05);
+          border: 1px solid rgba(255,255,255,0.16); border-radius: 14px; padding: 6px;
+          transition: border-color 200ms ease, box-shadow 200ms ease;
         }
-        .fmp-step-num {
-          width: 28px; height: 28px; border-radius: 50%;
-          background: rgba(255,255,255,0.08);
-          color: rgba(255,255,255,0.6);
-          display: inline-flex; align-items: center; justify-content: center;
-          font-size: 13px; font-weight: 700;
-          transition: all 0.3s ease;
-          flex-shrink: 0;
+        .fr-code:focus-within { border-color: rgba(242,12,143,0.6); box-shadow: 0 0 0 3px rgba(242,12,143,0.14); }
+        .fr-code input {
+          flex: 1; min-width: 0; background: transparent; border: 0; outline: none;
+          color: #fff; font-size: 16px; padding: 11px 12px; letter-spacing: 0.1em;
+          font-weight: 700; font-family: inherit;
         }
-        .fmp-step-text {
-          display: flex; flex-direction: column; align-items: flex-start;
-          line-height: 1.1;
+        .fr-code input::placeholder { color: rgba(255,255,255,0.35); letter-spacing: 0.02em; font-weight: 600; }
+        .fr-finder {
+          position: relative; border-radius: 14px; overflow: hidden;
+          background:
+            radial-gradient(220px 120px at 50% 40%, rgba(255,107,107,0.12), transparent 70%),
+            rgba(0,0,0,0.35);
+          border: 1px solid rgba(255,255,255,0.1);
+          display: flex; align-items: center; justify-content: center;
         }
-        .fmp-step-label { font-size: 12.5px; font-weight: 700; letter-spacing: 0.02em; }
-        .fmp-step-sub { font-size: 9.5px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; opacity: 0.6; margin-top: 1.5px; }
-        .fmp-step.is-active {
-          background: linear-gradient(135deg, rgba(168,85,247,0.18), rgba(236,72,153,0.18));
-          color: #fff;
-          box-shadow: 0 0 0 1px rgba(255,255,255,0.18) inset;
+        .fr-corner { position: absolute; width: 22px; height: 22px; border: 2.5px solid rgba(255,107,107,0.85); pointer-events: none; z-index: 2; }
+        .fr-corner.tl { top: 10px; left: 10px; border-right: 0; border-bottom: 0; border-radius: 6px 0 0 0; }
+        .fr-corner.tr { top: 10px; right: 10px; border-left: 0; border-bottom: 0; border-radius: 0 6px 0 0; }
+        .fr-corner.bl { bottom: 10px; left: 10px; border-right: 0; border-top: 0; border-radius: 0 0 0 6px; }
+        .fr-corner.br { bottom: 10px; right: 10px; border-left: 0; border-top: 0; border-radius: 0 0 6px 0; }
+        .fr-btn-ghost {
+          padding: 11px 18px; border-radius: 12px; cursor: pointer; font-family: inherit;
+          background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.18);
+          color: #fff; font-weight: 700; font-size: 13.5px; transition: background 180ms ease;
+          display: inline-flex; align-items: center; justify-content: center; gap: 7px;
         }
-        .fmp-step.is-active .fmp-step-num {
-          background: linear-gradient(135deg, #C084FC, #EC4899);
-          color: #fff;
-          box-shadow: 0 0 0 4px rgba(192,132,252,0.18), 0 6px 14px -4px rgba(236,72,153,0.55);
-          transform: scale(1.06);
+        .fr-btn-ghost:hover { background: rgba(255,255,255,0.12); }
+        .fr-btn-brand {
+          padding: 12px 22px; border-radius: 12px; border: 0; cursor: pointer; font-family: inherit;
+          background: linear-gradient(135deg, #083A85 0%, #F20C8F 130%); color: #fff;
+          font-weight: 800; font-size: 14px; box-shadow: 0 10px 26px -10px rgba(242,12,143,0.55);
+          display: inline-flex; align-items: center; justify-content: center; gap: 7px;
         }
-        .fmp-step.is-completed .fmp-step-num {
-          background: #10b981; color: #fff;
+        .fr-btn-brand:disabled { opacity: 0.55; cursor: not-allowed; }
+        .fr-btn-coral {
+          padding: 12px 22px; border-radius: 12px; border: 0; cursor: pointer; font-family: inherit;
+          background: #FF6B6B; color: #fff; font-weight: 800; font-size: 14px;
+          box-shadow: 0 10px 26px -10px rgba(255,107,107,0.55); transition: background 160ms ease;
+          display: inline-flex; align-items: center; justify-content: center; gap: 7px;
         }
-        .fmp-step.is-completed { color: rgba(255,255,255,0.85); }
-        .fmp-step-divider {
-          width: 16px; height: 1px;
-          background: linear-gradient(90deg, rgba(255,255,255,0.10), rgba(255,255,255,0.30), rgba(255,255,255,0.10));
-          flex-shrink: 0;
+        .fr-btn-coral:hover:not(:disabled) { background: #ff5252; }
+        .fr-btn-coral:disabled { opacity: 0.55; cursor: not-allowed; }
+        .fr-marquee {
+          position: relative; overflow: hidden; border-radius: 22px;
+          border: 1px solid rgba(255,255,255,0.1); min-height: 220px;
+          display: flex; align-items: flex-end;
         }
-        .fmp-step-divider.is-past {
-          background: linear-gradient(90deg, rgba(192,132,252,0.45), rgba(236,72,153,0.55));
+        .fr-marquee .cover { position: absolute; inset: 0; background-size: cover; background-position: center; filter: blur(2px) brightness(0.42) saturate(1.05); transform: scale(1.06); }
+        .fr-marquee .scrim { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(4,13,31,0.15) 0%, rgba(4,13,31,0.55) 55%, rgba(4,13,31,0.94) 100%); }
+        .fr-chip {
+          display: inline-flex; align-items: center; gap: 7px; padding: 7px 13px; border-radius: 999px;
+          background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.16);
+          color: rgba(255,255,255,0.85); font-size: 12.5px; font-weight: 700; white-space: nowrap;
         }
+        .fr-card {
+          break-inside: avoid; border-radius: 14px; overflow: hidden;
+          background: #0b1930; border: 1px solid rgba(255,255,255,0.09);
+          position: relative; cursor: pointer;
+          transition: transform 220ms ease, border-color 220ms ease, box-shadow 220ms ease;
+        }
+        .fr-card:hover { transform: translateY(-3px); border-color: rgba(255,255,255,0.22); box-shadow: 0 24px 48px -22px rgba(0,0,0,0.75); }
+        .fr-frame-no {
+          position: absolute; bottom: 8px; left: 10px; z-index: 3; pointer-events: none;
+          font-size: 10.5px; font-weight: 800; letter-spacing: 0.16em;
+          color: rgba(255,255,255,0.65); text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+        }
+        .fr-pick {
+          position: absolute; top: 10px; left: 10px; z-index: 4;
+          width: 30px; height: 30px; border-radius: 999px; border: 2px solid rgba(255,255,255,0.75);
+          background: rgba(4,10,24,0.45); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+          display: flex; align-items: center; justify-content: center; padding: 0;
+          color: #fff; font-size: 13px; font-weight: 800; cursor: pointer; transition: all 160ms ease;
+        }
+        .fr-eye {
+          position: absolute; top: 10px; right: 10px; z-index: 4;
+          width: 32px; height: 32px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.3);
+          background: rgba(4,10,24,0.6); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+          display: flex; align-items: center; justify-content: center; color: #fff; cursor: pointer;
+          opacity: 0; transform: translateY(-4px); transition: all 200ms ease; padding: 0;
+        }
+        .fr-card:hover .fr-eye { opacity: 1; transform: translateY(0); }
+        .fr-act {
+          position: absolute; bottom: 8px; right: 10px; z-index: 4;
+          display: inline-flex; align-items: center; gap: 5px;
+          padding: 7px 12px; border-radius: 999px; cursor: pointer;
+          background: rgba(0,0,0,0.65); border: 1px solid rgba(255,255,255,0.2);
+          color: #fff; font-size: 12px; font-weight: 700; font-family: inherit;
+          backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+          opacity: 0; transform: translateY(4px); transition: all 200ms ease;
+        }
+        .fr-card:hover .fr-act { opacity: 1; transform: translateY(0); }
+        .fr-act:hover { background: #03969c; border-color: #03969c; }
+        @media (hover: none) {
+          .fr-eye, .fr-act { opacity: 1; transform: none; }
+        }
+        .fr-badge {
+          position: absolute; top: 10px; right: 48px; z-index: 3; pointer-events: none;
+          padding: 4px 11px; border-radius: 999px; font-size: 11px; font-weight: 800;
+          backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+        }
+        .fr-tray {
+          position: fixed; left: 50%; transform: translateX(-50%); bottom: 18px; z-index: 1500;
+          display: flex; flex-direction: column; gap: 8px;
+          padding: 12px 14px; border-radius: 18px;
+          background: linear-gradient(175deg, rgba(10,33,72,0.97) 0%, rgba(6,15,36,0.97) 100%);
+          border: 1px solid rgba(255,255,255,0.14);
+          box-shadow: 0 24px 60px -18px rgba(0,0,0,0.8);
+          width: max-content; max-width: min(720px, calc(100vw - 20px));
+        }
+        .fr-tray-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+        .fr-tray .thumbs { display: flex; flex-shrink: 0; }
+        .fr-tray .thumbs span {
+          width: 40px; height: 40px; border-radius: 10px; overflow: hidden;
+          border: 2px solid #0a2148; margin-left: -10px; background-size: cover; background-position: center;
+          box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+        .fr-tray .thumbs span:first-child { margin-left: 0; }
+        .fr-cap {
+          border-radius: 16px; padding: 14px 18px;
+          background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1);
+        }
+        .fr-cap .bar { height: 8px; border-radius: 999px; background: rgba(255,255,255,0.08); overflow: hidden; }
+        .fr-cap .bar i { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, #03969c, #7be0e5); transition: width 240ms ease; }
+        .fr-lb-arrow {
+          position: fixed; top: 50%; transform: translateY(-50%);
+          width: 48px; height: 48px; border-radius: 50%;
+          background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.22);
+          color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center;
+          backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+          z-index: 2002; transition: background 200ms ease;
+        }
+        .fr-lb-arrow:hover { background: rgba(255,255,255,0.28); }
+        .fr-lb-arrow:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+        .fr-lb-arrow.prev { left: 18px; }
+        .fr-lb-arrow.next { right: 18px; }
         @media (max-width: 720px) {
-          .fmp-stepper { top: 72px; padding: 10px 8px 0; }
-          .fmp-step { padding: 4px 6px; gap: 6px; }
-          .fmp-step-text { display: none; }
-          .fmp-step.is-active .fmp-step-text { display: flex; }
-          .fmp-step-divider { width: 10px; }
+          .fr-lb-arrow { width: 42px; height: 42px; }
+          .fr-lb-arrow.prev { left: 8px; }
+          .fr-lb-arrow.next { right: 8px; }
         }
-
-        /* ── Dock row: stepper centered + persistent unlock pill ── */
-        .fmp-dock-row {
-          pointer-events: none;
-          position: relative;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 10px;
-          max-width: 1100px;
-          width: 100%;
+        .fr-scanline {
+          position: absolute; left: 8%; right: 8%; height: 3px; border-radius: 3px;
+          background: linear-gradient(90deg, transparent, #FF6B6B, transparent);
+          animation: fr-scan 2.2s ease-in-out infinite; box-shadow: 0 0 18px rgba(255,107,107,0.8);
+          z-index: 3; pointer-events: none;
         }
-        .fmp-dock-row > * { pointer-events: auto; }
-        .fmp-unlock-pill {
-          position: absolute; right: 0; top: 50%; transform: translateY(-50%);
+        @keyframes fr-scan { 0%, 100% { top: 10%; } 50% { top: 86%; } }
+        .fr-tab {
+          flex: 1; padding: 10px; border-radius: 10px; cursor: pointer; font-family: inherit;
+          background: transparent; border: 1px solid transparent; color: rgba(255,255,255,0.55);
+          font-weight: 700; font-size: 13.5px;
+        }
+        .fr-tab.on { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.2); color: #fff; }
+        .fr-skel {
+          background: linear-gradient(100deg, rgba(255,255,255,0.045) 40%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.045) 60%);
+          background-size: 200% 100%; animation: fr-sh 1.4s ease-in-out infinite;
+        }
+        @keyframes fr-sh { 0% { background-position: 120% 0; } 100% { background-position: -80% 0; } }
+        .fr-dock {
+          position: fixed; top: 76px; left: 50%; transform: translateX(-50%); z-index: 1400;
+          display: inline-flex; align-items: center; gap: 4px;
+          padding: 7px 10px; border-radius: 999px;
+          background: rgba(6,14,32,0.72); border: 1px solid rgba(255,255,255,0.12);
+          backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+          box-shadow: 0 14px 30px -14px rgba(0,0,0,0.6);
+        }
+        .fr-dock button {
+          appearance: none; background: transparent; border: 0; font-family: inherit;
+          display: inline-flex; align-items: center; gap: 7px;
+          padding: 6px 11px; border-radius: 999px; color: rgba(255,255,255,0.5);
+          font-size: 12px; font-weight: 700; cursor: pointer; transition: all 200ms ease;
+        }
+        .fr-dock button:disabled { cursor: default; }
+        .fr-dock button.on { background: rgba(255,107,107,0.16); color: #fff; }
+        .fr-dock button.done { color: rgba(255,255,255,0.8); }
+        .fr-dock .dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,0.25); flex-shrink: 0; transition: background 200ms ease; }
+        .fr-dock button.on .dot { background: #FF6B6B; box-shadow: 0 0 0 4px rgba(255,107,107,0.2); }
+        .fr-dock button.done .dot { background: #03969c; }
+        @media (max-width: 720px) {
+          .fr-dock { top: 70px; }
+          .fr-dock button span.lbl { display: none; }
+          .fr-dock button.on span.lbl { display: inline; }
+        }
+        .fr-unlock-pill {
+          position: fixed; top: 76px; right: 16px; z-index: 1400;
           display: inline-flex; align-items: center; gap: 8px;
-          min-height: 44px; padding: 8px 16px;
-          border-radius: 999px; cursor: pointer;
-          background: rgba(4,42,45,0.72);
-          border: 1px solid rgba(45,212,218,0.55);
-          color: #7be0e5; font-size: 13.5px; font-weight: 700;
-          font-family: inherit;
-          backdrop-filter: blur(14px);
-          -webkit-backdrop-filter: blur(14px);
+          min-height: 40px; padding: 8px 15px; border-radius: 999px; cursor: pointer;
+          background: rgba(4,42,45,0.75); border: 1px solid rgba(45,212,218,0.55);
+          color: #7be0e5; font-size: 12.5px; font-weight: 700; font-family: inherit;
+          backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
           box-shadow: 0 10px 26px -12px rgba(0,0,0,0.6);
           transition: background 200ms ease, border-color 200ms ease;
-          animation: fmp-unlock-pulse 2.4s ease-out 0.6s 2;
+          animation: fr-unlock-pulse 2.4s ease-out 0.6s 2;
         }
-        .fmp-unlock-pill:hover { background: rgba(6,64,68,0.85); border-color: rgba(45,212,218,0.85); }
-        .fmp-unlock-pill:focus-visible { outline: 2px solid #7be0e5; outline-offset: 2px; }
-        .fmp-unlock-pill-text { display: flex; flex-direction: column; align-items: flex-start; line-height: 1.15; }
-        .fmp-unlock-pill-sub { font-size: 10px; font-weight: 600; color: rgba(123,224,229,0.7); letter-spacing: 0.06em; text-transform: uppercase; }
-        @keyframes fmp-unlock-pulse {
+        .fr-unlock-pill:hover { background: rgba(6,64,68,0.9); border-color: rgba(45,212,218,0.85); }
+        @keyframes fr-unlock-pulse {
           0% { box-shadow: 0 10px 26px -12px rgba(0,0,0,0.6), 0 0 0 0 rgba(45,212,218,0.45); }
           70% { box-shadow: 0 10px 26px -12px rgba(0,0,0,0.6), 0 0 0 12px rgba(45,212,218,0); }
           100% { box-shadow: 0 10px 26px -12px rgba(0,0,0,0.6), 0 0 0 0 rgba(45,212,218,0); }
         }
-        @media (prefers-reduced-motion: reduce) {
-          .fmp-unlock-pill { animation: none; }
-        }
         @media (max-width: 720px) {
-          .fmp-dock-row { justify-content: space-between; }
-          .fmp-unlock-pill { position: static; transform: none; padding: 8px 12px; }
-          .fmp-unlock-pill-sub { display: none; }
-        }
-
-        /* ── Connect-phase entry cards ── */
-        .fmp-entry-card {
-          background: rgba(255,255,255,0.05);
-          border: 1px solid rgba(255,255,255,0.1);
-          border-radius: 20px;
-          padding: 26px 24px;
-          text-align: left;
-          transition: border-color 200ms ease;
-        }
-        .fmp-entry-card:hover { border-color: rgba(255,255,255,0.2); }
-        .fmp-entry-card-head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
-        .fmp-entry-card-icon {
-          width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0;
-          display: inline-flex; align-items: center; justify-content: center;
-        }
-        .fmp-entry-card-title { color: #fff; font-size: 17px; font-weight: 800; margin: 0; }
-        .fmp-entry-card-copy { color: rgba(255,255,255,0.55); font-size: 13.5px; line-height: 1.55; margin: 0 0 16px; }
-
-        /* ── Grid image shimmer while loading ── */
-        .fmp-skel {
-          background: linear-gradient(100deg,
-            rgba(255,255,255,0.045) 40%,
-            rgba(255,255,255,0.12) 50%,
-            rgba(255,255,255,0.045) 60%);
-          background-size: 200% 100%;
-          animation: fmp-shimmer 1.4s ease-in-out infinite;
-        }
-        @keyframes fmp-shimmer {
-          0% { background-position: 120% 0; }
-          100% { background-position: -80% 0; }
+          .fr-unlock-pill { top: 70px; right: 10px; padding: 7px 12px; }
         }
         @media (prefers-reduced-motion: reduce) {
-          .fmp-skel { animation: none; background: rgba(255,255,255,0.06); }
-        }
-
-        /* ── Lightbox navigation arrows ── */
-        .fmp-lb-arrow {
-          position: fixed; top: 50%; transform: translateY(-50%);
-          width: 48px; height: 48px; border-radius: 50%;
-          background: rgba(255,255,255,0.12);
-          border: 1px solid rgba(255,255,255,0.22);
-          color: #fff; cursor: pointer;
-          display: flex; align-items: center; justify-content: center;
-          backdrop-filter: blur(8px);
-          -webkit-backdrop-filter: blur(8px);
-          transition: background 200ms ease;
-          z-index: 2002;
-        }
-        .fmp-lb-arrow:hover { background: rgba(255,255,255,0.28); }
-        .fmp-lb-arrow:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
-        .fmp-lb-arrow.prev { left: 18px; }
-        .fmp-lb-arrow.next { right: 18px; }
-        @media (max-width: 720px) {
-          .fmp-lb-arrow { width: 42px; height: 42px; }
-          .fmp-lb-arrow.prev { left: 8px; }
-          .fmp-lb-arrow.next { right: 8px; }
-        }
-
-        /* ── Discover toolbar chips ── */
-        .fmp-chip {
-          display: inline-flex; align-items: center; gap: 6px;
-          padding: 5px 12px; border-radius: 999px;
-          font-size: 12.5px; font-weight: 600;
-          background: rgba(255,255,255,0.08);
-          color: rgba(255,255,255,0.75);
-          border: 1px solid rgba(255,255,255,0.1);
-          white-space: nowrap;
+          .fr-door, .fr-card, .fr-eye, .fr-act, .fr-scanline, .fr-unlock-pill { transition: none !important; animation: none !important; }
+          .fr-skel { animation: none; background: rgba(255,255,255,0.06); }
         }
       `}</style>
 
       <Navbar />
 
-      {/* ── Phase Stepper + persistent unlock - visible across all phases ── */}
-      <div className="fmp-stepper" aria-label="Phase navigation">
-        <div className="fmp-dock-row">
-        <nav className="fmp-stepper-inner">
-          {phases.map((p, i) => {
-            const isActive = i === currentPhaseIndex;
-            const isCompleted = i < currentPhaseIndex;
-            const canNavigate = i <= currentPhaseIndex; // can go to current or back; not forward
-            return (
-              <React.Fragment key={p.id}>
-                <button
-                  type="button"
-                  className={`fmp-step ${isActive ? 'is-active' : ''} ${isCompleted ? 'is-completed' : ''}`}
-                  onClick={() => canNavigate && goToPhase(p.id)}
-                  disabled={!canNavigate}
-                  aria-current={isActive ? 'step' : undefined}
-                >
-                  <span className="fmp-step-num">
-                    {isCompleted ? <i className="bi bi-check2" style={{ fontSize: 14 }} /> : <i className={`bi ${p.icon}`} style={{ fontSize: 12 }} />}
-                  </span>
-                  <span className="fmp-step-text">
-                    <span className="fmp-step-label">{p.label}</span>
-                    <span className="fmp-step-sub">{p.sub}</span>
-                  </span>
-                </button>
-                {i < phases.length - 1 && (
-                  <span className={`fmp-step-divider ${i < currentPhaseIndex ? 'is-past' : ''}`} aria-hidden="true" />
-                )}
-              </React.Fragment>
-            );
-          })}
-        </nav>
+      {/* ── Reel dock: minimal three-step progress (Connect → Browse → Save).
+          goToPhase keeps the same back-navigation semantics the old stepper had. ── */}
+      <nav className="fr-dock" aria-label="Progress">
+        {phases.map((p, i) => {
+          const isActive = i === currentPhaseIndex;
+          const isDone = i < currentPhaseIndex;
+          const canNavigate = i <= currentPhaseIndex;
+          return (
+            <button
+              key={p.id}
+              type="button"
+              className={isActive ? 'on' : isDone ? 'done' : ''}
+              onClick={() => canNavigate && goToPhase(p.id)}
+              disabled={!canNavigate}
+              aria-current={isActive ? 'step' : undefined}
+            >
+              <span className="dot" aria-hidden />
+              <span className="lbl">{p.label}</span>
+            </button>
+          );
+        })}
+      </nav>
 
-        {/* Already-paid buyers kept missing the unlock action below the fold.
-            This pill rides the sticky dock, so it is visible at every scroll
-            depth in every phase once an album is loaded. Same modal, both
-            doors (code + email) - see docs/PAYMENTS.md rule 6. */}
-        {unlockAlbumInScope && (
-          <button
-            type="button"
-            className="fmp-unlock-pill"
-            onClick={() => { setUnlockError(null); setUnlockOpen(true); }}
-            title="Already paid? Unlock with the code we emailed you, or with your email."
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
-            <span className="fmp-unlock-pill-text">
-              <span className="fmp-unlock-pill-sub">Already paid?</span>
-              <span>Unlock</span>
-            </span>
-          </button>
-        )}
-        </div>
-      </div>
+      {/* Persistent unlock pill - visible in every phase once an album is in
+          scope (handleUnlockSubmit needs one). docs/PAYMENTS.md rule 6:
+          both unlock doors stay reachable. */}
+      {unlockAlbumInScope && (
+        <button
+          type="button"
+          className="fr-unlock-pill"
+          onClick={() => { setUnlockError(null); setUnlockOpen(true); }}
+          title="Already paid? Unlock with the code we emailed you, or with your email."
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
+          Already paid? Unlock
+        </button>
+      )}
 
       {freeAlbumFlow !== 'idle' ? (
-        /* ── Free Album Flow ── */
-        <div id="phase-connect" style={{
+        /* ═══ FREE ALBUM FLOW - claim cards, then the contact sheet ═══ */
+        <div id="phase-connect" className="fr-gate" style={{
           minHeight: '100vh',
-          background: 'linear-gradient(135deg, #052047 0%, #103E83 100%)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: isMobile ? '100px 20px 40px' : '80px 20px 40px',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: isMobile ? '110px 16px 60px' : '120px 20px 60px',
           scrollMarginTop: '120px',
-          position: 'relative',
-          overflow: 'hidden',
         }}>
-          {/* Album cover backdrop once verified - same treatment as the paid
-              gallery hero, so a free album feels like THAT event too. */}
-          {freeAlbumFlow === 'verified' && (freeAlbumPhotos[0]?.thumbnailUrl || freeAlbumPhotos[0]?.url) && (
+          {/* Album cover backdrop - the event's own imagery behind every step */}
+          {(freeAlbumPhotos[0]?.thumbnailUrl || freeAlbumPhotos[0]?.url) && (
             <div style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none' }} aria-hidden="true">
               <img
                 src={stampPreviewUrl(freeAlbumPhotos[0].thumbnailUrl || freeAlbumPhotos[0].url, viewerId, { buyerId, refid: purchaseRefid })}
                 alt=""
                 draggable={false}
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'cover',
-                  filter: 'blur(26px) brightness(0.5) saturate(1.1)',
-                  transform: 'scale(1.15)',
-                }}
+                style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'blur(26px) brightness(0.32) saturate(1.1)', transform: 'scale(1.15)' }}
               />
-              <div style={{
-                position: 'absolute', inset: 0,
-                background: 'linear-gradient(180deg, rgba(5,32,71,0.85) 0%, rgba(5,32,71,0.6) 40%, rgba(5,32,71,0.95) 100%)',
-              }} />
+              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(4,13,31,0.82) 0%, rgba(4,13,31,0.55) 40%, rgba(4,13,31,0.95) 100%)' }} />
             </div>
           )}
+
           {freeAlbumFlow === 'email' && (
             <div style={{
-              background: 'rgba(255,255,255,0.06)',
-              borderRadius: '24px',
-              padding: isMobile ? '36px 24px' : '48px 44px',
-              border: '1px solid rgba(255,255,255,0.1)',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
-              maxWidth: '440px',
-              width: '100%',
-              textAlign: 'center',
+              position: 'relative', zIndex: 1, width: '100%', maxWidth: 460, borderRadius: 22,
+              padding: isMobile ? '28px 22px' : 30,
+              background: 'linear-gradient(160deg, #0a2148 0%, #071634 100%)',
+              border: '1px solid rgba(255,255,255,0.12)', boxShadow: '0 30px 80px rgba(0,0,0,0.6)',
             }}>
-              <div style={{
-                width: '64px', height: '64px', borderRadius: '18px',
-                background: 'rgba(255,107,107,0.14)', color: '#FF6B6B',
-                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                marginBottom: '16px',
-              }}>
-                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-              </div>
-              <h2 style={{ color: '#fff', fontSize: '22px', fontWeight: 700, marginBottom: '6px' }}>Free Album Access</h2>
-              {freeAlbumTitle && <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '14px', marginBottom: '4px' }}>{freeAlbumTitle}</p>}
-              {freeAlbumPhotographer && <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px', marginBottom: '20px' }}>by {freeAlbumPhotographer}</p>}
-              <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px', marginBottom: '24px', lineHeight: 1.6 }}>
-                This album requires email verification to view.
+              <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: 11, fontWeight: 800, letterSpacing: '0.2em', textTransform: 'uppercase' }}>Free album</span>
+              <h2 className="fr-serif" style={{ margin: '8px 0 6px', color: '#fff', fontSize: 28, fontWeight: 600 }}>Claim your album.</h2>
+              <p style={{ margin: '0 0 4px', color: 'rgba(255,255,255,0.7)', fontSize: 14, fontWeight: 600 }}>{freeAlbumTitle}</p>
+              {freeAlbumPhotographer && <p style={{ margin: '0 0 14px', color: 'rgba(255,255,255,0.45)', fontSize: 12.5 }}>by {freeAlbumPhotographer}</p>}
+              <p style={{ margin: '0 0 18px', color: 'rgba(255,255,255,0.6)', fontSize: 13.5, lineHeight: 1.6 }}>
+                Enter your email and we&apos;ll send a one-time access code.
               </p>
               <input
                 type="email"
-                placeholder="Enter your email address"
+                placeholder="you@example.com"
                 value={freeAlbumEmail}
                 onChange={(e) => { setFreeAlbumEmail(e.target.value); setFreeAlbumError(''); }}
                 onKeyDown={(e) => e.key === 'Enter' && handleFreeAlbumRequestAccess()}
                 style={{
-                  width: '100%',
-                  padding: '14px 16px',
-                  borderRadius: '12px',
-                  border: freeAlbumError ? '1px solid #ef4444' : '1px solid rgba(255,255,255,0.15)',
-                  background: 'rgba(255,255,255,0.06)',
-                  color: '#fff',
-                  fontSize: '15px',
-                  outline: 'none',
-                  marginBottom: '12px',
-                  boxSizing: 'border-box',
+                  width: '100%', padding: '13px 14px', borderRadius: 12, boxSizing: 'border-box',
+                  border: freeAlbumError ? '1px solid #ef4444' : '1px solid rgba(255,255,255,0.18)',
+                  background: 'rgba(255,255,255,0.06)', color: '#fff', fontSize: 14.5, outline: 'none', marginBottom: 12,
                 }}
               />
-              {freeAlbumError && (
-                <p style={{ color: '#ef4444', fontSize: '13px', marginBottom: '12px' }}>{freeAlbumError}</p>
-              )}
+              {freeAlbumError && <p style={{ color: '#ef4444', fontSize: 13, margin: '0 0 12px' }}>{freeAlbumError}</p>}
               <button
+                className="fr-btn-brand"
+                style={{ width: '100%', padding: 14 }}
                 onClick={handleFreeAlbumRequestAccess}
                 disabled={freeAlbumLoading || !freeAlbumEmail.trim()}
-                style={{
-                  width: '100%',
-                  padding: '14px',
-                  borderRadius: '12px',
-                  border: 'none',
-                  background: freeAlbumLoading || !freeAlbumEmail.trim() ? 'rgba(255,255,255,0.1)' : '#fff',
-                  color: freeAlbumLoading || !freeAlbumEmail.trim() ? 'rgba(255,255,255,0.4)' : '#052047',
-                  fontSize: '15px',
-                  fontWeight: 700,
-                  cursor: freeAlbumLoading || !freeAlbumEmail.trim() ? 'not-allowed' : 'pointer',
-                  transition: 'all 0.2s ease',
-                }}
               >
-                {freeAlbumLoading ? 'Sending...' : 'Request Access'}
+                {freeAlbumLoading ? 'Sending…' : 'Send my access code'}
               </button>
               <button
                 onClick={() => { setFreeAlbumFlow('idle'); setFreeAlbumError(''); }}
-                style={{ marginTop: '16px', background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', fontSize: '13px', cursor: 'pointer' }}
+                style={{ width: '100%', marginTop: 12, padding: 10, borderRadius: 12, cursor: 'pointer', background: 'transparent', border: '1px solid rgba(255,255,255,0.14)', color: 'rgba(255,255,255,0.6)', fontWeight: 600, fontSize: 13 }}
               >
-                ← Back to invite code
+                ← Back to the gate
               </button>
             </div>
           )}
 
           {freeAlbumFlow === 'otp' && (
             <div style={{
-              background: 'rgba(255,255,255,0.06)',
-              borderRadius: '24px',
-              padding: isMobile ? '36px 24px' : '48px 44px',
-              border: '1px solid rgba(255,255,255,0.1)',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
-              maxWidth: '440px',
-              width: '100%',
+              position: 'relative', zIndex: 1, width: '100%', maxWidth: 460, borderRadius: 22,
+              padding: isMobile ? '28px 22px' : 30,
+              background: 'linear-gradient(160deg, #0a2148 0%, #071634 100%)',
+              border: '1px solid rgba(255,255,255,0.12)', boxShadow: '0 30px 80px rgba(0,0,0,0.6)',
               textAlign: 'center',
             }}>
-              <h2 style={{ color: '#fff', fontSize: '22px', fontWeight: 700, marginBottom: '8px' }}>Enter Verification Code</h2>
-              <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px', marginBottom: '24px', lineHeight: 1.6 }}>
+              <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: 11, fontWeight: 800, letterSpacing: '0.2em', textTransform: 'uppercase' }}>Free album</span>
+              <h2 className="fr-serif" style={{ margin: '8px 0 6px', color: '#fff', fontSize: 28, fontWeight: 600 }}>Check your inbox.</h2>
+              <p style={{ margin: '0 0 20px', color: 'rgba(255,255,255,0.6)', fontSize: 13.5, lineHeight: 1.6 }}>
                 We sent a 6-digit code to<br />
-                <span style={{ color: 'rgba(255,255,255,0.85)', fontWeight: 600 }}>{maskEmail(freeAlbumEmail)}</span>
+                <strong style={{ color: '#fff' }}>{maskEmail(freeAlbumEmail)}</strong>
               </p>
-              <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginBottom: 16 }}>
                 {Array.from({ length: 6 }).map((_, i) => (
                   <input
                     key={i}
@@ -2196,55 +2176,36 @@ const FindMyPhotos = () => {
                       if (e.key === 'Enter' && freeAlbumOtp.length === 6) handleFreeAlbumVerify();
                     }}
                     style={{
-                      width: '44px',
-                      height: '52px',
-                      borderRadius: '10px',
+                      width: 44, height: 52, borderRadius: 10,
                       border: freeAlbumError ? '1px solid #ef4444' : '1px solid rgba(255,255,255,0.2)',
-                      background: 'rgba(255,255,255,0.06)',
-                      color: '#fff',
-                      fontSize: '20px',
-                      fontWeight: 700,
-                      textAlign: 'center',
-                      outline: 'none',
+                      background: 'rgba(255,255,255,0.06)', color: '#fff',
+                      fontSize: 20, fontWeight: 700, textAlign: 'center', outline: 'none',
                     }}
                   />
                 ))}
               </div>
-              {freeAlbumError && (
-                <p style={{ color: '#ef4444', fontSize: '13px', marginBottom: '12px' }}>{freeAlbumError}</p>
-              )}
+              {freeAlbumError && <p style={{ color: '#ef4444', fontSize: 13, margin: '0 0 12px' }}>{freeAlbumError}</p>}
               <button
+                className="fr-btn-brand"
+                style={{ width: '100%', padding: 14, marginBottom: 12 }}
                 onClick={handleFreeAlbumVerify}
                 disabled={freeAlbumLoading || freeAlbumOtp.length < 6}
-                style={{
-                  width: '100%',
-                  padding: '14px',
-                  borderRadius: '12px',
-                  border: 'none',
-                  background: freeAlbumLoading || freeAlbumOtp.length < 6 ? 'rgba(255,255,255,0.1)' : '#fff',
-                  color: freeAlbumLoading || freeAlbumOtp.length < 6 ? 'rgba(255,255,255,0.4)' : '#052047',
-                  fontSize: '15px',
-                  fontWeight: 700,
-                  cursor: freeAlbumLoading || freeAlbumOtp.length < 6 ? 'not-allowed' : 'pointer',
-                  transition: 'all 0.2s ease',
-                  marginBottom: '12px',
-                }}
               >
-                {freeAlbumLoading ? 'Verifying...' : 'Verify'}
+                {freeAlbumLoading ? 'Verifying…' : 'Open my album'}
               </button>
-              <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px' }}>
-                {"Didn't receive? "}
+              <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, margin: 0 }}>
+                {"Didn't receive it? "}
                 <button
                   onClick={handleFreeAlbumResendOtp}
                   disabled={freeAlbumLoading}
-                  style={{ background: 'none', border: 'none', color: '#60a5fa', fontSize: '13px', cursor: 'pointer', textDecoration: 'underline' }}
+                  style={{ background: 'none', border: 'none', color: '#7be0e5', fontSize: 13, cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
                 >
                   Resend
                 </button>
               </p>
               <button
                 onClick={() => { setFreeAlbumFlow('email'); setFreeAlbumOtp(''); setFreeAlbumError(''); }}
-                style={{ marginTop: '12px', background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', fontSize: '13px', cursor: 'pointer' }}
+                style={{ marginTop: 12, background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', fontSize: 13, cursor: 'pointer' }}
               >
                 ← Change email
               </button>
@@ -2252,378 +2213,237 @@ const FindMyPhotos = () => {
           )}
 
           {freeAlbumFlow === 'verified' && (
-            <div style={{ width: '100%', maxWidth: '1200px', margin: '0 auto', paddingBottom: selectedFreePhotoIds.size > 0 ? 100 : 0, position: 'relative', zIndex: 1 }}>
-              {/* Album header */}
-              <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-                {/* Pink uppercase eyebrow */}
-                <div style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 6,
-                  marginBottom: 10,
-                  padding: '5px 12px',
-                  borderRadius: 999,
-                  background: 'rgba(242,12,143,0.14)',
-                  border: '1px solid rgba(242,12,143,0.36)',
-                  color: '#F20C8F',
-                  fontSize: 11, fontWeight: 700,
-                  letterSpacing: '0.08em', textTransform: 'uppercase',
-                }}>
-                  <i className="bi bi-camera-fill" style={{ fontSize: 11 }} />
-                  Free Album
-                </div>
-                <h2 style={{ color: '#fff', fontSize: isMobile ? '26px' : '34px', fontWeight: 800, marginBottom: '6px', letterSpacing: '-0.02em' }}>{freeAlbumTitle}</h2>
-                {freeAlbumPhotographer && (
-                  <p style={{ color: 'rgba(255,255,255,0.72)', fontSize: '14px', marginBottom: '8px' }}>
-                    by <strong style={{ color: '#fff' }}>{freeAlbumPhotographer}</strong>
-                  </p>
+            <div style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: 1200, margin: '0 auto', paddingBottom: selectedFreePhotoIds.size > 0 ? 120 : 0, alignSelf: 'flex-start' }}>
+              {/* Marquee header - the event as a letterboxed title card */}
+              <div className="fr-marquee">
+                {(freeAlbumPhotos[0]?.thumbnailUrl || freeAlbumPhotos[0]?.url) && (
+                  <div className="cover" style={{ backgroundImage: `url(${stampPreviewUrl(freeAlbumPhotos[0].thumbnailUrl || freeAlbumPhotos[0].url, viewerId, { buyerId, refid: purchaseRefid })})` }} aria-hidden />
                 )}
-                {freeAlbumExpiresAt && (() => {
-                  const daysLeft = Math.ceil((new Date(freeAlbumExpiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-                  if (daysLeft <= 0) return (
-                    <p style={{ color: '#ef4444', fontSize: '13px', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                      <i className="bi bi-x-octagon-fill" style={{ fontSize: 12 }} />
-                      This album has expired and is no longer available
-                    </p>
-                  );
-                  if (daysLeft <= 7) return (
-                    <p style={{ color: '#f59e0b', fontSize: '13px', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                      <i className="bi bi-clock-history" style={{ fontSize: 12 }} />
-                      Expires in {daysLeft} day{daysLeft !== 1 ? 's' : ''}
-                    </p>
-                  );
-                  return null;
-                })()}
-                <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '13px', marginTop: '8px' }}>
-                  <i className="bi bi-images" style={{ marginRight: 5, color: '#F20C8F' }} />
-                  {freeAlbumPhotos.length} photo{freeAlbumPhotos.length !== 1 ? 's' : ''}
-                </p>
-                {/* "Select all" is shown ONLY on uncapped free albums.
-                    On capped albums every selection counts toward the cap,
-                    so a one-tap "select everything" would trick the user
-                    into a giant unexpected purchase. */}
-                {!(freeAlbumMax !== null || freeAlbumPricePerExtra > 0)
-                  && freeAlbumPhotos.length > 1
-                  && selectedFreePhotoIds.size < freeAlbumPhotos.length && (
-                  <div style={{ display: 'inline-flex', gap: 10, marginTop: 16, flexWrap: 'wrap', justifyContent: 'center' }}>
-                    <button
-                      onClick={() => setSelectedFreePhotoIds(new Set(freeAlbumPhotos.map(p => p.id)))}
-                      style={{
-                        padding: '11px 18px',
-                        borderRadius: 11,
-                        border: '1.5px solid rgba(255,255,255,0.22)',
-                        background: 'rgba(255,255,255,0.06)',
-                        color: '#fff',
-                        fontSize: 13.5,
-                        fontWeight: 700,
-                        letterSpacing: '-0.005em',
-                        cursor: 'pointer',
-                        display: 'inline-flex', alignItems: 'center', gap: 7,
-                        transition: 'background 0.15s, border-color 0.15s',
-                      }}
-                      onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(242,12,143,0.12)'; e.currentTarget.style.borderColor = 'rgba(242,12,143,0.42)'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.22)'; }}
-                    >
-                      <i className="bi bi-check2-square" style={{ fontSize: 13 }} />
-                      Select all
-                    </button>
+                <div className="scrim" aria-hidden />
+                <div style={{ position: 'relative', zIndex: 2, padding: isMobile ? '22px 18px 18px' : '26px 26px 22px', width: '100%' }}>
+                  <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11, fontWeight: 800, letterSpacing: '0.2em', textTransform: 'uppercase' }}>
+                    Free album · Yours to claim
+                  </span>
+                  <h1 className="fr-serif" style={{ margin: '6px 0 10px', color: '#fff', fontSize: 'clamp(26px, 4vw, 42px)', fontWeight: 600, lineHeight: 1.05 }}>
+                    {freeAlbumTitle || 'Your album.'}
+                  </h1>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                    {freeAlbumPhotographer && (
+                      <span className="fr-chip">
+                        <span aria-hidden style={{ width: 18, height: 18, borderRadius: '50%', background: 'linear-gradient(135deg,#083A85,#F20C8F)', flexShrink: 0 }} />
+                        by {freeAlbumPhotographer}
+                      </span>
+                    )}
+                    <span className="fr-chip">{freeAlbumPhotos.length} frame{freeAlbumPhotos.length !== 1 ? 's' : ''}</span>
+                    {freeAlbumExpiresAt && (() => {
+                      const daysLeft = Math.ceil((new Date(freeAlbumExpiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+                      if (daysLeft <= 0) return (
+                        <span className="fr-chip" style={{ borderColor: 'rgba(239,68,68,0.5)', color: '#fca5a5' }}>Expired</span>
+                      );
+                      if (daysLeft <= 7) return (
+                        <span className="fr-chip" style={{ borderColor: 'rgba(245,158,11,0.5)', color: '#fcd34d' }}>Expires in {daysLeft} day{daysLeft !== 1 ? 's' : ''}</span>
+                      );
+                      return null;
+                    })()}
+                    {!(freeAlbumMax !== null || freeAlbumPricePerExtra > 0)
+                      && freeAlbumPhotos.length > 1
+                      && selectedFreePhotoIds.size < freeAlbumPhotos.length && (
+                      <button
+                        className="fr-btn-ghost"
+                        style={{ marginLeft: 'auto', padding: '9px 15px', fontSize: 12.5 }}
+                        onClick={() => setSelectedFreePhotoIds(new Set(freeAlbumPhotos.map(p => p.id)))}
+                      >
+                        Select all
+                      </button>
+                    )}
                   </div>
-                )}
-                {/* Cap / extra-price hint, with an OWNED count if the user
-                    is a returning visitor. */}
-                {(freeAlbumMax !== null || freeAlbumPricePerExtra > 0) && (
-                  <p style={{ color: 'rgba(255,255,255,0.72)', fontSize: 12.5, marginTop: 10, lineHeight: 1.5 }}>
-                    {freeAlbumMax !== null && (
-                      <>Free up to <strong style={{ color: '#fff' }}>{freeAlbumMax}</strong> new photo{freeAlbumMax === 1 ? '' : 's'}.</>
-                    )}
-                    {freeAlbumPricePerExtra > 0 && (
-                      <> Extras cost <strong style={{ color: '#fff' }}>{freeAlbumCurrencyAbbr || ''} {freeAlbumPricePerExtra}</strong> each.</>
-                    )}
-                    {freeAcquiredIds.size > 0 && (
-                      <> You already own <strong style={{ color: '#fff' }}>{freeAcquiredIds.size}</strong> photo{freeAcquiredIds.size === 1 ? '' : 's'} from past visits. free to re-download.</>
-                    )}
-                  </p>
-                )}
-                {freeStatusMsg && (
-                  <p style={{ color: '#F20C8F', fontSize: 12.5, marginTop: 8, maxWidth: 520, marginLeft: 'auto', marginRight: 'auto', lineHeight: 1.5 }}>
-                    {freeStatusMsg}
-                  </p>
-                )}
+                </div>
               </div>
 
-              {/* Photo grid - same masonry + blur-up language as the main
-                  gallery: natural aspect ratios captured on load, shimmer
-                  placeholders, first rows eager. */}
-              <div style={{
-                columnCount: isMobile ? 2 : 3,
-                columnGap: isMobile ? '12px' : '16px',
-              }}>
+              <div className="fr-sprockets" style={{ margin: '16px auto' }} aria-hidden />
+
+              {/* Cap meter - live view of the current selection against the
+                  free quota. Counts NEW picks only; OWNED never re-counts. */}
+              {(freeAlbumMax !== null || freeAlbumPricePerExtra > 0) && (() => {
+                const info = getCappedSelectionInfo();
+                const capLabel = info.cap === Infinity ? '∞' : info.cap;
+                const pct = info.cap === Infinity || info.cap === 0
+                  ? 0
+                  : Math.min(100, (info.freeQuotaUsedNew / (info.cap as number)) * 100);
+                return (
+                  <div className="fr-cap" style={{ marginBottom: 16, display: 'flex', gap: 18, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <div style={{ flex: '1 1 240px', minWidth: 0 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                        <span style={{ color: '#fff', fontSize: 13.5, fontWeight: 700 }}>Free frames</span>
+                        <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12.5, fontWeight: 700 }}>{info.freeQuotaUsedNew} of {capLabel} picked</span>
+                      </div>
+                      <div className="bar"><i style={{ width: `${pct}%` }} /></div>
+                    </div>
+                    {freeAlbumPricePerExtra > 0 && (
+                      <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: 12.5 }}>
+                        Extras · {freeAlbumCurrencyAbbr || ''} {freeAlbumPricePerExtra} each
+                      </span>
+                    )}
+                    {info.overflow > 0 && (
+                      <span className="fr-chip" style={{ borderColor: 'rgba(245,158,11,0.5)', color: '#fcd34d' }}>
+                        {info.overflow} extra{info.overflow !== 1 ? 's' : ''} in selection
+                      </span>
+                    )}
+                    {freeAcquiredIds.size > 0 && (
+                      <span className="fr-chip" style={{ borderColor: 'rgba(3,150,156,0.5)', color: '#7be0e5' }}>
+                        ✓ {freeAcquiredIds.size} already yours
+                      </span>
+                    )}
+                  </div>
+                );
+              })()}
+              {freeStatusMsg && (
+                <p style={{ color: '#ff9c9c', fontSize: 12.5, margin: '0 0 14px', lineHeight: 1.5, textAlign: 'center' }}>{freeStatusMsg}</p>
+              )}
+
+              {/* Contact-sheet masonry */}
+              <div style={{ columnCount: isMobile ? 2 : 3, columnGap: isMobile ? 12 : 18 }}>
                 {freeAlbumPhotos.map((photo, freeIndex) => {
                   const isSelected = selectedFreePhotoIds.has(photo.id);
                   const isOwned = freeAcquiredIds.has(photo.id);
                   const isCappedAlbum = freeAlbumMax !== null || freeAlbumPricePerExtra > 0;
+                  const pickOrder = isSelected ? Array.from(selectedFreePhotoIds).indexOf(photo.id) + 1 : 0;
                   return (
-                  <div
-                    key={photo.id}
-                    className={loadedPhotoIds.has(photo.id) ? undefined : 'fmp-skel'}
-                    onContextMenu={(e) => { if (isCappedAlbum) e.preventDefault(); }}
-                    style={{
-                      position: 'relative',
-                      borderRadius: '14px',
-                      overflow: 'hidden',
-                      breakInside: 'avoid',
-                      marginBottom: isMobile ? '12px' : '16px',
-                      aspectRatio: photoRatios[photo.id] ? `${photoRatios[photo.id]}` : '1',
-                      cursor: 'pointer',
-                      background: '#0b2a56',
-                      border: isOwned
-                        ? '1px solid rgba(16,185,129,0.55)'
-                        : isSelected ? '1px solid rgba(242,12,143,0.45)' : '1px solid rgba(255,255,255,0.08)',
-                      boxShadow: isOwned
-                        ? '0 0 0 2px rgba(16,185,129,0.55), 0 6px 18px -6px rgba(16,185,129,0.35)'
-                        : isSelected
-                          ? '0 0 0 3px #F20C8F, 0 8px 22px -6px rgba(242,12,143,0.42)'
-                          : 'none',
-                      transition: 'box-shadow 0.18s, border-color 0.18s',
-                    }}
-                    onClick={() => setSelectedPhoto({
-                      id: photo.id,
-                      url: photo.thumbnailUrl || photo.url,
-                      fullUrl: photo.url || photo.thumbnailUrl,
-                      alt: photo.caption || 'Free album photo',
-                    })}
-                  >
-                    <img
-                      src={stampPreviewUrl(photo.thumbnailUrl || photo.url, viewerId, { buyerId, refid: purchaseRefid })}
-                      alt={photo.caption || 'Free album photo'}
-                      loading={freeIndex < 6 ? 'eager' : 'lazy'}
-                      fetchPriority={freeIndex < 3 ? 'high' : undefined}
-                      decoding="async"
-                      draggable={false}
-                      ref={(el) => markPhotoLoaded(photo.id, el)}
-                      onLoad={(e) => markPhotoLoaded(photo.id, e.currentTarget)}
-                      onDragStart={(e) => e.preventDefault()}
-                      onContextMenu={(e) => e.preventDefault()}
+                    <div
+                      key={photo.id}
+                      className="fr-card"
+                      onContextMenu={(e) => { if (isCappedAlbum) e.preventDefault(); }}
+                      onClick={() => toggleFreePhotoSelected(photo.id)}
                       style={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover',
-                        opacity: loadedPhotoIds.has(photo.id) ? 1 : 0,
-                        userSelect: 'none',
-                        WebkitUserSelect: 'none',
-                        pointerEvents: 'none',
-                        filter: isOccluded ? 'brightness(0)' : undefined,
-                        transition: 'opacity 0.45s ease, filter 0.1s linear',
+                        marginBottom: isMobile ? 12 : 18,
+                        borderColor: isOwned ? 'rgba(16,185,129,0.55)' : isSelected ? '#FF6B6B' : undefined,
+                        boxShadow: isOwned
+                          ? '0 0 0 2px rgba(16,185,129,0.55)'
+                          : isSelected ? '0 0 0 2px #FF6B6B, 0 24px 48px -22px rgba(255,107,107,0.35)' : undefined,
                       }}
-                    />
-                    {/* Visible watermark overlay on capped/priced albums,
-                        deters casual screenshot reuse. Repeated diagonal
-                        text bands sit above the image. */}
-                    {isCappedAlbum && !isOwned && (
-                      <div
-                        aria-hidden
-                        onContextMenu={(e) => e.preventDefault()}
-                        style={{
-                          position: 'absolute', inset: 0,
-                          pointerEvents: 'none',
-                          backgroundImage:
-                            `repeating-linear-gradient(-30deg, transparent 0 40px, rgba(255,255,255,0.06) 40px 41px)`,
-                          mixBlendMode: 'overlay',
-                        }}
-                      />
-                    )}
-                    {isCappedAlbum && !isOwned && (
-                      <div
-                        aria-hidden
-                        style={{
-                          position: 'absolute', inset: 0,
-                          pointerEvents: 'none',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          transform: 'rotate(-22deg)',
-                          color: 'rgba(255,255,255,0.30)',
-                          fontWeight: 800,
-                          fontSize: 'clamp(11px, 2.5vw, 18px)',
-                          letterSpacing: '4px',
-                          textShadow: '0 1px 4px rgba(0,0,0,0.45)',
-                          fontFamily: 'system-ui, -apple-system, sans-serif',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        PREVIEW · {freeAlbumPhotographer || 'PHOTOGRAPHER'}
-                      </div>
-                    )}
-                    {/* OWNED ribbon for returning users */}
-                    {isOwned && (
-                      <div
-                        aria-hidden
-                        style={{
-                          position: 'absolute', top: 8, right: 8,
-                          padding: '4px 9px', borderRadius: 999,
-                          background: '#10B981', color: '#fff',
-                          fontSize: 10.5, fontWeight: 800, letterSpacing: 0.5,
-                          display: 'inline-flex', alignItems: 'center', gap: 4,
-                          boxShadow: '0 4px 12px -3px rgba(16,185,129,0.55)',
-                          zIndex: 3,
-                        }}
-                      >
-                        <i className="bi bi-check2-circle" style={{ fontSize: 11 }} />
-                        OWNED
-                      </div>
-                    )}
-                    {/* Add-to-cart toggle */}
-                    <button
-                      onClick={(e) => { e.stopPropagation(); toggleFreePhotoSelected(photo.id); }}
-                      aria-label={isSelected ? 'Remove from cart' : 'Add to cart'}
-                      title={isSelected ? 'Remove from cart' : 'Add to cart'}
-                      style={{
-                        position: 'absolute',
-                        top: '8px',
-                        left: '8px',
-                        width: '30px',
-                        height: '30px',
-                        borderRadius: '9px',
-                        background: isSelected ? '#F20C8F' : 'rgba(255,255,255,0.95)',
-                        border: isSelected ? '2px solid #F20C8F' : '2px solid rgba(255,255,255,0.6)',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        zIndex: 3,
-                        padding: 0,
-                        boxShadow: isSelected
-                          ? '0 4px 12px -2px rgba(242,12,143,0.50)'
-                          : '0 2px 6px rgba(0,0,0,0.30)',
-                        transition: 'transform 0.15s, background 0.15s, box-shadow 0.15s',
-                      }}
-                      onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.08)'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
                     >
-                      {isSelected ? (
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="20 6 9 17 4 12"/>
-                        </svg>
-                      ) : (
-                        <i className="bi bi-plus" style={{ fontSize: '16px', color: '#F20C8F', fontWeight: 700, lineHeight: 1 }} />
-                      )}
-                    </button>
-                    {/* Per-card direct-download removed: would bypass the
-                        free-album cap and the pay-for-extras flow. Users add
-                        photos to the cart with the +/✓ toggle above, then use
-                        the bottom action bar to download. */}
-                  </div>
+                      <div
+                        className={loadedPhotoIds.has(photo.id) ? undefined : 'fr-skel'}
+                        style={{ aspectRatio: photoRatios[photo.id] ? `${photoRatios[photo.id]}` : '1', position: 'relative', overflow: 'hidden' }}
+                      >
+                        <img
+                          src={stampPreviewUrl(photo.thumbnailUrl || photo.url, viewerId, { buyerId, refid: purchaseRefid })}
+                          alt={photo.caption || 'Free album photo'}
+                          loading={freeIndex < 6 ? 'eager' : 'lazy'}
+                          fetchPriority={freeIndex < 3 ? 'high' : undefined}
+                          decoding="async"
+                          draggable={false}
+                          ref={(el) => markPhotoLoaded(photo.id, el)}
+                          onLoad={(e) => markPhotoLoaded(photo.id, e.currentTarget)}
+                          onDragStart={(e) => e.preventDefault()}
+                          onContextMenu={(e) => e.preventDefault()}
+                          style={{
+                            width: '100%', height: '100%', objectFit: 'cover',
+                            opacity: loadedPhotoIds.has(photo.id) ? 1 : 0,
+                            userSelect: 'none', WebkitUserSelect: 'none', pointerEvents: 'none',
+                            filter: isOccluded ? 'brightness(0)' : undefined,
+                            transition: 'opacity 0.45s ease, filter 0.1s linear',
+                          }}
+                        />
+                        {/* Watermark on capped/priced albums - deters screenshot reuse */}
+                        {isCappedAlbum && !isOwned && (
+                          <div aria-hidden onContextMenu={(e) => e.preventDefault()} style={{
+                            position: 'absolute', inset: 0, pointerEvents: 'none',
+                            backgroundImage: 'repeating-linear-gradient(-30deg, transparent 0 40px, rgba(255,255,255,0.06) 40px 41px)',
+                            mixBlendMode: 'overlay',
+                          }} />
+                        )}
+                        {isCappedAlbum && !isOwned && (
+                          <div aria-hidden style={{
+                            position: 'absolute', inset: 0, pointerEvents: 'none',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            transform: 'rotate(-22deg)', color: 'rgba(255,255,255,0.30)',
+                            fontWeight: 800, fontSize: 'clamp(11px, 2.5vw, 18px)', letterSpacing: 4,
+                            textShadow: '0 1px 4px rgba(0,0,0,0.45)', whiteSpace: 'nowrap',
+                          }}>
+                            PREVIEW · {(freeAlbumPhotographer || 'PHOTOGRAPHER').toUpperCase()}
+                          </div>
+                        )}
+                        <button
+                          type="button"
+                          className="fr-pick"
+                          aria-label={isSelected ? 'Remove from selection' : 'Add to selection'}
+                          onClick={(e) => { e.stopPropagation(); toggleFreePhotoSelected(photo.id); }}
+                          style={isSelected ? { background: '#FF6B6B', borderColor: '#FF6B6B' } : undefined}
+                        >
+                          {isSelected ? pickOrder : ''}
+                        </button>
+                        <button
+                          type="button"
+                          className="fr-eye"
+                          aria-label="Quick view"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedPhoto({
+                              id: photo.id,
+                              url: photo.thumbnailUrl || photo.url,
+                              fullUrl: photo.url || photo.thumbnailUrl,
+                              alt: photo.caption || 'Free album photo',
+                            });
+                          }}
+                        >
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </button>
+                        <span className="fr-frame-no">№ {String(freeIndex + 1).padStart(2, '0')}</span>
+                        {isOwned && (
+                          <span className="fr-badge" style={{ background: 'rgba(16,185,129,0.9)', color: '#fff', right: 10, top: 'auto', bottom: 8 }}>
+                            ✓ YOURS
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   );
                 })}
               </div>
 
-              {/* ── Free-album Cart Action Bar ── */}
+              {/* Free selection tray */}
               {selectedFreePhotoIds.size > 0 && (
-                <div style={{
-                  position: 'fixed',
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  background: 'rgba(15,15,20,0.97)',
-                  backdropFilter: 'blur(12px)',
-                  WebkitBackdropFilter: 'blur(12px)',
-                  borderTop: '1px solid rgba(255,255,255,0.08)',
-                  padding: isMobile ? '14px 16px' : '16px 24px',
-                  zIndex: 1500,
-                  boxShadow: '0 -12px 32px rgba(0,0,0,0.40)',
-                }}>
-                  {/* Brand top stripe */}
-                  <span aria-hidden style={{
-                    position: 'absolute', top: 0, left: 0, right: 0, height: 2,
-                    background: 'linear-gradient(90deg, #083A85 0%, #F20C8F 100%)',
-                  }} />
-                  <div style={{
-                    maxWidth: 1200,
-                    margin: '0 auto',
-                    display: 'flex',
-                    flexDirection: isMobile ? 'column' : 'row',
-                    alignItems: isMobile ? 'stretch' : 'center',
-                    gap: 12,
-                  }}>
-                    <div style={{ flex: isMobile ? 'initial' : 1, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                      <div style={{
-                        display: 'inline-flex', alignItems: 'center', gap: 7,
-                        padding: '6px 12px 6px 8px',
-                        borderRadius: 999,
-                        background: 'linear-gradient(135deg, #083A85 0%, #F20C8F 130%)',
-                        color: '#fff', fontSize: 13, fontWeight: 700, letterSpacing: '-0.005em',
-                        boxShadow: '0 6px 14px -4px rgba(242,12,143,0.36)',
-                      }}>
-                        <span style={{
-                          width: 22, height: 22, borderRadius: '50%',
-                          background: 'rgba(255,255,255,0.22)',
-                          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                        }}>
-                          <i className="bi bi-bag-check-fill" style={{ fontSize: 11 }} />
-                        </span>
-                        {selectedFreePhotoIds.size} in cart
-                      </div>
-                      <span style={{ color: 'rgba(255,255,255,0.78)', fontSize: 12.5, fontWeight: 500, display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                        <i className="bi bi-download" style={{ fontSize: 11, color: '#F20C8F' }} />
-                        Ready to download
-                      </span>
+                <div className="fr-tray">
+                  <div className="fr-tray-row">
+                    <div className="thumbs" aria-hidden>
+                      {freeAlbumPhotos.filter(p => selectedFreePhotoIds.has(p.id)).slice(0, 4).map(p => (
+                        <span key={p.id} style={{ backgroundImage: `url(${stampPreviewUrl(p.thumbnailUrl || p.url, viewerId, { buyerId, refid: purchaseRefid })})`, filter: isOccluded ? 'brightness(0)' : undefined }} />
+                      ))}
                     </div>
-                    <button
-                      onClick={() => setSelectedFreePhotoIds(new Set())}
-                      style={{
-                        padding: '10px 16px',
-                        borderRadius: 11,
-                        background: 'transparent',
-                        border: '1.5px solid rgba(255,255,255,0.20)',
-                        color: 'rgba(255,255,255,0.82)',
-                        fontSize: 13.5,
-                        fontWeight: 700,
-                        letterSpacing: '-0.005em',
-                        cursor: 'pointer',
-                        display: 'inline-flex', alignItems: 'center', gap: 6,
-                        transition: 'border-color 0.15s, color 0.15s',
-                      }}
-                      onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#F20C8F'; e.currentTarget.style.color = '#F20C8F'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.20)'; e.currentTarget.style.color = 'rgba(255,255,255,0.82)'; }}
-                    >
-                      <i className="bi bi-x-circle" style={{ fontSize: 13 }} />
-                      Clear
-                    </button>
                     {(() => {
                       const info = getCappedSelectionInfo();
                       const extrasTotal = info.overflow * (freeAlbumPricePerExtra || 0);
                       const showPurchase = info.overflow > 0 && freeAlbumPricePerExtra > 0;
-                      const label = showPurchase
-                        ? `Purchase (${freeAlbumCurrencyAbbr || ''} ${extrasTotal} for ${info.overflow} extra)`
-                        : `Download ${info.total} photo${info.total !== 1 ? 's' : ''}`;
                       return (
-                        <button
-                          onClick={handleFreeCappedDownload}
-                          disabled={freeIsProcessing}
-                          style={{
-                            padding: '11px 18px',
-                            borderRadius: 11,
-                            background: showPurchase
-                              ? 'linear-gradient(135deg, #f59e0b 0%, #f20c8f 130%)'
-                              : 'linear-gradient(135deg, #083A85 0%, #F20C8F 130%)',
-                            border: 'none',
-                            color: '#fff',
-                            fontSize: 13.5,
-                            fontWeight: 700,
-                            letterSpacing: '-0.005em',
-                            cursor: freeIsProcessing ? 'not-allowed' : 'pointer',
-                            opacity: freeIsProcessing ? 0.65 : 1,
-                            display: 'inline-flex', alignItems: 'center', gap: 7,
-                            boxShadow: '0 8px 22px -6px rgba(242,12,143,0.45)',
-                            transition: 'transform 0.15s, box-shadow 0.15s',
-                          }}
-                          onMouseEnter={(e) => { if (!freeIsProcessing) { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 12px 28px -6px rgba(242,12,143,0.55)'; } }}
-                          onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 22px -6px rgba(242,12,143,0.45)'; }}
-                        >
-                          <i className={showPurchase ? 'bi bi-credit-card-2-front' : 'bi bi-download'} style={{ fontSize: 13 }} />
-                          {label}
-                        </button>
+                        <>
+                          <div style={{ minWidth: 0 }}>
+                            <div style={{ color: '#fff', fontSize: 13.5, fontWeight: 800 }}>
+                              {info.total} frame{info.total !== 1 ? 's' : ''} selected
+                            </div>
+                            <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: 12 }}>
+                              {showPurchase
+                                ? `${info.overflow} extra${info.overflow !== 1 ? 's' : ''} · ${freeAlbumCurrencyAbbr || ''} ${extrasTotal}`
+                                : 'Free · within your album quota'}
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', gap: 8, marginLeft: 'auto' }}>
+                            <button className="fr-btn-ghost" style={{ padding: '10px 14px', fontSize: 13 }} onClick={() => setSelectedFreePhotoIds(new Set())}>
+                              Clear
+                            </button>
+                            <button
+                              className="fr-btn-brand"
+                              style={{ padding: '11px 18px', background: showPurchase ? 'linear-gradient(135deg, #f59e0b 0%, #f20c8f 130%)' : undefined }}
+                              onClick={handleFreeCappedDownload}
+                              disabled={freeIsProcessing}
+                            >
+                              {showPurchase
+                                ? `Purchase ${info.overflow} extra${info.overflow !== 1 ? 's' : ''} · ${freeAlbumCurrencyAbbr || ''} ${extrasTotal}`
+                                : `Download ${info.total}`}
+                            </button>
+                          </div>
+                        </>
                       );
                     })()}
-                    {/* The XentriPayModal handles the entire pay→download
-                        cycle in-page (no popup, no "I've paid" button) so
-                        the old freePendingPay fallback button is gone. */}
                   </div>
                 </div>
               )}
@@ -2631,894 +2451,225 @@ const FindMyPhotos = () => {
           )}
         </div>
       ) : !isCodeSubmitted ? (
-        /* ── Phase 1: Connect - Hero + Invite Code ── */
-        <div
-          id="phase-connect"
-          ref={heroSectionRef}
-          onMouseMove={handleMouseMove(heroSectionRef, setHeroMousePos)}
-          onMouseLeave={() => setHeroMousePos(null)}
-          style={{
-            minHeight: '100vh',
-            background: 'linear-gradient(to right, #052047, #052047, #103E83)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            position: 'relative',
-            overflow: 'hidden',
-            padding: isMobile ? '100px 20px 40px' : '80px 20px 40px',
-            scrollMarginTop: '120px',
-          }}
-        >
-          {/* Interactive DotGrid - same brand-blue palette + sizing as the footer.
-              Replaces the old static dot pattern + manual mouse-spotlight overlay. */}
-          <div style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none' }} aria-hidden="true">
-            <DotGrid
-              dotSize={2}
-              gap={15}
-              baseColor="#1E3A78"
-              activeColor="#3B82F6"
-              proximity={120}
-              shockRadius={180}
-              shockStrength={4}
-              resistance={750}
-              returnDuration={1.4}
-            />
-          </div>
-
-          <div style={{
-            maxWidth: '1000px',
-            width: '100%',
-            textAlign: 'center',
-            position: 'relative',
-            zIndex: 2,
-            background: 'linear-gradient(135deg, rgba(5, 32, 71, 0.95) 0%, rgba(16, 62, 131, 0.92) 100%)',
-            borderRadius: '28px',
-            padding: isMobile ? '36px 22px' : '44px 44px',
-            border: '1px solid rgba(255,255,255,0.08)',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
-          }}>
-            {/* Badge */}
-            <div style={{
-              display: 'inline-block',
-              padding: '8px 20px',
-              borderRadius: '50px',
-              background: 'rgba(255,255,255,0.08)',
-              border: '1px solid rgba(255,255,255,0.15)',
-              marginBottom: '28px',
-            }}>
-              <span style={{
-                color: '#FF6B6B',
-                fontSize: '14px',
-                fontWeight: 600,
-                letterSpacing: '1px',
-                textTransform: 'uppercase',
-              }}>Face Recognition</span>
-            </div>
-
-            {/* Headline - clamped down from 59px so both entry cards land
-                above the fold; the old size alone pushed the invite-code
-                input a full viewport below the headline. */}
-            <h1 style={{
-              fontSize: isMobile ? '30px' : 'clamp(34px, 4.5vw, 48px)',
-              fontWeight: 800,
-              color: '#ffffff',
-              lineHeight: 1.12,
-              marginBottom: '10px',
-              fontFamily: "'Pragati Narrow', sans-serif",
-            }}>
-              Find <span style={{ color: '#FF6B6B' }}>Your Photos</span>
-            </h1>
-
-            <p style={{
-              fontSize: isMobile ? '15px' : '17px',
-              color: 'rgba(255,255,255,0.7)',
-              lineHeight: 1.6,
-              marginBottom: '28px',
-              maxWidth: '540px',
-              marginLeft: 'auto',
-              marginRight: 'auto',
-            }}>
-              Use the invite code your photographer shared, or scan your face to find every photo of you across the platform.
-            </p>
-
-            {/* Hidden canvas for camera capture */}
-            <canvas ref={canvasRef} style={{ display: 'none' }} />
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleFileSelect}
-              style={{ display: 'none' }}
-            />
-
-            {/* Two entry cards: invite code first (the direct path buyers
-                arrive with), face scan second. Both sit above the fold - the
-                code input used to live below the entire scan section, a full
-                viewport of scrolling away. While scanning or the camera is
-                active, the invite card hides and the scan card centers. */}
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: (isMobile || isScanning || isCameraActive) ? '1fr' : '1fr 1fr',
-              gap: '18px',
-              textAlign: 'left',
-              alignItems: 'stretch',
-            }}>
-            {!isScanning && !isCameraActive && (
-              <div className="fmp-entry-card">
-                <div className="fmp-entry-card-head">
-                  <span className="fmp-entry-card-icon" style={{ background: 'rgba(255,107,107,0.16)', color: '#FF6B6B' }}>
-                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
-                  </span>
-                  <h3 className="fmp-entry-card-title">Have an invite code?</h3>
-                </div>
-                <p className="fmp-entry-card-copy">
-                  Enter the code your photographer or event owner shared to open that event gallery.
-                </p>
-                <input
-                  type="text"
-                  value={inviteCode}
-                  onChange={(e) => { setInviteCode(e.target.value); setInviteError(''); }}
-                  onKeyDown={(e) => e.key === 'Enter' && handleInviteSubmit()}
-                  placeholder="Enter invite code"
-                  aria-label="Invite code"
-                  style={{
-                    width: '100%',
-                    padding: '15px 18px',
-                    borderRadius: '12px',
-                    border: inviteError ? '2px solid #FF6B6B' : '2px solid rgba(255,255,255,0.15)',
-                    background: 'rgba(255,255,255,0.06)',
-                    color: '#ffffff',
-                    fontSize: '16px',
-                    outline: 'none',
-                    transition: 'all 0.3s ease',
-                    textAlign: 'center',
-                    letterSpacing: '2px',
-                    fontWeight: 600,
-                  }}
-                  onFocus={(e) => { e.target.style.borderColor = '#FF6B6B'; e.target.style.background = 'rgba(255,255,255,0.1)'; }}
-                  onBlur={(e) => { if (!inviteError) { e.target.style.borderColor = 'rgba(255,255,255,0.15)'; e.target.style.background = 'rgba(255,255,255,0.06)'; } }}
-                />
-                <button
-                  onClick={handleInviteSubmit}
-                  disabled={isLoadingAlbum}
-                  style={{
-                    width: '100%',
-                    marginTop: '12px',
-                    padding: '15px 24px',
-                    borderRadius: '12px',
-                    background: isLoadingAlbum ? 'rgba(255,107,107,0.6)' : '#FF6B6B',
-                    color: '#ffffff',
-                    fontSize: '16px',
-                    fontWeight: 700,
-                    border: 'none',
-                    cursor: isLoadingAlbum ? 'not-allowed' : 'pointer',
-                    transition: 'all 0.3s ease',
-                  }}
-                  onMouseEnter={(e) => { if (!isLoadingAlbum) { (e.target as HTMLButtonElement).style.background = '#ff5252'; } }}
-                  onMouseLeave={(e) => { if (!isLoadingAlbum) { (e.target as HTMLButtonElement).style.background = '#FF6B6B'; } }}
-                >
-                  {isLoadingAlbum ? 'Loading...' : 'Access Gallery'}
-                </button>
-                {inviteError && (
-                  <p style={{ color: '#FF6B6B', fontSize: '14px', marginTop: '12px', marginBottom: 0 }}>{inviteError}</p>
-                )}
-                <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '12.5px', marginTop: '14px', marginBottom: 0 }}>
-                  Your photographer or event owner can share the invite code after the event.
-                </p>
-              </div>
-            )}
-
-            <div
-              className="fmp-entry-card"
-              style={(isScanning || isCameraActive)
-                ? { maxWidth: '560px', width: '100%', margin: '0 auto', textAlign: 'center' }
-                : undefined}
-            >
-            {!isScanning && !isCameraActive && (
-              <>
-                <div className="fmp-entry-card-head">
-                  <span className="fmp-entry-card-icon" style={{ background: 'rgba(123,224,229,0.14)', color: '#7be0e5' }}>
-                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="10" r="3"/><path d="M8 17a4 4 0 0 1 8 0"/></svg>
-                  </span>
-                  <h3 className="fmp-entry-card-title">No code? Scan your face</h3>
-                </div>
-                <p className="fmp-entry-card-copy">
-                  {`Take a selfie or upload your photo and we'll scan all event photos on the platform to find every photo you appear in.`}
-                </p>
-              </>
-            )}
-            {isScanning ? (
-              <div style={{ textAlign: 'center', padding: '20px 0' }}>
-                <div style={{
-                  width: '180px',
-                  height: '180px',
-                  borderRadius: '50%',
-                  overflow: 'hidden',
-                  margin: '0 auto 24px',
-                  position: 'relative',
-                  border: '4px solid #FF6B6B',
-                  boxShadow: '0 0 30px rgba(255,107,107,0.4)',
-                }}>
-                  {uploadedPreview && (
-                    <img
-                      src={uploadedPreview}
-                      alt="Scanning face"
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover',
-                        filter: 'blur(4px) brightness(0.7)',
-                      }}
-                    />
-                  )}
-                  <div className="scan-line" style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    height: '3px',
-                    background: 'linear-gradient(90deg, transparent 0%, #FF6B6B 30%, #ffffff 50%, #FF6B6B 70%, transparent 100%)',
-                    boxShadow: '0 0 12px rgba(255,107,107,0.8), 0 0 30px rgba(255,107,107,0.4)',
-                    zIndex: 2,
-                  }} />
-                  <div className="scan-pulse-ring" style={{
-                    position: 'absolute',
-                    inset: '-4px',
-                    borderRadius: '50%',
-                    border: '3px solid rgba(255,107,107,0.5)',
-                    zIndex: 1,
-                  }} />
-                </div>
-                <p style={{ fontSize: '16px', fontWeight: 600, color: '#ffffff' }}>Scanning...</p>
-                <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginTop: '8px' }}>Matching your face across event photos</p>
-              </div>
-            ) : isCameraActive ? (
-              <div style={{ textAlign: 'center' }}>
-                <div style={{
-                  width: '200px',
-                  height: '200px',
-                  borderRadius: '50%',
-                  overflow: 'hidden',
-                  margin: '0 auto 20px',
-                  border: '4px solid #FF6B6B',
-                  boxShadow: '0 4px 20px rgba(255,107,107,0.3)',
-                }}>
-                  <video
-                    ref={videoRef}
-                    autoPlay
-                    playsInline
-                    muted
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'cover',
-                      transform: 'scaleX(-1)',
-                    }}
-                  />
-                </div>
-                <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginBottom: '16px' }}>
-                  Position your face in the circle
-                </p>
-                <div style={{ display: 'flex', gap: '12px', maxWidth: '340px', margin: '0 auto' }}>
-                  <button
-                    onClick={stopCamera}
-                    style={{
-                      flex: 1,
-                      padding: '14px',
-                      borderRadius: '12px',
-                      background: 'rgba(255,255,255,0.1)',
-                      color: '#ffffff',
-                      fontSize: '15px',
-                      fontWeight: 600,
-                      border: '1px solid rgba(255,255,255,0.2)',
-                      cursor: 'pointer',
-                      transition: 'all 0.3s ease',
-                    }}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={capturePhoto}
-                    style={{
-                      flex: 1,
-                      padding: '14px',
-                      borderRadius: '12px',
-                      background: '#FF6B6B',
-                      color: '#ffffff',
-                      fontSize: '15px',
-                      fontWeight: 700,
-                      border: 'none',
-                      cursor: 'pointer',
-                      transition: 'all 0.3s ease',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '8px',
-                    }}
-                    onMouseEnter={(e) => { (e.target as HTMLButtonElement).style.background = '#ff5252'; }}
-                    onMouseLeave={(e) => { (e.target as HTMLButtonElement).style.background = '#FF6B6B'; }}
-                  >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="12" cy="12" r="10"/>
-                      <circle cx="12" cy="12" r="4"/>
-                    </svg>
-                    Capture
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <>
-                {uploadedPreview ? (
-                  <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-                    <div style={{
-                      width: '120px',
-                      height: '120px',
-                      borderRadius: '50%',
-                      overflow: 'hidden',
-                      border: '3px solid #FF6B6B',
-                      boxShadow: '0 4px 12px rgba(255,107,107,0.3)',
-                      margin: '0 auto 12px',
-                    }}>
-                      <img
-                        src={uploadedPreview}
-                        alt="Captured face"
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                      />
-                    </div>
-                    <p style={{ fontSize: '13px', color: '#10b981', fontWeight: 600 }}>Photo ready for scan</p>
-                    <button
-                      onClick={() => { setUploadedFile(null); setUploadedPreview(null); setScanError(null); if (fileInputRef.current) fileInputRef.current.value = ''; }}
-                      style={{
-                        marginTop: '8px',
-                        padding: '6px 16px',
-                        borderRadius: '8px',
-                        background: 'transparent',
-                        color: 'rgba(255,255,255,0.6)',
-                        fontSize: '13px',
-                        fontWeight: 500,
-                        border: '1px solid rgba(255,255,255,0.2)',
-                        cursor: 'pointer',
-                        transition: 'all 0.3s ease',
-                      }}
-                    >
-                      Change photo
-                    </button>
-                  </div>
-                ) : (
-                  <div style={{
-                    display: 'flex',
-                    gap: '12px',
-                    marginBottom: '20px',
-                    maxWidth: '520px',
-                    marginLeft: 'auto',
-                    marginRight: 'auto',
-                  }}>
-                    {/* Take Selfie button */}
-                    <div
-                      onClick={startCamera}
-                      style={{
-                        flex: 1,
-                        border: '2px dashed rgba(255,255,255,0.2)',
-                        borderRadius: '16px',
-                        padding: '24px 12px',
-                        textAlign: 'center',
-                        cursor: 'pointer',
-                        transition: 'all 0.3s ease',
-                      }}
-                      onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#FF6B6B'; e.currentTarget.style.background = 'rgba(255,107,107,0.08)'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; e.currentTarget.style.background = 'transparent'; }}
-                    >
-                      <div style={{
-                        width: '48px',
-                        height: '48px',
-                        borderRadius: '50%',
-                        background: 'rgba(255,107,107,0.15)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        margin: '0 auto 10px',
-                      }}>
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FF6B6B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-                          <circle cx="12" cy="13" r="4"/>
-                        </svg>
-                      </div>
-                      <p style={{ fontSize: '14px', fontWeight: 600, color: '#ffffff' }}>Take Selfie</p>
-                      <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginTop: '2px' }}>Use camera</p>
-                    </div>
-
-                    {/* Upload Photo button */}
-                    <div
-                      onClick={() => fileInputRef.current?.click()}
-                      style={{
-                        flex: 1,
-                        border: '2px dashed rgba(255,255,255,0.2)',
-                        borderRadius: '16px',
-                        padding: '24px 12px',
-                        textAlign: 'center',
-                        cursor: 'pointer',
-                        transition: 'all 0.3s ease',
-                      }}
-                      onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#83B4FF'; e.currentTarget.style.background = 'rgba(131,180,255,0.08)'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; e.currentTarget.style.background = 'transparent'; }}
-                    >
-                      <div style={{
-                        width: '48px',
-                        height: '48px',
-                        borderRadius: '50%',
-                        background: 'rgba(131,180,255,0.15)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        margin: '0 auto 10px',
-                      }}>
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#83B4FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                          <polyline points="17 8 12 3 7 8"/>
-                          <line x1="12" y1="3" x2="12" y2="15"/>
-                        </svg>
-                      </div>
-                      <p style={{ fontSize: '14px', fontWeight: 600, color: '#ffffff' }}>Upload Photo</p>
-                      <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginTop: '2px' }}>From gallery</p>
-                    </div>
-
-                    {/* Browse Photos - third option, routes to the public
-                        stock-photo catalog (separate flow from face-scan).
-                        i icon surfaces the use-case description on hover. */}
-                    <div
-                      onClick={() => { if (typeof window !== 'undefined') window.location.href = '/user/browse-photos'; }}
-                      style={{
-                        flex: 1,
-                        position: 'relative',
-                        border: '2px dashed rgba(255,255,255,0.2)',
-                        borderRadius: '16px',
-                        padding: '24px 12px',
-                        textAlign: 'center',
-                        cursor: 'pointer',
-                        transition: 'all 0.3s ease',
-                      }}
-                      onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#F20C8F'; e.currentTarget.style.background = 'rgba(242,12,143,0.08)'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; e.currentTarget.style.background = 'transparent'; }}
-                    >
-                      <span
-                        title="Built to support professional photography art - usable on press, newspapers, luxury venues, magazine covers, etc."
-                        onClick={(e) => e.stopPropagation()}
-                        style={{
-                          position: 'absolute', top: 8, right: 8,
-                          width: 20, height: 20, borderRadius: '50%',
-                          background: 'rgba(242,12,143,0.20)', color: '#F20C8F',
-                          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: 11, fontWeight: 800, fontFamily: 'serif',
-                          cursor: 'help',
-                        }}>i</span>
-                      <div style={{
-                        width: '48px',
-                        height: '48px',
-                        borderRadius: '50%',
-                        background: 'rgba(242,12,143,0.15)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        margin: '0 auto 10px',
-                      }}>
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#F20C8F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <rect x="3" y="3" width="7" height="7" />
-                          <rect x="14" y="3" width="7" height="7" />
-                          <rect x="14" y="14" width="7" height="7" />
-                          <rect x="3" y="14" width="7" height="7" />
-                        </svg>
-                      </div>
-                      <p style={{ fontSize: '14px', fontWeight: 600, color: '#ffffff' }}>Browse Photos</p>
-                      <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginTop: '2px' }}>Stock library</p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Find My Photos button */}
-                <button
-                  onClick={handleStartScan}
-                  disabled={!uploadedFile}
-                  style={{
-                    width: '100%',
-                    maxWidth: '340px',
-                    display: 'block',
-                    margin: '0 auto',
-                    padding: '16px',
-                    borderRadius: '12px',
-                    background: uploadedFile ? '#FF6B6B' : 'rgba(255,255,255,0.08)',
-                    color: uploadedFile ? '#ffffff' : 'rgba(255,255,255,0.3)',
-                    fontSize: '16px',
-                    fontWeight: 700,
-                    border: 'none',
-                    cursor: uploadedFile ? 'pointer' : 'not-allowed',
-                    transition: 'all 0.3s ease',
-                  }}
-                  onMouseEnter={(e) => { if (uploadedFile) (e.target as HTMLButtonElement).style.background = '#ff5252'; }}
-                  onMouseLeave={(e) => { if (uploadedFile) (e.target as HTMLButtonElement).style.background = '#FF6B6B'; }}
-                >
-                  Find My Photos
-                </button>
-
-                {scanError && (
-                  <p style={{
-                    color: '#FF6B6B',
-                    fontSize: '14px',
-                    marginTop: '12px',
-                    textAlign: 'center',
-                  }}>{scanError}</p>
-                )}
-              </>
-            )}
-
-            </div>
-            </div>
-
-            <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '12.5px', marginTop: '24px', marginBottom: 0 }}>
-              Bought photos here before? Open your album, then use the Unlock button to re-download them free.
-            </p>
-          </div>
-        </div>
-      ) : (
-        /* ── Phase 2: Discover - Photo Grid + Scan ── */
-        <div id="phase-discover" style={{ scrollMarginTop: '120px' }}>
-          {/* Header */}
-          <div
-            ref={headerSectionRef}
-            onMouseMove={handleMouseMove(headerSectionRef, setHeaderMousePos)}
-            onMouseLeave={() => setHeaderMousePos(null)}
-            style={{
-              background: 'linear-gradient(to right, #052047, #052047, #103E83)',
-              padding: isMobile ? '100px 20px 26px' : '120px 40px 32px',
-              textAlign: 'center',
-              position: 'relative',
-              overflow: 'hidden',
-            }}
-          >
-            {/* Back-to-Connect button - top-left corner */}
-            <button
-              type="button"
-              onClick={() => goToPhase('phase-connect')}
-              aria-label="Back to invite code"
-              style={{
-                position: 'absolute',
-                top: isMobile ? 14 : 20,
-                left: isMobile ? 14 : 24,
-                zIndex: 4,
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 8,
-                padding: '8px 14px',
-                borderRadius: 999,
-                background: 'rgba(255,255,255,0.06)',
-                border: '1px solid rgba(255,255,255,0.16)',
-                backdropFilter: 'blur(10px)',
-                color: 'rgba(255,255,255,0.85)',
-                fontSize: 12,
-                fontWeight: 700,
-                letterSpacing: '0.08em',
-                cursor: 'pointer',
-                transition: 'all 0.25s ease',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(255,255,255,0.12)';
-                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.32)';
-                e.currentTarget.style.transform = 'translateX(-2px)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
-                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.16)';
-                e.currentTarget.style.transform = 'translateX(0)';
-              }}
-            >
-              <i className="bi bi-arrow-left" style={{ fontSize: 13 }} />
-              Back to Connect
-            </button>
-            {/* Album cover backdrop - the event's own imagery replaces the
-                animated dot canvas, so the gallery header feels like THIS
-                album rather than generic platform chrome. Heavy blur + a
-                dark scrim keep the toolbar readable and the preview
-                worthless to screenshot. */}
-            {displayedPhotos[0]?.url && (
-              <div style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none', overflow: 'hidden' }} aria-hidden="true">
-                <img
-                  src={stampPreviewUrl(displayedPhotos[0].url, viewerId, { buyerId, refid: purchaseRefid })}
-                  alt=""
-                  draggable={false}
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover',
-                    filter: 'blur(26px) brightness(0.55) saturate(1.1)',
-                    transform: 'scale(1.15)',
-                  }}
-                />
-                <div style={{
-                  position: 'absolute', inset: 0,
-                  background: 'linear-gradient(180deg, rgba(5,32,71,0.82) 0%, rgba(5,32,71,0.55) 45%, rgba(5,32,71,0.94) 100%)',
-                }} />
-              </div>
-            )}
-
-            {/* Compact toolbar - the old panel stacked a 59px title over
-                centered buttons and pushed every action below the fold on
-                phones; buyers never saw "Already paid? Unlock" without
-                scrolling. Title + meta chips on one row, actions on the
-                next, everything visible on a 667px-tall viewport. */}
-            <div style={{
-              position: 'relative',
-              zIndex: 2,
-              background: 'linear-gradient(135deg, rgba(5, 32, 71, 0.95) 0%, rgba(16, 62, 131, 0.92) 100%)',
-              borderRadius: '22px',
-              padding: isMobile ? '22px 20px' : '24px 28px',
-              border: '1px solid rgba(255,255,255,0.08)',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
-              maxWidth: '1100px',
-              margin: '0 auto',
-              textAlign: 'left',
-            }}>
-            <div style={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              alignItems: 'center',
-              gap: '10px',
-              marginBottom: '16px',
-            }}>
-              <div style={{ marginRight: 'auto', minWidth: 0 }}>
-                <h2 style={{
-                  fontSize: isMobile ? '24px' : 'clamp(26px, 3.2vw, 34px)',
-                  fontWeight: 800,
-                  color: '#ffffff',
-                  margin: 0,
-                  fontFamily: "'Pragati Narrow', sans-serif",
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }}>
-                  {freeAlbumTitle || 'Event Gallery'}
-                </h2>
-                {freeAlbumPhotographer && (
-                  <p style={{
-                    margin: '2px 0 0',
-                    fontSize: '13px',
-                    fontWeight: 600,
-                    color: 'rgba(255,255,255,0.6)',
-                  }}>
-                    by {freeAlbumPhotographer}
-                  </p>
-                )}
-              </div>
-              <span className="fmp-chip">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
-                {displayedPhotos.length} photo{displayedPhotos.length !== 1 ? 's' : ''}{isFiltered ? ' matched' : ''}
+        /* ═══ THE GATE - cinematic arrival with two entry doors ═══ */
+        <section id="phase-connect" className="fr-gate" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', scrollMarginTop: 120 }}>
+          <div style={{ maxWidth: 1100, margin: '0 auto', padding: isMobile ? '120px 18px 48px' : '130px 24px 56px', width: '100%', boxSizing: 'border-box' }}>
+            <div style={{ textAlign: 'center', marginBottom: 30 }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10, color: 'rgba(255,255,255,0.55)', fontSize: 11.5, fontWeight: 700, letterSpacing: '0.22em', textTransform: 'uppercase' }}>
+                <span aria-hidden style={{ width: 26, height: 1, background: '#FF6B6B' }} />
+                Your event · Your frames
+                <span aria-hidden style={{ width: 26, height: 1, background: '#FF6B6B' }} />
               </span>
-              {(() => {
-                // Uniform-price chip: only when every priced photo agrees on
-                // price and currency, so the chip can never misquote.
-                const priced = displayedPhotos.filter(p => typeof p.price === 'number' && p.price > 0);
-                if (priced.length === 0) return null;
-                const first = priced[0];
-                const uniform = priced.every(p => p.price === first.price
-                  && (p.currencyAbbreviation || '') === (first.currencyAbbreviation || ''));
-                if (!uniform) return null;
-                return (
-                  <span className="fmp-chip">
-                    {first.currencyAbbreviation ? `${first.currencyAbbreviation} ` : ''}{first.price} / photo
-                  </span>
-                );
-              })()}
+              <h1 className="fr-serif" style={{ margin: '14px 0 0', color: '#fff', fontSize: 'clamp(40px, 6vw, 70px)', lineHeight: 1.02, fontWeight: 600 }}>
+                Find my <em style={{ color: '#FF6B6B', fontStyle: 'italic' }}>photos.</em>
+              </h1>
+              <p style={{ margin: '16px auto 0', color: 'rgba(255,255,255,0.6)', fontSize: 15.5, lineHeight: 1.65, maxWidth: 520 }}>
+                Your photographer captured the moment. Enter your event code,
+                or let your face find every frame you appear in.
+              </p>
             </div>
 
-            <div style={{
-              display: 'flex',
-              gap: '10px',
-              flexWrap: 'wrap',
-            }}>
-              <button
-                onClick={() => setIsScanModalOpen(true)}
-                className="scan-btn"
-                style={{
-                  padding: '13px 24px',
-                  minHeight: '48px',
-                  borderRadius: '50px',
-                  background: '#FF6B6B',
-                  color: '#ffffff',
-                  fontSize: '15px',
-                  fontWeight: 700,
-                  border: 'none',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  flex: isMobile ? '1 1 100%' : '0 1 auto',
-                  justifyContent: 'center',
-                }}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = '#ff5252'; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = '#FF6B6B'; }}
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/><circle cx="12" cy="10" r="3"/><path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662"/></svg>
-                Find my photos with a selfie
-              </button>
+            <div className="fr-sprockets" aria-hidden />
 
-              <button
-                onClick={() => { setUnlockError(null); setUnlockOpen(true); }}
-                style={{
-                  padding: '13px 24px',
-                  minHeight: '48px',
-                  borderRadius: '50px',
-                  background: 'rgba(3,150,156,0.16)',
-                  color: '#7be0e5',
-                  fontSize: '15px',
-                  fontWeight: 700,
-                  border: '1.5px solid rgba(3,150,156,0.55)',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  flex: isMobile ? '1 1 100%' : '0 1 auto',
-                  justifyContent: 'center',
-                }}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(3,150,156,0.3)'; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(3,150,156,0.16)'; }}
-                title="Already paid? Unlock with the code we emailed you, or with your email."
-              >
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0"/></svg>
-                Already paid? Unlock
-              </button>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 20, marginTop: 32 }}>
+              {/* Ticket door - event access code */}
+              <div className="fr-door">
+                <span className="fr-door-tag" style={{ border: '1px solid rgba(242,12,143,0.5)', color: '#ff7ec4' }}>Ticket</span>
+                <h2 className="fr-serif" style={{ margin: '6px 0 6px', color: '#fff', fontSize: 24, fontWeight: 600 }}>I have a code</h2>
+                <p style={{ margin: '0 0 16px', color: 'rgba(255,255,255,0.55)', fontSize: 13.5, lineHeight: 1.6 }}>
+                  It came with the email or QR card from your photographer.
+                </p>
+                <div className="fr-code" style={inviteError ? { borderColor: 'rgba(239,68,68,0.7)' } : undefined}>
+                  <input
+                    value={inviteCode}
+                    onChange={(e) => { setInviteCode(e.target.value); setInviteError(''); }}
+                    onKeyDown={(e) => e.key === 'Enter' && handleInviteSubmit()}
+                    placeholder="Enter invite code"
+                    aria-label="Event access code"
+                    disabled={isLoadingAlbum}
+                  />
+                  <button className="fr-btn-brand" onClick={handleInviteSubmit} disabled={isLoadingAlbum}>
+                    {isLoadingAlbum ? 'Loading…' : 'Open album'}
+                  </button>
+                </div>
+                {inviteError && <p style={{ color: '#ef4444', fontSize: 13, margin: '10px 0 0' }}>{inviteError}</p>}
+              </div>
 
-              {isFiltered && allPhotos.length > 0 && (
+              {/* Mirror door - face match */}
+              <div className="fr-door">
+                <span className="fr-door-tag" style={{ border: '1px solid rgba(255,107,107,0.5)', color: '#ff9c9c' }}>Mirror</span>
+                <h2 className="fr-serif" style={{ margin: '6px 0 6px', color: '#fff', fontSize: 24, fontWeight: 600 }}>Match my face</h2>
+                <p style={{ margin: '0 0 16px', color: 'rgba(255,255,255,0.55)', fontSize: 13.5, lineHeight: 1.6 }}>
+                  One selfie finds every frame you appear in. Your selfie is
+                  matched, then discarded. never stored.
+                </p>
+                <div className="fr-finder" style={{ minHeight: 120, padding: 16 }}>
+                  <span className="fr-corner tl" aria-hidden /><span className="fr-corner tr" aria-hidden />
+                  <span className="fr-corner bl" aria-hidden /><span className="fr-corner br" aria-hidden />
+                  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
+                    <button className="fr-btn-coral" onClick={() => setIsScanModalOpen(true)}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                      Take a selfie
+                    </button>
+                    <button className="fr-btn-ghost" onClick={() => setIsScanModalOpen(true)}>Upload a photo</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 26, flexWrap: 'wrap' }}>
+              <a href="/user/browse-photos" style={{ display: 'inline-flex', alignItems: 'center', padding: '11px 20px', borderRadius: 999, color: 'rgba(255,255,255,0.6)', fontSize: 13.5, fontWeight: 600, textDecoration: 'none', border: '1px solid rgba(255,255,255,0.12)' }}>
+                Just browsing? Visit the print shop →
+              </a>
+            </div>
+
+            <div style={{ display: 'flex', gap: 22, justifyContent: 'center', marginTop: 28, flexWrap: 'wrap', color: 'rgba(255,255,255,0.45)', fontSize: 12.5, fontWeight: 600 }}>
+              <span>◈ Albums stay private to your event</span>
+              <span>◈ Pay per photo, or claim free frames</span>
+              <span>◈ Originals delivered by email</span>
+            </div>
+          </div>
+        </section>
+      ) : (
+        /* ═══ THE CONTACT SHEET - paid album ═══ */
+        <section id="phase-discover" style={{ maxWidth: 1200, margin: '0 auto', padding: isMobile ? '118px 16px 160px' : '128px 24px 170px', scrollMarginTop: 120 }}>
+          {/* Marquee header */}
+          <div className="fr-marquee">
+            {displayedPhotos[0]?.url && (
+              <div className="cover" style={{ backgroundImage: `url(${stampPreviewUrl(displayedPhotos[0].url, viewerId, { buyerId, refid: purchaseRefid })})` }} aria-hidden />
+            )}
+            <div className="scrim" aria-hidden />
+            <div style={{ position: 'relative', zIndex: 2, padding: isMobile ? '22px 18px 18px' : '26px 26px 22px', width: '100%' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11, fontWeight: 800, letterSpacing: '0.2em', textTransform: 'uppercase' }}>Event album</span>
                 <button
-                  onClick={handleShowAll}
-                  style={{
-                    padding: '13px 24px',
-                    minHeight: '48px',
-                    borderRadius: '50px',
-                    background: 'rgba(255,255,255,0.1)',
-                    color: '#ffffff',
-                    fontSize: '15px',
-                    fontWeight: 600,
-                    border: '1px solid rgba(255,255,255,0.2)',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s ease',
-                    flex: isMobile ? '1 1 100%' : '0 1 auto',
-                  }}
-                  onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.18)'; }}
-                  onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.1)'; }}
+                  onClick={() => goToPhase('phase-connect')}
+                  style={{ marginLeft: 'auto', background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.65)', padding: '6px 13px', borderRadius: 999, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
                 >
-                  Show All Photos
+                  ← Different event
                 </button>
-              )}
-            </div>
+              </div>
+              <h1 className="fr-serif" style={{ margin: '6px 0 10px', color: '#fff', fontSize: 'clamp(26px, 4vw, 42px)', fontWeight: 600, lineHeight: 1.05, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {freeAlbumTitle || 'Event Gallery'}
+              </h1>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                {freeAlbumPhotographer && (
+                  <span className="fr-chip">
+                    <span aria-hidden style={{ width: 18, height: 18, borderRadius: '50%', background: 'linear-gradient(135deg,#083A85,#F20C8F)', flexShrink: 0 }} />
+                    by {freeAlbumPhotographer}
+                  </span>
+                )}
+                <span className="fr-chip">{displayedPhotos.length} frame{displayedPhotos.length !== 1 ? 's' : ''}</span>
+                {isFiltered && (
+                  <span className="fr-chip" style={{ borderColor: 'rgba(255,107,107,0.5)', color: '#ff9c9c' }}>✦ matched to you</span>
+                )}
+                {(() => {
+                  // Uniform-price chip: only when every priced photo agrees on
+                  // price and currency, so the chip can never misquote.
+                  const priced = displayedPhotos.filter(p => typeof p.price === 'number' && p.price > 0);
+                  if (priced.length === 0) return null;
+                  const first = priced[0];
+                  const uniform = priced.every(p => p.price === first.price
+                    && (p.currencyAbbreviation || '') === (first.currencyAbbreviation || ''));
+                  if (!uniform) return null;
+                  return (
+                    <span className="fr-chip">
+                      {first.currencyAbbreviation ? `${first.currencyAbbreviation} ` : ''}{first.price} / frame
+                    </span>
+                  );
+                })()}
+              </div>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 14 }}>
+                <button className="fr-btn-coral" style={{ padding: '10px 16px', fontSize: 13 }} onClick={() => setIsScanModalOpen(true)}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/><circle cx="12" cy="10" r="3"/><path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662"/></svg>
+                  Find my frames with a selfie
+                </button>
+                <button
+                  className="fr-btn-ghost"
+                  style={{ padding: '10px 16px', fontSize: 13, borderColor: 'rgba(3,150,156,0.55)', color: '#7be0e5', background: 'rgba(3,150,156,0.14)' }}
+                  onClick={() => { setUnlockError(null); setUnlockOpen(true); }}
+                  title="Already paid? Unlock with the code we emailed you, or with your email."
+                >
+                  Already paid? Unlock
+                </button>
+                {isFiltered && allPhotos.length > 0 && (
+                  <button className="fr-btn-ghost" style={{ padding: '10px 16px', fontSize: 13 }} onClick={handleShowAll}>
+                    Show all frames
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
-          {/* Photo Grid - also acts as the checkout anchor when items are selected */}
-          <div
-            id="phase-checkout"
-            ref={gridSectionRef}
-            onMouseMove={handleMouseMove(gridSectionRef, setGridMousePos)}
-            onMouseLeave={() => setGridMousePos(null)}
-            style={{
-              padding: isMobile ? '24px 16px' : '40px',
-              background: 'linear-gradient(to right, #052047, #052047, #103E83)',
-              minHeight: '400px',
-              position: 'relative',
-              overflow: 'hidden',
-              scrollMarginTop: '120px',
-            }}
-          >
-          {/* No canvas animation behind the grid - the photos are the hero,
-              and the dot field cost battery while competing with them. */}
-          <div style={{
-            maxWidth: '1200px',
-            margin: '0 auto',
-            position: 'relative',
-            zIndex: 2,
-          }}>
-            {/* Masonry columns instead of a uniform crop grid: each photo
-                keeps its own aspect ratio (captured on load), so portraits
-                and panoramas render whole instead of force-cropped to 4:3. */}
-            <div style={{
-              columnCount: isMobile ? 2 : 3,
-              columnGap: isMobile ? '12px' : '18px',
-            }}>
+          <div className="fr-sprockets" style={{ margin: '16px auto' }} aria-hidden />
+
+          {/* Contact-sheet masonry - the checkout anchor when items are selected */}
+          <div id="phase-checkout" style={{ scrollMarginTop: 120 }}>
+            <div style={{ columnCount: isMobile ? 2 : 3, columnGap: isMobile ? 12 : 18 }}>
               {displayedPhotos.map((photo, photoIndex) => {
                 const isPaid = (photo.price ?? 0) > 0;
                 const isPurchased = !!photo.isPurchased;
-                // Any photo the user can act on (download or buy) is now
-                // selectable - that unlocks the unified "cart" UX in the
-                // bottom action bar. The downstream actions still filter
-                // by type: handleBulkBuy only sends paid-unpurchased, and
-                // handleBulkDownload only sends free/purchased.
+                // Any photo the user can act on (download or buy) is
+                // selectable - downstream actions still filter by type:
+                // handleBulkBuy sends paid-unpurchased, handleBulkDownload
+                // sends free/purchased.
                 const isFree = !isPaid;
                 const isSelectable = isPurchased || isFree || (isPaid && !!photo.albumId);
                 const isSelected = selectedPhotoIds.has(photo.id);
-                // Visual identity for the checkbox: free / already-purchased
-                // photos show a brand-pink check (these go to the download
-                // path), unpurchased-paid photos show a teal check (these go
-                // to the buy path - teal is the existing platform purchase
-                // colour, preserved per request).
+                // Pink = download intent (free/purchased), teal = buy intent.
                 const selectAccent = (isPurchased || isFree) ? '#F20C8F' : '#03969c';
                 const currencyLabel = photo.currencyAbbreviation || albumCurrencySymbol || 'RF';
                 const btnLabel = isPurchased
                   ? 'Download'
                   : isPaid
-                    ? `Buy (${currencyLabel} ${photo.price?.toLocaleString()})`
+                    ? `Buy · ${currencyLabel} ${photo.price?.toLocaleString()}`
                     : 'Download';
+                const pickOrder = isSelected ? Array.from(selectedPhotoIds).indexOf(photo.id) + 1 : 0;
                 return (
-                <div
-                  key={photo.id}
-                  className="photo-card"
-                  style={{
-                    borderRadius: '20px',
-                    overflow: 'hidden',
-                    cursor: 'pointer',
-                    boxShadow: isSelected
-                      ? `0 0 0 3px ${selectAccent}, 0 4px 20px rgba(0,0,0,0.08)`
-                      : '0 4px 20px rgba(0,0,0,0.08)',
-                    transition: 'box-shadow 0.3s ease',
-                    background: '#0b2a56',
-                    position: 'relative',
-                    breakInside: 'avoid',
-                    marginBottom: isMobile ? '12px' : '18px',
-                  }}
-                >
                   <div
-                    className={loadedPhotoIds.has(photo.id) ? undefined : 'fmp-skel'}
+                    key={photo.id}
+                    className="fr-card"
+                    onContextMenu={(e) => e.preventDefault()}
+                    onClick={() => { if (isSelectable) togglePhotoSelected(photo.id); else setSelectedPhoto(photo); }}
                     style={{
-                      // Hold 4:3 until the real ratio is known so the masonry
-                      // column doesn't jump; release to the photo's own shape
-                      // as soon as it loads.
-                      aspectRatio: photoRatios[photo.id] ? `${photoRatios[photo.id]}` : '4/3',
-                      overflow: 'hidden',
-                      position: 'relative',
+                      marginBottom: isMobile ? 12 : 18,
+                      borderColor: isSelected ? selectAccent : undefined,
+                      boxShadow: isSelected ? `0 0 0 2px ${selectAccent}, 0 24px 48px -22px rgba(0,0,0,0.6)` : undefined,
                     }}
-                    onClick={() => setSelectedPhoto(photo)}
                   >
-                    <img
-                      src={stampPreviewUrl(photo.url, viewerId, { buyerId, refid: purchaseRefid })}
-                      alt={photo.alt}
-                      draggable={false}
-                      ref={(el) => markPhotoLoaded(photo.id, el)}
-                      onLoad={(e) => markPhotoLoaded(photo.id, e.currentTarget)}
-                      onDragStart={(e) => e.preventDefault()}
-                      onContextMenu={(e) => e.preventDefault()}
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover',
-                        transition: 'opacity 0.45s ease, filter 0.1s linear',
-                        opacity: loadedPhotoIds.has(photo.id) ? 1 : 0,
-                        userSelect: 'none',
-                        WebkitUserSelect: 'none',
-                        pointerEvents: 'none',
-                        filter: isOccluded ? 'brightness(0)' : undefined,
-                      }}
-                      // First two rows load eagerly so the gallery paints
-                      // immediately; everything below the fold stays lazy.
-                      loading={photoIndex < 6 ? 'eager' : 'lazy'}
-                      fetchPriority={photoIndex < 3 ? 'high' : undefined}
-                      decoding="async"
-                    />
-                    {/* Repeating tile watermark - Shutterstock/Getty style.
-                        Tagged with the album OWNER PHOTOGRAPHER'S NAME
-                        (from freeAlbumPhotographer state) instead of the
-                        platform brand. Falls back to "PREVIEW" only if
-                        the photographer field hasn't loaded yet. */}
-                    {isPaid && !isPurchased && (() => {
-                      const raw = (freeAlbumPhotographer || 'PREVIEW').toUpperCase();
-                      const safe = raw
-                        .replace(/&/g, '&amp;')
-                        .replace(/</g, '&lt;')
-                        .replace(/>/g, '&gt;');
-                      return (
-                        <div
-                          aria-hidden
-                          style={{
-                            position: 'absolute',
-                            inset: 0,
-                            pointerEvents: 'none',
+                    <div
+                      className={loadedPhotoIds.has(photo.id) ? undefined : 'fr-skel'}
+                      style={{ aspectRatio: photoRatios[photo.id] ? `${photoRatios[photo.id]}` : '4/3', position: 'relative', overflow: 'hidden' }}
+                    >
+                      <img
+                        src={stampPreviewUrl(photo.url, viewerId, { buyerId, refid: purchaseRefid })}
+                        alt={photo.alt}
+                        draggable={false}
+                        ref={(el) => markPhotoLoaded(photo.id, el)}
+                        onLoad={(e) => markPhotoLoaded(photo.id, e.currentTarget)}
+                        onDragStart={(e) => e.preventDefault()}
+                        onContextMenu={(e) => e.preventDefault()}
+                        style={{
+                          width: '100%', height: '100%', objectFit: 'cover',
+                          opacity: loadedPhotoIds.has(photo.id) ? 1 : 0,
+                          userSelect: 'none', WebkitUserSelect: 'none', pointerEvents: 'none',
+                          filter: isOccluded ? 'brightness(0)' : undefined,
+                          transition: 'opacity 0.45s ease, filter 0.1s linear',
+                        }}
+                        loading={photoIndex < 6 ? 'eager' : 'lazy'}
+                        fetchPriority={photoIndex < 3 ? 'high' : undefined}
+                        decoding="async"
+                      />
+                      {/* Repeating tile watermark - the album photographer's name */}
+                      {isPaid && !isPurchased && (() => {
+                        const raw = (freeAlbumPhotographer || 'PREVIEW').toUpperCase();
+                        const safe = raw
+                          .replace(/&/g, '&amp;')
+                          .replace(/</g, '&lt;')
+                          .replace(/>/g, '&gt;');
+                        return (
+                          <div aria-hidden style={{
+                            position: 'absolute', inset: 0, pointerEvents: 'none',
                             backgroundImage:
                               'url("data:image/svg+xml;utf8,' +
                               encodeURIComponent(
@@ -3529,144 +2680,144 @@ const FindMyPhotos = () => {
                               '")',
                             backgroundRepeat: 'repeat',
                             mixBlendMode: 'overlay',
-                          }}
-                        />
-                      );
-                    })()}
-                  </div>
-                  {/* Selection checkbox - appears on every actionable photo
-                      so the bottom action bar can build a unified cart of
-                      free downloads + paid buys. Accent color reflects the
-                      intent (pink = download, teal = buy). */}
-                  {isSelectable && (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); togglePhotoSelected(photo.id); }}
-                      aria-label={isSelected ? 'Remove from cart' : 'Add to cart'}
-                      title={isSelected ? 'Remove from cart' : 'Add to cart'}
-                      style={{
-                        position: 'absolute',
-                        top: '10px',
-                        left: '10px',
-                        width: '28px',
-                        height: '28px',
-                        borderRadius: '8px',
-                        background: isSelected ? selectAccent : 'rgba(255,255,255,0.95)',
-                        border: isSelected ? `2px solid ${selectAccent}` : '2px solid rgba(255,255,255,0.6)',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        zIndex: 3,
-                        padding: 0,
-                        boxShadow: isSelected
-                          ? `0 4px 12px -2px ${selectAccent === '#F20C8F' ? 'rgba(242,12,143,0.42)' : 'rgba(3,150,156,0.42)'}`
-                          : '0 2px 6px rgba(0,0,0,0.18)',
-                        transition: 'transform 0.15s, background 0.15s, box-shadow 0.15s',
-                      }}
-                      onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.08)'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
-                    >
-                      {isSelected ? (
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="20 6 9 17 4 12"/>
-                        </svg>
-                      ) : (
-                        <i className="bi bi-plus" style={{ fontSize: '16px', color: selectAccent, fontWeight: 700, lineHeight: 1 }} />
+                          }} />
+                        );
+                      })()}
+                      {isSelectable && (
+                        <button
+                          type="button"
+                          className="fr-pick"
+                          aria-label={isSelected ? 'Remove from selection' : 'Add to selection'}
+                          onClick={(e) => { e.stopPropagation(); togglePhotoSelected(photo.id); }}
+                          style={isSelected ? { background: selectAccent, borderColor: selectAccent } : undefined}
+                        >
+                          {isSelected ? pickOrder : ''}
+                        </button>
                       )}
-                    </button>
-                  )}
-                  {/* Price / Purchased badge */}
-                  {isPaid && (
-                    <div style={{
-                      position: 'absolute',
-                      top: '10px',
-                      right: '10px',
-                      padding: '5px 10px',
-                      borderRadius: '50px',
-                      background: isPurchased ? '#16a34a' : 'rgba(0,0,0,0.75)',
-                      color: '#fff',
-                      fontSize: '11px',
-                      fontWeight: 700,
-                      zIndex: 2,
-                      backdropFilter: 'blur(4px)',
-                      border: '1px solid rgba(255,255,255,0.15)',
-                    }}>
-                      {isPurchased ? '✓ PURCHASED' : `${currencyLabel} ${photo.price?.toLocaleString()}`}
+                      <button
+                        type="button"
+                        className="fr-eye"
+                        aria-label="Quick view"
+                        onClick={(e) => { e.stopPropagation(); setSelectedPhoto(photo); }}
+                      >
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                      </button>
+                      <span className="fr-frame-no">№ {String(photoIndex + 1).padStart(2, '0')}</span>
+                      {isPaid && (
+                        <span className="fr-badge" style={{
+                          background: isPurchased ? 'rgba(3,150,156,0.9)' : 'rgba(4,10,24,0.72)',
+                          border: '1px solid rgba(255,255,255,0.16)', color: '#fff',
+                        }}>
+                          {isPurchased ? '✓ PURCHASED' : `${currencyLabel} ${photo.price?.toLocaleString()}`}
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        className="fr-act"
+                        onClick={(e) => { e.stopPropagation(); handleDownloadClick(photo); }}
+                      >
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        {btnLabel}
+                      </button>
                     </div>
-                  )}
-                  {/* Download / Buy button */}
-                  <button
-                    className="photo-download-btn"
-                    onClick={(e) => { e.stopPropagation(); handleDownloadClick(photo); }}
-                    style={{
-                      position: 'absolute',
-                      bottom: '10px',
-                      right: '10px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '5px',
-                      padding: '7px 12px',
-                      borderRadius: '50px',
-                      background: 'rgba(0,0,0,0.65)',
-                      backdropFilter: 'blur(4px)',
-                      border: '1px solid rgba(255,255,255,0.2)',
-                      color: '#ffffff',
-                      fontSize: '12px',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease',
-                      zIndex: 2,
-                    }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = '#03969c'; e.currentTarget.style.borderColor = '#03969c'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(0,0,0,0.65)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; }}
-                  >
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                      <polyline points="7 10 12 15 17 10"/>
-                      <line x1="12" y1="15" x2="12" y2="3"/>
-                    </svg>
-                    {btnLabel}
-                  </button>
-                </div>
+                  </div>
                 );
               })}
             </div>
 
             {displayedPhotos.length === 0 && (
               <div style={{
-                textAlign: 'center',
-                padding: '64px 24px',
-                maxWidth: '440px',
-                margin: '0 auto',
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px dashed rgba(255,255,255,0.16)',
-                borderRadius: '20px',
-                color: 'rgba(255,255,255,0.5)',
+                textAlign: 'center', padding: '64px 24px', maxWidth: 440, margin: '0 auto',
+                background: 'rgba(255,255,255,0.04)', border: '1px dashed rgba(255,255,255,0.16)',
+                borderRadius: 20, color: 'rgba(255,255,255,0.5)',
               }}>
                 <span style={{
-                  width: '56px', height: '56px', borderRadius: '16px',
+                  width: 56, height: 56, borderRadius: 16,
                   background: 'rgba(255,107,107,0.12)', color: '#FF6B6B',
-                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                  marginBottom: '16px',
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16,
                 }}>
                   <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
                 </span>
-                <p style={{ fontSize: '18px', fontWeight: 700, color: 'rgba(255,255,255,0.85)', margin: 0 }}>No photos matched</p>
-                <p style={{ fontSize: '14px', marginTop: '8px', lineHeight: 1.6 }}>
-                  Try another selfie, or use Show All Photos to browse the whole gallery.
+                <p style={{ fontSize: 18, fontWeight: 700, color: 'rgba(255,255,255,0.85)', margin: 0 }}>No frames matched</p>
+                <p style={{ fontSize: 14, marginTop: 8, lineHeight: 1.6 }}>
+                  Try another selfie, or show all frames to browse the whole album.
                 </p>
               </div>
             )}
           </div>
-          </div>
-        </div>
+        </section>
       )}
 
-      {/* ── Free-album cap-cross warning modal ── */}
-      {/* Fires the first time the user adds enough photos to push the
-          paying-extras count above 0. They have to confirm; clicking
-          Purchase again then triggers handleFreeCappedDownload which
-          opens XentriPay. */}
+      {/* ── Paid selection tray - unified downloads + buys ── */}
+      {(() => {
+        const selectedCount = selectedPhotoIds.size;
+        if (freeAlbumFlow !== 'idle') return null;
+        if (selectedCount === 0 && !purchaseNotice) return null;
+        const selectedItems = displayedPhotos.filter(p => selectedPhotoIds.has(p.id));
+        // Split by intent - mirrors what handleBulkBuy / handleBulkDownload
+        // filter internally, so the tray can't drift out of sync.
+        const paidItems = selectedItems.filter(p => (p.price ?? 0) > 0 && !p.isPurchased);
+        const downloadItems = selectedItems.filter(p => !!p.isPurchased || (p.price ?? 0) === 0);
+        const total = paidItems.reduce((s, p) => s + (p.price ?? 0), 0);
+        const curLabel = paidItems[0]?.currencyAbbreviation || albumCurrencySymbol || 'RF';
+        return (
+          <div className="fr-tray">
+            {purchaseNotice && (
+              <div style={{
+                color: '#fff', fontSize: 12.5, fontWeight: 500,
+                display: 'inline-flex', alignItems: 'center', gap: 8,
+                padding: '6px 10px', background: 'rgba(242,12,143,0.14)',
+                border: '1px solid rgba(242,12,143,0.32)', borderRadius: 8,
+              }}>
+                <i className="bi bi-info-circle-fill" style={{ fontSize: 13, color: '#F20C8F' }} />
+                {purchaseNotice}
+              </div>
+            )}
+            {selectedCount > 0 && (
+              <div className="fr-tray-row">
+                <div className="thumbs" aria-hidden>
+                  {selectedItems.slice(0, 4).map(p => (
+                    <span key={p.id} style={{ backgroundImage: `url(${stampPreviewUrl(p.url, viewerId, { buyerId, refid: purchaseRefid })})`, filter: isOccluded ? 'brightness(0)' : undefined }} />
+                  ))}
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ color: '#fff', fontSize: 13.5, fontWeight: 800 }}>
+                    {selectedCount} frame{selectedCount !== 1 ? 's' : ''} selected
+                  </div>
+                  <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: 12 }}>
+                    {downloadItems.length > 0 && <span>{downloadItems.length} to download</span>}
+                    {downloadItems.length > 0 && paidItems.length > 0 && <span> · </span>}
+                    {paidItems.length > 0 && <span>{paidItems.length} to buy · {curLabel} {total.toLocaleString()}</span>}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 8, marginLeft: 'auto', flexWrap: 'wrap' }}>
+                  <button className="fr-btn-ghost" style={{ padding: '10px 14px', fontSize: 13 }} onClick={() => setSelectedPhotoIds(new Set())}>
+                    Clear
+                  </button>
+                  {downloadItems.length > 0 && (
+                    <button className="fr-btn-brand" style={{ padding: '11px 16px', fontSize: 13 }} onClick={handleBulkDownload}>
+                      <i className="bi bi-download" style={{ fontSize: 13 }} />
+                      Download {downloadItems.length}
+                    </button>
+                  )}
+                  {paidItems.length > 0 && (
+                    <button
+                      className="fr-btn-brand"
+                      style={{ padding: '11px 16px', fontSize: 13, background: 'linear-gradient(135deg, #03969c 0%, #027a7f 100%)', boxShadow: '0 8px 22px -6px rgba(3,150,156,0.45)' }}
+                      onClick={handleBulkBuy}
+                    >
+                      <i className="bi bi-cart-fill" style={{ fontSize: 13 }} />
+                      Buy {paidItems.length} · {curLabel} {total.toLocaleString()}
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
+      {/* ── Free-album cap-cross warning ── */}
       {freeCapWarnOpen && (() => {
         const info = getCappedSelectionInfo();
         const extrasTotal = info.overflow * (freeAlbumPricePerExtra || 0);
@@ -3674,11 +2825,8 @@ const FindMyPhotos = () => {
           <div
             onClick={() => setFreeCapWarnOpen(false)}
             style={{
-              position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-              background: 'rgba(0,0,0,0.78)', backdropFilter: 'blur(6px)',
-              zIndex: 3500,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              padding: 20,
+              position: 'fixed', inset: 0, background: 'rgba(2,6,16,0.85)', backdropFilter: 'blur(6px)',
+              zIndex: 3500, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20,
             }}
           >
             <div
@@ -3689,33 +2837,22 @@ const FindMyPhotos = () => {
               style={{
                 width: 'min(440px, 100%)',
                 background: 'linear-gradient(160deg, #0a2148 0%, #071634 100%)',
-                border: '1px solid rgba(255,255,255,0.10)',
-                borderRadius: 18,
-                padding: 24,
-                color: '#fff',
-                boxShadow: '0 30px 70px -20px rgba(0,0,0,0.65)',
+                border: '1px solid rgba(255,255,255,0.10)', borderRadius: 20, padding: 26,
+                color: '#fff', boxShadow: '0 30px 70px -20px rgba(0,0,0,0.65)',
               }}
             >
-              <div style={{
-                width: 48, height: 48, borderRadius: '50%',
-                background: 'rgba(245,158,11,0.18)', color: '#f59e0b',
-                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                marginBottom: 14,
-              }}>
-                <i className="bi bi-exclamation-triangle-fill" style={{ fontSize: 20 }} />
-              </div>
-              <h3 id="cap-warn-title" style={{ margin: '0 0 10px', fontSize: 18, fontWeight: 800, letterSpacing: '-0.01em' }}>
-                You&apos;re about to pay for extra photos
+              <span style={{ color: '#fcd34d', fontSize: 11, fontWeight: 800, letterSpacing: '0.2em', textTransform: 'uppercase' }}>Heads up</span>
+              <h3 id="cap-warn-title" className="fr-serif" style={{ margin: '8px 0 10px', fontSize: 23, fontWeight: 600 }}>
+                You&apos;re about to pay for extras.
               </h3>
               <p style={{ margin: 0, fontSize: 13.5, color: 'rgba(255,255,255,0.78)', lineHeight: 1.55 }}>
-                The first <strong>{info.cap === Infinity ? freeAlbumPhotos.length : info.cap}</strong> new photo{info.cap === 1 ? '' : 's'} {info.cap === 1 ? 'is' : 'are'} free.
+                The first <strong>{info.cap === Infinity ? freeAlbumPhotos.length : info.cap}</strong> new frame{info.cap === 1 ? '' : 's'} {info.cap === 1 ? 'is' : 'are'} free.
                 You picked <strong>{info.overflow}</strong> beyond that. each costs{' '}
                 <strong>{freeAlbumCurrencyAbbr || ''} {freeAlbumPricePerExtra}</strong>.
               </p>
               <div style={{
                 marginTop: 16, padding: '12px 14px', borderRadius: 12,
                 background: 'rgba(245,158,11,0.10)', border: '1px solid rgba(245,158,11,0.30)',
-                color: '#fff',
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
                   <span style={{ color: 'rgba(255,255,255,0.72)' }}>Free quota used</span>
@@ -3739,24 +2876,15 @@ const FindMyPhotos = () => {
               <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
                 <button
                   onClick={() => setFreeCapWarnOpen(false)}
-                  style={{
-                    flex: 1, padding: '11px 14px', borderRadius: 11,
-                    background: 'rgba(255,255,255,0.06)', color: '#fff',
-                    border: '1px solid rgba(255,255,255,0.20)',
-                    fontSize: 13.5, fontWeight: 700, cursor: 'pointer',
-                  }}
+                  className="fr-btn-ghost"
+                  style={{ flex: 1 }}
                 >
                   Adjust selection
                 </button>
                 <button
                   onClick={() => { setFreeCapWarnOpen(false); void handleFreeCappedDownload(); }}
-                  style={{
-                    flex: 1, padding: '11px 14px', borderRadius: 11,
-                    background: 'linear-gradient(135deg, #f59e0b 0%, #f20c8f 130%)',
-                    color: '#fff', border: 'none',
-                    fontSize: 13.5, fontWeight: 800, cursor: 'pointer',
-                    boxShadow: '0 8px 22px -6px rgba(242,12,143,0.55)',
-                  }}
+                  className="fr-btn-brand"
+                  style={{ flex: 1, background: 'linear-gradient(135deg, #f59e0b 0%, #f20c8f 130%)' }}
                 >
                   Continue to payment
                 </button>
@@ -3766,10 +2894,11 @@ const FindMyPhotos = () => {
         );
       })()}
 
-      {/* ── Image Viewer Modal ── */}
+      {/* ── Quick view - split product panel (protected preview + rail) ── */}
       {selectedPhoto && (
         <div
           onClick={() => setSelectedPhoto(null)}
+          onContextMenu={(e) => e.preventDefault()}
           onTouchStart={(e) => { lightboxTouchX.current = e.touches[0].clientX; }}
           onTouchEnd={(e) => {
             const startX = lightboxTouchX.current;
@@ -3779,21 +2908,13 @@ const FindMyPhotos = () => {
             if (Math.abs(dx) > 48) stepLightbox(dx < 0 ? 1 : -1);
           }}
           style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0,0,0,0.85)',
-            backdropFilter: 'blur(4px)',
-            zIndex: 2000,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '20px',
+            position: 'fixed', inset: 0, background: 'rgba(2,6,16,0.9)',
+            backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
+            zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: isMobile ? 12 : 24, overflowY: 'auto',
           }}
         >
-          {/* Preload the neighbours so arrow/swipe navigation feels instant */}
+          {/* Preload neighbours so arrow/swipe navigation feels instant */}
           {[lightboxList[lightboxIndex - 1], lightboxList[lightboxIndex + 1]]
             .filter((p): p is PhotoItem => !!p)
             .map((p) => (
@@ -3806,360 +2927,266 @@ const FindMyPhotos = () => {
               />
             ))}
 
-          {/* Prev / next - arrow keys and swipe work too */}
           {lightboxIndex > 0 && (
-            <button
-              type="button"
-              className="fmp-lb-arrow prev"
-              aria-label="Previous photo"
-              onClick={(e) => { e.stopPropagation(); stepLightbox(-1); }}
-            >
+            <button type="button" className="fr-lb-arrow prev" aria-label="Previous photo"
+              onClick={(e) => { e.stopPropagation(); stepLightbox(-1); }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
             </button>
           )}
           {lightboxIndex >= 0 && lightboxIndex < lightboxList.length - 1 && (
-            <button
-              type="button"
-              className="fmp-lb-arrow next"
-              aria-label="Next photo"
-              onClick={(e) => { e.stopPropagation(); stepLightbox(1); }}
-            >
+            <button type="button" className="fr-lb-arrow next" aria-label="Next photo"
+              onClick={(e) => { e.stopPropagation(); stepLightbox(1); }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
             </button>
           )}
 
-          {/* Top bar: position counter + download + close */}
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              position: 'absolute',
-              top: '20px',
-              left: '20px',
-              right: '20px',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              gap: '10px',
-              zIndex: 2001,
-            }}
-          >
-            <span style={{
-              padding: '8px 14px',
-              borderRadius: '50px',
-              background: 'rgba(255,255,255,0.1)',
-              border: '1px solid rgba(255,255,255,0.18)',
-              color: 'rgba(255,255,255,0.85)',
-              fontSize: '13px',
-              fontWeight: 700,
-              fontVariantNumeric: 'tabular-nums',
-            }}>
-              {lightboxIndex + 1} / {lightboxList.length}
-            </span>
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-            {/* When the previewed photo belongs to the current free album,
-                the lightbox is preview-only. the user must add it to the
-                cart and route through handleFreeCappedDownload so the cap
-                and the pay-for-extras flow stay enforced. */}
-            {freeAlbumPhotos.some(p => p.id === selectedPhoto.id) ? (
-              <span style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 7,
-                padding: '10px 16px',
-                borderRadius: '50px',
-                background: 'rgba(255,255,255,0.08)',
-                color: 'rgba(255,255,255,0.78)',
-                fontSize: 12.5,
-                fontWeight: 600,
-                border: '1px solid rgba(255,255,255,0.18)',
-              }}>
-                <i className="bi bi-info-circle" />
-                Use the + button to add this photo, then download from the cart bar
-              </span>
-            ) : (
-              <button
-                onClick={(e) => { e.stopPropagation(); handleDownloadClick(selectedPhoto); }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '7px',
-                  padding: '10px 20px',
-                  borderRadius: '50px',
-                  background: '#03969c',
-                  border: 'none',
-                  color: '#ffffff',
-                  fontSize: '14px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = '#026d72'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = '#03969c'; }}
-              >
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                  <polyline points="7 10 12 15 17 10"/>
-                  <line x1="12" y1="15" x2="12" y2="3"/>
-                </svg>
-                {selectedPhoto.isPurchased
-                  ? 'Download'
-                  : (selectedPhoto.price ?? 0) > 0
-                    ? `Buy (${selectedPhoto.currencyAbbreviation || albumCurrencySymbol || 'RF'} ${selectedPhoto.price?.toLocaleString()})`
-                    : 'Download'}
-              </button>
-            )}
-            <button
-              onClick={(e) => { e.stopPropagation(); setSelectedPhoto(null); }}
-              style={{
-                width: '44px',
-                height: '44px',
-                borderRadius: '50%',
-                background: 'rgba(255,255,255,0.15)',
-                border: 'none',
-                color: '#ffffff',
-                fontSize: '24px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                transition: 'all 0.3s ease',
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.3)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.15)'; }}
-            >
-              &times;
-            </button>
-            </div>
-          </div>
           {(() => {
-            const isLocked = (selectedPhoto.price ?? 0) > 0 && !selectedPhoto.isPurchased;
+            const isFreeAlbumPhoto = freeAlbumPhotos.some(p => p.id === selectedPhoto.id);
+            const isLocked = !isFreeAlbumPhoto && (selectedPhoto.price ?? 0) > 0 && !selectedPhoto.isPurchased;
+            const qvSelectable = !isFreeAlbumPhoto && (
+              !!selectedPhoto.isPurchased || (selectedPhoto.price ?? 0) === 0
+              || ((selectedPhoto.price ?? 0) > 0 && !!selectedPhoto.albumId)
+            );
+            const qvSelected = isFreeAlbumPhoto
+              ? selectedFreePhotoIds.has(selectedPhoto.id)
+              : selectedPhotoIds.has(selectedPhoto.id);
+            const priceLabel = `${selectedPhoto.currencyAbbreviation || albumCurrencySymbol || 'RF'} ${(selectedPhoto.price ?? 0).toLocaleString()}`;
             return (
               <div
-                className="photo-preview-modal"
                 onClick={(e) => e.stopPropagation()}
                 onContextMenu={(e) => e.preventDefault()}
-                style={{ position: 'relative', maxWidth: '90vw', maxHeight: '85vh', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: isMobile ? '1fr' : 'minmax(0, 1fr) 300px',
+                  maxWidth: 1000, width: '100%',
+                  maxHeight: isMobile ? undefined : '86vh',
+                  borderRadius: 18, overflow: 'hidden',
+                  border: '1px solid rgba(255,255,255,0.12)',
+                  background: '#081831',
+                  boxShadow: '0 30px 80px rgba(0,0,0,0.55)',
+                  margin: 'auto',
+                }}
               >
-                <img
-                  src={stampPreviewUrl(selectedPhoto.fullUrl || selectedPhoto.url, viewerId, { buyerId, refid: purchaseRefid })}
-                  alt={selectedPhoto.alt}
-                  draggable={false}
-                  onDragStart={(e) => e.preventDefault()}
-                  onContextMenu={(e) => e.preventDefault()}
-                  style={{
-                    display: 'block',
-                    maxWidth: '90vw',
-                    maxHeight: '85vh',
-                    objectFit: 'contain',
-                    userSelect: 'none',
-                    WebkitUserSelect: 'none',
-                    pointerEvents: 'none',
-                    filter: isOccluded ? 'brightness(0)' : undefined,
-                    transition: 'filter 0.1s linear',
-                  }}
-                />
-                {/* Transparent overlay - absorbs right-click / drag / selection
-                    attempts that slip past the handlers above */}
-                <div
-                  aria-hidden
-                  onContextMenu={(e) => e.preventDefault()}
-                  onDragStart={(e) => e.preventDefault()}
-                  style={{
-                    position: 'absolute', inset: 0,
-                    background: 'transparent',
-                    userSelect: 'none',
-                  }}
-                />
-                {isLocked && (
-                  <>
-                    {/* Four 45° blurred diagonal bands - real image shows between them */}
-                    {[0, 1, 2, 3].map((i) => (
-                      <div
-                        key={i}
-                        aria-hidden
-                        style={{
+                {/* Image half - all protections intact */}
+                <div style={{ position: 'relative', minHeight: isMobile ? 260 : 380, background: '#050f22', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                  <img
+                    src={stampPreviewUrl(selectedPhoto.fullUrl || selectedPhoto.url, viewerId, { buyerId, refid: purchaseRefid })}
+                    alt={selectedPhoto.alt}
+                    draggable={false}
+                    onDragStart={(e) => e.preventDefault()}
+                    onContextMenu={(e) => e.preventDefault()}
+                    style={{
+                      width: '100%', height: '100%',
+                      maxHeight: isMobile ? '48vh' : '86vh',
+                      objectFit: 'contain', display: 'block',
+                      userSelect: 'none', WebkitUserSelect: 'none', pointerEvents: 'none',
+                      filter: isOccluded ? 'brightness(0)' : undefined,
+                      transition: 'filter 0.1s linear',
+                    }}
+                  />
+                  {/* Right-click / drag absorber */}
+                  <div aria-hidden
+                    onContextMenu={(e) => e.preventDefault()}
+                    onDragStart={(e) => e.preventDefault()}
+                    style={{ position: 'absolute', inset: 0, background: 'transparent', userSelect: 'none' }}
+                  />
+                  {isLocked && (
+                    <>
+                      {[0, 1, 2, 3].map((i) => (
+                        <div key={i} aria-hidden style={{
                           position: 'absolute',
-                          top: `${-5 + i * 32}%`,
-                          left: '-50%',
-                          width: '200%',
-                          height: '60px',
-                          transform: 'rotate(-45deg)',
-                          transformOrigin: 'center',
-                          backdropFilter: 'blur(16px)',
-                          WebkitBackdropFilter: 'blur(16px)',
+                          top: `${-5 + i * 32}%`, left: '-50%', width: '200%', height: 60,
+                          transform: 'rotate(-45deg)', transformOrigin: 'center',
+                          backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
                           background: 'rgba(255,255,255,0.18)',
                           borderTop: '1px solid rgba(255,255,255,0.35)',
                           borderBottom: '1px solid rgba(255,255,255,0.35)',
                           pointerEvents: 'none',
-                        }}
-                      />
-                    ))}
-                    {/* Corner lock label */}
-                    <div
-                      aria-hidden
-                      style={{
-                        position: 'absolute', bottom: '12px', left: '12px',
-                        padding: '6px 12px', borderRadius: '50px',
+                        }} />
+                      ))}
+                      <div aria-hidden style={{
+                        position: 'absolute', bottom: 12, left: 12,
+                        padding: '6px 12px', borderRadius: 50,
                         background: 'rgba(0,0,0,0.7)', color: '#fff',
-                        fontSize: '11px', fontWeight: 700, letterSpacing: '0.5px',
+                        fontSize: 11, fontWeight: 700, letterSpacing: '0.5px',
                         border: '1px solid rgba(255,255,255,0.2)', backdropFilter: 'blur(6px)',
                         pointerEvents: 'none',
-                      }}
-                    >
-                      🔒 PREVIEW · BUY TO UNLOCK
+                      }}>
+                        🔒 PREVIEW · BUY TO UNLOCK
+                      </div>
+                    </>
+                  )}
+                  <span style={{
+                    position: 'absolute', top: 12, left: 12,
+                    padding: '6px 12px', borderRadius: 50,
+                    background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(255,255,255,0.18)',
+                    color: 'rgba(255,255,255,0.85)', fontSize: 12, fontWeight: 700,
+                    fontVariantNumeric: 'tabular-nums', pointerEvents: 'none',
+                  }}>
+                    {lightboxIndex + 1} / {lightboxList.length}
+                  </span>
+                </div>
+
+                {/* Rail half */}
+                <div style={{
+                  padding: 22, display: 'flex', flexDirection: 'column', gap: 14,
+                  borderLeft: isMobile ? 'none' : '1px solid rgba(255,255,255,0.08)',
+                  borderTop: isMobile ? '1px solid rgba(255,255,255,0.08)' : 'none',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span aria-hidden style={{ width: 34, height: 34, borderRadius: '50%', background: 'linear-gradient(135deg,#083A85,#F20C8F)', flexShrink: 0 }} />
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ color: '#fff', fontSize: 14, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{freeAlbumPhotographer || 'Photographer'}</div>
+                      <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: 11.5 }}>Frame № {String(lightboxIndex + 1).padStart(2, '0')}</div>
                     </div>
-                  </>
-                )}
+                  </div>
+
+                  {isFreeAlbumPhoto ? (
+                    <>
+                      <div className="fr-serif" style={{ color: '#7be0e5', fontSize: 24, fontWeight: 600 }}>Free frame</div>
+                      <p style={{ margin: 0, color: 'rgba(255,255,255,0.55)', fontSize: 12.5, lineHeight: 1.6 }}>
+                        Select the frames you want, then download from the tray.
+                        Your album quota is applied there.
+                      </p>
+                      <button
+                        className={qvSelected ? 'fr-btn-ghost' : 'fr-btn-brand'}
+                        onClick={() => toggleFreePhotoSelected(selectedPhoto.id)}
+                      >
+                        {qvSelected ? '✓ Selected · tap to remove' : 'Add to selection'}
+                      </button>
+                    </>
+                  ) : selectedPhoto.isPurchased ? (
+                    <>
+                      <div className="fr-serif" style={{ color: '#7be0e5', fontSize: 24, fontWeight: 600 }}>Purchased ✓</div>
+                      <p style={{ margin: 0, color: 'rgba(255,255,255,0.55)', fontSize: 12.5, lineHeight: 1.6 }}>
+                        This frame is yours. Download the original any time.
+                      </p>
+                      <button className="fr-btn-brand" onClick={() => handleDownloadClick(selectedPhoto)}>
+                        Download original
+                      </button>
+                      {qvSelectable && (
+                        <button className="fr-btn-ghost" onClick={() => togglePhotoSelected(selectedPhoto.id)}>
+                          {qvSelected ? '✓ Selected · tap to remove' : 'Add to selection'}
+                        </button>
+                      )}
+                    </>
+                  ) : (selectedPhoto.price ?? 0) > 0 ? (
+                    <>
+                      <div className="fr-serif" style={{ color: '#fff', fontSize: 26, fontWeight: 600 }}>{priceLabel}</div>
+                      <p style={{ margin: 0, color: 'rgba(255,255,255,0.55)', fontSize: 12.5, lineHeight: 1.6 }}>
+                        Watermark-free original, emailed the moment payment lands.
+                      </p>
+                      <button className="fr-btn-brand" style={{ background: 'linear-gradient(135deg, #03969c 0%, #027a7f 100%)', boxShadow: '0 8px 22px -6px rgba(3,150,156,0.45)' }} onClick={() => handleDownloadClick(selectedPhoto)}>
+                        Buy this frame
+                      </button>
+                      {qvSelectable && (
+                        <button className="fr-btn-ghost" onClick={() => togglePhotoSelected(selectedPhoto.id)}>
+                          {qvSelected ? '✓ Selected · tap to remove' : 'Add to selection'}
+                        </button>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <div className="fr-serif" style={{ color: '#7be0e5', fontSize: 24, fontWeight: 600 }}>Free frame</div>
+                      <button className="fr-btn-brand" onClick={() => handleDownloadClick(selectedPhoto)}>
+                        Download
+                      </button>
+                      {qvSelectable && (
+                        <button className="fr-btn-ghost" onClick={() => togglePhotoSelected(selectedPhoto.id)}>
+                          {qvSelected ? '✓ Selected · tap to remove' : 'Add to selection'}
+                        </button>
+                      )}
+                    </>
+                  )}
+                  <button onClick={() => setSelectedPhoto(null)} style={{ marginTop: 'auto', padding: 11, borderRadius: 12, cursor: 'pointer', background: 'transparent', border: '1px solid rgba(255,255,255,0.14)', color: 'rgba(255,255,255,0.6)', fontWeight: 600, fontSize: 13 }}>
+                    Close
+                  </button>
+                </div>
               </div>
             );
           })()}
         </div>
       )}
 
-      {/* ── Download Payment Modal ── */}
+      {/* ── Download payment modal (legacy single-photo path) ── */}
       {showDownloadModal && downloadTarget && (
         <div
           style={{
-            position: 'fixed',
-            top: 0, left: 0, right: 0, bottom: 0,
-            backgroundColor: 'rgba(0,0,0,0.8)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 3000,
-            backdropFilter: 'blur(4px)',
-            padding: '16px',
-            overflowY: 'auto',
+            position: 'fixed', inset: 0, background: 'rgba(2,6,16,0.85)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: 3000, backdropFilter: 'blur(5px)', padding: 16, overflowY: 'auto',
           }}
           onMouseDown={(e) => { if (e.target === e.currentTarget) resetDownloadModal(); }}
         >
           <div
             onMouseDown={(e) => e.stopPropagation()}
             style={{
-              backgroundColor: '#0a2148',
-              backgroundImage: 'linear-gradient(160deg, #0a2148 0%, #071634 100%)',
-              borderRadius: '20px',
-              padding: 'clamp(20px, 5vw, 32px)',
-              paddingTop: 'clamp(40px, 8vw, 50px)',
-              maxWidth: '450px',
-              width: '100%',
-              maxHeight: '90vh',
-              overflowY: 'auto',
-              boxShadow: '0 20px 25px -5px rgba(0,0,0,0.5)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              position: 'relative',
-              margin: 'auto',
+              background: 'linear-gradient(160deg, #0a2148 0%, #071634 100%)',
+              borderRadius: 20, padding: 'clamp(22px, 5vw, 30px)',
+              maxWidth: 450, width: '100%', maxHeight: '90vh', overflowY: 'auto',
+              boxShadow: '0 30px 80px rgba(0,0,0,0.6)',
+              border: '1px solid rgba(255,255,255,0.1)', position: 'relative', margin: 'auto',
             }}
           >
-            {/* Close */}
-            <button
-              onClick={resetDownloadModal}
-              style={{
-                position: 'absolute',
-                top: 'clamp(12px, 3vw, 16px)',
-                right: 'clamp(12px, 3vw, 16px)',
-                background: 'transparent',
-                border: 'none',
-                color: '#adadb8',
-                cursor: 'pointer',
-                fontSize: 'clamp(18px, 4vw, 20px)',
-                padding: '8px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                minWidth: '44px',
-                minHeight: '44px',
-                borderRadius: '50%',
-                transition: 'color 0.2s',
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.color = '#efeff1'; e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.color = '#adadb8'; e.currentTarget.style.backgroundColor = 'transparent'; }}
-            >
-              ✕
-            </button>
-
-            {/* Title */}
-            <h2 style={{
-              fontSize: 'clamp(18px, 5vw, 22px)',
-              fontWeight: 600,
-              color: '#efeff1',
-              marginBottom: '6px',
-              marginTop: 0,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px',
-            }}>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#03969c" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                <polyline points="7 10 12 15 17 10"/>
-                <line x1="12" y1="15" x2="12" y2="3"/>
-              </svg>
-              Download Photo
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: 6 }}>
+              <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: 11, fontWeight: 800, letterSpacing: '0.2em', textTransform: 'uppercase' }}>Checkout</span>
+              <button
+                onClick={resetDownloadModal}
+                aria-label="Close"
+                style={{ marginLeft: 'auto', width: 34, height: 34, borderRadius: '50%', background: 'rgba(255,255,255,0.08)', border: 0, color: '#fff', fontSize: 18, cursor: 'pointer' }}
+              >×</button>
+            </div>
+            <h2 className="fr-serif" style={{ fontSize: 24, fontWeight: 600, color: '#fff', margin: '0 0 6px' }}>
+              Pay &amp; download.
             </h2>
-            <p style={{ fontSize: '13px', color: '#adadb8', marginBottom: '24px', lineHeight: 1.5 }}>
-              Complete your payment to download this photo
+            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', margin: '0 0 20px', lineHeight: 1.5 }}>
+              Complete your payment to download this frame.
             </p>
 
-            {/* Price display */}
             <div style={{
-              padding: '14px 16px',
-              backgroundColor: 'rgba(3,150,156,0.12)',
-              border: '1px solid rgba(3,150,156,0.3)',
-              borderRadius: '12px',
-              marginBottom: '20px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
+              padding: '14px 16px', background: 'rgba(3,150,156,0.12)',
+              border: '1px solid rgba(3,150,156,0.3)', borderRadius: 12, marginBottom: 20,
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             }}>
-              <span style={{ fontSize: '13px', color: '#adadb8', fontWeight: 500 }}>Photo price</span>
-              <span style={{ fontSize: '18px', color: '#03969c', fontWeight: 700 }}>
+              <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', fontWeight: 500 }}>Frame price</span>
+              <span className="fr-serif" style={{ fontSize: 20, color: '#7be0e5', fontWeight: 600 }}>
                 {albumCurrencySymbol || 'RF'} {(downloadTarget.price ?? 0).toLocaleString()}
               </span>
             </div>
 
-            {/* Payment Method */}
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#efeff1', marginBottom: '12px' }}>
-                Select Payment Method
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#fff', marginBottom: 12 }}>
+                Select payment method
               </label>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {paymentMethods.map((method) => (
                   <button
                     key={method.id}
                     onClick={() => setDlPaymentMethod(method.id)}
                     style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '12px',
-                      padding: '12px 16px',
-                      backgroundColor: dlPaymentMethod === method.id ? 'rgba(3,150,156,0.15)' : '#27272a',
+                      display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px',
+                      background: dlPaymentMethod === method.id ? 'rgba(3,150,156,0.15)' : 'rgba(255,255,255,0.05)',
                       border: `2px solid ${dlPaymentMethod === method.id ? '#03969c' : 'rgba(255,255,255,0.1)'}`,
-                      borderRadius: '12px',
-                      cursor: 'pointer',
-                      width: '100%',
-                      textAlign: 'left',
+                      borderRadius: 12, cursor: 'pointer', width: '100%', textAlign: 'left',
                       transition: 'all 0.2s',
                     }}
-                    onMouseEnter={(e) => { if (dlPaymentMethod !== method.id) e.currentTarget.style.borderColor = 'rgba(3,150,156,0.5)'; }}
-                    onMouseLeave={(e) => { if (dlPaymentMethod !== method.id) e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; }}
                   >
-                    <div style={{ width: '44px', height: '44px', borderRadius: '10px', overflow: 'hidden', flexShrink: 0 }}>
+                    <div style={{ width: 44, height: 44, borderRadius: 10, overflow: 'hidden', flexShrink: 0 }}>
                       <img src={method.image} alt={method.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     </div>
-                    <span style={{ color: '#efeff1', fontSize: '14px', fontWeight: 500 }}>{method.name}</span>
+                    <span style={{ color: '#fff', fontSize: 14, fontWeight: 600 }}>{method.name}</span>
                     {dlPaymentMethod === method.id && (
-                      <span style={{ marginLeft: 'auto', color: '#03969c', fontSize: '20px' }}>✓</span>
+                      <span style={{ marginLeft: 'auto', color: '#03969c', fontSize: 20 }}>✓</span>
                     )}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Mobile Money phone */}
             {(dlPaymentMethod === 'mtn' || dlPaymentMethod === 'airtel') && (
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#efeff1', marginBottom: '8px' }}>
-                  Your Phone Number *
+              <div style={{ marginBottom: 20 }}>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#fff', marginBottom: 8 }}>
+                  Your phone number *
                 </label>
                 <InternationalPhoneInput
                   dark
@@ -4167,175 +3194,103 @@ const FindMyPhotos = () => {
                   disabled={dlLoading}
                   ariaLabel="Mobile money phone number"
                 />
-                <p style={{ fontSize: '11px', color: '#71717a', marginTop: '6px', marginBottom: 0 }}>
+                <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 6, marginBottom: 0 }}>
                   You will receive a payment confirmation SMS on this number
                 </p>
               </div>
             )}
 
-            {/* Card details */}
             {dlPaymentMethod === 'card' && (
-              <div style={{ marginBottom: '20px' }}>
-                <div style={{ marginBottom: '12px' }}>
-                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#efeff1', marginBottom: '8px' }}>Card Holder Name *</label>
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ marginBottom: 12 }}>
+                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#fff', marginBottom: 8 }}>Card holder name *</label>
                   <input type="text" value={dlCardHolderName} onChange={(e) => setDlCardHolderName(e.target.value)} placeholder="Name on card"
-                    style={{ width: '100%', padding: '12px 16px', backgroundColor: '#27272a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#efeff1', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
-                    onFocus={(e) => e.currentTarget.style.borderColor = '#03969c'}
-                    onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'} />
+                    style={{ width: '100%', padding: '12px 16px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.14)', borderRadius: 12, color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} />
                 </div>
-                <div style={{ marginBottom: '12px' }}>
-                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#efeff1', marginBottom: '8px' }}>Card Number *</label>
+                <div style={{ marginBottom: 12 }}>
+                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#fff', marginBottom: 8 }}>Card number *</label>
                   <input type="text" value={dlCardNumber} onChange={(e) => setDlCardNumber(e.target.value.replace(/\D/g, '').slice(0, 16))} placeholder="1234 5678 9012 3456"
-                    style={{ width: '100%', padding: '12px 16px', backgroundColor: '#27272a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#efeff1', fontSize: '14px', outline: 'none', boxSizing: 'border-box', letterSpacing: '2px' }}
-                    onFocus={(e) => e.currentTarget.style.borderColor = '#03969c'}
-                    onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'} />
+                    style={{ width: '100%', padding: '12px 16px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.14)', borderRadius: 12, color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box', letterSpacing: 2 }} />
                 </div>
-                <div style={{ display: 'flex', gap: '12px' }}>
+                <div style={{ display: 'flex', gap: 12 }}>
                   <div style={{ flex: 1 }}>
-                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#efeff1', marginBottom: '8px' }}>Expiry Date *</label>
+                    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#fff', marginBottom: 8 }}>Expiry *</label>
                     <input type="text" value={dlCardExpiry}
                       onChange={(e) => { let v = e.target.value.replace(/\D/g, '').slice(0, 4); if (v.length >= 2) v = v.slice(0, 2) + '/' + v.slice(2); setDlCardExpiry(v); }}
                       placeholder="MM/YY" maxLength={5}
-                      style={{ width: '100%', padding: '12px 16px', backgroundColor: '#27272a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#efeff1', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
-                      onFocus={(e) => e.currentTarget.style.borderColor = '#03969c'}
-                      onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'} />
+                      style={{ width: '100%', padding: '12px 16px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.14)', borderRadius: 12, color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} />
                   </div>
                   <div style={{ flex: 1 }}>
-                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#efeff1', marginBottom: '8px' }}>CVV *</label>
+                    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#fff', marginBottom: 8 }}>CVV *</label>
                     <input type="password" value={dlCardCvv} onChange={(e) => setDlCardCvv(e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="***" maxLength={4}
-                      style={{ width: '100%', padding: '12px 16px', backgroundColor: '#27272a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#efeff1', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
-                      onFocus={(e) => e.currentTarget.style.borderColor = '#03969c'}
-                      onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'} />
+                      style={{ width: '100%', padding: '12px 16px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.14)', borderRadius: 12, color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} />
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Error */}
             {dlError && (
-              <div style={{ padding: '10px 14px', marginBottom: '12px', backgroundColor: 'rgba(239,68,68,0.15)', border: '1px solid #EF4444', borderRadius: '10px', color: '#EF4444', fontSize: '13px' }}>
+              <div style={{ padding: '10px 14px', marginBottom: 12, background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.5)', borderRadius: 10, color: '#fca5a5', fontSize: 13 }}>
                 {dlError}
               </div>
             )}
-
-            {/* Success */}
             {dlSuccess && (
-              <div style={{ padding: '10px 14px', marginBottom: '12px', backgroundColor: 'rgba(16,185,129,0.15)', border: '1px solid #10b981', borderRadius: '10px', color: '#10b981', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ padding: '10px 14px', marginBottom: 12, background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.5)', borderRadius: 10, color: '#6ee7b7', fontSize: 13, display: 'flex', alignItems: 'center', gap: 8 }}>
                 ✓ Payment successful! Starting download…
               </div>
             )}
 
-            {/* Pay & Download button */}
             <button
               onClick={handleDownloadPayment}
               disabled={!isDlPaymentValid() || dlLoading || dlSuccess}
+              className="fr-btn-brand"
               style={{
-                width: '100%',
-                padding: '14px 24px',
-                background: (!isDlPaymentValid() || dlLoading || dlSuccess) ? '#3f3f46' : 'linear-gradient(135deg, #03969c 0%, #026d72 100%)',
-                border: 'none',
-                borderRadius: '12px',
-                color: (!isDlPaymentValid() || dlLoading || dlSuccess) ? '#71717a' : '#fff',
-                fontSize: '15px',
-                fontWeight: 600,
-                cursor: (!isDlPaymentValid() || dlLoading || dlSuccess) ? 'not-allowed' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-                transition: 'all 0.3s ease',
-                boxShadow: (!isDlPaymentValid() || dlLoading || dlSuccess) ? 'none' : '0 4px 15px rgba(3,150,156,0.3)',
+                width: '100%', padding: 14,
+                background: (!isDlPaymentValid() || dlLoading || dlSuccess) ? 'rgba(255,255,255,0.08)' : 'linear-gradient(135deg, #03969c 0%, #026d72 100%)',
+                boxShadow: (!isDlPaymentValid() || dlLoading || dlSuccess) ? 'none' : '0 8px 22px -6px rgba(3,150,156,0.45)',
               }}
-              onMouseEnter={(e) => { if (isDlPaymentValid() && !dlLoading && !dlSuccess) { e.currentTarget.style.transform = 'scale(1.02)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(3,150,156,0.4)'; } }}
-              onMouseLeave={(e) => { if (isDlPaymentValid() && !dlLoading && !dlSuccess) { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 4px 15px rgba(3,150,156,0.3)'; } }}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                <polyline points="7 10 12 15 17 10"/>
-                <line x1="12" y1="15" x2="12" y2="3"/>
-              </svg>
-              {dlLoading ? 'Processing...' : dlSuccess ? 'Downloading…' : `Pay & Download (${albumCurrencySymbol || 'RF'} ${(downloadTarget.price ?? 0).toLocaleString()})`}
+              {dlLoading ? 'Processing…' : dlSuccess ? 'Downloading…' : `Pay & download · ${albumCurrencySymbol || 'RF'} ${(downloadTarget.price ?? 0).toLocaleString()}`}
             </button>
           </div>
         </div>
       )}
 
-      {/* ── Face Scan Modal ── */}
+      {/* ── Face scan modal - the viewfinder ── */}
       {isScanModalOpen && (
         <div
           onClick={() => { if (!isScanning) resetScanModal(); }}
           style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0,0,0,0.6)',
-            backdropFilter: 'blur(4px)',
-            zIndex: 2000,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '20px',
+            position: 'fixed', inset: 0, background: 'rgba(2,6,16,0.88)',
+            backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
+            zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: 18, overflowY: 'auto',
           }}
         >
           <div
             onClick={(e) => e.stopPropagation()}
             style={{
               background: 'linear-gradient(160deg, #0a2148 0%, #071634 100%)',
-              borderRadius: '24px',
-              padding: isMobile ? '28px 20px' : '36px 32px',
-              maxWidth: '500px',
-              width: '100%',
-              position: 'relative',
-              boxShadow: '0 25px 60px rgba(0,0,0,0.3)',
+              borderRadius: 22, padding: isMobile ? '24px 20px' : 28,
+              maxWidth: 480, width: '100%', position: 'relative',
+              border: '1px solid rgba(255,255,255,0.12)',
+              boxShadow: '0 30px 80px rgba(0,0,0,0.6)', margin: 'auto',
             }}
           >
-            {/* Close button */}
-            {!isScanning && !isCameraActive && (
-              <button
-                onClick={resetScanModal}
-                style={{
-                  position: 'absolute',
-                  top: '16px',
-                  right: '16px',
-                  width: '36px',
-                  height: '36px',
-                  borderRadius: '50%',
-                  background: 'rgba(255,255,255,0.10)',
-                  border: 'none',
-                  color: 'rgba(255,255,255,0.6)',
-                  fontSize: '20px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  transition: 'all 0.3s ease',
-                }}
-                onMouseEnter={(e) => { (e.target as HTMLButtonElement).style.background = 'rgba(255,255,255,0.18)'; }}
-                onMouseLeave={(e) => { (e.target as HTMLButtonElement).style.background = 'rgba(255,255,255,0.10)'; }}
-              >
-                &times;
-              </button>
-            )}
-
-            <h3 style={{
-              fontSize: '22px',
-              fontWeight: 700,
-              color: '#ffffff',
-              marginBottom: '8px',
-              textAlign: 'center',
-            }}>
-              Facial Recognition Scan
-            </h3>
-            <p style={{
-              fontSize: '14px',
-              color: 'rgba(255,255,255,0.6)',
-              textAlign: 'center',
-              marginBottom: '28px',
-              lineHeight: 1.5,
-            }}>
-              Upload or take a selfie to find your photos in this event gallery
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: 4 }}>
+              <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: 11, fontWeight: 800, letterSpacing: '0.2em', textTransform: 'uppercase' }}>Face match</span>
+              {!isScanning && !isCameraActive && (
+                <button
+                  onClick={resetScanModal}
+                  aria-label="Close"
+                  style={{ marginLeft: 'auto', width: 34, height: 34, borderRadius: '50%', background: 'rgba(255,255,255,0.08)', border: 0, color: '#fff', fontSize: 18, cursor: 'pointer' }}
+                >×</button>
+              )}
+            </div>
+            <h3 className="fr-serif" style={{ margin: '0 0 6px', color: '#fff', fontSize: 24, fontWeight: 600 }}>Show us your face.</h3>
+            <p style={{ margin: '0 0 16px', color: 'rgba(255,255,255,0.6)', fontSize: 13, lineHeight: 1.6 }}>
+              We compare your selfie against this event&apos;s frames, return your
+              matches, and discard the selfie. Nothing is stored.
             </p>
 
             {/* Hidden canvas for camera capture */}
@@ -4349,340 +3304,104 @@ const FindMyPhotos = () => {
             />
 
             {isScanning ? (
-              /* Scanning state - blurred photo with overlay */
-              <div style={{
-                textAlign: 'center',
-                padding: '20px 0',
-              }}>
-                <div style={{
-                  width: '180px',
-                  height: '180px',
-                  borderRadius: '50%',
-                  overflow: 'hidden',
-                  margin: '0 auto 24px',
-                  position: 'relative',
-                  border: '4px solid #FF6B6B',
-                  boxShadow: '0 0 30px rgba(255,107,107,0.4)',
-                }}>
+              /* Scanning - viewfinder sweep over the selfie */
+              <div style={{ textAlign: 'center' }}>
+                <div className="fr-finder" style={{ minHeight: 230, marginBottom: 16 }}>
+                  <span className="fr-corner tl" aria-hidden /><span className="fr-corner tr" aria-hidden />
+                  <span className="fr-corner bl" aria-hidden /><span className="fr-corner br" aria-hidden />
+                  <div className="fr-scanline" aria-hidden />
                   {uploadedPreview && (
                     <img
                       src={uploadedPreview}
                       alt="Scanning face"
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover',
-                        filter: 'blur(4px) brightness(0.7)',
-                      }}
+                      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', filter: 'blur(4px) brightness(0.6)' }}
                     />
                   )}
-                  {/* Scan line animation overlay */}
-                  <div className="scan-line" style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    height: '3px',
-                    background: 'linear-gradient(90deg, transparent 0%, #FF6B6B 30%, #ffffff 50%, #FF6B6B 70%, transparent 100%)',
-                    boxShadow: '0 0 12px rgba(255,107,107,0.8), 0 0 30px rgba(255,107,107,0.4)',
-                    zIndex: 2,
-                  }} />
-                  {/* Pulsing border ring */}
-                  <div className="scan-pulse-ring" style={{
-                    position: 'absolute',
-                    inset: '-4px',
-                    borderRadius: '50%',
-                    border: '3px solid rgba(255,107,107,0.5)',
-                    zIndex: 1,
-                  }} />
                 </div>
-                <p style={{
-                  fontSize: '16px',
-                  fontWeight: 600,
-                  color: '#ffffff',
-                }}>Scanning...</p>
-                <p style={{
-                  fontSize: '13px',
-                  color: 'rgba(255,255,255,0.45)',
-                  marginTop: '8px',
-                }}>Matching your face across event photos</p>
+                <p style={{ fontSize: 16, fontWeight: 700, color: '#fff', margin: 0 }}>Scanning…</p>
+                <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', marginTop: 8 }}>Matching your face across the event&apos;s frames</p>
               </div>
             ) : isCameraActive ? (
-              /* Live camera view */
+              /* Live camera in the viewfinder */
               <div style={{ textAlign: 'center' }}>
-                <div style={{
-                  width: '200px',
-                  height: '200px',
-                  borderRadius: '50%',
-                  overflow: 'hidden',
-                  margin: '0 auto 20px',
-                  border: '4px solid #FF6B6B',
-                  boxShadow: '0 4px 20px rgba(255,107,107,0.3)',
-                }}>
+                <div className="fr-finder" style={{ minHeight: 250, marginBottom: 16 }}>
+                  <span className="fr-corner tl" aria-hidden /><span className="fr-corner tr" aria-hidden />
+                  <span className="fr-corner bl" aria-hidden /><span className="fr-corner br" aria-hidden />
                   <video
                     ref={videoRef}
                     autoPlay
                     playsInline
                     muted
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'cover',
-                      transform: 'scaleX(-1)',
-                    }}
+                    style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)' }}
                   />
                 </div>
-                <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)', marginBottom: '16px' }}>
-                  Position your face in the circle
+                <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', marginBottom: 16 }}>
+                  Line your face up inside the brackets
                 </p>
-                <div style={{ display: 'flex', gap: '12px' }}>
-                  <button
-                    onClick={stopCamera}
-                    style={{
-                      flex: 1,
-                      padding: '14px',
-                      borderRadius: '12px',
-                      background: 'rgba(255,255,255,0.10)',
-                      color: 'rgba(255,255,255,0.85)',
-                      fontSize: '15px',
-                      fontWeight: 600,
-                      border: 'none',
-                      cursor: 'pointer',
-                      transition: 'all 0.3s ease',
-                    }}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={capturePhoto}
-                    style={{
-                      flex: 1,
-                      padding: '14px',
-                      borderRadius: '12px',
-                      background: '#FF6B6B',
-                      color: '#ffffff',
-                      fontSize: '15px',
-                      fontWeight: 700,
-                      border: 'none',
-                      cursor: 'pointer',
-                      transition: 'all 0.3s ease',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '8px',
-                    }}
-                    onMouseEnter={(e) => { (e.target as HTMLButtonElement).style.background = '#ff5252'; }}
-                    onMouseLeave={(e) => { (e.target as HTMLButtonElement).style.background = '#FF6B6B'; }}
-                  >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="12" cy="12" r="10"/>
-                      <circle cx="12" cy="12" r="4"/>
-                    </svg>
+                <div style={{ display: 'flex', gap: 12 }}>
+                  <button className="fr-btn-ghost" style={{ flex: 1, padding: 14 }} onClick={stopCamera}>Cancel</button>
+                  <button className="fr-btn-coral" style={{ flex: 1, padding: 14 }} onClick={capturePhoto}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/></svg>
                     Capture
                   </button>
                 </div>
               </div>
             ) : (
               <>
-                {/* Preview of captured/uploaded photo */}
                 {uploadedPreview ? (
-                  <div style={{
-                    textAlign: 'center',
-                    marginBottom: '24px',
-                  }}>
-                    <div style={{
-                      width: '120px',
-                      height: '120px',
-                      borderRadius: '50%',
-                      overflow: 'hidden',
-                      border: '3px solid #FF6B6B',
-                      boxShadow: '0 4px 12px rgba(255,107,107,0.3)',
-                      margin: '0 auto 12px',
-                    }}>
+                  <div style={{ textAlign: 'center', marginBottom: 20 }}>
+                    <div className="fr-finder" style={{ minHeight: 210, marginBottom: 12 }}>
+                      <span className="fr-corner tl" aria-hidden /><span className="fr-corner tr" aria-hidden />
+                      <span className="fr-corner bl" aria-hidden /><span className="fr-corner br" aria-hidden />
                       <img
                         src={uploadedPreview}
                         alt="Captured face"
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
                       />
                     </div>
-                    <p style={{ fontSize: '13px', color: '#10b981', fontWeight: 600 }}>Photo ready for scan</p>
+                    <p style={{ fontSize: 13, color: '#6ee7b7', fontWeight: 700, margin: 0 }}>Photo ready for the match</p>
                     <button
                       onClick={() => { setUploadedFile(null); setUploadedPreview(null); setScanError(null); if (fileInputRef.current) fileInputRef.current.value = ''; }}
-                      style={{
-                        marginTop: '8px',
-                        padding: '6px 16px',
-                        borderRadius: '8px',
-                        background: 'transparent',
-                        color: 'rgba(255,255,255,0.6)',
-                        fontSize: '13px',
-                        fontWeight: 500,
-                        border: '1px solid rgba(255,255,255,0.22)',
-                        cursor: 'pointer',
-                        transition: 'all 0.3s ease',
-                      }}
+                      style={{ marginTop: 10, padding: '7px 16px', borderRadius: 9, background: 'transparent', color: 'rgba(255,255,255,0.6)', fontSize: 13, fontWeight: 600, border: '1px solid rgba(255,255,255,0.22)', cursor: 'pointer' }}
                     >
                       Change photo
                     </button>
                   </div>
                 ) : (
-                  /* Two option buttons: Camera & Upload */
-                  <div style={{
-                    display: 'flex',
-                    gap: '12px',
-                    marginBottom: '24px',
-                  }}>
-                    {/* Take Selfie button */}
-                    <div
-                      onClick={startCamera}
-                      style={{
-                        flex: 1,
-                        border: '2px dashed rgba(255,255,255,0.22)',
-                        borderRadius: '16px',
-                        padding: '28px 12px',
-                        textAlign: 'center',
-                        cursor: 'pointer',
-                        transition: 'all 0.3s ease',
-                      }}
-                      onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#FF6B6B'; e.currentTarget.style.background = 'rgba(255,107,107,0.03)'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.22)'; e.currentTarget.style.background = 'transparent'; }}
-                    >
-                      <div style={{
-                        width: '48px',
-                        height: '48px',
-                        borderRadius: '50%',
-                        background: 'rgba(255,107,107,0.1)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        margin: '0 auto 10px',
-                      }}>
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FF6B6B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-                          <circle cx="12" cy="13" r="4"/>
-                        </svg>
-                      </div>
-                      <p style={{ fontSize: '14px', fontWeight: 600, color: 'rgba(255,255,255,0.85)' }}>Take Selfie</p>
-                      <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.45)', marginTop: '2px' }}>Use camera</p>
-                    </div>
-
-                    {/* Upload Photo button */}
-                    <div
-                      onClick={() => fileInputRef.current?.click()}
-                      style={{
-                        flex: 1,
-                        border: '2px dashed rgba(255,255,255,0.22)',
-                        borderRadius: '16px',
-                        padding: '28px 12px',
-                        textAlign: 'center',
-                        cursor: 'pointer',
-                        transition: 'all 0.3s ease',
-                      }}
-                      onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#083A85'; e.currentTarget.style.background = 'rgba(8,58,133,0.03)'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.22)'; e.currentTarget.style.background = 'transparent'; }}
-                    >
-                      <div style={{
-                        width: '48px',
-                        height: '48px',
-                        borderRadius: '50%',
-                        background: 'rgba(8,58,133,0.1)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        margin: '0 auto 10px',
-                      }}>
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#083A85" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                          <polyline points="17 8 12 3 7 8"/>
-                          <line x1="12" y1="3" x2="12" y2="15"/>
-                        </svg>
-                      </div>
-                      <p style={{ fontSize: '14px', fontWeight: 600, color: 'rgba(255,255,255,0.85)' }}>Upload Photo</p>
-                      <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.45)', marginTop: '2px' }}>From gallery</p>
-                    </div>
-
-                    {/* Browse Photos - routes to the public stock catalog. */}
-                    <div
-                      onClick={() => { if (typeof window !== 'undefined') window.location.href = '/user/browse-photos'; }}
-                      style={{
-                        flex: 1,
-                        position: 'relative',
-                        border: '2px dashed rgba(255,255,255,0.22)',
-                        borderRadius: '16px',
-                        padding: '28px 12px',
-                        textAlign: 'center',
-                        cursor: 'pointer',
-                        transition: 'all 0.3s ease',
-                      }}
-                      onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#F20C8F'; e.currentTarget.style.background = 'rgba(242,12,143,0.03)'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.22)'; e.currentTarget.style.background = 'transparent'; }}
-                    >
-                      <span
-                        title="Built to support professional photography art - usable on press, newspapers, luxury venues, magazine covers, etc."
-                        onClick={(e) => e.stopPropagation()}
-                        style={{
-                          position: 'absolute', top: 8, right: 8,
-                          width: 20, height: 20, borderRadius: '50%',
-                          background: 'rgba(242,12,143,0.15)', color: '#F20C8F',
-                          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: 11, fontWeight: 800, fontFamily: 'serif',
-                          cursor: 'help',
-                        }}>i</span>
-                      <div style={{
-                        width: '48px',
-                        height: '48px',
-                        borderRadius: '50%',
-                        background: 'rgba(242,12,143,0.10)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        margin: '0 auto 10px',
-                      }}>
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#F20C8F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <rect x="3" y="3" width="7" height="7" />
-                          <rect x="14" y="3" width="7" height="7" />
-                          <rect x="14" y="14" width="7" height="7" />
-                          <rect x="3" y="14" width="7" height="7" />
-                        </svg>
-                      </div>
-                      <p style={{ fontSize: '14px', fontWeight: 600, color: 'rgba(255,255,255,0.85)' }}>Browse Photos</p>
-                      <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.45)', marginTop: '2px' }}>Stock library</p>
+                  <div className="fr-finder" style={{ minHeight: 190, marginBottom: 16, padding: 18 }}>
+                    <span className="fr-corner tl" aria-hidden /><span className="fr-corner tr" aria-hidden />
+                    <span className="fr-corner bl" aria-hidden /><span className="fr-corner br" aria-hidden />
+                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
+                      <button className="fr-btn-coral" onClick={startCamera}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                        Take a selfie
+                      </button>
+                      <button className="fr-btn-ghost" onClick={() => fileInputRef.current?.click()}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                        Upload a photo
+                      </button>
                     </div>
                   </div>
                 )}
 
-                {/* Start Scan button */}
                 <button
+                  className="fr-btn-brand"
+                  style={{ width: '100%', padding: 15 }}
                   onClick={handleStartScan}
                   disabled={!uploadedFile}
-                  style={{
-                    width: '100%',
-                    padding: '16px',
-                    borderRadius: '12px',
-                    background: uploadedFile ? '#FF6B6B' : 'rgba(255,255,255,0.10)',
-                    color: uploadedFile ? '#ffffff' : 'rgba(255,255,255,0.35)',
-                    fontSize: '16px',
-                    fontWeight: 700,
-                    border: 'none',
-                    cursor: uploadedFile ? 'pointer' : 'not-allowed',
-                    transition: 'all 0.3s ease',
-                  }}
-                  onMouseEnter={(e) => { if (uploadedFile) (e.target as HTMLButtonElement).style.background = '#ff5252'; }}
-                  onMouseLeave={(e) => { if (uploadedFile) (e.target as HTMLButtonElement).style.background = '#FF6B6B'; }}
                 >
-                  Start Scan
+                  Find my frames
                 </button>
 
+                <p style={{ margin: '12px 0 0', textAlign: 'center', fontSize: 12.5, color: 'rgba(255,255,255,0.45)' }}>
+                  Just browsing?{' '}
+                  <a href="/user/browse-photos" style={{ color: '#ff7ec4', fontWeight: 700, textDecoration: 'none' }}>
+                    Visit the print shop →
+                  </a>
+                </p>
+
                 {scanError && (
-                  <div style={{
-                    marginTop: '12px',
-                    padding: '10px 14px',
-                    backgroundColor: 'rgba(239,68,68,0.1)',
-                    border: '1px solid rgba(239,68,68,0.3)',
-                    borderRadius: '10px',
-                    color: '#ef4444',
-                    fontSize: '13px',
-                    textAlign: 'center',
-                  }}>
+                  <div style={{ marginTop: 12, padding: '10px 14px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 10, color: '#fca5a5', fontSize: 13, textAlign: 'center' }}>
                     {scanError}
                   </div>
                 )}
@@ -4691,206 +3410,6 @@ const FindMyPhotos = () => {
           </div>
         </div>
       )}
-
-      {/* ── Embedded Styles ── */}
-      <style>{`
-        @keyframes scanLineMove {
-          0% { top: 0; }
-          100% { top: calc(100% - 3px); }
-        }
-        @keyframes scanPulse {
-          0%, 100% { transform: scale(1); opacity: 0.5; }
-          50% { transform: scale(1.06); opacity: 1; }
-        }
-        .scan-line {
-          animation: scanLineMove 1.5s ease-in-out infinite alternate;
-        }
-        .scan-pulse-ring {
-          animation: scanPulse 1.2s ease-in-out infinite;
-        }
-        .photo-card:hover {
-          transform: translateY(-6px);
-          box-shadow: 0 12px 32px rgba(0,0,0,0.15) !important;
-        }
-        .photo-card:hover img {
-          transform: scale(1.08);
-        }
-        .scan-btn:hover {
-          box-shadow: 0 8px 24px rgba(255,107,107,0.35);
-        }
-      `}</style>
-
-      {/* ── Cart Action Bar - unified multi-select for downloads + buys ── */}
-      {(() => {
-        const selectedCount = selectedPhotoIds.size;
-        if (selectedCount === 0 && !purchaseNotice) return null;
-        const selectedItems = displayedPhotos.filter(p => selectedPhotoIds.has(p.id));
-        // Split the selection by intent. Paid-unpurchased flow through the
-        // existing handleBulkBuy → XentriPay modal; free or already-purchased
-        // photos flow through handleBulkDownload, which reuses the same
-        // single-photo download path. Both filters mirror what those
-        // handlers do internally, so the action bar can't drift out of sync
-        // with the actual backend selection logic.
-        const paidItems = selectedItems.filter(p => (p.price ?? 0) > 0 && !p.isPurchased);
-        const downloadItems = selectedItems.filter(p => !!p.isPurchased || (p.price ?? 0) === 0);
-        const total = paidItems.reduce((s, p) => s + (p.price ?? 0), 0);
-        const curLabel = paidItems[0]?.currencyAbbreviation || albumCurrencySymbol || 'RF';
-        return (
-          <div style={{
-            position: 'fixed',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            background: 'rgba(15,15,20,0.97)',
-            backdropFilter: 'blur(12px)',
-            WebkitBackdropFilter: 'blur(12px)',
-            borderTop: '1px solid rgba(255,255,255,0.08)',
-            padding: isMobile ? '14px 16px' : '16px 24px',
-            zIndex: 1500,
-            boxShadow: '0 -12px 32px rgba(0,0,0,0.40)',
-          }}>
-            {/* Brand top stripe */}
-            <span aria-hidden style={{
-              position: 'absolute', top: 0, left: 0, right: 0, height: 2,
-              background: 'linear-gradient(90deg, #083A85 0%, #F20C8F 100%)',
-            }} />
-            <div style={{
-              maxWidth: '1200px',
-              margin: '0 auto',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '10px',
-            }}>
-              {purchaseNotice && (
-                <div style={{
-                  color: '#fff', fontSize: '13px', fontWeight: 500,
-                  display: 'inline-flex', alignItems: 'center', gap: 8,
-                  padding: '6px 10px',
-                  background: 'rgba(242,12,143,0.14)',
-                  border: '1px solid rgba(242,12,143,0.32)',
-                  borderRadius: 8,
-                  alignSelf: 'flex-start',
-                }}>
-                  <i className="bi bi-info-circle-fill" style={{ fontSize: 13, color: '#F20C8F' }} />
-                  {purchaseNotice}
-                </div>
-              )}
-              {selectedCount > 0 && (
-              <div style={{
-                display: 'flex',
-                flexDirection: isMobile ? 'column' : 'row',
-                alignItems: isMobile ? 'stretch' : 'center',
-                gap: '12px',
-              }}>
-                  {/* Cart summary with breakdown chip */}
-                  <div style={{ flex: isMobile ? 'initial' : 1, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                    <div style={{
-                      display: 'inline-flex', alignItems: 'center', gap: 7,
-                      padding: '6px 12px 6px 8px',
-                      borderRadius: 999,
-                      background: 'linear-gradient(135deg, #083A85 0%, #F20C8F 130%)',
-                      color: '#fff', fontSize: 13, fontWeight: 700, letterSpacing: '-0.005em',
-                      boxShadow: '0 6px 14px -4px rgba(242,12,143,0.36)',
-                    }}>
-                      <span style={{
-                        width: 22, height: 22, borderRadius: '50%',
-                        background: 'rgba(255,255,255,0.22)',
-                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                      }}>
-                        <i className="bi bi-bag-check-fill" style={{ fontSize: 11 }} />
-                      </span>
-                      {selectedCount} in cart
-                    </div>
-                    <div style={{ color: 'rgba(255,255,255,0.78)', fontSize: 12.5, fontWeight: 500 }}>
-                      {downloadItems.length > 0 && (
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginRight: 12 }}>
-                          <i className="bi bi-download" style={{ fontSize: 11, color: '#F20C8F' }} />
-                          <span><strong style={{ color: '#fff' }}>{downloadItems.length}</strong> to download</span>
-                        </span>
-                      )}
-                      {paidItems.length > 0 && (
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                          <i className="bi bi-cart-fill" style={{ fontSize: 11, color: '#03969c' }} />
-                          <span><strong style={{ color: '#fff' }}>{paidItems.length}</strong> to buy · <strong style={{ color: '#fff' }}>{curLabel} {total.toLocaleString()}</strong></span>
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setSelectedPhotoIds(new Set())}
-                    style={{
-                      padding: '10px 16px',
-                      borderRadius: 11,
-                      background: 'transparent',
-                      border: '1.5px solid rgba(255,255,255,0.20)',
-                      color: 'rgba(255,255,255,0.82)',
-                      fontSize: 13.5,
-                      fontWeight: 700,
-                      letterSpacing: '-0.005em',
-                      cursor: 'pointer',
-                      transition: 'border-color 0.15s, color 0.15s',
-                      display: 'inline-flex', alignItems: 'center', gap: 6,
-                    }}
-                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#F20C8F'; e.currentTarget.style.color = '#F20C8F'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.20)'; e.currentTarget.style.color = 'rgba(255,255,255,0.82)'; }}
-                  >
-                    <i className="bi bi-x-circle" style={{ fontSize: 13 }} />
-                    Clear
-                  </button>
-                  {downloadItems.length > 0 && (
-                    <button
-                      onClick={handleBulkDownload}
-                      style={{
-                        padding: '11px 18px',
-                        borderRadius: 11,
-                        background: 'linear-gradient(135deg, #083A85 0%, #F20C8F 130%)',
-                        border: 'none',
-                        color: '#fff',
-                        fontSize: 13.5,
-                        fontWeight: 700,
-                        letterSpacing: '-0.005em',
-                        cursor: 'pointer',
-                        display: 'inline-flex', alignItems: 'center', gap: 7,
-                        boxShadow: '0 8px 22px -6px rgba(242,12,143,0.45)',
-                        transition: 'transform 0.15s, box-shadow 0.15s',
-                      }}
-                      onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 12px 28px -6px rgba(242,12,143,0.55)'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 22px -6px rgba(242,12,143,0.45)'; }}
-                    >
-                      <i className="bi bi-download" style={{ fontSize: 13 }} />
-                      Download {downloadItems.length}
-                    </button>
-                  )}
-                  {paidItems.length > 0 && (
-                    <button
-                      onClick={handleBulkBuy}
-                      style={{
-                        padding: '11px 18px',
-                        borderRadius: 11,
-                        background: 'linear-gradient(135deg, #03969c 0%, #027a7f 100%)',
-                        border: 'none',
-                        color: '#fff',
-                        fontSize: 13.5,
-                        fontWeight: 700,
-                        letterSpacing: '-0.005em',
-                        cursor: 'pointer',
-                        display: 'inline-flex', alignItems: 'center', gap: 7,
-                        boxShadow: '0 8px 22px -6px rgba(3,150,156,0.45)',
-                        transition: 'transform 0.15s, box-shadow 0.15s',
-                      }}
-                      onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 12px 28px -6px rgba(3,150,156,0.55)'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 22px -6px rgba(3,150,156,0.45)'; }}
-                    >
-                      <i className="bi bi-cart-fill" style={{ fontSize: 13 }} />
-                      Buy {paidItems.length} · {curLabel} {total.toLocaleString()}
-                    </button>
-                  )}
-              </div>
-              )}
-            </div>
-          </div>
-        );
-      })()}
 
       {/* ── XentriPay Modal for album purchase ── */}
       {pendingPurchase && (
@@ -4927,14 +3446,12 @@ const FindMyPhotos = () => {
         />
       )}
 
-      {/* ── Your Details Modal (buyer identity) ── */}
+      {/* ── Your details modal (buyer identity) ── */}
       {detailsOpen && (
         <div
           style={{
-            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-            background: 'rgba(0,0,0,0.82)', backdropFilter: 'blur(6px)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            zIndex: 2500, padding: '16px',
+            position: 'fixed', inset: 0, background: 'rgba(2,6,16,0.85)', backdropFilter: 'blur(6px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2500, padding: 16,
           }}
           onMouseDown={(e) => { if (e.target === e.currentTarget && !detailsLoading) setDetailsOpen(false); }}
         >
@@ -4942,27 +3459,27 @@ const FindMyPhotos = () => {
             onMouseDown={(e) => e.stopPropagation()}
             style={{
               background: 'linear-gradient(160deg, #0a2148 0%, #071634 100%)',
-              borderRadius: '20px',
-              padding: 'clamp(24px, 5vw, 36px)',
-              maxWidth: '460px', width: '100%',
+              borderRadius: 20, padding: 'clamp(24px, 5vw, 32px)',
+              maxWidth: 460, width: '100%',
               border: '1px solid rgba(255,255,255,0.1)',
-              boxShadow: '0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(3,150,156,0.15)',
-              position: 'relative',
+              boxShadow: '0 32px 80px rgba(0,0,0,0.6)',
             }}
           >
-            <h2 style={{ fontSize: '22px', fontWeight: 700, color: '#fff', margin: '0 0 6px' }}>Your Details</h2>
-            <p style={{ fontSize: '13px', color: '#9ca3af', margin: '0 0 20px' }}>
-              We use these to send your receipt and to recognize you next time so you never pay twice for the same photo.
+            <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: 11, fontWeight: 800, letterSpacing: '0.2em', textTransform: 'uppercase' }}>Before you pay</span>
+            <h2 className="fr-serif" style={{ fontSize: 24, fontWeight: 600, color: '#fff', margin: '8px 0 6px' }}>Your details.</h2>
+            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', margin: '0 0 20px', lineHeight: 1.55 }}>
+              We use these to send your receipt and to recognize you next time
+              so you never pay twice for the same frame.
             </p>
 
             {(['name', 'email'] as const).map((field) => {
-              const labels = { name: 'Full Name', email: 'Email' };
+              const labels = { name: 'Full name', email: 'Email' };
               const placeholders = { name: 'Jane Doe', email: 'jane@example.com' };
               const value = field === 'name' ? detailsName : detailsEmail;
               const setter = field === 'name' ? setDetailsName : setDetailsEmail;
               return (
-                <div key={field} style={{ marginBottom: '14px' }}>
-                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#d1d5db', marginBottom: '6px' }}>
+                <div key={field} style={{ marginBottom: 14 }}>
+                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.85)', marginBottom: 6 }}>
                     {labels[field]}
                   </label>
                   <input
@@ -4974,48 +3491,35 @@ const FindMyPhotos = () => {
                     style={{
                       width: '100%', padding: '12px 14px',
                       background: 'rgba(255,255,255,0.06)',
-                      border: '1px solid rgba(255,255,255,0.12)',
-                      borderRadius: '10px', color: '#fff', fontSize: '14px',
+                      border: '1px solid rgba(255,255,255,0.14)',
+                      borderRadius: 12, color: '#fff', fontSize: 14,
                       outline: 'none', boxSizing: 'border-box',
                     }}
-                    onFocus={(e) => { e.currentTarget.style.borderColor = '#03969c'; }}
-                    onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }}
                   />
                 </div>
               );
             })}
 
             {detailsError && (
-              <div style={{
-                padding: '10px 12px', marginBottom: '14px',
-                background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.35)',
-                borderRadius: '10px', color: '#ef4444', fontSize: '13px',
-              }}>
+              <div style={{ padding: '10px 12px', marginBottom: 14, background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.35)', borderRadius: 10, color: '#fca5a5', fontSize: 13 }}>
                 {detailsError}
               </div>
             )}
 
-            <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
+            <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
               <button
+                className="fr-btn-ghost"
                 onClick={() => { if (!detailsLoading) { setDetailsOpen(false); pendingBuyRef.current = null; } }}
                 disabled={detailsLoading}
-                style={{
-                  flex: 1, padding: '12px', borderRadius: '12px',
-                  background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)',
-                  color: '#9ca3af', fontSize: '14px', fontWeight: 500, cursor: detailsLoading ? 'not-allowed' : 'pointer',
-                }}
+                style={{ flex: 1, padding: 12 }}
               >
                 Cancel
               </button>
               <button
+                className="fr-btn-brand"
                 onClick={handleDetailsSubmit}
                 disabled={detailsLoading}
-                style={{
-                  flex: 2, padding: '12px', borderRadius: '12px',
-                  background: detailsLoading ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, #03969c, #027a7f)',
-                  border: 'none', color: '#fff', fontSize: '14px', fontWeight: 600,
-                  cursor: detailsLoading ? 'not-allowed' : 'pointer',
-                }}
+                style={{ flex: 2, padding: 12, background: detailsLoading ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, #03969c, #027a7f)', boxShadow: detailsLoading ? 'none' : '0 8px 22px -6px rgba(3,150,156,0.45)' }}
               >
                 {detailsLoading ? 'Verifying…' : 'Continue'}
               </button>
@@ -5024,14 +3528,12 @@ const FindMyPhotos = () => {
         </div>
       )}
 
-      {/* ── Unlock My Photos Modal (returning buyer) ── */}
+      {/* ── Unlock modal (returning buyer) - both doors, per PAYMENTS.md ── */}
       {unlockOpen && (
         <div
           style={{
-            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-            background: 'rgba(0,0,0,0.82)', backdropFilter: 'blur(6px)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            zIndex: 2500, padding: '16px',
+            position: 'fixed', inset: 0, background: 'rgba(2,6,16,0.85)', backdropFilter: 'blur(6px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2500, padding: 16,
           }}
           onMouseDown={(e) => { if (e.target === e.currentTarget && !unlockLoading) setUnlockOpen(false); }}
         >
@@ -5039,45 +3541,35 @@ const FindMyPhotos = () => {
             onMouseDown={(e) => e.stopPropagation()}
             style={{
               background: 'linear-gradient(160deg, #0a2148 0%, #071634 100%)',
-              borderRadius: '20px',
-              padding: 'clamp(24px, 5vw, 36px)',
-              maxWidth: '460px', width: '100%',
+              borderRadius: 20, padding: 'clamp(24px, 5vw, 32px)',
+              maxWidth: 440, width: '100%',
               border: '1px solid rgba(255,255,255,0.1)',
-              boxShadow: '0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(3,150,156,0.15)',
+              boxShadow: '0 32px 80px rgba(0,0,0,0.6)',
             }}
           >
-            <h2 style={{ fontSize: '22px', fontWeight: 700, color: '#fff', margin: '0 0 6px' }}>
-              Unlock My Photos
+            <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: 11, fontWeight: 800, letterSpacing: '0.2em', textTransform: 'uppercase' }}>Returning buyer</span>
+            <h2 className="fr-serif" style={{ fontSize: 24, fontWeight: 600, color: '#fff', margin: '8px 0 6px' }}>
+              Unlock your photos.
             </h2>
-            <p style={{ fontSize: '13px', color: '#9ca3af', margin: '0 0 18px' }}>
-              Already paid? Use the unlock code we emailed you, or the email you used at checkout.
+            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', margin: '0 0 16px', lineHeight: 1.55 }}>
+              Use the unlock code from your receipt email, or the email you paid with.
             </p>
 
-            {/* Mode tabs */}
-            <div style={{ display: 'flex', gap: '6px', padding: '4px', background: 'rgba(255,255,255,0.04)', borderRadius: '10px', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', gap: 6, padding: 4, background: 'rgba(0,0,0,0.25)', borderRadius: 12, marginBottom: 16 }}>
               {(['code', 'email'] as const).map(mode => (
                 <button
                   key={mode}
+                  className={`fr-tab ${unlockMode === mode ? 'on' : ''}`}
                   onClick={() => { setUnlockMode(mode); setUnlockError(null); }}
                   disabled={unlockLoading}
-                  style={{
-                    flex: 1, padding: '10px', borderRadius: '8px',
-                    background: unlockMode === mode ? 'rgba(3,150,156,0.25)' : 'transparent',
-                    border: '1px solid ' + (unlockMode === mode ? 'rgba(3,150,156,0.5)' : 'transparent'),
-                    color: unlockMode === mode ? '#7be0e5' : '#9ca3af',
-                    fontSize: '13px', fontWeight: 600, cursor: unlockLoading ? 'not-allowed' : 'pointer',
-                  }}
                 >
-                  {mode === 'code' ? 'Use Code' : 'Use Email'}
+                  {mode === 'code' ? 'I have a code' : 'Use my email'}
                 </button>
               ))}
             </div>
 
             {unlockMode === 'code' ? (
-              <div style={{ marginBottom: '14px' }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#d1d5db', marginBottom: '6px' }}>
-                  Unlock Code
-                </label>
+              <div style={{ marginBottom: 14 }}>
                 <input
                   type="text"
                   value={unlockCodeInput}
@@ -5086,25 +3578,19 @@ const FindMyPhotos = () => {
                   disabled={unlockLoading}
                   autoFocus
                   style={{
-                    width: '100%', padding: '12px 14px',
-                    background: 'rgba(255,255,255,0.06)',
-                    border: '1px solid rgba(255,255,255,0.12)',
-                    borderRadius: '10px', color: '#fff', fontSize: '15px',
-                    letterSpacing: '1px', fontFamily: 'monospace',
-                    outline: 'none', boxSizing: 'border-box',
+                    width: '100%', padding: 14, borderRadius: 12,
+                    border: '1px solid rgba(255,255,255,0.18)',
+                    background: 'rgba(255,255,255,0.06)', color: '#fff',
+                    fontSize: 16, fontWeight: 800, letterSpacing: '0.2em', textAlign: 'center',
+                    fontFamily: 'monospace', outline: 'none', boxSizing: 'border-box',
                   }}
-                  onFocus={(e) => { e.currentTarget.style.borderColor = '#03969c'; }}
-                  onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }}
                 />
-                <p style={{ fontSize: '12px', color: '#6b7280', margin: '6px 0 0' }}>
+                <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', margin: '8px 0 0' }}>
                   Unlocks only the photos in that purchase.
                 </p>
               </div>
             ) : (
-              <div style={{ marginBottom: '14px' }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#d1d5db', marginBottom: '6px' }}>
-                  Email
-                </label>
+              <div style={{ marginBottom: 14 }}>
                 <input
                   type="email"
                   value={unlockEmailInput}
@@ -5113,55 +3599,40 @@ const FindMyPhotos = () => {
                   disabled={unlockLoading}
                   autoFocus
                   style={{
-                    width: '100%', padding: '12px 14px',
-                    background: 'rgba(255,255,255,0.06)',
-                    border: '1px solid rgba(255,255,255,0.12)',
-                    borderRadius: '10px', color: '#fff', fontSize: '14px',
+                    width: '100%', padding: '13px 14px', borderRadius: 12,
+                    border: '1px solid rgba(255,255,255,0.18)',
+                    background: 'rgba(255,255,255,0.06)', color: '#fff', fontSize: 14.5,
                     outline: 'none', boxSizing: 'border-box',
                   }}
-                  onFocus={(e) => { e.currentTarget.style.borderColor = '#03969c'; }}
-                  onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }}
                 />
-                <p style={{ fontSize: '12px', color: '#6b7280', margin: '6px 0 0' }}>
+                <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', margin: '8px 0 0' }}>
                   Unlocks every photo this email has purchased in this album.
                 </p>
               </div>
             )}
 
             {unlockError && (
-              <div style={{
-                padding: '10px 12px', marginBottom: '14px',
-                background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.35)',
-                borderRadius: '10px', color: '#ef4444', fontSize: '13px',
-              }}>
+              <div style={{ padding: '10px 12px', marginBottom: 14, background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.35)', borderRadius: 10, color: '#fca5a5', fontSize: 13 }}>
                 {unlockError}
               </div>
             )}
 
-            <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
+            <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
               <button
+                className="fr-btn-ghost"
                 onClick={() => { if (!unlockLoading) { setUnlockOpen(false); setUnlockError(null); } }}
                 disabled={unlockLoading}
-                style={{
-                  flex: 1, padding: '12px', borderRadius: '12px',
-                  background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)',
-                  color: '#9ca3af', fontSize: '14px', fontWeight: 500,
-                  cursor: unlockLoading ? 'not-allowed' : 'pointer',
-                }}
+                style={{ flex: 1, padding: 12 }}
               >
                 Cancel
               </button>
               <button
+                className="fr-btn-brand"
                 onClick={handleUnlockSubmit}
                 disabled={unlockLoading}
-                style={{
-                  flex: 2, padding: '12px', borderRadius: '12px',
-                  background: unlockLoading ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, #03969c, #027a7f)',
-                  border: 'none', color: '#fff', fontSize: '14px', fontWeight: 600,
-                  cursor: unlockLoading ? 'not-allowed' : 'pointer',
-                }}
+                style={{ flex: 2, padding: 12, background: unlockLoading ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, #03969c, #027a7f)', boxShadow: unlockLoading ? 'none' : '0 8px 22px -6px rgba(3,150,156,0.45)' }}
               >
-                {unlockLoading ? 'Unlocking…' : 'Unlock & Download'}
+                {unlockLoading ? 'Unlocking…' : 'Unlock & download'}
               </button>
             </div>
           </div>
@@ -5172,38 +3643,35 @@ const FindMyPhotos = () => {
       {recentUnlockCode && (
         <div
           style={{
-            position: 'fixed',
-            top: '90px', right: '20px', maxWidth: '340px',
+            position: 'fixed', top: 120, right: 20, maxWidth: 340,
             background: 'linear-gradient(145deg, #0b3d4a 0%, #0a2d3a 100%)',
             border: '1px solid rgba(3,150,156,0.45)',
-            borderRadius: '14px',
-            padding: '16px 18px',
-            zIndex: 2400,
-            boxShadow: '0 12px 40px rgba(0,0,0,0.4)',
-            color: '#e5fafa',
+            borderRadius: 14, padding: '16px 18px', zIndex: 2400,
+            boxShadow: '0 12px 40px rgba(0,0,0,0.4)', color: '#e5fafa',
           }}
         >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
-            <div style={{ fontSize: '13px', fontWeight: 600, marginBottom: '6px' }}>Save your unlock code</div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 6 }}>Save your unlock code</div>
             <button
               onClick={() => setRecentUnlockCode(null)}
-              style={{ background: 'transparent', border: 'none', color: '#7be0e5', cursor: 'pointer', fontSize: '18px', lineHeight: 1, padding: 0 }}
+              style={{ background: 'transparent', border: 'none', color: '#7be0e5', cursor: 'pointer', fontSize: 18, lineHeight: 1, padding: 0 }}
               aria-label="Dismiss"
             >×</button>
           </div>
           <div
             style={{
-              fontFamily: 'monospace', fontSize: '17px', fontWeight: 700,
-              letterSpacing: '1.5px', color: '#fff',
-              padding: '10px 12px', borderRadius: '8px',
+              fontFamily: 'monospace', fontSize: 17, fontWeight: 700,
+              letterSpacing: 1.5, color: '#fff',
+              padding: '10px 12px', borderRadius: 8,
               background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
               userSelect: 'all',
             }}
           >
             {recentUnlockCode}
           </div>
-          <p style={{ fontSize: '12px', color: '#a8d4d8', margin: '8px 0 0' }}>
-            We also emailed it to you. Use it (or your email) on this page anytime to re-download these photos.
+          <p style={{ fontSize: 12, color: '#a8d4d8', margin: '8px 0 0' }}>
+            We also emailed it to you. Use it (or your email) on this page
+            anytime to re-download these photos.
           </p>
         </div>
       )}
