@@ -623,6 +623,7 @@ export default function BrowsePhotosAlbumPage({
           multiAlbumItems={multiAlbumItems}
           viewerEmail={email}
           showDonationPrompt
+          darkMode
           title="Connekyt Photos"
           subtitle={album ? `${cartItems.length} photo${cartItems.length === 1 ? '' : 's'} from ${album.title}` : undefined}
         />

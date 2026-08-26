@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { API_ENDPOINTS } from '@/lib/api/config';
-import PaymentCurrencyPreview, { type CurrencyCode, useLiveRates } from './PaymentCurrencyPreview';
+import { type CurrencyCode, useLiveRates } from './PaymentCurrencyPreview';
 import {
   initiateXentriPayTip,
   initiateXentriPayStreaming,
@@ -169,6 +169,12 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [refid, setRefid] = useState<string | null>(null);
+  // How the payment ended when step === 'failed'. 'declined' = the gateway
+  // definitively said FAILED (no charge landed) so retrying is safe.
+  // 'unknown' = timeout / status-check error: the charge MAY have landed, so
+  // per docs/PAYMENTS.md rule 2 we must NOT offer a retry - the buyer is
+  // told to check their phone and email first.
+  const [failureKind, setFailureKind] = useState<'declined' | 'unknown'>('declined');
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
   const stopPollingRef = useRef<(() => void) | null>(null);
 
@@ -407,7 +413,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
           setTimeout(poll, 2000);
         } catch {
           if (stopped) return;
-          if (attempts >= 150) { setError('Unable to check payment status. Please try again later.'); setStep('failed'); return; }
+          if (attempts >= 150) { setFailureKind('unknown'); setError('Unable to check payment status.'); setStep('failed'); return; }
           setTimeout(poll, 2000);
         }
       };
@@ -716,22 +722,57 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
   const totalAmount = amount + (donationAmount || 0);
   const hasDonation = (donationAmount || 0) > 0;
 
+  // ═══ "The Receipt" - one token set drives light and dark ═══
+  const T = darkMode ? {
+    overlay: 'rgba(2,6,16,0.72)',
+    surface: 'linear-gradient(160deg, #0a2148 0%, #071634 100%)',
+    border: 'rgba(255,255,255,0.12)',
+    text: '#fff',
+    sub: 'rgba(255,255,255,0.58)',
+    faint: 'rgba(255,255,255,0.4)',
+    field: 'rgba(255,255,255,0.06)',
+    fieldBorder: 'rgba(255,255,255,0.16)',
+    chip: 'rgba(255,255,255,0.05)',
+    chipBorder: 'rgba(255,255,255,0.14)',
+    chipOnBg: 'rgba(3,150,156,0.16)',
+    hair: 'rgba(255,255,255,0.09)',
+    receipt: 'rgba(255,255,255,0.04)',
+    tileBg: 'rgba(255,255,255,0.05)',
+    shadow: '0 40px 100px rgba(0,0,0,0.6)',
+  } : {
+    overlay: 'rgba(8,25,55,0.45)',
+    surface: '#ffffff',
+    border: 'rgba(8,58,133,0.1)',
+    text: '#0f1f3d',
+    sub: '#5b6b85',
+    faint: '#93a0b5',
+    field: '#f6f8fb',
+    fieldBorder: '#dbe2ec',
+    chip: '#f6f8fb',
+    chipBorder: '#e3e8f0',
+    chipOnBg: 'rgba(3,150,156,0.09)',
+    hair: '#edf0f5',
+    receipt: '#f8fafc',
+    tileBg: '#ffffff',
+    shadow: '0 40px 100px -20px rgba(8,58,133,0.35)',
+  };
+
+  const DISPLAY_CCYS: CurrencyCode[] = ['RWF', 'USD', 'EUR', 'KES', 'UGX', 'TZS'];
+
+  const trustFooter = (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: '12px 24px 16px', color: T.faint, fontSize: 11.5, fontWeight: 600 }}>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      Encrypted · Secured by Connekyt Payments
+    </div>
+  );
+
   return (
     <div
       style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'rgba(8,58,133,0.4)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 2000,
-        backdropFilter: 'blur(8px)',
-        padding: '16px',
-        overflowY: 'auto',
+        position: 'fixed', inset: 0, background: T.overlay,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        zIndex: 2000, backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+        padding: 16, overflowY: 'auto',
       }}
       onMouseDown={(e) => {
         if (e.target === e.currentTarget && step !== 'processing') {
@@ -741,262 +782,81 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
     >
       <div
         style={{
-          // Outer panel: clips the decorative ribbon/glow with border-radius.
-          // Scroll happens on the inner content layer instead.
-          background: '#ffffff',
-          borderRadius: '22px',
-          maxWidth: '440px',
-          width: '100%',
-          maxHeight: '92vh',
-          // Layered shadow: deep ambient + brand-blue tinted bloom + thin inner highlight
-          boxShadow:
-            '0 40px 100px -20px rgba(8,58,133,0.35), 0 18px 40px -12px rgba(8,58,133,0.18), 0 1px 0 rgba(255,255,255,0.9) inset',
-          border: '1px solid rgba(8,58,133,0.08)',
-          position: 'relative',
-          margin: 'auto',
-          overflow: 'hidden',
-          isolation: 'isolate',
-          display: 'flex',
-          flexDirection: 'column',
+          background: T.surface,
+          borderRadius: 22, maxWidth: 420, width: '100%', maxHeight: '92vh',
+          boxShadow: T.shadow, border: `1px solid ${T.border}`,
+          position: 'relative', margin: 'auto', overflow: 'hidden',
+          isolation: 'isolate', display: 'flex', flexDirection: 'column',
         }}
         onMouseDown={(e) => e.stopPropagation()}
       >
-        {/* Top brand-blue accent ribbon - subtle gradient that hints at the
-            brand without overwhelming the white surface. */}
-        <div
-          aria-hidden="true"
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            height: '4px',
-            background:
-              'linear-gradient(90deg, rgba(8,58,133,0) 0%, #083A85 22%, #1f6bff 50%, #083A85 78%, rgba(8,58,133,0) 100%)',
-            opacity: 0.95,
-            zIndex: 1,
-            pointerEvents: 'none',
-          }}
-        />
-        {/* Soft brand glow in the top-right corner */}
-        <div
-          aria-hidden="true"
-          style={{
-            position: 'absolute',
-            top: '-90px',
-            right: '-90px',
-            width: '240px',
-            height: '240px',
-            borderRadius: '50%',
-            background:
-              'radial-gradient(circle at center, rgba(8,58,133,0.10) 0%, rgba(31,107,255,0.06) 40%, transparent 70%)',
-            pointerEvents: 'none',
-            zIndex: 0,
-          }}
-        />
-        {/* Decorative dot grid in the bottom-left - barely-there texture */}
-        <div
-          aria-hidden="true"
-          style={{
-            position: 'absolute',
-            bottom: '-20px',
-            left: '-20px',
-            width: '160px',
-            height: '160px',
-            backgroundImage:
-              'radial-gradient(circle, rgba(8,58,133,0.10) 1px, transparent 1.5px)',
-            backgroundSize: '14px 14px',
-            opacity: 0.45,
-            pointerEvents: 'none',
-            zIndex: 0,
-            maskImage: 'radial-gradient(circle at bottom left, #000 0%, transparent 70%)',
-            WebkitMaskImage: 'radial-gradient(circle at bottom left, #000 0%, transparent 70%)',
-          }}
-        />
+        {/* Brand hairline */}
+        <span aria-hidden style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: 'linear-gradient(90deg, #083A85, #F20C8F 60%, #03969C)', opacity: 0.9, zIndex: 2 }} />
+
         {/* Scrollable content layer */}
-        <div style={{
-          position: 'relative',
-          zIndex: 2,
-          padding: 'clamp(22px, 4vw, 34px)',
-          paddingTop: 'clamp(26px, 4.5vw, 38px)',
-          overflowY: 'auto',
-          flex: 1,
-          minHeight: 0,
-        }}>
-        {/* Close button - hidden during processing and when geo-blocked.
-            Sits absolutely above the scroll layer (zIndex 3) so it doesn't
-            scroll away with content. */}
+        <div style={{ overflowY: 'auto', padding: '20px 22px 0' }}>
+
+        {/* Close - hidden during processing and when geo-blocked */}
         {step !== 'processing' && !(eventId && !geoCheckLoading && eventGeoCheck && !eventGeoCheck.allowed) && (
           <button
             onClick={handleClose}
             aria-label="Close"
             style={{
-              position: 'absolute',
-              top: 'clamp(14px, 3vw, 20px)',
-              right: 'clamp(14px, 3vw, 20px)',
-              background: 'rgba(8,58,133,0.06)',
-              border: '1px solid rgba(8,58,133,0.10)',
-              color: '#475569',
-              cursor: 'pointer',
-              padding: '0',
-              transition: 'transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1), background-color 180ms ease, border-color 180ms ease, color 180ms ease',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: '36px',
-              height: '36px',
-              borderRadius: '50%',
-              zIndex: 3,
-              backdropFilter: 'blur(4px)',
-              WebkitBackdropFilter: 'blur(4px)',
+              position: 'absolute', top: 14, right: 14, zIndex: 3,
+              width: 32, height: 32, borderRadius: '50%',
+              background: T.chip, border: `1px solid ${T.chipBorder}`,
+              color: T.sub, fontSize: 17, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(8,58,133,0.12)';
-              e.currentTarget.style.borderColor = 'rgba(8,58,133,0.22)';
-              e.currentTarget.style.color = '#083A85';
-              e.currentTarget.style.transform = 'rotate(90deg) scale(1.05)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(8,58,133,0.06)';
-              e.currentTarget.style.borderColor = 'rgba(8,58,133,0.10)';
-              e.currentTarget.style.color = '#475569';
-              e.currentTarget.style.transform = 'rotate(0deg) scale(1)';
-            }}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
+          >×</button>
         )}
 
         {/* ==================== STEP: Select Method ==================== */}
         {step === 'method' && (
           <>
-            {/* Loading state while geo-check is in progress */}
+            {/* Geo-check in progress */}
             {eventId && geoCheckLoading && (
-              <div style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '48px 20px',
-              }}>
-                <div style={{
-                  width: '40px',
-                  height: '40px',
-                  border: '3px solid #e5e7eb',
-                  borderTopColor: '#083A85',
-                  borderRadius: '50%',
-                  animation: 'spin 0.8s linear infinite',
-                  marginBottom: '16px',
-                }} />
-                <p style={{ fontSize: '14px', color: '#6b7280', margin: 0 }}>
-                  Checking availability...
-                </p>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '48px 20px' }}>
+                <div style={{ width: 38, height: 38, border: `3px solid ${T.hair}`, borderTopColor: '#F20C8F', borderRadius: '50%', animation: 'spin 0.8s linear infinite', marginBottom: 16 }} />
+                <p style={{ fontSize: 13.5, color: T.sub, margin: 0 }}>Checking availability…</p>
               </div>
             )}
 
-            {/* Blocked overlay - full-screen, no close option */}
+            {/* Geo-blocked - full-screen, no close */}
             {eventId && !geoCheckLoading && eventGeoCheck && !eventGeoCheck.allowed && (
               <div style={{
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                backgroundColor: 'rgba(0, 0, 0, 0.75)',
-                backdropFilter: 'blur(12px)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                zIndex: 9999,
-                padding: '24px',
+                position: 'fixed', inset: 0, background: 'rgba(2,6,16,0.8)', backdropFilter: 'blur(12px)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 24,
               }}>
                 <div style={{
-                  background: '#fff',
-                  borderRadius: '24px',
-                  padding: 'clamp(32px, 6vw, 48px) clamp(24px, 5vw, 40px)',
-                  maxWidth: '420px',
-                  width: '100%',
-                  textAlign: 'center',
-                  boxShadow: '0 32px 80px rgba(0,0,0,0.3)',
+                  background: T.surface, borderRadius: 22,
+                  padding: 'clamp(30px, 6vw, 44px) clamp(24px, 5vw, 38px)',
+                  maxWidth: 420, width: '100%', textAlign: 'center',
+                  border: `1px solid ${T.border}`, boxShadow: T.shadow,
                 }}>
-                  {/* Icon */}
-                  <div style={{
-                    width: '80px',
-                    height: '80px',
-                    borderRadius: '50%',
-                    background: 'linear-gradient(135deg, #fee2e2 0%, #fef2f2 100%)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    margin: '0 auto 24px',
-                  }}>
-                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                      <line x1="9" y1="9" x2="15" y2="15" />
-                      <line x1="15" y1="9" x2="9" y2="15" />
-                    </svg>
+                  <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'rgba(239,68,68,0.12)', border: '2px solid rgba(239,68,68,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+                    <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><line x1="9" y1="9" x2="15" y2="15"/><line x1="15" y1="9" x2="9" y2="15"/></svg>
                   </div>
-
-                  <h2 style={{
-                    fontSize: 'clamp(20px, 4vw, 26px)',
-                    fontWeight: 700,
-                    color: '#1f2937',
-                    marginBottom: '12px',
-                    marginTop: 0,
-                    fontFamily: "'Pragati Narrow', sans-serif",
-                  }}>
-                    This event is not available in your region
+                  <h2 className="pay-serif" style={{ fontSize: 'clamp(20px, 4vw, 25px)', fontWeight: 600, color: T.text, margin: '0 0 10px' }}>
+                    Not available in your region.
                   </h2>
-
-                  <p style={{
-                    fontSize: '15px',
-                    color: '#6b7280',
-                    lineHeight: 1.7,
-                    marginBottom: '24px',
-                    maxWidth: '340px',
-                    marginLeft: 'auto',
-                    marginRight: 'auto',
-                  }}>
-                    We&apos;re sorry, but the event organizer has restricted access to this event from your current location. This may be due to regional availability or licensing requirements.
+                  <p style={{ fontSize: 14, color: T.sub, lineHeight: 1.65, margin: '0 auto 20px', maxWidth: 330 }}>
+                    The event organizer has restricted access from your current
+                    location. This may be due to regional availability or
+                    licensing requirements.
                   </p>
-
-                  {/* Detected location pill */}
                   {eventGeoCheck.userCountry && (
-                    <div style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      padding: '10px 20px',
-                      backgroundColor: '#f9fafb',
-                      borderRadius: '24px',
-                      border: '1px solid #e5e7eb',
-                      marginBottom: '28px',
-                    }}>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2">
-                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                        <circle cx="12" cy="10" r="3" />
-                      </svg>
-                      <span style={{ fontSize: '14px', color: '#6b7280' }}>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '9px 18px', background: T.chip, borderRadius: 999, border: `1px solid ${T.chipBorder}`, marginBottom: 20 }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: T.faint }} aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                      <span style={{ fontSize: 13, color: T.sub }}>
                         Your location: {eventGeoCheck.userCity && eventGeoCheck.userCity !== 'Unknown'
                           ? `${eventGeoCheck.userCity}, ${eventGeoCheck.userCountry}`
                           : eventGeoCheck.userCountry}
                       </span>
                     </div>
                   )}
-
-                  {/* Divider */}
-                  <div style={{ height: '1px', backgroundColor: '#f3f4f6', margin: '0 0 20px' }} />
-
-                  <p style={{
-                    fontSize: '13px',
-                    color: '#9ca3af',
-                    lineHeight: 1.5,
-                    margin: 0,
-                  }}>
-                    If you believe this is an error, please contact the event organizer for assistance.
+                  <p style={{ fontSize: 12.5, color: T.faint, lineHeight: 1.5, margin: 0, borderTop: `1px solid ${T.hair}`, paddingTop: 16 }}>
+                    If you believe this is an error, contact the event organizer.
                   </p>
                 </div>
               </div>
@@ -1004,225 +864,86 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
 
             {/* Normal payment form - only when allowed */}
             {(!eventId || (!geoCheckLoading && eventGeoCheck?.allowed !== false)) && (<>
-            {/* Header - eyebrow pill + title + subtitle. Currency preview is
-                pulled out into its own dedicated "Amount panel" below the
-                header so it reads as a first-class element, not an island. */}
-            <div style={{ marginBottom: '16px' }}>
-              {/* Brand eyebrow pill - communicates "this is a payment", builds trust */}
-              <div style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '5px 11px 5px 9px',
-                background: 'linear-gradient(135deg, rgba(8,58,133,0.10) 0%, rgba(31,107,255,0.06) 100%)',
-                border: '1px solid rgba(8,58,133,0.18)',
-                borderRadius: '999px',
-                marginBottom: '10px',
-              }}>
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#083A85" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                </svg>
-                <span style={{
-                  fontSize: '10.5px',
-                  fontWeight: 800,
-                  color: '#083A85',
-                  letterSpacing: '0.10em',
-                  textTransform: 'uppercase',
-                  fontFamily: "'Pragati Narrow', sans-serif",
-                }}>
-                  Secure Payment
-                </span>
-              </div>
-              <h2 style={{
-                fontSize: 'clamp(20px, 4.5vw, 24px)',
-                fontWeight: 800,
-                color: '#083A85',
-                marginBottom: '4px',
-                marginTop: 0,
-                fontFamily: "'Pragati Narrow', sans-serif",
-                lineHeight: 1.2,
-                letterSpacing: '-0.01em',
-              }}>
+            {/* Header */}
+            <div style={{ marginBottom: 14 }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: T.faint, fontSize: 10.5, fontWeight: 800, letterSpacing: '0.18em', textTransform: 'uppercase' }}>
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                Secure checkout
+              </span>
+              <h2 className="pay-serif" style={{ fontSize: 'clamp(20px, 4.5vw, 23px)', fontWeight: 600, color: T.text, margin: '9px 0 3px', lineHeight: 1.2 }}>
                 {title || defaultTitle}
               </h2>
               {subtitle ? (
-                <p style={{ fontSize: '13.5px', color: '#64748b', margin: 0, lineHeight: 1.5 }}>{subtitle}</p>
-              ) : !hasDonation ? (
-                <p style={{ fontSize: '13.5px', color: '#64748b', margin: 0 }}>
-                  Choose how you&apos;d like to pay
-                </p>
-              ) : null}
+                <p style={{ fontSize: 12.5, color: T.sub, margin: 0, lineHeight: 1.5 }}>{subtitle}</p>
+              ) : (
+                <p style={{ fontSize: 12.5, color: T.sub, margin: 0 }}>Choose how you&apos;d like to pay</p>
+              )}
             </div>
 
-            {/* Amount Panel - the financial heart of the modal. White-on-blue-tint
-                gradient card with the headline amount on the left and the currency
-                converter on the right. Replaces the previous "floating box" feel.
-                NB: overflow stays VISIBLE so the currency dropdown menu can open
-                downward without being clipped by the panel's bottom edge. The
-                accent stripe is inset 10px from top/bottom so the rounded corners
-                still look clean without needing overflow:hidden. */}
-            <div style={{
-              position: 'relative',
-              background: 'linear-gradient(135deg, #f0f5ff 0%, #ffffff 60%, #fafbff 100%)',
-              border: '1px solid rgba(8,58,133,0.12)',
-              borderRadius: '16px',
-              padding: '14px 16px',
-              marginBottom: '18px',
-              boxShadow:
-                'inset 0 1px 0 rgba(255,255,255,0.9), 0 1px 2px rgba(8,58,133,0.04)',
-            }}>
-              {/* Subtle accent stripe on the left */}
-              <span aria-hidden="true" style={{
-                position: 'absolute',
-                top: 10,
-                bottom: 10,
-                left: 0,
-                width: '3px',
-                borderRadius: '0 3px 3px 0',
-                background: 'linear-gradient(180deg, #083A85 0%, #1f6bff 100%)',
-              }} />
+            {/* Amount hero - receipt panel with inline currency pill */}
+            <div style={{ padding: '15px 17px', borderRadius: 16, background: T.receipt, border: `1px solid ${T.hair}`, marginBottom: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span className="pay-serif" style={{ color: T.text, fontSize: 'clamp(26px, 6vw, 32px)', fontWeight: 600, lineHeight: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {formatAmount(totalAmount)}
+                </span>
+                <label style={{ marginLeft: 'auto', position: 'relative', flexShrink: 0 }}>
+                  <span style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }} aria-hidden />
+                  <select
+                    value={displayCurrency}
+                    onChange={(e) => setDisplayCurrency(e.target.value as CurrencyCode)}
+                    aria-label="View amount in currency"
+                    style={{
+                      appearance: 'none', WebkitAppearance: 'none',
+                      padding: '6px 24px 6px 12px', borderRadius: 999,
+                      background: `${T.chip} url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='9' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' stroke='%23848fa5' fill='none' stroke-width='1.6' stroke-linecap='round'/></svg>") no-repeat right 9px center`,
+                      border: `1px solid ${T.chipBorder}`, color: T.sub,
+                      fontSize: 11.5, fontWeight: 800, cursor: 'pointer', outline: 'none',
+                    }}
+                  >
+                    {DISPLAY_CCYS.map(c => <option key={c} value={c} style={{ background: darkMode ? '#0a1f44' : '#fff', color: darkMode ? '#fff' : '#0f1f3d' }}>{c}</option>)}
+                  </select>
+                </label>
+              </div>
               {hasDonation ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px', color: '#64748b' }}>
-                    <span>Gift</span>
-                    <strong style={{ color: '#0f172a', fontWeight: 700 }}>{formatAmount(amount)}</strong>
+                <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px dashed ${T.fieldBorder}` }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: T.sub, fontSize: 12 }}>
+                    <span>{paymentType === 'streaming' ? 'Gift' : 'Payment'}</span><span>{formatAmount(amount)}</span>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px', color: '#64748b' }}>
-                    <span>Donation</span>
-                    <strong style={{ color: '#0a4da3', fontWeight: 700 }}>{formatAmount(donationAmount!)}</strong>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 5, color: T.sub, fontSize: 12 }}>
+                    <span>Donation</span><span style={{ color: '#ff7ec4', fontWeight: 700 }}>{formatAmount(donationAmount!)}</span>
                   </div>
-                  <div style={{
-                    borderTop: '1px dashed rgba(8,58,133,0.18)',
-                    paddingTop: '8px',
-                    marginTop: '2px',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'baseline',
-                  }}>
-                    <span style={{
-                      fontSize: '10.5px',
-                      fontWeight: 800,
-                      color: '#083A85',
-                      letterSpacing: '0.10em',
-                      textTransform: 'uppercase',
-                      fontFamily: "'Pragati Narrow', sans-serif",
-                    }}>Total</span>
-                    <strong style={{
-                      color: '#083A85',
-                      fontSize: '20px',
-                      fontWeight: 800,
-                      fontFamily: "'Pragati Narrow', sans-serif",
-                    }}>{formatAmount(totalAmount)}</strong>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, paddingTop: 8, borderTop: `1px dashed ${T.fieldBorder}`, color: T.text, fontSize: 12.5, fontWeight: 800 }}>
+                    <span>Total</span><span>{formatAmount(totalAmount)}</span>
                   </div>
                 </div>
               ) : (
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-                    <span style={{
-                      fontSize: '10.5px',
-                      fontWeight: 800,
-                      color: '#083A85',
-                      letterSpacing: '0.10em',
-                      textTransform: 'uppercase',
-                      fontFamily: "'Pragati Narrow', sans-serif",
-                    }}>Amount to Pay</span>
-                    <strong style={{
-                      color: '#083A85',
-                      fontSize: 'clamp(20px, 5vw, 26px)',
-                      fontWeight: 800,
-                      fontFamily: "'Pragati Narrow', sans-serif",
-                      lineHeight: 1.15,
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                    }}>{formatAmount(amount)}</strong>
-                  </div>
-                  <div style={{ flexShrink: 0 }}>
-                    {/*
-                      NOTE: intentionally NOT forwarding the XentriPayModal
-                      `darkMode` prop to the panel. The modal's body renders
-                      in light theme regardless of that prop, so passing
-                      darkMode=true would render the panel with white text
-                      that disappears on the modal's white backdrop.
-                    */}
-                    <PaymentCurrencyPreview
-                      fromCurrency={(currencyCode || 'RWF') as CurrencyCode}
-                      defaultCurrency={displayCurrency}
-                      onCurrencyChange={setDisplayCurrency}
-                      amounts={[{ label: 'Amount', amount }]}
-                    />
-                  </div>
-                </div>
-              )}
-              {hasDonation && (
-                <div style={{ marginTop: '12px', display: 'flex', justifyContent: 'flex-end' }}>
-                  <PaymentCurrencyPreview
-                    fromCurrency={(currencyCode || 'RWF') as CurrencyCode}
-                    defaultCurrency={displayCurrency}
-                    onCurrencyChange={setDisplayCurrency}
-                    amounts={[
-                      { label: 'Gift', amount },
-                      { label: 'Donation', amount: donationAmount || 0 },
-                      { label: 'Total', amount: totalAmount },
-                    ]}
-                  />
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10, paddingTop: 10, borderTop: `1px dashed ${T.fieldBorder}`, color: T.sub, fontSize: 12 }}>
+                  <span>Amount to pay</span><span style={{ fontWeight: 700, color: T.text }}>{formatAmount(amount)}</span>
                 </div>
               )}
             </div>
 
-            {/* Escrow notice — booking deposits are held by the platform, not
-                paid to the photographer directly. Only shown for booking
-                payments (tips / donations / photo buys are not escrowed). */}
+            {/* Escrow notice - booking deposits are platform-held */}
             {paymentType === 'booking' && (
-              <div style={{
-                display: 'flex', gap: '10px', alignItems: 'flex-start',
-                background: 'linear-gradient(135deg, #f0f5ff 0%, #fafbff 100%)',
-                border: '1px solid rgba(8,58,133,0.14)', borderRadius: '12px',
-                padding: '12px 14px', marginBottom: '18px',
-              }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#083A85" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: '1px' }} aria-hidden="true">
-                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                </svg>
-                <p style={{ margin: 0, fontSize: '12.5px', lineHeight: 1.5, color: '#475569' }}>
-                  <strong style={{ color: '#0f172a' }}>Held safely by Connekyt.</strong> This payment is not sent to the photographer directly. We hold it and release it to them only after your event is delivered.
+              <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', background: T.chip, border: `1px solid ${T.chipBorder}`, borderRadius: 12, padding: '11px 14px', marginBottom: 14 }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#03969c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 1 }} aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                <p style={{ margin: 0, fontSize: 12, lineHeight: 1.55, color: T.sub }}>
+                  <strong style={{ color: T.text }}>Held safely by Connekyt.</strong> This payment is not sent to the photographer directly. We hold it and release it to them only after your event is delivered.
                 </p>
               </div>
             )}
 
-            {/* Geo-restriction Warning */}
+            {/* Geo-restriction warning */}
             {!geoStatus.loading && geoStatus.blocked && (
-              <div style={{
-                background: 'linear-gradient(135deg, #fee2e2 0%, #fef2f2 100%)',
-                border: '1.5px solid #fca5a5',
-                borderRadius: '12px',
-                padding: '16px',
-                marginBottom: '20px',
-              }}>
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, marginTop: '2px' }}>
-                    <path d="M12 9V11M12 15H12.01M5.07183 19H18.9282C20.4678 19 21.4301 17.3333 20.6603 16L13.7321 4C12.9623 2.66667 11.0377 2.66667 10.2679 4L3.33975 16C2.56995 17.3333 3.53223 19 5.07183 19Z" stroke="#dc2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  <div style={{ flex: 1 }}>
-                    <h4 style={{
-                      margin: '0 0 6px 0',
-                      fontSize: '15px',
-                      fontWeight: 700,
-                      color: '#991b1b',
-                      fontFamily: "'Pragati Narrow', sans-serif",
-                    }}>
-                      Payment Not Available
-                    </h4>
-                    <p style={{
-                      margin: 0,
-                      fontSize: '13px',
-                      color: '#7f1d1d',
-                      lineHeight: '1.5',
-                    }}>
+              <div style={{ background: 'rgba(239,68,68,0.08)', border: '1.5px solid rgba(239,68,68,0.4)', borderRadius: 12, padding: '13px 15px', marginBottom: 14 }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, marginTop: 2 }} aria-hidden="true"><path d="M12 9V11M12 15H12.01M5.07183 19H18.9282C20.4678 19 21.4301 17.3333 20.6603 16L13.7321 4C12.9623 2.66667 11.0377 2.66667 10.2679 4L3.33975 16C2.56995 17.3333 3.53223 19 5.07183 19Z" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  <div>
+                    <h4 style={{ margin: '0 0 4px', fontSize: 13.5, fontWeight: 800, color: '#ef4444' }}>Payment not available</h4>
+                    <p style={{ margin: 0, fontSize: 12.5, color: T.sub, lineHeight: 1.5 }}>
                       {geoStatus.message || 'Payment services are not available in your country.'}
                       {geoStatus.country && (
-                        <><br /><span style={{ fontSize: '12px', opacity: 0.8 }}>Detected location: {geoStatus.country}</span></>
+                        <><br /><span style={{ fontSize: 11.5, opacity: 0.8 }}>Detected location: {geoStatus.country}</span></>
                       )}
                     </p>
                   </div>
@@ -1230,87 +951,38 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
               </div>
             )}
 
-            {/* Mobile Money Disabled Warning */}
+            {/* Mobile money disabled warning */}
             {!geoStatus.loading && geoStatus.disableMobileMoney && !geoStatus.blocked && (
-              <div style={{
-                background: 'linear-gradient(135deg, #fef3c7 0%, #fefce8 100%)',
-                border: '1.5px solid #fbbf24',
-                borderRadius: '12px',
-                padding: '14px 16px',
-                marginBottom: '20px',
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
-                    <path d="M12 9V11M12 15H12.01M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  <p style={{
-                    margin: 0,
-                    fontSize: '13px',
-                    color: '#92400e',
-                    fontWeight: 500,
-                  }}>
-                    Mobile money (MTN/Airtel) is unavailable in your region. Please use card payment.
-                  </p>
-                </div>
+              <div style={{ background: 'rgba(245,158,11,0.08)', border: '1.5px solid rgba(245,158,11,0.4)', borderRadius: 12, padding: '11px 14px', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 10 }}>
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }} aria-hidden="true"><path d="M12 9V11M12 15H12.01M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                <p style={{ margin: 0, fontSize: 12.5, color: T.sub, fontWeight: 500 }}>
+                  Mobile money is unavailable in your region. Please use card payment.
+                </p>
               </div>
             )}
 
-            {/* Payment Method Selection - uppercase eyebrow label, premium tiles
-                with brand-blue ring on selected, hover lift, check badge. */}
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{
-                display: 'block',
-                fontSize: '10.5px',
-                fontWeight: 800,
-                color: '#083A85',
-                marginBottom: '10px',
-                letterSpacing: '0.10em',
-                textTransform: 'uppercase',
-                fontFamily: "'Pragati Narrow', sans-serif",
-              }}>Select Payment Method</label>
-
-              {/* Country pill + "change" link. The operator list below is
-                  driven by usePaymentOptions(detectedCountry); changing
-                  country here re-fetches and re-renders the grid. */}
-              {/* Country pill + change/choose link. Always rendered (even
-                  when IP-detection returned null) so the user can ALWAYS pick
-                  a country — otherwise a failed/empty detection silently traps
-                  them on the Rwanda fallback list with no way to switch. */}
+            {/* Pay with - country pill + method chips */}
+            <div style={{ marginBottom: 14 }}>
               {!showCountryPicker && (
-                <div style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  gap: '8px', marginBottom: '12px', flexWrap: 'wrap',
-                }}>
-                  <div style={{
-                    display: 'inline-flex', alignItems: 'center', gap: '6px',
-                    padding: '5px 10px', background: '#EFF6FF', border: '1px solid #BFDBFE',
-                    borderRadius: '999px', fontSize: '12px', color: '#083A85', fontWeight: 700,
-                  }}>
-                    {detectedCountry ? (
-                      <>
-                        {findCountry(detectedCountry)?.flag && <span style={{ fontSize: '13px' }}>{findCountry(detectedCountry)?.flag}</span>}
-                        <span>{findCountry(detectedCountry)?.name ?? detectedCountry}{paymentOptions?.currency ? ` · ${paymentOptions.currency}` : ''}</span>
-                      </>
-                    ) : (
-                      <span>🌍 Select your country</span>
-                    )}
-                  </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 9, flexWrap: 'wrap' }}>
+                  <span style={{ color: T.faint, fontSize: 10.5, fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase' }}>Pay with</span>
                   <button
                     type="button"
                     onClick={() => setShowCountryPicker(true)}
-                    style={{
-                      background: 'transparent', border: 'none', color: '#1f6bff',
-                      cursor: 'pointer', fontSize: '12px', fontWeight: 600, padding: '4px 6px',
-                    }}
+                    style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 11px', borderRadius: 999, background: 'transparent', border: `1px solid ${T.chipBorder}`, color: T.sub, fontSize: 11.5, fontWeight: 700, cursor: 'pointer' }}
                   >
-                    {detectedCountry ? 'Change country' : 'Choose country'}
+                    {detectedCountry ? (
+                      <>
+                        {findCountry(detectedCountry)?.flag && <span style={{ fontSize: 12 }}>{findCountry(detectedCountry)?.flag}</span>}
+                        {findCountry(detectedCountry)?.name ?? detectedCountry}{paymentOptions?.currency ? ` · ${paymentOptions.currency}` : ''} · change
+                      </>
+                    ) : (
+                      <>🌍 Choose country</>
+                    )}
                   </button>
                 </div>
               )}
 
-              {/* Country picker fallback: when detection failed, the
-                  detected country has no operators, or the user clicked
-                  "Change country". Shown in place of the method grid. */}
               {(showCountryPicker || (detectedCountry && !optionsLoading && !countrySupported)) ? (
                 <CountryPicker
                   value={detectedCountry}
@@ -1325,224 +997,99 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
                     : `We don't have operators for ${detectedCountry} yet. Pick a country we support, or use a card.`}
                 />
               ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
-                {paymentMethods
-                  .filter((method) => {
-                    // Filter by the event geo-check's allowed methods — but at the
-                    // CATEGORY level (mobile-money vs card), not by exact provider
-                    // name. The backend defaults this list to RW providers
-                    // ["MTN","AIRTEL","CARD"], so matching exact names wrongly hid
-                    // every other country's operator (e.g. Kenya's MPESA) once the
-                    // user switched country, leaving only the card tile. Treat any
-                    // non-CARD entry as "mobile money allowed" so the selected
-                    // country's operators show regardless of their provider id.
-                    const allowed = eventGeoCheck?.allowedPaymentMethods;
-                    if (!allowed || allowed.length === 0) return true; // No restriction = show all
-                    if (method.provider === 'CARD') return allowed.includes('CARD');
-                    return allowed.some((m) => m !== 'CARD');
-                  })
-                  .map((method) => {
-                  const isSelected = selectedMethod === method.id;
-                  // Disable mobile money if blocked or restricted. Any tile
-                  // that isn't 'card' is treated as mobile money — covers
-                  // MTN/Airtel/M-Pesa/Wave/etc. uniformly.
-                  const isMobileMoneyMethod = method.id !== 'card';
-                  const isDisabled = geoStatus.blocked || (isMobileMoneyMethod && geoStatus.disableMobileMoney);
-
-                  return (
-                    <button
-                      key={method.id}
-                      onClick={() => !isDisabled && setSelectedMethod(method.id)}
-                      disabled={isDisabled}
-                      style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        gap: '8px',
-                        padding: '16px 8px 14px',
-                        background: isSelected
-                          ? 'linear-gradient(160deg, #f0f5ff 0%, #ffffff 100%)'
-                          : (isDisabled ? '#f9fafb' : '#ffffff'),
-                        border: isSelected
-                          ? '2px solid #083A85'
-                          : (isDisabled ? '1.5px solid #e5e7eb' : '1.5px solid rgba(8,58,133,0.14)'),
-                        borderRadius: '14px',
-                        cursor: isDisabled ? 'not-allowed' : 'pointer',
-                        transition: 'transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1), border-color 180ms ease, box-shadow 200ms ease, background 200ms ease',
-                        position: 'relative',
-                        opacity: isDisabled ? 0.5 : 1,
-                        boxShadow: isSelected
-                          ? '0 8px 22px -8px rgba(8,58,133,0.35), 0 1px 0 rgba(255,255,255,0.9) inset'
-                          : '0 1px 0 rgba(255,255,255,0.9) inset, 0 1px 2px rgba(8,58,133,0.04)',
-                        transform: isSelected ? 'translateY(-1px)' : 'translateY(0)',
-                      }}
-                      onMouseEnter={(e) => {
-                        if (!isSelected && !isDisabled) {
-                          e.currentTarget.style.borderColor = 'rgba(8,58,133,0.30)';
-                          e.currentTarget.style.transform = 'translateY(-2px)';
-                          e.currentTarget.style.boxShadow = '0 6px 16px -6px rgba(8,58,133,0.20), 0 1px 0 rgba(255,255,255,0.9) inset';
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!isSelected && !isDisabled) {
-                          e.currentTarget.style.borderColor = 'rgba(8,58,133,0.14)';
-                          e.currentTarget.style.transform = 'translateY(0)';
-                          e.currentTarget.style.boxShadow = '0 1px 0 rgba(255,255,255,0.9) inset, 0 1px 2px rgba(8,58,133,0.04)';
-                        }
-                      }}
-                    >
-                      {isSelected && (
-                        <div style={{
-                          position: 'absolute',
-                          top: 8,
-                          right: 8,
-                          width: 18,
-                          height: 18,
-                          borderRadius: '50%',
-                          background: 'linear-gradient(135deg, #083A85 0%, #1f6bff 100%)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          boxShadow: '0 2px 6px rgba(8,58,133,0.40)',
-                          border: '1.5px solid #ffffff',
-                        }}>
-                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="20 6 9 17 4 12" />
-                          </svg>
-                        </div>
-                      )}
-                      <div style={{
-                        width: '44px',
-                        height: '44px',
-                        borderRadius: '12px',
-                        overflow: 'hidden',
-                        flexShrink: 0,
-                        backgroundColor: '#fff',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        border: '1px solid rgba(8,58,133,0.10)',
-                        boxShadow: '0 1px 2px rgba(8,58,133,0.06)',
-                      }}>
-                        <img
-            src={method.image}
-            alt={method.name}
-            onError={(e) => {
-              const img = e.currentTarget;
-              if (img.dataset.fallback === '1') return;
-              img.dataset.fallback = '1';
-              img.src = '/mobile-money.svg';
-            }}
-            style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '5px' }}
-          />
-                      </div>
-                      <span style={{
-                        color: isSelected ? '#083A85' : (isDisabled ? '#9ca3af' : '#475569'),
-                        fontSize: '11px',
-                        fontWeight: isSelected ? 800 : 600,
-                        textAlign: 'center',
-                        lineHeight: 1.25,
-                        fontFamily: "'Pragati Narrow', sans-serif",
-                        letterSpacing: '0.01em',
-                      }}>
-                        {isDisabled ? (
-                          <>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(104px, 1fr))', gap: 8 }}>
+                  {paymentMethods
+                    .filter((method) => {
+                      // Filter by the event geo-check's allowed methods at the
+                      // CATEGORY level (mobile-money vs card): matching exact
+                      // provider names hid other countries' operators.
+                      const allowed = eventGeoCheck?.allowedPaymentMethods;
+                      if (!allowed || allowed.length === 0) return true;
+                      if (method.provider === 'CARD') return allowed.includes('CARD');
+                      return allowed.some((m) => m !== 'CARD');
+                    })
+                    .map((method) => {
+                      const isSelected = selectedMethod === method.id;
+                      const isMobileMoneyMethod = method.id !== 'card';
+                      const isDisabled = geoStatus.blocked || (isMobileMoneyMethod && geoStatus.disableMobileMoney);
+                      return (
+                        <button
+                          key={method.id}
+                          onClick={() => !isDisabled && setSelectedMethod(method.id)}
+                          disabled={isDisabled}
+                          style={{
+                            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7,
+                            padding: '12px 6px 10px', borderRadius: 14,
+                            background: isSelected ? T.chipOnBg : T.chip,
+                            border: isSelected ? '2px solid #03969c' : `1px solid ${T.chipBorder}`,
+                            cursor: isDisabled ? 'not-allowed' : 'pointer',
+                            opacity: isDisabled ? 0.45 : 1,
+                            position: 'relative', transition: 'all 160ms ease',
+                          }}
+                        >
+                          {isSelected && (
+                            <span style={{ position: 'absolute', top: 6, right: 6, width: 15, height: 15, borderRadius: '50%', background: '#03969c', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+                            </span>
+                          )}
+                          <span style={{ width: 36, height: 36, borderRadius: 10, background: '#fff', border: `1px solid ${T.chipBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
+                            <img
+                              src={method.image}
+                              alt=""
+                              onError={(e) => {
+                                const img = e.currentTarget;
+                                if (img.dataset.fallback === '1') return;
+                                img.dataset.fallback = '1';
+                                img.src = '/mobile-money.svg';
+                              }}
+                              style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 4 }}
+                            />
+                          </span>
+                          <span style={{ color: isSelected ? T.text : T.sub, fontSize: 11, fontWeight: 700, lineHeight: 1.2, textAlign: 'center' }}>
                             {method.name}
-                            <div style={{ fontSize: '9px', color: '#ef4444', marginTop: '2px', fontWeight: 700 }}>Unavailable</div>
-                          </>
-                        ) : method.name}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
+                            {isDisabled && <span style={{ display: 'block', fontSize: 9, color: '#ef4444', marginTop: 2, fontWeight: 700 }}>Unavailable</span>}
+                          </span>
+                        </button>
+                      );
+                    })}
+                </div>
               )}
             </div>
 
-            {/* Phone Input - shown for mobile money, and always for donations */}
+            {/* Phone - mobile money */}
             {selectedMethod && selectedMethod !== 'card' && (
-              <div style={{ marginBottom: '16px' }}>
-                <label style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  fontSize: '10.5px',
-                  fontWeight: 800,
-                  color: '#083A85',
-                  marginBottom: '8px',
-                  letterSpacing: '0.10em',
-                  textTransform: 'uppercase',
-                  fontFamily: "'Pragati Narrow', sans-serif",
-                }}>
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
-                    <line x1="12" y1="18" x2="12" y2="18" />
-                  </svg>
-                  Phone Number <span style={{ color: '#ef4444', letterSpacing: 0 }}>*</span>
-                </label>
+              <div style={{ marginBottom: 14 }}>
                 <InternationalPhoneInput
                   defaultIso2={detectedCountry}
                   onChange={setPhoneVal}
                   disabled={loading}
+                  dark={darkMode}
                   ariaLabel="Mobile money phone number"
                 />
-                <p style={{
-                  fontSize: '12px',
-                  color: '#64748b',
-                  marginTop: '8px',
-                  marginBottom: 0,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                }}>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#083A85" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <circle cx="12" cy="12" r="10" />
-                    <line x1="12" y1="16" x2="12" y2="12" />
-                    <line x1="12" y1="8" x2="12.01" y2="8" />
-                  </svg>
-                  You will receive a payment prompt on this number
+                <p style={{ fontSize: 11.5, color: T.faint, margin: '7px 2px 0' }}>
+                  An approval prompt lands on this phone. Keep it nearby.
                 </p>
               </div>
             )}
 
-            {/* Card info note */}
+            {/* Card note */}
             {selectedMethod === 'card' && (
-              <div style={{
-                marginBottom: '16px',
-                padding: '12px 14px',
-                backgroundColor: '#EFF6FF',
-                border: '1px solid #BFDBFE',
-                borderRadius: '12px',
-              }}>
-                <p style={{ fontSize: '14px', color: '#083A85', margin: 0 }}>
-                  You will be redirected to a secure payment page to enter your card details.
-                </p>
-              </div>
+              <p style={{ margin: '0 2px 14px', fontSize: 11.5, color: T.faint, lineHeight: 1.55 }}>
+                A secure card page opens in a new tab. Come back here after
+                paying, we watch for the confirmation.
+              </p>
             )}
 
             {/* Error */}
             {error && (
-              <div style={{
-                padding: '12px 16px',
-                marginBottom: '16px',
-                backgroundColor: '#FEF2F2',
-                border: '1px solid #fecaca',
-                borderRadius: '12px',
-                color: '#EF4444',
-                fontSize: '14px',
-              }}>
+              <div style={{ padding: '11px 14px', marginBottom: 14, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.4)', borderRadius: 12, color: darkMode ? '#fca5a5' : '#dc2626', fontSize: 13 }}>
                 {error}
               </div>
             )}
 
-            {/* Pay Button - gradient brand-blue with brand-blue glow when active.
-                Disabled state uses a brand-blue tinted soft surface (not pure
-                gray) so it still feels like part of the brand system. */}
+            {/* CTA */}
             <button
               onClick={() => {
-                // If donation prompt is enabled, open the standalone overlay
-                // (DonationPromptModal) - not the internal step. Skipping or
-                // confirming on that overlay continues to handlePay below.
                 if (showDonationPrompt && paymentType !== 'donation') {
                   setShowDonationOverlay(true);
                 } else {
@@ -1551,576 +1098,189 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
               }}
               disabled={!isValid() || loading}
               style={{
-                width: '100%',
-                padding: '15px 22px',
+                width: '100%', padding: 15, borderRadius: 14, border: 0,
                 background: (!isValid() || loading)
-                  ? 'linear-gradient(135deg, #e5edf9 0%, #f1f5fb 100%)'
-                  : 'linear-gradient(135deg, #083A85 0%, #0a4da3 50%, #1f6bff 100%)',
-                border: 'none',
-                borderRadius: '14px',
-                color: (!isValid() || loading) ? '#94a3b8' : '#fff',
-                fontSize: '15.5px',
-                fontWeight: 700,
-                fontFamily: "'Pragati Narrow', sans-serif",
-                letterSpacing: '0.01em',
+                  ? (darkMode ? 'rgba(255,255,255,0.08)' : '#eef2f8')
+                  : 'linear-gradient(135deg, #083A85 0%, #F20C8F 130%)',
+                color: (!isValid() || loading) ? T.faint : '#fff',
+                fontSize: 15, fontWeight: 800,
                 cursor: (!isValid() || loading) ? 'not-allowed' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '10px',
-                transition: 'transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 220ms ease, filter 220ms ease',
-                boxShadow: (!isValid() || loading)
-                  ? 'inset 0 0 0 1px rgba(8,58,133,0.10)'
-                  : '0 14px 28px -10px rgba(8,58,133,0.55), 0 4px 10px -2px rgba(8,58,133,0.30), inset 0 1px 0 rgba(255,255,255,0.18)',
-              }}
-              onMouseEnter={(e) => {
-                if (!isValid() || loading) return;
-                e.currentTarget.style.transform = 'translateY(-2px)';
-                e.currentTarget.style.boxShadow = '0 20px 36px -10px rgba(8,58,133,0.65), 0 6px 14px -2px rgba(8,58,133,0.40), inset 0 1px 0 rgba(255,255,255,0.22)';
-                e.currentTarget.style.filter = 'brightness(1.05)';
-              }}
-              onMouseLeave={(e) => {
-                if (!isValid() || loading) return;
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 14px 28px -10px rgba(8,58,133,0.55), 0 4px 10px -2px rgba(8,58,133,0.30), inset 0 1px 0 rgba(255,255,255,0.18)';
-                e.currentTarget.style.filter = 'brightness(1)';
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                boxShadow: (!isValid() || loading) ? 'none' : '0 12px 30px -10px rgba(242,12,143,0.5)',
+                transition: 'transform 180ms ease, box-shadow 180ms ease',
               }}
             >
               {loading ? (
                 <>
-                  <div style={{
-                    width: '20px',
-                    height: '20px',
-                    border: '2px solid rgba(255,255,255,0.3)',
-                    borderTopColor: '#fff',
-                    borderRadius: '50%',
-                    animation: 'spin 0.8s linear infinite',
-                  }} />
-                  Processing...
+                  <span style={{ width: 18, height: 18, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                  Processing…
                 </>
               ) : (
                 <>
-                  {(!isValid()) ? (
-                    /* Disabled: small lock icon → "select a method first" feel */
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                    </svg>
-                  ) : selectedMethod === 'card' ? (
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                      <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
-                      <line x1="1" y1="10" x2="23" y2="10" />
-                    </svg>
-                  ) : (
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                      <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
-                      <line x1="12" y1="18" x2="12" y2="18" />
-                    </svg>
-                  )}
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                   {showDonationPrompt && paymentType !== 'donation'
                     ? `Continue · ${formatAmount(totalAmount)}`
-                    : selectedMethod === 'card' ? `Proceed to Pay · ${formatAmount(totalAmount)}` : `Pay · ${formatAmount(totalAmount)}`}
-                  {isValid() && (
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ marginLeft: 2 }}>
-                      <line x1="5" y1="12" x2="19" y2="12" />
-                      <polyline points="12 5 19 12 12 19" />
-                    </svg>
-                  )}
+                    : selectedMethod === 'card'
+                      ? `Proceed to pay · ${formatAmount(totalAmount)}`
+                      : `Pay ${formatAmount(totalAmount)}`}
                 </>
               )}
             </button>
+            {trustFooter}
             </>)}
           </>
         )}
 
-        {/* ==================== STEP: Donation ==================== */}
-        {step === 'donation' && (() => {
-          const convertDonation = (rwfAmount: number): number => {
-            if (donationExchangeRate === 1) return Math.round(rwfAmount);
-            return Math.round(rwfAmount * donationExchangeRate * 100) / 100;
-          };
-          const formatDonationAmt = (val: number): string => {
-            const formatted = new Intl.NumberFormat('en-US', {
-              minimumFractionDigits: 0,
-              maximumFractionDigits: donationExchangeRate === 1 ? 0 : 2,
-            }).format(val);
-            return `${formatted} ${currencyCode}`;
-          };
-          const getDonationAmt = (): number => {
-            if (isCustomDonation && customDonationAmount) return parseFloat(customDonationAmount) || 0;
-            if (selectedDonationTier !== null) return convertDonation(selectedDonationTier);
-            return 0;
-          };
-          const canDonate = getDonationAmt() > 0;
-          const proceedWithDonation = (amt: number) => {
-            setInternalDonationAmount(amt);
-            onDonationAmountChange?.(amt);
-            handlePay(amt);
-          };
-
-          return (
-            <>
-              {/* Header */}
-              <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-                <div style={{
-                  width: '56px', height: '56px', borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #e11d48 0%, #f43f5e 100%)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  margin: '0 auto 14px',
-                  boxShadow: '0 4px 14px rgba(225, 29, 72, 0.3)',
-                }}>
-                  <i className="bi bi-heart-fill" style={{ fontSize: '24px', color: '#fff' }}></i>
-                </div>
-                <h2 style={{
-                  fontSize: 'clamp(18px, 4vw, 22px)', fontWeight: '700', color: '#083A85',
-                  marginBottom: '6px', fontFamily: "'Pragati Narrow', sans-serif", marginTop: 0,
-                }}>
-                  Support a Cause
-                </h2>
-                <p style={{ fontSize: '13px', color: '#6b7280', lineHeight: '1.5', margin: 0 }}>
-                  Your donation helps support vulnerable families, educate children, and empower those in need.
-                </p>
-              </div>
-
-              {/* Payment context */}
-              <div style={{
-                backgroundColor: '#f0f5ff', border: '1px solid #dbeafe', borderRadius: '10px',
-                padding: '10px 14px', marginBottom: '16px',
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              }}>
-                <span style={{ fontSize: '13px', color: '#4b5563' }}>Your payment</span>
-                <strong style={{ fontSize: '14px', color: '#083A85' }}>{formatAmount(amount)}</strong>
-              </div>
-
-              {/* Tier buttons */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', marginBottom: '12px' }}>
-                {donationTiers.map((tier) => {
-                  const convertedAmount = convertDonation(tier);
-                  const isSelected = !isCustomDonation && selectedDonationTier === tier;
-                  return (
-                    <button
-                      key={tier}
-                      onClick={() => { setSelectedDonationTier(tier); setIsCustomDonation(false); setCustomDonationAmount(''); }}
-                      style={{
-                        padding: '12px 8px', borderRadius: '12px',
-                        border: isSelected ? '2px solid #083A85' : '2px solid #e5e7eb',
-                        backgroundColor: isSelected ? '#f0f5ff' : '#fff',
-                        color: isSelected ? '#083A85' : '#374151',
-                        fontWeight: '600', fontSize: '14px', cursor: 'pointer', transition: 'all 0.2s',
-                      }}
-                    >
-                      {formatDonationAmt(convertedAmount)}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Custom amount */}
-              <div style={{ marginBottom: '20px' }}>
-                <div
-                  onClick={() => { setIsCustomDonation(true); setSelectedDonationTier(null); }}
-                  style={{
-                    display: 'flex', alignItems: 'center',
-                    border: isCustomDonation ? '2px solid #083A85' : '2px solid #e5e7eb',
-                    borderRadius: '12px', overflow: 'hidden',
-                    backgroundColor: isCustomDonation ? '#f0f5ff' : '#fff', transition: 'all 0.2s',
-                  }}
-                >
-                  <span style={{
-                    padding: '10px 14px', fontSize: '14px', fontWeight: '600', color: '#6b7280',
-                    backgroundColor: isCustomDonation ? '#dbeafe' : '#f9fafb', borderRight: '1px solid #e5e7eb',
-                  }}>
-                    {currencyCode}
-                  </span>
-                  <input
-                    type="number"
-                    placeholder="Custom amount"
-                    value={customDonationAmount}
-                    onChange={(e) => { setCustomDonationAmount(e.target.value); setIsCustomDonation(true); setSelectedDonationTier(null); }}
-                    onFocus={() => { setIsCustomDonation(true); setSelectedDonationTier(null); }}
-                    style={{
-                      flex: 1, padding: '10px 14px', border: 'none', outline: 'none',
-                      fontSize: '14px', fontWeight: '500', backgroundColor: 'transparent', color: '#1f2937',
-                    }}
-                    min="1"
-                  />
-                </div>
-              </div>
-
-              {/* Total display when donation selected */}
-              {canDonate && (
-                <div style={{
-                  backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '10px',
-                  padding: '10px 14px', marginBottom: '16px', fontSize: '13px', color: '#166534',
-                }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                    <span>Payment:</span>
-                    <strong>{formatAmount(amount)}</strong>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                    <span>Donation:</span>
-                    <strong style={{ color: '#e11d48' }}>{formatDonationAmt(getDonationAmt())}</strong>
-                  </div>
-                  <div style={{
-                    borderTop: '1px solid #bbf7d0', paddingTop: '6px',
-                    display: 'flex', justifyContent: 'space-between', fontWeight: '700', fontSize: '14px',
-                  }}>
-                    <span>Total:</span>
-                    <span>{formatAmount(amount + getDonationAmt())}</span>
-                  </div>
-                </div>
-              )}
-
-              {/* Action buttons */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <button
-                  onClick={() => proceedWithDonation(getDonationAmt())}
-                  disabled={!canDonate || loading}
-                  style={{
-                    width: '100%', padding: '14px 20px',
-                    backgroundColor: (canDonate && !loading) ? '#083A85' : '#d1d5db',
-                    color: (canDonate && !loading) ? '#fff' : '#9ca3af',
-                    border: 'none', borderRadius: '12px', fontSize: '15px', fontWeight: '600',
-                    cursor: (canDonate && !loading) ? 'pointer' : 'not-allowed', transition: 'all 0.2s ease',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                  }}
-                >
-                  {loading ? (
-                    <>
-                      <div style={{
-                        width: '16px', height: '16px',
-                        border: '2px solid rgba(255,255,255,0.3)',
-                        borderTopColor: '#fff',
-                        borderRadius: '50%',
-                        animation: 'spin 0.8s linear infinite',
-                      }} />
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      <i className="bi bi-heart-fill" style={{ fontSize: '16px' }}></i>
-                      Add Donation & Continue
-                    </>
-                  )}
-                </button>
-                <button
-                  onClick={() => proceedWithDonation(0)}
-                  disabled={loading}
-                  style={{
-                    width: '100%', padding: '12px 20px',
-                    backgroundColor: '#fff', color: loading ? '#d1d5db' : '#6b7280',
-                    border: '2px solid #e5e7eb', borderRadius: '12px',
-                    fontSize: '14px', fontWeight: '600',
-                    cursor: loading ? 'not-allowed' : 'pointer',
-                    opacity: loading ? 0.6 : 1,
-                    transition: 'all 0.2s ease',
-                  }}
-                >
-                  {loading ? 'Processing...' : 'Skip, continue to payment'}
-                </button>
-              </div>
-
-              {/* Error display */}
-              {error && (
-                <div style={{
-                  padding: '12px 16px',
-                  marginTop: '12px',
-                  backgroundColor: '#FEF2F2',
-                  border: '1px solid #fecaca',
-                  borderRadius: '12px',
-                  color: '#EF4444',
-                  fontSize: '14px',
-                }}>
-                  {error}
-                </div>
-              )}
-            </>
-          );
-        })()}
-
         {/* ==================== STEP: Processing ==================== */}
         {step === 'processing' && (
-          <div style={{ textAlign: 'center', padding: '20px 0', position: 'relative' }}>
-            {/* Brand-blue ambient halo behind the spinner */}
-            <div aria-hidden="true" style={{
-              position: 'absolute',
-              top: '-20px',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              width: '200px',
-              height: '200px',
-              borderRadius: '50%',
-              background: 'radial-gradient(circle, rgba(8,58,133,0.14) 0%, rgba(31,107,255,0.06) 40%, transparent 70%)',
-              pointerEvents: 'none',
-              zIndex: 0,
-            }} />
-            {/* Dual-ring spinner - outer thin track + brand-blue gradient arc */}
-            <div style={{
-              width: '92px',
-              height: '92px',
-              margin: '0 auto 24px',
-              position: 'relative',
-              zIndex: 1,
-            }}>
-              <div style={{
-                position: 'absolute',
-                inset: 0,
-                border: '3px solid rgba(8,58,133,0.10)',
-                borderRadius: '50%',
-              }} />
-              <div style={{
-                position: 'absolute',
-                inset: 0,
-                border: '3px solid transparent',
-                borderTopColor: '#083A85',
-                borderRightColor: '#1f6bff',
-                borderRadius: '50%',
-                animation: 'spin 0.9s linear infinite',
-                boxShadow: '0 6px 20px -6px rgba(8,58,133,0.40)',
-              }} />
-              {/* Inner pulse dot */}
-              <div style={{
-                position: 'absolute',
-                inset: '36px',
-                borderRadius: '50%',
-                background: 'linear-gradient(135deg, #083A85 0%, #1f6bff 100%)',
-                boxShadow: '0 4px 12px rgba(8,58,133,0.45)',
-              }} />
+          <div style={{ padding: '16px 4px 0', textAlign: 'center' }}>
+            <div style={{ position: 'relative', width: 86, height: 86, margin: '4px auto 18px' }}>
+              <span className="pay-ring" aria-hidden />
+              <span className="pay-ring d2" aria-hidden />
+              <span style={{ position: 'absolute', inset: 18, borderRadius: '50%', background: 'rgba(3,150,156,0.14)', border: '1px solid rgba(3,150,156,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#03969c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  {selectedMethod === 'card'
+                    ? <><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></>
+                    : <><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></>}
+                </svg>
+              </span>
             </div>
-
-            <h3 style={{
-              fontSize: 'clamp(20px, 4.5vw, 24px)',
-              fontWeight: 800,
-              color: '#083A85',
-              marginBottom: '12px',
-              marginTop: 0,
-              fontFamily: "'Pragati Narrow', sans-serif",
-              position: 'relative',
-              zIndex: 1,
-            }}>
-              {selectedMethod === 'card' ? 'Complete Payment' : 'Payment Initiated'}
+            <h3 className="pay-serif" style={{ margin: '0 0 6px', color: T.text, fontSize: 23, fontWeight: 600 }}>
+              {selectedMethod === 'card' ? 'Finish in the card tab.' : 'Check your phone.'}
             </h3>
-
-            {selectedMethod === 'card' ? (
-              <>
-                <p style={{ fontSize: '15px', color: '#6b7280', marginBottom: '16px', lineHeight: '1.5' }}>
-                  A secure payment page has been opened in a new tab.
-                  Please complete the payment there.{' '}
-                  <strong style={{ color: '#083A85' }}>
-                    If you don&apos;t see it, tap the button below.
-                  </strong>
-                </p>
-                {paymentUrl && (
-                  <a
-                    href={paymentUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      display: 'inline-block',
-                      padding: '14px 28px',
-                      background: 'linear-gradient(135deg, #083A85 0%, #1f6bff 100%)',
-                      color: '#fff',
-                      borderRadius: '12px',
-                      textDecoration: 'none',
-                      fontSize: '16px',
-                      fontWeight: 700,
-                      marginBottom: '16px',
-                      boxShadow: '0 10px 22px -8px rgba(8,58,133,0.55), 0 4px 10px -2px rgba(8,58,133,0.30)',
-                      letterSpacing: '0.01em',
-                    }}
-                  >
-                    Open Payment Page
-                  </a>
-                )}
-              </>
-            ) : (
-              <p style={{ fontSize: '15px', color: '#6b7280', marginBottom: '16px', lineHeight: '1.5' }}>
-                A payment prompt has been sent to your phone.
-                Please check your phone and confirm the payment.
-              </p>
+            <p style={{ margin: '0 auto', maxWidth: 300, color: T.sub, fontSize: 13, lineHeight: 1.6 }}>
+              {selectedMethod === 'card'
+                ? 'We opened a secure card page in another tab. This screen updates by itself the moment the payment lands.'
+                : `An approval prompt was sent${phoneVal?.digits ? ` to your number ending in ${phoneVal.digits.slice(-3)}` : ' to your phone'}. Approve it there, this screen updates by itself.`}
+            </p>
+            {selectedMethod !== 'card' && (
+              <div style={{ margin: '14px auto 0', maxWidth: 300, padding: '10px 14px', borderRadius: 12, background: T.chip, border: `1px solid ${T.chipBorder}`, color: T.sub, fontSize: 12, textAlign: 'left', lineHeight: 1.55 }}>
+                No prompt? Open your mobile money menu to approve pending
+                payments, and check your balance covers <strong style={{ color: T.text }}>{formatAmount(totalAmount)}</strong>.
+              </div>
             )}
-
-            <p style={{ fontSize: '13px', color: '#6b7280' }}>
-              Waiting for the gateway to confirm your payment - this can take up to a minute.
-            </p>
-
-            <p style={{ fontSize: '13px', color: '#ef4444', marginTop: '12px', lineHeight: 1.5 }}>
-              {"Didn't receive the SMS? Check that your mobile money balance covers the payment amount."}
-            </p>
+            {selectedMethod === 'card' && paymentUrl && (
+              <a
+                href={paymentUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, margin: '14px auto 0', padding: '9px 16px', borderRadius: 999, background: T.chip, border: `1px solid ${T.chipBorder}`, color: '#03969c', fontSize: 12.5, fontWeight: 700, textDecoration: 'none' }}
+              >
+                Reopen the card page ↗
+              </a>
+            )}
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, margin: '16px 0 4px', color: T.faint, fontSize: 11.5, fontWeight: 600 }}>
+              <span className="pay-dot" aria-hidden /> Watching for confirmation{refid ? ` · ref ${refid.slice(0, 10)}…` : ''}
+            </div>
+            {trustFooter}
           </div>
         )}
 
         {/* ==================== STEP: Success ==================== */}
         {step === 'success' && (
-          <div style={{ textAlign: 'center', padding: '20px 0', position: 'relative' }}>
-            {/* Brand-tinted halo behind the green check - keeps the page in
-                the brand system while preserving green's success semantics. */}
-            <div aria-hidden="true" style={{
-              position: 'absolute',
-              top: '-20px',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              width: '180px',
-              height: '180px',
-              borderRadius: '50%',
-              background: 'radial-gradient(circle, rgba(8,58,133,0.10) 0%, rgba(34,197,94,0.06) 35%, transparent 70%)',
-              pointerEvents: 'none',
-              zIndex: 0,
-            }} />
-            {/* Checkmark with success-green core + brand-blue rim */}
-            <div style={{
-              width: '88px',
-              height: '88px',
-              margin: '0 auto 22px',
-              background: 'linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%)',
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              position: 'relative',
-              zIndex: 1,
-              border: '2px solid #bbf7d0',
-              boxShadow: '0 12px 30px -10px rgba(34,197,94,0.45), 0 0 0 6px rgba(8,58,133,0.04)',
-            }}>
-              <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
+          <div style={{ padding: '20px 4px 0', textAlign: 'center' }}>
+            <div style={{ width: 76, height: 76, margin: '0 auto 16px', borderRadius: '50%', background: 'rgba(16,185,129,0.14)', border: '2px solid rgba(16,185,129,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
             </div>
-
-            <h3 style={{
-              fontSize: 'clamp(22px, 5vw, 26px)',
-              fontWeight: 800,
-              color: '#083A85',
-              marginBottom: '8px',
-              marginTop: 0,
-              fontFamily: "'Pragati Narrow', sans-serif",
-              position: 'relative',
-              zIndex: 1,
-            }}>
-              Payment Successful
-            </h3>
-            <p style={{ fontSize: '15px', color: '#475569', margin: 0, lineHeight: 1.6, position: 'relative', zIndex: 1 }}>
-              Your payment of <strong style={{ color: '#083A85' }}>{formatAmount(totalAmount)}</strong> has been completed.
+            <h3 className="pay-serif" style={{ margin: '0 0 6px', color: T.text, fontSize: 25, fontWeight: 600 }}>Paid.</h3>
+            <p style={{ margin: '0 auto', maxWidth: 290, color: T.sub, fontSize: 13, lineHeight: 1.6 }}>
+              {formatAmount(totalAmount)} received. Taking you to your purchase now.
             </p>
+            {refid && (
+              <div style={{ margin: '16px auto 4px', maxWidth: 270, padding: '9px 14px', borderRadius: 12, background: T.receipt, border: `1px dashed ${T.fieldBorder}`, color: T.sub, fontSize: 12, display: 'flex', justifyContent: 'space-between', gap: 10 }}>
+                <span>Receipt</span><code style={{ color: '#03969c', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis' }}>{refid}</code>
+              </div>
+            )}
+            {trustFooter}
           </div>
         )}
 
         {/* ==================== STEP: Failed ==================== */}
+        {/* Two truths, per docs/PAYMENTS.md rule 2:
+            - declined: the gateway definitively refused - no charge landed,
+              retrying is safe and offered.
+            - unknown: timeout / status-check error - the charge MAY have
+              landed, so NO retry is offered. The buyer is told to check
+              their phone and email first. */}
         {step === 'failed' && (
-          <div style={{ textAlign: 'center', padding: '20px 0' }}>
-            {/* X mark */}
+          <div style={{ padding: '20px 4px 0', textAlign: 'center' }}>
             <div style={{
-              width: '88px',
-              height: '88px',
-              margin: '0 auto 22px',
-              background: 'linear-gradient(135deg, #fef2f2 0%, #fff5f5 100%)',
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              border: '2px solid #fecaca',
-              boxShadow: '0 12px 30px -10px rgba(239,68,68,0.40), 0 0 0 6px rgba(8,58,133,0.04)',
+              width: 70, height: 70, margin: '0 auto 16px', borderRadius: '50%',
+              background: failureKind === 'declined' ? 'rgba(239,68,68,0.12)' : 'rgba(245,158,11,0.12)',
+              border: `2px solid ${failureKind === 'declined' ? 'rgba(239,68,68,0.55)' : 'rgba(245,158,11,0.55)'}`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
-              <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
+              {failureKind === 'declined' ? (
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.6" strokeLinecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              ) : (
+                <span style={{ color: '#f59e0b', fontSize: 26, fontWeight: 800 }}>?</span>
+              )}
             </div>
-
-            <h3 style={{
-              fontSize: 'clamp(22px, 5vw, 26px)',
-              fontWeight: 800,
-              color: '#083A85',
-              marginBottom: '8px',
-              marginTop: 0,
-              fontFamily: "'Pragati Narrow', sans-serif",
-            }}>
-              Payment Failed
+            <h3 className="pay-serif" style={{ margin: '0 0 6px', color: T.text, fontSize: 23, fontWeight: 600 }}>
+              {failureKind === 'declined' ? 'Payment declined.' : 'Still unconfirmed.'}
             </h3>
-            <p style={{ fontSize: '15px', color: '#475569', marginBottom: '24px', lineHeight: 1.6 }}>
-              {error || 'The payment could not be completed. Please try again.'}
+            <p style={{ margin: '0 auto', maxWidth: 300, color: T.sub, fontSize: 13, lineHeight: 1.6 }}>
+              {failureKind === 'declined'
+                ? 'The provider declined this payment. You were not charged. Check your balance or try a different method.'
+                : "We couldn't confirm the payment in time. If you approved it, the money may have left your account, so don't pay again yet."}
             </p>
-
-            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
-              <button
-                onClick={handleRetry}
-                style={{
-                  padding: '13px 26px',
-                  background: 'linear-gradient(135deg, #083A85 0%, #0a4da3 50%, #1f6bff 100%)',
-                  border: 'none',
-                  borderRadius: '12px',
-                  color: '#fff',
-                  fontSize: '15px',
-                  fontWeight: 700,
-                  fontFamily: "'Pragati Narrow', sans-serif",
-                  cursor: 'pointer',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  boxShadow: '0 12px 24px -10px rgba(8,58,133,0.55), inset 0 1px 0 rgba(255,255,255,0.18)',
-                  transition: 'transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 200ms ease',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 18px 30px -10px rgba(8,58,133,0.65), inset 0 1px 0 rgba(255,255,255,0.22)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 12px 24px -10px rgba(8,58,133,0.55), inset 0 1px 0 rgba(255,255,255,0.18)';
-                }}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <polyline points="23 4 23 10 17 10" />
-                  <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
-                </svg>
-                Try Again
-              </button>
-              <button
-                onClick={handleClose}
-                style={{
-                  padding: '13px 26px',
-                  backgroundColor: '#ffffff',
-                  border: '1.5px solid rgba(8,58,133,0.16)',
-                  borderRadius: '12px',
-                  color: '#475569',
-                  fontSize: '15px',
-                  fontWeight: 600,
-                  fontFamily: "'Pragati Narrow', sans-serif",
-                  cursor: 'pointer',
-                  transition: 'border-color 180ms ease, background-color 180ms ease, color 180ms ease',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = 'rgba(8,58,133,0.30)';
-                  e.currentTarget.style.backgroundColor = '#f8fafc';
-                  e.currentTarget.style.color = '#083A85';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = 'rgba(8,58,133,0.16)';
-                  e.currentTarget.style.backgroundColor = '#ffffff';
-                  e.currentTarget.style.color = '#475569';
-                }}
-              >
-                Close
-              </button>
+            {error && failureKind === 'declined' && (
+              <p style={{ margin: '10px auto 0', maxWidth: 300, color: T.faint, fontSize: 11.5 }}>{error}</p>
+            )}
+            {failureKind === 'unknown' && (
+              <div style={{ margin: '14px auto 0', maxWidth: 310, padding: '12px 14px', borderRadius: 12, background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.3)', color: T.sub, fontSize: 12.5, textAlign: 'left', lineHeight: 1.6 }}>
+                <strong style={{ color: '#f59e0b' }}>Before anything else:</strong><br />
+                1. Check your phone for the payment receipt SMS.<br />
+                2. Check your email, we deliver there the moment it clears.<br />
+                If neither arrives in a few minutes, you can safely start over.
+              </div>
+            )}
+            <div style={{ display: 'flex', gap: 10, margin: '16px 0 4px' }}>
+              {failureKind === 'declined' ? (
+                <>
+                  <button
+                    onClick={handleClose}
+                    style={{ flex: 1, padding: 13, borderRadius: 13, cursor: 'pointer', background: T.chip, border: `1px solid ${T.chipBorder}`, color: T.text, fontWeight: 700, fontSize: 13.5 }}
+                  >
+                    Close
+                  </button>
+                  <button
+                    onClick={handleRetry}
+                    style={{ flex: 1.4, padding: 13, borderRadius: 13, border: 0, cursor: 'pointer', background: 'linear-gradient(135deg, #083A85 0%, #F20C8F 130%)', color: '#fff', fontWeight: 800, fontSize: 13.5, boxShadow: '0 10px 26px -10px rgba(242,12,143,0.5)' }}
+                  >
+                    Try a different way
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={handleClose}
+                  style={{ flex: 1, padding: 13, borderRadius: 13, cursor: 'pointer', background: T.chip, border: `1px solid ${T.chipBorder}`, color: T.text, fontWeight: 700, fontSize: 13.5 }}
+                >
+                  Close · I&apos;ll check my phone &amp; email
+                </button>
+              )}
             </div>
+            {trustFooter}
           </div>
         )}
         </div>{/* end scrollable content layer */}
       </div>
 
-      {/* Spinner animation */}
       <style>{`
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
+        @import url('https://fonts.googleapis.com/css2?family=Libre+Bodoni:ital,wght@0,500;0,600;0,700;1,500&display=swap');
+        .pay-serif { font-family: 'Libre Bodoni', Georgia, 'Times New Roman', serif; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .pay-ring { position: absolute; inset: 0; border-radius: 50%; border: 2px solid rgba(3,150,156,0.5); animation: pay-pulse 2s ease-out infinite; }
+        .pay-ring.d2 { animation-delay: 1s; }
+        @keyframes pay-pulse { 0% { transform: scale(0.6); opacity: 1; } 100% { transform: scale(1.25); opacity: 0; } }
+        .pay-dot { width: 7px; height: 7px; border-radius: 50%; background: #03969c; display: inline-block; animation: pay-blink 1.2s ease-in-out infinite; }
+        @keyframes pay-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+        @media (prefers-reduced-motion: reduce) { .pay-ring, .pay-dot { animation: none; } }
       `}</style>
 
-      {/* ═══════════════════════════════════════════════════════════════════
-          DonationPromptModal - pops over this payment modal AFTER the user
-          clicks "Continue". Visually distinct (rose-coral palette) so the
-          viewer immediately sees this is an OPTIONAL ask, not part of the
-          payment progression. Either action below closes the overlay and
-          calls handlePay() with the appropriate donation amount. */}
+      {/* DonationPromptModal - optional add-on overlay AFTER Continue.
+          Either action closes the overlay and calls handlePay() with the
+          chosen donation amount. */}
       <DonationPromptModal
         isOpen={showDonationOverlay}
         currencyCode={currencyCode}
