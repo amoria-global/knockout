@@ -1181,6 +1181,7 @@ export default function BrowsePhotosPage() {
           // saves to the Donation table - never mixed into any
           // photographer's 70/30 payout.
           showDonationPrompt
+          darkMode
           title="Connekyt Photos"
           subtitle={`${cartItems.length} photo${cartItems.length === 1 ? '' : 's'} from ${multiAlbumItems.length} photographer${multiAlbumItems.length === 1 ? '' : 's'}`}
         />
