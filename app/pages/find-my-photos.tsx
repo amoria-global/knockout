@@ -2027,6 +2027,27 @@ const FindMyPhotos = () => {
         @media (max-width: 720px) {
           .fr-unlock-pill { top: 70px; right: 10px; padding: 7px 12px; }
         }
+        .fr-code-toast {
+          position: fixed; top: 124px; right: 20px; max-width: 340px;
+          background: linear-gradient(145deg, #0b3d4a 0%, #0a2d3a 100%);
+          border: 1px solid rgba(3,150,156,0.45);
+          border-radius: 14px; padding: 16px 18px; z-index: 2400;
+          box-shadow: 0 12px 40px rgba(0,0,0,0.4); color: #e5fafa;
+        }
+        .fr-code-toast-code {
+          font-family: monospace; font-size: 17px; font-weight: 700;
+          letter-spacing: 1.5px; color: #fff;
+          padding: 10px 12px; border-radius: 8px;
+          background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+        }
+        @media (max-width: 720px) {
+          .fr-code-toast {
+            top: auto; right: 12px; left: 12px; max-width: none;
+            bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+            padding: 12px 14px;
+          }
+          .fr-code-toast-code { font-size: 15px; padding: 8px 10px; }
+        }
         @media (prefers-reduced-motion: reduce) {
           .fr-door, .fr-card, .fr-eye, .fr-act, .fr-scanline, .fr-unlock-pill { transition: none !important; animation: none !important; }
           .fr-skel { animation: none; background: rgba(255,255,255,0.06); }
@@ -3639,17 +3660,14 @@ const FindMyPhotos = () => {
         </div>
       )}
 
-      {/* ── Recent unlock-code banner (after a fresh purchase) ── */}
+      {/* ── Recent unlock-code banner (after a fresh purchase) ──
+          A corner toast on desktop; on a phone it drops to the bottom edge
+          as a compact strip, because pinned near the top it sat on the dock,
+          the unlock pill and the first row of cards. Placement lives in the
+          stylesheet with the rest of the fixed chrome, not inline, so the
+          720px breakpoint governs it like everything else. */}
       {recentUnlockCode && (
-        <div
-          style={{
-            position: 'fixed', top: 120, right: 20, maxWidth: 340,
-            background: 'linear-gradient(145deg, #0b3d4a 0%, #0a2d3a 100%)',
-            border: '1px solid rgba(3,150,156,0.45)',
-            borderRadius: 14, padding: '16px 18px', zIndex: 2400,
-            boxShadow: '0 12px 40px rgba(0,0,0,0.4)', color: '#e5fafa',
-          }}
-        >
+        <div className="fr-code-toast">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
             <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 6 }}>Save your unlock code</div>
             <button
@@ -3658,15 +3676,7 @@ const FindMyPhotos = () => {
               aria-label="Dismiss"
             >×</button>
           </div>
-          <div
-            style={{
-              fontFamily: 'monospace', fontSize: 17, fontWeight: 700,
-              letterSpacing: 1.5, color: '#fff',
-              padding: '10px 12px', borderRadius: 8,
-              background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
-              userSelect: 'all',
-            }}
-          >
+          <div className="fr-code-toast-code" style={{ userSelect: 'all' }}>
             {recentUnlockCode}
           </div>
           <p style={{ fontSize: 12, color: '#a8d4d8', margin: '8px 0 0' }}>
