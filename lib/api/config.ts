@@ -212,10 +212,15 @@ export const API_ENDPOINTS = {
     PAYMENT_OPTIONS: (country: string) => `/api/remote/public/payments/options?country=${encodeURIComponent(country)}`,
     PAYMENT_OPTIONS_ALL: '/api/remote/public/payments/options/all',
     ALBUM_PHOTO_DOWNLOAD: (albumId: string, photoId: string, token: { refid?: string; buyerId?: string }) => {
-      const qs = token.buyerId
-        ? `buyerId=${encodeURIComponent(token.buyerId)}`
-        : `refid=${encodeURIComponent(token.refid || '')}`;
-      return `/api/remote/public/albums/${albumId}/photo/${photoId}/download?${qs}`;
+      // Send every proof we hold. This used to prefer buyerId and silently
+      // DROP the refid - so the download straight after checkout discarded
+      // the one token guaranteed to match the purchase row, and leaned on a
+      // localStorage buyerId that may belong to an older session. The
+      // backend accepts both params and checks refid first.
+      const parts: string[] = [];
+      if (token.refid) parts.push(`refid=${encodeURIComponent(token.refid)}`);
+      if (token.buyerId) parts.push(`buyerId=${encodeURIComponent(token.buyerId)}`);
+      return `/api/remote/public/albums/${albumId}/photo/${photoId}/download?${parts.join('&')}`;
     },
   },
 
