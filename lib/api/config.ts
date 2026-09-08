@@ -93,7 +93,12 @@ export const API_ENDPOINTS = {
     VALIDATE_PASSWORD: '/api/remote/auth/validate-password',
     CHECK_EMAIL: '/api/remote/auth/check-email',
     REFRESH_TOKEN: '/api/remote/auth/refresh-token',
-    LOGOUT: '/api/remote/auth/logout',
+    // Ordinary sign-out ends this device's session only (CONN-AUTH-7). The
+    // old target, now LOGOUT_EVERYWHERE, ends every session on every device
+    // and used to run on every "Log out" click, so signing out of the web
+    // silently signed out the phone and the TV a few hours later.
+    LOGOUT: '/api/remote/auth/logout-device',
+    LOGOUT_EVERYWHERE: '/api/remote/auth/logout',
     GOOGLE: '/api/remote/auth/google',
     VERIFY_TOTP: '/api/remote/auth/verify-totp',
   },
