@@ -10,6 +10,9 @@ import { validatePassword as validatePasswordRemote } from '@/lib/APIs/auth/vali
 import { checkEmail as checkEmailRemote } from '@/lib/APIs/auth/check-email/route';
 import { persistPhotographerProfile } from '@/lib/photographer/persist-profile';
 import { googleAuth } from '@/lib/APIs/auth/google/route';
+import { appleAuth } from '@/lib/APIs/auth/apple/route';
+import AppleSignInButton from '@/app/components/auth/AppleSignInButton';
+import { forgetFirstHandshake as forgetAppleHandshake, type AppleWebCredential } from '@/lib/auth/apple-js';
 import { setAuthToken, getAuthToken, getRefreshToken } from '@/lib/api/client';
 import { useToast } from '@/lib/notifications/ToastProvider';
 import { useAuth } from '@/app/providers/AuthProvider';
@@ -310,6 +313,7 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
   const [loggedInUserName, setLoggedInUserName] = useState('');
   const [loggedInUserType, setLoggedInUserType] = useState<string | undefined>(undefined);
   const [googleLoginLoading, setGoogleLoginLoading] = useState(false);
+  const [appleLoginLoading, setAppleLoginLoading] = useState(false);
 
   useEffect(() => { if (redirectUrl) localStorage.setItem('authRedirectUrl', redirectUrl); }, [redirectUrl]);
   useEffect(() => { if (loggedOut) { logoutUser(); setShowLoggedOutBanner(true); const t = setTimeout(() => setShowLoggedOutBanner(false), 5000); return () => clearTimeout(t); } }, [loggedOut, logoutUser]);
@@ -527,6 +531,7 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
   const phoneDigits = phoneVal?.digits ?? '';
   const [signupLoading, setSignupLoading] = useState(false);
   const [googleSignupLoading, setGoogleSignupLoading] = useState(false);
+  const [appleSignupLoading, setAppleSignupLoading] = useState(false);
   const [isGooglePreFilled, setIsGooglePreFilled] = useState(false);
   const [signupErrors, setSignupErrors] = useState<{ [key: string]: string }>({});
   // Photographer onboarding state - shown after signup, before OTP
@@ -594,6 +599,56 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
 
   const validatePassword = (pwd: string) => /\d/.test(pwd) && /[a-zA-Z]/.test(pwd) && /[@!#$%^&*=+]/.test(pwd) && pwd.length >= 8;
 
+  // ─── Apple sign-in (login). Never creates an account: no role is known here, so an
+  // unknown Apple ID is handed to registration (action 3 / needsRole from the backend).
+  const handleAppleLoginSuccess = async (credential: AppleWebCredential) => {
+    setAppleLoginLoading(true); setLoginError('');
+    try {
+      const response = await appleAuth({ ...credential, customerType: 'Client', createIfMissing: false });
+      const data = response.data;
+      if (response.success && data?.needsRole) {
+        // Apple will not resend the name on the next attempt; apple-js.ts cached it.
+        showInfo('No account is linked to this Apple ID yet. Choose how you will use Connekyt to sign up.');
+        setIsLogin(false); setShowUserTypeModal(true);
+        window.history.replaceState(null, '', '/user/auth/signup');
+        return;
+      }
+      if (response.success && data?.twoFactorRequired && data?.customerId) { showInfo('Please enter your authenticator code.'); router.push(`/user/auth/verify-totp?customerId=${encodeURIComponent(String(data.customerId))}`); return; }
+      if (response.success && data?.token) {
+        const customerType = data.customerType || '';
+        if (customerType === 'Viewer') { setLoginError('Viewer accounts can only sign in from event pages.'); showError('Viewer accounts can only sign in from event pages.'); return; }
+        const userData = { id: data.id || data.customerId || '', firstName: data.firstName || credential.firstName || '', lastName: data.lastName || credential.lastName || '', email: data.email || credential.email || '', phone: data.phone || '', customerId: data.customerId || '', customerType };
+        loginUser(userData, data.token);
+        forgetAppleHandshake(credential.appleUserId);
+        setLoggedInUserName(userData.firstName || 'User'); setLoggedInUserType(customerType); showSuccess('Welcome back!');
+        if (appRedirect) { setTimeout(() => returnToAppWithSession(data.token as string, { refreshToken: data.refreshToken, customerId: userData.customerId, email: userData.email, firstName: userData.firstName, lastName: userData.lastName, phone: userData.phone, customerType }), 300); }
+        else if (isBookingRedirect) { setTimeout(() => redirectToBookingDashboard(customerType), 300); }
+        else { setShowPostLoginModal(true); }
+      } else { const msg = response.error || data?.message || 'Apple sign-in failed.'; setLoginError(msg); showError(msg); }
+    } catch (err) { const msg = err instanceof Error ? err.message : 'An error occurred during Apple sign-in.'; setLoginError(msg); showError(msg); }
+    finally { setAppleLoginLoading(false); }
+  };
+
+  // ─── Apple sign-up: the role chosen in UserTypeModal is applied when the account is created.
+  const handleAppleSignupSuccess = async (credential: AppleWebCredential) => {
+    setAppleSignupLoading(true);
+    try {
+      const br = await appleAuth({ ...credential, customerType: signupUserType, createIfMissing: true });
+      if (br.success && br.data?.twoFactorRequired && br.data?.customerId) { showInfo('Please enter your authenticator code.'); router.push(`/user/auth/verify-totp?customerId=${encodeURIComponent(String(br.data.customerId))}`); return; }
+      if (br.success && br.data?.token) {
+        setAuthToken(br.data.token);
+        forgetAppleHandshake(credential.appleUserId);
+        showSuccess(appRedirect ? 'Welcome! Returning to the app…' : 'Welcome! Redirecting...');
+        if (appRedirect) { setTimeout(() => returnToAppWithSession(br.data!.token as string, br.data), 300); }
+        else if (isBookingRedirect) { setTimeout(() => redirectToBookingDashboard(br.data?.customerType), 300); }
+        else { router.push(redirectUrl || '/user'); }
+        return;
+      }
+      const msg = br.error || br.data?.message || 'Apple sign-up failed.'; showError(msg);
+    } catch (err) { showError(err instanceof Error ? err.message : 'Apple sign-up failed.'); }
+    finally { setAppleSignupLoading(false); }
+  };
+
   const handleGoogleSignupSuccess = async (tokenResponse: { access_token: string }) => {
     setGoogleSignupLoading(true);
     try {
@@ -622,7 +677,13 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
     if (!lastName.trim()) newErrors.lastName = tSignup('lastNameRequired');
     if (!phoneVal?.nsn) newErrors.phoneNumber = tSignup('phoneRequired');
     else if (!phoneVal.isValid) newErrors.phoneNumber = 'Please enter a valid phone number';
+    // Email is REQUIRED at registration (product decision). The backend and
+    // schema still permit phone-only accounts — existing ones keep working and
+    // can still sign in — but no NEW account is created without an email.
     if (!signupEmail.trim()) newErrors.email = tSignup('emailRequired');
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(signupEmail.trim())) {
+      newErrors.email = 'Please enter a valid email address';
+    }
     if (!validatePassword(signupPassword)) newErrors.password = tSignup('passwordInvalid');
     if (signupPassword !== confirmPassword) newErrors.confirmPassword = tSignup('passwordsNotMatch');
     setSignupErrors(newErrors);
@@ -647,8 +708,12 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
         // signup() is deferred to the wizard's last step, so without this a
         // duplicate email is only caught after all 6 steps are filled.
         try {
-          const emailCheck = await checkEmailRemote(signupEmail.trim());
-          if (emailCheck.data && emailCheck.data.action === 0) {
+          // Email is optional now, so only ask the server about it when one
+          // was actually supplied — checking '' would be meaningless.
+          const emailCheck = signupEmail.trim()
+            ? await checkEmailRemote(signupEmail.trim())
+            : null;
+          if (emailCheck?.data && emailCheck.data.action === 0) {
             const msg = emailCheck.data.message || 'This email already exists. Please log in to use your account.';
             setSignupErrors({ email: msg });
             showError(msg);
@@ -788,7 +853,17 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
   const handleUserTypeSelect = (type: string) => { setSelectedUserType(type); setShowUserTypeModal(false); };
 
   // ── Shared styles ──
-  const inputStyle: React.CSSProperties = { width: '100%', padding: isMobile ? '13px 14px' : '12px 14px', fontSize: isMobile ? '16px' : '15px', border: '1px solid #e2e8f0', borderRadius: '10px', outline: 'none', transition: 'all 0.2s', backgroundColor: '#eef2f9', minHeight: isMobile ? '48px' : '44px', boxSizing: 'border-box', color: '#1e293b' };
+  const inputStyle: React.CSSProperties = {
+    // Longhands, NOT the `padding` shorthand. Call sites that need room for a
+    // leading icon spread this object and then set `paddingLeft`; React treats a
+    // shorthand + longhand in one style object as a conflict and re-applies the
+    // shorthand on re-render, dropping the longhand. That is why the envelope
+    // icon sat on top of the placeholder on forgot-password in production.
+    width: '100%',
+    paddingTop: isMobile ? '13px' : '12px',
+    paddingBottom: isMobile ? '13px' : '12px',
+    paddingLeft: '14px',
+    paddingRight: '14px', fontSize: isMobile ? '16px' : '15px', border: '1px solid #e2e8f0', borderRadius: '10px', outline: 'none', transition: 'all 0.2s', backgroundColor: '#eef2f9', minHeight: isMobile ? '48px' : '44px', boxSizing: 'border-box', color: '#1e293b' };
   const labelStyle: React.CSSProperties = { display: 'block', fontSize: '14px', fontWeight: '600', color: '#1e293b', marginBottom: '6px' };
   const errorStyle: React.CSSProperties = { fontSize: '12px', color: '#dc2626', marginTop: '4px' };
 
@@ -1034,7 +1109,7 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
           </div>
         )}
         <h1 style={{ fontSize: isMobile ? '22px' : '26px', fontWeight: '700', textAlign: 'center', marginBottom: '2px', background: 'linear-gradient(90deg, #8B5CF6 0%, #FF6B6B 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>{t('title')}</h1>
-        <p style={{ fontSize: isMobile ? '13px' : '14px', color: '#64748b', textAlign: 'center', marginBottom: isMobile ? '14px' : '16px', marginTop: 0 }}>Sign in to your account</p>
+        <div style={{ marginBottom: isMobile ? '14px' : '16px' }} />
 
         <form onSubmit={handleLoginSubmit}>
           {loginError && <div style={{ backgroundColor: '#fee2e2', border: '1px solid #fecaca', borderRadius: '8px', padding: '8px 12px', marginBottom: '10px' }}><p style={{ fontSize: '12px', color: '#991b1b', margin: 0 }}>{loginError}</p></div>}
@@ -1046,7 +1121,7 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
                 <div style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af', display: 'flex', alignItems: 'center' }}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 12C14.21 12 16 10.21 16 8C16 5.79 14.21 4 12 4C9.79 4 8 5.79 8 8C8 10.21 9.79 12 12 12ZM12 14C9.33 14 4 15.34 4 18V20H20V18C20 15.34 14.67 14 12 14Z" fill="currentColor"/></svg>
                 </div>
-                <input className="auth-input" type="email" id="loginEmail" value={loginEmail} onChange={e => setLoginEmail(e.target.value)} placeholder={t('emailPlaceholder')} style={{ ...inputStyle, paddingLeft: '42px' }} />
+                <input className="auth-input" type="text" inputMode="email" autoComplete="username" id="loginEmail" value={loginEmail} onChange={e => setLoginEmail(e.target.value)} placeholder={t('emailPlaceholder')} style={{ ...inputStyle, paddingLeft: '42px' }} />
               </div>
             </div>
             <div>
@@ -1055,8 +1130,8 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
                 <div style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af', display: 'flex', alignItems: 'center' }}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1s3.1 1.39 3.1 3.1v2z" fill="currentColor"/></svg>
                 </div>
-                <input className="auth-input" type={showPassword ? 'text' : 'password'} id="loginPassword" value={loginPassword} onChange={e => setLoginPassword(e.target.value)} placeholder={t('passwordPlaceholder')} style={{ ...inputStyle, paddingLeft: '42px', paddingRight: '42px' }} />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af', cursor: 'pointer', border: 'none', background: 'transparent', padding: '4px', display: 'flex', alignItems: 'center' }}>
+                <input className="auth-input" type={showPassword ? 'text' : 'password'} id="loginPassword" autoComplete="current-password" required value={loginPassword} onChange={e => setLoginPassword(e.target.value)} placeholder={t('passwordPlaceholder')} style={{ ...inputStyle, paddingLeft: '42px', paddingRight: '42px' }} />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? "Hide password" : "Show password"} aria-pressed={showPassword} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af', cursor: 'pointer', border: 'none', background: 'transparent', padding: '4px', display: 'flex', alignItems: 'center' }}>
                   <i className={`bi ${showPassword ? 'bi-eye-slash' : 'bi-eye'}`} style={{ fontSize: '16px' }} />
                 </button>
               </div>
@@ -1079,18 +1154,19 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
           </div>
         </form>
 
-        {GOOGLE_CLIENT_ID && (
-          <>
+        {/* Social sign-in. Apple is always offered (the button explains itself until the
+            Services ID is configured); Google appears only with its client ID. */}
+        <>
             <div style={{ display: 'flex', alignItems: 'center', margin: isMobile ? '8px 0' : '12px 0' }}>
               <hr style={{ flex: '1', border: 'none', borderTop: '1.5px solid #d1d5db' }} />
               <span style={{ padding: '0 12px', fontSize: '13px', color: '#6b7280', fontWeight: '600' }}>{t('orContinueWith')}</span>
               <hr style={{ flex: '1', border: 'none', borderTop: '1.5px solid #d1d5db' }} />
             </div>
-            <div style={{ display: 'flex' }}>
-              <GoogleLoginButton onSuccess={handleGoogleLoginSuccess} onError={() => { showError('Google sign-in failed.'); setGoogleLoginLoading(false); }} disabled={googleLoginLoading || loginLoading} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {!!GOOGLE_CLIENT_ID && <GoogleLoginButton onSuccess={handleGoogleLoginSuccess} onError={() => { showError('Google sign-in failed.'); setGoogleLoginLoading(false); }} disabled={googleLoginLoading || appleLoginLoading || loginLoading} />}
+              <AppleSignInButton label="Login with Apple" onCredential={handleAppleLoginSuccess} onError={(msg) => { setLoginError(msg); showError(msg); }} disabled={googleLoginLoading || appleLoginLoading || loginLoading} />
             </div>
-          </>
-        )}
+        </>
 
         {/* Mobile only: show signup link */}
         {isMobile && (
@@ -1130,12 +1206,12 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
             <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: '10px' }}>
               <div style={{ flex: 1 }}>
                 <label htmlFor="firstName" style={labelStyle}>{tSignup('firstName')} {isGooglePreFilled && <span style={{ fontSize: '12px', color: '#10b981' }}>(from Google)</span>}</label>
-                <input className="auth-input" type="text" id="firstName" value={firstName} onChange={e => !isGooglePreFilled && setFirstName(e.target.value)} placeholder={tSignup('firstNamePlaceholder')} readOnly={isGooglePreFilled} style={{ ...inputStyle, backgroundColor: isGooglePreFilled ? '#f1f5f9' : '#eef2f9', cursor: isGooglePreFilled ? 'not-allowed' : 'text' }} />
+                <input className="auth-input" type="text" id="firstName" autoComplete="given-name" required value={firstName} onChange={e => !isGooglePreFilled && setFirstName(e.target.value)} placeholder={tSignup('firstNamePlaceholder')} readOnly={isGooglePreFilled} style={{ ...inputStyle, backgroundColor: isGooglePreFilled ? '#f1f5f9' : '#eef2f9', cursor: isGooglePreFilled ? 'not-allowed' : 'text' }} />
                 {signupErrors.firstName && <p style={errorStyle}>{signupErrors.firstName}</p>}
               </div>
               <div style={{ flex: 1 }}>
                 <label htmlFor="lastName" style={labelStyle}>{tSignup('lastName')} {isGooglePreFilled && <span style={{ fontSize: '12px', color: '#10b981' }}>(from Google)</span>}</label>
-                <input className="auth-input" type="text" id="lastName" value={lastName} onChange={e => !isGooglePreFilled && setLastName(e.target.value)} placeholder={tSignup('lastNamePlaceholder')} readOnly={isGooglePreFilled} style={{ ...inputStyle, backgroundColor: isGooglePreFilled ? '#f1f5f9' : '#eef2f9', cursor: isGooglePreFilled ? 'not-allowed' : 'text' }} />
+                <input className="auth-input" type="text" id="lastName" autoComplete="family-name" required value={lastName} onChange={e => !isGooglePreFilled && setLastName(e.target.value)} placeholder={tSignup('lastNamePlaceholder')} readOnly={isGooglePreFilled} style={{ ...inputStyle, backgroundColor: isGooglePreFilled ? '#f1f5f9' : '#eef2f9', cursor: isGooglePreFilled ? 'not-allowed' : 'text' }} />
                 {signupErrors.lastName && <p style={errorStyle}>{signupErrors.lastName}</p>}
               </div>
             </div>
@@ -1143,7 +1219,7 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
             {/* Email */}
             <div>
               <label htmlFor="signupEmail" style={labelStyle}>{tSignup('yourEmail')} {isGooglePreFilled && <span style={{ fontSize: '12px', color: '#10b981' }}>(from Google)</span>}</label>
-              <input className="auth-input" type="email" id="signupEmail" value={signupEmail} onChange={e => !isGooglePreFilled && setSignupEmail(e.target.value)} placeholder={tSignup('emailPlaceholder')} readOnly={isGooglePreFilled} style={{ ...inputStyle, backgroundColor: isGooglePreFilled ? '#f1f5f9' : '#eef2f9', cursor: isGooglePreFilled ? 'not-allowed' : 'text' }} />
+              <input className="auth-input" type="email" id="signupEmail" autoComplete="email" required value={signupEmail} onChange={e => !isGooglePreFilled && setSignupEmail(e.target.value)} placeholder={tSignup('emailPlaceholder')} readOnly={isGooglePreFilled} style={{ ...inputStyle, backgroundColor: isGooglePreFilled ? '#f1f5f9' : '#eef2f9', cursor: isGooglePreFilled ? 'not-allowed' : 'text' }} />
               {signupErrors.email && <p style={errorStyle}>{signupErrors.email}</p>}
             </div>
 
@@ -1163,8 +1239,8 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
             <div>
               <label htmlFor="signupPassword" style={labelStyle}>{tAuth('password')} {isGooglePreFilled && !signupPassword && <span style={{ fontSize: '12px', color: '#2563eb' }}>(required)</span>}</label>
               <div style={{ position: 'relative' }}>
-                <input className="auth-input" type={showSignupPassword ? 'text' : 'password'} id="signupPassword" value={signupPassword} onChange={e => setSignupPassword(e.target.value)} placeholder={tSignup('passwordPlaceholder')} style={{ ...inputStyle, paddingRight: '44px', borderColor: isGooglePreFilled && !signupPassword ? '#083A85' : undefined, animation: isGooglePreFilled && !signupPassword ? 'pulseHighlight 2s ease-in-out 3' : 'none' }} />
-                <button type="button" onClick={() => setShowSignupPassword(!showSignupPassword)} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#6b7280', cursor: 'pointer', border: 'none', background: 'transparent', padding: '4px' }}>
+                <input className="auth-input" type={showSignupPassword ? 'text' : 'password'} id="signupPassword" autoComplete="new-password" required value={signupPassword} onChange={e => setSignupPassword(e.target.value)} placeholder={tSignup('passwordPlaceholder')} style={{ ...inputStyle, paddingRight: '44px', borderColor: isGooglePreFilled && !signupPassword ? '#083A85' : undefined, animation: isGooglePreFilled && !signupPassword ? 'pulseHighlight 2s ease-in-out 3' : 'none' }} />
+                <button type="button" onClick={() => setShowSignupPassword(!showSignupPassword)} aria-label={showSignupPassword ? "Hide password" : "Show password"} aria-pressed={showSignupPassword} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#6b7280', cursor: 'pointer', border: 'none', background: 'transparent', padding: '4px' }}>
                   <i className={`bi ${showSignupPassword ? 'bi-eye-slash' : 'bi-eye'}`} style={{ fontSize: '16px' }} />
                 </button>
               </div>
@@ -1201,7 +1277,7 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
                       { ok: passwordChecks.hasLetter, label: 'Contains a letter' },
                       { ok: passwordChecks.hasDigit, label: 'Contains a number' },
                       { ok: passwordChecks.hasSpecial, label: 'Contains a special character (@!#$%^&*=+)' },
-                      { ok: passwordChecks.longer || passwordChecks.mixedCase, label: '12+ characters or mixed case (recommended)', bonus: true },
+                      { ok: passwordChecks.longer || passwordChecks.mixedCase, label: '12+ characters or mixed case (required)', bonus: true },
                     ].map((c, idx) => (
                       <li key={idx} style={{
                         display: 'flex',
@@ -1228,8 +1304,8 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
             <div>
               <label htmlFor="confirmPassword" style={labelStyle}>{tSignup('confirmPasswordLabel')} {isGooglePreFilled && !confirmPassword && <span style={{ fontSize: '12px', color: '#2563eb' }}>(required)</span>}</label>
               <div style={{ position: 'relative' }}>
-                <input className="auth-input" type={showConfirmPassword ? 'text' : 'password'} id="confirmPassword" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder={tSignup('confirmPasswordPlaceholder')} style={{ ...inputStyle, paddingRight: '44px', borderColor: isGooglePreFilled && !confirmPassword ? '#083A85' : undefined, animation: isGooglePreFilled && !confirmPassword ? 'pulseHighlight 2s ease-in-out 3' : 'none' }} />
-                <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#6b7280', cursor: 'pointer', border: 'none', background: 'transparent', padding: '4px' }}>
+                <input className="auth-input" type={showConfirmPassword ? 'text' : 'password'} id="confirmPassword" autoComplete="new-password" required value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder={tSignup('confirmPasswordPlaceholder')} style={{ ...inputStyle, paddingRight: '44px', borderColor: isGooglePreFilled && !confirmPassword ? '#083A85' : undefined, animation: isGooglePreFilled && !confirmPassword ? 'pulseHighlight 2s ease-in-out 3' : 'none' }} />
+                <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} aria-label={showConfirmPassword ? "Hide password" : "Show password"} aria-pressed={showConfirmPassword} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#6b7280', cursor: 'pointer', border: 'none', background: 'transparent', padding: '4px' }}>
                   <i className={`bi ${showConfirmPassword ? 'bi-eye-slash' : 'bi-eye'}`} style={{ fontSize: '16px' }} />
                 </button>
               </div>
@@ -1269,15 +1345,16 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
           </div>
         </form>
 
-        {GOOGLE_CLIENT_ID && signupUserType !== 'Photographer' && (
+        {signupUserType !== 'Photographer' && (
           <>
             <div style={{ display: 'flex', alignItems: 'center', margin: isMobile ? '8px 0' : '12px 0' }}>
               <hr style={{ flex: '1', border: 'none', borderTop: '1.5px solid #d1d5db' }} />
               <span style={{ padding: '0 12px', fontSize: '13px', color: '#6b7280', fontWeight: '600' }}>{tSignup('orSignUpWith')}</span>
               <hr style={{ flex: '1', border: 'none', borderTop: '1.5px solid #d1d5db' }} />
             </div>
-            <div style={{ display: 'flex' }}>
-              <GoogleSignupButton onSuccess={handleGoogleSignupSuccess} onError={() => { showError('Google sign-in failed.'); setGoogleSignupLoading(false); }} disabled={googleSignupLoading} isConnected={isGooglePreFilled} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {!!GOOGLE_CLIENT_ID && <GoogleSignupButton onSuccess={handleGoogleSignupSuccess} onError={() => { showError('Google sign-in failed.'); setGoogleSignupLoading(false); }} disabled={googleSignupLoading || appleSignupLoading} isConnected={isGooglePreFilled} />}
+              <AppleSignInButton label="Sign up with Apple" busyLabel="Connecting..." onCredential={handleAppleSignupSuccess} onError={(msg) => showError(msg)} disabled={googleSignupLoading || appleSignupLoading || isGooglePreFilled} />
             </div>
           </>
         )}

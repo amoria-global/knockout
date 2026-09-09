@@ -23,7 +23,9 @@ const SECURITY_HEADERS = [
     key: 'Content-Security-Policy',
     value: [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://www.google.com https://www.gstatic.com https://apis.google.com",
+      // appleid.cdn-apple.com - Apple's Sign in with Apple JS SDK, loaded on demand by
+      //                         lib/auth/apple-js.ts when an Apple button is clicked.
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://www.google.com https://www.gstatic.com https://apis.google.com https://appleid.cdn-apple.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       // Third-party image hosts the landing components already load:
       //   flagcdn        - language/country flag thumbnails in navbar + login
@@ -48,10 +50,12 @@ const SECURITY_HEADERS = [
       //                             access token. Without this, Google sign-in fails with "Failed to fetch".
       // *.cloudflarestream.com    - WHEP HTTP SDP exchange in WHEPClient, used by
       //                             events/live-stream.tsx to play paid live streams.
-      "connect-src 'self' https://backend.connekyt.com https://dashboard.connekyt.com https://accounts.google.com https://www.googleapis.com wss://backend.connekyt.com https://cdn.jsdelivr.net https://unpkg.com https://*.cloudflarestream.com",
+      // appleid.apple.com / appleid.cdn-apple.com - Sign in with Apple popup flow.
+      "connect-src 'self' https://backend.connekyt.com https://dashboard.connekyt.com https://accounts.google.com https://www.googleapis.com wss://backend.connekyt.com https://cdn.jsdelivr.net https://unpkg.com https://*.cloudflarestream.com https://appleid.apple.com https://appleid.cdn-apple.com",
       "media-src 'self' blob: https://*.r2.cloudflarestorage.com https://*.cloudflarestream.com",
       // www.google.com - Google Maps embed iframe on the contact page.
-      "frame-src 'self' https://accounts.google.com https://customer-ngk2huwatflljurq.cloudflarestream.com https://*.cloudflarestream.com https://www.google.com",
+      // appleid.apple.com - Sign in with Apple may host its sheet in a frame as well as a popup.
+      "frame-src 'self' https://accounts.google.com https://customer-ngk2huwatflljurq.cloudflarestream.com https://*.cloudflarestream.com https://www.google.com https://appleid.apple.com",
       "frame-ancestors 'self'",
       "base-uri 'self'",
       "form-action 'self'",

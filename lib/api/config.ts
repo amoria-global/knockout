@@ -95,6 +95,7 @@ export const API_ENDPOINTS = {
     REFRESH_TOKEN: '/api/remote/auth/refresh-token',
     LOGOUT: '/api/remote/auth/logout',
     GOOGLE: '/api/remote/auth/google',
+    APPLE: '/api/remote/auth/apple',
     VERIFY_TOTP: '/api/remote/auth/verify-totp',
   },
 
