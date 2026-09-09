@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useReducer, useRef } from 'react';
+import React, { useState, useEffect, useReducer, useRef, useCallback } from 'react';
 import { getCurrencies, type Currency } from '@/lib/APIs/public';
 import { apiClient } from '@/lib/api/client';
 import { getProfileSummary } from '@/lib/APIs/photographers/update-profile/route';
@@ -178,6 +178,30 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
   const sessionPromiseRef = useRef<Promise<{ success: boolean; error?: string }> | null>(null);
   const syncInFlightRef = useRef(false);
 
+  /** Which reference-data list failed to load, if any (CONN-ONB-6). */
+  const [refDataError, setRefDataError] = useState<'categories' | 'currencies' | 'both' | null>(null);
+
+  /**
+   * Whether the background save to the server is working (CONN-ONB-3).
+   *
+   * runServerSync used to swallow everything: an early `return` when the
+   * session could not be established, and a bare `catch` for every other
+   * failure. There was no indicator of any kind in this component, so a user
+   * whose token had expired or whose network was down filled in a seven-step
+   * wizard while nothing persisted, and the UI looked exactly like success.
+   *
+   * That failure has already happened in production. The comment on the signup
+   * token in AuthController records it: every photographer save 401'd and the
+   * whole wizard payload was dropped, leaving new profiles stuck far under 100%
+   * with "nothing to finish" in the dashboard. The token was added; the silence
+   * that made it invisible was not.
+   *
+   * 'auth' and 'network' are kept apart because the remedies differ: one needs
+   * signing in again, the other just needs retrying.
+   */
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [syncErrorKind, setSyncErrorKind] = useState<'auth' | 'network' | null>(null);
+
   const [address, setAddress] = useState('');
   const [about, setAbout] = useState('');
   const [businessType, setBusinessType] = useState<'Freelancer' | 'Registered Company'>('Freelancer');
@@ -247,23 +271,53 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
   const setStudioPkgField = (k: keyof PkgFields, v: number | string) =>
     setStudioPkgs(p => ({ ...p, [studioPkgTier]: { ...p[studioPkgTier], [k]: v } }));
 
-  useEffect(() => {
-    apiClient.get<{ data: { id: string; name: string }[] }>('/api/remote/photographer-categories', { skipAuth: true, retries: 2 }).then(r => {
-      if (r.success && r.data) {
-        const raw = r.data as unknown as Record<string, unknown>;
-        const list = Array.isArray(raw) ? raw : Array.isArray(raw?.data) ? raw.data as { id: string; name: string }[] : [];
-        setCategories(list);
-      }
-    }).catch(() => {});
-    getCurrencies().then(r => {
-      if (r.success && Array.isArray(r.data)) {
-        const list = r.data;
-        setCurrenciesList(list);
-        const fallbackId = (list.find(c => c.code === 'RWF') || list[0])?.id;
-        if (fallbackId) setPkgCurrencyId(prev => prev || fallbackId);
-      }
-    }).catch(() => {});
+  /**
+   * Reference data for the specialty and currency selectors (CONN-ONB-6).
+   *
+   * Both used to end in `.catch(() => {})`. If either request failed the user
+   * reached a step with an EMPTY selector, no message and no way to retry -
+   * indistinguishable from "there are no options", part-way through onboarding.
+   * A failure is now recorded so the step can say so and offer a retry.
+   */
+  const loadReferenceData = useCallback(() => {
+    setRefDataError(null);
+    const cats = apiClient
+      .get<{ data: { id: string; name: string }[] }>('/api/remote/photographer-categories', { skipAuth: true, retries: 2 })
+      .then(r => {
+        if (r.success && r.data) {
+          const raw = r.data as unknown as Record<string, unknown>;
+          const list = Array.isArray(raw) ? raw : Array.isArray(raw?.data) ? raw.data as { id: string; name: string }[] : [];
+          setCategories(list);
+          return true;
+        }
+        return false;
+      })
+      .catch(() => false);
+
+    const curr = getCurrencies()
+      .then(r => {
+        if (r.success && Array.isArray(r.data)) {
+          const list = r.data;
+          setCurrenciesList(list);
+          const fallbackId = (list.find(c => c.code === 'RWF') || list[0])?.id;
+          if (fallbackId) setPkgCurrencyId(prev => prev || fallbackId);
+          return true;
+        }
+        return false;
+      })
+      .catch(() => false);
+
+    void Promise.all([cats, curr]).then(([okCats, okCurr]) => {
+      if (okCats && okCurr) return;
+      setRefDataError(
+        !okCats && !okCurr ? 'both'
+          : !okCats ? 'categories'
+          : 'currencies',
+      );
+    });
   }, []);
+
+  useEffect(() => { loadReferenceData(); }, [loadReferenceData]);
 
   useEffect(() => {
     if (isOpen) {
@@ -618,7 +672,13 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
   const runServerSync = async (flush = false): Promise<void> => {
     if (!serverSync || draftFinalizedRef.current) return;
     const sess = await ensureSessionOnce();
-    if (!sess.success) return;
+    if (!sess.success) {
+      // Was a bare `return`. This is the exact path that dropped a whole
+      // wizard's worth of input in production without telling anyone.
+      setSyncStatus('error');
+      setSyncErrorKind('auth');
+      return;
+    }
     if (syncInFlightRef.current) {
       if (!flush) return;
       let waited = 0;
@@ -628,14 +688,22 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
       if (syncInFlightRef.current) return;
     }
     syncInFlightRef.current = true;
+    setSyncStatus('saving');
     try {
       const { state: nextState, presence } = await syncPhotographerProfile(
         buildPayload(), who, syncStateRef.current
       );
       syncStateRef.current = nextState;
       setServerHas(presence);
-    } catch {
-      // resilient - never throw
+      setSyncStatus('saved');
+      setSyncErrorKind(null);
+    } catch (err) {
+      // Still never throws - a background save must not break typing - but it
+      // is no longer silent. A 401 here means the session died mid-wizard and
+      // re-authenticating is the only fix; anything else is worth a retry.
+      const status = (err as { status?: number } | null)?.status;
+      setSyncStatus('error');
+      setSyncErrorKind(status === 401 || status === 403 ? 'auth' : 'network');
     } finally {
       syncInFlightRef.current = false;
     }
@@ -803,6 +871,82 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
           </button>
 
           <div style={{ flex: 1, overflowY: 'auto', padding: '34px 24px 24px' }}>
+
+            {/*
+              Save state (CONN-ONB-3). Quiet when things are working - a
+              wizard should not shout "Saved" after every keystroke - and
+              unmissable when they are not, because the failure mode this
+              replaces was a user filling in seven steps that persisted
+              nowhere while the UI looked completely normal.
+            */}
+            {refDataError && (
+              <div role="alert" style={{
+                display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap',
+                marginBottom: 16, padding: '10px 12px', borderRadius: 10,
+                background: '#FFFBEB', border: '1px solid #FDE68A', color: '#92400E',
+                fontSize: 13, lineHeight: 1.45,
+              }}>
+                <i className="bi bi-exclamation-triangle-fill" style={{ fontSize: 14 }} />
+                <span style={{ flex: 1, minWidth: 180 }}>
+                  {refDataError === 'both'
+                    ? 'We could not load the specialty and currency options.'
+                    : refDataError === 'categories'
+                      ? 'We could not load the specialty options.'
+                      : 'We could not load the currency options.'}
+                  {' '}Those selectors will be empty until this loads.
+                </span>
+                <button
+                  type="button"
+                  onClick={loadReferenceData}
+                  style={{
+                    padding: '5px 12px', borderRadius: 999, border: '1px solid #92400E',
+                    background: 'transparent', color: '#92400E', fontSize: 12,
+                    fontWeight: 600, cursor: 'pointer',
+                  }}
+                >
+                  Reload options
+                </button>
+              </div>
+            )}
+
+            {syncStatus === 'error' ? (
+              <div role="alert" style={{
+                display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap',
+                marginBottom: 16, padding: '10px 12px', borderRadius: 10,
+                background: '#FEF2F2', border: '1px solid #FECACA', color: '#B91C1C',
+                fontSize: 13, lineHeight: 1.45,
+              }}>
+                <i className="bi bi-exclamation-triangle-fill" style={{ fontSize: 14 }} />
+                <span style={{ flex: 1, minWidth: 180 }}>
+                  {syncErrorKind === 'auth'
+                    ? 'Your session expired, so recent changes have not been saved. Sign in again to keep them.'
+                    : 'We could not save your latest changes. Check your connection.'}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => { void runServerSync(true); }}
+                  style={{
+                    padding: '5px 12px', borderRadius: 999, border: '1px solid #B91C1C',
+                    background: 'transparent', color: '#B91C1C', fontSize: 12,
+                    fontWeight: 600, cursor: 'pointer',
+                  }}
+                >
+                  Retry now
+                </button>
+              </div>
+            ) : syncStatus !== 'idle' ? (
+              <div aria-live="polite" style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                marginBottom: 12, fontSize: 12,
+                color: syncStatus === 'saving' ? '#64748b' : '#059669',
+              }}>
+                <i
+                  className={syncStatus === 'saving' ? 'bi bi-arrow-repeat' : 'bi bi-check-circle-fill'}
+                  style={{ fontSize: 12 }}
+                />
+                <span>{syncStatus === 'saving' ? 'Saving…' : 'Saved'}</span>
+              </div>
+            ) : null}
 
             {/* ── SLIDE 0 ── */}
             {state.currentSlide === 0 ? (
