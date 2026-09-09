@@ -442,6 +442,8 @@ function VerifyOtpContent(): React.JSX.Element {
                     type="text"
                     inputMode="numeric"
                     maxLength={1}
+                    autoComplete={index === 0 ? 'one-time-code' : 'off'}
+                    aria-label={`Digit ${index + 1}`}
                     value={digit}
                     onChange={(e) => handleOtpChange(index, e.target.value)}
                     onKeyDown={(e) => handleKeyDown(index, e)}
