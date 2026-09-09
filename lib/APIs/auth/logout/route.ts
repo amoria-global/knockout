@@ -9,7 +9,7 @@
  * - Production-safe logging
  */
 
-import { apiClient, getAuthToken, removeAuthToken } from '@/lib/api/client';
+import { apiClient, getAuthToken, getRefreshToken, removeAuthToken } from '@/lib/api/client';
 import { API_ENDPOINTS } from '@/lib/api/config';
 import type { ApiResponse } from '@/lib/api/types';
 
@@ -24,6 +24,9 @@ export interface LogoutResponse {
  */
 export async function logout(): Promise<ApiResponse<LogoutResponse>> {
   const token = getAuthToken();
+  // Names this device's session so the backend ends exactly that one; the
+  // access token above is revoked with it. Read before the storage is cleared.
+  const refreshToken = getRefreshToken();
 
   // Always clear local auth data regardless of backend response
   removeAuthToken();
@@ -40,10 +43,10 @@ export async function logout(): Promise<ApiResponse<LogoutResponse>> {
     };
   }
 
-  // Call backend to invalidate the token
+  // Call backend to end this device's session
   const response = await apiClient.post<LogoutResponse>(
     API_ENDPOINTS.AUTH.LOGOUT,
-    { token },
+    { token, refreshToken },
     {
       skipAuth: true, // We send token in body, not header
       retries: 1,

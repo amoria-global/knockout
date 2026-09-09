@@ -913,7 +913,7 @@ export default function BrowsePhotosPage() {
             .filter((p): p is BrowseRow => !!p)
             .map((p) => (
               /* eslint-disable-next-line @next/next/no-img-element */
-              <img key={`preload-${p.imageId}`} src={p.fileUrl} alt="" aria-hidden style={{ display: 'none' }} />
+              <img key={`preload-${p.imageId}`} src={p.thumbnailUrl || p.fileUrl} alt="" aria-hidden style={{ display: 'none' }} />
             ))}
 
           {lightboxIndex > 0 && (
@@ -948,7 +948,10 @@ export default function BrowsePhotosPage() {
             <div style={{ position: 'relative', minHeight: isMobile ? 260 : 380, background: '#050f22', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={previewing.fileUrl}
+                // Preview, not product: the original is released only after
+                // purchase (PaidMediaAccessGuard gates it server-side), so the
+                // product view shows the grid-sized variant.
+                src={previewing.thumbnailUrl || previewing.fileUrl}
                 alt=""
                 draggable={false}
                 onDragStart={(e) => e.preventDefault()}
