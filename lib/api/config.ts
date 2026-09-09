@@ -239,6 +239,19 @@ export const API_ENDPOINTS = {
     FACIAL_RECOGNITION: '/api/remote/customer/events/facial-recognition',
   },
 
+  // Smart TV pairing. The TV shows a 6-character code; a signed-in user claims
+  // it here and the backend mints the TV its OWN session rather than copying
+  // this one, which is why unpairing a TV does not sign the browser out.
+  //
+  // CONFIRM is the only one the web needs. initiate and status belong to the TV
+  // itself, and status additionally requires a device secret the TV never
+  // displays, so a browser cannot complete a token handoff even if it asked.
+  TV: {
+    PAIRING_CONFIRM: '/api/remote/tv/pairing/confirm',
+    DEVICES: '/api/remote/customer/tv-devices',
+    DEVICE_BY_ID: (id: string) => `/api/remote/customer/tv-devices/${id}`,
+  },
+
   // Stream endpoints (coordinator streams)
   STREAMS: {
     CHATS: (streamId: string) => `/api/remote/coordinator/streams/${streamId}/chats`,
