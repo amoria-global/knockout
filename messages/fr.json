@@ -164,11 +164,17 @@
     "dontHaveAccount": "Vous n'avez pas de compte?",
     "alreadyHaveAccount": "Vous avez déjà un compte?",
     "signupType": {
-      "title": "Choisir le Type de Compte",
-      "client": "Je suis un Client",
-      "photographer": "Je suis un Photographe",
-      "clientDesc": "Réserver des photographes pour vos événements",
-      "photographerDesc": "Offrir vos services de photographie"
+      "title": "Comment souhaitez-vous utiliser Connekyt?",
+      "subtitle": "Sélectionnez l'option qui vous décrit le mieux",
+      "photographerTitle": "Je suis un Photographe à la recherche d'un emploi",
+      "photographerDescription": "Présentez votre portfolio, trouvez des missions et développez votre activité de photographe",
+      "clientTitle": "Je suis un Client qui embauche pour un événement",
+      "clientDescription": "Trouvez et engagez des photographes professionnels pour vos événements",
+      "coordinatorTitle": "Je suis un Coordinateur d'Événements",
+      "coordinatorDescription": "Créez des événements de diffusion en direct commerciaux et gérez la billetterie en streaming",
+      "continue": "Continuer",
+      "alreadyHaveAccount": "Vous avez déjà un compte?",
+      "login": "Se connecter"
     },
     "loginPage": {
       "title": "Connectez-vous à votre compte existant",
@@ -211,19 +217,6 @@
       "emailRequired": "L'email est requis",
       "passwordInvalid": "Le mot de passe doit contenir au moins 8 caractères, 1 chiffre, 1 lettre et 1 caractère spécial (@!#$%^&*=+)",
       "passwordsNotMatch": "Les mots de passe ne correspondent pas"
-    },
-    "signupType": {
-      "title": "Comment souhaitez-vous utiliser Connekyt?",
-      "subtitle": "Sélectionnez l'option qui vous décrit le mieux",
-      "photographerTitle": "Je suis un Photographe à la recherche d'un emploi",
-      "photographerDescription": "Présentez votre portfolio, trouvez des missions et développez votre activité de photographe",
-      "clientTitle": "Je suis un Client qui embauche pour un événement",
-      "clientDescription": "Trouvez et engagez des photographes professionnels pour vos événements",
-      "coordinatorTitle": "Je suis un Coordinateur d'Événements",
-      "coordinatorDescription": "Créez des événements de diffusion en direct commerciaux et gérez la billetterie en streaming",
-      "continue": "Continuer",
-      "alreadyHaveAccount": "Vous avez déjà un compte?",
-      "login": "Se connecter"
     }
   },
   "events": {

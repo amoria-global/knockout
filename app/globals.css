@@ -1291,3 +1291,21 @@ body {
  .eco-toc{position:static;flex-direction:row;flex-wrap:wrap;top:auto}
  .eco-scopes{grid-template-columns:1fr}
 }
+
+/* ============================================================
+   Fully-rounded (pill) buttons — app-wide.
+
+   Most buttons in this app are inline-styled (`style={{ borderRadius }}`),
+   and inline styles outrank stylesheet rules, so `!important` is required
+   for this to take effect. Removing this block reverts every button to
+   whatever radius its own inline style declares.
+
+   Scoped to real <button> elements and the .btn/.ap-btn classes only —
+   deliberately NOT [role="button"], which would turn clickable cards
+   into pills.
+   ============================================================ */
+button,
+.btn,
+.ap-btn {
+  border-radius: 9999px !important;
+}

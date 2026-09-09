@@ -7,9 +7,10 @@
  * One field for the whole platform:
  *  - auto-applies the international dial code for the detected/selected
  *    country (flag button + searchable dropdown);
- *  - the dial code lives INSIDE the editable value, so deleting or editing
- *    "+250" re-detects the country from what remains (paste "+254712345678"
- *    and the picker flips to Kenya);
+ *  - the dial code is shown ONCE, in the flag chip — the editable value holds
+ *    only the national number. (It used to live inside the value too, which
+ *    rendered as "+250 | +250" on an empty field.) An international paste still
+ *    re-detects the country: "+254712345678" flips the picker to Kenya;
  *  - validates the national number against the country's numbering plan
  *    (lengths from lib/phone/phoneKit) with live hints and a ✓/✕ state;
  *  - pasting a trunk-prefixed national number ("0788…") strips the 0.

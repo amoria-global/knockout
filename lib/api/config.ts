@@ -100,6 +100,7 @@ export const API_ENDPOINTS = {
     LOGOUT: '/api/remote/auth/logout-device',
     LOGOUT_EVERYWHERE: '/api/remote/auth/logout',
     GOOGLE: '/api/remote/auth/google',
+    APPLE: '/api/remote/auth/apple',
     VERIFY_TOTP: '/api/remote/auth/verify-totp',
   },
 
