@@ -56,3 +56,29 @@ export async function validateToken(): Promise<ApiResponse<ValidateTokenResponse
 
   return response;
 }
+
+/**
+ * Validate a PASSWORD-RESET token taken from the URL.
+ *
+ * Distinct from `validateToken()` above, which reads the SESSION token from
+ * storage and clears it on failure — doing that here would log out a signed-in
+ * visitor who merely opened a stale reset link.
+ *
+ * The reset page must call this before rendering the form. Without it the page
+ * told every visitor "Your identity has been verified" and rendered the form
+ * even with no token at all, so an expired link was only discovered on submit.
+ *
+ * Backend: GET /auth/validate-token?token=... -> action 1 valid, 0 invalid/expired.
+ */
+export async function validateResetToken(
+  token: string,
+): Promise<ApiResponse<ValidateTokenResponse>> {
+  if (!token) {
+    return { success: false, error: 'No reset token supplied' };
+  }
+
+  return apiClient.get<ValidateTokenResponse>(
+    `${API_ENDPOINTS.AUTH.VALIDATE_TOKEN}?${new URLSearchParams({ token })}`,
+    { skipAuth: true, retries: 1 },
+  );
+}

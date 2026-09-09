@@ -34,6 +34,57 @@ export default function UserTypeModal({
     if (!isOpen) setSelected(null);
   }, [isOpen]);
 
+  const dialogRef = React.useRef<HTMLDivElement | null>(null);
+  const closeButtonRef = React.useRef<HTMLButtonElement | null>(null);
+  const previouslyFocused = React.useRef<Element | null>(null);
+
+  /**
+   * Dialog behaviour. Measured before this: no role, no aria-modal, no name,
+   * focus left on document.body, and Escape did nothing — the only working
+   * dismissal was an undiscoverable backdrop click. At 740x360 the close button
+   * also rendered above the top of the document (top: -96px), so a keyboard
+   * user had no way out at all: a WCAG 2.1.2 keyboard trap.
+   */
+  useEffect(() => {
+    if (!isOpen) return;
+
+    previouslyFocused.current = document.activeElement;
+    // Move focus into the dialog so the next Tab stays inside it.
+    closeButtonRef.current?.focus();
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        onClose?.();
+        return;
+      }
+      if (e.key !== 'Tab') return;
+
+      const root = dialogRef.current;
+      if (!root) return;
+      const focusable = root.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), select, textarea, [tabindex]:not([tabindex="-1"])',
+      );
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener('keydown', onKeyDown, true);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown, true);
+      // Restore focus to whatever opened the dialog.
+      (previouslyFocused.current as HTMLElement | null)?.focus?.();
+    };
+  }, [isOpen, onClose]);
+
   const userOptions = [
     {
       id: 'User',
@@ -151,6 +202,10 @@ export default function UserTypeModal({
         {/* Modal */}
         <div
           className="utm-modal"
+          ref={dialogRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="utm-title"
           onClick={(e) => e.stopPropagation()}
           style={{
             position: 'relative',
@@ -159,6 +214,12 @@ export default function UserTypeModal({
             width: '100%',
             maxWidth: isMobile ? '100%' : '460px',
             boxShadow: '0 30px 80px -20px rgba(8,12,28,0.55), 0 8px 24px -8px rgba(8,58,133,0.30)',
+            // Never taller than the viewport. Without this the card overflowed
+            // upward on short screens (740x360) and the close button sat at
+            // top:-96px with nothing to scroll — permanently unreachable.
+            maxHeight: '100%',
+            display: 'flex',
+            flexDirection: 'column',
             overflow: 'hidden',
             animation: 'utmScaleIn 0.36s cubic-bezier(0.34, 1.56, 0.64, 1)',
           }}
@@ -198,9 +259,11 @@ export default function UserTypeModal({
             }}
           />
 
-          {/* Header */}
+          {/* Header — pinned. `flexShrink: 0` keeps the title and the close
+              control on screen when the card is clamped to the viewport. */}
           <div
             style={{
+              flexShrink: 0,
               padding: isMobile ? '24px 18px 14px' : '30px 28px 18px',
               textAlign: 'center',
               position: 'relative',
@@ -209,6 +272,7 @@ export default function UserTypeModal({
           >
             {onClose && (
               <button
+                ref={closeButtonRef}
                 onClick={(e) => { e.stopPropagation(); onClose(); }}
                 aria-label="Close"
                 style={{
@@ -275,6 +339,7 @@ export default function UserTypeModal({
             </div>
 
             <h2
+              id="utm-title"
               style={{
                 fontFamily: "'Pragati Narrow', system-ui, sans-serif",
                 fontSize: isMobile ? '22px' : '26px',
@@ -307,9 +372,14 @@ export default function UserTypeModal({
             </p>
           </div>
 
-          {/* Selection Cards */}
+          {/* Selection Cards — the only scrolling region, so the pinned header
+              (and its close control) stay reachable at any viewport height. */}
           <div
             style={{
+              flex: '1 1 auto',
+              minHeight: 0,
+              overflowY: 'auto',
+              WebkitOverflowScrolling: 'touch',
               padding: isMobile ? '4px 16px 22px' : '6px 24px 26px',
               display: 'flex',
               flexDirection: 'column',
@@ -435,9 +505,10 @@ export default function UserTypeModal({
             })}
           </div>
 
-          {/* Footer trust strip */}
+          {/* Footer trust strip — pinned alongside the header. */}
           <div
             style={{
+              flexShrink: 0,
               padding: isMobile ? '12px 16px 18px' : '14px 24px 22px',
               borderTop: '1px solid #F1F5F9',
               display: 'flex',

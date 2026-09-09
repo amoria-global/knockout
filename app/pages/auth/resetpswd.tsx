@@ -1,8 +1,9 @@
 'use client';
-import React, { useState, Suspense } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { setNewPassword as setNewPasswordAPI } from '@/lib/APIs/auth/set-new-password/route';
+import { validateResetToken } from '@/lib/APIs/auth/validate-token/route';
 import { useToast } from '@/lib/notifications/ToastProvider';
 
 // Component that uses useSearchParams - needs to be wrapped in Suspense
@@ -21,6 +22,35 @@ function ResetPasswordContent(): React.JSX.Element {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  /**
+   * The page used to render the form — and claim "Your identity has been
+   * verified" — unconditionally, with no token check at all. A visitor with an
+   * expired link, or none, composed a whole new password before finding out on
+   * submit. Nothing may be claimed or rendered until the backend confirms.
+   */
+  const [tokenState, setTokenState] = useState<'checking' | 'valid' | 'invalid'>('checking');
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!codeFromQuery) {
+      setTokenState('invalid');
+      return;
+    }
+    (async () => {
+      try {
+        const res = await validateResetToken(codeFromQuery);
+        if (!cancelled) setTokenState(res.success ? 'valid' : 'invalid');
+      } catch {
+        // Treat an unreachable backend as unverified: claiming verification we
+        // could not obtain is the bug being fixed.
+        if (!cancelled) setTokenState('invalid');
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [codeFromQuery]);
 
   const isDisabled = !newPassword || !confirmPassword;
 
@@ -71,10 +101,20 @@ function ResetPasswordContent(): React.JSX.Element {
           setSuccess(true);
           showSuccess('Password reset successful!');
 
-          // Redirect to login after 2 seconds
-          setTimeout(() => {
-            router.push('/user/auth/login');
-          }, 2000);
+          /**
+           * Desktop users want the redirect. A user who arrived here by tapping
+           * the reset link in the Connekyt mobile app does NOT: dropping them on
+           * the web login is a dead end when their session lives in the app. For
+           * them we hold on the success screen and offer a way back instead.
+           */
+          const onMobileBrowser =
+            typeof navigator !== 'undefined' &&
+            /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+          if (!onMobileBrowser) {
+            setTimeout(() => {
+              router.push('/user/auth/login');
+            }, 2000);
+          }
         } else {
           const errorMessage = response.error || 'Password reset failed. Please try again.';
           setError(errorMessage);
@@ -90,6 +130,61 @@ function ResetPasswordContent(): React.JSX.Element {
     }
   };
 
+  const shellOuter = "h-screen overflow-hidden bg-gray-50 flex items-center justify-center px-3 py-3 sm:px-4 sm:py-4";
+  const shellInner = "w-full max-w-md h-[90vh] max-h-[800px] bg-white rounded-xl sm:rounded-2xl md:rounded-3xl shadow-2xl overflow-hidden flex flex-col items-center justify-center";
+
+  // Validation in flight — claim nothing yet.
+  if (tokenState === 'checking') {
+    return (
+      <div className={shellOuter}>
+        <div className={shellInner}>
+          <div style={{ textAlign: 'center', padding: '32px 24px' }} role="status" aria-live="polite">
+            <div style={{ width: 48, height: 48, borderRadius: '50%', border: '3px solid #e5e7eb', borderTopColor: '#083A85', margin: '0 auto 16px', animation: 'spin 0.8s linear infinite' }} />
+            <p style={{ fontSize: 14, fontWeight: 500, color: '#000', opacity: 0.7 }}>Checking your reset link…</p>
+          </div>
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        </div>
+      </div>
+    );
+  }
+
+  // No token, expired, or unknown: say so plainly and offer a new link. The
+  // password form is NOT rendered — there is nothing valid to submit it with.
+  if (tokenState === 'invalid') {
+    return (
+      <div className={shellOuter}>
+        <div className={shellInner}>
+          <div style={{ width: '100%', maxWidth: 420, padding: '32px 28px', textAlign: 'center' }}>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+              <div style={{ width: 56, height: 56, borderRadius: '50%', backgroundColor: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <i className="bi bi-exclamation-triangle" style={{ fontSize: 26, color: '#dc2626' }} />
+              </div>
+            </div>
+            <h1 style={{ fontSize: 22, fontWeight: 600, color: '#000', marginBottom: 8, letterSpacing: '0.3px' }}>
+              This reset link is no longer valid
+            </h1>
+            <p style={{ fontSize: 14, fontWeight: 500, color: '#000', opacity: 0.7, lineHeight: 1.5, marginBottom: 24 }}>
+              Reset links expire for your security, and each one can only be used once.
+              Request a new link and we&apos;ll email it to you.
+            </p>
+            <Link
+              href="/user/auth/forgotpswd"
+              style={{ display: 'inline-block', width: '100%', padding: '12px 18px', borderRadius: 9999, backgroundColor: '#083A85', color: '#fff', fontWeight: 600, fontSize: 15, textDecoration: 'none' }}
+            >
+              Request a new link
+            </Link>
+            <Link
+              href="/user/auth/login"
+              style={{ display: 'inline-block', marginTop: 14, fontSize: 14, color: '#083A85', fontWeight: 500 }}
+            >
+              Back to sign in
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (success) {
     return (
       <div className="h-screen overflow-hidden bg-gray-50 flex items-center justify-center px-3 py-3 sm:px-4 sm:py-4">
@@ -104,8 +199,25 @@ function ResetPasswordContent(): React.JSX.Element {
 
             <h1 style={{ fontSize: window.innerWidth < 640 ? '20px' : '22px', fontWeight: '600', textAlign: 'center', color: '#000000', marginBottom: '6px', letterSpacing: '0.3px' }}>Password Reset Successful!</h1>
             <p style={{ fontSize: window.innerWidth < 640 ? '14px' : '14px', fontWeight: '500', color: '#000000', textAlign: 'center', marginBottom: window.innerWidth < 640 ? '20px' : '20px', lineHeight: '1.4', opacity: '0.7' }}>
-              Your password has been successfully reset. Redirecting to login...
+              Your password has been successfully reset.
             </p>
+
+            {/* Deep link back into the app for anyone who started there. The
+                scheme is declared in connekt-mobile/app.json ("connekt"). If the
+                app is not installed nothing opens, so the web link below stays
+                as the fallback for everyone. */}
+            <a
+              href="connekt://login"
+              style={{ display: 'block', width: '100%', padding: '12px 18px', borderRadius: 9999, backgroundColor: '#083A85', color: '#fff', fontWeight: 600, fontSize: 15, textDecoration: 'none', textAlign: 'center', marginBottom: 10 }}
+            >
+              Open the Connekyt app
+            </a>
+            <Link
+              href="/user/auth/login"
+              style={{ display: 'block', fontSize: 14, color: '#083A85', fontWeight: 500, textAlign: 'center', textDecoration: 'none' }}
+            >
+              Or sign in here
+            </Link>
           </div>
         </div>
       </div>
@@ -149,6 +261,8 @@ function ResetPasswordContent(): React.JSX.Element {
                 <input
                   type={showPassword ? 'text' : 'password'}
                   id="newPassword"
+                  autoComplete="new-password"
+                  required
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   placeholder="Enter new password"
@@ -168,6 +282,8 @@ function ResetPasswordContent(): React.JSX.Element {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  aria-pressed={showPassword}
                   style={{
                     position: 'absolute',
                     right: '12px',
@@ -194,6 +310,8 @@ function ResetPasswordContent(): React.JSX.Element {
                 <input
                   type={showConfirmPassword ? 'text' : 'password'}
                   id="confirmPassword"
+                  autoComplete="new-password"
+                  required
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="Confirm new password"
@@ -213,6 +331,8 @@ function ResetPasswordContent(): React.JSX.Element {
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                  aria-pressed={showConfirmPassword}
                   style={{
                     position: 'absolute',
                     right: '12px',

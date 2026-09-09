@@ -54,7 +54,16 @@ export default function ForgotPasswordPage(): React.JSX.Element {
   };
 
   const inputStyle: React.CSSProperties = {
-    width: '100%', padding: isMobile ? '11px 14px' : '10px 14px',
+    // Longhands, NOT the `padding` shorthand. Call sites that need room for a
+    // leading icon spread this object and then set `paddingLeft`; React treats a
+    // shorthand + longhand in one style object as a conflict and re-applies the
+    // shorthand on re-render, dropping the longhand. That is why the envelope
+    // icon sat on top of the placeholder on forgot-password in production.
+    width: '100%',
+    paddingTop: isMobile ? '11px' : '10px',
+    paddingBottom: isMobile ? '11px' : '10px',
+    paddingLeft: '14px',
+    paddingRight: '14px',
     fontSize: isMobile ? '16px' : '15px', border: '1px solid #e2e8f0',
     borderRadius: '10px', outline: 'none', transition: 'all 0.2s',
     backgroundColor: '#eef2f9', minHeight: isMobile ? '44px' : '42px',
@@ -117,7 +126,7 @@ export default function ForgotPasswordPage(): React.JSX.Element {
                     <div style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af', display: 'flex', alignItems: 'center' }}>
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" fill="currentColor"/></svg>
                     </div>
-                    <input className="fp-input" type="email" id="fpEmail" value={email} onChange={e => setEmail(e.target.value)} placeholder="Enter your email address" style={{ ...inputStyle, paddingLeft: '42px' }} />
+                    <input className="fp-input" type="email" id="fpEmail" autoComplete="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="Enter your email address" style={{ ...inputStyle, paddingLeft: '42px' }} />
                   </div>
                 </div>
 

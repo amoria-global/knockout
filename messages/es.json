@@ -164,11 +164,17 @@
     "dontHaveAccount": "¿No tienes una cuenta?",
     "alreadyHaveAccount": "¿Ya tienes una cuenta?",
     "signupType": {
-      "title": "Elegir Tipo de Cuenta",
-      "client": "Soy un Cliente",
-      "photographer": "Soy un Fotógrafo",
-      "clientDesc": "Reservar fotógrafos para tus eventos",
-      "photographerDesc": "Ofrecer tus servicios de fotografía"
+      "title": "¿Cómo quieres usar Connekyt?",
+      "subtitle": "Selecciona la opción que mejor te describa",
+      "photographerTitle": "Soy un Fotógrafo buscando trabajo",
+      "photographerDescription": "Muestra tu portafolio, encuentra trabajos y haz crecer tu negocio de fotografía",
+      "clientTitle": "Soy un Cliente contratando para un evento",
+      "clientDescription": "Encuentra y contrata fotógrafos profesionales para tus eventos",
+      "coordinatorTitle": "Soy un Coordinador de Eventos",
+      "coordinatorDescription": "Crea eventos de transmisión en vivo comerciales y gestiona la venta de entradas en streaming",
+      "continue": "Continuar",
+      "alreadyHaveAccount": "¿Ya tienes una cuenta?",
+      "login": "Iniciar sesión"
     },
     "loginPage": {
       "title": "Inicia sesión en tu cuenta existente",
@@ -211,19 +217,6 @@
       "emailRequired": "El email es requerido",
       "passwordInvalid": "La contraseña debe contener al menos 8 caracteres, 1 número, 1 letra y 1 carácter especial (@!#$%^&*=+)",
       "passwordsNotMatch": "Las contraseñas no coinciden"
-    },
-    "signupType": {
-      "title": "¿Cómo quieres usar Connekyt?",
-      "subtitle": "Selecciona la opción que mejor te describa",
-      "photographerTitle": "Soy un Fotógrafo buscando trabajo",
-      "photographerDescription": "Muestra tu portafolio, encuentra trabajos y haz crecer tu negocio de fotografía",
-      "clientTitle": "Soy un Cliente contratando para un evento",
-      "clientDescription": "Encuentra y contrata fotógrafos profesionales para tus eventos",
-      "coordinatorTitle": "Soy un Coordinador de Eventos",
-      "coordinatorDescription": "Crea eventos de transmisión en vivo comerciales y gestiona la venta de entradas en streaming",
-      "continue": "Continuar",
-      "alreadyHaveAccount": "¿Ya tienes una cuenta?",
-      "login": "Iniciar sesión"
     }
   },
   "events": {
