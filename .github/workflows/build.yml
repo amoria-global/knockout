@@ -29,6 +29,14 @@ jobs:
         run: npx tsc --noEmit
         continue-on-error: true
 
+      # Added with CONN-TEST-2. Deliberately WITHOUT continue-on-error: the
+      # typecheck step above carries that flag, so it reports but cannot fail
+      # the build. A test that cannot fail the build is decoration, and this
+      # job also gates the Dependabot auto-merge below (CONN-TEST-7), which
+      # until now merged dependency bumps on a typecheck and a build alone.
+      - name: Test
+        run: yarn test
+
       - name: Build
         env:
           NEXT_PUBLIC_API_URL: "https://backend.connekyt.com/"
