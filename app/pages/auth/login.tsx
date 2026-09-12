@@ -688,7 +688,27 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
       try {
         const br = await googleAuth({ email: userInfo.email, firstName: userInfo.given_name || '', lastName: userInfo.family_name || '', customerType: signupUserType });
         if (br.success && br.data?.twoFactorRequired && br.data?.customerId) { showInfo('Please enter your authenticator code.'); router.push(`/user/auth/verify-totp?customerId=${encodeURIComponent(String(br.data.customerId))}`); return; }
-        if (br.success && br.data?.token) { setAuthToken(br.data.token); showSuccess(appRedirect ? 'Welcome! Returning to the app…' : 'Welcome back! Redirecting...'); if (appRedirect) { setTimeout(() => returnToAppWithSession(br.data!.token as string, br.data), 300); } else if (isBookingRedirect) { setTimeout(() => redirectToBookingDashboard(br.data?.customerType), 300); } else { redirectAfterLogin(br.data?.customerType as string | undefined); } return; }
+        if (br.success && br.data?.token) {
+          setAuthToken(br.data.token);
+          // The email already had an account, and its role is NOT the one just
+          // picked. The backend keeps the stored role on purpose - one email is
+          // one account - but without this the user is silently dropped into a
+          // dashboard for a role they did not choose and cannot explain.
+          if ((br.data as { roleAlreadySet?: boolean }).roleAlreadySet) {
+            const registeredAs = String((br.data as { registeredAs?: string }).registeredAs || '')
+              .replace('Event-coordinator', 'Event coordinator');
+            showInfo(
+              `You already have a Connekyt account as a ${registeredAs}. `
+              + 'We have signed you in. Your account type cannot be changed here.',
+            );
+          } else {
+            showSuccess(appRedirect ? 'Welcome! Returning to the app…' : 'Welcome back! Redirecting...');
+          }
+          if (appRedirect) { setTimeout(() => returnToAppWithSession(br.data!.token as string, br.data), 300); }
+          else if (isBookingRedirect) { setTimeout(() => redirectToBookingDashboard(br.data?.customerType), 300); }
+          else { redirectAfterLogin(br.data?.customerType as string | undefined); }
+          return;
+        }
       } catch { /* continue with form pre-fill */ }
       if (userInfo.given_name) setFirstName(userInfo.given_name);
       if (userInfo.family_name) setLastName(userInfo.family_name);
