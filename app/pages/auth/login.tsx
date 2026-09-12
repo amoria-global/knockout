@@ -1161,7 +1161,7 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1s3.1 1.39 3.1 3.1v2z" fill="currentColor"/></svg>
                 </div>
                 <input className="auth-input" type={showPassword ? 'text' : 'password'} id="loginPassword" autoComplete="current-password" required value={loginPassword} onChange={e => setLoginPassword(e.target.value)} placeholder={t('passwordPlaceholder')} style={{ ...inputStyle, paddingLeft: '42px', paddingRight: '42px' }} />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? "Hide password" : "Show password"} aria-pressed={showPassword} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af', cursor: 'pointer', border: 'none', background: 'transparent', padding: '4px', display: 'flex', alignItems: 'center' }}>
+                <button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? "Hide password" : "Show password"} aria-pressed={showPassword} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af', cursor: 'pointer', border: 'none', background: 'transparent', padding: '4px', minWidth: '44px', minHeight: '44px', justifyContent: 'center', display: 'flex', alignItems: 'center' }}>
                   <i className={`bi ${showPassword ? 'bi-eye-slash' : 'bi-eye'}`} style={{ fontSize: '16px' }} />
                 </button>
               </div>
@@ -1202,7 +1202,7 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
         {isMobile && (
           <p style={{ fontSize: '13px', color: '#6b7280', textAlign: 'center', marginTop: '10px', marginBottom: 0 }}>
             {t('notRegistered')}{' '}
-            <button onClick={toggleView} style={{ color: '#083A85', fontWeight: '700', background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', textDecoration: 'underline', padding: 0 }}>{t('createAccount')}</button>
+            <button onClick={toggleView} style={{ color: '#083A85', fontWeight: '700', background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', textDecoration: 'underline', paddingTop: '12px', paddingBottom: '12px', paddingLeft: '4px', paddingRight: '4px', display: 'inline-block' }}>{t('createAccount')}</button>
           </p>
         )}
       </>
@@ -1270,7 +1270,7 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
               <label htmlFor="signupPassword" style={labelStyle}>{tAuth('password')} {isGooglePreFilled && !signupPassword && <span style={{ fontSize: '12px', color: '#2563eb' }}>(required)</span>}</label>
               <div style={{ position: 'relative' }}>
                 <input className="auth-input" type={showSignupPassword ? 'text' : 'password'} id="signupPassword" autoComplete="new-password" required value={signupPassword} onChange={e => setSignupPassword(e.target.value)} placeholder={tSignup('passwordPlaceholder')} style={{ ...inputStyle, paddingRight: '44px', borderColor: isGooglePreFilled && !signupPassword ? '#083A85' : undefined, animation: isGooglePreFilled && !signupPassword ? 'pulseHighlight 2s ease-in-out 3' : 'none' }} />
-                <button type="button" onClick={() => setShowSignupPassword(!showSignupPassword)} aria-label={showSignupPassword ? "Hide password" : "Show password"} aria-pressed={showSignupPassword} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#6b7280', cursor: 'pointer', border: 'none', background: 'transparent', padding: '4px' }}>
+                <button type="button" onClick={() => setShowSignupPassword(!showSignupPassword)} aria-label={showSignupPassword ? "Hide password" : "Show password"} aria-pressed={showSignupPassword} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#6b7280', cursor: 'pointer', border: 'none', background: 'transparent', padding: '4px', minWidth: '44px', minHeight: '44px', justifyContent: 'center' }}>
                   <i className={`bi ${showSignupPassword ? 'bi-eye-slash' : 'bi-eye'}`} style={{ fontSize: '16px' }} />
                 </button>
               </div>
@@ -1335,7 +1335,7 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
               <label htmlFor="confirmPassword" style={labelStyle}>{tSignup('confirmPasswordLabel')} {isGooglePreFilled && !confirmPassword && <span style={{ fontSize: '12px', color: '#2563eb' }}>(required)</span>}</label>
               <div style={{ position: 'relative' }}>
                 <input className="auth-input" type={showConfirmPassword ? 'text' : 'password'} id="confirmPassword" autoComplete="new-password" required value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder={tSignup('confirmPasswordPlaceholder')} style={{ ...inputStyle, paddingRight: '44px', borderColor: isGooglePreFilled && !confirmPassword ? '#083A85' : undefined, animation: isGooglePreFilled && !confirmPassword ? 'pulseHighlight 2s ease-in-out 3' : 'none' }} />
-                <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} aria-label={showConfirmPassword ? "Hide password" : "Show password"} aria-pressed={showConfirmPassword} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#6b7280', cursor: 'pointer', border: 'none', background: 'transparent', padding: '4px' }}>
+                <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} aria-label={showConfirmPassword ? "Hide password" : "Show password"} aria-pressed={showConfirmPassword} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#6b7280', cursor: 'pointer', border: 'none', background: 'transparent', padding: '4px', minWidth: '44px', minHeight: '44px', justifyContent: 'center' }}>
                   <i className={`bi ${showConfirmPassword ? 'bi-eye-slash' : 'bi-eye'}`} style={{ fontSize: '16px' }} />
                 </button>
               </div>
@@ -1393,7 +1393,7 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
         {isMobile && (
           <p style={{ fontSize: '13px', color: '#6b7280', textAlign: 'center', marginTop: '14px', marginBottom: 0 }}>
             {tSignup('alreadyHaveAccountText')}{' '}
-            <button onClick={toggleView} style={{ color: '#083A85', fontWeight: '700', background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', textDecoration: 'underline', padding: 0 }}>{tSignup('loginLink')}</button>
+            <button onClick={toggleView} style={{ color: '#083A85', fontWeight: '700', background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', textDecoration: 'underline', paddingTop: '12px', paddingBottom: '12px', paddingLeft: '4px', paddingRight: '4px', display: 'inline-block' }}>{tSignup('loginLink')}</button>
           </p>
         )}
       </>
