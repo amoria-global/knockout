@@ -357,17 +357,47 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
   // Helper: redirect to dashboard with booking params (for book-now flows).
   // No token in the URL - the amoria_auth HttpOnly cookie scoped to
   // .connekyt.com carries auth across subdomains automatically.
+  /**
+   * Where a signed-in user belongs: the DASHBOARD, on a path for their role.
+   *
+   * `events` rather than `home` because it is the one section every role has -
+   * client, photographer, event-coordinator and user all define it, while
+   * photographer has no `home` at all.
+   */
+  const dashboardUrlFor = (customerType?: string) => {
+    const rawType = (customerType || loggedInUserType || 'client').toLowerCase();
+    const userType = rawType === 'coordinator' ? 'event-coordinator' : rawType;
+    const dashUrl = process.env.NEXT_PUBLIC_DASHBOARD_URL || 'https://dashboard.connekyt.com';
+    return new URL(`${dashUrl}/user/${userType}/events`);
+  };
+
   const redirectToBookingDashboard = (customerType?: string) => {
     const returnToUrl = new URL(returnTo, window.location.origin);
     const photographerId = returnToUrl.searchParams.get('id');
     const packageId = returnToUrl.searchParams.get('packageId');
-    const rawType = (customerType || loggedInUserType || 'client').toLowerCase();
-    const userType = rawType === 'coordinator' ? 'event-coordinator' : rawType;
-    const dashUrl = process.env.NEXT_PUBLIC_DASHBOARD_URL || 'https://dashboard.connekyt.com';
-    const dest = new URL(`${dashUrl}/user/${userType}/events`);
+    const dest = dashboardUrlFor(customerType);
     if (photographerId) dest.searchParams.set('photographerId', photographerId);
     if (packageId) dest.searchParams.set('packageId', packageId);
     window.location.href = dest.toString();
+  };
+
+  /**
+   * The landing after a successful sign-in with no explicit destination.
+   *
+   * This used to be `router.push(redirectUrl || '/user')`, and `/user` has no
+   * page.tsx - there is no such route on this app. Every Google sign-in and
+   * sign-up that did not carry a redirectUrl therefore authenticated the user
+   * correctly and then dropped them on a 404, signed in, with no way forward
+   * except the nav bar. The dashboard is a different origin, so a router.push
+   * could never have reached it.
+   */
+  const redirectAfterLogin = (customerType?: string) => {
+    if (redirectUrl) {
+      if (redirectUrl.startsWith('http')) window.location.href = redirectUrl;
+      else router.push(redirectUrl);
+      return;
+    }
+    window.location.href = dashboardUrlFor(customerType).toString();
   };
 
   const isBookingRedirect = returnTo.includes('book-now');
@@ -641,7 +671,7 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
         showSuccess(appRedirect ? 'Welcome! Returning to the app…' : 'Welcome! Redirecting...');
         if (appRedirect) { setTimeout(() => returnToAppWithSession(br.data!.token as string, br.data), 300); }
         else if (isBookingRedirect) { setTimeout(() => redirectToBookingDashboard(br.data?.customerType), 300); }
-        else { router.push(redirectUrl || '/user'); }
+        else { redirectAfterLogin(br.data?.customerType as string | undefined); }
         return;
       }
       const msg = br.error || br.data?.message || 'Apple sign-up failed.'; showError(msg);
@@ -658,7 +688,7 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
       try {
         const br = await googleAuth({ email: userInfo.email, firstName: userInfo.given_name || '', lastName: userInfo.family_name || '', customerType: signupUserType });
         if (br.success && br.data?.twoFactorRequired && br.data?.customerId) { showInfo('Please enter your authenticator code.'); router.push(`/user/auth/verify-totp?customerId=${encodeURIComponent(String(br.data.customerId))}`); return; }
-        if (br.success && br.data?.token) { setAuthToken(br.data.token); showSuccess(appRedirect ? 'Welcome! Returning to the app…' : 'Welcome back! Redirecting...'); if (appRedirect) { setTimeout(() => returnToAppWithSession(br.data!.token as string, br.data), 300); } else if (isBookingRedirect) { setTimeout(() => redirectToBookingDashboard(br.data?.customerType), 300); } else { router.push(redirectUrl || '/user'); } return; }
+        if (br.success && br.data?.token) { setAuthToken(br.data.token); showSuccess(appRedirect ? 'Welcome! Returning to the app…' : 'Welcome back! Redirecting...'); if (appRedirect) { setTimeout(() => returnToAppWithSession(br.data!.token as string, br.data), 300); } else if (isBookingRedirect) { setTimeout(() => redirectToBookingDashboard(br.data?.customerType), 300); } else { redirectAfterLogin(br.data?.customerType as string | undefined); } return; }
       } catch { /* continue with form pre-fill */ }
       if (userInfo.given_name) setFirstName(userInfo.given_name);
       if (userInfo.family_name) setLastName(userInfo.family_name);

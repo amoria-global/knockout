@@ -25,7 +25,16 @@ export function getDashboardUrl(customerType?: string): string {
   // Roles without a cross-app dashboard (user, viewer) resolve to '' so callers
   // use their in-app fallback (e.g. `|| '/user/dashboard'`).
   if (!route) return '';
-  const baseUrl = process.env.NEXT_PUBLIC_DASHBOARD_URL || '';
+  // NEVER fall back to '' here. An empty base turns this into a RELATIVE path,
+  // so `window.open('/user/client/home')` opens it on the LANDING origin, which
+  // has no such route - the user authenticates successfully and lands on a 404,
+  // signed in, with no way forward but the nav bar. The dashboard is a separate
+  // deployment; a path without its host can never reach it.
+  //
+  // This matched login.tsx's own redirectToBookingDashboard, which has always
+  // defaulted to the production host. The two disagreeing is what made the
+  // failure depend on whether one env var happened to be set at build time.
+  const baseUrl = process.env.NEXT_PUBLIC_DASHBOARD_URL || 'https://dashboard.connekyt.com';
   return `${baseUrl}${route}`;
 }
 
