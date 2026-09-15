@@ -14,6 +14,9 @@ import { API_ENDPOINTS } from '@/lib/api/config';
 import type { ApiResponse } from '@/lib/api/types';
 
 export interface GoogleAuthRequest {
+  /** The Google OAuth access token; the backend verifies it with Google and
+   *  trusts only the email Google returns. */
+  accessToken: string;
   email: string;
   firstName: string;
   lastName: string;
@@ -51,6 +54,7 @@ export interface GoogleAuthResponse {
  */
 export async function googleAuth(data: GoogleAuthRequest): Promise<ApiResponse<GoogleAuthResponse>> {
   const queryParams = new URLSearchParams({
+    googleAccessToken: data.accessToken,
     email: data.email,
     firstName: data.firstName,
     lastName: data.lastName,
