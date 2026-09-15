@@ -404,7 +404,7 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
       const googleResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', { headers: { Authorization: `Bearer ${tokenResponse.access_token}` } });
       if (!googleResponse.ok) throw new Error('Failed to fetch Google user info');
       const userInfo = await googleResponse.json();
-      const response = await googleAuth({ email: userInfo.email, firstName: userInfo.given_name || '', lastName: userInfo.family_name || '', customerType: 'Client' });
+      const response = await googleAuth({ accessToken: tokenResponse.access_token, email: userInfo.email, firstName: userInfo.given_name || '', lastName: userInfo.family_name || '', customerType: 'Client' });
       const data = response.data;
       if (response.success && data?.twoFactorRequired && data?.customerId) { showInfo('Please enter your authenticator code.'); router.push(`/user/auth/verify-totp?customerId=${encodeURIComponent(String(data.customerId))}`); return; }
       if (response.success && data?.token) {
@@ -656,7 +656,7 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
       if (!response.ok) throw new Error('Failed to fetch Google user info');
       const userInfo = await response.json();
       try {
-        const br = await googleAuth({ email: userInfo.email, firstName: userInfo.given_name || '', lastName: userInfo.family_name || '', customerType: signupUserType });
+        const br = await googleAuth({ accessToken: tokenResponse.access_token, email: userInfo.email, firstName: userInfo.given_name || '', lastName: userInfo.family_name || '', customerType: signupUserType });
         if (br.success && br.data?.twoFactorRequired && br.data?.customerId) { showInfo('Please enter your authenticator code.'); router.push(`/user/auth/verify-totp?customerId=${encodeURIComponent(String(br.data.customerId))}`); return; }
         if (br.success && br.data?.token) { setAuthToken(br.data.token); showSuccess(appRedirect ? 'Welcome! Returning to the app…' : 'Welcome back! Redirecting...'); if (appRedirect) { setTimeout(() => returnToAppWithSession(br.data!.token as string, br.data), 300); } else if (isBookingRedirect) { setTimeout(() => redirectToBookingDashboard(br.data?.customerType), 300); } else { router.push(redirectUrl || '/user'); } return; }
       } catch { /* continue with form pre-fill */ }
