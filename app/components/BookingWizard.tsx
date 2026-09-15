@@ -1604,6 +1604,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
       if (!infoRes.ok) throw new Error();
       const info = await infoRes.json();
       const res = await googleAuth({
+        accessToken: tokenResponse.access_token,
         email: info.email, firstName: info.given_name || '', lastName: info.family_name || '',
         customerType: 'Client',
       });

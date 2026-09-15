@@ -154,7 +154,7 @@ function JoinPackageContent(): React.JSX.Element {
         });
         if (!userInfoRes.ok) throw new Error('Failed to fetch Google user info');
         const userInfo = await userInfoRes.json();
-        const res = await googleAuth({ email: userInfo.email, firstName: userInfo.given_name || '', lastName: userInfo.family_name || '', customerType: 'Client' });
+        const res = await googleAuth({ accessToken: tokenResponse.access_token, email: userInfo.email, firstName: userInfo.given_name || '', lastName: userInfo.family_name || '', customerType: 'Client' });
         if (res.success && res.data?.token) {
           const d = res.data as unknown as Record<string, string>;
           await authLogin({ id: d.id || d.customerId || '', firstName: d.firstName || userInfo.given_name || '', lastName: d.lastName || userInfo.family_name || '', email: d.email || userInfo.email, phone: d.phone || '', customerId: d.customerId || '', customerType: d.customerType || 'Viewer' }, d.token);

@@ -750,6 +750,7 @@ function ViewEventContent({ eventIdProp }: { eventIdProp?: string }): React.JSX.
       if (!userInfoRes.ok) throw new Error('Failed to fetch Google user info');
       const userInfo = await userInfoRes.json();
       const res = await googleAuth({
+        accessToken: tokenResponse.access_token,
         email: userInfo.email,
         firstName: userInfo.given_name || '',
         lastName: userInfo.family_name || '',
