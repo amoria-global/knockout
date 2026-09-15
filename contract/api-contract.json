@@ -2572,6 +2572,9 @@
     "path" : "/api/remote/auth/google",
     "controller" : "AuthController#googleAuth",
     "params" : [ {
+      "name" : "googleAccessToken",
+      "required" : false
+    }, {
       "name" : "email",
       "required" : true
     }, {
