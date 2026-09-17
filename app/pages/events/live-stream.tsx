@@ -19,6 +19,8 @@ import { useAuth } from '../../providers/AuthProvider';
 import { login } from '@/lib/APIs/auth/login/route';
 import { signup } from '@/lib/APIs/auth/signup/route';
 import { verifyOtp } from '@/lib/APIs/auth/verify-otp/route';
+import { unverifiedLoginCustomerId } from '@/lib/auth/otp-resend';
+import { useOtpResend } from '@/lib/auth/useOtpResend';
 import { googleAuth } from '@/lib/APIs/auth/google/route';
 import { useGoogleLogin } from '@react-oauth/google';
 import { getStreamChats, type StreamChatMessage } from '@/lib/APIs/streams/chat/route';
@@ -312,6 +314,12 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
   const [signupPassword, setSignupPassword] = useState('');
   const [otpCustomerId, setOtpCustomerId] = useState('');
   const [otpValue, setOtpValue] = useState('');
+  // The address and password the pending code belongs to. Signup and an
+  // unverified login both land on the OTP step, so the step and the
+  // post-verify auto-login must not assume the signup fields were used.
+  const [otpEmail, setOtpEmail] = useState('');
+  const [otpPassword, setOtpPassword] = useState('');
+  const otpResend = useOtpResend();
   const [googleLoading, setGoogleLoading] = useState(false);
 
   // Interaction capability - true when user can chat, rate, gift, etc.
@@ -405,6 +413,18 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
         // Reload to refetch event with auth - backend returns whepUrl + hasPurchasedAccess for paid viewers
         window.location.reload();
       } else {
+        // Right password, unverified email: the backend has already emailed a
+        // new code, so open the code box instead of showing an error.
+        const pendingId = unverifiedLoginCustomerId(res.data);
+        if (pendingId) {
+          setOtpCustomerId(pendingId);
+          setOtpEmail(loginEmail);
+          setOtpPassword(loginPassword);
+          setOtpValue('');
+          setAuthStep('otp');
+          otpResend.markSent(`We sent a new code to ${loginEmail}.`);
+          return;
+        }
         setAuthError(res.data?.message || res.error || 'Incorrect email or password. Please try again.');
       }
     } catch {
@@ -433,6 +453,9 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
       if (res.success && res.data) {
         const customerId = res.data.customerId || '';
         setOtpCustomerId(customerId);
+        setOtpEmail(signupEmail);
+        setOtpPassword(signupPassword);
+        otpResend.markSent();
         setAuthStep('otp');
         setAuthError('');
       } else {
@@ -452,14 +475,14 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
     try {
       const res = await verifyOtp({ customerId: otpCustomerId, otp: parseInt(otpValue, 10) });
       if (res.success && res.data?.action === 1) {
-        const loginRes = await login({ email: signupEmail, password: signupPassword });
+        const loginRes = await login({ email: otpEmail, password: otpPassword });
         if (loginRes.success && loginRes.data?.token) {
           const d = loginRes.data;
           await authLogin({
             id: d.id || d.customerId || '',
             firstName: d.firstName || signupFirstName,
             lastName: d.lastName || signupLastName,
-            email: d.email || signupEmail,
+            email: d.email || otpEmail,
             phone: d.phone || (signupPhoneVal?.digits ?? ''),
             customerId: d.customerId || '',
             customerType: d.customerType || 'Viewer',
@@ -11088,14 +11111,19 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 <div style={{ background: 'rgba(3,150,156,0.1)', border: '1px solid rgba(3,150,156,0.25)', borderRadius: 10, padding: '12px 16px', display: 'flex', gap: 10, alignItems: 'center' }}>
                   <i className="bi bi-envelope-check-fill" style={{ color: '#03969c', fontSize: 16, flexShrink: 0 }}></i>
-                  <span style={{ color: '#a1a1aa', fontSize: 13 }}>A 6-digit code was sent to <strong style={{ color: '#fff' }}>{signupEmail}</strong></span>
+                  <span style={{ color: '#a1a1aa', fontSize: 13 }}>A 6-digit code was sent to <strong style={{ color: '#fff' }}>{otpEmail}</strong></span>
                 </div>
+                {otpResend.notice && <p role="status" style={{ color: '#a1a1aa', fontSize: 13, margin: 0 }}>{otpResend.notice}</p>}
+                {otpResend.error && <p role="alert" style={{ color: '#f87171', fontSize: 13, margin: 0 }}>{otpResend.error}</p>}
                 <div>
                   <label style={{ display: 'block', color: '#d1d5db', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Verification Code</label>
                   <input type="text" inputMode="numeric" maxLength={6} value={otpValue} onChange={e => setOtpValue(e.target.value.replace(/[^0-9]/g, ''))} placeholder="000000" onKeyDown={e => e.key === 'Enter' && handleAuthVerifyOtp()} style={{ width: '100%', padding: '14px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 9, color: '#fff', fontSize: 22, fontWeight: 700, letterSpacing: '0.35em', textAlign: 'center', outline: 'none', boxSizing: 'border-box' }} onFocus={e => { e.currentTarget.style.borderColor = '#03969c'; }} onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }} />
                 </div>
                 <button onClick={handleAuthVerifyOtp} disabled={authLoading} style={{ width: '100%', padding: '13px', background: authLoading ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, #03969c, #027a7f)', border: 'none', borderRadius: 10, color: '#fff', fontSize: 15, fontWeight: 700, cursor: authLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                   {authLoading ? <><div style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} /> Verifying…</> : <><i className="bi bi-shield-check"></i> Verify & Continue</>}
+                </button>
+                <button type="button" onClick={() => otpResend.resend(otpCustomerId)} disabled={otpResend.sending || otpResend.secondsLeft > 0} style={{ background: 'none', border: 'none', color: otpResend.sending || otpResend.secondsLeft > 0 ? '#6b7280' : '#03969c', fontSize: 13, fontWeight: 600, cursor: otpResend.sending || otpResend.secondsLeft > 0 ? 'not-allowed' : 'pointer', textAlign: 'center', padding: '4px 0' }}>
+                  {otpResend.sending ? 'Sending...' : otpResend.secondsLeft > 0 ? `Didn't get it? Resend in ${otpResend.secondsLeft}s` : "Didn't get it? Resend code"}
                 </button>
                 <button onClick={() => { setAuthStep('login'); setAuthError(''); }} style={{ background: 'none', border: 'none', color: '#6b7280', fontSize: 13, cursor: 'pointer', textAlign: 'center', padding: '4px 0' }}>
                   Already have an account? Log in
