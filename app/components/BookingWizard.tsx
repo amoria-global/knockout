@@ -25,6 +25,8 @@ import InternationalPhoneInput, { type PhoneValue } from './phone/InternationalP
 import { login } from '@/lib/APIs/auth/login/route';
 import { signup } from '@/lib/APIs/auth/signup/route';
 import { verifyOtp } from '@/lib/APIs/auth/verify-otp/route';
+import { unverifiedLoginCustomerId } from '@/lib/auth/otp-resend';
+import { useOtpResend } from '@/lib/auth/useOtpResend';
 import { googleAuth } from '@/lib/APIs/auth/google/route';
 import { saveDraft, loadDraft, clearDraft, type BookingDraft } from '@/lib/utils/bookingDraft';
 
@@ -916,6 +918,12 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
   const [signupPassword, setSignupPassword] = useState('');
   const [otpCustomerId, setOtpCustomerId] = useState('');
   const [otpValue, setOtpValue] = useState('');
+  // The address and password the pending code belongs to. Signup and an
+  // unverified login both land on the OTP step, so the step and the
+  // post-verify auto-login must not assume the signup fields were used.
+  const [otpEmail, setOtpEmail] = useState('');
+  const [otpPassword, setOtpPassword] = useState('');
+  const otpResend = useOtpResend();
   const [googleLoading, setGoogleLoading] = useState(false);
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [showSignupPassword, setShowSignupPassword] = useState(false);
@@ -1538,6 +1546,15 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
         }, d.token!);
         dispatch({ type: 'SHOW_AUTH', value: false });
       } else {
+        // Right password, unverified email: the backend has already emailed a
+        // new code, so open the code box instead of showing an error.
+        const pendingId = unverifiedLoginCustomerId(res.data);
+        if (pendingId) {
+          setOtpCustomerId(pendingId); setOtpEmail(loginEmail); setOtpPassword(loginPassword);
+          setOtpValue(''); setAuthStep('otp');
+          otpResend.markSent(`We sent a new code to ${loginEmail}.`);
+          return;
+        }
         setAuthError(res.data?.message || res.error || 'Incorrect email or password.');
       }
     } catch { setAuthError('Connection error. Please try again.'); }
@@ -1556,6 +1573,8 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
       });
       if (res.success && res.data) {
         setOtpCustomerId(res.data.customerId || '');
+        setOtpEmail(signupEmail); setOtpPassword(signupPassword);
+        otpResend.markSent();
         setAuthStep('otp'); setAuthError('');
       } else {
         const errMsg = res.data?.message || res.error || 'Could not create account.';
@@ -1575,12 +1594,12 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
     try {
       const res = await verifyOtp({ customerId: otpCustomerId, otp: parseInt(otpValue, 10) });
       if (res.success && res.data?.action === 1) {
-        const loginRes = await login({ email: signupEmail, password: signupPassword });
+        const loginRes = await login({ email: otpEmail, password: otpPassword });
         if (loginRes.success && loginRes.data?.token) {
           const d = loginRes.data;
           await authLogin({
             id: d.id || d.customerId || '', firstName: d.firstName || signupFirst,
-            lastName: d.lastName || signupLast, email: d.email || signupEmail,
+            lastName: d.lastName || signupLast, email: d.email || otpEmail,
             phone: d.phone || (signupPhoneVal?.digits ?? ''), customerId: d.customerId || '',
             customerType: d.customerType || 'Client',
           }, d.token!);
@@ -2029,10 +2048,15 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
 
                 {authStep === 'otp' && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                    <p style={{ color: TEXT_SECONDARY, fontSize: 13, margin: 0 }}>Enter the verification code sent to {signupEmail}</p>
+                    <p style={{ color: TEXT_SECONDARY, fontSize: 13, margin: 0 }}>Enter the verification code sent to {otpEmail}</p>
+                    {otpResend.notice && <p role="status" style={{ color: TEXT_SECONDARY, fontSize: 13, margin: 0 }}>{otpResend.notice}</p>}
+                    {otpResend.error && <p role="alert" style={{ color: '#dc2626', fontSize: 13, margin: 0 }}>{otpResend.error}</p>}
                     <input type="text" value={otpValue} onChange={e => setOtpValue(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="Enter code" style={{ ...inputStyle, textAlign: 'center' as const, letterSpacing: 8, fontSize: 20 }} onKeyDown={e => e.key === 'Enter' && handleAuthOtp()} />
                     <button onClick={handleAuthOtp} disabled={authLoading} style={{ ...btnPrimary, opacity: authLoading ? 0.6 : 1 }}>
                       {authLoading ? 'Verifying...' : 'Verify & Continue'}
+                    </button>
+                    <button type="button" onClick={() => otpResend.resend(otpCustomerId)} disabled={otpResend.sending || otpResend.secondsLeft > 0} style={{ background: 'none', border: 'none', color: TEXT_SECONDARY, fontSize: 13, cursor: otpResend.sending || otpResend.secondsLeft > 0 ? 'not-allowed' : 'pointer', textDecoration: 'underline', padding: '4px 0' }}>
+                      {otpResend.sending ? 'Sending...' : otpResend.secondsLeft > 0 ? `Didn't get it? Resend in ${otpResend.secondsLeft}s` : "Didn't get it? Resend code"}
                     </button>
                   </div>
                 )}
