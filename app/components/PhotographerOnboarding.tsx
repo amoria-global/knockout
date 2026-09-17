@@ -5,6 +5,7 @@ import { getCurrencies, type Currency } from '@/lib/APIs/public';
 import { apiClient } from '@/lib/api/client';
 import { getProfileSummary } from '@/lib/APIs/photographers/update-profile/route';
 import { syncPhotographerProfile, initialSyncState, type SyncState } from '@/lib/photographer/sync-profile';
+import { shouldAutosave } from '@/lib/photographer/autosave';
 
 // ─── Types ───
 
@@ -710,12 +711,12 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
   };
 
   useEffect(() => {
-    if (!serverSync || draftFinalizedRef.current || state.currentSlide === 7) return;
+    if (!shouldAutosave({ serverSync, isOpen, finalized: draftFinalizedRef.current, currentSlide: state.currentSlide })) return;
     const t = setTimeout(() => { void runServerSync(false); }, 5000);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    serverSync, address, about, businessType, companyName, tin,
+    serverSync, isOpen, address, about, businessType, companyName, tin,
     selectedSpecialtyIds, profileFile, coverFile, projTitle, projYear,
     projDescription, projFile, expPosition, expCompany, expLocation,
     expStartDate, expEndDate, expIsCurrent, expDescription,
