@@ -1829,41 +1829,6 @@ export default function Home() {
                   Order 6 places it at the very bottom of the column. */}
               <div className="hero-trust" aria-label="Platform highlights" style={{ order: 6 }}>
                 <div className="hero-trust-cell">
-                  <span className="hero-trust-icon hero-trust-icon--blue" aria-hidden="true">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-                      <circle cx="12" cy="13" r="4" />
-                    </svg>
-                  </span>
-                  <div className="hero-trust-text">
-                    <strong>{fmtCount(stats.photographers)}</strong>
-                    <span>Photographers</span>
-                  </div>
-                </div>
-                <div className="hero-trust-cell">
-                  <span className="hero-trust-icon hero-trust-icon--red" aria-hidden="true">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M3 11l18-5v12L3 14v-3z" />
-                      <path d="M11.6 16.8a3 3 0 1 1-5.8-1.6" />
-                    </svg>
-                  </span>
-                  <div className="hero-trust-text">
-                    <strong>{fmtCount(stats.totalEvents)}</strong>
-                    <span>Events hosted</span>
-                  </div>
-                </div>
-                <div className="hero-trust-cell">
-                  <span className="hero-trust-icon hero-trust-icon--gold" aria-hidden="true">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M12 2l2.39 4.84 5.34.78-3.86 3.77.91 5.31L12 14.21l-4.78 2.49.91-5.31L4.27 7.62l5.34-.78z" />
-                    </svg>
-                  </span>
-                  <div className="hero-trust-text">
-                    <strong>{fmtRating(stats.avgRating)}</strong>
-                    <span>User rating</span>
-                  </div>
-                </div>
-                <div className="hero-trust-cell">
                   <span className="hero-trust-icon hero-trust-icon--green" aria-hidden="true">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                       <circle cx="12" cy="12" r="10" />
