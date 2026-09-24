@@ -95,8 +95,33 @@ We maintain records of all communications conducted through our platform to ensu
 7. Location Information
 With your explicit permission, we may collect precise or approximate location data from your device. This information helps us provide location-based services such as matching you with nearby photographers or clients, suggesting local creative professionals, displaying relevant search results based on geography, and enhancing the accuracy of event planning features. You can control location permissions through your device settings or app preferences at any time. Location data is used solely to improve your experience and is never shared with third parties for marketing purposes without your consent.
 
-8. Facial Recognition & Biometric Data
-Amoria Connekyt offers an optional face-search feature that helps you find photos of yourself across event galleries. If you choose to opt in and take a selfie, we process that selfie as biometric (face) data solely to match it against event photos and surface pictures that appear to include you. This processing happens only with your explicit consent. Your face data is never used for advertising, is not sold or shared with third parties, and is not used for any purpose other than helping you find your own photos. You can withdraw consent at any time, and your face data is deleted on request or when you delete your account. If you do not opt in, no facial-recognition processing takes place.
+8. Facial Recognition and Face Data
+Face data is sensitive. We collect it only for the features described in this section, only after you agree to it in the app, and we never use it for advertising, for profiling, or to identify you anywhere else. We do not sell face data and we do not use it to train any model.
+
+8.1 What face data we collect
+(a) Find My Photos selfie: if you choose to search event albums for photos of yourself, you take or select a selfie.
+(b) Faces in event photos: when a photographer publishes a paid event album with face search, each face in those photos is converted into a face vector. A face vector is a set of numbers that describes the geometry of a face. It is not a photo and cannot be turned back into one.
+(c) Identity verification selfie: photographers and coordinators who receive payouts verify their identity with a selfie and photos of a government ID. While you take the selfie, the app runs a liveness check on your device (for example, turning your head). The frames captured for that check are not kept.
+(d) Withdrawal confirmation selfie: some withdrawals ask you for a new selfie so we can confirm the request is yours.
+
+8.2 How we use face data
+(a) Your Find My Photos selfie is compared with the face vectors of the albums you search, so we can show you the photos that appear to include you.
+(b) Face vectors from event photos are used only to answer those searches.
+(c) Your identity verification selfie is reviewed by authorized Connekyt staff together with your ID to verify your identity, and it is the reference your withdrawal selfie is compared with.
+(d) Your withdrawal confirmation selfie is compared with your identity verification selfie to confirm the withdrawal is yours.
+
+8.3 Who processes face data
+Face matching is performed by Amazon Web Services (AWS) Rekognition in the AWS US East (N. Virginia) region, acting as our service provider. Identity verification images are stored in a private, encrypted Cloudflare R2 storage bucket that only our servers and authorized staff can access. We do not share face data with any other third party. We disclose it to authorities only where the law requires it, as described in Data Sharing and Disclosure.
+
+8.4 Where face data is stored and how long we keep it
+(a) Find My Photos selfie: not stored. It is held in memory only while the search runs and is discarded when the results are returned. It is not added to any face collection.
+(b) Face vectors from event photos: stored in an AWS Rekognition collection for that event or album, kept while the album exists, and deleted when the photographer or event owner deletes the event or album.
+(c) Identity verification selfie and ID images: stored in our private storage while your account is active, because withdrawals are confirmed against them. They are replaced when you submit verification again and permanently deleted when you delete your account in the app (Profile, then Delete account) or ask us to delete them.
+(d) Withdrawal confirmation selfie: not stored. It is compared and discarded immediately.
+(e) Liveness check frames: not stored.
+
+8.5 Your choices
+Face search is optional, and you can browse albums without it. Identity verification is needed only to receive payouts. You can withdraw your consent, ask what face data we hold about you, or ask us to delete it at any time by emailing privacy@amoriaglobal.com, and we will act on your request within 30 days. If you appear in an event album and object to face search processing of your image, email us and we will handle your request within 30 days under the rights described in Your Rights and Choices.
 
 9. Live Broadcast Data (Self-Streaming)
 When you use our self-streaming feature to broadcast your own live video (for example, a self-streamed private event), we process your live camera and microphone feed in order to transmit the broadcast to your intended audience. This live media is delivered through our media and streaming provider (Cloudflare Stream). You control when a broadcast starts and stops.
@@ -116,7 +141,7 @@ To enable the core functionality of our platform (connecting clients with creati
 All financial transactions on Amoria Connekyt are processed through our trusted, licensed payment partner, XentriPay. Payments are completed on our website (connekyt.com) via XentriPay's secure checkout; the app itself does not collect your card or mobile-money details. XentriPay is carefully selected based on its security credentials, regulatory compliance, and track record. When you make a payment or receive funds, necessary transaction information is securely transmitted to XentriPay for verification and processing. All payment data is encrypted using industry-standard SSL/TLS protocols during transmission. We do not store your full card or mobile-money details on our servers. This information is tokenized and secured by our payment partner, who is certified as PCI DSS compliant.
 
 3. Service Providers and Technology Partners
-To deliver a high-quality platform experience, we partner with reputable third-party service providers who assist with various operational functions. Our cloud hosting providers store data securely in encrypted servers located in jurisdictions with strong data protection laws (Rwanda, EU, Kenya, South Africa). Analytics services help us understand how users interact with our platform, identify areas for improvement, and optimize performance. This data is typically aggregated and anonymized. Email and communication tools enable us to send important notifications, updates, and support messages. Identity verification partners assist with KYC compliance, helping us verify user identities while preventing fraud and ensuring platform security. All these service providers are bound by strict confidentiality agreements and are only permitted to access data necessary for their specific functions.
+To deliver a high-quality platform experience, we partner with reputable third-party service providers who assist with various operational functions. Our cloud hosting providers store data securely in encrypted servers located in jurisdictions with strong data protection laws (Rwanda, EU, Kenya, South Africa). Analytics services help us understand how users interact with our platform, identify areas for improvement, and optimize performance. This data is typically aggregated and anonymized. Email and communication tools enable us to send important notifications, updates, and support messages. Face matching is performed by Amazon Web Services (AWS) Rekognition in the United States, as described in section 8 of Information We Collect. Identity verification partners assist with KYC compliance, helping us verify user identities while preventing fraud and ensuring platform security. All these service providers are bound by strict confidentiality agreements and are only permitted to access data necessary for their specific functions.
 
 4. Legal or Government Bodies
 We may disclose your information to law enforcement, regulatory authorities, or other government bodies when required by law or when we believe in good faith that such disclosure is necessary. This includes situations where we receive a valid legal process such as a court order, subpoena, or warrant. We comply with Rwanda's legal obligations under the oversight of regulatory bodies including the National Bank of Rwanda (BNR), National Cyber Security Authority (NCSA), Rwanda Investigation Bureau (RIB), and Financial Intelligence Centre (FIC). We may also disclose information to protect our rights, property, or safety, or that of our users or the public. For example, to prevent fraud, investigate security threats, or respond to illegal activities. For Anti-Money Laundering and Counter-Terrorism Financing (AML/CTF) compliance, we may report suspicious activities as required under Rwanda's Law No. 69/2018. During legal proceedings or investigations, we cooperate with authorities while respecting user privacy to the extent permitted by law.
@@ -1099,8 +1124,8 @@ For formal legal correspondence, please direct mail to our registered office or 
 
 Effective Date and Policy Information
 
-This Privacy Policy was last updated on 01 March 2026.
-Version: 2026.03.01
+This Privacy Policy was last updated on 24 September 2026.
+Version: 2026.09.24
 Previous versions available upon request for comparison and transparency purposes.
 
 © 2026 Amoria Global Tech Ltd. | All Rights Reserved`
