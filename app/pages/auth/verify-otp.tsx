@@ -74,8 +74,8 @@ function VerifyOtpContent(): React.JSX.Element {
     if (em) p.set('email', String(em));
     // The OTP response doesn't always echo profile fields, so fall back to the
     // values signup threaded through the URL. customerType is critical: without
-    // it the app's useRole defaults to 'Client', so a 'User' would land on the
-    // wrong dashboard.
+    // it the app's useRole defaults to 'Client', so a photographer or
+    // coordinator would land on the wrong dashboard.
     const firstName = d.firstName || handoffRef.current.firstName || '';
     const lastName = d.lastName || handoffRef.current.lastName || '';
     const phone = d.phone || handoffRef.current.phone || '';
@@ -242,16 +242,6 @@ function VerifyOtpContent(): React.JSX.Element {
           }
 
           setSuccess(true);
-          // The consumer `User` role has its dedicated dashboard on the
-          // cross-app dashboard host. Bounce there (auth rides the shared
-          // .connekyt.com cookie); skip when returning to the mobile app.
-          const ctForRoute = (d?.customerType || handoffRef.current.customerType || '').toLowerCase();
-          if (ctForRoute === 'user' && !appRedirect) {
-            const dash = getDashboardUrlWithToken('User');
-            showSuccess('Account verified! Redirecting to your dashboard...');
-            setTimeout(() => { window.location.href = dash || '/user/photographers'; }, 1500);
-            return;
-          }
           // Launched from the mobile app → hand the session back to it.
           if (appRedirect) {
             showSuccess(
