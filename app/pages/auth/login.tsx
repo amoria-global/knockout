@@ -220,8 +220,10 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
   const { login: loginUser, logout: logoutUser } = useAuth();
 
   // ── User type (needed before toggle handler) ──
-  const rawUserType = searchParams.get('userType');
-  const allowedSignupTypes = ['Photographer', 'Client', 'Coordinator', 'User'];
+  // "User" was merged into Client; old links that still say userType=User
+  // open the Client sign-up.
+  const rawUserType = searchParams.get('userType') === 'User' ? 'Client' : searchParams.get('userType');
+  const allowedSignupTypes = ['Photographer', 'Client', 'Coordinator'];
   const urlUserType = rawUserType && allowedSignupTypes.includes(rawUserType) ? rawUserType : null;
   const [selectedUserType, setSelectedUserType] = useState<string | null>(urlUserType);
   const [showUserTypeModal, setShowUserTypeModal] = useState(!urlUserType && initialView === 'signup');
