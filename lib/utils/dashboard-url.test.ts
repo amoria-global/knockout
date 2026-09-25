@@ -35,7 +35,8 @@ describe('getDashboardUrl', () => {
       expect(getDashboardUrl('client')).toBe('https://dashboard.connekyt.com/user/client/home');
       expect(getDashboardUrl('photographer')).toBe('https://dashboard.connekyt.com/user/photographer/dashboard');
       expect(getDashboardUrl('event-coordinator')).toBe('https://dashboard.connekyt.com/user/event-coordinator/home');
-      expect(getDashboardUrl('user')).toBe('https://dashboard.connekyt.com/user/user/home');
+      // User was merged into Client, so a stale User session lands on the client dashboard.
+      expect(getDashboardUrl('user')).toBe('https://dashboard.connekyt.com/user/client/home');
     });
 
     it('accepts "coordinator" as well as "event-coordinator"', () => {
