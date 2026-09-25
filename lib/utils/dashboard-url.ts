@@ -7,9 +7,9 @@ function getRouteForType(customerType?: string): string {
     case 'event-coordinator':
     case 'coordinator': return '/user/event-coordinator/home';
     case 'photographer': return '/user/photographer/dashboard';
-    // The consumer `User` role has its own dedicated dashboard section on the
-    // cross-app dashboard host.
-    case 'user': return '/user/user/home';
+    // "User" was merged into Client. A session minted before that still says
+    // User, so it goes to the client dashboard too.
+    case 'user': return '/user/client/home';
     case 'viewer': return '';  // Viewers don't have a dashboard
     default: return '/'; // Role selection page
   }
@@ -22,7 +22,7 @@ function getRouteForType(customerType?: string): string {
  */
 export function getDashboardUrl(customerType?: string): string {
   const route = getRouteForType(customerType);
-  // Roles without a cross-app dashboard (user, viewer) resolve to '' so callers
+  // Roles without a cross-app dashboard (viewer) resolve to '' so callers
   // use their in-app fallback (e.g. `|| '/user/dashboard'`).
   if (!route) return '';
   // NEVER fall back to '' here. An empty base turns this into a RELATIVE path,
