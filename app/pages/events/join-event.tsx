@@ -9,6 +9,7 @@ import InternationalPhoneInput, { type PhoneValue } from '../../components/phone
 import { getPublicEvents, getPublicEventById, type PublicEvent } from '@/lib/APIs/public';
 import { joinEvent } from '@/lib/APIs/events/join-event/route';
 import { validateStreamToken } from '@/lib/APIs/streams/route';
+import { PaymentMethodChooser } from '@/app/components/payments/PaymentMethodChooser';
 
 // Event type used by this page's UI
 interface EventItem {
@@ -726,70 +727,13 @@ export default function JoinEvent() {
                     }}>
                       Select Payment Method
                     </label>
-                    <div style={{
-                      display: 'grid',
-                      gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',
-                      gap: '10px',
-                    }}>
-                      {paymentMethods.map((method) => (
-                        <button
-                          key={method.id}
-                          onClick={() => setSelectedPaymentMethod(method.id)}
-                          style={{
-                            padding: '20px 8px',
-                            background: selectedPaymentMethod === method.id
-                              ? 'linear-gradient(135deg, #059669 0%, #10b981 100%)'
-                              : 'rgba(255, 255, 255, 0.05)',
-                            border: '2px solid',
-                            borderColor: selectedPaymentMethod === method.id
-                              ? '#10b981'
-                              : 'rgba(255, 255, 255, 0.1)',
-                            borderRadius: '12px',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            gap: '6px',
-                            transition: 'all 0.3s ease',
-                            position: 'relative',
-                          }}
-                        >
-                          {selectedPaymentMethod === method.id && (
-                            <div style={{
-                              position: 'absolute',
-                              top: '-6px',
-                              right: '-6px',
-                              width: '18px',
-                              height: '18px',
-                              borderRadius: '50%',
-                              backgroundColor: '#0ea5e9',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                            }}>
-                              <i className="bi bi-check" style={{ color: '#fff', fontSize: '11px' }}></i>
-                            </div>
-                          )}
-                          <img
-                            src={method.image}
-                            alt={method.name}
-                            style={{
-                              width: '32px',
-                              height: '32px',
-                              objectFit: 'contain',
-                            }}
-                          />
-                          <span style={{
-                            fontSize: '14px',
-                            fontWeight: '600',
-                            color: '#fff',
-                            textAlign: 'center',
-                          }}>
-                            {method.name}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
+                    <PaymentMethodChooser
+                      tone="dark"
+                      accent="#10b981"
+                      selectedId={selectedPaymentMethod}
+                      onSelect={setSelectedPaymentMethod}
+                      methods={paymentMethods}
+                    />
                   </div>
 
                   {/* Payment Details - Mobile Money */}

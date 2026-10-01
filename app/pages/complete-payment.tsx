@@ -7,6 +7,7 @@ import Navbar from '../components/navbar';
 import Footer from '../components/footer';
 import { pollXentriPayStatus } from '@/lib/APIs/payments/xentripay';
 import InternationalPhoneInput, { type PhoneValue } from '../components/phone/InternationalPhoneInput';
+import { PaymentMethodChooser } from '@/app/components/payments/PaymentMethodChooser';
 
 /**
  * Sessionless payment receiver. The mobile app hands a buyer off here with a
@@ -328,31 +329,14 @@ function CompletePaymentContent(): React.JSX.Element {
                   <div style={{ fontSize: 12.5, fontWeight: 700, color: '#374151', marginBottom: 8 }}>
                     Pay with
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
-                    {PAYMENT_METHODS.map((m) => (
-                      <button
-                        key={m.id}
-                        onClick={() => { setSelectedMethod(m.id); setPayError(null); }}
-                        disabled={step === 'initiating'}
-                        style={{
-                          padding: '12px 6px', borderRadius: 12,
-                          border: selectedMethod === m.id ? '2px solid #083A85' : '1.5px solid #e5e7eb',
-                          background: selectedMethod === m.id ? 'rgba(8,58,133,0.06)' : '#fff',
-                          cursor: 'pointer', display: 'flex', flexDirection: 'column',
-                          alignItems: 'center', gap: 6,
-                        }}
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={m.image} alt={m.name} style={{ height: 26, objectFit: 'contain' }} />
-                        <span style={{
-                          fontSize: 11, fontWeight: 700, lineHeight: 1.2, textAlign: 'center',
-                          color: selectedMethod === m.id ? '#083A85' : '#4b5563',
-                        }}>
-                          {m.name}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
+                  <PaymentMethodChooser
+                    tone="light"
+                    accent="#083A85"
+                    selectedId={selectedMethod}
+                    disabled={step === 'initiating'}
+                    onSelect={(id) => { setSelectedMethod(id as MethodTile['id']); setPayError(null); }}
+                    methods={PAYMENT_METHODS}
+                  />
 
                   {selectedMethod && !isCard && (
                     <label style={{ display: 'block', marginTop: 14 }}>

@@ -21,6 +21,7 @@ import DonationPromptModal from './DonationPromptModal';
 import { usePaymentCountry } from '@/lib/payments/usePaymentCountry';
 import { usePaymentOptions } from '@/lib/payments/usePaymentOptions';
 import { CountryPicker } from './payments/CountryPicker';
+import { PaymentMethodChooser } from './payments/PaymentMethodChooser';
 import { findCountry } from '@/lib/payments/supportedCountries';
 import InternationalPhoneInput, { type PhoneValue } from './phone/InternationalPhoneInput';
 
@@ -998,8 +999,12 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
                     : `We don't have operators for ${detectedCountry} yet. Pick a country we support, or use a card.`}
                 />
               ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(104px, 1fr))', gap: 8 }}>
-                  {paymentMethods
+                <PaymentMethodChooser
+                  tone={darkMode ? 'dark' : 'light'}
+                  accent="#03969c"
+                  selectedId={selectedMethod}
+                  onSelect={setSelectedMethod}
+                  methods={paymentMethods
                     .filter((method) => {
                       // Filter by the event geo-check's allowed methods at the
                       // CATEGORY level (mobile-money vs card): matching exact
@@ -1009,51 +1014,13 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
                       if (method.provider === 'CARD') return allowed.includes('CARD');
                       return allowed.some((m) => m !== 'CARD');
                     })
-                    .map((method) => {
-                      const isSelected = selectedMethod === method.id;
-                      const isMobileMoneyMethod = method.id !== 'card';
-                      const isDisabled = geoStatus.blocked || (isMobileMoneyMethod && geoStatus.disableMobileMoney);
-                      return (
-                        <button
-                          key={method.id}
-                          onClick={() => !isDisabled && setSelectedMethod(method.id)}
-                          disabled={isDisabled}
-                          style={{
-                            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7,
-                            padding: '12px 6px 10px', borderRadius: 14,
-                            background: isSelected ? T.chipOnBg : T.chip,
-                            border: isSelected ? '2px solid #03969c' : `1px solid ${T.chipBorder}`,
-                            cursor: isDisabled ? 'not-allowed' : 'pointer',
-                            opacity: isDisabled ? 0.45 : 1,
-                            position: 'relative', transition: 'all 160ms ease',
-                          }}
-                        >
-                          {isSelected && (
-                            <span style={{ position: 'absolute', top: 6, right: 6, width: 15, height: 15, borderRadius: '50%', background: '#03969c', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
-                            </span>
-                          )}
-                          <span style={{ width: 36, height: 36, borderRadius: 10, background: '#fff', border: `1px solid ${T.chipBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
-                            <img
-                              src={method.image}
-                              alt=""
-                              onError={(e) => {
-                                const img = e.currentTarget;
-                                if (img.dataset.fallback === '1') return;
-                                img.dataset.fallback = '1';
-                                img.src = '/mobile-money.svg';
-                              }}
-                              style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 4 }}
-                            />
-                          </span>
-                          <span style={{ color: isSelected ? T.text : T.sub, fontSize: 11, fontWeight: 700, lineHeight: 1.2, textAlign: 'center' }}>
-                            {method.name}
-                            {isDisabled && <span style={{ display: 'block', fontSize: 9, color: '#ef4444', marginTop: 2, fontWeight: 700 }}>Unavailable</span>}
-                          </span>
-                        </button>
-                      );
-                    })}
-                </div>
+                    .map((method) => ({
+                      id: method.id,
+                      name: method.name,
+                      image: method.image,
+                      disabled: geoStatus.blocked || (method.id !== 'card' && geoStatus.disableMobileMoney),
+                    }))}
+                />
               )}
             </div>
 

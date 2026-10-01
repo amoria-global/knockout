@@ -23,6 +23,7 @@ import {
 import { API_ENDPOINTS } from '@/lib/api/config';
 import { API_CONFIG } from '@/lib/api/config';
 import InternationalPhoneInput, { type PhoneValue } from '../components/phone/InternationalPhoneInput';
+import { PaymentMethodChooser } from '@/app/components/payments/PaymentMethodChooser';
 
 // Photo shape used throughout the page, augmented with album-purchase fields
 type PhotoItem = {
@@ -3179,29 +3180,13 @@ const FindMyPhotos = () => {
               <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#fff', marginBottom: 12 }}>
                 Select payment method
               </label>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {paymentMethods.map((method) => (
-                  <button
-                    key={method.id}
-                    onClick={() => setDlPaymentMethod(method.id)}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px',
-                      background: dlPaymentMethod === method.id ? 'rgba(3,150,156,0.15)' : 'rgba(255,255,255,0.05)',
-                      border: `2px solid ${dlPaymentMethod === method.id ? '#03969c' : 'rgba(255,255,255,0.1)'}`,
-                      borderRadius: 12, cursor: 'pointer', width: '100%', textAlign: 'left',
-                      transition: 'all 0.2s',
-                    }}
-                  >
-                    <div style={{ width: 44, height: 44, borderRadius: 10, overflow: 'hidden', flexShrink: 0 }}>
-                      <img src={method.image} alt={method.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    </div>
-                    <span style={{ color: '#fff', fontSize: 14, fontWeight: 600 }}>{method.name}</span>
-                    {dlPaymentMethod === method.id && (
-                      <span style={{ marginLeft: 'auto', color: '#03969c', fontSize: 20 }}>✓</span>
-                    )}
-                  </button>
-                ))}
-              </div>
+              <PaymentMethodChooser
+                tone="dark"
+                accent="#03969c"
+                selectedId={dlPaymentMethod}
+                onSelect={setDlPaymentMethod}
+                methods={paymentMethods}
+              />
             </div>
 
             {(dlPaymentMethod === 'mtn' || dlPaymentMethod === 'airtel') && (
