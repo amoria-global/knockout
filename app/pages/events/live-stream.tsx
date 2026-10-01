@@ -64,6 +64,7 @@ const EMOJI_THEME_DARK = 'dark' as unknown as EmojiPickerThemeT;
 // matters more.
 const EMOJI_STYLE_NATIVE = 'native' as unknown as EmojiPickerStyleT;
 import { PlayIcon, PauseIcon, VolumeHighIcon, VolumeLowIcon, VolumeOffIcon, FullscreenEnterIcon, FullscreenExitIcon, PipEnterIcon, SpinnerIcon, EmojiIcon, PeopleIcon, GearIcon } from '@/app/components/player-icons';
+import { PaymentMethodChooser } from '@/app/components/payments/PaymentMethodChooser';
 
 // Dynamically import VideoMessageRecorder to avoid SSR issues
 const VideoMessageRecorder = dynamic(() => import('../../components/VideoMessageRecorder'), { ssr: false });
@@ -10610,33 +10611,13 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
               <label className="gift-modal-amount-label" style={{ marginBottom: '8px' }}>
                 Select Payment Method
               </label>
-              <div className="gift-modal-payment-grid">
-                {paymentMethods.map((method) => {
-                  const isSelected = selectedPaymentMethod === method.id;
-                  return (
-                    <button
-                      key={method.id}
-                      type="button"
-                      onClick={() => setSelectedPaymentMethod(method.id)}
-                      className={`gift-modal-payment-tile ${isSelected ? 'is-selected' : ''}`}
-                    >
-                      {isSelected && (
-                        <span className="gift-modal-payment-tile-check" aria-hidden="true">
-                          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="20 6 9 17 4 12" />
-                          </svg>
-                        </span>
-                      )}
-                      <span className="gift-modal-payment-tile-logo">
-                        <img src={method.image} alt={method.name} onError={handleLogoError} />
-                      </span>
-                      <span className="gift-modal-payment-tile-label">
-                        {method.name}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
+              <PaymentMethodChooser
+                tone="light"
+                accent="#083A85"
+                selectedId={selectedPaymentMethod}
+                onSelect={setSelectedPaymentMethod}
+                methods={paymentMethods}
+              />
             </div>
 
             {/* Payment Details Input - MTN/Airtel Mobile Money */}
