@@ -22,6 +22,7 @@ import dynamic from 'next/dynamic';
 
 const PhotographerOnboarding = dynamic(() => import('@/app/components/PhotographerOnboarding'), { ssr: false });
 import { getDashboardUrlWithToken } from '@/lib/utils/dashboard-url';
+import { resolvePostAuthDestination, goToPostAuthDestination } from '@/lib/utils/post-auth-destination';
 import { buildVerifyOtpUrl } from '@/lib/utils/otp-handoff';
 import InternationalPhoneInput, { type PhoneValue } from '@/app/components/phone/InternationalPhoneInput';
 
@@ -262,6 +263,12 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
   // ── LOGIN STATE & HANDLERS ────────────────────────────────────
   // ═══════════════════════════════════════════════════════════════
   const redirectUrl = searchParams.get('redirect');
+  // The dashboard sends signed-out visitors here with ?returnUrl=<page they asked for>
+  // (a shared collaboration link, for one). Captured once and kept in sessionStorage
+  // because the login/signup toggle rewrites the URL and sign-up detours through OTP.
+  const returnUrlParam = searchParams.get('returnUrl');
+  const [dashboardReturn, setDashboardReturn] = useState<string | null>(null);
+  useEffect(() => { setDashboardReturn(resolvePostAuthDestination(returnUrlParam)); }, [returnUrlParam]);
   // When a native app launches sign-in in the browser it passes its callback
   // as `redirect`: either a custom-scheme deep link (connekt://auth-callback,
   // connektstudio://…, exp://…) or a loopback HTTP listener
@@ -394,6 +401,7 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
    * could never have reached it.
    */
   const redirectAfterLogin = (customerType?: string) => {
+    if (goToPostAuthDestination()) return;
     if (redirectUrl) {
       if (redirectUrl.startsWith('http')) window.location.href = redirectUrl;
       else router.push(redirectUrl);
@@ -448,6 +456,7 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
         // Desktop/mobile app sign-in: hand the session back and stop here.
         if (appRedirect) { setTimeout(() => returnToAppWithSession(data.token as string, { refreshToken: (data as { refreshToken?: string }).refreshToken, customerId: userData.customerId, email: userData.email, firstName: userData.firstName, lastName: userData.lastName, phone: userData.phone, customerType }), 300); }
         // Auto-redirect for booking flows - skip the PostLoginModal
+        else if (dashboardReturn) { setTimeout(() => goToPostAuthDestination(), 300); }
         else if (isBookingRedirect) { setTimeout(() => redirectToBookingDashboard(customerType), 300); }
         else { setShowPostLoginModal(true); }
       } else { const msg = response.error || data?.message || 'Google login failed.'; setLoginError(msg); showError(msg); }
@@ -539,7 +548,8 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
           // Desktop/mobile app sign-in: hand the session back and stop here.
           if (appRedirect) { setTimeout(() => returnToAppWithSession(data.token || '', { refreshToken: (data as { refreshToken?: string }).refreshToken, customerId: userData.customerId, email: userData.email, firstName: userData.firstName, lastName: userData.lastName, phone: userData.phone, customerType }), 300); }
           // Auto-redirect for booking flows - skip the PostLoginModal
-          else if (isBookingRedirect) { setTimeout(() => redirectToBookingDashboard(customerType), 300); }
+          else if (dashboardReturn) { setTimeout(() => goToPostAuthDestination(), 300); }
+        else if (isBookingRedirect) { setTimeout(() => redirectToBookingDashboard(customerType), 300); }
           else { setShowPostLoginModal(true); }
         } else { const msg = response.error || data?.message || 'Login failed.'; setLoginError(msg); showError(msg); }
       } catch (err) { const msg = err instanceof Error ? err.message : 'An error occurred.'; setLoginError(msg); showError(msg); }
@@ -654,6 +664,7 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
         forgetAppleHandshake(credential.appleUserId);
         setLoggedInUserName(userData.firstName || 'User'); setLoggedInUserType(customerType); showSuccess('Welcome back!');
         if (appRedirect) { setTimeout(() => returnToAppWithSession(data.token as string, { refreshToken: data.refreshToken, customerId: userData.customerId, email: userData.email, firstName: userData.firstName, lastName: userData.lastName, phone: userData.phone, customerType }), 300); }
+        else if (dashboardReturn) { setTimeout(() => goToPostAuthDestination(), 300); }
         else if (isBookingRedirect) { setTimeout(() => redirectToBookingDashboard(customerType), 300); }
         else { setShowPostLoginModal(true); }
       } else { const msg = response.error || data?.message || 'Apple sign-in failed.'; setLoginError(msg); showError(msg); }
@@ -672,6 +683,7 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
         forgetAppleHandshake(credential.appleUserId);
         showSuccess(appRedirect ? 'Welcome! Returning to the app…' : 'Welcome! Redirecting...');
         if (appRedirect) { setTimeout(() => returnToAppWithSession(br.data!.token as string, br.data), 300); }
+        else if (dashboardReturn) { setTimeout(() => goToPostAuthDestination(), 300); }
         else if (isBookingRedirect) { setTimeout(() => redirectToBookingDashboard(br.data?.customerType), 300); }
         else { redirectAfterLogin(br.data?.customerType as string | undefined); }
         return;
@@ -707,7 +719,8 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
             showSuccess(appRedirect ? 'Welcome! Returning to the app…' : 'Welcome back! Redirecting...');
           }
           if (appRedirect) { setTimeout(() => returnToAppWithSession(br.data!.token as string, br.data), 300); }
-          else if (isBookingRedirect) { setTimeout(() => redirectToBookingDashboard(br.data?.customerType), 300); }
+          else if (dashboardReturn) { setTimeout(() => goToPostAuthDestination(), 300); }
+        else if (isBookingRedirect) { setTimeout(() => redirectToBookingDashboard(br.data?.customerType), 300); }
           else { redirectAfterLogin(br.data?.customerType as string | undefined); }
           return;
         }
@@ -1119,7 +1132,8 @@ export function AuthPage({ initialView = 'login' }: { initialView?: 'login' | 's
             setLoggedInUserType(ctx.customerType);
             showSuccess('Profile complete! Welcome back.');
             if (appRedirect) { setTimeout(() => returnToAppWithSession(getAuthToken() || '', { customerId: ctx.customerId, email: ctx.email, firstName: ctx.firstName, lastName: ctx.lastName, phone: ctx.phone, customerType: ctx.customerType }), 300); }
-            else if (isBookingRedirect) { setTimeout(() => redirectToBookingDashboard(ctx.customerType), 300); }
+            else if (dashboardReturn) { setTimeout(() => goToPostAuthDestination(), 300); }
+        else if (isBookingRedirect) { setTimeout(() => redirectToBookingDashboard(ctx.customerType), 300); }
             else { setShowPostLoginModal(true); }
           }}
           firstName={completionCtx.firstName}

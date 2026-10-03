@@ -8,6 +8,7 @@ import { getRefreshToken } from '@/lib/api/client';
 import { useAuth } from '@/app/providers/AuthProvider';
 import PostLoginModal from '@/app/components/PostLoginModal';
 import { getDashboardUrlWithToken } from '@/lib/utils/dashboard-url';
+import { readPostAuthDestination, goToPostAuthDestination } from '@/lib/utils/post-auth-destination';
 
 function VerifyTotpContent(): React.JSX.Element {
   const searchParams = useSearchParams();
@@ -72,7 +73,8 @@ function VerifyTotpContent(): React.JSX.Element {
         setLoggedInUserType(customerType);
 
         showSuccess('Verified successfully!');
-        setShowPostLoginModal(true);
+        if (readPostAuthDestination()) { setTimeout(() => goToPostAuthDestination(), 300); }
+        else { setShowPostLoginModal(true); }
       } else {
         const errorMessage = response.error || 'Invalid code. Please try again.';
         setError(errorMessage);
