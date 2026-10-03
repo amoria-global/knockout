@@ -8,6 +8,7 @@ import { resendOtp } from '@/lib/APIs/auth/resend-otp/route';
 import { useToast } from '@/lib/notifications/ToastProvider';
 import { getAuthToken, getRefreshToken, setAuthToken } from '@/lib/api/client';
 import { getDashboardUrlWithToken } from '@/lib/utils/dashboard-url';
+import { goToPostAuthDestination } from '@/lib/utils/post-auth-destination';
 import { readOtpHandoff, scrubOtpUrl } from '@/lib/utils/otp-handoff';
 import { persistPhotographerProfile } from '@/lib/photographer/persist-profile';
 
@@ -122,6 +123,8 @@ function VerifyOtpContent(): React.JSX.Element {
    * change-password screen already go through it.
    */
   const goToDashboard = () => {
+    // A shared link (e.g. a collaboration invite) the visitor was sent here to unlock.
+    if (goToPostAuthDestination()) return;
     const d = verifiedDataRef.current || {};
     const ct = d.customerType || handoffRef.current.customerType || '';
     window.location.href = getDashboardUrlWithToken(ct) || '/user/photographers';
