@@ -23,6 +23,7 @@ import { useToast } from '@/lib/notifications/ToastProvider';
 import dynamic from 'next/dynamic';
 
 const BookingWizard = dynamic(() => import('../../components/BookingWizard'), { ssr: false });
+const DirectBookingMapView = dynamic(() => import('../../components/DirectBookingMapView'), { ssr: false });
 
 const BRAND = '#083A85';
 const BRAND_DARK = '#062a63';
@@ -314,6 +315,7 @@ const Photographers: React.FC = () => {
   const toast = useToast();
 
   // ----- States (preserved from previous version) -----
+  const [viewMode, setViewMode] = useState<'grid' | 'map'>('grid');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>(searchParams.get('category') || 'all');
   const [selectedLocation, setSelectedLocation] = useState<string>('all');
@@ -1432,6 +1434,46 @@ const Photographers: React.FC = () => {
           box-shadow: 0 6px 14px -6px rgba(8,58,133,0.55);
         }
 
+        /* View toggle (Grid vs Map) */
+        .ph-view-toggle {
+          display: inline-flex;
+          align-items: center;
+          background: #f1f5f9;
+          padding: 3px;
+          border-radius: 999px;
+          border: 1px solid #e2e8f0;
+          gap: 2px;
+        }
+        .ph-view-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 5px 12px;
+          border-radius: 999px;
+          font-size: 0.8rem;
+          font-weight: 600;
+          color: #64748b;
+          border: none;
+          background: transparent;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          font-family: inherit;
+        }
+        .ph-view-btn.is-active {
+          background: ${BRAND};
+          color: #ffffff;
+          box-shadow: 0 2px 6px rgba(8, 58, 133, 0.3);
+        }
+        .ph-live-pill {
+          background: #F20C8F;
+          color: #ffffff;
+          font-size: 0.65rem;
+          font-weight: 800;
+          padding: 1px 5px;
+          border-radius: 999px;
+          letter-spacing: 0.05em;
+        }
+
         /* A11y focus ring */
         .ph-root :where(a, button, input, select, [tabindex]):focus-visible {
           outline: 2px solid ${BRAND};
@@ -1591,6 +1633,27 @@ const Photographers: React.FC = () => {
             )}
           </p>
           <div className="ph-result-actions">
+            {/* View Mode Toggle: Grid vs Map */}
+            <div className="ph-view-toggle">
+              <button
+                type="button"
+                className={`ph-view-btn ${viewMode === 'grid' ? 'is-active' : ''}`}
+                onClick={() => setViewMode('grid')}
+                aria-label="Grid view"
+              >
+                <i className="bi bi-grid-fill" /> Grid
+              </button>
+              <button
+                type="button"
+                className={`ph-view-btn ${viewMode === 'map' ? 'is-active' : ''}`}
+                onClick={() => setViewMode('map')}
+                aria-label="Map view"
+              >
+                <i className="bi bi-geo-alt-fill" /> Map
+                <span className="ph-live-pill">LIVE</span>
+              </button>
+            </div>
+
             {activeFilterCount > 0 && (
               <button type="button" className="ph-clear-btn" onClick={resetAllFilters}>
                 <i className="bi bi-arrow-counterclockwise" /> Reset filters
@@ -1615,9 +1678,23 @@ const Photographers: React.FC = () => {
           </div>
         </div>
 
-        {/* Loading - skeleton grid */}
-        {isLoading && (
-          <div className="ph-grid" aria-busy="true" aria-live="polite">
+        {viewMode === 'map' ? (
+          <div className="ph-map-view-container my-4">
+            <DirectBookingMapView
+              initialSpecialty={selectedCategory}
+              initialSearch={searchTerm}
+              initialDate={availableOn}
+              onBookPhotographer={(id) => {
+                setWizardPhotographerId(id);
+                setShowWizard(true);
+              }}
+            />
+          </div>
+        ) : (
+          <>
+            {/* Loading - skeleton grid */}
+            {isLoading && (
+              <div className="ph-grid" aria-busy="true" aria-live="polite">
             {Array.from({ length: 6 }).map((_, i) => (
               <div className="ph-skeleton" key={i}>
                 <div className="ph-skeleton-cover" />
@@ -1865,6 +1942,8 @@ const Photographers: React.FC = () => {
             </button>
           </nav>
         )}
+        </>
+      )}
       </main>
 
       <BookingWizard
