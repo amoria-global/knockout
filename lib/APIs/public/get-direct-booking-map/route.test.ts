@@ -87,8 +87,8 @@ describe('Direct Booking Map API', () => {
       expect(calledUrl).toContain('search=Jean');
       expect(options).toEqual({ skipAuth: true, retries: 2 });
 
-      expect(res.data.clientLocation.message).toBe('You are here');
-      expect(res.data.photographers).toHaveLength(1);
+      expect(res.data?.clientLocation.message).toBe('You are here');
+      expect(res.data?.photographers).toHaveLength(1);
     });
 
     it('works without optional parameters', async () => {
