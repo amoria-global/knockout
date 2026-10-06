@@ -156,3 +156,16 @@ export type {
   ExchangeRate,
   DonationTiersResponse,
 } from './get-donation-tiers/route';
+
+// Direct Booking Map
+export {
+  getDirectBookingMap,
+  calculateHaversineDistanceKm,
+} from './get-direct-booking-map/route';
+export type {
+  ClientLocation,
+  DirectBookingPackageItem,
+  NearbyPhotographerMapItem,
+  DirectBookingMapData,
+  GetDirectBookingMapParams,
+} from './get-direct-booking-map/route';

@@ -106,6 +106,7 @@ export const API_ENDPOINTS = {
 
   // Public endpoints
   PUBLIC: {
+    DIRECT_BOOKING_MAP: '/api/remote/direct-booking/map',
     PHOTOGRAPHERS_LIST: '/api/remote/public/photographers/list',
     PHOTOGRAPHER_BY_ID: (id: string) => `/api/remote/public/photographers/list/${id}`,
     PHOTOGRAPHER_REVIEWS: (id: string) => `/api/remote/public/photographers/${id}/reviews`,
