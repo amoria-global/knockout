@@ -49,3 +49,4 @@ next-env.d.ts
 
 # greenfield UI design previews (Phase 1 sandbox — see CLAUDE.md)
 /app/_design-sandbox/
+!.env.example
