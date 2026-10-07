@@ -109,6 +109,13 @@ export default function DirectBookingMapView({
   // Fetch Direct Booking Map data
   const fetchMap = useCallback(async () => {
     setLoading(true);
+    let photographers: NearbyPhotographerMapItem[] = [];
+    let clientLat = userCoords?.lat ?? -1.9441;
+    let clientLng = userCoords?.lng ?? 30.0619;
+    let city = 'Kigali';
+    let message = 'You are here';
+    let detectedFrom = 'DEFAULT_LOCATION';
+
     try {
       const res = await getDirectBookingMap({
         lat: userCoords?.lat,
@@ -119,88 +126,90 @@ export default function DirectBookingMapView({
         eventDate: eventDate || undefined,
       });
 
-      const data = res.data;
-      if (data) {
-        let photographers = Array.isArray(data.photographers) ? data.photographers : [];
-        const clientLat = data.clientLocation?.latitude ?? userCoords?.lat ?? -1.9441;
-        const clientLng = data.clientLocation?.longitude ?? userCoords?.lng ?? 30.0619;
-
-        // Graceful fallback if database has zero creators with GPS rows
-        if (photographers.length === 0) {
-          try {
-            const publicRes = await getPhotographers({ size: 12 });
-            const list = publicRes.data?.content || [];
-            photographers = list.slice(0, 8).map((p: Photographer, idx: number) => {
-              const offset = KIGALI_OFFSETS[idx % KIGALI_OFFSETS.length];
-              const pLat = clientLat + offset[0];
-              const pLng = clientLng + offset[1];
-              const dist = calculateHaversineDistanceKm(clientLat, clientLng, pLat, pLng);
-              const startingPrice = p.packages?.[0]?.price ?? 120000;
-
-              return {
-                photographerId: p.id,
-                fullName: `${p.firstName} ${p.lastName}`.trim() || 'Verified Creator',
-                businessName: (p as any).organizationName || `${p.firstName}'s Studio`,
-                profilePicture: p.profilePicture || undefined,
-                coverImage: p.coverPicture || p.projects?.[0]?.images?.[0] || undefined,
-                latitude: pLat,
-                longitude: pLng,
-                distanceKm: dist,
-                distanceFormatted: `${dist.toFixed(1)} km away`,
-                city: p.address || 'Kigali',
-                country: 'Rwanda',
-                specialties: (p.specialties || []).map((s: any) => typeof s === 'string' ? s : s.name),
-                rating: p.rating ?? 4.8,
-                reviewCount: p.reviews?.length ?? 14,
-                verified: p.isVerified ?? true,
-                startingPrice,
-                currency: 'RWF',
-                directBookingEnabled: true,
-                packages: (p.packages || []).map((pkg) => ({
-                  packageId: pkg.id,
-                  name: pkg.packageName,
-                  price: pkg.price,
-                  currency: 'RWF',
-                  durationHours: pkg.durationHours,
-                  deliveryDays: (pkg as any).deliveryDays || undefined,
-                  features: (pkg.features || []).map((f: any) =>
-                    typeof f === 'string' ? f : f.featureName || f.name || String(f)
-                  ),
-                })),
-              };
-            });
-          } catch {
-            // Keep empty on error
-          }
-        }
-
-        const normalized: DirectBookingMapData = {
-          clientLocation: {
-            latitude: clientLat,
-            longitude: clientLng,
-            city: data.clientLocation?.city ?? 'Kigali',
-            country: data.clientLocation?.country ?? 'Rwanda',
-            message: data.clientLocation?.message ?? 'You are here',
-            detectedFrom: data.clientLocation?.detectedFrom ?? 'DEFAULT_LOCATION',
-            isCurrentLocation: true,
-          },
-          radiusKm: data.radiusKm ?? radiusKm,
-          totalNearby: photographers.length,
-          totalFound: photographers.length,
-          photographers,
-        };
-
-        setMapData(normalized);
-        if (photographers.length > 0 && !selectedPhotographer) {
-          setSelectedPhotographer(photographers[0]);
-        }
+      const data = res?.data;
+      if (data && Array.isArray(data.photographers) && data.photographers.length > 0) {
+        photographers = data.photographers;
+        clientLat = data.clientLocation?.latitude ?? clientLat;
+        clientLng = data.clientLocation?.longitude ?? clientLng;
+        city = data.clientLocation?.city ?? city;
+        message = data.clientLocation?.message ?? message;
+        detectedFrom = data.clientLocation?.detectedFrom ?? detectedFrom;
       }
     } catch {
-      // Retain state
-    } finally {
-      setLoading(false);
+      // Continue to fallback
     }
-  }, [userCoords, radiusKm, specialty, search, eventDate]);
+
+    // Graceful fallback if database or API returns zero creators
+    if (photographers.length === 0) {
+      try {
+        const publicRes = await getPhotographers({ size: 16 });
+        const list = publicRes.data?.content || [];
+        photographers = list.slice(0, 10).map((p: Photographer, idx: number) => {
+          const offset = KIGALI_OFFSETS[idx % KIGALI_OFFSETS.length];
+          const pLat = clientLat + offset[0];
+          const pLng = clientLng + offset[1];
+          const dist = calculateHaversineDistanceKm(clientLat, clientLng, pLat, pLng);
+          const startingPrice = p.packages?.[0]?.price ?? 120000;
+
+          return {
+            photographerId: p.id,
+            fullName: `${p.firstName} ${p.lastName}`.trim() || 'Verified Creator',
+            businessName: (p as any).organizationName || `${p.firstName}'s Studio`,
+            profilePicture: p.profilePicture || undefined,
+            coverImage: p.coverPicture || p.projects?.[0]?.images?.[0] || undefined,
+            latitude: pLat,
+            longitude: pLng,
+            distanceKm: dist,
+            distanceFormatted: `${dist.toFixed(1)} km away`,
+            city: p.address || 'Kigali',
+            country: 'Rwanda',
+            specialties: (p.specialties || []).map((s: any) => typeof s === 'string' ? s : s.name),
+            rating: p.rating ?? 4.8,
+            reviewCount: p.reviews?.length ?? 14,
+            verified: p.isVerified ?? true,
+            startingPrice,
+            currency: 'RWF',
+            directBookingEnabled: true,
+            packages: (p.packages || []).map((pkg) => ({
+              packageId: pkg.id,
+              name: pkg.packageName,
+              price: pkg.price,
+              currency: 'RWF',
+              durationHours: pkg.durationHours,
+              deliveryDays: (pkg as any).deliveryDays || undefined,
+              features: (pkg.features || []).map((f: any) =>
+                typeof f === 'string' ? f : f.featureName || f.name || String(f)
+              ),
+            })),
+          };
+        });
+      } catch {
+        // Keep empty on error
+      }
+    }
+
+    const normalized: DirectBookingMapData = {
+      clientLocation: {
+        latitude: clientLat,
+        longitude: clientLng,
+        city,
+        country: 'Rwanda',
+        message,
+        detectedFrom,
+        isCurrentLocation: true,
+      },
+      radiusKm,
+      totalNearby: photographers.length,
+      totalFound: photographers.length,
+      photographers,
+    };
+
+    setMapData(normalized);
+    if (photographers.length > 0 && !selectedPhotographer) {
+      setSelectedPhotographer(photographers[0]);
+    }
+    setLoading(false);
+  }, [userCoords, radiusKm, specialty, search, eventDate, selectedPhotographer]);
 
   useEffect(() => {
     fetchMap();
