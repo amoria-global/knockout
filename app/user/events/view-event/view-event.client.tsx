@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useCallback, Suspense } from 'react
 import dynamic from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
 import AmoriaKNavbar from '../../../components/navbar';
+import QrMobileGate from '../../../components/QrMobileGate';
 
 const VideoMessageRecorder = dynamic(() => import('../../../components/VideoMessageRecorder'), { ssr: false });
 import ErrorPopup, { type PopupSeverity } from '../../../components/ErrorPopup';
@@ -3480,7 +3481,9 @@ function LoadingFallback() {
 export default function ViewEventPage({ eventId }: { eventId?: string } = {}): React.JSX.Element {
   return (
     <Suspense fallback={<LoadingFallback />}>
-      <ViewEventContent eventIdProp={eventId} />
+      <QrMobileGate eventId={eventId}>
+        <ViewEventContent eventIdProp={eventId} />
+      </QrMobileGate>
     </Suspense>
   );
 }
