@@ -408,6 +408,11 @@ const Events: React.FC = () => {
     event.streamStatus !== 'ended' &&
     (event.hasLiveStream === true || liveStreamIds.has(event.id));
 
+  // An ONGOING event is happening now even when it has no stream (free events
+  // carry no streaming package), so the card badge must not read UPCOMING.
+  const isEventHappening = (event: PublicEvent) =>
+    (event.eventStatus || '').toUpperCase() === 'ONGOING' && event.streamStatus !== 'ended';
+
   const isEventEnded = (event: PublicEvent) =>
     (event.eventStatus || '').toUpperCase() === 'COMPLETED' || event.streamStatus === 'ended';
 
@@ -2313,7 +2318,7 @@ const Events: React.FC = () => {
           <>
             <div className={`ev-grid${isLoading ? ' is-refining' : ''}`}>
               {eventsData.map(event => {
-                const live = isEventLive(event);
+                const live = isEventLive(event) || isEventHappening(event);
                 const ended = isEventEnded(event);
                 const href = `/user/events/view-event?id=${event.id}`;
                 const isSaved = savedEvents.has(event.id);
