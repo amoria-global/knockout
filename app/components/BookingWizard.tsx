@@ -175,7 +175,7 @@ const TEXT_MUTED = '#64748b';
 const inputStyle: React.CSSProperties = {
   width: '100%', padding: '12px 14px', background: INPUT_BG,
   border: `1.5px solid ${INPUT_BORDER}`, borderRadius: 10, color: TEXT_PRIMARY,
-  fontSize: 14, outline: 'none', boxSizing: 'border-box',
+  fontSize: 16, outline: 'none', boxSizing: 'border-box',
 };
 
 const btnPrimary: React.CSSProperties = {
@@ -420,7 +420,24 @@ function BookingWizardStyles() {
       .bw-content::-webkit-scrollbar-track { background: transparent; }
       .bw-content::-webkit-scrollbar-thumb { background: rgba(8,58,133,0.25); border-radius: 4px; }
 
-      /* Input focus ring (layers on top of inline inputStyle) */
+      /* Form inputs - enforce 16px to prevent iOS Safari auto-zoom */
+      .bw-panel input:not([type="checkbox"]):not([type="radio"]),
+      .bw-panel select,
+      .bw-panel textarea {
+        font-size: 16px !important;
+        color: #0f172a !important;
+        -webkit-text-fill-color: #0f172a !important;
+        font-family: inherit;
+      }
+      .bw-panel select {
+        appearance: none !important;
+        -webkit-appearance: none !important;
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' stroke='%23083A85' stroke-width='2' fill='none' stroke-linecap='round'/></svg>") !important;
+        background-repeat: no-repeat !important;
+        background-position: right 14px center !important;
+        padding-right: 36px !important;
+        cursor: pointer;
+      }
       .bw-panel input:not([type="checkbox"]):not([type="radio"]):focus,
       .bw-panel select:focus,
       .bw-panel textarea:focus {
@@ -430,6 +447,14 @@ function BookingWizardStyles() {
       }
       .bw-panel input::placeholder,
       .bw-panel textarea::placeholder { color: #94a3b8; }
+
+      /* When payment modal opens over the wizard, dim the panel gracefully */
+      .bw-panel.is-modal-active {
+        opacity: 0.15;
+        filter: blur(2px);
+        pointer-events: none;
+        transition: opacity 0.22s ease, filter 0.22s ease;
+      }
 
       /* Primary button hover (matches the gradient inline style) */
       .bw-panel button[style*="linear-gradient(135deg, rgb(8, 58, 133)"]:hover:not(:disabled),
@@ -1665,7 +1690,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
     <>
       <BookingWizardStyles />
       <div className="bw-overlay">
-        <div className="bw-panel" role="dialog" aria-modal="true" aria-label="Book a photographer">
+        <div className={`bw-panel${showPaymentModal ? ' is-modal-active' : ''}`} role="dialog" aria-modal="true" aria-label="Book a photographer">
           {/* Branded header strip - back button (left) + eyebrow + close (right) */}
           <header className="bw-header">
             {(() => {
@@ -2603,15 +2628,24 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
               <div>
                 <h3 style={{ color: TEXT_PRIMARY, fontSize: 18, fontWeight: 700, margin: '0 0 16px' }}>Payment Plan</h3>
 
-                <div style={{ textAlign: 'center', marginBottom: 16 }}>
-                  <p style={{ color: TEXT_MUTED, fontSize: 13, margin: '0 0 4px' }}>Total Amount</p>
-                  <p style={{ color: TEXT_PRIMARY, fontSize: 28, fontWeight: 700, margin: 0 }}>{fmtLive(effectiveTotal)}</p>
+                <div style={{
+                  padding: '16px 20px', borderRadius: 16,
+                  background: 'linear-gradient(180deg, #f8fafc 0%, #eff6ff 100%)',
+                  border: '1px solid #dbeafe', textAlign: 'center', marginBottom: 16,
+                  boxShadow: '0 4px 12px rgba(8, 58, 133, 0.04)',
+                }}>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '3px 10px', borderRadius: 999, background: '#dbeafe', color: ACCENT, fontSize: 11, fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 6 }}>
+                    <i className="bi bi-tag-fill" style={{ fontSize: 10 }}></i> Package Total
+                  </div>
+                  <div style={{ color: TEXT_PRIMARY, fontSize: 30, fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.1 }}>
+                    {fmtLive(effectiveTotal)}
+                  </div>
                 </div>
                 {/* Currency preview panel - same selector that controls the
                     entire Payment Plan step's amount displays (total +
                     milestone rows below). Display-only; submit still goes
                     through XentriPay in the original paymentCurrencyCode. */}
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 20 }}>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 18 }}>
                   <PaymentCurrencyPreview
                     fromCurrency={(paymentCurrencyCode || 'RWF') as CurrencyCode}
                     defaultCurrency={displayCurrency}
@@ -2620,28 +2654,38 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                   />
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 22 }}>
                   {([
-                    { key: 'half' as const, label: '50% Deposit', desc: '50% now, 50% before the event date' },
+                    { key: 'half' as const, label: '50% Deposit', desc: '50% now, 50% before the event date', badge: 'Standard' },
                     { key: 'seventy' as const, label: '70% Deposit', desc: '70% now, 30% before the event date' },
-                    { key: 'full' as const, label: '100% Upfront', desc: 'Pay everything now' },
+                    { key: 'full' as const, label: '100% Upfront', desc: 'Pay everything now, zero balance due later' },
                   ]).map(opt => {
                     const sel = milestoneOption === opt.key;
                     return (
                       <button key={opt.key} onClick={() => setMilestoneOption(opt.key)} style={{
-                        padding: '14px 16px', background: sel ? '#eff6ff' : '#f9fafb',
-                        border: `1px solid ${sel ? ACCENT : INPUT_BORDER}`, borderRadius: 12,
+                        padding: '14px 16px', background: sel ? 'linear-gradient(180deg, #eff6ff 0%, #ffffff 100%)' : '#f9fafb',
+                        border: `1.5px solid ${sel ? ACCENT : INPUT_BORDER}`, borderRadius: 14,
                         cursor: 'pointer', textAlign: 'left' as const, display: 'flex', alignItems: 'center', gap: 12,
+                        boxShadow: sel ? '0 4px 14px -3px rgba(8, 58, 133, 0.18)' : 'none',
+                        transition: 'all 0.18s ease',
                       }}>
                         <div style={{
-                          width: 20, height: 20, borderRadius: '50%',
+                          width: 22, height: 22, borderRadius: '50%',
                           border: `2px solid ${sel ? ACCENT : INPUT_BORDER}`,
                           display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                          background: sel ? ACCENT : '#ffffff',
                         }}>
-                          {sel && <div style={{ width: 10, height: 10, borderRadius: '50%', background: ACCENT }} />}
+                          {sel && <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#ffffff' }} />}
                         </div>
-                        <div>
-                          <p style={{ color: TEXT_PRIMARY, fontSize: 14, fontWeight: 600, margin: 0 }}>{opt.label}</p>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <p style={{ color: TEXT_PRIMARY, fontSize: 14.5, fontWeight: 700, margin: 0 }}>{opt.label}</p>
+                            {opt.badge && (
+                              <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 999, background: '#dbeafe', color: ACCENT }}>
+                                {opt.badge}
+                              </span>
+                            )}
+                          </div>
                           <p style={{ color: TEXT_MUTED, fontSize: 12, margin: '2px 0 0' }}>{opt.desc}</p>
                         </div>
                       </button>
@@ -2748,7 +2792,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                   </div>
                   <div>
                     <label style={{ display: 'block', color: TEXT_SECONDARY, fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Event Type</label>
-                    <select value={evtType} onChange={e => setEvtType(e.target.value)} style={{ ...inputStyle, appearance: 'auto' as const }}>
+                    <select value={evtType} onChange={e => setEvtType(e.target.value)} style={inputStyle}>
                       <option value="">Select type</option>
                       {eventTypes.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
                     </select>
@@ -2840,7 +2884,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
                           <select
                             value={evtStreamFeeCurrencyId}
                             onChange={e => setEvtStreamFeeCurrencyId(e.target.value)}
-                            style={{ ...inputStyle, appearance: 'auto' as const, flex: '0 0 110px' }}
+                            style={{ ...inputStyle, flex: '0 0 110px' }}
                           >
                             {currencies.length === 0 && <option value="">RWF</option>}
                             {currencies.map(c => (
