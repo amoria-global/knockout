@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
-import { appDeepLink, detectMobilePlatform, PLAY_STORE_URL } from './eventQr';
+import { appDeepLink, detectMobilePlatform, PLAY_STORE_URL, APP_STORE_URL } from './eventQr';
 
 /**
  * Pins the rules of the event QR gate:
@@ -52,5 +52,11 @@ describe('detectMobilePlatform', () => {
 describe('PLAY_STORE_URL', () => {
   it('points at the shipped Android package', () => {
     expect(PLAY_STORE_URL).toContain('id=com.amoria.connekyt.app');
+  });
+});
+
+describe('APP_STORE_URL', () => {
+  it('points at the live Connekyt listing, without a country so every storefront resolves it', () => {
+    expect(APP_STORE_URL).toBe('https://apps.apple.com/app/id6811336076');
   });
 });
