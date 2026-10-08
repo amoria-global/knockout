@@ -1076,27 +1076,40 @@ const Events: React.FC = () => {
         }
         .ev-search-input {
           width: 100%;
-          padding: 0.85rem 0.85rem 0.85rem 44px;
+          height: 48px;
+          padding: 0.75rem 2.75rem 0.75rem 44px;
           border-radius: 12px;
-          border: 1.5px solid #e2e8f0;
-          background: #f8fafc;
-          font-size: 0.95rem;
-          color: #0f172a;
+          border: 1.5px solid #cbd5e1;
+          background: #ffffff !important;
+          /* 16px font-size prevents iOS Safari from automatically zooming into the field */
+          font-size: 16px !important;
+          line-height: 1.4 !important;
+          color: #0f172a !important;
+          -webkit-text-fill-color: #0f172a !important;
+          caret-color: ${BRAND};
           outline: none;
+          -webkit-appearance: none;
+          appearance: none;
+          box-sizing: border-box;
           font-family: inherit;
           transition: border-color 0.18s, box-shadow 0.18s, background 0.18s;
         }
-        .ev-search-input::placeholder { color: #94a3b8; }
-        /* Suppress the native WebKit clear control so it can't double up
-           with our custom clear button in the same corner. */
-        .ev-search-input::-webkit-search-cancel-button {
+        .ev-search-input::-webkit-search-decoration,
+        .ev-search-input::-webkit-search-cancel-button,
+        .ev-search-input::-webkit-search-results-button,
+        .ev-search-input::-webkit-search-results-decoration {
           -webkit-appearance: none;
           display: none;
         }
+        .ev-search-input::placeholder {
+          color: #94a3b8 !important;
+          -webkit-text-fill-color: #94a3b8 !important;
+          opacity: 1;
+        }
         .ev-search-input:focus {
           border-color: ${BRAND};
-          background: #fff;
-          box-shadow: 0 0 0 4px rgba(8,58,133,0.08);
+          background: #ffffff !important;
+          box-shadow: 0 0 0 4px rgba(8,58,133,0.10);
         }
         .ev-search-clear {
           position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
@@ -2142,7 +2155,12 @@ const Events: React.FC = () => {
             <div className="ev-search">
               <i className="bi bi-search ev-search-icon" aria-hidden="true" />
               <input
-                type="search"
+                type="text"
+                inputMode="search"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                enterKeyHint="search"
                 className="ev-search-input"
                 placeholder={t('searchPlaceholder')}
                 value={searchTerm}
