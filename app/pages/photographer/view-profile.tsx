@@ -182,7 +182,7 @@ function ViewProfileContent({ photographerIdProp }: { photographerIdProp?: strin
     const to = new Date(today.getFullYear(), today.getMonth() + 2, today.getDate())
       .toISOString()
       .split('T')[0];
-    getBookedDates({ photographerId, from, to })
+    getBookedDates({ photographerId, from, to, includePartial: true })
       .then((res) => {
         if (res.success && res.data) {
           setBookedDates(Array.isArray(res.data) ? res.data : []);
@@ -954,6 +954,9 @@ function ViewProfileContent({ photographerIdProp }: { photographerIdProp?: strin
               <div className="vp-side-cal-legend">
                 <span>
                   <span className="vp-cal-dot vp-cal-dot--free" /> Free
+                </span>
+                <span>
+                  <span className="vp-cal-dot vp-cal-dot--partial" /> Partly booked
                 </span>
                 <span>
                   <span className="vp-cal-dot vp-cal-dot--booked" /> Booked
@@ -1936,6 +1939,7 @@ function ViewProfileContent({ photographerIdProp }: { photographerIdProp?: strin
         }
         .vp-cal-dot--free { background: #10b981; }
         .vp-cal-dot--booked { background: #ef4444; }
+        .vp-cal-dot--partial { background: #f59e0b; }
 
         /* ===== MINI CALENDAR ===== */
         .vp-cal { user-select: none; }
@@ -1998,6 +2002,13 @@ function ViewProfileContent({ photographerIdProp }: { photographerIdProp?: strin
           font-weight: 800;
           border-color: #dc2626;
           box-shadow: 0 2px 6px rgba(239, 68, 68, 0.30);
+        }
+        /* Partly booked - amber, the day can still take another booking */
+        .vp-cal-cell.is-partial {
+          background: #fef3c7;
+          color: #92400e;
+          font-weight: 800;
+          border-color: #f59e0b;
         }
         /* Booked + today - keep red bg, ring it with brand-blue outline */
         .vp-cal-cell.is-booked.is-today {
@@ -2206,9 +2217,11 @@ function MiniCalendar({
   for (let i = 0; i < startDayOfWeek; i++) cells.push(null);
   for (let d = 1; d <= daysInMonth; d++) cells.push(d);
 
-  const isBooked = (day: number) => {
+  // The day's entry, if any. isFullDay false = partly booked (amber, still
+  // bookable); anything else is a full (red) day.
+  const entryFor = (day: number): BookedDate | undefined => {
     const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    return bookedDates.some((b) => {
+    return bookedDates.find((b) => {
       if (!b || typeof b !== 'object') return false;
       const obj = b as unknown as Record<string, unknown>;
       if (typeof obj.date === 'string' && obj.date === dateStr) return true;
@@ -2234,19 +2247,32 @@ function MiniCalendar({
         {cells.map((day, i) => {
           if (day === null) return <div key={i} className="vp-cal-cell vp-cal-cell--empty" />;
           const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-          const booked = isBooked(day);
+          const entry = entryFor(day);
+          const partial = entry?.isFullDay === false;
+          const booked = !!entry && !partial;
           const isToday = dateStr === todayStr;
           const isPast = dateStr < todayStr;
           const cls = [
             'vp-cal-cell',
             booked ? 'is-booked' : '',
+            partial && !isPast ? 'is-partial' : '',
             isToday ? 'is-today' : '',
             isPast ? 'is-past' : '',
           ]
             .filter(Boolean)
             .join(' ');
           return (
-            <div key={i} className={cls} aria-label={booked ? `${dateStr}, booked` : `${dateStr}, available`}>
+            <div
+              key={i}
+              className={cls}
+              aria-label={
+                booked
+                  ? `${dateStr}, booked`
+                  : partial
+                    ? `${dateStr}, ${entry?.bookedCount ?? 1} of ${entry?.capacity ?? 2} booked, still available`
+                    : `${dateStr}, available`
+              }
+            >
               {day}
             </div>
           );
