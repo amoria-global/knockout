@@ -6,6 +6,7 @@ import {
   QR_SOURCE_PARAM,
   QR_SOURCE_VALUE,
   PLAY_STORE_URL,
+  APP_STORE_URL,
   appDeepLink,
   detectMobilePlatform,
   type MobilePlatform,
@@ -163,21 +164,17 @@ export default function QrMobileGate({
                   Get the Connekyt app first
                 </h2>
                 <p style={{ fontSize: 15, lineHeight: 1.5, color: '#475569', margin: '0 0 20px' }}>
-                  {platform === 'ios'
-                    ? 'The iPhone app is coming soon. Until then, you can view this event here, and open the QR code again on an Android phone to join in the app.'
-                    : 'This event is joined through the Connekyt app. Download it, then scan the QR code again to enter your details and continue.'}
+                  This event is joined through the Connekyt app. Download it, then scan the QR code again to enter your details and continue.
                 </p>
-                {platform === 'android' && (
-                  <a
-                    href={PLAY_STORE_URL}
-                    ref={primaryRef as unknown as React.Ref<HTMLAnchorElement>}
-                    style={primaryStyle}
-                  >
-                    Download on Google Play
-                  </a>
-                )}
-                <button type="button" onClick={platform === 'android' ? openApp : close} style={secondaryStyle}>
-                  {platform === 'android' ? 'I have installed it, open the app' : 'Close'}
+                <a
+                  href={platform === 'ios' ? APP_STORE_URL : PLAY_STORE_URL}
+                  ref={primaryRef as unknown as React.Ref<HTMLAnchorElement>}
+                  style={primaryStyle}
+                >
+                  {platform === 'ios' ? 'Download on the App Store' : 'Download on Google Play'}
+                </a>
+                <button type="button" onClick={openApp} style={secondaryStyle}>
+                  I have installed it, open the app
                 </button>
               </>
             ) : (
