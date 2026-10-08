@@ -316,6 +316,7 @@ const Photographers: React.FC = () => {
 
   // ----- States (preserved from previous version) -----
   const [viewMode, setViewMode] = useState<'grid' | 'map'>('grid');
+  const [searchInput, setSearchInput] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>(searchParams.get('category') || 'all');
   const [selectedLocation, setSelectedLocation] = useState<string>('all');
@@ -440,11 +441,34 @@ const Photographers: React.FC = () => {
     if (categoryParam) setSelectedCategory(categoryParam);
   }, [searchParams]);
 
+  // Debounce search input so mobile typing is instantaneous without dropping letters
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const trimmed = searchInput.trim();
+      if (trimmed !== searchTerm) {
+        setSearchTerm(trimmed);
+        setCurrentPage(0);
+      }
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [searchInput, searchTerm]);
+
   // ----- Handlers (preserved) -----
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
+    const trimmed = searchInput.trim();
+    if (trimmed !== searchTerm) {
+      setSearchTerm(trimmed);
+      setCurrentPage(0);
+    } else {
+      fetchPhotographers();
+    }
+  };
+
+  const handleClearSearch = () => {
+    setSearchInput('');
+    setSearchTerm('');
     setCurrentPage(0);
-    fetchPhotographers();
   };
 
   const toggleBookmark = (photographerId: string) => {
@@ -456,6 +480,7 @@ const Photographers: React.FC = () => {
   };
 
   const resetAllFilters = () => {
+    setSearchInput('');
     setSearchTerm('');
     setSelectedCategory('all');
     setSelectedLocation('all');
@@ -471,7 +496,7 @@ const Photographers: React.FC = () => {
     (priceRange !== 'all' ? 1 : 0) +
     (selectedRating !== 'all' ? 1 : 0) +
     (availableOn ? 1 : 0) +
-    (searchTerm.trim() ? 1 : 0);
+    (searchInput.trim() || searchTerm.trim() ? 1 : 0);
 
   // ----- Display helpers (preserved) -----
   const getPhotographerDisplayName = (photographer: Photographer) =>
@@ -722,38 +747,74 @@ const Photographers: React.FC = () => {
         .ph-search {
           position: relative;
           margin-bottom: 0.85rem;
+          width: 100%;
         }
         .ph-search-icon {
           position: absolute;
           left: 16px; top: 50%; transform: translateY(-50%);
-          color: #94a3b8; font-size: 1rem; pointer-events: none;
+          color: #94a3b8; font-size: 1.05rem; pointer-events: none;
+          z-index: 2;
+          display: inline-flex; align-items: center; justify-content: center;
+        }
+        .ph-search-icon.ph-spin {
+          animation: ph-spin 0.9s linear infinite;
+        }
+        @keyframes ph-spin {
+          from { transform: translateY(-50%) rotate(0deg); }
+          to   { transform: translateY(-50%) rotate(360deg); }
         }
         .ph-search-input {
           width: 100%;
-          padding: 0.85rem 0.85rem 0.85rem 44px;
+          height: 48px;
+          padding: 0.75rem 2.75rem 0.75rem 44px;
           border-radius: 12px;
-          border: 1.5px solid #e2e8f0;
-          background: #f8fafc;
-          font-size: 0.95rem;
-          color: #0f172a;
+          border: 1.5px solid #cbd5e1;
+          background: #ffffff !important;
+          /* 16px font-size prevents iOS Safari from automatically zooming into the field */
+          font-size: 16px !important;
+          line-height: 1.4 !important;
+          color: #0f172a !important;
+          -webkit-text-fill-color: #0f172a !important;
+          caret-color: ${BRAND};
           outline: none;
+          -webkit-appearance: none;
+          appearance: none;
+          box-sizing: border-box;
           transition: border-color 0.18s, box-shadow 0.18s, background 0.18s;
           font-family: inherit;
         }
-        .ph-search-input::placeholder { color: #94a3b8; }
+        .ph-search-input::-webkit-search-decoration,
+        .ph-search-input::-webkit-search-cancel-button,
+        .ph-search-input::-webkit-search-results-button,
+        .ph-search-input::-webkit-search-results-decoration {
+          -webkit-appearance: none;
+          display: none;
+        }
+        .ph-search-input::placeholder {
+          color: #94a3b8 !important;
+          -webkit-text-fill-color: #94a3b8 !important;
+          opacity: 1;
+        }
         .ph-search-input:focus {
           border-color: ${BRAND};
-          background: #fff;
-          box-shadow: 0 0 0 4px rgba(8,58,133,0.08);
+          background: #ffffff !important;
+          box-shadow: 0 0 0 4px rgba(8,58,133,0.10);
         }
         .ph-search-clear {
           position: absolute;
           right: 12px; top: 50%; transform: translateY(-50%);
           background: transparent; border: none; cursor: pointer;
           color: #94a3b8; padding: 6px; border-radius: 50%;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 1rem;
+          z-index: 2;
           transition: color 0.18s, background 0.18s;
         }
-        .ph-search-clear:hover { color: ${BRAND}; background: rgba(8,58,133,0.08); }
+        .ph-search-clear:hover,
+        .ph-search-clear:active {
+          color: ${BRAND};
+          background: rgba(8,58,133,0.08);
+        }
 
         .ph-filters {
           display: grid;
@@ -967,6 +1028,11 @@ const Photographers: React.FC = () => {
           display: grid;
           grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
           gap: 1.5rem;
+          transition: opacity 0.2s ease;
+        }
+        .ph-grid--loading {
+          opacity: 0.55;
+          pointer-events: none;
         }
         @media (max-width: 640px) {
           .ph-grid { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
@@ -1516,20 +1582,29 @@ const Photographers: React.FC = () => {
         <div className="ph-control-card">
           <form onSubmit={handleSearch} role="search">
             <div className="ph-search">
-              <i className="bi bi-search ph-search-icon" aria-hidden="true" />
+              {isLoading ? (
+                <i className="bi bi-arrow-repeat ph-search-icon ph-spin" aria-hidden="true" style={{ color: BRAND }} />
+              ) : (
+                <i className="bi bi-search ph-search-icon" aria-hidden="true" />
+              )}
               <input
-                type="search"
+                type="text"
+                inputMode="search"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                enterKeyHint="search"
                 className="ph-search-input"
                 placeholder={t('searchPlaceholder')}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
                 aria-label="Search photographers"
               />
-              {searchTerm && (
+              {searchInput && (
                 <button
                   type="button"
                   className="ph-search-clear"
-                  onClick={() => { setSearchTerm(''); setCurrentPage(0); }}
+                  onClick={handleClearSearch}
                   aria-label="Clear search"
                 >
                   <i className="bi bi-x-circle-fill" />
@@ -1692,52 +1767,52 @@ const Photographers: React.FC = () => {
           </div>
         ) : (
           <>
-            {/* Loading - skeleton grid */}
-            {isLoading && (
+            {/* Loading - skeleton grid (shown on initial load when no photographers loaded yet) */}
+            {isLoading && photographers.length === 0 && (
               <div className="ph-grid" aria-busy="true" aria-live="polite">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div className="ph-skeleton" key={i}>
-                <div className="ph-skeleton-cover" />
-                <div className="ph-skeleton-body">
-                  <div className="ph-skeleton-line" style={{ width: '60%', height: 16 }} />
-                  <div className="ph-skeleton-line" style={{ width: '40%' }} />
-                  <div className="ph-skeleton-line" style={{ width: '85%' }} />
-                  <div className="ph-skeleton-line" style={{ width: '55%' }} />
-                </div>
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div className="ph-skeleton" key={i}>
+                    <div className="ph-skeleton-cover" />
+                    <div className="ph-skeleton-body">
+                      <div className="ph-skeleton-line" style={{ width: '60%', height: 16 }} />
+                      <div className="ph-skeleton-line" style={{ width: '40%' }} />
+                      <div className="ph-skeleton-line" style={{ width: '85%' }} />
+                      <div className="ph-skeleton-line" style={{ width: '55%' }} />
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        )}
+            )}
 
-        {/* Error */}
-        {error && !isLoading && (
-          <div className="ph-empty" role="alert">
-            <div className="ph-empty-icon" style={{ background: 'rgba(239,68,68,0.10)', color: '#dc2626' }}>
-              <i className="bi bi-exclamation-triangle-fill" />
-            </div>
-            <h3>Something went wrong</h3>
-            <p>{error}</p>
-            <button type="button" className="ph-cta" onClick={fetchPhotographers}>
-              <i className="bi bi-arrow-clockwise" /> Try again
-            </button>
-          </div>
-        )}
+            {/* Error */}
+            {error && !isLoading && (
+              <div className="ph-empty" role="alert">
+                <div className="ph-empty-icon" style={{ background: 'rgba(239,68,68,0.10)', color: '#dc2626' }}>
+                  <i className="bi bi-exclamation-triangle-fill" />
+                </div>
+                <h3>Something went wrong</h3>
+                <p>{error}</p>
+                <button type="button" className="ph-cta" onClick={fetchPhotographers}>
+                  <i className="bi bi-arrow-clockwise" /> Try again
+                </button>
+              </div>
+            )}
 
-        {/* Empty */}
-        {!isLoading && !error && displayedPhotographers.length === 0 && (
-          <div className="ph-empty">
-            <div className="ph-empty-icon"><i className="bi bi-camera" /></div>
-            <h3>No photographers match your filters</h3>
-            <p>Try widening your search, picking a different location, or clearing filters.</p>
-            <button type="button" className="ph-cta" onClick={resetAllFilters}>
-              <i className="bi bi-arrow-counterclockwise" /> Reset filters
-            </button>
-          </div>
-        )}
+            {/* Empty */}
+            {!isLoading && !error && displayedPhotographers.length === 0 && (
+              <div className="ph-empty">
+                <div className="ph-empty-icon"><i className="bi bi-camera" /></div>
+                <h3>No photographers match your filters</h3>
+                <p>Try widening your search, picking a different location, or clearing filters.</p>
+                <button type="button" className="ph-cta" onClick={resetAllFilters}>
+                  <i className="bi bi-arrow-counterclockwise" /> Reset filters
+                </button>
+              </div>
+            )}
 
-        {/* Grid */}
-        {!isLoading && !error && displayedPhotographers.length > 0 && (
-          <div className="ph-grid">
+            {/* Grid */}
+            {!error && displayedPhotographers.length > 0 && (
+              <div className={`ph-grid ${isLoading ? 'ph-grid--loading' : ''}`}>
             {displayedPhotographers.map((photographer) => {
               const isBookmarked = bookmarkedPhotographers.includes(photographer.id);
               const displayName   = getPhotographerDisplayName(photographer);
