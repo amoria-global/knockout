@@ -772,7 +772,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
       style={{
         position: 'fixed', inset: 0, background: T.overlay,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        zIndex: 2000, backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+        zIndex: 10005, backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
         padding: 16, overflowY: 'auto',
       }}
       onMouseDown={(e) => {
@@ -788,6 +788,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
           boxShadow: T.shadow, border: `1px solid ${T.border}`,
           position: 'relative', margin: 'auto', overflow: 'hidden',
           isolation: 'isolate', display: 'flex', flexDirection: 'column',
+          fontFamily: "'Pragati Narrow', system-ui, -apple-system, sans-serif",
         }}
         onMouseDown={(e) => e.stopPropagation()}
       >
@@ -1235,8 +1236,10 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
       </div>
 
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Libre+Bodoni:ital,wght@0,500;0,600;0,700;1,500&display=swap');
-        .pay-serif { font-family: 'Libre Bodoni', Georgia, 'Times New Roman', serif; }
+        .pay-serif {
+          font-family: 'Pragati Narrow', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          letter-spacing: -0.015em;
+        }
         @keyframes spin { to { transform: rotate(360deg); } }
         .pay-ring { position: absolute; inset: 0; border-radius: 50%; border: 2px solid rgba(3,150,156,0.5); animation: pay-pulse 2s ease-out infinite; }
         .pay-ring.d2 { animation-delay: 1s; }

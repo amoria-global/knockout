@@ -13,12 +13,16 @@ import type { ApiResponse } from '@/lib/api/types';
 // preparation/event/delivery split is gone. Optional legacy fields are kept
 // so any cached client code keeps deserialising; the backend no longer
 // sends them.
-export type BookedDateReason = 'booked';
+// With includePartial the backend also returns days that have bookings but
+// can take more: isFullDay false, reason 'partial', bookedCount and capacity.
+export type BookedDateReason = 'booked' | 'partial';
 
 export interface BookedDate {
   date: string;                 // "YYYY-MM-DD" - the blocked calendar day
-  isFullDay: boolean;           // always true now
-  reason: BookedDateReason;     // always 'booked'
+  isFullDay: boolean;           // false only for partly booked days (includePartial)
+  reason: BookedDateReason;     // 'booked' (full) or 'partial'
+  bookedCount?: number;         // partial days: bookings so far
+  capacity?: number;            // partial days: the photographer's daily cap
   bookingId?: string;           // no longer sent
   eventDate: string;            // "YYYY-MM-DD" - mirrors `date`
   startTime?: { hour: number; minute: number } | null;
@@ -31,6 +35,8 @@ export interface GetBookedDatesRequest {
   photographerId: string;
   from: string; // "YYYY-MM-DD"
   to: string;   // "YYYY-MM-DD"
+  /** Also return partly booked days. Leave off where every entry must mean unavailable. */
+  includePartial?: boolean;
 }
 
 /**
@@ -42,6 +48,7 @@ export async function getBookedDates(
   const queryParams = new URLSearchParams();
   queryParams.append('from', params.from);
   queryParams.append('to', params.to);
+  if (params.includePartial) queryParams.append('includePartial', 'true');
 
   const endpoint = `${API_ENDPOINTS.PUBLIC.PHOTOGRAPHER_BOOKED_DATES(params.photographerId)}?${queryParams.toString()}`;
 
