@@ -11,6 +11,10 @@ import { shouldAutosave } from '@/lib/photographer/autosave';
 
 export interface OnboardingPayload {
   address: string;
+  /** Optional. Username or profile link; used for Post My Event matching. */
+  instagramHandle?: string;
+  /** Base city from the shared list; used for Post My Event matching. */
+  city?: string;
   about: string;
   businessType: 'Freelancer' | 'Registered Company';
   companyName: string;
@@ -204,6 +208,15 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
   const [syncErrorKind, setSyncErrorKind] = useState<'auth' | 'network' | null>(null);
 
   const [address, setAddress] = useState('');
+  const [instagram, setInstagram] = useState('');
+  const [baseCity, setBaseCity] = useState('');
+  const [cityOptions, setCityOptions] = useState<string[]>([]);
+  const [showIgWhy, setShowIgWhy] = useState(false);
+  useEffect(() => {
+    apiClient.get<{ action?: number; data?: { cities?: { name: string }[] } }>('/api/remote/public/hybrid/options')
+      .then((r) => { const list = r.success ? r.data?.data?.cities : undefined; if (list) setCityOptions(list.map((c) => c.name)); })
+      .catch(() => { /* the field stays empty; it is optional */ });
+  }, []);
   const [about, setAbout] = useState('');
   const [businessType, setBusinessType] = useState<'Freelancer' | 'Registered Company'>('Freelancer');
   const [companyName, setCompanyName] = useState('');
@@ -343,6 +356,8 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
         const s = (k: string) => (typeof d[k] === 'string' ? (d[k] as string) : undefined);
 
         if (s('address') !== undefined) setAddress(d.address as string);
+        if (s('instagram') !== undefined) setInstagram(d.instagram as string);
+        if (s('baseCity') !== undefined) setBaseCity(d.baseCity as string);
         if (s('about') !== undefined) setAbout(d.about as string);
         if (d.businessType === 'Freelancer' || d.businessType === 'Registered Company')
           setBusinessType(d.businessType);
@@ -413,7 +428,7 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
     const t = setTimeout(() => {
       try {
         window.localStorage.setItem(draftStorageKey, JSON.stringify({
-          address, about, businessType, companyName, tin,
+          address, about, businessType, companyName, tin, instagram, baseCity,
           selectedSpecialtyIds, selectedLanguages,
           projTitle, projYear, projDescription,
           expPosition, expCompany, expLocation, expStartDate, expEndDate,
@@ -428,7 +443,7 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
     }, 400);
     return () => clearTimeout(t);
   }, [
-    draftStorageKey, address, about, businessType, companyName, tin,
+    draftStorageKey, address, about, businessType, companyName, tin, instagram, baseCity,
     selectedSpecialtyIds, selectedLanguages, projTitle, projYear, projDescription,
     expPosition, expCompany, expLocation, expStartDate, expEndDate,
     expIsCurrent, expDescription, pkgTier, pkgCurrencyId, pkgs,
@@ -446,6 +461,9 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
         if (cancelled || !p) return;
 
         if (p.address) setAddress(p.address);
+        const pp = p as unknown as { instagramHandle?: string; city?: string };
+        if (pp.instagramHandle) setInstagram(`@${pp.instagramHandle}`);
+        if (pp.city) setBaseCity(pp.city);
         if (p.businessType === 'Registered Company') {
           setBusinessType('Registered Company');
           if (p.organizationName) setCompanyName(p.organizationName);
@@ -537,6 +555,12 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
   // ─── SLIDE 0 ───
   const handleLocationNext = () => {
     if (!address.trim()) { setSlideError('Please enter your working area/location'); return; }
+    if (!baseCity && cityOptions.length > 0) { setSlideError('Please choose the city you are based in'); return; }
+    const ig = instagram.trim().replace(/^@/, '');
+    if (ig && !/^(https?:\/\/)?(www\.)?(instagram\.com\/)?[A-Za-z0-9._]{1,30}\/?(\?.*)?$/.test(ig)) {
+      setSlideError('That Instagram doesn\u2019t look right. Use @yourname or instagram.com/yourname, or leave it empty.');
+      return;
+    }
     if (businessType === 'Registered Company') {
       if (!companyName.trim()) { setSlideError('Please enter your company name'); return; }
       if (!tin.trim()) { setSlideError('Please enter your TIN number'); return; }
@@ -624,6 +648,8 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
       }));
     return {
       address: address.trim(),
+      instagramHandle: instagram.trim() || undefined,
+      city: baseCity || undefined,
       about: about.trim(),
       businessType,
       companyName: companyName.trim(),
@@ -990,6 +1016,34 @@ const PhotographerOnboarding: React.FC<PhotographerOnboardingProps> = ({
                     <label style={labelStyle}>Working Area / Location <span style={{ color: '#DC2626' }}>*</span></label>
                     <input type="text" value={address} onChange={e => setAddress(e.target.value)}
                       placeholder="e.g. Kigali, Rwanda" style={inputStyle}
+                      onFocus={(e) => { e.currentTarget.style.borderColor = PINK; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(242,12,143,0.12)'; }}
+                      onBlur={(e) => { e.currentTarget.style.borderColor = INPUT_BORDER; e.currentTarget.style.boxShadow = 'none'; }}
+                    />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>City you are based in <span style={{ color: '#DC2626' }}>*</span></label>
+                    <select value={baseCity} onChange={e => setBaseCity(e.target.value)} style={{ ...inputStyle, appearance: 'auto' as const }}>
+                      <option value="">Choose your city</option>
+                      {cityOptions.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                    <span style={{ fontSize: 12, color: TEXT_MUTED }}>We send you Post My Event opportunities near this city.</span>
+                  </div>
+                  <div>
+                    <label style={labelStyle}>
+                      Instagram <span style={{ color: TEXT_MUTED, fontWeight: 500 }}>(optional)</span>
+                      <button type="button" onClick={() => setShowIgWhy(v => !v)} aria-expanded={showIgWhy}
+                        style={{ marginLeft: 8, background: 'none', border: 'none', color: PINK, fontWeight: 700, fontSize: 12, cursor: 'pointer', padding: 0 }}>
+                        Why we ask
+                      </button>
+                    </label>
+                    {showIgWhy && (
+                      <div style={{ fontSize: 12.5, color: TEXT_MUTED, lineHeight: 1.5, background: 'rgba(242,12,143,0.06)', borderRadius: 10, padding: '8px 10px', marginBottom: 6 }}>
+                        Clients who use Post My Event are matched with photographers automatically, and a public Instagram profile helps us recommend you.
+                        We read only your public bio, follower and following counts and profile photo. We never post, message you or ask for your password. You can remove it any time.
+                      </div>
+                    )}
+                    <input type="text" value={instagram} onChange={e => setInstagram(e.target.value)}
+                      placeholder="@yourstudio or instagram.com/yourstudio" style={inputStyle} autoCapitalize="none" spellCheck={false}
                       onFocus={(e) => { e.currentTarget.style.borderColor = PINK; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(242,12,143,0.12)'; }}
                       onBlur={(e) => { e.currentTarget.style.borderColor = INPUT_BORDER; e.currentTarget.style.boxShadow = 'none'; }}
                     />
