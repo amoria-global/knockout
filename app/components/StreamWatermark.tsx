@@ -60,13 +60,12 @@ export function StreamWatermark({
             style={{
               transform: 'rotate(-22deg)',
               color: '#fff',
-              opacity: 0.03,
+              opacity: 0.012,
               fontSize: 'clamp(26px, 6.5vw, 84px)',
               fontWeight: 900,
               letterSpacing: 4,
               textTransform: 'uppercase',
               whiteSpace: 'nowrap',
-              textShadow: '0 2px 14px rgba(0,0,0,0.35)',
             }}
           >
             Amoria Connekyt
