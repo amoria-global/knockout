@@ -60,7 +60,7 @@ export function StreamWatermark({
             style={{
               transform: 'rotate(-22deg)',
               color: '#fff',
-              opacity: 0.08,
+              opacity: 0.03,
               fontSize: 'clamp(26px, 6.5vw, 84px)',
               fontWeight: 900,
               letterSpacing: 4,
@@ -85,7 +85,7 @@ export function StreamWatermark({
           display: 'flex',
           alignItems: 'center',
           gap: mark ? 0 : 7,
-          opacity: mark ? 0.4 : 0.5,
+          opacity: mark ? 0.25 : 0.3,
           pointerEvents: 'none',
           userSelect: 'none',
           zIndex: WM_Z,
