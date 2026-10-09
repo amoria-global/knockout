@@ -1724,7 +1724,7 @@ const BookingWizard: React.FC<BookingWizardProps> = ({
             })()}
             <div className="bw-header-text">
               <span className="bw-header-eyebrow">
-                <i className="bi bi-calendar-check" aria-hidden="true" /> Connekyt booking
+                <i className="bi bi-search" aria-hidden="true" /> Find a Photographer · Direct booking
               </span>
               {state.bookingSuccess && (
                 <h2 className="bw-header-title">You&apos;re all set!</h2>
