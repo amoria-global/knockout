@@ -1845,7 +1845,9 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
   const [giftLoading, setGiftLoading] = useState(false);
   const [giftError, setGiftError] = useState<string | null>(null);
   // Gift payment inline state (replaces XentriPayModal)
-  const [giftStep, setGiftStep] = useState<'form' | 'processing' | 'success' | 'failed'>('form');
+  // 'unconfirmed': timeout or status error, the charge may have landed, so
+  // no Try Again (docs/PAYMENTS.md rule 2). 'failed' is a definite decline.
+  const [giftStep, setGiftStep] = useState<'form' | 'processing' | 'success' | 'failed' | 'unconfirmed'>('form');
   const [giftPaymentUrl, setGiftPaymentUrl] = useState<string | null>(null);
   const stopGiftPollingRef = useRef<(() => void) | null>(null);
 
@@ -2233,14 +2235,13 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
               }
             }, 800);
           },
+          // Explicit gateway FAILED past the card grace window.
           onFailure: (_data: XentriPayStatusResponse) => {
             setGiftStep('failed');
-            setGiftError('Payment was declined or timed out. Please try again.');
+            setGiftError('The provider reported this payment as failed. You were not charged.');
           },
-          onError: (errorMsg: string) => {
-            setGiftStep('failed');
-            setGiftError(errorMsg || 'Something went wrong while processing your payment.');
-          },
+          // Timeout or status error: the charge may have landed.
+          onError: () => setGiftStep('unconfirmed'),
         },
         2000,
         150,
@@ -2263,7 +2264,10 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
       } else if (lower.includes('insufficient') || lower.includes('balance')) {
         msg = 'Insufficient balance. Please check your account and try again.';
       } else if (lower.includes('network') || lower.includes('fetch') || lower.includes('timeout')) {
-        msg = 'Unable to connect. Please check your internet connection and try again.';
+        // The initiate POST may have reached the gateway before the
+        // connection dropped (docs/PAYMENTS.md rule 3): unknown, not failed.
+        setGiftStep('unconfirmed');
+        return;
       } else if (lower.includes('device') || lower.includes('fingerprint')) {
         msg = 'Device verification failed. Please refresh the page and try again.';
       } else if (lower.includes('viewer not found') || lower.includes('not found')) {
@@ -10886,6 +10890,32 @@ const App = ({ eventIdProp, viewerIdProp }: { eventIdProp?: string; viewerIdProp
                 <p style={{ fontSize: '14px', color: '#6b7280', margin: 0 }}>
                   Your gift has been sent successfully.
                 </p>
+              </div>
+            )}
+
+            {/* ── STEP: Unconfirmed (charge may have landed, no retry) ── */}
+            {giftStep === 'unconfirmed' && (
+              <div style={{ textAlign: 'center', padding: '30px 0' }}>
+                <div style={{
+                  width: '70px', height: '70px', margin: '0 auto 20px',
+                  backgroundColor: 'rgba(245,158,11,0.12)', border: '2px solid rgba(245,158,11,0.55)', borderRadius: '50%',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <span aria-hidden="true" style={{ color: '#f59e0b', fontSize: '28px', fontWeight: 800 }}>?</span>
+                </div>
+                <h3 style={{ fontSize: '20px', fontWeight: 700, color: '#b45309', marginBottom: '8px' }}>Still unconfirmed</h3>
+                <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '14px', lineHeight: 1.6 }}>
+                  We couldn&apos;t confirm this gift in time. If you approved it, the money may already have left your account, so please don&apos;t send it again yet.
+                </p>
+                <div style={{ textAlign: 'left', margin: '0 auto 20px', maxWidth: '320px', padding: '12px 14px', borderRadius: '12px', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.3)', color: '#78350f', fontSize: '13px', lineHeight: 1.6 }}>
+                  1. Check your phone for the payment receipt SMS.<br />
+                  2. Give it a few minutes. Mobile money often confirms late.<br />
+                  If neither happens, contact support before trying again.
+                </div>
+                <button onClick={resetGiftModal} style={{
+                  padding: '12px 24px', backgroundColor: '#f3f4f6', border: 'none',
+                  borderRadius: '12px', color: '#374151', fontSize: '15px', fontWeight: 600, cursor: 'pointer',
+                }}>Close</button>
               </div>
             )}
 
