@@ -23,8 +23,14 @@ export interface IdentifyBuyerRequest {
 }
 
 export interface IdentifyBuyerResponse {
-  buyerId: string;
-  status: 'NEW' | 'RETURNING';
+  /**
+   * Null for VERIFY_EMAIL: the email belongs to an earlier buyer on another
+   * device. Knowing an email is not proof of being that buyer, so the backend
+   * returns no buyerId (it downloads their photos) and emails their unlock
+   * codes to that address instead.
+   */
+  buyerId: string | null;
+  status: 'NEW' | 'RETURNING' | 'VERIFY_EMAIL';
   purchasedPhotoIds: string[];
 }
 

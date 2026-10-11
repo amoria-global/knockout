@@ -146,6 +146,8 @@ const FindMyPhotos = () => {
 
   // Persistent buyer identity (one per album) - mirrors anonymous-viewer pattern
   const [buyerId, setBuyerId] = useState<string | null>(null);
+  // Album whose purchase continues as a guest after VERIFY_EMAIL (no buyerId).
+  const [guestCheckoutAlbumId, setGuestCheckoutAlbumId] = useState<string | null>(null);
   const [buyerAlbumId, setBuyerAlbumId] = useState<string | null>(null);
   // "Your Details" modal
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -1269,7 +1271,9 @@ const FindMyPhotos = () => {
       return;
     }
     // If we don't yet have a buyerId for this album, collect buyer details first
-    if (!buyerId || buyerAlbumId !== ctx.albumId) {
+    // (unless the details were already given and the backend asked for email
+    // verification: then this is a guest checkout and we go straight to pay).
+    if ((!buyerId || buyerAlbumId !== ctx.albumId) && guestCheckoutAlbumId !== ctx.albumId) {
       pendingBuyRef.current = photos;
       setDetailsError(null);
       setDetailsOpen(true);
@@ -1486,7 +1490,21 @@ const FindMyPhotos = () => {
       if (!res.success || !res.data) {
         throw new Error(res.error || 'Could not verify your details.');
       }
-      const { buyerId: newBuyerId, purchasedPhotoIds } = res.data;
+      const { buyerId: newBuyerId, purchasedPhotoIds, status } = res.data;
+      if (status === 'VERIFY_EMAIL' || !newBuyerId) {
+        // This email bought here before on another device. The backend sent its
+        // unlock codes to that inbox; this visit pays as a guest, and the new
+        // photos download through this purchase's own reference.
+        try { localStorage.setItem('album_buyer_details', JSON.stringify({ name, email })); } catch {}
+        setGuestCheckoutAlbumId(ctx.albumId);
+        setDetailsOpen(false);
+        setDetailsLoading(false);
+        setPurchaseNotice('This email has bought photos here before. We sent its unlock codes to your inbox; use one to download those again.');
+        setTimeout(() => setPurchaseNotice(null), 8000);
+        proceedToPayment(photos);
+        pendingBuyRef.current = null;
+        return;
+      }
       setBuyerId(newBuyerId);
       setBuyerAlbumId(ctx.albumId);
 
@@ -1598,6 +1616,16 @@ const FindMyPhotos = () => {
     try {
       const res = await unlockAlbumPhotos(albumId, { email });
       if (!res.success || !res.data) throw new Error(res.error || 'No purchases found for this email');
+      if (res.data.emailSent || !res.data.buyerId) {
+        // The email door delivers to the inbox (it no longer unlocks on the
+        // spot for whoever types an address). Same answer either way.
+        setUnlockOpen(false);
+        setUnlockEmailInput('');
+        setUnlockLoading(false);
+        setPurchaseNotice('If this email bought photos here, we sent the unlock code(s) to it. Enter a code to download.');
+        setTimeout(() => setPurchaseNotice(null), 8000);
+        return;
+      }
       const { buyerId: bId, purchasedPhotoIds } = res.data;
       if (bId) {
         setBuyerId(bId);
