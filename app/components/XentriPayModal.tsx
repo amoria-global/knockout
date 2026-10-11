@@ -175,9 +175,20 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
   // 'unknown' = timeout / status-check error: the charge MAY have landed, so
   // per docs/PAYMENTS.md rule 2 we must NOT offer a retry - the buyer is
   // told to check their phone and email first.
-  const [failureKind, setFailureKind] = useState<'declined' | 'unknown'>('declined');
+  // Defaults to 'unknown' so a path that forgets to say which it is fails
+  // safe, without a Retry. It used to default to 'declined' and only one path
+  // set it, so a five-minute poll timeout told a buyer whose money may have
+  // left "Payment declined. You were not charged." next to a Retry button.
+  const [failureKind, setFailureKind] = useState<'declined' | 'unknown'>('unknown');
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
   const stopPollingRef = useRef<(() => void) | null>(null);
+  // Every road into the failed step goes through here and names its kind.
+  // Only an explicit gateway FAILED is 'declined'.
+  const fail = (kind: 'declined' | 'unknown', message: string) => {
+    setFailureKind(kind);
+    setError(message);
+    setStep('failed');
+  };
 
   // Multi-country payment options. Country is IP-detected on first
   // render (with localStorage cache for manual overrides), and the
@@ -403,18 +414,18 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
               // Card grace: ignore early FAILEDs so the user gets time
               // to complete the gateway checkout.
               if (isCard && Date.now() - startedAt < cardGraceMs) {
-                if (attempts >= 150) { setError('Payment is taking longer than expected. Please check your payment history.'); setStep('failed'); return; }
+                if (attempts >= 150) { fail('unknown', 'Payment is taking longer than expected.'); return; }
                 setTimeout(poll, 2000);
                 return;
               }
-              setStep('failed'); setError('Payment was declined or timed out. Please check your balance and try again.'); return;
+              fail('declined', 'The provider reported this payment as failed.'); return;
             }
           }
-          if (attempts >= 150) { setError('Payment is taking longer than expected. Please check your payment history.'); setStep('failed'); return; }
+          if (attempts >= 150) { fail('unknown', 'Payment is taking longer than expected.'); return; }
           setTimeout(poll, 2000);
         } catch {
           if (stopped) return;
-          if (attempts >= 150) { setFailureKind('unknown'); setError('Unable to check payment status.'); setStep('failed'); return; }
+          if (attempts >= 150) { fail('unknown', 'Unable to check payment status.'); return; }
           setTimeout(poll, 2000);
         }
       };
@@ -444,13 +455,14 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
             onSuccess(paymentRefid);
           }, 500);
         },
+        // onFailure fires only on an explicit gateway FAILED past the card
+        // grace window. onError is every timeout and status-check error: the
+        // charge may have landed, so it must never offer a retry.
         onFailure: (_data: XentriPayStatusResponse) => {
-          setStep('failed');
-          setError('Payment was declined or timed out. Please check your balance and try again.');
+          fail('declined', 'The provider reported this payment as failed.');
         },
         onError: (errorMsg: string) => {
-          setError(errorMsg || 'Something went wrong while processing your payment.');
-          setStep('failed');
+          fail('unknown', errorMsg || 'Unable to check payment status.');
         },
       },
       2000,
@@ -650,7 +662,12 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
       const lower = raw.toLowerCase();
       let msg: string;
       if (lower.includes('network') || lower.includes('fetch')) {
-        msg = 'Unable to connect. Please check your internet connection and try again.';
+        // The initiate POST may have reached the gateway before the
+        // connection dropped, so a prompt may already be on the buyer's
+        // phone. That is an unknown outcome (docs/PAYMENTS.md rule 3).
+        fail('unknown', 'The connection dropped while starting this payment.');
+        onError?.('The connection dropped while starting this payment.');
+        return;
       } else if (raw) {
         // Surface the backend/XentriPay reply verbatim so the user can act
         // on the real reason (amount too low, phone wrong format, provider
