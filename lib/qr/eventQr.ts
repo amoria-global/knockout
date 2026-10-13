@@ -13,10 +13,8 @@ export const QR_SOURCE_VALUE = 'qr';
 export const ANDROID_PACKAGE = 'com.amoria.connekyt.app';
 export const PLAY_STORE_URL = `https://play.google.com/store/apps/details?id=${ANDROID_PACKAGE}`;
 export const IOS_APP_ID = '6811336076';
-export const APP_STORE_URL = `https://apps.apple.com/app/id${IOS_APP_ID}`;
-
 /** Country-neutral App Store listing (bundle com.connekyt.app). */
-export const APP_STORE_URL = 'https://apps.apple.com/app/id6811336076';
+export const APP_STORE_URL = `https://apps.apple.com/app/id${IOS_APP_ID}`;
 
 /** Deep link the installed app handles (src/app/(public)/scan/[id].tsx in connekt-mobile). */
 export function appDeepLink(eventId: string): string {
