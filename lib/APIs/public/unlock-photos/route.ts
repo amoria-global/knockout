@@ -17,6 +17,8 @@ export type UnlockAlbumPhotosRequest =
 
 export interface UnlockAlbumPhotosResponse {
   buyerId: string | null;
+  /** True for the email door: the codes were sent to that inbox, nothing is unlocked here. */
+  emailSent?: boolean;
   purchasedPhotoIds: string[];
   refid: string | null;
 }

@@ -403,10 +403,12 @@ const Events: React.FC = () => {
   }, [fetchEvents]);
 
   // ───── Derivations ─────
+  // An ONGOING event that has not ended is live, with or without a stream:
+  // free events carry no streaming package, so requiring the stream flag made
+  // them read UPCOMING while happening. Drives the banner, tab count and card.
   const isEventLive = (event: PublicEvent) =>
     (event.eventStatus || '').toUpperCase() === 'ONGOING' &&
-    event.streamStatus !== 'ended' &&
-    (event.hasLiveStream === true || liveStreamIds.has(event.id));
+    event.streamStatus !== 'ended';
 
   const isEventEnded = (event: PublicEvent) =>
     (event.eventStatus || '').toUpperCase() === 'COMPLETED' || event.streamStatus === 'ended';
