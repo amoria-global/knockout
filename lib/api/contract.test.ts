@@ -88,6 +88,24 @@ const KNOWN_STALE: Record<string, string[]> = {
     'PUBLIC.ANONYMOUS_VIEWER_CHAT_VIDEO': ['lib/APIs/streams/anonymous-viewer.ts'],
 };
 
+/**
+ * Repo-relative path with forward slashes. The allow-lists above are written
+ * that way; path.relative gives backslashes on Windows, so every allowed use
+ * was reported as a new offender there while CI on Linux passed.
+ */
+const posixRel = (file: string) => path.relative(ROOT, file).split(path.sep).join('/');
+
+/**
+ * Every app/ and lib/ source, read once. The scans below used to re-read every
+ * file once per stale key, about 15 full passes over the tree, which ran past
+ * vitest's 5 s timeout on Windows.
+ */
+let cachedSources: { rel: string; src: string }[] | null = null;
+const sources = () =>
+    (cachedSources ??= sourceFiles(path.join(ROOT, 'app'))
+        .concat(sourceFiles(path.join(ROOT, 'lib')))
+        .map((file) => ({ rel: posixRel(file), src: readFileSync(file, 'utf8') })));
+
 describe('backend contract', () => {
     it('has routes to check against', () => {
         expect(routes.length).toBeGreaterThan(100);
@@ -111,15 +129,13 @@ describe('backend contract', () => {
     });
 
     it('no known-stale endpoint is used anywhere it was not already', () => {
-        const files = sourceFiles(path.join(ROOT, 'app')).concat(sourceFiles(path.join(ROOT, 'lib')));
         const offenders: string[] = [];
         for (const [key, allowed] of Object.entries(KNOWN_STALE)) {
             const leaf = key.split('.').pop()!;
             const pattern = new RegExp(`\\.${leaf}\\b`);
-            for (const file of files) {
-                const rel = path.relative(ROOT, file);
+            for (const { rel, src } of sources()) {
                 if (rel === 'lib/api/config.ts' || allowed.includes(rel)) continue;
-                if (pattern.test(readFileSync(file, 'utf8'))) offenders.push(`${key} used in ${rel}`);
+                if (pattern.test(src)) offenders.push(`${key} used in ${rel}`);
             }
         }
         expect(offenders, 'a request to a route the backend does not have ships as a 404').toEqual([]);
@@ -134,13 +150,11 @@ describe('backend contract', () => {
             rateStreamAnonymous: 'lib/APIs/streams/anonymous-viewer.ts',
             getGroupCodeStatus: 'lib/APIs/streams/route.ts',
         };
-        const files = sourceFiles(path.join(ROOT, 'app')).concat(sourceFiles(path.join(ROOT, 'lib')));
         const calls: string[] = [];
         for (const [fn, home] of Object.entries(wrappers)) {
             const call = new RegExp(`\\b${fn}\\s*\\(`);
-            for (const file of files) {
-                const rel = path.relative(ROOT, file);
-                if (rel !== home && call.test(readFileSync(file, 'utf8'))) calls.push(`${fn} called in ${rel}`);
+            for (const { rel, src } of sources()) {
+                if (rel !== home && call.test(src)) calls.push(`${fn} called in ${rel}`);
             }
         }
         expect(calls).toEqual([]);

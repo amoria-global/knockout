@@ -37,7 +37,11 @@ import { PaymentMethodChooser } from '@/app/components/payments/PaymentMethodCho
 const BACKEND_BASE = (process.env.NEXT_PUBLIC_API_URL
     || 'https://backend.connekyt.com').replace(/\/$/, '');
 
-type Step = 'loading' | 'invalid' | 'expired' | 'error' | 'form' | 'initiating' | 'pending' | 'success';
+// 'unconfirmed': a timeout or status error after initiation. The charge may
+// have landed, so this step never shows the Pay button (docs/PAYMENTS.md
+// rule 2). Only an explicit gateway FAILED or a backend refusal returns the
+// buyer to the form.
+type Step = 'loading' | 'invalid' | 'expired' | 'error' | 'form' | 'initiating' | 'pending' | 'unconfirmed' | 'success';
 
 interface HandoffData {
   type: string; // 'BOOKING_DECLARATION' | 'ARCHIVE'
@@ -123,14 +127,14 @@ function CompletePaymentContent(): React.JSX.Element {
       refid,
       {
         onSuccess: () => setStep('success'),
+        // Explicit gateway FAILED past the card grace window: nothing was
+        // charged, so the form (and its Pay button) is safe.
         onFailure: () => {
-          setPayError('Payment was declined or timed out. Please check your balance and try again.');
+          setPayError('The provider reported this payment as failed. You were not charged.');
           setStep('form');
         },
-        onError: (msg) => {
-          setPayError(msg || 'Something went wrong while checking your payment.');
-          setStep('form');
-        },
+        // Timeout or status error: the charge may have landed.
+        onError: () => setStep('unconfirmed'),
       },
       2000,
       150,
@@ -154,6 +158,10 @@ function CompletePaymentContent(): React.JSX.Element {
 
     setPayError(null);
     setStep('initiating');
+    // True once the backend has answered. A refusal it sends back is definite
+    // (nothing charged); no answer at all means the POST may have reached the
+    // gateway, so the outcome is unknown (docs/PAYMENTS.md rule 3).
+    let answered = false;
     try {
       const res = await fetch(`${BACKEND_BASE}/api/remote/public/payments/handoff/${ref}/initiate`, {
         method: 'POST',
@@ -163,6 +171,7 @@ function CompletePaymentContent(): React.JSX.Element {
           paymentMethod: isCard ? 'CARD' : 'MOBILE_MONEY',
         }),
       });
+      answered = true;
       if (res.status === 404) { cardWindow?.close(); setStep('invalid'); return; }
       if (res.status === 410) { cardWindow?.close(); setStep('expired'); return; }
       const j = await res.json().catch(() => ({}));
@@ -183,6 +192,12 @@ function CompletePaymentContent(): React.JSX.Element {
       setStep('pending');
       startPolling(j.data.refid, isCard);
     } catch (e) {
+      if (!answered) {
+        // Leave the card tab open: if the session was created, the buyer
+        // may be paying in it right now.
+        setStep('unconfirmed');
+        return;
+      }
       cardWindow?.close();
       setPayError(e instanceof Error ? e.message : 'Could not initiate payment');
       setStep('form');
@@ -408,6 +423,33 @@ function CompletePaymentContent(): React.JSX.Element {
                 )}
                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 22, color: '#94a3b8', fontSize: 12, fontWeight: 600 }}>
                   <i className="bi bi-arrow-repeat" style={{ animation: 'cp-spin 2s linear infinite' }}></i> Watching for confirmation…
+                </div>
+              </div>
+            )}
+
+            {step === 'unconfirmed' && (
+              <div style={{ padding: '20px 0 8px' }}>
+                <div style={{
+                  width: 64, height: 64, margin: '0 auto 16px', borderRadius: '50%', background: '#fef3c7',
+                  border: '2px solid #fcd34d',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <span aria-hidden="true" style={{ fontSize: 28, fontWeight: 800, color: '#b45309' }}>?</span>
+                </div>
+                <h2 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: '#0f172a' }}>
+                  Still unconfirmed
+                </h2>
+                <p style={{ margin: '10px auto 0', maxWidth: 380, fontSize: 14, color: '#475569', lineHeight: 1.6 }}>
+                  We couldn&apos;t confirm this payment in time. If you approved it, the money may already have left your account, so please don&apos;t pay again yet.
+                </p>
+                <div style={{
+                  margin: '18px auto 0', maxWidth: 380, padding: '12px 16px', textAlign: 'left',
+                  background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 12,
+                  fontSize: 13, color: '#78350f', lineHeight: 1.65,
+                }}>
+                  1. Check your phone for the payment receipt SMS.<br />
+                  2. Return to the app in a few minutes. A confirmed payment shows your booking as paid.<br />
+                  If neither happens, contact support before paying again.
                 </div>
               </div>
             )}

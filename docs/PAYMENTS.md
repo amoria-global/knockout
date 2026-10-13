@@ -86,6 +86,17 @@ the purchase — it is what recovered a stranded buyer on 2026-08-23.
 Both are case- and whitespace-tolerant server-side; do not add client-side
 validation stricter than the server's.
 
+**The email door proves the inbox, it does not open on the spot** (since
+2026-10-11). Typing an email used to return that buyer's `buyerId`, and the
+`buyerId` alone downloads their paid photos, so anyone who knew a buyer's
+address could take their purchases. Now the backend emails the unlock codes to
+that address and answers the same way whether or not it bought anything. The
+rescue still works: the stranded buyer opens their email and uses the code
+door. `identify-buyer` follows the same rule: a returning buyer on the device
+they bought from is recognised; anyone else using that email gets
+`VERIFY_EMAIL`, no `buyerId`, and pays as a guest. Never put a `buyerId` back
+into a response that only an email was needed to get.
+
 ---
 
 ## Before you ship a change here
