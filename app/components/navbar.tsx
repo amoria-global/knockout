@@ -1544,8 +1544,8 @@ const AmoriaKNavbar = () => {
 
                     {/* QR Code Container */}
                     <div style={{
-                      background: '#f8fafc',
-                      border: '1px solid #e2e8f0',
+                      background: 'rgba(8, 58, 133, 0.03)',
+                      border: '1px solid rgba(8, 58, 133, 0.12)',
                       borderRadius: '12px',
                       padding: '10px',
                       display: 'flex',
@@ -1553,9 +1553,9 @@ const AmoriaKNavbar = () => {
                       alignItems: 'center',
                       marginBottom: '10px',
                     }}>
-                      <QrCodeSvg value={GET_APP_PAGE_URL} size={118} />
-                      <span style={{ fontSize: '11px', fontWeight: 600, color: '#475569', marginTop: '6px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                        <i className="bi bi-camera" style={{ fontSize: '11.5px', color: '#083A85' }} />
+                      <QrCodeSvg value={GET_APP_PAGE_URL} size={118} fgColor="#083A85" />
+                      <span style={{ fontSize: '11px', fontWeight: 600, color: '#083A85', marginTop: '6px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                        <i className="bi bi-camera" style={{ fontSize: '11.5px', color: '#F20C8F' }} />
                         Scan with phone camera
                       </span>
                     </div>
@@ -1568,23 +1568,23 @@ const AmoriaKNavbar = () => {
                         rel="noopener noreferrer"
                         className="flex items-center gap-3 text-left cursor-pointer transition-all duration-200"
                         style={{
-                          background: '#0F172A',
+                          background: 'linear-gradient(135deg, #083A85 0%, #0F4FB6 100%)',
                           color: '#ffffff',
                           padding: '8px 12px',
                           borderRadius: '11px',
                           textDecoration: 'none',
-                          border: '1px solid rgba(255,255,255,0.12)',
-                          boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+                          border: '1px solid rgba(255,255,255,0.15)',
+                          boxShadow: '0 4px 12px rgba(8, 58, 133, 0.25)',
                         }}
                         onMouseEnter={(e) => {
                           e.currentTarget.style.transform = 'translateY(-1px)';
-                          e.currentTarget.style.boxShadow = '0 6px 14px rgba(0,0,0,0.25)';
-                          e.currentTarget.style.background = '#1E293B';
+                          e.currentTarget.style.boxShadow = '0 6px 16px rgba(8, 58, 133, 0.35)';
+                          e.currentTarget.style.background = 'linear-gradient(135deg, #062D6B 0%, #083A85 100%)';
                         }}
                         onMouseLeave={(e) => {
                           e.currentTarget.style.transform = 'translateY(0)';
-                          e.currentTarget.style.boxShadow = '0 2px 6px rgba(0,0,0,0.15)';
-                          e.currentTarget.style.background = '#0F172A';
+                          e.currentTarget.style.boxShadow = '0 4px 12px rgba(8, 58, 133, 0.25)';
+                          e.currentTarget.style.background = 'linear-gradient(135deg, #083A85 0%, #0F4FB6 100%)';
                         }}
                       >
                         <FaApple style={{ fontSize: '22px', flexShrink: 0 }} />
@@ -1605,23 +1605,23 @@ const AmoriaKNavbar = () => {
                         rel="noopener noreferrer"
                         className="flex items-center gap-3 text-left cursor-pointer transition-all duration-200"
                         style={{
-                          background: '#0F172A',
+                          background: 'linear-gradient(135deg, #083A85 0%, #0F4FB6 100%)',
                           color: '#ffffff',
                           padding: '8px 12px',
                           borderRadius: '11px',
                           textDecoration: 'none',
-                          border: '1px solid rgba(255,255,255,0.12)',
-                          boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+                          border: '1px solid rgba(255,255,255,0.15)',
+                          boxShadow: '0 4px 12px rgba(8, 58, 133, 0.25)',
                         }}
                         onMouseEnter={(e) => {
                           e.currentTarget.style.transform = 'translateY(-1px)';
-                          e.currentTarget.style.boxShadow = '0 6px 14px rgba(0,0,0,0.25)';
-                          e.currentTarget.style.background = '#1E293B';
+                          e.currentTarget.style.boxShadow = '0 6px 16px rgba(8, 58, 133, 0.35)';
+                          e.currentTarget.style.background = 'linear-gradient(135deg, #062D6B 0%, #083A85 100%)';
                         }}
                         onMouseLeave={(e) => {
                           e.currentTarget.style.transform = 'translateY(0)';
-                          e.currentTarget.style.boxShadow = '0 2px 6px rgba(0,0,0,0.15)';
-                          e.currentTarget.style.background = '#0F172A';
+                          e.currentTarget.style.boxShadow = '0 4px 12px rgba(8, 58, 133, 0.25)';
+                          e.currentTarget.style.background = 'linear-gradient(135deg, #083A85 0%, #0F4FB6 100%)';
                         }}
                       >
                         <FaGooglePlay style={{ fontSize: '18px', flexShrink: 0, marginLeft: '2px', marginRight: '2px' }} />
