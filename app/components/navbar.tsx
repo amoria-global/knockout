@@ -13,6 +13,8 @@ import { useToast } from '@/lib/notifications/ToastProvider';
 import { locales, languageNames, type Locale } from '../../i18n';
 import { getPublicEvents, getPhotographers, getPhotographerById } from '@/lib/APIs/public';
 import { getStreamVideo } from '@/lib/APIs/streams/route';
+import { FaApple, FaGooglePlay } from 'react-icons/fa6';
+import { APP_STORE_URL, PLAY_STORE_URL } from '@/lib/qr/eventQr';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 
 // Map category names to icons
@@ -113,6 +115,7 @@ const AmoriaKNavbar = () => {
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
+  const [isGetAppOpen, setIsGetAppOpen] = useState(false);
   const [selectedLang, setSelectedLang] = useState(languageNames[locale as Locale]);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isPhotographersDropdownOpen, setIsPhotographersDropdownOpen] = useState(false);
@@ -129,6 +132,7 @@ const AmoriaKNavbar = () => {
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
   const langMenuRef = useRef<HTMLDivElement>(null);
+  const getAppDropdownRef = useRef<HTMLDivElement>(null);
   const navPillRef = useRef<HTMLDivElement>(null);
   const photographersDropdownRef = useRef<HTMLDivElement>(null);
   const eventsDropdownRef = useRef<HTMLDivElement>(null);
@@ -347,6 +351,10 @@ const AmoriaKNavbar = () => {
       if (langMenuRef.current && !langMenuRef.current.contains(event.target as Node)) {
         setIsLangMenuOpen(false);
       }
+      // Close get app dropdown
+      if (getAppDropdownRef.current && !getAppDropdownRef.current.contains(event.target as Node)) {
+        setIsGetAppOpen(false);
+      }
       // Close profile dropdown
       if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target as Node)) {
         setIsProfileDropdownOpen(false);
@@ -383,6 +391,7 @@ const AmoriaKNavbar = () => {
       setIsPhotographersDropdownOpen(false);
       setIsEventsDropdownOpen(false);
       setIsLangMenuOpen(false);
+      setIsGetAppOpen(false);
       setIsProfileDropdownOpen(false);
     }
   }, [pathname, isMobileMenuOpen]);
@@ -840,6 +849,19 @@ const AmoriaKNavbar = () => {
           background-color: rgba(255, 255, 255, 0.08) !important;
           color: #ffffff !important;
         }
+        nav[data-theme^="dark"] [data-getappbtn] {
+          color: #f4f6fb !important;
+          background: rgba(255, 255, 255, 0.10) !important;
+          border-color: rgba(255, 255, 255, 0.20) !important;
+        }
+        nav[data-theme^="dark"] [data-getappbtn] i {
+          color: #93c5fd !important;
+        }
+        nav[data-theme^="dark"] [data-getappbtn]:hover {
+          background-color: rgba(255, 255, 255, 0.18) !important;
+          color: #ffffff !important;
+          border-color: rgba(255, 255, 255, 0.35) !important;
+        }
         nav[data-theme^="dark"] [data-loginbtn] {
           color: #ffffff !important;
           border-color: rgba(255, 255, 255, 0.45) !important;
@@ -969,6 +991,17 @@ const AmoriaKNavbar = () => {
         nav[data-theme^="dark"] [data-mobiledrawer] a.bg-\\[\\#002D72\\]:hover {
           background-color: #1f6bff !important;
           color: #ffffff !important;
+        }
+        /* Mobile drawer Get App card dark theme */
+        nav[data-theme^="dark"] [data-mobileappbox] {
+          background: rgba(255, 255, 255, 0.06) !important;
+          border-color: rgba(255, 255, 255, 0.12) !important;
+        }
+        nav[data-theme^="dark"] [data-mobileappbox] span {
+          color: #ffffff !important;
+        }
+        nav[data-theme^="dark"] [data-mobileappbox] p {
+          color: #cbd5e1 !important;
         }
 
       `}</style>
@@ -1393,8 +1426,167 @@ const AmoriaKNavbar = () => {
             </div>
           </div>
 
-          {/* Right: Language and Auth Buttons (Desktop) */}
+          {/* Right: Language, Get App and Auth Buttons (Desktop) */}
           <div className="hidden md:flex items-center gap-3 flex-shrink-0" style={{ zIndex: 1 }}>
+            {/* Get App Dropdown / Popover (Desktop) */}
+            <div
+              ref={getAppDropdownRef}
+              className="relative"
+              onMouseEnter={() => setIsGetAppOpen(true)}
+              onMouseLeave={() => setIsGetAppOpen(false)}
+            >
+              <button
+                type="button"
+                onClick={() => setIsGetAppOpen(prev => !prev)}
+                data-getappbtn
+                className="flex items-center gap-1.5 font-semibold transition-all duration-200 cursor-pointer"
+                style={{
+                  color: '#083A85',
+                  fontSize: '13px',
+                  padding: '6px 13px',
+                  borderRadius: '9999px',
+                  backgroundColor: 'rgba(8, 58, 133, 0.08)',
+                  border: '1px solid rgba(8, 58, 133, 0.16)',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(8, 58, 133, 0.14)';
+                  e.currentTarget.style.borderColor = 'rgba(8, 58, 133, 0.35)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(8, 58, 133, 0.08)';
+                  e.currentTarget.style.borderColor = 'rgba(8, 58, 133, 0.16)';
+                }}
+                aria-label="Get the mobile app"
+              >
+                <i className="bi bi-phone" style={{ fontSize: '13.5px' }} />
+                <span>{t('getApp')}</span>
+                <i className={`bi bi-chevron-down transition-transform duration-200 ${isGetAppOpen ? 'rotate-180' : ''}`} style={{ fontSize: '10px' }} />
+              </button>
+
+              {isGetAppOpen && (
+                <>
+                  <div style={{ position: 'absolute', top: '100%', left: '-20px', right: '-20px', height: '14px', zIndex: 9998 }} />
+                  <div
+                    data-navdropdown
+                    className="absolute right-0"
+                    style={{
+                      width: '280px',
+                      top: 'calc(100% + 10px)',
+                      background: 'rgba(255, 255, 255, 0.98)',
+                      backdropFilter: 'blur(16px)',
+                      WebkitBackdropFilter: 'blur(16px)',
+                      borderRadius: '16px',
+                      boxShadow: '0 20px 48px -8px rgba(8, 58, 133, 0.22), 0 0 0 1px rgba(8, 58, 133, 0.08)',
+                      padding: '14px 16px',
+                      overflow: 'hidden',
+                      zIndex: 10000,
+                      animation: 'nav-dropdown-enter 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                    }}
+                  >
+                    <div style={{ marginBottom: '12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                        <span style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          width: '24px',
+                          height: '24px',
+                          borderRadius: '6px',
+                          background: 'linear-gradient(135deg, #083A85, #0F4FB6)',
+                          color: '#fff',
+                          fontSize: '12px',
+                        }}>
+                          <i className="bi bi-phone" />
+                        </span>
+                        <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 700, color: '#0F172A' }}>
+                          {t('getAppTitle')}
+                        </h4>
+                      </div>
+                      <p style={{ margin: 0, fontSize: '12px', color: '#64748B', lineHeight: 1.4 }}>
+                        {t('getAppDescription')}
+                      </p>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {/* App Store button */}
+                      <a
+                        href={APP_STORE_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 text-left cursor-pointer transition-all duration-200"
+                        style={{
+                          background: '#0F172A',
+                          color: '#ffffff',
+                          padding: '9px 14px',
+                          borderRadius: '12px',
+                          textDecoration: 'none',
+                          border: '1px solid rgba(255,255,255,0.12)',
+                          boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.transform = 'translateY(-1px)';
+                          e.currentTarget.style.boxShadow = '0 6px 14px rgba(0,0,0,0.25)';
+                          e.currentTarget.style.background = '#1E293B';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.transform = 'translateY(0)';
+                          e.currentTarget.style.boxShadow = '0 2px 6px rgba(0,0,0,0.15)';
+                          e.currentTarget.style.background = '#0F172A';
+                        }}
+                      >
+                        <FaApple style={{ fontSize: '24px', flexShrink: 0 }} />
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <span style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.04em', opacity: 0.85, lineHeight: 1 }}>
+                            Download on the
+                          </span>
+                          <span style={{ fontSize: '13.5px', fontWeight: 700, lineHeight: 1.25, letterSpacing: '0.01em' }}>
+                            App Store
+                          </span>
+                        </div>
+                      </a>
+
+                      {/* Google Play button */}
+                      <a
+                        href={PLAY_STORE_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 text-left cursor-pointer transition-all duration-200"
+                        style={{
+                          background: '#0F172A',
+                          color: '#ffffff',
+                          padding: '9px 14px',
+                          borderRadius: '12px',
+                          textDecoration: 'none',
+                          border: '1px solid rgba(255,255,255,0.12)',
+                          boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.transform = 'translateY(-1px)';
+                          e.currentTarget.style.boxShadow = '0 6px 14px rgba(0,0,0,0.25)';
+                          e.currentTarget.style.background = '#1E293B';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.transform = 'translateY(0)';
+                          e.currentTarget.style.boxShadow = '0 2px 6px rgba(0,0,0,0.15)';
+                          e.currentTarget.style.background = '#0F172A';
+                        }}
+                      >
+                        <FaGooglePlay style={{ fontSize: '20px', flexShrink: 0, marginLeft: '2px', marginRight: '2px' }} />
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <span style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.04em', opacity: 0.85, lineHeight: 1 }}>
+                            GET IT ON
+                          </span>
+                          <span style={{ fontSize: '13.5px', fontWeight: 700, lineHeight: 1.25, letterSpacing: '0.01em' }}>
+                            Google Play
+                          </span>
+                        </div>
+                      </a>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+
             {/* Language Dropdown (Desktop) */}
             <div ref={langMenuRef} className="relative">
               <button
@@ -1977,6 +2169,81 @@ const AmoriaKNavbar = () => {
                     ))}
                 </div>
               )}
+            </div>
+
+            {/* Get Connekyt Mobile App in Mobile Drawer */}
+            <div
+              data-mobileappbox
+              style={{
+                marginTop: isMobile ? '0.5rem' : '0.75rem',
+                marginBottom: isMobile ? '0.5rem' : '0.75rem',
+                padding: isMobile ? '0.85rem' : '1rem',
+                borderRadius: isMobile ? '10px' : '12px',
+                background: 'linear-gradient(135deg, rgba(8, 58, 133, 0.07) 0%, rgba(15, 79, 182, 0.12) 100%)',
+                border: '1px solid rgba(8, 58, 133, 0.14)',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                <span style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '22px',
+                  height: '22px',
+                  borderRadius: '6px',
+                  background: 'linear-gradient(135deg, #083A85, #0F4FB6)',
+                  color: '#fff',
+                  fontSize: '11px',
+                }}>
+                  <i className="bi bi-phone" />
+                </span>
+                <span style={{ fontSize: isMobile ? '0.875rem' : '0.9375rem', fontWeight: 700, color: '#083A85' }}>
+                  {t('getAppTitle')}
+                </span>
+              </div>
+              <p style={{ margin: '0 0 10px 0', fontSize: isMobile ? '0.78rem' : '0.8125rem', color: '#4b5563', lineHeight: 1.45 }}>
+                {t('getAppDescription')}
+              </p>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                <a
+                  href={APP_STORE_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-1.5 text-center transition-all duration-200"
+                  style={{
+                    background: '#0F172A',
+                    color: '#ffffff',
+                    padding: '8px 10px',
+                    borderRadius: '10px',
+                    textDecoration: 'none',
+                    fontSize: isMobile ? '12px' : '13px',
+                    fontWeight: 600,
+                    boxShadow: '0 2px 6px rgba(0,0,0,0.12)',
+                  }}
+                >
+                  <FaApple style={{ fontSize: '18px', flexShrink: 0 }} />
+                  <span>App Store</span>
+                </a>
+                <a
+                  href={PLAY_STORE_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-1.5 text-center transition-all duration-200"
+                  style={{
+                    background: '#0F172A',
+                    color: '#ffffff',
+                    padding: '8px 10px',
+                    borderRadius: '10px',
+                    textDecoration: 'none',
+                    fontSize: isMobile ? '12px' : '13px',
+                    fontWeight: 600,
+                    boxShadow: '0 2px 6px rgba(0,0,0,0.12)',
+                  }}
+                >
+                  <FaGooglePlay style={{ fontSize: '14px', flexShrink: 0 }} />
+                  <span>Google Play</span>
+                </a>
+              </div>
             </div>
 
             <div className="border-t border-gray-200" style={{ marginTop: isMobile ? '0.5rem' : '0.75rem', marginBottom: isMobile ? '0.5rem' : '0.75rem' }}></div>
