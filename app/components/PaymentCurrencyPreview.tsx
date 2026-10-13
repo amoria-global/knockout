@@ -20,6 +20,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { getCurrencyRates, type CurrencyRate } from "@/lib/APIs/public";
+import { canConvert } from "@/lib/payments/displayRates";
 
 export type CurrencyCode = "USD" | "RWF" | "EUR" | "KES" | "UGX" | "TZS";
 
@@ -106,7 +107,7 @@ const PaymentCurrencyPreview: React.FC<PaymentCurrencyPreviewProps> = ({
   };
 
   const converted = useMemo(() => {
-    if (!rates) return [];
+    if (!rates || !canConvert(fromCurrency, displayCode, rates)) return [];
     const fromRate = rateFor(fromCurrency);
     const toRate = rateFor(displayCode);
     return amounts.map(({ label, amount }) => {
@@ -357,7 +358,7 @@ export function useLiveRates() {
       // fallback - which treats e.g. 1000 RWF as $1000 USD. Wildly wrong to
       // show. Return the original amount unchanged; callers should pair this
       // with `ready` or format() so they don't mislabel the currency.
-      if (!rates && from !== to) return amount;
+      if (!canConvert(from, to, rates)) return amount;
       return convertAmount(amount, from, to, rates);
     },
     [rates],
@@ -367,7 +368,7 @@ export function useLiveRates() {
     (amount: number, from: CurrencyCode, to: CurrencyCode): string => {
       // While rates are still loading, keep the source-currency label so the
       // user doesn't see a wrong symbol next to a pre-conversion number.
-      if (!rates && from !== to) return formatInCurrency(amount, from);
+      if (!canConvert(from, to, rates)) return formatInCurrency(amount, from);
       return formatInCurrency(convertAmount(amount, from, to, rates), to);
     },
     [rates],
