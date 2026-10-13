@@ -1861,9 +1861,11 @@ const AmoriaKNavbar = () => {
                 <Link
                   href={`${getLocalePath('/user/auth/login')}?redirect=${encodeURIComponent(pathname)}`}
                   data-loginbtn
-                  className="font-semibold transition-all duration-200 whitespace-nowrap cursor-pointer px-3 xl:px-4 2xl:px-5 py-1.5 xl:py-2 text-xs xl:text-sm"
+                  className="font-semibold transition-all duration-200 whitespace-nowrap cursor-pointer"
                   style={{
                     color: '#083A85',
+                    fontSize: '14px',
+                    padding: '9px 22px',
                     borderRadius: '10px',
                     border: '1.5px solid #083A85',
                   }}
@@ -1878,9 +1880,11 @@ const AmoriaKNavbar = () => {
                 </Link>
                 <Link
                   href={`${getLocalePath('/user/auth/signup')}?redirect=${encodeURIComponent(pathname)}`}
-                  className="text-white font-semibold whitespace-nowrap cursor-pointer px-3 xl:px-4 2xl:px-5 py-1.5 xl:py-2 text-xs xl:text-sm"
+                  className="text-white font-semibold whitespace-nowrap cursor-pointer"
                   style={{
+                    fontSize: '14px',
                     background: '#083A85',
+                    padding: '9px 22px',
                     borderRadius: '10px',
                     transition: 'all 0.25s ease',
                     boxShadow: '0 2px 8px rgba(8, 58, 133, 0.3)',
