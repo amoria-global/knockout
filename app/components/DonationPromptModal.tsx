@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { API_ENDPOINTS } from '@/lib/api/config';
+import { resolveDonationRate } from '@/lib/payments/displayRates';
 
 /**
  * DonationPromptModal - platform-wide reusable donation prompt.
@@ -71,7 +72,13 @@ const DonationPromptModal: React.FC<DonationPromptModalProps> = ({
   const [selectedTier, setSelectedTier] = useState<number | null>(null);
   const [customAmount, setCustomAmount] = useState('');
   const [isCustom, setIsCustom] = useState(false);
-  const [exchangeRate, setExchangeRate] = useState<number>(1);
+  // The fallback tiers are RWF. A tier is only offered in another currency when the
+  // backend supplied the rate to convert it; without one it is hidden rather than
+  // relabelled (a preset 500 RWF must never become a 500 USD donation).
+  const [baseCurrency, setBaseCurrency] = useState<string>('RWF');
+  const [apiRate, setApiRate] = useState<number | null>(null);
+  const resolvedRate = resolveDonationRate(currencyCode, baseCurrency, apiRate);
+  const exchangeRate = resolvedRate ?? 1;
 
   // Fetch tiers + exchange rate from public donation API
   const fetchTiers = useCallback(async () => {
@@ -84,11 +91,12 @@ const DonationPromptModal: React.FC<DonationPromptModalProps> = ({
         if (data?.tiers?.length) {
           setTiers(data.tiers.map((t: { amount: number }) => t.amount));
         }
+        if (typeof data?.baseCurrency === 'string' && data.baseCurrency) setBaseCurrency(data.baseCurrency);
         if (data?.exchangeRates && currencyCode && currencyCode !== data.baseCurrency) {
           const base = data.exchangeRates[data.baseCurrency];
           const target = data.exchangeRates[currencyCode];
           if (base?.rateToUsd && target?.rateToUsd) {
-            setExchangeRate(target.rateToUsd / base.rateToUsd);
+            setApiRate(target.rateToUsd / base.rateToUsd);
           }
         }
       }
@@ -103,6 +111,7 @@ const DonationPromptModal: React.FC<DonationPromptModalProps> = ({
       setSelectedTier(null);
       setCustomAmount('');
       setIsCustom(false);
+      setApiRate(null);
       fetchTiers();
     }
   }, [isOpen, fetchTiers]);
@@ -191,7 +200,7 @@ const DonationPromptModal: React.FC<DonationPromptModalProps> = ({
 
           {/* Tier grid - amounts converted into the payment currency */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
-            {tiers.map((tier) => {
+            {(resolvedRate === null ? [] : tiers).map((tier) => {
               const on = !isCustom && selectedTier === tier;
               return (
                 <button
