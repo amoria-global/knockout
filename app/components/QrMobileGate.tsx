@@ -142,28 +142,59 @@ export default function QrMobileGate({
             onClick={(e) => e.stopPropagation()}
             style={{
               width: '100%', maxWidth: 480, background: '#fff', color: '#0f172a',
-              borderRadius: '20px 20px 0 0', padding: '28px 24px calc(24px + env(safe-area-inset-bottom))',
-              boxShadow: '0 -12px 40px rgba(0,0,0,0.35)',
+              borderRadius: '24px 24px 0 0', padding: '28px 24px calc(24px + env(safe-area-inset-bottom))',
+              boxShadow: '0 -16px 48px rgba(8, 58, 133, 0.28)',
+              position: 'relative', overflow: 'hidden',
+              borderTop: '1px solid rgba(8, 58, 133, 0.15)',
             }}
           >
+            {/* Connekyt Top Brand Gradient Bar */}
             <div
-              aria-hidden="true"
               style={{
-                width: 48, height: 48, borderRadius: 14, marginBottom: 16,
-                background: `linear-gradient(135deg, ${BRAND_NAVY}, ${BRAND_PINK})`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: '#fff', fontSize: 22, fontWeight: 800,
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 4,
+                background: 'linear-gradient(90deg, #083A85 0%, #0F4FB6 45%, #F20C8F 100%)',
               }}
-            >
-              C
+            />
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+              <div
+                aria-hidden="true"
+                style={{
+                  width: 44, height: 44, borderRadius: 14,
+                  background: 'linear-gradient(135deg, #083A85 0%, #0F4FB6 60%, #F20C8F 100%)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: '#fff', fontSize: 20, fontWeight: 900,
+                  boxShadow: '0 4px 14px rgba(8, 58, 133, 0.3)',
+                  flexShrink: 0,
+                }}
+              >
+                C
+              </div>
+              <div>
+                <span
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 4,
+                    fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em',
+                    color: '#083A85', background: 'rgba(8, 58, 133, 0.08)',
+                    padding: '2px 8px', borderRadius: 9999, border: '1px solid rgba(8, 58, 133, 0.15)',
+                  }}
+                >
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#F20C8F' }} />
+                  Official Connekyt App
+                </span>
+              </div>
             </div>
 
             {phase === 'missing' ? (
               <>
-                <h2 id="qr-gate-title" style={{ fontSize: 20, fontWeight: 800, margin: '0 0 8px' }}>
+                <h2 id="qr-gate-title" style={{ fontSize: 20, fontWeight: 800, margin: '0 0 8px', color: '#083A85' }}>
                   Get the Connekyt app first
                 </h2>
-                <p style={{ fontSize: 15, lineHeight: 1.5, color: '#475569', margin: '0 0 20px' }}>
+                <p style={{ fontSize: 14, lineHeight: 1.5, color: '#475569', margin: '0 0 20px' }}>
                   This event is joined through the Connekyt app. Download it, then scan the QR code again to enter your details and continue.
                 </p>
                 <a
@@ -179,10 +210,10 @@ export default function QrMobileGate({
               </>
             ) : (
               <>
-                <h2 id="qr-gate-title" style={{ fontSize: 20, fontWeight: 800, margin: '0 0 8px' }}>
+                <h2 id="qr-gate-title" style={{ fontSize: 20, fontWeight: 800, margin: '0 0 8px', color: '#083A85' }}>
                   Continue in the Connekyt app
                 </h2>
-                <p style={{ fontSize: 15, lineHeight: 1.5, color: '#475569', margin: '0 0 20px' }}>
+                <p style={{ fontSize: 14, lineHeight: 1.5, color: '#475569', margin: '0 0 20px' }}>
                   {phase === 'checking'
                     ? 'Looking for the Connekyt app on your phone...'
                     : 'To take part in this event you will enter your details in the app, and you will land straight back on this event.'}
@@ -210,12 +241,14 @@ export default function QrMobileGate({
 
 const primaryStyle: React.CSSProperties = {
   display: 'block', width: '100%', boxSizing: 'border-box', textAlign: 'center',
-  padding: '14px 18px', borderRadius: 12, background: '#083A85', color: '#fff',
+  padding: '14px 18px', borderRadius: 14,
+  background: 'linear-gradient(135deg, #083A85 0%, #0F4FB6 100%)', color: '#fff',
   fontSize: 16, fontWeight: 700, textDecoration: 'none', minHeight: 48,
+  boxShadow: '0 6px 18px rgba(8, 58, 133, 0.3)',
 };
 
 const secondaryStyle: React.CSSProperties = {
-  display: 'block', width: '100%', marginTop: 10, padding: '12px 18px', borderRadius: 12,
-  background: 'transparent', color: '#083A85', border: '1px solid #cbd5e1',
-  fontSize: 15, fontWeight: 600, cursor: 'pointer', minHeight: 48,
+  display: 'block', width: '100%', marginTop: 10, padding: '12px 18px', borderRadius: 14,
+  background: 'transparent', color: '#083A85', border: '1px solid rgba(8, 58, 133, 0.2)',
+  fontSize: 14, fontWeight: 600, cursor: 'pointer', minHeight: 46,
 };
