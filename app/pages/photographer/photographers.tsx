@@ -1575,6 +1575,16 @@ const Photographers: React.FC = () => {
         </span>
         <h1 id="ph-hero-title" className="ph-hero-title">{t('title')}</h1>
         <p className="ph-hero-sub">{t('subtitle')}</p>
+        {/* The two ways to book, named as on the dashboard and in the app. */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, justifyContent: 'center', marginTop: 14 }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 999, background: 'rgba(8,58,133,0.10)', color: '#083A85', fontWeight: 700, fontSize: 13 }}>
+            <i className="bi bi-search" aria-hidden="true" /> Find a Photographer: you choose and book directly
+          </span>
+          <a href={`${(process.env.NEXT_PUBLIC_DASHBOARD_URL || 'https://dashboard.connekyt.com').replace(/\/$/, '')}/user/client/events?post=1`}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 999, background: '#F20C8F', color: '#fff', fontWeight: 700, fontSize: 13, textDecoration: 'none' }}>
+            <i className="bi bi-broadcast" aria-hidden="true" /> Rather not search? Post My Event and let photographers come to you
+          </a>
+        </div>
       </section>
 
       {/* Control card - search + filters */}
