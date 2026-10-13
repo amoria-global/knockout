@@ -44,6 +44,8 @@ export async function persistPhotographerProfile(
     specialtyIds: payload.specialtyIds,
     spokenLanguages: payload.spokenLanguages,
     businessType: payload.businessType,
+    ...(payload.instagramHandle ? { instagramHandle: payload.instagramHandle } : {}),
+    ...(payload.city ? { city: payload.city } : {}),
     ...(payload.businessType === 'Registered Company'
       ? { organizationName: payload.companyName, taxId: payload.tin }
       : {}),

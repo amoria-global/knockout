@@ -25,6 +25,9 @@ export interface UpdateImportantDetailsRequest {
   businessType?: string;
   organizationName?: string;
   taxId?: string;
+  // Post My Event matching: an Instagram username or link, and a base city.
+  instagramHandle?: string;
+  city?: string;
 }
 
 export interface EquipmentRequest {

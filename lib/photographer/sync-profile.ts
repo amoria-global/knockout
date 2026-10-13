@@ -123,7 +123,7 @@ export async function syncPhotographerProfile(
       const sig = JSON.stringify([
         who.firstName, who.lastName, who.phone, payload.about, addr,
         [...payload.specialtyIds].sort(), [...langs].sort(), payload.businessType,
-        payload.companyName, payload.tin,
+        payload.companyName, payload.tin, payload.instagramHandle || '', payload.city || '',
       ]);
       if (sig !== s.sigs.important) {
         const r = await updateImportantDetails({
@@ -135,6 +135,8 @@ export async function syncPhotographerProfile(
           specialtyIds: payload.specialtyIds,
           spokenLanguages: langs,
           businessType: payload.businessType,
+          ...(payload.instagramHandle ? { instagramHandle: payload.instagramHandle } : {}),
+          ...(payload.city ? { city: payload.city } : {}),
           ...(payload.businessType === 'Registered Company'
             ? { organizationName: payload.companyName, taxId: payload.tin }
             : {}),
