@@ -14,7 +14,9 @@ import { locales, languageNames, type Locale } from '../../i18n';
 import { getPublicEvents, getPhotographers, getPhotographerById } from '@/lib/APIs/public';
 import { getStreamVideo } from '@/lib/APIs/streams/route';
 import { FaApple, FaGooglePlay } from 'react-icons/fa6';
-import { APP_STORE_URL, PLAY_STORE_URL } from '@/lib/qr/eventQr';
+import { APP_STORE_URL, PLAY_STORE_URL, GET_APP_PAGE_URL, detectMobilePlatform } from '@/lib/qr/eventQr';
+import QrCodeSvg from './QrCodeSvg';
+import GetAppModal from './GetAppModal';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 
 // Map category names to icons
@@ -116,6 +118,8 @@ const AmoriaKNavbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
   const [isGetAppOpen, setIsGetAppOpen] = useState(false);
+  const [isGetAppModalOpen, setIsGetAppModalOpen] = useState(false);
+  const [userPlatform, setUserPlatform] = useState<'android' | 'ios' | null>(null);
   const [selectedLang, setSelectedLang] = useState(languageNames[locale as Locale]);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isPhotographersDropdownOpen, setIsPhotographersDropdownOpen] = useState(false);
@@ -310,13 +314,14 @@ const AmoriaKNavbar = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Effect to detect screen size
+  // Effect to detect screen size and mobile platform
   useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth < 768);
     };
 
     handleResize(); // Initial check
+    setUserPlatform(detectMobilePlatform());
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
@@ -862,6 +867,19 @@ const AmoriaKNavbar = () => {
           color: #ffffff !important;
           border-color: rgba(255, 255, 255, 0.35) !important;
         }
+        nav[data-theme^="dark"] [data-mobile-getapp-pill] {
+          color: #f4f6fb !important;
+          background: rgba(255, 255, 255, 0.10) !important;
+          border-color: rgba(255, 255, 255, 0.22) !important;
+        }
+        nav[data-theme^="dark"] [data-mobile-getapp-pill] i {
+          color: #93c5fd !important;
+        }
+        nav[data-theme^="dark"] [data-mobile-getapp-pill]:hover {
+          background-color: rgba(255, 255, 255, 0.18) !important;
+          color: #ffffff !important;
+          border-color: rgba(255, 255, 255, 0.35) !important;
+        }
         nav[data-theme^="dark"] [data-loginbtn] {
           color: #ffffff !important;
           border-color: rgba(255, 255, 255, 0.45) !important;
@@ -1006,8 +1024,8 @@ const AmoriaKNavbar = () => {
 
       `}</style>
       {/* Main navbar container */}
-      <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 2rem', overflow: 'visible', position: 'relative' }}>
-        <div className="flex items-center justify-between" style={{ height: '64px', overflow: 'visible' }}>
+      <div className="px-3 sm:px-4 xl:px-6" style={{ maxWidth: '1440px', margin: '0 auto', overflow: 'visible', position: 'relative' }}>
+        <div className="flex items-center justify-between gap-3" style={{ height: '64px', overflow: 'visible' }}>
           {/* Left: Logo with neon glow + blinking dot */}
           <Link href="/" onClick={handleLinkClick} className="nav-logo-group flex-shrink-0" style={{ zIndex: 1, textDecoration: 'none' }}>
             <img
@@ -1024,16 +1042,17 @@ const AmoriaKNavbar = () => {
             </span>
           </Link>
 
-          {/* Center: Navigation Links (Desktop) - glass pill, absolutely centered */}
-          <div ref={navPillRef} data-navpill className="hidden md:flex items-center gap-1 absolute left-1/2 -translate-x-1/2" style={{
-            overflow: 'visible',
-            background: 'rgba(255, 255, 255, 0.85)',
-            backdropFilter: 'blur(12px)',
-            WebkitBackdropFilter: 'blur(12px)',
-            border: '1px solid rgba(8, 58, 133, 0.08)',
-            borderRadius: '10px',
-            padding: '4px 5px',
-          }}>
+          {/* Center: Navigation Links (Desktop) - centered in flex flow, guaranteed non-overlapping */}
+          <div className="hidden lg:flex items-center justify-center flex-1 min-w-0" style={{ overflow: 'visible' }}>
+            <div ref={navPillRef} data-navpill className="flex items-center gap-0 xl:gap-0.5 2xl:gap-1 flex-shrink-0" style={{
+              overflow: 'visible',
+              background: 'rgba(255, 255, 255, 0.85)',
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)',
+              border: '1px solid rgba(8, 58, 133, 0.08)',
+              borderRadius: '10px',
+              padding: '3px 4px',
+            }}>
             {/* Photographers Dropdown */}
             <div
               ref={photographersDropdownRef}
@@ -1043,7 +1062,7 @@ const AmoriaKNavbar = () => {
             >
               <Link
                 href={getLocalePath('/user/photographers')}
-                className={`nav-link-hover ${isPhotographersDropdownOpen ? 'nav-link-active' : ''} flex items-center gap-1 text-gray-700 hover:text-[#083A85] text-sm lg:text-base font-semibold transition-colors duration-200 whitespace-nowrap cursor-pointer`}
+                className={`nav-link-hover ${isPhotographersDropdownOpen ? 'nav-link-active' : ''} flex items-center gap-1 text-gray-700 hover:text-[#083A85] text-[11.5px] xl:text-[13px] 2xl:text-sm font-semibold transition-colors duration-200 whitespace-nowrap cursor-pointer px-1.5 xl:px-2.5 2xl:px-3 py-1`}
               >
                 <span>{t('photographers')}</span>
                 <i className={`bi bi-chevron-down transition-transform duration-200 ${isPhotographersDropdownOpen ? 'rotate-180' : ''}`}></i>
@@ -1184,7 +1203,7 @@ const AmoriaKNavbar = () => {
             >
               <Link
                 href={getLocalePath('/user/events')}
-                className={`nav-link-hover ${isEventsDropdownOpen ? 'nav-link-active' : ''} ${hasLiveEvents ? 'nav-events-link' : 'text-gray-700 hover:text-[#083A85]'} flex items-center gap-1 text-sm lg:text-base font-semibold transition-colors duration-200 whitespace-nowrap cursor-pointer`}
+                className={`nav-link-hover ${isEventsDropdownOpen ? 'nav-link-active' : ''} ${hasLiveEvents ? 'nav-events-link' : 'text-gray-700 hover:text-[#083A85]'} flex items-center gap-1 text-[11.5px] xl:text-[13px] 2xl:text-sm font-semibold transition-colors duration-200 whitespace-nowrap cursor-pointer px-1.5 xl:px-2.5 2xl:px-3 py-1`}
               >
                 <span>{t('events')}</span>
                 <i className={`bi bi-chevron-down transition-transform duration-200 ${isEventsDropdownOpen ? 'rotate-180' : ''}`}></i>
@@ -1360,9 +1379,9 @@ const AmoriaKNavbar = () => {
               )}
             </div>
 
-            <Link href={getLocalePath('/user/about')} className="nav-link-hover text-gray-700 hover:text-[#083A85] text-sm lg:text-base font-semibold transition-colors duration-200 whitespace-nowrap cursor-pointer">{t('about')}</Link>
-            <Link href={getLocalePath('/user/hall-of-fame')} className="nav-link-hover text-gray-700 hover:text-[#083A85] text-sm lg:text-base font-semibold transition-colors duration-200 whitespace-nowrap cursor-pointer">Hall of fame</Link>
-            <Link href={getLocalePath('/user/donations')} className="nav-link-hover text-gray-700 hover:text-[#083A85] text-sm lg:text-base font-semibold transition-colors duration-200 whitespace-nowrap cursor-pointer">Donate</Link>
+            <Link href={getLocalePath('/user/about')} className="nav-link-hover text-gray-700 hover:text-[#083A85] text-[11.5px] xl:text-[13px] 2xl:text-sm font-semibold transition-colors duration-200 whitespace-nowrap cursor-pointer px-1.5 xl:px-2.5 2xl:px-3 py-1">{t('about')}</Link>
+            <Link href={getLocalePath('/user/hall-of-fame')} className="nav-link-hover text-gray-700 hover:text-[#083A85] text-[11.5px] xl:text-[13px] 2xl:text-sm font-semibold transition-colors duration-200 whitespace-nowrap cursor-pointer px-1.5 xl:px-2.5 2xl:px-3 py-1">Hall of fame</Link>
+            <Link href={getLocalePath('/user/donations')} className="nav-link-hover text-gray-700 hover:text-[#083A85] text-[11.5px] xl:text-[13px] 2xl:text-sm font-semibold transition-colors duration-200 whitespace-nowrap cursor-pointer px-1.5 xl:px-2.5 2xl:px-3 py-1">Donate</Link>
             {/* Find My Photos - dropdown with two paths:
                   • Get Your Photos  → existing face-recognition lookup
                   • Browse Photos   → new stock-style content album browse */}
@@ -1374,7 +1393,7 @@ const AmoriaKNavbar = () => {
               <button
                 type="button"
                 onClick={() => setIsFindMyPhotosDropdownOpen(v => !v)}
-                className={`nav-link-hover ${isFindMyPhotosDropdownOpen ? 'nav-link-active' : ''} flex items-center gap-1 text-gray-700 hover:text-[#083A85] text-sm lg:text-base font-semibold transition-colors duration-200 whitespace-nowrap cursor-pointer bg-transparent border-0 p-0`}
+                className={`nav-link-hover ${isFindMyPhotosDropdownOpen ? 'nav-link-active' : ''} flex items-center gap-1 text-gray-700 hover:text-[#083A85] text-[11.5px] xl:text-[13px] 2xl:text-sm font-semibold transition-colors duration-200 whitespace-nowrap cursor-pointer bg-transparent border-0 px-1.5 xl:px-2.5 2xl:px-3 py-1`}
               >
                 <span>Find My Photos</span>
                 <i className={`bi bi-chevron-down transition-transform duration-200 ${isFindMyPhotosDropdownOpen ? 'rotate-180' : ''}`}></i>
@@ -1425,9 +1444,10 @@ const AmoriaKNavbar = () => {
               )}
             </div>
           </div>
+        </div>
 
           {/* Right: Language, Get App and Auth Buttons (Desktop) */}
-          <div className="hidden md:flex items-center gap-3 flex-shrink-0" style={{ zIndex: 1 }}>
+          <div className="hidden lg:flex items-center gap-1.5 xl:gap-2.5 2xl:gap-3 flex-shrink-0" style={{ zIndex: 1 }}>
             {/* Get App Dropdown / Popover (Desktop) */}
             <div
               ref={getAppDropdownRef}
@@ -1439,11 +1459,11 @@ const AmoriaKNavbar = () => {
                 type="button"
                 onClick={() => setIsGetAppOpen(prev => !prev)}
                 data-getappbtn
-                className="flex items-center gap-1.5 font-semibold transition-all duration-200 cursor-pointer"
+                className="flex items-center gap-1.5 font-semibold transition-all duration-200 cursor-pointer whitespace-nowrap flex-shrink-0"
                 style={{
                   color: '#083A85',
-                  fontSize: '13px',
-                  padding: '6px 13px',
+                  fontSize: '12.5px',
+                  padding: '5px 11px',
                   borderRadius: '9999px',
                   backgroundColor: 'rgba(8, 58, 133, 0.08)',
                   border: '1px solid rgba(8, 58, 133, 0.16)',
@@ -1458,9 +1478,10 @@ const AmoriaKNavbar = () => {
                 }}
                 aria-label="Get the mobile app"
               >
-                <i className="bi bi-phone" style={{ fontSize: '13.5px' }} />
-                <span>{t('getApp')}</span>
-                <i className={`bi bi-chevron-down transition-transform duration-200 ${isGetAppOpen ? 'rotate-180' : ''}`} style={{ fontSize: '10px' }} />
+                <i className="bi bi-phone" style={{ fontSize: '13px' }} />
+                <span className="hidden xl:inline">{t('getApp')}</span>
+                <span className="hidden lg:inline xl:hidden">App</span>
+                <i className={`bi bi-chevron-down transition-transform duration-200 ${isGetAppOpen ? 'rotate-180' : ''}`} style={{ fontSize: '9.5px' }} />
               </button>
 
               {isGetAppOpen && (
@@ -1470,7 +1491,7 @@ const AmoriaKNavbar = () => {
                     data-navdropdown
                     className="absolute right-0"
                     style={{
-                      width: '280px',
+                      width: '300px',
                       top: 'calc(100% + 10px)',
                       background: 'rgba(255, 255, 255, 0.98)',
                       backdropFilter: 'blur(16px)',
@@ -1483,28 +1504,60 @@ const AmoriaKNavbar = () => {
                       animation: 'nav-dropdown-enter 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards',
                     }}
                   >
-                    <div style={{ marginBottom: '12px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                    <div style={{ marginBottom: '10px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: '24px',
+                            height: '24px',
+                            borderRadius: '6px',
+                            background: 'linear-gradient(135deg, #083A85, #0F4FB6)',
+                            color: '#fff',
+                            fontSize: '12px',
+                          }}>
+                            <i className="bi bi-phone" />
+                          </span>
+                          <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 700, color: '#0F172A' }}>
+                            {t('getAppTitle')}
+                          </h4>
+                        </div>
                         <span style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          width: '24px',
-                          height: '24px',
-                          borderRadius: '6px',
-                          background: 'linear-gradient(135deg, #083A85, #0F4FB6)',
-                          color: '#fff',
-                          fontSize: '12px',
+                          fontSize: '10px',
+                          fontWeight: 700,
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.04em',
+                          padding: '1px 6px',
+                          borderRadius: '9999px',
+                          background: 'rgba(8, 58, 133, 0.08)',
+                          color: '#083A85',
                         }}>
-                          <i className="bi bi-phone" />
+                          Free
                         </span>
-                        <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 700, color: '#0F172A' }}>
-                          {t('getAppTitle')}
-                        </h4>
                       </div>
                       <p style={{ margin: 0, fontSize: '12px', color: '#64748B', lineHeight: 1.4 }}>
                         {t('getAppDescription')}
                       </p>
+                    </div>
+
+                    {/* QR Code Container */}
+                    <div style={{
+                      background: '#f8fafc',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '12px',
+                      padding: '10px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      marginBottom: '10px',
+                    }}>
+                      <QrCodeSvg value={GET_APP_PAGE_URL} size={118} />
+                      <span style={{ fontSize: '11px', fontWeight: 600, color: '#475569', marginTop: '6px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                        <i className="bi bi-camera" style={{ fontSize: '11.5px', color: '#083A85' }} />
+                        Scan with phone camera
+                      </span>
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -1517,8 +1570,8 @@ const AmoriaKNavbar = () => {
                         style={{
                           background: '#0F172A',
                           color: '#ffffff',
-                          padding: '9px 14px',
-                          borderRadius: '12px',
+                          padding: '8px 12px',
+                          borderRadius: '11px',
                           textDecoration: 'none',
                           border: '1px solid rgba(255,255,255,0.12)',
                           boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
@@ -1534,12 +1587,12 @@ const AmoriaKNavbar = () => {
                           e.currentTarget.style.background = '#0F172A';
                         }}
                       >
-                        <FaApple style={{ fontSize: '24px', flexShrink: 0 }} />
+                        <FaApple style={{ fontSize: '22px', flexShrink: 0 }} />
                         <div style={{ display: 'flex', flexDirection: 'column' }}>
                           <span style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.04em', opacity: 0.85, lineHeight: 1 }}>
                             Download on the
                           </span>
-                          <span style={{ fontSize: '13.5px', fontWeight: 700, lineHeight: 1.25, letterSpacing: '0.01em' }}>
+                          <span style={{ fontSize: '13px', fontWeight: 700, lineHeight: 1.25, letterSpacing: '0.01em' }}>
                             App Store
                           </span>
                         </div>
@@ -1554,8 +1607,8 @@ const AmoriaKNavbar = () => {
                         style={{
                           background: '#0F172A',
                           color: '#ffffff',
-                          padding: '9px 14px',
-                          borderRadius: '12px',
+                          padding: '8px 12px',
+                          borderRadius: '11px',
                           textDecoration: 'none',
                           border: '1px solid rgba(255,255,255,0.12)',
                           boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
@@ -1571,17 +1624,48 @@ const AmoriaKNavbar = () => {
                           e.currentTarget.style.background = '#0F172A';
                         }}
                       >
-                        <FaGooglePlay style={{ fontSize: '20px', flexShrink: 0, marginLeft: '2px', marginRight: '2px' }} />
+                        <FaGooglePlay style={{ fontSize: '18px', flexShrink: 0, marginLeft: '2px', marginRight: '2px' }} />
                         <div style={{ display: 'flex', flexDirection: 'column' }}>
                           <span style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.04em', opacity: 0.85, lineHeight: 1 }}>
                             GET IT ON
                           </span>
-                          <span style={{ fontSize: '13.5px', fontWeight: 700, lineHeight: 1.25, letterSpacing: '0.01em' }}>
+                          <span style={{ fontSize: '13px', fontWeight: 700, lineHeight: 1.25, letterSpacing: '0.01em' }}>
                             Google Play
                           </span>
                         </div>
                       </a>
                     </div>
+
+                    {/* View Details Button */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsGetAppOpen(false);
+                        setIsGetAppModalOpen(true);
+                      }}
+                      style={{
+                        marginTop: '8px',
+                        width: '100%',
+                        padding: '6px',
+                        fontSize: '11.5px',
+                        fontWeight: 600,
+                        color: '#083A85',
+                        background: 'rgba(8, 58, 133, 0.05)',
+                        borderRadius: '8px',
+                        border: 'none',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '4px',
+                        transition: 'background 0.2s',
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(8, 58, 133, 0.1)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'rgba(8, 58, 133, 0.05)'; }}
+                    >
+                      <span>View app features & details</span>
+                      <i className="bi bi-arrow-right" style={{ fontSize: '10px' }} />
+                    </button>
                   </div>
                 </>
               )}
@@ -1777,11 +1861,9 @@ const AmoriaKNavbar = () => {
                 <Link
                   href={`${getLocalePath('/user/auth/login')}?redirect=${encodeURIComponent(pathname)}`}
                   data-loginbtn
-                  className="font-semibold transition-all duration-200 whitespace-nowrap cursor-pointer"
+                  className="font-semibold transition-all duration-200 whitespace-nowrap cursor-pointer px-3 xl:px-4 2xl:px-5 py-1.5 xl:py-2 text-xs xl:text-sm"
                   style={{
                     color: '#083A85',
-                    fontSize: '14px',
-                    padding: '9px 22px',
                     borderRadius: '10px',
                     border: '1.5px solid #083A85',
                   }}
@@ -1796,11 +1878,9 @@ const AmoriaKNavbar = () => {
                 </Link>
                 <Link
                   href={`${getLocalePath('/user/auth/signup')}?redirect=${encodeURIComponent(pathname)}`}
-                  className="text-white font-semibold whitespace-nowrap cursor-pointer"
+                  className="text-white font-semibold whitespace-nowrap cursor-pointer px-3 xl:px-4 2xl:px-5 py-1.5 xl:py-2 text-xs xl:text-sm"
                   style={{
-                    fontSize: '14px',
                     background: '#083A85',
-                    padding: '9px 22px',
                     borderRadius: '10px',
                     transition: 'all 0.25s ease',
                     boxShadow: '0 2px 8px rgba(8, 58, 133, 0.3)',
@@ -1822,16 +1902,39 @@ const AmoriaKNavbar = () => {
             )}
           </div>
 
-          {/* Mobile Menu Button */}
-          <button
-            ref={mobileMenuButtonRef}
-            onClick={toggleMobileMenu}
-            className="md:hidden inline-flex items-center justify-center rounded-md text-gray-700 hover:bg-gray-100 focus:outline-none transition-colors cursor-pointer"
-            style={{ padding: isMobile ? '0.375rem' : '0.5rem' }}
-            aria-label="Toggle menu"
-          >
-            <i className={`bi ${isMobileMenuOpen ? 'bi-x-lg' : 'bi-list'}`} style={{ fontSize: isMobile ? '1.5rem' : '1.75rem' }}></i>
-          </button>
+          {/* Mobile Right: Get App Pill + Hamburger Menu */}
+          <div className="lg:hidden flex items-center gap-1.5 sm:gap-2" style={{ zIndex: 1 }}>
+            <button
+              type="button"
+              onClick={() => setIsGetAppModalOpen(true)}
+              data-mobile-getapp-pill
+              className="flex items-center gap-1 sm:gap-1.5 font-semibold transition-all duration-200 cursor-pointer whitespace-nowrap flex-shrink-0"
+              style={{
+                color: '#083A85',
+                fontSize: '12px',
+                padding: '5px 10px',
+                borderRadius: '9999px',
+                backgroundColor: 'rgba(8, 58, 133, 0.08)',
+                border: '1px solid rgba(8, 58, 133, 0.18)',
+                boxShadow: '0 1px 3px rgba(8, 58, 133, 0.06)',
+              }}
+              aria-label="Get the mobile app"
+            >
+              <i className="bi bi-phone" style={{ fontSize: '13px' }} />
+              <span className="hidden sm:inline">{t('getApp')}</span>
+              <span className="sm:hidden">App</span>
+            </button>
+
+            <button
+              ref={mobileMenuButtonRef}
+              onClick={toggleMobileMenu}
+              className="inline-flex items-center justify-center rounded-md text-gray-700 hover:bg-gray-100 focus:outline-none transition-colors cursor-pointer"
+              style={{ padding: isMobile ? '0.375rem' : '0.5rem' }}
+              aria-label="Toggle menu"
+            >
+              <i className={`bi ${isMobileMenuOpen ? 'bi-x-lg' : 'bi-list'}`} style={{ fontSize: isMobile ? '1.5rem' : '1.75rem' }}></i>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1888,7 +1991,7 @@ const AmoriaKNavbar = () => {
       <div
         ref={mobileMenuRef}
         data-mobiledrawer
-        className="md:hidden"
+        className="lg:hidden"
         style={{
           position: 'fixed',
           top: '64px',
@@ -2175,75 +2278,191 @@ const AmoriaKNavbar = () => {
             <div
               data-mobileappbox
               style={{
-                marginTop: isMobile ? '0.5rem' : '0.75rem',
-                marginBottom: isMobile ? '0.5rem' : '0.75rem',
-                padding: isMobile ? '0.85rem' : '1rem',
-                borderRadius: isMobile ? '10px' : '12px',
-                background: 'linear-gradient(135deg, rgba(8, 58, 133, 0.07) 0%, rgba(15, 79, 182, 0.12) 100%)',
-                border: '1px solid rgba(8, 58, 133, 0.14)',
+                marginTop: isMobile ? '0.625rem' : '0.875rem',
+                marginBottom: isMobile ? '0.625rem' : '0.875rem',
+                padding: isMobile ? '0.875rem' : '1.125rem',
+                borderRadius: isMobile ? '12px' : '16px',
+                background: 'linear-gradient(135deg, rgba(8, 58, 133, 0.08) 0%, rgba(242, 12, 143, 0.05) 50%, rgba(15, 79, 182, 0.12) 100%)',
+                border: '1px solid rgba(8, 58, 133, 0.16)',
+                boxShadow: '0 4px 16px rgba(8, 58, 133, 0.06)',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                <span style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: '22px',
-                  height: '22px',
-                  borderRadius: '6px',
-                  background: 'linear-gradient(135deg, #083A85, #0F4FB6)',
-                  color: '#fff',
-                  fontSize: '11px',
-                }}>
-                  <i className="bi bi-phone" />
-                </span>
-                <span style={{ fontSize: isMobile ? '0.875rem' : '0.9375rem', fontWeight: 700, color: '#083A85' }}>
-                  {t('getAppTitle')}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '24px',
+                    height: '24px',
+                    borderRadius: '7px',
+                    background: 'linear-gradient(135deg, #083A85, #0F4FB6)',
+                    color: '#fff',
+                    fontSize: '12px',
+                    boxShadow: '0 2px 6px rgba(8, 58, 133, 0.25)',
+                  }}>
+                    <i className="bi bi-phone" />
+                  </span>
+                  <span style={{ fontSize: isMobile ? '0.875rem' : '0.9375rem', fontWeight: 700, color: '#083A85' }}>
+                    {t('getAppTitle')}
+                  </span>
+                </div>
+                <span
+                  className="mobileapp-badge"
+                  style={{
+                    fontSize: '10px',
+                    fontWeight: 700,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.04em',
+                    padding: '2px 7px',
+                    borderRadius: '9999px',
+                    background: 'rgba(8, 58, 133, 0.10)',
+                    color: '#083A85',
+                  }}
+                >
+                  Free App
                 </span>
               </div>
               <p style={{ margin: '0 0 10px 0', fontSize: isMobile ? '0.78rem' : '0.8125rem', color: '#4b5563', lineHeight: 1.45 }}>
                 {t('getAppDescription')}
               </p>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                <a
-                  href={APP_STORE_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-1.5 text-center transition-all duration-200"
-                  style={{
-                    background: '#0F172A',
-                    color: '#ffffff',
-                    padding: '8px 10px',
-                    borderRadius: '10px',
-                    textDecoration: 'none',
-                    fontSize: isMobile ? '12px' : '13px',
-                    fontWeight: 600,
-                    boxShadow: '0 2px 6px rgba(0,0,0,0.12)',
-                  }}
-                >
-                  <FaApple style={{ fontSize: '18px', flexShrink: 0 }} />
-                  <span>App Store</span>
-                </a>
-                <a
-                  href={PLAY_STORE_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-1.5 text-center transition-all duration-200"
-                  style={{
-                    background: '#0F172A',
-                    color: '#ffffff',
-                    padding: '8px 10px',
-                    borderRadius: '10px',
-                    textDecoration: 'none',
-                    fontSize: isMobile ? '12px' : '13px',
-                    fontWeight: 600,
-                    boxShadow: '0 2px 6px rgba(0,0,0,0.12)',
-                  }}
-                >
-                  <FaGooglePlay style={{ fontSize: '14px', flexShrink: 0 }} />
-                  <span>Google Play</span>
-                </a>
-              </div>
+
+              {userPlatform === 'ios' ? (
+                /* iOS Primary CTA */
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <a
+                    href={APP_STORE_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2.5 text-center transition-all duration-200"
+                    style={{
+                      background: '#0F172A',
+                      color: '#ffffff',
+                      padding: '10px 14px',
+                      borderRadius: '11px',
+                      textDecoration: 'none',
+                      fontSize: '13px',
+                      fontWeight: 700,
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.18)',
+                    }}
+                  >
+                    <FaApple style={{ fontSize: '20px', flexShrink: 0 }} />
+                    <span>Download on the App Store</span>
+                  </a>
+                  <div style={{ display: 'flex', justifyContent: 'center' }}>
+                    <a
+                      href={PLAY_STORE_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ fontSize: '11.5px', color: '#64748B', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                    >
+                      <FaGooglePlay style={{ fontSize: '11px' }} />
+                      <span>Also available on Google Play</span>
+                    </a>
+                  </div>
+                </div>
+              ) : userPlatform === 'android' ? (
+                /* Android Primary CTA */
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <a
+                    href={PLAY_STORE_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2.5 text-center transition-all duration-200"
+                    style={{
+                      background: '#0F172A',
+                      color: '#ffffff',
+                      padding: '10px 14px',
+                      borderRadius: '11px',
+                      textDecoration: 'none',
+                      fontSize: '13px',
+                      fontWeight: 700,
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.18)',
+                    }}
+                  >
+                    <FaGooglePlay style={{ fontSize: '16px', flexShrink: 0 }} />
+                    <span>GET IT ON Google Play</span>
+                  </a>
+                  <div style={{ display: 'flex', justifyContent: 'center' }}>
+                    <a
+                      href={APP_STORE_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ fontSize: '11.5px', color: '#64748B', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                    >
+                      <FaApple style={{ fontSize: '12px' }} />
+                      <span>Also available on App Store</span>
+                    </a>
+                  </div>
+                </div>
+              ) : (
+                /* General Dual CTA */
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '8px' }}>
+                  <a
+                    href={APP_STORE_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 text-center transition-all duration-200"
+                    style={{
+                      background: '#0F172A',
+                      color: '#ffffff',
+                      padding: '9px 12px',
+                      borderRadius: '10px',
+                      textDecoration: 'none',
+                      fontSize: '12.5px',
+                      fontWeight: 600,
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.12)',
+                    }}
+                  >
+                    <FaApple style={{ fontSize: '18px', flexShrink: 0 }} />
+                    <span>App Store</span>
+                  </a>
+                  <a
+                    href={PLAY_STORE_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 text-center transition-all duration-200"
+                    style={{
+                      background: '#0F172A',
+                      color: '#ffffff',
+                      padding: '9px 12px',
+                      borderRadius: '10px',
+                      textDecoration: 'none',
+                      fontSize: '12.5px',
+                      fontWeight: 600,
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.12)',
+                    }}
+                  >
+                    <FaGooglePlay style={{ fontSize: '14px', flexShrink: 0 }} />
+                    <span>Google Play</span>
+                  </a>
+                </div>
+              )}
+
+              {/* Open full modal / scan details */}
+              <button
+                type="button"
+                onClick={() => setIsGetAppModalOpen(true)}
+                style={{
+                  marginTop: '9px',
+                  width: '100%',
+                  padding: '6px 8px',
+                  fontSize: isMobile ? '11px' : '11.5px',
+                  fontWeight: 600,
+                  color: '#083A85',
+                  background: 'rgba(8, 58, 133, 0.05)',
+                  borderRadius: '8px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '4px',
+                }}
+              >
+                <span>Learn more & scan QR code</span>
+                <i className="bi bi-arrow-right" style={{ fontSize: '10px' }} />
+              </button>
             </div>
 
             <div className="border-t border-gray-200" style={{ marginTop: isMobile ? '0.5rem' : '0.75rem', marginBottom: isMobile ? '0.5rem' : '0.75rem' }}></div>
@@ -2345,6 +2564,11 @@ const AmoriaKNavbar = () => {
             )}
           </div>
       </div>
+      <GetAppModal
+        isOpen={isGetAppModalOpen}
+        onClose={() => setIsGetAppModalOpen(false)}
+        userPlatform={userPlatform}
+      />
     </nav>
     <div style={{ height: '64px' }} />
     </>
