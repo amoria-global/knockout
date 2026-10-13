@@ -8,9 +8,12 @@ import {
   FaLinkedinIn,
   FaXTwitter,
   FaInstagram,
+  FaApple,
+  FaGooglePlay,
 } from 'react-icons/fa6';
 import { newsletterSubscribe } from '@/lib/APIs/public';
 import { useToast } from '@/lib/notifications/ToastProvider';
+import { APP_STORE_URL, PLAY_STORE_URL } from '@/lib/qr/eventQr';
 import DotGrid from './DotGrid';
 
 export default function Footer() {
@@ -112,7 +115,46 @@ export default function Footer() {
     .footer-tagline { font-size: 0.85rem; color: rgba(255,255,255,0.55); margin: 0 0 0.6rem; line-height: 1.5; font-weight: 700; font-family: 'Pragati Narrow', sans-serif; letter-spacing: 0.2px; }
     .footer-tagline-bar { height: 2px; width: 56px; border-radius: 999px; background: linear-gradient(90deg, #083A85 0%, #0F4FB6 50%, #3B82F6 100%); box-shadow: 0 0 14px rgba(15,79,182,0.55); margin-bottom: 1.2rem; }
 
-    .social-section { margin: 5.4rem 0 -2.2rem; }
+    .footer-app-section { margin-top: 1.5rem; margin-bottom: 0.5rem; }
+    .footer-app-title {
+      color: #E2E8F0;
+      font-size: 0.96rem;
+      font-weight: 700;
+      display: block;
+      margin-bottom: 0.65rem;
+      letter-spacing: 0.3px;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+    }
+    .footer-app-badges { display: flex; flex-direction: column; gap: 0.6rem; max-width: 200px; }
+    .footer-store-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.48rem 0.95rem;
+      border-radius: 11px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      color: #ffffff;
+      text-decoration: none;
+      transition: all 0.25s ease;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    .footer-store-badge:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(59, 130, 246, 0.6);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px -4px rgba(15, 79, 182, 0.5), 0 0 12px rgba(59, 130, 246, 0.3);
+      color: #ffffff;
+    }
+    .footer-store-icon { font-size: 1.45rem; flex-shrink: 0; }
+    .footer-store-icon.play { font-size: 1.25rem; }
+    .footer-store-text { display: flex; flex-direction: column; line-height: 1.15; }
+    .footer-store-sub { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.8; font-weight: 500; }
+    .footer-store-main { font-size: 0.92rem; font-weight: 700; letter-spacing: 0.02em; }
+
+    .social-section { margin: 1.6rem 0 -1rem; }
     .social-title { color: #E2E8F0; font-size: 1.04rem; display: block; margin-bottom: 0.8rem; letter-spacing: 0.3px; text-shadow: 0 1px 2px rgba(0,0,0,0.4); }
     .social-links { display: flex; gap: 1.2rem; }
     .social-link {
@@ -212,6 +254,10 @@ export default function Footer() {
       .footer-logo { margin-bottom: 0.75rem !important; justify-content: center !important; margin-left: 0 !important; margin-top: 0 !important; }
       .footer-tagline { font-size: 0.85rem !important; margin-bottom: 0.6rem !important; text-align: center; max-width: 100%; }
       .footer-tagline-bar { margin-left: auto; margin-right: auto; }
+      .footer-app-section { margin-top: 1.1rem !important; margin-bottom: 0.5rem !important; text-align: center; }
+      .footer-app-title { text-align: center; font-size: 0.9rem !important; }
+      .footer-app-badges { flex-direction: row !important; justify-content: center !important; max-width: 100% !important; gap: 0.75rem !important; }
+      .footer-store-badge { padding: 0.45rem 0.85rem !important; }
       .social-section { margin: 1rem 0 0 !important; margin-bottom: 0 !important; text-align: center; }
       .social-title { font-size: 0.95rem !important; text-align: center; }
       .social-links { gap: 1rem !important; justify-content: center !important; }
@@ -239,6 +285,12 @@ export default function Footer() {
       .footer-brand { padding-top: 1rem !important; margin-bottom: 1rem !important; }
       .footer-logo { justify-content: center !important; }
       .footer-tagline { font-size: 0.78rem !important; line-height: 1.5 !important; padding: 0 0.25rem; }
+      .footer-app-badges { flex-direction: row !important; gap: 0.5rem !important; }
+      .footer-store-badge { padding: 0.4rem 0.65rem !important; gap: 0.5rem !important; }
+      .footer-store-icon { font-size: 1.25rem !important; }
+      .footer-store-icon.play { font-size: 1.1rem !important; }
+      .footer-store-sub { font-size: 0.52rem !important; }
+      .footer-store-main { font-size: 0.8rem !important; }
       .social-section { margin: 1rem 0 0 !important; }
       .social-title { font-size: 0.85rem !important; }
       .social-links { gap: 0.85rem !important; }
@@ -356,6 +408,38 @@ export default function Footer() {
                 </Link>
                 <p className="footer-tagline">The Smart Way to Capture Life</p>
                 <div className="footer-tagline-bar" />
+
+                <div className="footer-app-section">
+                  <span className="footer-app-title">{t('getApp')}</span>
+                  <div className="footer-app-badges">
+                    <a
+                      href={APP_STORE_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="footer-store-badge"
+                      aria-label="Download on Apple App Store"
+                    >
+                      <FaApple className="footer-store-icon" />
+                      <div className="footer-store-text">
+                        <span className="footer-store-sub">{t('downloadOn')}</span>
+                        <span className="footer-store-main">{t('appStore')}</span>
+                      </div>
+                    </a>
+                    <a
+                      href={PLAY_STORE_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="footer-store-badge"
+                      aria-label="Get it on Google Play"
+                    >
+                      <FaGooglePlay className="footer-store-icon play" />
+                      <div className="footer-store-text">
+                        <span className="footer-store-sub">{t('getItOn')}</span>
+                        <span className="footer-store-main">{t('googlePlay')}</span>
+                      </div>
+                    </a>
+                  </div>
+                </div>
               </div>
               <div className="social-section">
                 <span className="social-title">{t('followUs')}</span>
