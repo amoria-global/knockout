@@ -314,96 +314,91 @@ export default function GetAppModal({
             )}
           </div>
 
-          {/* Feature Highlights Grid in Connekyt Branding */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
-            <div
-              className="flex items-start gap-2.5 p-3 rounded-xl"
-              style={{
-                background: 'rgba(8, 58, 133, 0.04)',
-                border: '1px solid rgba(8, 58, 133, 0.14)',
-              }}
-            >
-              <span
-                className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 text-sm"
-                style={{
-                  background: 'rgba(8, 58, 133, 0.12)',
-                  color: '#083A85',
-                }}
-              >
-                <i className="bi bi-person-bounding-box" />
+          {/* Senior-Crafted Mobile Capabilities Bento */}
+          <div className="space-y-2.5">
+            <div className="flex items-center justify-between px-0.5">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                Core Mobile Capabilities
               </span>
-              <div>
-                <h4 className="text-xs font-bold text-[#083A85] leading-tight">
-                  AI Face Match
-                </h4>
-                <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">
-                  One selfie finds all your photos instantly.
-                </p>
-              </div>
+              <span className="text-[10px] font-semibold text-[#083A85] bg-[#083A85]/8 px-2 py-0.5 rounded-full border border-[#083A85]/15">
+                Native iOS & Android
+              </span>
             </div>
 
-            <div
-              className="flex items-start gap-2.5 p-3 rounded-xl"
-              style={{
-                background: 'rgba(242, 12, 143, 0.04)',
-                border: '1px solid rgba(242, 12, 143, 0.16)',
-              }}
-            >
-              <span
-                className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 text-sm"
-                style={{
-                  background: 'rgba(242, 12, 143, 0.12)',
-                  color: '#F20C8F',
-                }}
-              >
-                <i className="bi bi-broadcast" />
-              </span>
-              <div>
-                <h4 className="text-xs font-bold text-[#083A85] leading-tight">
-                  Live Streams
-                </h4>
-                <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">
-                  Stream & watch ceremonies anywhere.
-                </p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              {/* Feature 1: AI Biometric Search */}
+              <div className="p-3.5 rounded-xl border border-slate-200/80 bg-white hover:border-[#083A85]/35 hover:shadow-sm transition-all duration-200 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="w-7 h-7 rounded-lg flex items-center justify-center bg-[#083A85]/10 text-[#083A85] text-xs font-bold">
+                      <i className="bi bi-person-bounding-box" />
+                    </span>
+                    <span className="text-[9.5px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200/60">
+                      0.3s Match
+                    </span>
+                  </div>
+                  <h4 className="text-xs font-bold text-slate-900 leading-tight">
+                    Instant Face Match
+                  </h4>
+                  <p className="text-[11px] text-slate-600 mt-1 leading-snug">
+                    One selfie filters thousands of gallery photos down to only yours.
+                  </p>
+                </div>
               </div>
-            </div>
 
-            <div
-              className="flex items-start gap-2.5 p-3 rounded-xl"
-              style={{
-                background: 'rgba(15, 79, 182, 0.04)',
-                border: '1px solid rgba(15, 79, 182, 0.14)',
-              }}
-            >
-              <span
-                className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 text-sm"
-                style={{
-                  background: 'rgba(15, 79, 182, 0.12)',
-                  color: '#0F4FB6',
-                }}
-              >
-                <i className="bi bi-bell-fill" />
-              </span>
-              <div>
-                <h4 className="text-xs font-bold text-[#083A85] leading-tight">
-                  Instant Alerts
-                </h4>
-                <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">
-                  Real-time photo notifications on lock screen.
-                </p>
+              {/* Feature 2: Ultra-low latency stream */}
+              <div className="p-3.5 rounded-xl border border-slate-200/80 bg-white hover:border-[#F20C8F]/35 hover:shadow-sm transition-all duration-200 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="w-7 h-7 rounded-lg flex items-center justify-center bg-[#F20C8F]/10 text-[#F20C8F] text-xs font-bold">
+                      <i className="bi bi-broadcast" />
+                    </span>
+                    <span className="text-[9.5px] font-bold uppercase tracking-wider text-red-700 bg-red-50 px-1.5 py-0.5 rounded border border-red-200/60 flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-red-600 animate-pulse" />
+                      Live 1080p
+                    </span>
+                  </div>
+                  <h4 className="text-xs font-bold text-slate-900 leading-tight">
+                    Ceremony Streaming
+                  </h4>
+                  <p className="text-[11px] text-slate-600 mt-1 leading-snug">
+                    Watch milestones live with zero audio lag, guest chat, and gifts.
+                  </p>
+                </div>
+              </div>
+
+              {/* Feature 3: Real-time lock-screen delivery */}
+              <div className="p-3.5 rounded-xl border border-slate-200/80 bg-white hover:border-[#0F4FB6]/35 hover:shadow-sm transition-all duration-200 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="w-7 h-7 rounded-lg flex items-center justify-center bg-[#0F4FB6]/10 text-[#0F4FB6] text-xs font-bold">
+                      <i className="bi bi-bell-fill" />
+                    </span>
+                    <span className="text-[9.5px] font-bold uppercase tracking-wider text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200/60">
+                      Lock Screen
+                    </span>
+                  </div>
+                  <h4 className="text-xs font-bold text-slate-900 leading-tight">
+                    Lock Screen Push
+                  </h4>
+                  <p className="text-[11px] text-slate-600 mt-1 leading-snug">
+                    Instant alerts as photographers upload. No email waiting.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Trust strip */}
-          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-center gap-3 text-[11px] text-slate-500">
-            <span className="inline-flex items-center gap-1 font-semibold text-[#083A85]">
-              <i className="bi bi-shield-check text-[#F20C8F]" /> Official App
+          {/* Trust & Spec Strip */}
+          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+            <span className="inline-flex items-center gap-1.5 font-medium text-slate-600">
+              <i className="bi bi-shield-check text-[#083A85]" />
+              Official Connekyt Client
             </span>
-            <span>•</span>
-            <span>100% Free</span>
-            <span>•</span>
-            <span>Secure & Private</span>
+            <span className="hidden sm:inline text-slate-300">•</span>
+            <span>Free on iOS & Android</span>
+            <span className="hidden sm:inline text-slate-300">•</span>
+            <span className="text-slate-600 font-medium">Original RAW/JPEG Exports</span>
           </div>
         </div>
       </div>
