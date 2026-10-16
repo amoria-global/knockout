@@ -13,10 +13,10 @@ import { useToast } from '@/lib/notifications/ToastProvider';
 import { locales, languageNames, type Locale } from '../../i18n';
 import { getPublicEvents, getPhotographers, getPhotographerById } from '@/lib/APIs/public';
 import { getStreamVideo } from '@/lib/APIs/streams/route';
-import { FaApple, FaGooglePlay } from 'react-icons/fa6';
 import { APP_STORE_URL, PLAY_STORE_URL, GET_APP_PAGE_URL, detectMobilePlatform } from '@/lib/qr/eventQr';
 import QrCodeSvg from './QrCodeSvg';
 import GetAppModal from './GetAppModal';
+import { StoreBadge, StoreBadges } from './StoreBadges';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 
 // Map category names to icons
@@ -1022,9 +1022,38 @@ const AmoriaKNavbar = () => {
           color: #cbd5e1 !important;
         }
 
+        /* Phones and tablets. The global reset zeroes Tailwind padding, and the logo
+           carries negative offsets meant for desktop, so on a phone the logo and the menu
+           icon sat against (and past) the screen edges. Plain rules fix both. */
+        @media (max-width: 1023px) {
+          .nav-shell { padding-left: 16px !important; padding-right: 16px !important; }
+          .nav-shell .nav-logo-icon { left: 0 !important; top: 0 !important; }
+          .nav-shell .nav-logo-text { margin-left: 8px !important; }
+        }
+        @media (max-width: 359px) {
+          .nav-shell { padding-left: 12px !important; padding-right: 12px !important; }
+          .nav-shell .nav-logo-text { font-size: 1.1rem !important; }
+        }
+        .nav-mobile-cluster { display: flex; align-items: center; gap: 8px; flex: none; }
+        .nav-app-pill {
+          display: inline-flex; align-items: center; gap: 6px; flex: none;
+          height: 36px; padding: 0 14px; border: 0; border-radius: 9999px; cursor: pointer;
+          color: #fff; font-size: 13px; font-weight: 700; letter-spacing: 0.01em; white-space: nowrap;
+          background: linear-gradient(135deg, #083A85 0%, #0F4FB6 100%);
+          box-shadow: 0 6px 14px -4px rgba(8, 58, 133, 0.5), inset 0 1px 0 rgba(255,255,255,0.18);
+          transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        .nav-app-pill:active { transform: scale(0.96); }
+        .nav-app-pill i { font-size: 14px; }
+        .nav-menu-btn {
+          display: inline-flex; align-items: center; justify-content: center; flex: none;
+          width: 40px; height: 40px; border-radius: 10px; border: 0; background: transparent; cursor: pointer; color: #374151;
+        }
+        .nav-menu-btn:hover { background: rgba(8, 58, 133, 0.07); }
+        .nav-app-pill:focus-visible, .nav-menu-btn:focus-visible { outline: 3px solid #F20C8F; outline-offset: 2px; }
       `}</style>
       {/* Main navbar container */}
-      <div className="px-3 sm:px-4 xl:px-6" style={{ maxWidth: '1440px', margin: '0 auto', overflow: 'visible', position: 'relative' }}>
+      <div className="nav-shell px-3 sm:px-4 xl:px-6" style={{ maxWidth: '1440px', margin: '0 auto', overflow: 'visible', position: 'relative' }}>
         <div className="flex items-center justify-between gap-3" style={{ height: '64px', overflow: 'visible' }}>
           {/* Left: Logo with neon glow + blinking dot */}
           <Link href="/" onClick={handleLinkClick} className="nav-logo-group flex-shrink-0" style={{ zIndex: 1, textDecoration: 'none' }}>
@@ -1560,81 +1589,7 @@ const AmoriaKNavbar = () => {
                       </span>
                     </div>
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      {/* App Store button */}
-                      <a
-                        href={APP_STORE_URL}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-3 text-left cursor-pointer transition-all duration-200"
-                        style={{
-                          background: 'linear-gradient(135deg, #083A85 0%, #0F4FB6 100%)',
-                          color: '#ffffff',
-                          padding: '8px 12px',
-                          borderRadius: '11px',
-                          textDecoration: 'none',
-                          border: '1px solid rgba(255,255,255,0.15)',
-                          boxShadow: '0 4px 12px rgba(8, 58, 133, 0.25)',
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.transform = 'translateY(-1px)';
-                          e.currentTarget.style.boxShadow = '0 6px 16px rgba(8, 58, 133, 0.35)';
-                          e.currentTarget.style.background = 'linear-gradient(135deg, #062D6B 0%, #083A85 100%)';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.transform = 'translateY(0)';
-                          e.currentTarget.style.boxShadow = '0 4px 12px rgba(8, 58, 133, 0.25)';
-                          e.currentTarget.style.background = 'linear-gradient(135deg, #083A85 0%, #0F4FB6 100%)';
-                        }}
-                      >
-                        <FaApple style={{ fontSize: '22px', flexShrink: 0 }} />
-                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-                          <span style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.04em', opacity: 0.85, lineHeight: 1 }}>
-                            Download on the
-                          </span>
-                          <span style={{ fontSize: '13px', fontWeight: 700, lineHeight: 1.25, letterSpacing: '0.01em' }}>
-                            App Store
-                          </span>
-                        </div>
-                      </a>
-
-                      {/* Google Play button */}
-                      <a
-                        href={PLAY_STORE_URL}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-3 text-left cursor-pointer transition-all duration-200"
-                        style={{
-                          background: 'linear-gradient(135deg, #083A85 0%, #0F4FB6 100%)',
-                          color: '#ffffff',
-                          padding: '8px 12px',
-                          borderRadius: '11px',
-                          textDecoration: 'none',
-                          border: '1px solid rgba(255,255,255,0.15)',
-                          boxShadow: '0 4px 12px rgba(8, 58, 133, 0.25)',
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.transform = 'translateY(-1px)';
-                          e.currentTarget.style.boxShadow = '0 6px 16px rgba(8, 58, 133, 0.35)';
-                          e.currentTarget.style.background = 'linear-gradient(135deg, #062D6B 0%, #083A85 100%)';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.transform = 'translateY(0)';
-                          e.currentTarget.style.boxShadow = '0 4px 12px rgba(8, 58, 133, 0.25)';
-                          e.currentTarget.style.background = 'linear-gradient(135deg, #083A85 0%, #0F4FB6 100%)';
-                        }}
-                      >
-                        <FaGooglePlay style={{ fontSize: '18px', flexShrink: 0, marginLeft: '2px', marginRight: '2px' }} />
-                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-                          <span style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.04em', opacity: 0.85, lineHeight: 1 }}>
-                            GET IT ON
-                          </span>
-                          <span style={{ fontSize: '13px', fontWeight: 700, lineHeight: 1.25, letterSpacing: '0.01em' }}>
-                            Google Play
-                          </span>
-                        </div>
-                      </a>
-                    </div>
+                    <StoreBadges size="sm" direction="column" />
 
                     {/* View Details Button */}
                     <button
@@ -1907,36 +1862,26 @@ const AmoriaKNavbar = () => {
           </div>
 
           {/* Mobile Right: Get App Pill + Hamburger Menu */}
-          <div className="lg:hidden flex items-center gap-1.5 sm:gap-2" style={{ zIndex: 1 }}>
+          <div className="lg:hidden nav-mobile-cluster" style={{ zIndex: 1 }}>
             <button
               type="button"
               onClick={() => setIsGetAppModalOpen(true)}
               data-mobile-getapp-pill
-              className="flex items-center gap-1 sm:gap-1.5 font-semibold transition-all duration-200 cursor-pointer whitespace-nowrap flex-shrink-0"
-              style={{
-                color: '#083A85',
-                fontSize: '12px',
-                padding: '5px 10px',
-                borderRadius: '9999px',
-                backgroundColor: 'rgba(8, 58, 133, 0.08)',
-                border: '1px solid rgba(8, 58, 133, 0.18)',
-                boxShadow: '0 1px 3px rgba(8, 58, 133, 0.06)',
-              }}
+              className="nav-app-pill"
               aria-label="Get the mobile app"
             >
-              <i className="bi bi-phone" style={{ fontSize: '13px' }} />
-              <span className="hidden sm:inline">{t('getApp')}</span>
-              <span className="sm:hidden">App</span>
+              <i className="bi bi-download" />
+              <span>App</span>
             </button>
 
             <button
               ref={mobileMenuButtonRef}
               onClick={toggleMobileMenu}
-              className="inline-flex items-center justify-center rounded-md text-gray-700 hover:bg-gray-100 focus:outline-none transition-colors cursor-pointer"
-              style={{ padding: isMobile ? '0.375rem' : '0.5rem' }}
+              className="nav-menu-btn"
               aria-label="Toggle menu"
+              aria-expanded={isMobileMenuOpen}
             >
-              <i className={`bi ${isMobileMenuOpen ? 'bi-x-lg' : 'bi-list'}`} style={{ fontSize: isMobile ? '1.5rem' : '1.75rem' }}></i>
+              <i className={`bi ${isMobileMenuOpen ? 'bi-x-lg' : 'bi-list'}`} style={{ fontSize: '1.6rem', lineHeight: 1 }}></i>
             </button>
           </div>
         </div>
@@ -2331,116 +2276,20 @@ const AmoriaKNavbar = () => {
                 {t('getAppDescription')}
               </p>
 
-              {userPlatform === 'ios' ? (
-                /* iOS Primary CTA */
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {userPlatform === 'ios' || userPlatform === 'android' ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <StoreBadge kind={userPlatform} size="md" block />
                   <a
-                    href={APP_STORE_URL}
+                    href={userPlatform === 'ios' ? PLAY_STORE_URL : APP_STORE_URL}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2.5 text-center transition-all duration-200"
-                    style={{
-                      background: '#0F172A',
-                      color: '#ffffff',
-                      padding: '10px 14px',
-                      borderRadius: '11px',
-                      textDecoration: 'none',
-                      fontSize: '13px',
-                      fontWeight: 700,
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.18)',
-                    }}
+                    style={{ fontSize: '12px', color: '#64748B', textDecoration: 'none', textAlign: 'center' }}
                   >
-                    <FaApple style={{ fontSize: '20px', flexShrink: 0 }} />
-                    <span>Download on the App Store</span>
+                    {userPlatform === 'ios' ? 'Also available on Google Play' : 'Also available on the App Store'}
                   </a>
-                  <div style={{ display: 'flex', justifyContent: 'center' }}>
-                    <a
-                      href={PLAY_STORE_URL}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{ fontSize: '11.5px', color: '#64748B', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                    >
-                      <FaGooglePlay style={{ fontSize: '11px' }} />
-                      <span>Also available on Google Play</span>
-                    </a>
-                  </div>
-                </div>
-              ) : userPlatform === 'android' ? (
-                /* Android Primary CTA */
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <a
-                    href={PLAY_STORE_URL}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2.5 text-center transition-all duration-200"
-                    style={{
-                      background: '#0F172A',
-                      color: '#ffffff',
-                      padding: '10px 14px',
-                      borderRadius: '11px',
-                      textDecoration: 'none',
-                      fontSize: '13px',
-                      fontWeight: 700,
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.18)',
-                    }}
-                  >
-                    <FaGooglePlay style={{ fontSize: '16px', flexShrink: 0 }} />
-                    <span>GET IT ON Google Play</span>
-                  </a>
-                  <div style={{ display: 'flex', justifyContent: 'center' }}>
-                    <a
-                      href={APP_STORE_URL}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{ fontSize: '11.5px', color: '#64748B', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                    >
-                      <FaApple style={{ fontSize: '12px' }} />
-                      <span>Also available on App Store</span>
-                    </a>
-                  </div>
                 </div>
               ) : (
-                /* General Dual CTA */
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '8px' }}>
-                  <a
-                    href={APP_STORE_URL}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2 text-center transition-all duration-200"
-                    style={{
-                      background: '#0F172A',
-                      color: '#ffffff',
-                      padding: '9px 12px',
-                      borderRadius: '10px',
-                      textDecoration: 'none',
-                      fontSize: '12.5px',
-                      fontWeight: 600,
-                      boxShadow: '0 2px 6px rgba(0,0,0,0.12)',
-                    }}
-                  >
-                    <FaApple style={{ fontSize: '18px', flexShrink: 0 }} />
-                    <span>App Store</span>
-                  </a>
-                  <a
-                    href={PLAY_STORE_URL}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2 text-center transition-all duration-200"
-                    style={{
-                      background: '#0F172A',
-                      color: '#ffffff',
-                      padding: '9px 12px',
-                      borderRadius: '10px',
-                      textDecoration: 'none',
-                      fontSize: '12.5px',
-                      fontWeight: 600,
-                      boxShadow: '0 2px 6px rgba(0,0,0,0.12)',
-                    }}
-                  >
-                    <FaGooglePlay style={{ fontSize: '14px', flexShrink: 0 }} />
-                    <span>Google Play</span>
-                  </a>
-                </div>
+                <StoreBadges size="md" direction="column" />
               )}
 
               {/* Open full modal / scan details */}
