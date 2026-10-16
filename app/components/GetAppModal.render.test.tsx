@@ -29,21 +29,21 @@ afterEach(() => {
 describe('GetAppModal', () => {
   it('iPhone: the App Store is the main button, Google Play the alternative', () => {
     const h = mount('ios');
-    expect(h.textContent).toContain('Apple App Store');
+    expect(h.textContent).toContain('App Store');
     expect(h.textContent).toContain('Best for your iPhone');
     expect(h.textContent).toContain('Also available on Google Play');
   });
 
   it('Android: Google Play is the main button', () => {
     const h = mount('android');
-    expect(h.textContent).toContain('Google Play Store');
+    expect(h.textContent).toContain('Google Play');
     expect(h.textContent).toContain('Also available on Apple App Store');
   });
 
   it('desktop: a QR code and both store buttons', () => {
     const h = mount(null);
     expect(h.querySelector('[data-testid="qr"]')).not.toBeNull();
-    expect(h.querySelectorAll('a.ga-cta')).toHaveLength(2);
+    expect(h.querySelectorAll('a.sb-badge')).toHaveLength(2);
   });
 
   it('shows all three capabilities and closes from the button and the backdrop', () => {
