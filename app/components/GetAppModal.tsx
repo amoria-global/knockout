@@ -11,6 +11,25 @@ interface GetAppModalProps {
   userPlatform?: MobilePlatform;
 }
 
+const FEATURES = [
+  { icon: 'bi-person-bounding-box', tone: 'navy', tag: '0.3s match', tagTone: 'green', live: false, title: 'Instant Face Match', body: 'One selfie filters thousands of gallery photos down to only yours.' },
+  { icon: 'bi-broadcast', tone: 'pink', tag: 'Live 1080p', tagTone: 'red', live: true, title: 'Ceremony Streaming', body: 'Watch milestones live with zero audio lag, guest chat, and gifts.' },
+  { icon: 'bi-bell-fill', tone: 'blue', tag: 'Lock screen', tagTone: 'blue', live: false, title: 'Lock Screen Push', body: 'Instant alerts as photographers upload. No email waiting.' },
+];
+
+function StoreCta({ kind }: { kind: 'ios' | 'android' }) {
+  const ios = kind === 'ios';
+  return (
+    <a href={ios ? APP_STORE_URL : PLAY_STORE_URL} target="_blank" rel="noopener noreferrer" className="ga-cta">
+      {ios ? <FaApple className="ga-cta-icon" /> : <FaGooglePlay className="ga-cta-icon ga-cta-icon--play" />}
+      <span className="ga-cta-text">
+        <span className="ga-cta-kicker">{ios ? 'Download on the' : 'Get it on'}</span>
+        <span className="ga-cta-name">{ios ? 'Apple App Store' : 'Google Play Store'}</span>
+      </span>
+    </a>
+  );
+}
+
 export default function GetAppModal({
   isOpen,
   onClose,
@@ -46,362 +65,208 @@ export default function GetAppModal({
 
   const isIos = userPlatform === 'ios';
   const isAndroid = userPlatform === 'android';
-  const isMobileDevice = isIos || isAndroid;
 
   return (
     <div
       role="dialog"
       aria-modal="true"
       aria-labelledby="get-app-modal-title"
-      className="fixed inset-0 z-[10000] flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto"
-      style={{
-        backgroundColor: 'rgba(5, 8, 20, 0.78)',
-        backdropFilter: 'blur(12px)',
-        WebkitBackdropFilter: 'blur(12px)',
-      }}
+      className="ga-overlay"
       onClick={onClose}
     >
-      <div
-        className="w-full sm:max-w-xl bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden transition-all duration-300 relative"
-        style={{
-          maxHeight: '92vh',
-          display: 'flex',
-          flexDirection: 'column',
-          border: '1px solid rgba(8, 58, 133, 0.16)',
-          boxShadow: '0 25px 65px -12px rgba(8, 58, 133, 0.38), 0 0 0 1px rgba(255, 255, 255, 0.15)',
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Top Connekyt Brand Gradient Bar */}
-        <div
-          className="w-full h-1 sm:h-1.5 flex-shrink-0"
-          style={{
-            background: 'linear-gradient(90deg, #083A85 0%, #0F4FB6 45%, #F20C8F 100%)',
-          }}
-        />
+      <style>{GET_APP_CSS}</style>
+      <div className="ga-sheet" onClick={(e) => e.stopPropagation()}>
+        <div className="ga-bar" />
+        <div className="ga-handle" aria-hidden="true"><span /></div>
 
-        {/* Mobile drag handle */}
-        <div className="sm:hidden flex justify-center pt-2.5 pb-1">
-          <div className="w-10 h-1.5 bg-slate-300 rounded-full" />
-        </div>
-
-        {/* Close Button */}
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Close modal"
-          className="absolute top-3 right-3 sm:top-5 sm:right-5 w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-slate-500 hover:text-[#083A85] hover:bg-[#083A85]/10 transition-colors cursor-pointer z-10"
-          style={{ background: 'rgba(8, 58, 133, 0.06)' }}
-        >
-          <i className="bi bi-x-lg text-sm sm:text-base" />
+        <button type="button" onClick={onClose} aria-label="Close modal" className="ga-close">
+          <i className="bi bi-x-lg" />
         </button>
 
-        {/* Scrollable Content */}
-        <div className="overflow-y-auto px-5 sm:px-8 pt-2 sm:pt-6 pb-6 sm:pb-8">
-          {/* Header with Official Logo & Brand Badge */}
-          <div className="flex items-center gap-3.5 sm:gap-4 mb-4">
-            <div
-              className="w-13 h-13 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center flex-shrink-0 bg-white border border-[#083A85]/15 p-2"
-              style={{
-                boxShadow: '0 8px 24px rgba(8, 58, 133, 0.14)',
-              }}
-            >
-              <img
-                src="/logo.png"
-                alt="Connekyt Logo"
-                className="w-full h-full object-contain"
-              />
+        <div className="ga-body">
+          <header className="ga-head">
+            <div className="ga-logo">
+              <img src="/logo.png" alt="Connekyt Logo" />
             </div>
-            <div>
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider text-[#083A85] bg-[#083A85]/10 border border-[#083A85]/15 mb-1">
-                <i className="bi bi-stars text-[#F20C8F] text-[10px]" /> Mobile App
-              </div>
-              <h3
-                id="get-app-modal-title"
-                className="text-lg sm:text-2xl font-black text-[#083A85] leading-tight"
-              >
-                Get Connekyt on Mobile
-              </h3>
+            <div className="ga-head-text">
+              <span className="ga-badge">
+                <i className="bi bi-stars" /> Mobile App
+              </span>
+              <h3 id="get-app-modal-title" className="ga-title">Get Connekyt on Mobile</h3>
             </div>
-          </div>
+          </header>
 
-          <p className="text-sm sm:text-base text-slate-600 mb-5 leading-relaxed">
+          <p className="ga-intro">
             Find your event photos in seconds with AI face scanning, join real-time live ceremonies, and get instant updates straight on your device.
           </p>
 
-          {/* Action Area: Platform Aware with Connekyt Branding */}
-          <div
-            className="rounded-2xl p-4 sm:p-5 mb-5"
-            style={{
-              background: 'linear-gradient(135deg, rgba(8, 58, 133, 0.05) 0%, rgba(15, 79, 182, 0.07) 50%, rgba(242, 12, 143, 0.04) 100%)',
-              border: '1px solid rgba(8, 58, 133, 0.16)',
-              boxShadow: '0 4px 20px -2px rgba(8, 58, 133, 0.08)',
-            }}
-          >
-            {isIos ? (
-              /* Primary iOS CTA */
-              <div>
-                <div className="flex items-center justify-between mb-2.5">
-                  <span className="text-xs font-bold uppercase tracking-wider text-[#083A85] bg-[#083A85]/10 border border-[#083A85]/20 px-2.5 py-0.5 rounded-full inline-flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#F20C8F]" /> Best for your iPhone
+          <section className="ga-action">
+            {isIos || isAndroid ? (
+              <>
+                <div className="ga-meta">
+                  <span className="ga-chip">
+                    <span className="ga-dot" /> {isIos ? 'Best for your iPhone' : 'Best for your Android'}
                   </span>
-                  <span className="text-xs text-[#083A85] font-semibold">Free • App Store</span>
+                  <span className="ga-free">{isIos ? 'Free • App Store' : 'Free • Google Play'}</span>
                 </div>
+                <StoreCta kind={isIos ? 'ios' : 'android'} />
                 <a
-                  href={APP_STORE_URL}
+                  href={isIos ? PLAY_STORE_URL : APP_STORE_URL}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-3 w-full text-white py-3.5 px-5 rounded-xl font-semibold transition-all duration-200 shadow-md hover:shadow-lg text-center cursor-pointer"
-                  style={{
-                    background: 'linear-gradient(135deg, #083A85 0%, #0F4FB6 100%)',
-                    boxShadow: '0 8px 24px -4px rgba(8, 58, 133, 0.45)',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'linear-gradient(135deg, #062D6B 0%, #083A85 100%)';
-                    e.currentTarget.style.transform = 'translateY(-1px)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'linear-gradient(135deg, #083A85 0%, #0F4FB6 100%)';
-                    e.currentTarget.style.transform = 'translateY(0)';
-                  }}
+                  className="ga-alt"
                 >
-                  <FaApple className="text-2xl flex-shrink-0" />
-                  <div className="text-left">
-                    <div className="text-[10px] uppercase tracking-wider opacity-85 leading-none">
-                      Download on the
-                    </div>
-                    <div className="text-base sm:text-lg font-bold leading-tight">
-                      Apple App Store
-                    </div>
-                  </div>
+                  {isIos ? <FaGooglePlay className="ga-alt-icon" /> : <FaApple className="ga-alt-icon" />}
+                  <span>{isIos ? 'Also available on Google Play' : 'Also available on Apple App Store'}</span>
                 </a>
-                <div className="mt-3 text-center">
-                  <a
-                    href={PLAY_STORE_URL}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-slate-600 hover:text-[#083A85] font-semibold inline-flex items-center gap-1.5 transition-colors"
-                  >
-                    <FaGooglePlay className="text-[11px] text-[#083A85]" />
-                    <span>Also available on Google Play</span>
-                  </a>
-                </div>
-              </div>
-            ) : isAndroid ? (
-              /* Primary Android CTA */
-              <div>
-                <div className="flex items-center justify-between mb-2.5">
-                  <span className="text-xs font-bold uppercase tracking-wider text-[#083A85] bg-[#083A85]/10 border border-[#083A85]/20 px-2.5 py-0.5 rounded-full inline-flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#F20C8F]" /> Best for your Android
-                  </span>
-                  <span className="text-xs text-[#083A85] font-semibold">Free • Google Play</span>
-                </div>
-                <a
-                  href={PLAY_STORE_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-3 w-full text-white py-3.5 px-5 rounded-xl font-semibold transition-all duration-200 shadow-md hover:shadow-lg text-center cursor-pointer"
-                  style={{
-                    background: 'linear-gradient(135deg, #083A85 0%, #0F4FB6 100%)',
-                    boxShadow: '0 8px 24px -4px rgba(8, 58, 133, 0.45)',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'linear-gradient(135deg, #062D6B 0%, #083A85 100%)';
-                    e.currentTarget.style.transform = 'translateY(-1px)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'linear-gradient(135deg, #083A85 0%, #0F4FB6 100%)';
-                    e.currentTarget.style.transform = 'translateY(0)';
-                  }}
-                >
-                  <FaGooglePlay className="text-xl flex-shrink-0" />
-                  <div className="text-left">
-                    <div className="text-[10px] uppercase tracking-wider opacity-85 leading-none">
-                      GET IT ON
-                    </div>
-                    <div className="text-base sm:text-lg font-bold leading-tight">
-                      Google Play Store
-                    </div>
-                  </div>
-                </a>
-                <div className="mt-3 text-center">
-                  <a
-                    href={APP_STORE_URL}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-slate-600 hover:text-[#083A85] font-semibold inline-flex items-center gap-1.5 transition-colors"
-                  >
-                    <FaApple className="text-sm text-[#083A85]" />
-                    <span>Also available on Apple App Store</span>
-                  </a>
-                </div>
-              </div>
+              </>
             ) : (
-              /* Desktop / Tablet: QR Code + Dual Store Badges */
-              <div className="flex flex-col sm:flex-row items-center gap-5 sm:gap-6">
-                <div className="flex flex-col items-center flex-shrink-0">
+              <div className="ga-desk">
+                <div className="ga-qr">
                   <QrCodeSvg value={GET_APP_PAGE_URL} size={136} fgColor="#083A85" />
-                  <span className="text-[11px] font-bold text-[#083A85] mt-2 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#083A85]/8 border border-[#083A85]/15">
-                    <i className="bi bi-camera text-xs text-[#F20C8F]" />
-                    Scan with phone camera
+                  <span className="ga-chip ga-chip--soft">
+                    <i className="bi bi-camera" /> Scan with phone camera
                   </span>
                 </div>
-
-                <div className="flex-1 w-full flex flex-col justify-center gap-2.5">
-                  <div className="text-xs font-bold text-[#083A85] uppercase tracking-wider mb-0.5 flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#F20C8F]" />
-                    Or download directly
-                  </div>
-                  {/* Apple App Store */}
-                  <a
-                    href={APP_STORE_URL}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-3 w-full text-white py-2.5 px-4 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer"
-                    style={{
-                      background: 'linear-gradient(135deg, #083A85 0%, #0F4FB6 100%)',
-                      boxShadow: '0 4px 12px rgba(8, 58, 133, 0.28)',
-                      border: '1px solid rgba(255, 255, 255, 0.15)',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = 'linear-gradient(135deg, #062D6B 0%, #083A85 100%)';
-                      e.currentTarget.style.transform = 'translateY(-1px)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'linear-gradient(135deg, #083A85 0%, #0F4FB6 100%)';
-                      e.currentTarget.style.transform = 'translateY(0)';
-                    }}
-                  >
-                    <FaApple className="text-2xl flex-shrink-0" />
-                    <div className="text-left">
-                      <div className="text-[9px] uppercase tracking-wider opacity-85 leading-none">
-                        Download on the
-                      </div>
-                      <div className="text-sm font-bold leading-tight">App Store</div>
-                    </div>
-                  </a>
-
-                  {/* Google Play */}
-                  <a
-                    href={PLAY_STORE_URL}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-3 w-full text-white py-2.5 px-4 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer"
-                    style={{
-                      background: 'linear-gradient(135deg, #083A85 0%, #0F4FB6 100%)',
-                      boxShadow: '0 4px 12px rgba(8, 58, 133, 0.28)',
-                      border: '1px solid rgba(255, 255, 255, 0.15)',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = 'linear-gradient(135deg, #062D6B 0%, #083A85 100%)';
-                      e.currentTarget.style.transform = 'translateY(-1px)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'linear-gradient(135deg, #083A85 0%, #0F4FB6 100%)';
-                      e.currentTarget.style.transform = 'translateY(0)';
-                    }}
-                  >
-                    <FaGooglePlay className="text-lg flex-shrink-0" />
-                    <div className="text-left">
-                      <div className="text-[9px] uppercase tracking-wider opacity-85 leading-none">
-                        GET IT ON
-                      </div>
-                      <div className="text-sm font-bold leading-tight">Google Play</div>
-                    </div>
-                  </a>
+                <div className="ga-desk-links">
+                  <span className="ga-chip ga-chip--plain">
+                    <span className="ga-dot" /> Or download directly
+                  </span>
+                  <StoreCta kind="ios" />
+                  <StoreCta kind="android" />
                 </div>
               </div>
             )}
-          </div>
+          </section>
 
-          {/* Senior-Crafted Mobile Capabilities Bento */}
-          <div className="space-y-2.5">
-            <div className="flex items-center justify-between px-0.5">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                Core Mobile Capabilities
-              </span>
-              <span className="text-[10px] font-semibold text-[#083A85] bg-[#083A85]/8 px-2 py-0.5 rounded-full border border-[#083A85]/15">
-                Native iOS & Android
-              </span>
+          <section>
+            <div className="ga-meta ga-meta--section">
+              <span className="ga-section-label">Core mobile capabilities</span>
+              <span className="ga-chip ga-chip--soft">Native iOS &amp; Android</span>
             </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-              {/* Feature 1: AI Biometric Search */}
-              <div className="p-3.5 rounded-xl border border-slate-200/80 bg-white hover:border-[#083A85]/35 hover:shadow-sm transition-all duration-200 flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="w-7 h-7 rounded-lg flex items-center justify-center bg-[#083A85]/10 text-[#083A85] text-xs font-bold">
-                      <i className="bi bi-person-bounding-box" />
-                    </span>
-                    <span className="text-[9.5px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200/60">
-                      0.3s Match
+            <div className="ga-grid">
+              {FEATURES.map((f) => (
+                <article key={f.title} className="ga-card">
+                  <div className="ga-card-top">
+                    <span className={`ga-icon ga-icon--${f.tone}`}><i className={`bi ${f.icon}`} /></span>
+                    <span className={`ga-tag ga-tag--${f.tagTone}`}>
+                      {f.live ? <span className="ga-live-dot" /> : null}
+                      {f.tag}
                     </span>
                   </div>
-                  <h4 className="text-xs font-bold text-slate-900 leading-tight">
-                    Instant Face Match
-                  </h4>
-                  <p className="text-[11px] text-slate-600 mt-1 leading-snug">
-                    One selfie filters thousands of gallery photos down to only yours.
-                  </p>
-                </div>
-              </div>
-
-              {/* Feature 2: Ultra-low latency stream */}
-              <div className="p-3.5 rounded-xl border border-slate-200/80 bg-white hover:border-[#F20C8F]/35 hover:shadow-sm transition-all duration-200 flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="w-7 h-7 rounded-lg flex items-center justify-center bg-[#F20C8F]/10 text-[#F20C8F] text-xs font-bold">
-                      <i className="bi bi-broadcast" />
-                    </span>
-                    <span className="text-[9.5px] font-bold uppercase tracking-wider text-red-700 bg-red-50 px-1.5 py-0.5 rounded border border-red-200/60 flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-red-600 animate-pulse" />
-                      Live 1080p
-                    </span>
-                  </div>
-                  <h4 className="text-xs font-bold text-slate-900 leading-tight">
-                    Ceremony Streaming
-                  </h4>
-                  <p className="text-[11px] text-slate-600 mt-1 leading-snug">
-                    Watch milestones live with zero audio lag, guest chat, and gifts.
-                  </p>
-                </div>
-              </div>
-
-              {/* Feature 3: Real-time lock-screen delivery */}
-              <div className="p-3.5 rounded-xl border border-slate-200/80 bg-white hover:border-[#0F4FB6]/35 hover:shadow-sm transition-all duration-200 flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="w-7 h-7 rounded-lg flex items-center justify-center bg-[#0F4FB6]/10 text-[#0F4FB6] text-xs font-bold">
-                      <i className="bi bi-bell-fill" />
-                    </span>
-                    <span className="text-[9.5px] font-bold uppercase tracking-wider text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200/60">
-                      Lock Screen
-                    </span>
-                  </div>
-                  <h4 className="text-xs font-bold text-slate-900 leading-tight">
-                    Lock Screen Push
-                  </h4>
-                  <p className="text-[11px] text-slate-600 mt-1 leading-snug">
-                    Instant alerts as photographers upload. No email waiting.
-                  </p>
-                </div>
-              </div>
+                  <h4 className="ga-card-title">{f.title}</h4>
+                  <p className="ga-card-body">{f.body}</p>
+                </article>
+              ))}
             </div>
-          </div>
+          </section>
 
-          {/* Trust & Spec Strip */}
-          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
-            <span className="inline-flex items-center gap-1.5 font-medium text-slate-600">
-              <i className="bi bi-shield-check text-[#083A85]" />
-              Official Connekyt Client
-            </span>
-            <span className="hidden sm:inline text-slate-300">•</span>
-            <span>Free on iOS & Android</span>
-            <span className="hidden sm:inline text-slate-300">•</span>
-            <span className="text-slate-600 font-medium">Original RAW/JPEG Exports</span>
-          </div>
+          <footer className="ga-trust">
+            <span className="ga-trust-main"><i className="bi bi-shield-check" /> Official Connekyt Client</span>
+            <span>Free on iOS &amp; Android</span>
+            <span>Original RAW/JPEG Exports</span>
+          </footer>
         </div>
       </div>
     </div>
   );
 }
+
+/*
+ * Scoped styles. The site's global `* { margin: 0; padding: 0 }` is unlayered, so it beats
+ * Tailwind v4's layered utilities and zeroed every p-* and m-* this modal used. Plain class
+ * rules win over the universal selector, so the spacing lives here and stays put.
+ */
+const GET_APP_CSS = `
+.ga-overlay{position:fixed;inset:0;z-index:10000;display:flex;align-items:flex-end;justify-content:center;
+  background:rgba(5,8,20,.78);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);overflow-y:auto}
+.ga-sheet{position:relative;display:flex;flex-direction:column;width:100%;max-width:560px;max-height:92vh;
+  background:#fff;border-radius:24px 24px 0 0;overflow:hidden;border:1px solid rgba(8,58,133,.16);
+  box-shadow:0 25px 65px -12px rgba(8,58,133,.38)}
+@supports (height:1dvh){.ga-sheet{max-height:92dvh}}
+.ga-bar{height:6px;flex:none;background:linear-gradient(90deg,#083A85 0%,#0F4FB6 45%,#F20C8F 100%)}
+.ga-handle{display:flex;justify-content:center;padding:10px 0 2px;flex:none}
+.ga-handle span{width:40px;height:5px;border-radius:999px;background:#cbd5e1}
+.ga-close{position:absolute;top:18px;right:14px;z-index:2;width:40px;height:40px;border-radius:50%;border:0;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;color:#475569;background:rgba(8,58,133,.07);font-size:15px;transition:background .15s,color .15s}
+.ga-close:hover{background:rgba(8,58,133,.14);color:#083A85}
+.ga-close:focus-visible,.ga-cta:focus-visible,.ga-alt:focus-visible{outline:3px solid #F20C8F;outline-offset:2px}
+.ga-body{overflow-y:auto;padding:14px 20px calc(24px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:20px}
+.ga-head{display:flex;align-items:center;gap:14px;padding-right:48px}
+.ga-logo{flex:none;width:56px;height:56px;padding:8px;border-radius:16px;background:#fff;border:1px solid rgba(8,58,133,.15);
+  box-shadow:0 8px 24px rgba(8,58,133,.14);display:flex;align-items:center;justify-content:center}
+.ga-logo img{width:100%;height:100%;object-fit:contain}
+.ga-head-text{min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:6px}
+.ga-badge{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;
+  letter-spacing:.08em;text-transform:uppercase;color:#083A85;background:rgba(8,58,133,.09);border:1px solid rgba(8,58,133,.15)}
+.ga-badge .bi{color:#F20C8F;font-size:11px}
+.ga-title{font-size:20px;line-height:1.2;font-weight:900;color:#083A85;margin:0}
+.ga-intro{font-size:14.5px;line-height:1.55;color:#475569;margin:0}
+.ga-action{padding:16px;border-radius:18px;border:1px solid rgba(8,58,133,.16);
+  background:linear-gradient(135deg,rgba(8,58,133,.05),rgba(15,79,182,.07) 50%,rgba(242,12,143,.04));
+  box-shadow:0 4px 20px -2px rgba(8,58,133,.08)}
+.ga-meta{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px 10px;margin-bottom:12px}
+.ga-meta--section{margin-bottom:10px}
+.ga-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:11.5px;font-weight:700;
+  letter-spacing:.06em;text-transform:uppercase;color:#083A85;background:rgba(8,58,133,.09);border:1px solid rgba(8,58,133,.18);line-height:1.2}
+.ga-chip--soft{font-size:11px;letter-spacing:.03em;text-transform:none;background:rgba(8,58,133,.07)}
+.ga-chip--plain{background:transparent;border-color:transparent;padding-left:0}
+.ga-chip .bi{color:#F20C8F}
+.ga-dot{width:7px;height:7px;border-radius:50%;background:#F20C8F;flex:none}
+.ga-free{font-size:12.5px;font-weight:600;color:#083A85}
+.ga-cta{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;padding:14px 20px;border-radius:14px;color:#fff;
+  text-decoration:none;background:linear-gradient(135deg,#083A85,#0F4FB6);box-shadow:0 8px 24px -4px rgba(8,58,133,.45);
+  transition:transform .15s,box-shadow .15s,background .15s;border:1px solid rgba(255,255,255,.15)}
+.ga-cta:hover{background:linear-gradient(135deg,#062D6B,#083A85);transform:translateY(-1px)}
+.ga-cta-icon{font-size:26px;flex:none}
+.ga-cta-icon--play{font-size:22px}
+.ga-cta-text{display:flex;flex-direction:column;align-items:flex-start;gap:3px;text-align:left}
+.ga-cta-kicker{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;opacity:.85;line-height:1}
+.ga-cta-name{font-size:17px;font-weight:700;line-height:1.1}
+.ga-alt{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:14px;font-size:13px;font-weight:600;color:#475569;text-decoration:none}
+.ga-alt:hover{color:#083A85}
+.ga-alt-icon{font-size:13px;color:#083A85}
+.ga-desk{display:flex;flex-direction:column;align-items:center;gap:20px}
+.ga-qr{display:flex;flex-direction:column;align-items:center;gap:10px;flex:none}
+.ga-desk-links{display:flex;flex-direction:column;gap:10px;width:100%}
+.ga-desk-links .ga-cta{justify-content:flex-start;padding:11px 16px}
+.ga-desk-links .ga-cta-name{font-size:15px}
+.ga-desk-links .ga-cta-kicker{font-size:9.5px}
+.ga-section-label{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#64748b}
+.ga-grid{display:grid;grid-template-columns:1fr;gap:10px}
+.ga-card{padding:14px;border-radius:14px;border:1px solid rgba(148,163,184,.45);background:#fff;transition:border-color .2s,box-shadow .2s}
+.ga-card:hover{border-color:rgba(8,58,133,.35);box-shadow:0 2px 10px rgba(8,58,133,.08)}
+.ga-card-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.ga-icon{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:15px;flex:none}
+.ga-icon--navy{background:rgba(8,58,133,.1);color:#083A85}
+.ga-icon--pink{background:rgba(242,12,143,.1);color:#F20C8F}
+.ga-icon--blue{background:rgba(15,79,182,.1);color:#0F4FB6}
+.ga-tag{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:7px;font-size:10.5px;font-weight:700;
+  letter-spacing:.06em;text-transform:uppercase;border:1px solid transparent;line-height:1.2;white-space:nowrap}
+.ga-tag--green{color:#047857;background:#ecfdf5;border-color:rgba(167,243,208,.9)}
+.ga-tag--red{color:#b91c1c;background:#fef2f2;border-color:rgba(254,202,202,.9)}
+.ga-tag--blue{color:#1d4ed8;background:#eff6ff;border-color:rgba(191,219,254,.9)}
+.ga-live-dot{width:7px;height:7px;border-radius:50%;background:#dc2626;animation:ga-pulse 1.4s ease-in-out infinite}
+@keyframes ga-pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.ga-card-title{font-size:14.5px;font-weight:700;line-height:1.25;color:#0f172a;margin:0}
+.ga-card-body{font-size:13px;line-height:1.45;color:#475569;margin:4px 0 0}
+.ga-trust{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 16px;padding-top:14px;
+  border-top:1px solid #e2e8f0;font-size:12px;color:#64748b}
+.ga-trust-main{display:inline-flex;align-items:center;gap:6px;font-weight:600;color:#475569}
+.ga-trust-main .bi{color:#083A85}
+@media (min-width:640px){
+  .ga-overlay{align-items:center;padding:16px}
+  .ga-sheet{border-radius:24px}
+  .ga-handle{display:none}
+  .ga-close{top:22px;right:20px}
+  .ga-body{padding:26px 32px 32px;gap:22px}
+  .ga-logo{width:64px;height:64px}
+  .ga-title{font-size:26px}
+  .ga-intro{font-size:15.5px}
+  .ga-action{padding:20px}
+  .ga-desk{flex-direction:row;gap:24px}
+  .ga-desk-links{flex:1}
+  .ga-grid{grid-template-columns:repeat(3,1fr)}
+}
+@media (prefers-reduced-motion:reduce){.ga-live-dot{animation:none}.ga-cta{transition:none}}
+`;
