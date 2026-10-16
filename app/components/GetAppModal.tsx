@@ -4,6 +4,7 @@ import React, { useEffect, useCallback } from 'react';
 import { FaApple, FaGooglePlay } from 'react-icons/fa6';
 import { APP_STORE_URL, PLAY_STORE_URL, GET_APP_PAGE_URL, type MobilePlatform } from '@/lib/qr/eventQr';
 import QrCodeSvg from './QrCodeSvg';
+import { StoreBadge } from './StoreBadges';
 
 interface GetAppModalProps {
   isOpen: boolean;
@@ -16,19 +17,6 @@ const FEATURES = [
   { icon: 'bi-broadcast', tone: 'pink', tag: 'Live 1080p', tagTone: 'red', live: true, title: 'Ceremony Streaming', body: 'Watch milestones live with zero audio lag, guest chat, and gifts.' },
   { icon: 'bi-bell-fill', tone: 'blue', tag: 'Lock screen', tagTone: 'blue', live: false, title: 'Lock Screen Push', body: 'Instant alerts as photographers upload. No email waiting.' },
 ];
-
-function StoreCta({ kind }: { kind: 'ios' | 'android' }) {
-  const ios = kind === 'ios';
-  return (
-    <a href={ios ? APP_STORE_URL : PLAY_STORE_URL} target="_blank" rel="noopener noreferrer" className="ga-cta">
-      {ios ? <FaApple className="ga-cta-icon" /> : <FaGooglePlay className="ga-cta-icon ga-cta-icon--play" />}
-      <span className="ga-cta-text">
-        <span className="ga-cta-kicker">{ios ? 'Download on the' : 'Get it on'}</span>
-        <span className="ga-cta-name">{ios ? 'Apple App Store' : 'Google Play Store'}</span>
-      </span>
-    </a>
-  );
-}
 
 export default function GetAppModal({
   isOpen,
@@ -109,7 +97,7 @@ export default function GetAppModal({
                   </span>
                   <span className="ga-free">{isIos ? 'Free • App Store' : 'Free • Google Play'}</span>
                 </div>
-                <StoreCta kind={isIos ? 'ios' : 'android'} />
+                <StoreBadge kind={isIos ? 'ios' : 'android'} size="lg" block />
                 <a
                   href={isIos ? PLAY_STORE_URL : APP_STORE_URL}
                   target="_blank"
@@ -132,8 +120,8 @@ export default function GetAppModal({
                   <span className="ga-chip ga-chip--plain">
                     <span className="ga-dot" /> Or download directly
                   </span>
-                  <StoreCta kind="ios" />
-                  <StoreCta kind="android" />
+                  <StoreBadge kind="ios" size="md" block />
+                  <StoreBadge kind="android" size="md" block />
                 </div>
               </div>
             )}
@@ -190,7 +178,7 @@ const GET_APP_CSS = `
 .ga-close{position:absolute;top:18px;right:14px;z-index:2;width:40px;height:40px;border-radius:50%;border:0;cursor:pointer;
   display:flex;align-items:center;justify-content:center;color:#475569;background:rgba(8,58,133,.07);font-size:15px;transition:background .15s,color .15s}
 .ga-close:hover{background:rgba(8,58,133,.14);color:#083A85}
-.ga-close:focus-visible,.ga-cta:focus-visible,.ga-alt:focus-visible{outline:3px solid #F20C8F;outline-offset:2px}
+.ga-close:focus-visible,.ga-alt:focus-visible{outline:3px solid #F20C8F;outline-offset:2px}
 .ga-body{overflow-y:auto;padding:14px 20px calc(24px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:20px}
 .ga-head{display:flex;align-items:center;gap:14px;padding-right:48px}
 .ga-logo{flex:none;width:56px;height:56px;padding:8px;border-radius:16px;background:#fff;border:1px solid rgba(8,58,133,.15);
@@ -214,24 +202,13 @@ const GET_APP_CSS = `
 .ga-chip .bi{color:#F20C8F}
 .ga-dot{width:7px;height:7px;border-radius:50%;background:#F20C8F;flex:none}
 .ga-free{font-size:12.5px;font-weight:600;color:#083A85}
-.ga-cta{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;padding:14px 20px;border-radius:14px;color:#fff;
-  text-decoration:none;background:linear-gradient(135deg,#083A85,#0F4FB6);box-shadow:0 8px 24px -4px rgba(8,58,133,.45);
-  transition:transform .15s,box-shadow .15s,background .15s;border:1px solid rgba(255,255,255,.15)}
-.ga-cta:hover{background:linear-gradient(135deg,#062D6B,#083A85);transform:translateY(-1px)}
-.ga-cta-icon{font-size:26px;flex:none}
-.ga-cta-icon--play{font-size:22px}
-.ga-cta-text{display:flex;flex-direction:column;align-items:flex-start;gap:3px;text-align:left}
-.ga-cta-kicker{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;opacity:.85;line-height:1}
-.ga-cta-name{font-size:17px;font-weight:700;line-height:1.1}
+
 .ga-alt{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:14px;font-size:13px;font-weight:600;color:#475569;text-decoration:none}
 .ga-alt:hover{color:#083A85}
 .ga-alt-icon{font-size:13px;color:#083A85}
 .ga-desk{display:flex;flex-direction:column;align-items:center;gap:20px}
 .ga-qr{display:flex;flex-direction:column;align-items:center;gap:10px;flex:none}
 .ga-desk-links{display:flex;flex-direction:column;gap:10px;width:100%}
-.ga-desk-links .ga-cta{justify-content:flex-start;padding:11px 16px}
-.ga-desk-links .ga-cta-name{font-size:15px}
-.ga-desk-links .ga-cta-kicker{font-size:9.5px}
 .ga-section-label{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#64748b}
 .ga-grid{display:grid;grid-template-columns:1fr;gap:10px}
 .ga-card{padding:14px;border-radius:14px;border:1px solid rgba(148,163,184,.45);background:#fff;transition:border-color .2s,box-shadow .2s}
@@ -268,5 +245,5 @@ const GET_APP_CSS = `
   .ga-desk-links{flex:1}
   .ga-grid{grid-template-columns:repeat(3,1fr)}
 }
-@media (prefers-reduced-motion:reduce){.ga-live-dot{animation:none}.ga-cta{transition:none}}
+@media (prefers-reduced-motion:reduce){.ga-live-dot{animation:none}}
 `;
