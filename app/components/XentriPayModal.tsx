@@ -104,11 +104,10 @@ type PaymentMethodTile = {
   provider: string;  // value sent to the backend ("MTN", "AIRTEL", "MPESA", "CARD")
 };
 
-const FALLBACK_RW_METHODS: PaymentMethodTile[] = [
-  { id: 'mtn', name: 'MTN Mobile Money', image: '/mtn.png', provider: 'MTN' },
-  { id: 'airtel', name: 'Airtel Money', image: '/airtel.png', provider: 'AIRTEL' },
-  { id: 'card', name: 'VISA & Master Card', image: '/cards.png', provider: 'CARD' },
-];
+// Cards are offered in every market. Mobile money is offered only for the
+// operators the backend returns for the buyer's country, so while the country is
+// unknown, still loading or unsupported nothing falls back to Rwanda's MTN/Airtel.
+const CARD_METHOD: PaymentMethodTile = { id: 'card', name: 'VISA & Master Card', image: '/cards.png', provider: 'CARD' };
 
 function iconForOperator(iconKey: string): string {
   // Map PawaPay operator iconKey to /public images we ship. Unknown
@@ -194,14 +193,15 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
   // render (with localStorage cache for manual overrides), and the
   // operator list is fetched from /api/remote/public/payments/options
   // for that country. Falls back to the RW hardcoded list while the
-  // hooks resolve so the modal never flashes empty for the common path.
-  const { country: detectedCountry, setCountry } = usePaymentCountry();
+  // hooks resolve. Until then, and whenever the country is unknown or has no
+  // mobile-money coverage, only the card option is shown.
+  const { country: detectedCountry, setCountry, loading: countryLoading } = usePaymentCountry();
   const { options: paymentOptions, supported: countrySupported, loading: optionsLoading }
       = usePaymentOptions(detectedCountry);
   const [showCountryPicker, setShowCountryPicker] = useState(false);
 
   const paymentMethods: PaymentMethodTile[] = React.useMemo(() => {
-    if (!paymentOptions) return FALLBACK_RW_METHODS;
+    if (!paymentOptions) return [CARD_METHOD];
     const tiles: PaymentMethodTile[] = paymentOptions.operators.map(op => ({
       id: op.id.toLowerCase(),
       name: op.name,
@@ -209,10 +209,15 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
       provider: op.id, // backend expects canonical UPPER provider name
     }));
     if (paymentOptions.supportsCard) {
-      tiles.push({ id: 'card', name: 'VISA & Master Card', image: '/cards.png', provider: 'CARD' });
+      tiles.push(CARD_METHOD);
     }
     return tiles;
   }, [paymentOptions]);
+
+  // A method that is no longer on offer (country changed, options reloaded) cannot stay selected.
+  useEffect(() => {
+    setSelectedMethod((cur) => (cur && !paymentMethods.some((m) => m.id === cur) ? null : cur));
+  }, [paymentMethods]);
 
   // Internal donation state (used when showDonationPrompt is true).
   // The donation tiers/exchange-rate state below is now legacy - the
@@ -1002,7 +1007,7 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
                 </div>
               )}
 
-              {(showCountryPicker || (detectedCountry && !optionsLoading && !countrySupported)) ? (
+              {showCountryPicker ? (
                 <CountryPicker
                   value={detectedCountry}
                   dark={darkMode}
@@ -1011,10 +1016,8 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
                     setSelectedMethod(null);
                     setShowCountryPicker(false);
                   }}
-                  title={showCountryPicker ? 'Pick a country' : 'Mobile money not yet available here'}
-                  hint={showCountryPicker
-                    ? "Choose the country your number belongs to."
-                    : `We don't have operators for ${detectedCountry} yet. Pick a country we support, or use a card.`}
+                  title="Pick a country"
+                  hint="Choose the country your number belongs to."
                 />
               ) : (
                 <PaymentMethodChooser
@@ -1039,6 +1042,13 @@ const XentriPayModal: React.FC<XentriPayModalProps> = ({
                       disabled: geoStatus.blocked || (method.id !== 'card' && geoStatus.disableMobileMoney),
                     }))}
                 />
+              )}
+              {!showCountryPicker && !optionsLoading && !countryLoading && !countrySupported && (
+                <p style={{ margin: '9px 0 0', color: T.faint, fontSize: 12, lineHeight: 1.45 }}>
+                  {detectedCountry
+                    ? `Mobile money is not available in ${findCountry(detectedCountry)?.name ?? detectedCountry}. You can pay by card, or choose another country above.`
+                    : 'We could not confirm your country. You can pay by card, or choose your country above to see mobile money.'}
+                </p>
               )}
             </div>
 
