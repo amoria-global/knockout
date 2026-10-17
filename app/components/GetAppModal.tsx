@@ -101,7 +101,7 @@ export default function GetAppModal({
             ) : (
               <div className="ga-desk">
                 <div className="ga-qr">
-                  <QrCodeSvg value={GET_APP_PAGE_URL} size={136} fgColor="#083A85" />
+                  <QrCodeSvg value={GET_APP_PAGE_URL} size={108} fgColor="#083A85" />
                   <span className="ga-chip ga-chip--soft">
                     <i className="bi bi-camera" /> Scan with phone camera
                   </span>
@@ -226,26 +226,18 @@ const GET_APP_CSS = `
 .ga-sheet{animation:ga-rise .3s cubic-bezier(.2,.8,.2,1)}
 @media (min-width:640px){
   .ga-overlay{align-items:center;padding:16px}
-  .ga-sheet{border-radius:24px}
+  .ga-sheet{border-radius:24px;max-width:600px;animation-name:ga-pop}
   .ga-handle{display:none}
-  .ga-close{top:22px;right:20px}
-  .ga-body{padding:26px 32px 32px;gap:22px}
-  .ga-logo{width:64px;height:64px}
-  .ga-title{font-size:28px}
-  .ga-trust{display:flex}
-  .ga-icon{width:44px;height:44px;border-radius:13px}
-  .ga-card-title{font-size:15px}
-  .ga-card-body{font-size:13.5px;margin-top:5px}
-  .ga-intro{font-size:15.5px}
-  .ga-sheet{animation-name:ga-pop}
-  .ga-intro{font-size:15.5px}
-  .ga-action{padding:20px}
-  .ga-desk{flex-direction:row;gap:24px}
+  .ga-close{top:18px;right:18px}
+  .ga-body{padding:20px 28px 22px;gap:16px}
+  .ga-logo{width:56px;height:56px}
+  .ga-title{font-size:24px}
+  .ga-intro{font-size:14.5px;max-width:none}
+  .ga-trust{display:flex;padding-top:12px}
+  .ga-action{padding:14px 18px}
+  .ga-desk{flex-direction:row;gap:22px;align-items:center}
   .ga-desk-links{flex:1}
-  .ga-grid{grid-template-columns:repeat(3,1fr)}
-  .ga-card{display:flex;flex-direction:column;padding:18px}
-  .ga-card .ga-icon{margin-bottom:14px}
-  .ga-card-row{flex-direction:column-reverse;align-items:flex-start;gap:10px}
+  .ga-qr{gap:8px}
 }
 @media (prefers-reduced-motion:reduce){.ga-live-dot,.ga-overlay,.ga-sheet{animation:none}.ga-card{transition:none}.ga-card:hover{transform:none}}
 `;
