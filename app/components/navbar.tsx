@@ -16,7 +16,7 @@ import { getStreamVideo } from '@/lib/APIs/streams/route';
 import { APP_STORE_URL, PLAY_STORE_URL, GET_APP_PAGE_URL, detectMobilePlatform } from '@/lib/qr/eventQr';
 import QrCodeSvg from './QrCodeSvg';
 import GetAppModal from './GetAppModal';
-import { StoreBadge, StoreBadges } from './StoreBadges';
+import { StoreBadges } from './StoreBadges';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 
 // Map category names to icons
@@ -1589,7 +1589,7 @@ const AmoriaKNavbar = () => {
                       </span>
                     </div>
 
-                    <StoreBadges size="sm" direction="column" />
+                    <StoreBadges size="md" align="center" />
 
                     {/* View Details Button */}
                     <button
@@ -2276,21 +2276,7 @@ const AmoriaKNavbar = () => {
                 {t('getAppDescription')}
               </p>
 
-              {userPlatform === 'ios' || userPlatform === 'android' ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <StoreBadge kind={userPlatform} size="md" block />
-                  <a
-                    href={userPlatform === 'ios' ? PLAY_STORE_URL : APP_STORE_URL}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ fontSize: '12px', color: '#64748B', textDecoration: 'none', textAlign: 'center' }}
-                  >
-                    {userPlatform === 'ios' ? 'Also available on Google Play' : 'Also available on the App Store'}
-                  </a>
-                </div>
-              ) : (
-                <StoreBadges size="md" direction="column" />
-              )}
+              <StoreBadges size="md" align="center" first={userPlatform === 'android' ? 'android' : 'ios'} />
 
               {/* Open full modal / scan details */}
               <button
