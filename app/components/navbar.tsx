@@ -17,6 +17,7 @@ import { APP_STORE_URL, PLAY_STORE_URL, GET_APP_PAGE_URL, detectMobilePlatform }
 import QrCodeSvg from './QrCodeSvg';
 import GetAppModal from './GetAppModal';
 import { StoreBadges } from './StoreBadges';
+import LangFlag from './LangFlag';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 
 // Map category names to icons
@@ -147,16 +148,9 @@ const AmoriaKNavbar = () => {
   // when the user merely starts scrolling.
   const backdropTouchStartRef = useRef<{ x: number; y: number } | null>(null);
 
-  const languageFlags: Record<string, string> = {
-    en: 'gb',
-    fr: 'fr',
-    es: 'es',
-  };
-
   const languages = locales.map((code) => ({
     code,
     name: languageNames[code],
-    flagCode: languageFlags[code] || '',
   }));
 
   // Helper function - no locale prefix needed now
@@ -1673,11 +1667,7 @@ const AmoriaKNavbar = () => {
                         }
                       }}
                     >
-                      <img
-                        src={`https://flagcdn.com/w40/${lang.flagCode}.png`}
-                        alt={lang.name}
-                        style={{ width: '20px', height: '14px', marginRight: '8px', borderRadius: '2px', objectFit: 'cover' }}
-                      />
+                      <LangFlag code={lang.code} />
                       {lang.name}
                     </a>
                   ))}
@@ -2194,11 +2184,7 @@ const AmoriaKNavbar = () => {
                               }
                             }}
                         >
-                            <img
-                              src={`https://flagcdn.com/w40/${lang.flagCode}.png`}
-                              alt={lang.name}
-                              style={{ width: '20px', height: '14px', marginRight: '8px', borderRadius: '2px', objectFit: 'cover' }}
-                            />
+                            <LangFlag code={lang.code} />
                             {lang.name}
                         </a>
                     ))}
