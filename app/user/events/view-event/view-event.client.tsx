@@ -14,6 +14,7 @@ import { useGoogleLogin } from '@react-oauth/google';
 import { getPublicEventById, type PublicEvent } from '@/lib/APIs/public';
 import { getEffectivePrice, type EffectivePrice } from '@/lib/geoPricing';
 import { isAuthenticated } from '@/lib/api/client';
+import { clearEventReminder, getEventReminder, setEventReminder } from '@/lib/APIs/events/reminder/route';
 import { registerAnonymousViewer } from '@/lib/APIs/streams/anonymous-viewer';
 import { getDeviceId } from '@/lib/fingerprint';
 import { login } from '@/lib/APIs/auth/login/route';
@@ -306,6 +307,84 @@ function ViewEventContent({ eventIdProp }: { eventIdProp?: string }): React.JSX.
       setIsSaved(next.includes(selectedEvent.id));
     } catch { /* silent */ }
   }, [selectedEvent?.id]);
+
+  // "Get notified": a real reminder held by the backend. A signed-in person is told by an
+  // in-app notification and push, a guest by one email, from 15 minutes before the start.
+  const REMINDER_EMAIL_KEY = 'connekyt:reminderEmail';
+  const [reminderOn, setReminderOn] = useState(false);
+  const [reminderBusy, setReminderBusy] = useState(false);
+  const [reminderAsk, setReminderAsk] = useState(false);
+  const [reminderEmail, setReminderEmail] = useState('');
+  const [reminderError, setReminderError] = useState<string | null>(null);
+  const [reminderNote, setReminderNote] = useState<string | null>(null);
+
+  const rememberedEmail = () => {
+    try { return localStorage.getItem(REMINDER_EMAIL_KEY) || ''; } catch { return ''; }
+  };
+
+  // Is this person already waiting for the event?
+  useEffect(() => {
+    const id = selectedEvent?.id;
+    if (!id || typeof window === 'undefined') return;
+    let cancelled = false;
+    const email = rememberedEmail();
+    getEventReminder(id, email || undefined)
+      .then((res) => { if (!cancelled && res.success) setReminderOn(!!res.data?.subscribed); })
+      .catch(() => { /* unknown stays off */ });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedEvent?.id]);
+
+  const flashReminderNote = (text: string) => {
+    setReminderNote(text);
+    window.setTimeout(() => setReminderNote(null), 3500);
+  };
+
+  const applyReminder = useCallback(async (email?: string) => {
+    const id = selectedEvent?.id;
+    if (!id || reminderBusy) return;
+    setReminderBusy(true);
+    setReminderError(null);
+    const fail = (msg: string) => {
+      if (reminderAsk) setReminderError(msg);
+      else setErrorPopup({ open: true, severity: 'error', title: 'Notification not set', message: msg });
+    };
+    try {
+      const turningOff = reminderOn;
+      const res = turningOff ? await clearEventReminder(id, email) : await setEventReminder(id, email);
+      if (!res.success) {
+        fail(res.error || res.message || 'We could not update your notification. Please try again.');
+        return;
+      }
+      setReminderOn(!turningOff);
+      setReminderAsk(false);
+      if (!turningOff && email) { try { localStorage.setItem(REMINDER_EMAIL_KEY, email); } catch { /* private mode */ } }
+      flashReminderNote(turningOff
+        ? 'Notification turned off.'
+        : isAuthenticated() ? 'Done. We will notify you when this event starts.' : `Done. We will email ${email} when this event starts.`);
+    } catch {
+      fail('We could not reach the server. Check your connection and try again.');
+    } finally {
+      setReminderBusy(false);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedEvent?.id, reminderBusy, reminderOn, reminderAsk]);
+
+  const toggleReminder = useCallback(() => {
+    if (reminderBusy) return;
+    if (reminderOn) { void applyReminder(rememberedEmail() || undefined); return; }
+    if (isAuthenticated()) { void applyReminder(); return; }
+    setReminderEmail(rememberedEmail());
+    setReminderError(null);
+    setReminderAsk(true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reminderBusy, reminderOn, applyReminder]);
+
+  const submitReminderEmail = () => {
+    const email = reminderEmail.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) { setReminderError('Enter a valid email address.'); return; }
+    void applyReminder(email);
+  };
 
   // Description expand/collapse
   const [descExpanded, setDescExpanded] = useState(false);
@@ -1448,7 +1527,9 @@ function ViewEventContent({ eventIdProp }: { eventIdProp?: string }): React.JSX.
             return { label: 'Buy access', sub: `${displayPrice.toLocaleString()} ${displayCurrency}`, icon: 'bi-ticket-perforated-fill', onClick: () => handlePurchaseAccess(`/user/events/join-package?id=${selectedEvent.id}`), tone: 'live' };
           }
           if (isUpcoming) {
-            if (!isPaid) return { label: 'Get notified', icon: 'bi-bell-fill', onClick: () => toggleSaved(), tone: 'reserve' };
+            if (!isPaid) return reminderOn
+              ? { label: 'You will be notified', sub: reminderBusy ? 'Updating' : 'Tap to turn off', icon: 'bi-bell-fill', onClick: () => toggleReminder(), tone: 'reserve' }
+              : { label: reminderBusy ? 'Setting up' : 'Get notified', icon: 'bi-bell', onClick: () => toggleReminder(), tone: 'reserve' };
             if (hasPurchasedAccess) return { label: 'Access reserved', icon: 'bi-check-circle-fill', onClick: () => {}, tone: 'owned' };
             return { label: 'Reserve your spot', sub: `${displayPrice.toLocaleString()} ${displayCurrency}`, icon: 'bi-ticket-perforated-fill', onClick: () => handlePurchaseAccess(`/user/events/join-package?id=${selectedEvent.id}`), tone: 'reserve' };
           }
@@ -3449,6 +3530,36 @@ function ViewEventContent({ eventIdProp }: { eventIdProp?: string }): React.JSX.
       )}
 
       {/* ── Global Error / Notice Popup ── */}
+      {reminderNote && (
+        <div role="status" aria-live="polite" style={{ position: 'fixed', left: '50%', bottom: 92, transform: 'translateX(-50%)', zIndex: 10001, background: '#0F172A', color: '#fff', padding: '12px 18px', borderRadius: 12, fontSize: 14, fontWeight: 600, maxWidth: 'calc(100vw - 32px)', boxShadow: '0 12px 32px rgba(0,0,0,0.35)' }}>
+          {reminderNote}
+        </div>
+      )}
+      {reminderAsk && (
+        <div role="dialog" aria-modal="true" aria-labelledby="reminder-title" onClick={() => !reminderBusy && setReminderAsk(false)}
+          style={{ position: 'fixed', inset: 0, zIndex: 10000, background: 'rgba(5,8,20,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+          <form onClick={(e) => e.stopPropagation()} onSubmit={(e) => { e.preventDefault(); submitReminderEmail(); }}
+            style={{ width: '100%', maxWidth: 400, background: '#fff', borderRadius: 20, padding: 24, boxShadow: '0 25px 60px rgba(8,58,133,0.35)' }}>
+            <h3 id="reminder-title" style={{ margin: 0, fontSize: 20, fontWeight: 800, color: '#083A85' }}>Get notified</h3>
+            <p style={{ margin: '8px 0 16px', fontSize: 14, lineHeight: 1.5, color: '#475569' }}>
+              Enter your email and we will send you one message about 15 minutes before this event starts. Signed-in members are notified in the app instead.
+            </p>
+            <label htmlFor="reminder-email" style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#334155', marginBottom: 6 }}>Email</label>
+            <input id="reminder-email" type="email" inputMode="email" autoComplete="email" autoFocus value={reminderEmail}
+              onChange={(e) => { setReminderEmail(e.target.value); setReminderError(null); }} placeholder="you@example.com"
+              style={{ width: '100%', boxSizing: 'border-box', padding: '12px 14px', fontSize: 16, border: '1px solid #CBD5E1', borderRadius: 12, outline: 'none' }} />
+            {reminderError && <p role="alert" style={{ margin: '8px 0 0', fontSize: 13, color: '#B91C1C' }}>{reminderError}</p>}
+            <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
+              <button type="button" onClick={() => setReminderAsk(false)} disabled={reminderBusy}
+                style={{ flex: 1, padding: '12px 14px', borderRadius: 12, border: '1px solid #CBD5E1', background: '#fff', color: '#334155', fontWeight: 700, cursor: 'pointer' }}>Cancel</button>
+              <button type="submit" disabled={reminderBusy}
+                style={{ flex: 1, padding: '12px 14px', borderRadius: 12, border: 0, background: '#083A85', color: '#fff', fontWeight: 700, cursor: reminderBusy ? 'wait' : 'pointer', opacity: reminderBusy ? 0.7 : 1 }}>
+                {reminderBusy ? 'Saving' : 'Notify me'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
       <ErrorPopup
         open={errorPopup.open}
         onClose={closeErrorPopup}
