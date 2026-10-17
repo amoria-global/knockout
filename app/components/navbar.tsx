@@ -1034,7 +1034,7 @@ const AmoriaKNavbar = () => {
           .nav-shell { padding-left: 12px !important; padding-right: 12px !important; }
           .nav-shell .nav-logo-text { font-size: 1.1rem !important; }
         }
-        .nav-mobile-cluster { display: flex; align-items: center; gap: 8px; flex: none; }
+        @media (max-width: 1023px) { .nav-mobile-cluster { display: flex; align-items: center; gap: 8px; flex: none; } }
         .nav-app-pill {
           display: inline-flex; align-items: center; gap: 6px; flex: none;
           height: 36px; padding: 0 14px; border: 0; border-radius: 9999px; cursor: pointer;
