@@ -469,12 +469,9 @@ const AmoriaKNavbar = () => {
         backgroundColor: isDarkHeroPage
           ? (isScrolled ? 'rgba(7, 8, 13, 0.78)' : 'transparent')
           : (isScrolled ? 'rgba(255, 255, 255, 0.85)' : '#DBDBDB'),
-        backdropFilter: isDarkHeroPage
-          ? (isScrolled ? 'blur(20px) saturate(160%)' : 'none')
-          : (isScrolled ? 'blur(16px)' : 'none'),
-        WebkitBackdropFilter: isDarkHeroPage
-          ? (isScrolled ? 'blur(20px) saturate(160%)' : 'none')
-          : (isScrolled ? 'blur(16px)' : 'none'),
+        // backdrop-filter lives on the glass layer below, not here: it makes the nav the
+        // containing block of its position:fixed descendants, so once the page scrolled the
+        // mobile menu was clamped to the 64px bar and could not be seen on any page.
         // Drop shadow + an inset bottom highlight (in place of a literal
         // border-bottom). The inset shadow renders via the compositor and
         // doesn't leave a fixed-pixel hairline that flashes during scroll
@@ -496,6 +493,21 @@ const AmoriaKNavbar = () => {
               : 'none'),
       }}
     >
+      <div
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          inset: 0,
+          zIndex: -1,
+          pointerEvents: 'none',
+          backdropFilter: isDarkHeroPage
+            ? (isScrolled ? 'blur(20px) saturate(160%)' : 'none')
+            : (isScrolled ? 'blur(16px)' : 'none'),
+          WebkitBackdropFilter: isDarkHeroPage
+            ? (isScrolled ? 'blur(20px) saturate(160%)' : 'none')
+            : (isScrolled ? 'blur(16px)' : 'none'),
+        }}
+      />
       {/* Live Animation Styles for Event Category Cards */}
       <style>{`
         @keyframes nav-live-dot-ping {
