@@ -170,18 +170,20 @@ const GET_APP_CSS = `
   display:flex;align-items:center;justify-content:center;color:#475569;background:rgba(8,58,133,.07);font-size:15px;transition:background .15s,color .15s}
 .ga-close:hover{background:rgba(8,58,133,.14);color:#083A85}
 .ga-close:focus-visible{outline:3px solid #F20C8F;outline-offset:2px}
-.ga-body{overflow-y:auto;padding:14px 20px calc(24px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:22px;background:radial-gradient(120% 40% at 0% 0%,rgba(15,79,182,.09),transparent 65%),radial-gradient(80% 30% at 100% 0%,rgba(242,12,143,.06),transparent 70%)}
-.ga-head{display:flex;align-items:center;gap:14px;padding-right:48px}
-.ga-logo{flex:none;width:60px;height:60px;padding:9px;border-radius:18px;background:#fff;border:1px solid rgba(8,58,133,.14);box-shadow:0 10px 28px rgba(8,58,133,.18),inset 0 -2px 0 rgba(8,58,133,.04);display:flex;align-items:center;justify-content:center}
+.ga-body{overflow-y:auto;padding:8px 16px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:14px;background:radial-gradient(120% 40% at 0% 0%,rgba(15,79,182,.09),transparent 65%),radial-gradient(80% 30% at 100% 0%,rgba(242,12,143,.06),transparent 70%)}
+.ga-head{display:flex;align-items:center;gap:12px;padding-right:50px}
+.ga-logo{flex:none;width:50px;height:50px;padding:8px;border-radius:15px;background:#fff;border:1px solid rgba(8,58,133,.14);box-shadow:0 8px 22px rgba(8,58,133,.16);display:flex;align-items:center;justify-content:center}
 .ga-logo img{width:100%;height:100%;object-fit:contain}
 .ga-head-text{min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:6px}
 .ga-badge{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;
   letter-spacing:.08em;text-transform:uppercase;color:#083A85;background:rgba(8,58,133,.09);border:1px solid rgba(8,58,133,.15)}
 .ga-badge .bi{color:#F20C8F;font-size:11px}
-.ga-title{font-size:22px;line-height:1.15;font-weight:900;letter-spacing:-.01em;margin:0;background:linear-gradient(90deg,#083A85,#0F4FB6 70%,#6D3FB5);-webkit-background-clip:text;background-clip:text;color:transparent}
-.ga-intro{font-size:15px;line-height:1.6;color:#475569;margin:0;max-width:46ch}
-.ga-action{padding:16px;border-radius:20px;border:1px solid rgba(8,58,133,.14);background:linear-gradient(145deg,rgba(255,255,255,.9),rgba(235,243,255,.85) 55%,rgba(255,240,248,.8));box-shadow:0 10px 30px -12px rgba(8,58,133,.28),inset 0 1px 0 #fff}
-.ga-meta{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px 10px;margin-bottom:12px}
+
+.ga-title{font-size:19px;line-height:1.15;font-weight:900;letter-spacing:-.01em;margin:0;background:linear-gradient(90deg,#083A85,#0F4FB6 70%,#6D3FB5);-webkit-background-clip:text;background-clip:text;color:transparent}
+.ga-intro{font-size:13.5px;line-height:1.5;color:#475569;margin:0;max-width:46ch}
+
+.ga-action{padding:12px;border-radius:20px;border:1px solid rgba(8,58,133,.14);background:linear-gradient(145deg,rgba(255,255,255,.9),rgba(235,243,255,.85) 55%,rgba(255,240,248,.8));box-shadow:0 10px 30px -12px rgba(8,58,133,.28),inset 0 1px 0 #fff}
+.ga-meta{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px 10px;margin-bottom:10px}
 .ga-meta--section{margin-bottom:10px}
 .ga-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:11.5px;font-weight:700;
   letter-spacing:.06em;text-transform:uppercase;color:#083A85;background:rgba(8,58,133,.09);border:1px solid rgba(8,58,133,.18);line-height:1.2}
@@ -195,12 +197,12 @@ const GET_APP_CSS = `
 .ga-qr{display:flex;flex-direction:column;align-items:center;gap:10px;flex:none}
 .ga-desk-links{display:flex;flex-direction:column;gap:10px;width:100%}
 .ga-section-label{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#64748b}
-.ga-grid{display:grid;grid-template-columns:1fr;gap:10px}
-.ga-card{position:relative;display:grid;grid-template-columns:44px 1fr;column-gap:14px;align-items:start;padding:14px;border-radius:16px;border:1px solid rgba(148,163,184,.4);background:#fff;transition:border-color .2s,box-shadow .2s,transform .2s}
+.ga-grid{display:grid;grid-template-columns:1fr;gap:8px}
+.ga-card{position:relative;display:grid;grid-template-columns:36px 1fr;column-gap:12px;align-items:start;padding:10px 12px;border-radius:14px;border:1px solid rgba(148,163,184,.4);background:#fff;transition:border-color .2s,box-shadow .2s,transform .2s}
 .ga-card:hover{border-color:rgba(8,58,133,.35);box-shadow:0 10px 24px -12px rgba(8,58,133,.3);transform:translateY(-2px)}
 .ga-card-main{min-width:0}
 .ga-card-row{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
-.ga-icon{width:44px;height:44px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:15px;flex:none}
+.ga-icon{width:36px;height:36px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:15px;flex:none}
 .ga-icon--navy{background:rgba(8,58,133,.1);color:#083A85}
 .ga-icon--pink{background:rgba(242,12,143,.1);color:#F20C8F}
 .ga-icon--blue{background:rgba(15,79,182,.1);color:#0F4FB6}
@@ -211,9 +213,10 @@ const GET_APP_CSS = `
 .ga-tag--blue{color:#1d4ed8;background:#eff6ff;border-color:rgba(191,219,254,.9)}
 .ga-live-dot{width:7px;height:7px;border-radius:50%;background:#dc2626;animation:ga-pulse 1.4s ease-in-out infinite}
 @keyframes ga-pulse{0%,100%{opacity:1}50%{opacity:.35}}
-.ga-card-title{font-size:15px;font-weight:800;line-height:1.25;color:#0f172a;margin:0}
-.ga-card-body{font-size:13.5px;line-height:1.5;color:#475569;margin:5px 0 0}
-.ga-trust{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px 14px;padding-top:16px;border-top:1px solid #e2e8f0;font-size:12px;color:#64748b}
+.ga-card-title{font-size:14px;font-weight:800;line-height:1.25;color:#0f172a;margin:0}
+.ga-card-body{font-size:12.5px;line-height:1.4;color:#475569;margin:2px 0 0}
+
+.ga-trust{display:none;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px 14px;padding-top:16px;border-top:1px solid #e2e8f0;font-size:12px;color:#64748b}
 .ga-trust-item{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;font-weight:600;color:#475569}
 .ga-trust-item .bi{color:#083A85;font-size:14px}
 @keyframes ga-fade{from{opacity:0}to{opacity:1}}
@@ -229,6 +232,11 @@ const GET_APP_CSS = `
   .ga-body{padding:26px 32px 32px;gap:22px}
   .ga-logo{width:64px;height:64px}
   .ga-title{font-size:28px}
+  .ga-trust{display:flex}
+  .ga-icon{width:44px;height:44px;border-radius:13px}
+  .ga-card-title{font-size:15px}
+  .ga-card-body{font-size:13.5px;margin-top:5px}
+  .ga-intro{font-size:15.5px}
   .ga-sheet{animation-name:ga-pop}
   .ga-intro{font-size:15.5px}
   .ga-action{padding:20px}
