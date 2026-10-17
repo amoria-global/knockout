@@ -27,17 +27,17 @@ afterEach(() => {
 });
 
 describe('GetAppModal', () => {
-  it('iPhone: the App Store is the main button, Google Play the alternative', () => {
+  it('iPhone: the App Store badge comes first, then Google Play', () => {
     const h = mount('ios');
-    expect(h.textContent).toContain('App Store');
     expect(h.textContent).toContain('Best for your iPhone');
-    expect(h.textContent).toContain('Also available on Google Play');
+    const labels = Array.from(h.querySelectorAll('a.sb-badge')).map((a) => a.getAttribute('aria-label'));
+    expect(labels).toEqual(['Download on the App Store', 'Get it on Google Play']);
   });
 
-  it('Android: Google Play is the main button', () => {
+  it('Android: the Google Play badge comes first, then the App Store', () => {
     const h = mount('android');
-    expect(h.textContent).toContain('Google Play');
-    expect(h.textContent).toContain('Also available on Apple App Store');
+    const labels = Array.from(h.querySelectorAll('a.sb-badge')).map((a) => a.getAttribute('aria-label'));
+    expect(labels).toEqual(['Get it on Google Play', 'Download on the App Store']);
   });
 
   it('desktop: a QR code and both store buttons', () => {
