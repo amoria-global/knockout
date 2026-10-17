@@ -1,10 +1,9 @@
 'use client';
 
 import React, { useEffect, useCallback } from 'react';
-import { FaApple, FaGooglePlay } from 'react-icons/fa6';
-import { APP_STORE_URL, PLAY_STORE_URL, GET_APP_PAGE_URL, type MobilePlatform } from '@/lib/qr/eventQr';
+import { GET_APP_PAGE_URL, type MobilePlatform } from '@/lib/qr/eventQr';
 import QrCodeSvg from './QrCodeSvg';
-import { StoreBadge } from './StoreBadges';
+import { StoreBadges } from './StoreBadges';
 
 interface GetAppModalProps {
   isOpen: boolean;
@@ -97,16 +96,7 @@ export default function GetAppModal({
                   </span>
                   <span className="ga-free">{isIos ? 'Free • App Store' : 'Free • Google Play'}</span>
                 </div>
-                <StoreBadge kind={isIos ? 'ios' : 'android'} size="lg" block />
-                <a
-                  href={isIos ? PLAY_STORE_URL : APP_STORE_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="ga-alt"
-                >
-                  {isIos ? <FaGooglePlay className="ga-alt-icon" /> : <FaApple className="ga-alt-icon" />}
-                  <span>{isIos ? 'Also available on Google Play' : 'Also available on Apple App Store'}</span>
-                </a>
+                <StoreBadges size="md" first={isIos ? 'ios' : 'android'} align="center" />
               </>
             ) : (
               <div className="ga-desk">
@@ -120,8 +110,7 @@ export default function GetAppModal({
                   <span className="ga-chip ga-chip--plain">
                     <span className="ga-dot" /> Or download directly
                   </span>
-                  <StoreBadge kind="ios" size="md" block />
-                  <StoreBadge kind="android" size="md" block />
+                  <StoreBadges size="md" />
                 </div>
               </div>
             )}
@@ -178,7 +167,7 @@ const GET_APP_CSS = `
 .ga-close{position:absolute;top:18px;right:14px;z-index:2;width:40px;height:40px;border-radius:50%;border:0;cursor:pointer;
   display:flex;align-items:center;justify-content:center;color:#475569;background:rgba(8,58,133,.07);font-size:15px;transition:background .15s,color .15s}
 .ga-close:hover{background:rgba(8,58,133,.14);color:#083A85}
-.ga-close:focus-visible,.ga-alt:focus-visible{outline:3px solid #F20C8F;outline-offset:2px}
+.ga-close:focus-visible{outline:3px solid #F20C8F;outline-offset:2px}
 .ga-body{overflow-y:auto;padding:14px 20px calc(24px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:20px}
 .ga-head{display:flex;align-items:center;gap:14px;padding-right:48px}
 .ga-logo{flex:none;width:56px;height:56px;padding:8px;border-radius:16px;background:#fff;border:1px solid rgba(8,58,133,.15);
@@ -203,9 +192,6 @@ const GET_APP_CSS = `
 .ga-dot{width:7px;height:7px;border-radius:50%;background:#F20C8F;flex:none}
 .ga-free{font-size:12.5px;font-weight:600;color:#083A85}
 
-.ga-alt{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:14px;font-size:13px;font-weight:600;color:#475569;text-decoration:none}
-.ga-alt:hover{color:#083A85}
-.ga-alt-icon{font-size:13px;color:#083A85}
 .ga-desk{display:flex;flex-direction:column;align-items:center;gap:20px}
 .ga-qr{display:flex;flex-direction:column;align-items:center;gap:10px;flex:none}
 .ga-desk-links{display:flex;flex-direction:column;gap:10px;width:100%}

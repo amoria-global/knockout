@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
-import { FaApple, FaGooglePlay } from 'react-icons/fa6';
 import {
   APP_STORE_URL,
   PLAY_STORE_URL,
@@ -11,6 +10,7 @@ import {
   type MobilePlatform,
 } from '@/lib/qr/eventQr';
 import QrCodeSvg from '../components/QrCodeSvg';
+import { StoreBadges } from '../components/StoreBadges';
 
 export default function GetAppPage(): React.JSX.Element {
   const [platform, setPlatform] = useState<MobilePlatform>(null);
@@ -268,24 +268,7 @@ export default function GetAppPage(): React.JSX.Element {
                       </div>
                     )}
 
-                    <a
-                      href={APP_STORE_URL}
-                      className="flex items-center justify-center gap-3.5 w-full text-white py-3.5 sm:py-4 px-6 rounded-xl font-bold transition-all duration-200 shadow-md hover:shadow-xl active:scale-[0.99] cursor-pointer"
-                      style={{
-                        background: 'linear-gradient(135deg, #083A85 0%, #0F4FB6 100%)',
-                        boxShadow: '0 6px 20px -2px rgba(8, 58, 133, 0.35)',
-                      }}
-                    >
-                      <FaApple className="text-2xl sm:text-3xl flex-shrink-0" />
-                      <div className="text-left">
-                        <div className="text-[10px] uppercase tracking-wider opacity-85 leading-none">
-                          Download on the
-                        </div>
-                        <div className="text-base sm:text-lg font-bold leading-tight">
-                          Apple App Store
-                        </div>
-                      </div>
-                    </a>
+                    <StoreBadges size="md" first="ios" align="center" />
 
                     <a
                       href="connekt://"
@@ -295,15 +278,7 @@ export default function GetAppPage(): React.JSX.Element {
                       <span>Already installed? Open Connekyt App</span>
                     </a>
 
-                    <div className="text-center pt-0.5">
-                      <a
-                        href={PLAY_STORE_URL}
-                        className="text-xs text-slate-500 hover:text-[#083A85] font-semibold inline-flex items-center gap-1.5 transition-colors"
-                      >
-                        <FaGooglePlay className="text-[11px] text-[#083A85]" />
-                        <span>Looking for Android? Open on Google Play</span>
-                      </a>
-                    </div>
+                    
                   </div>
                 )}
 
@@ -326,24 +301,7 @@ export default function GetAppPage(): React.JSX.Element {
                       </div>
                     )}
 
-                    <a
-                      href={PLAY_STORE_URL}
-                      className="flex items-center justify-center gap-3.5 w-full text-white py-3.5 sm:py-4 px-6 rounded-xl font-bold transition-all duration-200 shadow-md hover:shadow-xl active:scale-[0.99] cursor-pointer"
-                      style={{
-                        background: 'linear-gradient(135deg, #083A85 0%, #0F4FB6 100%)',
-                        boxShadow: '0 6px 20px -2px rgba(8, 58, 133, 0.35)',
-                      }}
-                    >
-                      <FaGooglePlay className="text-2xl flex-shrink-0" />
-                      <div className="text-left">
-                        <div className="text-[10px] uppercase tracking-wider opacity-85 leading-none">
-                          GET IT ON
-                        </div>
-                        <div className="text-base sm:text-lg font-bold leading-tight">
-                          Google Play Store
-                        </div>
-                      </div>
-                    </a>
+                    <StoreBadges size="md" first="android" align="center" />
 
                     <a
                       href="connekt://"
@@ -353,15 +311,7 @@ export default function GetAppPage(): React.JSX.Element {
                       <span>Already installed? Open Connekyt App</span>
                     </a>
 
-                    <div className="text-center pt-0.5">
-                      <a
-                        href={APP_STORE_URL}
-                        className="text-xs text-slate-500 hover:text-[#083A85] font-semibold inline-flex items-center gap-1.5 transition-colors"
-                      >
-                        <FaApple className="text-sm text-[#083A85]" />
-                        <span>Looking for iPhone? Open Apple App Store</span>
-                      </a>
-                    </div>
+                    
                   </div>
                 )}
 
@@ -385,41 +335,7 @@ export default function GetAppPage(): React.JSX.Element {
                           Install directly to your device
                         </div>
 
-                        <a
-                          href={APP_STORE_URL}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-3.5 w-full text-white py-2.5 px-4 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer"
-                          style={{
-                            background: 'linear-gradient(135deg, #083A85 0%, #0F4FB6 100%)',
-                          }}
-                        >
-                          <FaApple className="text-2xl flex-shrink-0" />
-                          <div className="text-left">
-                            <div className="text-[9px] uppercase tracking-wider opacity-85 leading-none">
-                              Download on the
-                            </div>
-                            <div className="text-sm font-bold leading-tight">Apple App Store</div>
-                          </div>
-                        </a>
-
-                        <a
-                          href={PLAY_STORE_URL}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-3.5 w-full text-white py-2.5 px-4 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer"
-                          style={{
-                            background: 'linear-gradient(135deg, #083A85 0%, #0F4FB6 100%)',
-                          }}
-                        >
-                          <FaGooglePlay className="text-lg flex-shrink-0" />
-                          <div className="text-left">
-                            <div className="text-[9px] uppercase tracking-wider opacity-85 leading-none">
-                              GET IT ON
-                            </div>
-                            <div className="text-sm font-bold leading-tight">Google Play</div>
-                          </div>
-                        </a>
+                        <StoreBadges size="md" />
                       </div>
                     </div>
 

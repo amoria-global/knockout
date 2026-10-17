@@ -32,6 +32,7 @@ export function StoreBadge({
   kicker,
   name,
   className = '',
+  anchorRef,
 }: {
   kind: 'ios' | 'android';
   size?: StoreBadgeSize;
@@ -42,6 +43,8 @@ export function StoreBadge({
   /** Override the store name (for a translated page). */
   name?: string;
   className?: string;
+  /** For a screen that moves focus to the main badge. */
+  anchorRef?: React.Ref<HTMLAnchorElement>;
 }) {
   const ios = kind === 'ios';
   const icon = size === 'lg' ? 28 : size === 'md' ? 24 : 20;
@@ -49,6 +52,7 @@ export function StoreBadge({
   const n = name ?? (ios ? 'App Store' : 'Google Play');
   return (
     <a
+      ref={anchorRef}
       href={ios ? APP_STORE_URL : PLAY_STORE_URL}
       target="_blank"
       rel="noopener noreferrer"
@@ -70,19 +74,24 @@ export function StoreBadges({
   size = 'md',
   direction = 'row',
   align = 'start',
+  first = 'ios',
   className = '',
 }: {
   size?: StoreBadgeSize;
   direction?: 'row' | 'column';
   align?: 'start' | 'center';
+  /** Which store comes first (the visitor's own platform). */
+  first?: 'ios' | 'android';
   className?: string;
 }) {
+  const order: ('ios' | 'android')[] = first === 'android' ? ['android', 'ios'] : ['ios', 'android'];
   return (
     <div
       className={`sb-group sb-${direction} sb-align-${align} ${className}`.trim()}
     >
-      <StoreBadge kind="ios" size={size} block={direction === 'column'} />
-      <StoreBadge kind="android" size={size} block={direction === 'column'} />
+      {order.map((k) => (
+        <StoreBadge key={k} kind={k} size={size} block={direction === 'column'} />
+      ))}
     </div>
   );
 }
