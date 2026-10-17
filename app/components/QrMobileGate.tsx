@@ -2,11 +2,10 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { StoreBadge } from './StoreBadges';
 import {
   QR_SOURCE_PARAM,
   QR_SOURCE_VALUE,
-  PLAY_STORE_URL,
-  APP_STORE_URL,
   appDeepLink,
   detectMobilePlatform,
   type MobilePlatform,
@@ -197,13 +196,9 @@ export default function QrMobileGate({
                 <p style={{ fontSize: 14, lineHeight: 1.5, color: '#475569', margin: '0 0 20px' }}>
                   This event is joined through the Connekyt app. Download it, then scan the QR code again to enter your details and continue.
                 </p>
-                <a
-                  href={platform === 'ios' ? APP_STORE_URL : PLAY_STORE_URL}
-                  ref={primaryRef as unknown as React.Ref<HTMLAnchorElement>}
-                  style={primaryStyle}
-                >
-                  {platform === 'ios' ? 'Download on the App Store' : 'Download on Google Play'}
-                </a>
+                <div style={{ marginBottom: 12 }}>
+                  <StoreBadge kind={platform === 'ios' ? 'ios' : 'android'} size="md" anchorRef={primaryRef as unknown as React.Ref<HTMLAnchorElement>} />
+                </div>
                 <button type="button" onClick={openApp} style={secondaryStyle}>
                   I have installed it, open the app
                 </button>
