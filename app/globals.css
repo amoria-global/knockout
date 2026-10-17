@@ -1,9 +1,10 @@
 @import url('https://fonts.googleapis.com/css2?family=Pragati+Narrow:wght@400;700&family=Alex+Brush&family=Kaushan+Script&display=swap');
 @import "tailwindcss";
 
+/* No margin or padding here. Tailwind v4's preflight already zeroes both inside a cascade
+   layer, and an unlayered `margin: 0; padding: 0` on `*` beat every p-*, m-*, mx-auto and
+   space-* utility on the site. */
 * {
-  margin: 0;
-  padding: 0;
   box-sizing: border-box;
   scrollbar-width: thin;
   scrollbar-color: rgba(8, 58, 133, 0.25) transparent;
