@@ -1487,30 +1487,13 @@ const AmoriaKNavbar = () => {
               <button
                 type="button"
                 onClick={() => setIsGetAppOpen(prev => !prev)}
-                data-getappbtn
-                className="flex items-center gap-1.5 font-semibold transition-all duration-200 cursor-pointer whitespace-nowrap flex-shrink-0"
-                style={{
-                  color: '#083A85',
-                  fontSize: '12.5px',
-                  padding: '5px 11px',
-                  borderRadius: '9999px',
-                  backgroundColor: 'rgba(8, 58, 133, 0.08)',
-                  border: '1px solid rgba(8, 58, 133, 0.16)',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = 'rgba(8, 58, 133, 0.14)';
-                  e.currentTarget.style.borderColor = 'rgba(8, 58, 133, 0.35)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'rgba(8, 58, 133, 0.08)';
-                  e.currentTarget.style.borderColor = 'rgba(8, 58, 133, 0.16)';
-                }}
+                data-mobile-getapp-pill
+                className="nav-app-pill"
+                aria-expanded={isGetAppOpen}
                 aria-label="Get the mobile app"
               >
-                <i className="bi bi-phone" style={{ fontSize: '13px' }} />
-                <span className="hidden xl:inline">{t('getApp')}</span>
-                <span className="hidden lg:inline xl:hidden">App</span>
-                <i className={`bi bi-chevron-down transition-transform duration-200 ${isGetAppOpen ? 'rotate-180' : ''}`} style={{ fontSize: '9.5px' }} />
+                <i className="bi bi-download" />
+                <span>App</span>
               </button>
 
               {isGetAppOpen && (
