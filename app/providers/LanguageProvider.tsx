@@ -26,15 +26,65 @@ const LANG_IDX: Record<Exclude<Locale, 'en'>, 0 | 1 | 2> = {
   rw: 2,
 };
 
-function translateText(raw: string, lang: Locale): string {
-  if (!raw || lang === 'en') return raw;
-  const trimmed = raw.trim();
-  if (!trimmed) return raw;
-  const match = domTranslations[trimmed];
-  if (!match) return raw;
+// Build normalized and reverse dictionaries for resilient multi-way translation
+const normalizedDict = new Map<string, [string, string, string]>();
+const reverseDict = new Map<string, string>(); // any FR, ES, RW string (lowercase trimmed) -> canonical EN
+
+for (const [enKey, trans] of Object.entries(domTranslations)) {
+  const normEn = enKey.trim().toLowerCase();
+  normalizedDict.set(normEn, trans);
+
+  // Map each translation back to canonical EN
+  for (const t of trans) {
+    if (t && typeof t === 'string') {
+      const normTrans = t.trim().toLowerCase();
+      if (normTrans && normTrans !== normEn) {
+        reverseDict.set(normTrans, enKey);
+      }
+    }
+  }
+}
+
+function translateText(raw: string, targetLang: Locale): string {
+  if (!raw) return raw;
   const leading = raw.match(/^\s*/)?.[0] ?? '';
   const trailing = raw.match(/\s*$/)?.[0] ?? '';
-  return `${leading}${match[LANG_IDX[lang]]}${trailing}`;
+  const trimmed = raw.trim();
+  if (!trimmed) return raw;
+
+  // Check for trailing punctuation
+  const punctMatch = trimmed.match(/^([^:!?.]+)([:!?.]+)$/);
+  const baseTrimmed = punctMatch ? punctMatch[1].trim() : trimmed;
+  const suffix = punctMatch ? punctMatch[2] : '';
+
+  // Find canonical English representation
+  let enCanonical: string | null = null;
+  if (domTranslations[baseTrimmed]) {
+    enCanonical = baseTrimmed;
+  } else {
+    const lower = baseTrimmed.toLowerCase();
+    for (const key of Object.keys(domTranslations)) {
+      if (key.toLowerCase() === lower) {
+        enCanonical = key;
+        break;
+      }
+    }
+    if (!enCanonical) {
+      enCanonical = reverseDict.get(lower) ?? null;
+    }
+  }
+
+  if (!enCanonical) return raw;
+
+  if (targetLang === 'en') {
+    return `${leading}${enCanonical}${suffix}${trailing}`;
+  }
+
+  const match = domTranslations[enCanonical] || normalizedDict.get(enCanonical.toLowerCase());
+  if (!match) return raw;
+
+  const translated = match[LANG_IDX[targetLang]];
+  return `${leading}${translated}${suffix}${trailing}`;
 }
 
 function readCookieLocale(): Locale | null {
@@ -95,6 +145,9 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     setLocaleState(newLocale);
     localStorage.setItem('locale', newLocale);
     writeCookieLocale(newLocale);
+    if (typeof document !== 'undefined') {
+      document.documentElement.lang = newLocale;
+    }
   };
 
   const origTextMapRef = useRef<WeakMap<Text, string>>(new WeakMap());
@@ -121,26 +174,16 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       if (orig === undefined) {
         const candidate = translateText(current, 'rw');
         if (candidate !== current) {
-          orig = current;
+          const enForm = translateText(current, 'en');
+          orig = enForm;
           origTextMap.set(node, orig);
           trackedNodes.add(node);
         } else {
           return;
         }
-      } else {
-        const expectedPrev = locale === 'en' ? orig : translateText(orig, locale);
-        if (current !== expectedPrev && current !== orig) {
-          const candidate = translateText(current, 'rw');
-          if (candidate !== current) {
-            orig = current;
-            origTextMap.set(node, orig);
-          } else {
-            return;
-          }
-        }
       }
 
-      const nextVal = locale === 'en' ? orig : translateText(orig, locale);
+      const nextVal = translateText(orig, locale);
       if (node.nodeValue !== nextVal) {
         node.nodeValue = nextVal;
       }
@@ -153,13 +196,13 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
         let orig = origPlaceholderMap.get(el);
         if (orig === undefined) {
           if (translateText(ph, 'rw') !== ph) {
-            orig = ph;
+            orig = translateText(ph, 'en');
             origPlaceholderMap.set(el, orig);
             trackedEls.add(el);
           }
         }
         if (orig !== undefined) {
-          const nextPh = locale === 'en' ? orig : translateText(orig, locale);
+          const nextPh = translateText(orig, locale);
           if (el.getAttribute('placeholder') !== nextPh) {
             el.setAttribute('placeholder', nextPh);
           }
@@ -180,6 +223,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       }
     };
 
+    // First re-translate all previously tracked nodes immediately
     trackedNodes.forEach((node) => {
       if (!node.isConnected) {
         trackedNodes.delete(node);
@@ -187,7 +231,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       }
       const orig = origTextMap.get(node);
       if (orig) {
-        const nextVal = locale === 'en' ? orig : translateText(orig, locale);
+        const nextVal = translateText(orig, locale);
         if (node.nodeValue !== nextVal) node.nodeValue = nextVal;
       }
     });
@@ -199,7 +243,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       }
       const orig = origPlaceholderMap.get(el);
       if (orig) {
-        const nextPh = locale === 'en' ? orig : translateText(orig, locale);
+        const nextPh = translateText(orig, locale);
         if (el.getAttribute('placeholder') !== nextPh) el.setAttribute('placeholder', nextPh);
       }
     });
@@ -239,7 +283,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
   return (
     <LanguageContext.Provider value={{ locale, setLocale }}>
-      <IntlProvider messages={currentMessages} locale={locale}>
+      <IntlProvider key={locale} messages={currentMessages} locale={locale}>
         {children}
       </IntlProvider>
     </LanguageContext.Provider>
