@@ -1,0 +1,1752 @@
+{
+  "Photographers": [
+    "Professionnels",
+    "Profesionales",
+    "b'Abanyamwuga"
+  ],
+  "Events": [
+    "Événements",
+    "Eventos",
+    "Ibirori"
+  ],
+  "About": [
+    "À Propos",
+    "Acerca de",
+    "Ibyerekeye"
+  ],
+  "Log In": [
+    "Se connecter",
+    "Iniciar sesión",
+    "Injira"
+  ],
+  "Sign Up": [
+    "S'inscrire",
+    "Registrarse",
+    "Iyandikishe"
+  ],
+  "Get App": [
+    "Télécharger l'app",
+    "Obtener App",
+    "Shaka Porogaramu"
+  ],
+  "Get Connekyt App": [
+    "Téléchargez l'application Connekyt",
+    "Descarga Connekyt App",
+    "Shaka Porogaramu ya Connekyt"
+  ],
+  "Instant photo finding, live streams & lock screen updates on your phone.": [
+    "Reconnaissance de photos instantanée, diffusions en direct et alertes sur votre téléphone.",
+    "Reconocimiento de fotos al instante, eventos en vivo y alertas en tu teléfono.",
+    "Kubona amafoto yawe ako kanya, imyidagaduro imbonankubone n'amakuru kuri telefoni yawe."
+  ],
+  "Download on the App Store": [
+    "Télécharger dans l'App Store",
+    "Consíguelo en el App Store",
+    "Yikure kuri App Store"
+  ],
+  "Get it on Google Play": [
+    "DISPONIBLE SUR Google Play",
+    "DISPONIBLE EN Google Play",
+    "Yikure kuri Google Play"
+  ],
+  "Language": [
+    "Langue",
+    "Idioma",
+    "Ururimi"
+  ],
+  "Location": [
+    "Lieu",
+    "Ubicación",
+    "Ahantu"
+  ],
+  "Detecting location...": [
+    "Détection de la localisation...",
+    "Detectando ubicación...",
+    "Gushaka aho uherereye..."
+  ],
+  "Select Country": [
+    "Sélectionner le Pays",
+    "Seleccionar País",
+    "Hitamo Igihugu"
+  ],
+  "Select District": [
+    "Sélectionner le District",
+    "Seleccionar Distrito",
+    "Hitamo Akarere"
+  ],
+  "All Districts": [
+    "Tous les Districts",
+    "Todos los Distritos",
+    "Uturere Twose"
+  ],
+  "Change Location": [
+    "Changer de Localisation",
+    "Cambiar Ubicación",
+    "Hindura Ahantu"
+  ],
+  "Search location...": [
+    "Rechercher un lieu...",
+    "Buscar ubicación...",
+    "Shakisha ahantu..."
+  ],
+  "No results found": [
+    "Aucun résultat trouvé",
+    "No se encontraron resultados",
+    "Nta bisubizo byabonetse"
+  ],
+  "For Wedding": [
+    "Pour Mariage",
+    "Para Bodas",
+    "Ubukwe"
+  ],
+  "For Portrait": [
+    "Pour Portrait",
+    "Para Retratos",
+    "Amafoto y'umuntu (Portrait)"
+  ],
+  "For Event": [
+    "Pour Événement",
+    "Para Eventos",
+    "Ibirori"
+  ],
+  "For Commercial": [
+    "Pour Commercial",
+    "Para Comercial",
+    "Ubucuruzi"
+  ],
+  "For Fashion": [
+    "Pour Mode",
+    "Para Moda",
+    "Imideri"
+  ],
+  "For Product": [
+    "Pour Produit",
+    "Para Productos",
+    "Ibicuruzwa"
+  ],
+  "Browse Photographers": [
+    "Parcourir les Photographes",
+    "Explorar Fotógrafos",
+    "Shakisha Abafotora"
+  ],
+  "Find the perfect photographer for your special moments": [
+    "Trouvez le photographe parfait pour vos moments spéciaux",
+    "Encuentra el fotógrafo perfecto para tus momentos especiales",
+    "Shaka umufotozi ukwiye ibihe byawe by'ingenzi"
+  ],
+  "Sports": [
+    "Sports",
+    "Deportes",
+    "Imikino"
+  ],
+  "Wedding": [
+    "Mariage",
+    "Boda",
+    "Ubukwe"
+  ],
+  "Academic": [
+    "Académique",
+    "Académico",
+    "Amashuri"
+  ],
+  "Gathering": [
+    "Rassemblement",
+    "Reunión",
+    "Ihura ry'abantu"
+  ],
+  "Concert": [
+    "Concert",
+    "Concierto",
+    "Igitaramo"
+  ],
+  "Fashion": [
+    "Mode",
+    "Moda",
+    "Imideri"
+  ],
+  "Religious": [
+    "Religieux",
+    "Religioso",
+    "Iyobokamana"
+  ],
+  "Cultural": [
+    "Culturel",
+    "Cultural",
+    "Umuco"
+  ],
+  "Corporate": [
+    "Entreprise",
+    "Corporativo",
+    "Ibigo n'Ubucuruzi"
+  ],
+  "Conference": [
+    "Conférence",
+    "Conferencia",
+    "Inama"
+  ],
+  "Entertainment": [
+    "Divertissement",
+    "Entretenimiento",
+    "Imyidagaduro"
+  ],
+  "Birthday": [
+    "Anniversaire",
+    "Cumpleaños",
+    "Isabukuru y'amavuko"
+  ],
+  "Baby Shower": [
+    "Baby Shower",
+    "Baby Shower",
+    "Baby Shower"
+  ],
+  "Graduation": [
+    "Remise de Diplôme",
+    "Graduación",
+    "Kurangiza amashuri"
+  ],
+  "Anniversary": [
+    "Anniversaire de Mariage",
+    "Aniversario",
+    "Isabukuru"
+  ],
+  "Other": [
+    "Autre",
+    "Otro",
+    "Ibindi"
+  ],
+  "Browse Events": [
+    "Parcourir les Événements",
+    "Explorar Eventos",
+    "Shakisha Ibirori"
+  ],
+  "Discover amazing events happening near you": [
+    "Découvrez des événements incroyables près de chez vous",
+    "Descubre eventos increíbles cerca de ti",
+    "Vumbura ibirori bidasanzwe bibera hafi yawe"
+  ],
+  "@AmoriaConnekyt": [
+    "@AmoriaConnekyt",
+    "@AmoriaConnekyt",
+    "@AmoriaConnekyt"
+  ],
+  "Connekyt": [
+    "Connectez-vous",
+    "Conéctate",
+    "Connekyt"
+  ],
+  "With Professional": [
+    "Avec des Photographes",
+    "Con Fotógrafos",
+    "N'Abafotora"
+  ],
+  "Find A Photographer": [
+    "Trouver un Photographe",
+    "Encontrar un Fotógrafo",
+    "Shaka Umufotozi"
+  ],
+  "Join As A Photographer": [
+    "Rejoindre en tant que Photographe",
+    "Unirse como Fotógrafo",
+    "Injira nk'Umufotozi"
+  ],
+  "Oooh! Wow! 😍": [
+    "Ooh! Wow! 😍",
+    "¡Ooh! ¡Wow! 😍",
+    "Yego we! Byiza cyane! 😍"
+  ],
+  "Smile Please 🤩": [
+    "Souriez S'il Vous Plaît 🤩",
+    "Sonríe Por Favor 🤩",
+    "Sekamo gato 🤩"
+  ],
+  "How it works": [
+    "Comment ça marche",
+    "Cómo funciona",
+    "Uko bikora"
+  ],
+  "Get Started": [
+    "Commencer",
+    "Comenzar",
+    "Tangira Nonaha"
+  ],
+  "Describe your event and details. Get reviewed and recognized globally. Capture moments. Let every one come to you": [
+    "Décrivez votre événement et ses détails. Soyez évalué et reconnu mondialement. Capturez des moments. Laissez tout le monde venir à vous",
+    "Describe tu evento y detalles. Sé revisado y reconocido globalmente. Captura momentos. Deja que todos vengan a ti",
+    "Sobanura ibirori byawe n'amakuru arambuye. Menyekana hose ku isi. Fata ibihe by'ingenzi. Reka abantu bose bakugane"
+  ],
+  "Photography": [
+    "Photographie",
+    "Fotografía",
+    "Gufotora"
+  ],
+  "Connect with photographers, capture memories and their visual narratives in protected digital vaults": [
+    "Connectez-vous avec des photographes, capturez des souvenirs et leurs récits visuels dans des coffres numériques protégés",
+    "Conéctate con fotógrafos, captura recuerdos y sus narrativas visuales en bóvedas digitales protegidas",
+    "Hura n'abafotora, fata urwibutso kandi ubike inkuru z'amashusho mu bubiko bw'ikoranabuhanga burinzwe"
+  ],
+  "Go Live": [
+    "En Direct",
+    "En Vivo",
+    "Tangiza Imbonankubone"
+  ],
+  "Live stream your event, get connected to far attendance, share moments and memories": [
+    "Diffusez votre événement en direct, connectez-vous à une audience éloignée, partagez des moments et des souvenirs",
+    "Transmite tu evento en vivo, conéctate con audiencias lejanas, comparte momentos y recuerdos",
+    "Erekana ibirori byawe imbonankubone, huza n'abari kure, musangire ibihe byiza n'urwibutso"
+  ],
+  "Photographers & Videographers": [
+    "Photographes & Vidéastes",
+    "Fotógrafos y Videógrafos",
+    "Abafotora n'Abafata Amashusho"
+  ],
+  "Phone": [
+    "Téléphone",
+    "Teléfono",
+    "Telefoni"
+  ],
+  "Tablet": [
+    "Tablette",
+    "Tableta",
+    "Tabuleti"
+  ],
+  "Laptop": [
+    "Ordinateur",
+    "Portátil",
+    "Mudasobwa"
+  ],
+  "Concerts": [
+    "Concerts",
+    "Conciertos",
+    "Ibitaramo"
+  ],
+  "Weddings": [
+    "Mariages",
+    "Bodas",
+    "Ubukwe"
+  ],
+  "Wishings.": [
+    "Vœux.",
+    "Deseos.",
+    "Intashyo."
+  ],
+  "Birthdays!": [
+    "Anniversaires!",
+    "¡Cumpleaños!",
+    "Isabukuru!"
+  ],
+  "Love.": [
+    "Amour.",
+    "Amor.",
+    "Urukundo."
+  ],
+  "Weddings!": [
+    "Mariages!",
+    "¡Bodas!",
+    "Ubukwe!"
+  ],
+  "Vybes.": [
+    "Vibes.",
+    "Vibras.",
+    "Ibyishimo."
+  ],
+  "Concerts!": [
+    "Concerts!",
+    "¡Conciertos!",
+    "Ibitaramo!"
+  ],
+  "Why Amoria Connekyt Only?": [
+    "Pourquoi Uniquement Amoria Connekyt?",
+    "¿Por Qué Solo Amoria Connekyt?",
+    "Kuki Ari Amoria Connekyt Gusa?"
+  ],
+  "Rated Photographers": [
+    "Photographes Évalués",
+    "Fotógrafos Calificados",
+    "Abafotora Bizewe"
+  ],
+  "Work with trusted photographers reviewed by the community and backed by platform verification": [
+    "Travaillez avec des photographes de confiance évalués par la communauté et soutenus par la vérification de la plateforme",
+    "Trabaja con fotógrafos de confianza revisados por la comunidad y respaldados por la verificación de la plataforma",
+    "Korana n'abafotora bizewe bahawe amanota n'abakiriya kandi bagenzuwe n'urubuga"
+  ],
+  "Live Streaming": [
+    "Diffusion en Direct",
+    "Transmisión en Vivo",
+    "Kwerekanwa Imbonankubone"
+  ],
+  "Go beyond memories, host and share your event live with real-time reactions and over dual-event split-screen streaming!": [
+    "Allez au-delà des souvenirs, organisez et partagez votre événement en direct avec des réactions en temps réel et une diffusion en écran partagé double événement!",
+    "Ve más allá de los recuerdos, organiza y comparte tu evento en vivo con reacciones en tiempo real y transmisión en pantalla dividida de eventos duales",
+    "Renga urwibutso rusanzwe, tegura kandi usangize ibirori byawe imbonankubone hamwe n'ibitekerezo by'ako kanya!"
+  ],
+  "Secure Payments": [
+    "Paiements Sécurisés",
+    "Pagos Seguros",
+    "Kwishyura mu Mutekano"
+  ],
+  "Full Event Gallery": [
+    "Galerie d'Événement Complète",
+    "Galería Completa del Evento",
+    "Ububiko Bwuzuye bw'Ibirori"
+  ],
+  "Receive a beautifully curated gallery from your hired photographer and relive the memories anytime": [
+    "Recevez une galerie magnifiquement organisée de votre photographe engagé et revivez les souvenirs à tout moment",
+    "Recibe una galería bellamente curada de tu fotógrafo contratado y revive los recuerdos en cualquier momento",
+    "Akira ububiko bw'amafoto atunganyije neza uturutse ku mufotozi wawe kandi wongere ube muri ibyo bihe igihe cyose"
+  ],
+  "Connecting Photographers & Videographers with Clients Worldwide": [
+    "Connecter Photographes & Vidéastes avec des Clients dans le Monde Entier",
+    "Conectando Fotógrafos y Videógrafos con Clientes en Todo el Mundo",
+    "Guhuza Abafotora n'Abafata Amashusho n'Abakiriya ku Isi Hose"
+  ],
+  "Connect Now": [
+    "Se Connecter Maintenant",
+    "Conectar Ahora",
+    "Ihuze Nonaha"
+  ],
+  "Find Events": [
+    "Trouver des Événements",
+    "Encontrar Eventos",
+    "Shaka Ibirori"
+  ],
+  "Enter Email Address": [
+    "Entrez l'Adresse Email",
+    "Ingrese Dirección de Email",
+    "Andika Imeyili Yawe"
+  ],
+  "SUBSCRIBE": [
+    "S'ABONNER",
+    "SUSCRIBIRSE",
+    "IYANDIKISHE"
+  ],
+  "Connecting moments, creating memories. Your trusted platform for professional event photography and live streaming.": [
+    "Connecter des moments, créer des souvenirs. Votre plateforme de confiance pour la photographie d'événements professionnels et la diffusion en direct.",
+    "Conectando momentos, creando recuerdos. Tu plataforma de confianza para fotografía de eventos profesional y transmisión en vivo.",
+    "Guhuza ibihe, kurema urwibutso. Urubuga rwawe rwizewe rwo gufotora ibirori by'umwuga no kwerekana imbonankubone."
+  ],
+  "Get the App": [
+    "Téléchargez l'application",
+    "Descarga la App",
+    "Shaka Porogaramu"
+  ],
+  "Experience instant face-matching, live events and real-time updates on your phone.": [
+    "Reconnaissance de photos instantanée, événements en direct et notifications en temps réel.",
+    "Reconocimiento de fotos al instante, eventos en vivo y notificaciones en tiempo real.",
+    "Gerageza kubona amafoto yawe ukoresheje isura, ibirori by'imbonankubone n'amakuru y'ako kanya kuri telefoni yawe."
+  ],
+  "App Store": [
+    "App Store",
+    "App Store",
+    "App Store"
+  ],
+  "Google Play": [
+    "Google Play",
+    "Google Play",
+    "Google Play"
+  ],
+  "Download on the": [
+    "Télécharger dans l'",
+    "Consíguelo en el",
+    "Yikure kuri"
+  ],
+  "GET IT ON": [
+    "DISPONIBLE SUR",
+    "DISPONIBLE EN",
+    "YIKURE KURI"
+  ],
+  "Follow us on:": [
+    "Suivez-nous sur:",
+    "Síguenos en:",
+    "Dukurikire kuri:"
+  ],
+  "For Clients": [
+    "Pour les Clients",
+    "Para Clientes",
+    "Ku Bakiriya"
+  ],
+  "For Photographers": [
+    "Pour les Photographes",
+    "Para Fotógrafos",
+    "Ku Bafotora"
+  ],
+  "Company": [
+    "Entreprise",
+    "Empresa",
+    "Ikigo"
+  ],
+  "Support": [
+    "Assistance",
+    "Soporte",
+    "Ubufasha"
+  ],
+  "How it Works": [
+    "Comment ça Marche",
+    "Cómo Funciona",
+    "Uko Bikora"
+  ],
+  "Photographer Guide": [
+    "Guide du Photographe",
+    "Guía del Fotógrafo",
+    "Amabwiriza ya Gafotozi"
+  ],
+  "Portfolio Tips": [
+    "Conseils de Portfolio",
+    "Consejos de Portafolio",
+    "Inama za Portfolio"
+  ],
+  "About Us": [
+    "À Propos de Nous",
+    "Acerca de Nosotros",
+    "Ibyerekeye Twebwe"
+  ],
+  "Contact": [
+    "Contact",
+    "Contacto",
+    "Twandikire"
+  ],
+  "Blog": [
+    "Blog",
+    "Blog",
+    "Inkuru (Blog)"
+  ],
+  "Help Center": [
+    "Centre d'Aide",
+    "Centro de Ayuda",
+    "Ikigo cy'Ubufasha"
+  ],
+  "Privacy Policy": [
+    "Politique de Confidentialité",
+    "Política de Privacidad",
+    "Politiki y'Ibanga"
+  ],
+  "Terms of Service": [
+    "Conditions d'Utilisation",
+    "Términos de Servicio",
+    "Amategeko ya Serivisi"
+  ],
+  "Trust & Safety": [
+    "Confiance & Sécurité",
+    "Confianza y Seguridad",
+    "Icyizere n'Umutekano"
+  ],
+  "Donations": [
+    "Dons",
+    "Donaciones",
+    "Gutanga Inkunga"
+  ],
+  "Delete Your Account": [
+    "Supprimer votre compte",
+    "Eliminar tu cuenta",
+    "Siba Konti Yawe"
+  ],
+  "Email": [
+    "Email",
+    "Email",
+    "Imeyili"
+  ],
+  "Password": [
+    "Mot de passe",
+    "Contraseña",
+    "Ijambo ry'ibanga"
+  ],
+  "Confirm Password": [
+    "Confirmer le Mot de passe",
+    "Confirmar Contraseña",
+    "Emeza Ijambo ry'ibanga"
+  ],
+  "Full Name": [
+    "Nom Complet",
+    "Nombre Completo",
+    "Amazina Yombi"
+  ],
+  "Phone Number": [
+    "Numéro de Téléphone",
+    "Número de Teléfono",
+    "Nimero ya Telefoni"
+  ],
+  "Login": [
+    "Se Connecter",
+    "Iniciar Sesión",
+    "Injira"
+  ],
+  "Forgot Password": [
+    "Mot de passe Oublié",
+    "Olvidé mi Contraseña",
+    "Wibagiwe Ijambo ry'ibanga?"
+  ],
+  "Reset Password": [
+    "Réinitialiser le Mot de passe",
+    "Restablecer Contraseña",
+    "Subiramo Ijambo ry'ibanga"
+  ],
+  "Don't have an account?": [
+    "Vous n'avez pas de compte?",
+    "¿No tienes una cuenta?",
+    "Nta konti ufite?"
+  ],
+  "Already have an account?": [
+    "Vous avez déjà un compte?",
+    "¿Ya tienes una cuenta?",
+    "Usanzwe ufite konti?"
+  ],
+  "How do you want to use Connekyt?": [
+    "Comment souhaitez-vous utiliser Connekyt?",
+    "¿Cómo quieres usar Connekyt?",
+    "Ushaka gukoresha Connekyt ute?"
+  ],
+  "Select the option that best describes you": [
+    "Sélectionnez l'option qui vous décrit le mieux",
+    "Selecciona la opción que mejor te describa",
+    "Hitamo icyiciro kikuranga neza"
+  ],
+  "I'm a Photographer looking for a job": [
+    "Je suis un Photographe à la recherche d'un emploi",
+    "Soy un Fotógrafo buscando trabajo",
+    "Ndi Umufotozi ushaka akazi"
+  ],
+  "Showcase your portfolio, find gigs, and grow your photography business": [
+    "Présentez votre portfolio, trouvez des missions et développez votre activité de photographe",
+    "Muestra tu portafolio, encuentra trabajos y haz crecer tu negocio de fotografía",
+    "Erekana ibikorwa byawe, ubona akazi kandi wagure ubucuruzi bwawe bwo gufotora"
+  ],
+  "I'm a Client hiring for an event": [
+    "Je suis un Client qui embauche pour un événement",
+    "Soy un Cliente contratando para un evento",
+    "Ndi Umukiriya ushaka gufotora ibirori"
+  ],
+  "Find and hire professional photographers for your events": [
+    "Trouvez et engagez des photographes professionnels pour vos événements",
+    "Encuentra y contrata fotógrafos profesionales para tus eventos",
+    "Shaka kandi ukodeshe abafotozi b'abanyamwuga mu birori byawe"
+  ],
+  "I'm an Event Coordinator": [
+    "Je suis un Coordinateur d'Événements",
+    "Soy un Coordinador de Eventos",
+    "Ndi Umuhuzabikorwa w'Ibirori"
+  ],
+  "Create commercial live stream events and manage live stream ticketing": [
+    "Créez des événements de diffusion en direct commerciaux et gérez la billetterie en streaming",
+    "Crea eventos de transmisión en vivo comerciales y gestiona la venta de entradas en streaming",
+    "Tegura ibirori by'imbonankubone kandi ucunge amatike yo kubireba"
+  ],
+  "Continue": [
+    "Continuer",
+    "Continuar",
+    "Komeza"
+  ],
+  "Log In to your existing account": [
+    "Connectez-vous à votre compte existant",
+    "Inicia sesión en tu cuenta existente",
+    "Injira muri konti yawe isanzwe"
+  ],
+  "Connect with photographer or videographer": [
+    "Connectez-vous avec un photographe ou vidéaste",
+    "Conéctate con fotógrafo o videógrafo",
+    "Hura n'umufotozi cyangwa umufata-mashusho"
+  ],
+  "Or continue with": [
+    "Ou continuer avec",
+    "O continuar con",
+    "Cyangwa ukomeze na"
+  ],
+  "Your Email": [
+    "Votre Email",
+    "Tu Email",
+    "Imeyili Yawe"
+  ],
+  "example@gmail.com": [
+    "exemple@gmail.com",
+    "ejemplo@gmail.com",
+    "urugero@gmail.com"
+  ],
+  "Enter Email Address associated with your account": [
+    "Entrez l'adresse email associée à votre compte",
+    "Ingresa la dirección de email asociada con tu cuenta",
+    "Andika imeyili ihuye na konti yawe"
+  ],
+  "Enter your Password": [
+    "Entrez votre Mot de passe",
+    "Ingresa tu Contraseña",
+    "Andika ijambo ry'ibanga ryawe"
+  ],
+  "Log in": [
+    "Se connecter",
+    "Iniciar sesión",
+    "Injira"
+  ],
+  "Forgot your password?": [
+    "Mot de passe oublié?",
+    "¿Olvidaste tu contraseña?",
+    "Wibagiwe ijambo ry'ibanga?"
+  ],
+  "Not registered yet?": [
+    "Pas encore inscrit?",
+    "¿Aún no estás registrado?",
+    "Nturiyandikisha?"
+  ],
+  "Create an account": [
+    "Créer un compte",
+    "Crear una cuenta",
+    "Fungura konti"
+  ],
+  "Create your first account": [
+    "Créez votre premier compte",
+    "Crea tu primera cuenta",
+    "Fungura konti yawe ya mbere"
+  ],
+  "Or sign up with": [
+    "Ou s'inscrire avec",
+    "O registrarse con",
+    "Cyangwa wiyandikishe na"
+  ],
+  "First name": [
+    "Prénom",
+    "Nombre",
+    "Izina rya mbere"
+  ],
+  "Enter your First Name": [
+    "Entrez votre Prénom",
+    "Ingresa tu Nombre",
+    "Andika izina ryawe rya mbere"
+  ],
+  "Last name": [
+    "Nom de famille",
+    "Apellido",
+    "Izina ry'umuryango"
+  ],
+  "Enter your Last Name": [
+    "Entrez votre Nom de famille",
+    "Ingresa tu Apellido",
+    "Andika izina ryawe ry'umuryango"
+  ],
+  "Confirm your Password": [
+    "Confirmez votre Mot de passe",
+    "Confirma tu Contraseña",
+    "Subiramo ijambo ry'ibanga ryawe"
+  ],
+  "Must contain at least 8 characters, 1 number, 1 letter, and 1 special character (@!#$%^&*=+)": [
+    "Doit contenir au moins 8 caractères, 1 chiffre, 1 lettre et 1 caractère spécial (@!#$%^&*=+)",
+    "Debe contener al menos 8 caracteres, 1 número, 1 letra y 1 carácter especial (@!#$%^&*=+)",
+    "Rigomba kugira nibura inyuguti 8, umubare 1, inyuguti nkuru n'into, n'ikimenyetso cyihariye (@!#$%^&*=+)."
+  ],
+  "By creating an account, you consent that you have read and agree to our": [
+    "En créant un compte, vous consentez à avoir lu et accepté nos",
+    "Al crear una cuenta, aceptas que has leído y estás de acuerdo con nuestros",
+    "Mu gufungura konti, wemera ko wasomye kandi ukemera"
+  ],
+  "and": [
+    "et",
+    "y",
+    "na"
+  ],
+  "Create account": [
+    "Créer un compte",
+    "Crear cuenta",
+    "Fungura konti"
+  ],
+  "Launch your event and let it dazzle with guests from afar!": [
+    "Lancez votre événement et laissez-le éblouir avec des invités de loin!",
+    "¡Lanza tu evento y deja que deslumbre con invitados desde lejos!",
+    "Tangiza ibirori byawe kandi ushimishe abatumirwa bari kure!"
+  ],
+  "First name is required": [
+    "Le prénom est requis",
+    "El nombre es requerido",
+    "Izina rya mbere rirakenewe"
+  ],
+  "Last name is required": [
+    "Le nom de famille est requis",
+    "El apellido es requerido",
+    "Izina ry'umuryango rirakenewe"
+  ],
+  "Phone number is required": [
+    "Le numéro de téléphone est requis",
+    "El número de teléfono es requerido",
+    "Nimero ya telefoni irakenewe"
+  ],
+  "Email is required": [
+    "L'email est requis",
+    "El email es requerido",
+    "Imeyili irakenewe"
+  ],
+  "Password must contain at least 8 characters, 1 number, 1 letter, and 1 special character (@!#$%^&*=+)": [
+    "Le mot de passe doit contenir au moins 8 caractères, 1 chiffre, 1 lettre et 1 caractère spécial (@!#$%^&*=+)",
+    "La contraseña debe contener al menos 8 caracteres, 1 número, 1 letra y 1 carácter especial (@!#$%^&*=+)",
+    "Ijambo ry'ibanga rigomba kugira nibura inyuguti 8, umubare 1, inyuguti nkuru n'into, n'ikimenyetso cyihariye (@!#$%^&*=+)."
+  ],
+  "Passwords do not match": [
+    "Les mots de passe ne correspondent pas",
+    "Las contraseñas no coinciden",
+    "Amagambo y'ibanga ntabwo ahuye"
+  ],
+  "Discover Amazing Events Near You": [
+    "Découvrez des Événements Incroyables Près de Chez Vous",
+    "Descubre Eventos Increíbles Cerca de Ti",
+    "Vumbura Ibirori Bidasanzwe Hafi Yawe"
+  ],
+  "Browse through upcoming events, concerts, weddings, and gatherings": [
+    "Parcourez les événements à venir, concerts, mariages et rassemblements",
+    "Explora eventos próximos, conciertos, bodas y reuniones",
+    "Reba ibirori biri imbere, ibitaramo, ubukwe, n'inama"
+  ],
+  "Search events by name, category, or location...": [
+    "Rechercher des événements par nom, catégorie ou lieu...",
+    "Buscar eventos por nombre, categoría o ubicación...",
+    "Shakisha ibirori ku izina, icyiciro, cyangwa ahantu..."
+  ],
+  "All Categories": [
+    "Toutes les Catégories",
+    "Todas las Categorías",
+    "Ibyiciro Byose"
+  ],
+  "All Locations": [
+    "Tous les Lieux",
+    "Todas las Ubicaciones",
+    "Ahantu Hose"
+  ],
+  "All Dates": [
+    "Toutes les Dates",
+    "Todas las Fechas",
+    "Amatariki Yose"
+  ],
+  "All Statuses": [
+    "Tous les Statuts",
+    "Todos los Estados",
+    "Imiterere Yose"
+  ],
+  "UPCOMING": [
+    "À VENIR",
+    "PRÓXIMO",
+    "BITEGANYIJWE"
+  ],
+  "LIVE": [
+    "EN DIRECT",
+    "EN VIVO",
+    "IMBONANKUBONE"
+  ],
+  "ENDED": [
+    "TERMINÉ",
+    "FINALIZADO",
+    "BYARANGIYE"
+  ],
+  "COMPLETED": [
+    "TERMINÉ",
+    "FINALIZADO",
+    "BYARANGIYE"
+  ],
+  "CANCELLED": [
+    "ANNULÉ",
+    "CANCELADO",
+    "BYAHAGARITSWE"
+  ],
+  "Live Now": [
+    "En Direct Maintenant",
+    "En Vivo Ahora",
+    "Imbonankubone Nonaha"
+  ],
+  "Trending Events": [
+    "Événements Tendance",
+    "Eventos Populares",
+    "Ibirori Bikunzwe"
+  ],
+  "View Details": [
+    "Voir les Détails",
+    "Ver Detalles",
+    "Reba Birambuye"
+  ],
+  "Join Event": [
+    "Rejoindre l'Événement",
+    "Unirse al Evento",
+    "Injira mu Birori"
+  ],
+  "No events found": [
+    "Aucun événement trouvé",
+    "No se encontraron eventos",
+    "Nta birori byabonetse"
+  ],
+  "Page": [
+    "Page",
+    "Página",
+    "Urupapuro"
+  ],
+  "of": [
+    "sur",
+    "de",
+    "kuri"
+  ],
+  "Previous": [
+    "Précédent",
+    "Anterior",
+    "Ibanziriza"
+  ],
+  "Next": [
+    "Suivant",
+    "Siguiente",
+    "Ikurikira"
+  ],
+  "Join Live Event": [
+    "Rejoindre un Événement en Direct",
+    "Unirse a Evento en Vivo",
+    "Injira mu Birori by'Imbonankubone"
+  ],
+  "Live Moments, Shared Instantly": [
+    "Moments En Direct, Partagés Instantanément",
+    "Momentos En Vivo, Compartidos Instantáneamente",
+    "Ibihe by'Imbonankubone, Bisangirwa Ako Kanya"
+  ],
+  "Stream Your Event In Real-Time And Let Remote Guests Celebrate With You": [
+    "Diffusez Votre Événement En Temps Réel Et Laissez Les Invités À Distance Célébrer Avec Vous",
+    "Transmite Tu Evento En Tiempo Real Y Deja Que Los Invitados Remotos Celebren Contigo",
+    "Erekana Ibirori Byawe mu Gihe Nyacyo Kandi Ureke Abatumirwa Bari Kure Mwishimane"
+  ],
+  "Through Reactions, Wishes, And Gifts, No Matter Where They Are.": [
+    "À Travers Des Réactions, Des Souhaits Et Des Cadeaux, Peu Importe Où Ils Sont.",
+    "A Través De Reacciones, Deseos Y Regalos, Sin Importar Dónde Estén.",
+    "Binyuze mu Bitekerezo, Intashyo, n'Impano, Aho Baba Bari Hose."
+  ],
+  "Enter Event Code": [
+    "Entrer le Code de l'Événement",
+    "Ingresar Código del Evento",
+    "Andika Kode y'Ibirori"
+  ],
+  "Enter Event Link or Host ID from your event host": [
+    "Entrez le lien de l'événement ou l'ID de l'hôte",
+    "Ingresa el enlace del evento o ID del anfitrión",
+    "Andika ihuza ry'ibirori cyangwa ID y'uwateguye ibirori"
+  ],
+  "Join": [
+    "Rejoindre",
+    "Unirse",
+    "Injira"
+  ],
+  "Invalid event code": [
+    "Code d'événement invalide",
+    "Código de evento inválido",
+    "Kode y'ibirori si yo"
+  ],
+  "Joining event...": [
+    "Connexion à l'événement...",
+    "Uniéndose al evento...",
+    "Kwinjira mu birori..."
+  ],
+  "Hot Live Trends 🔥": [
+    "Tendances En Direct 🔥",
+    "Tendencias En Vivo 🔥",
+    "Ibigezweho Imbonankubone 🔥"
+  ],
+  "Live Stream": [
+    "Diffusion en Direct",
+    "Transmisión en Vivo",
+    "Imbonankubone"
+  ],
+  "Viewers": [
+    "Spectateurs",
+    "Espectadores",
+    "Abareba"
+  ],
+  "Live Chat": [
+    "Chat en Direct",
+    "Chat en Vivo",
+    "Ikiganiro Imbonankubone"
+  ],
+  "Send message": [
+    "Envoyer un message",
+    "Enviar mensaje",
+    "Ohereza ubutumwa"
+  ],
+  "Share": [
+    "Partager",
+    "Compartir",
+    "Sangiza"
+  ],
+  "Fullscreen": [
+    "Plein Écran",
+    "Pantalla Completa",
+    "Mugaragaza Yuzuye"
+  ],
+  "Settings": [
+    "Paramètres",
+    "Configuración",
+    "Igenamiterere"
+  ],
+  "Leave Stream": [
+    "Quitter la Diffusion",
+    "Salir de la Transmisión",
+    "Sohoka mu Mbonankubone"
+  ],
+  "Connecting to stream...": [
+    "Connexion à la diffusion...",
+    "Conectando a la transmisión...",
+    "Kwihuza n'imbonankubone..."
+  ],
+  "Failed to load stream": [
+    "Échec du chargement de la diffusion",
+    "Error al cargar la transmisión",
+    "Ntibyakunze gufungura imbonankubone"
+  ],
+  "Multi-Stream View": [
+    "Vue Multi-Diffusion",
+    "Vista Multi-Transmisión",
+    "Kureba Imbonankubone Nyinshi"
+  ],
+  "Select Streams to Watch": [
+    "Sélectionner les Diffusions à Regarder",
+    "Seleccionar Transmisiones para Ver",
+    "Hitamo Imbonankubone Ureba"
+  ],
+  "Layout": [
+    "Disposition",
+    "Diseño",
+    "Imiterere"
+  ],
+  "Grid": [
+    "Grille",
+    "Cuadrícula",
+    "Urutonde"
+  ],
+  "Side by Side": [
+    "Côte à Côte",
+    "Lado a Lado",
+    "Uruhande ku Rundi"
+  ],
+  "Picture in Picture": [
+    "Image dans l'Image",
+    "Imagen en Imagen",
+    "Ishusho mu Yindi"
+  ],
+  "No active streams available": [
+    "Aucune diffusion active disponible",
+    "No hay transmisiones activas disponibles",
+    "Nta mbonankubone zirimo gukora"
+  ],
+  "Record Event": [
+    "Enregistrer l'Événement",
+    "Grabar Evento",
+    "Fata Amashusho y'Ibirori"
+  ],
+  "Start Recording": [
+    "Démarrer l'Enregistrement",
+    "Iniciar Grabación",
+    "Tangira Gufata"
+  ],
+  "Stop Recording": [
+    "Arrêter l'Enregistrement",
+    "Detener Grabación",
+    "Hagarika Gufata"
+  ],
+  "Pause Recording": [
+    "Mettre en Pause",
+    "Pausar Grabación",
+    "Subika Gato"
+  ],
+  "Resume Recording": [
+    "Reprendre l'Enregistrement",
+    "Reanudar Grabación",
+    "Komeza Gufata"
+  ],
+  "Recording": [
+    "Enregistrement en Cours",
+    "Grabando",
+    "Birimo Gufatwa"
+  ],
+  "Paused": [
+    "En Pause",
+    "Pausado",
+    "Byasubitswe"
+  ],
+  "Duration": [
+    "Durée",
+    "Duración",
+    "Igihe Bimaze"
+  ],
+  "Save Recording": [
+    "Sauvegarder l'Enregistrement",
+    "Guardar Grabación",
+    "Bika Amashusho"
+  ],
+  "Discard": [
+    "Supprimer",
+    "Descartar",
+    "Siba"
+  ],
+  "Recording Settings": [
+    "Paramètres d'Enregistrement",
+    "Configuración de Grabación",
+    "Igenamiterere ryo Gufata"
+  ],
+  "Quality": [
+    "Qualité",
+    "Calidad",
+    "Ireme ry'amashusho"
+  ],
+  "Format": [
+    "Format",
+    "Formato",
+    "Ubwoko"
+  ],
+  "View Full": [
+    "Voir en Entier",
+    "Ver Completo",
+    "Reba Byose"
+  ],
+  "Event Date": [
+    "Date de l'Événement",
+    "Fecha del Evento",
+    "Itariki y'Ibirori"
+  ],
+  "Event Time": [
+    "Heure de l'Événement",
+    "Hora del Evento",
+    "Isaha y'Ibirori"
+  ],
+  "Live Stream Access Fee": [
+    "Frais d'Entrée",
+    "Tarifa de Entrada",
+    "Ikiguzi cyo Kureba Imbonankubone"
+  ],
+  "Expected Attendees": [
+    "Participants Attendus",
+    "Asistentes Esperados",
+    "Abantu Biteze Kwitabira"
+  ],
+  "People": [
+    "Personnes",
+    "Personas",
+    "Abantu"
+  ],
+  "Organized By": [
+    "Organisé Par",
+    "Organizado Por",
+    "Byateguwe na"
+  ],
+  "About This Event": [
+    "À Propos de Cet Événement",
+    "Acerca de Este Evento",
+    "Ibyerekeye Ibi Birori"
+  ],
+  "Event Tags": [
+    "Étiquettes de l'Événement",
+    "Etiquetas del Evento",
+    "Ibimenyetso by'Ibirori"
+  ],
+  "Join Live Stream": [
+    "Rejoindre la Diffusion en Direct",
+    "Unirse a la Transmisión en Vivo",
+    "Injira mu Mbonankubone"
+  ],
+  "Event Banner": [
+    "Bannière de l'Événement",
+    "Banner del Evento",
+    "Ifoto y'Ibirori"
+  ],
+  "Press ESC or click outside to close": [
+    "Appuyez sur ESC ou cliquez à l'extérieur pour fermer",
+    "Presione ESC o haga clic afuera para cerrar",
+    "Kanda ESC cyangwa hanze kugira ngo ufunge"
+  ],
+  "Loading event details...": [
+    "Chargement des détails de l'événement...",
+    "Cargando detalles del evento...",
+    "Gutegura amakuru y'ibirori..."
+  ],
+  "Find Your Perfect Photographer": [
+    "Trouvez Votre Photographe Parfait",
+    "Encuentra Tu Fotógrafo Perfecto",
+    "Shaka Umufotozi Ukwiye"
+  ],
+  "Browse through professional photographers and videographers": [
+    "Parcourez les photographes et vidéastes professionnels",
+    "Explora fotógrafos y videógrafos profesionales",
+    "Shakisha mu bafotora n'abafata amashusho b'abanyamwuga"
+  ],
+  "Search by name, specialty, or location...": [
+    "Rechercher par nom, spécialité ou lieu...",
+    "Buscar por nombre, especialidad o ubicación...",
+    "Shakisha ku izina, umwuga, cyangwa ahantu..."
+  ],
+  "All Prices": [
+    "Tous les Prix",
+    "Todos los Precios",
+    "Ibiciro Byose"
+  ],
+  "All Ratings": [
+    "Toutes les Notes",
+    "Todas las Calificaciones",
+    "Amanota Yose"
+  ],
+  "Portraits": [
+    "Portraits",
+    "Retratos",
+    "Amafoto y'umuntu"
+  ],
+  "Commercial": [
+    "Commercial",
+    "Comercial",
+    "Ubucuruzi"
+  ],
+  "Product": [
+    "Produit",
+    "Producto",
+    "Ibicuruzwa"
+  ],
+  "Budget (< 50k RWF)": [
+    "Budget (< 50k RWF)",
+    "Económico (< 50k RWF)",
+    "Icya make (< 50,000 RWF)"
+  ],
+  "Standard (50k - 100k RWF)": [
+    "Standard (50k - 100k RWF)",
+    "Estándar (50k - 100k RWF)",
+    "Iringaniye (50,000 - 100,000 RWF)"
+  ],
+  "Premium (> 100k RWF)": [
+    "Premium (> 100k RWF)",
+    "Premium (> 100k RWF)",
+    "Icyo hejuru (> 100,000 RWF)"
+  ],
+  "Verified": [
+    "Vérifié",
+    "Verificado",
+    "Yemejwe"
+  ],
+  "Rating": [
+    "Note",
+    "Calificación",
+    "Amanota"
+  ],
+  "Reviews": [
+    "Avis",
+    "Reseñas",
+    "Ibitekerezo"
+  ],
+  "Completed Jobs": [
+    "Travaux Terminés",
+    "Trabajos Completados",
+    "Imirimo yarangiye"
+  ],
+  "Accuracy": [
+    "Précision",
+    "Precisión",
+    "Ukuri"
+  ],
+  "Response Time": [
+    "Temps de Réponse",
+    "Tiempo de Respuesta",
+    "Igihe cyo Gusubiza"
+  ],
+  "Get In Touch": [
+    "Entrer en Contact",
+    "Ponerse en Contacto",
+    "Twandikire"
+  ],
+  "Book Now": [
+    "Réserver Maintenant",
+    "Reservar Ahora",
+    "Fata Igihe Nonaha"
+  ],
+  "No photographers found": [
+    "Aucun photographe trouvé",
+    "No se encontraron fotógrafos",
+    "Nta bafotora babonetse"
+  ],
+  "Loading photographers...": [
+    "Chargement des photographes...",
+    "Cargando fotógrafos...",
+    "Gushakisha abafotora..."
+  ],
+  "BOOK NOW": [
+    "RÉSERVER",
+    "RESERVAR AHORA",
+    "FATA IGIHE NONAHA"
+  ],
+  "START CHAT": [
+    "DÉMARRER LA DISCUSSION",
+    "INICIAR CHAT",
+    "TANGIRA IKIGANIRO"
+  ],
+  "Overview": [
+    "Aperçu",
+    "Descripción General",
+    "Incamake"
+  ],
+  "Portfolio": [
+    "Portfolio",
+    "Portafolio",
+    "Ibikorwa (Portfolio)"
+  ],
+  "Working Experience": [
+    "Expérience Professionnelle",
+    "Experiencia Laboral",
+    "Uburambe mu Kazi"
+  ],
+  "Specialties": [
+    "Spécialités",
+    "Especialidades",
+    "Imyuga Yihariye"
+  ],
+  "Equipment": [
+    "Équipement",
+    "Equipo",
+    "Ibikoresho"
+  ],
+  "No equipment listed": [
+    "Aucun équipement listé",
+    "No hay equipo listado",
+    "Nta bikoresho byanditse"
+  ],
+  "Availability": [
+    "Disponibilité",
+    "Disponibilidad",
+    "Kuboneka"
+  ],
+  "Working Hours": [
+    "Heures de Travail",
+    "Horario de Trabajo",
+    "Amasaha y'Akazi"
+  ],
+  "Starting Price": [
+    "Prix de Départ",
+    "Precio Inicial",
+    "Igiciro gitangirirwaho"
+  ],
+  "Professional Skills": [
+    "Compétences Professionnelles",
+    "Habilidades Profesionales",
+    "Ubumenyi bw'Umwuga"
+  ],
+  "Education": [
+    "Éducation",
+    "Educación",
+    "Amashuri"
+  ],
+  "Qualifications & Certifications": [
+    "Qualifications et Certifications",
+    "Calificaciones y Certificaciones",
+    "Impamyabumenyi n'Ibyemezo"
+  ],
+  "reviews": [
+    "avis",
+    "reseñas",
+    "ibitekerezo"
+  ],
+  "Write a Review": [
+    "Écrire un Avis",
+    "Escribir una Reseña",
+    "Andika Igitekerezo"
+  ],
+  "Professional Experience": [
+    "Expérience Professionnelle",
+    "Experiencia Profesional",
+    "Uburambe bw'Umwuga"
+  ],
+  "Loading profile...": [
+    "Chargement du profil...",
+    "Cargando perfil...",
+    "Gutegura umwirondoro..."
+  ],
+  "Choose Your Preferred Package": [
+    "Choisissez Votre Forfait Préféré",
+    "Elige Tu Paquete Preferido",
+    "Hitamo Ipaki Ushaka"
+  ],
+  "Back": [
+    "Retour",
+    "Atrás",
+    "Subira inyuma"
+  ],
+  "Professional Photographer": [
+    "Photographe Professionnel",
+    "Fotógrafo Profesional",
+    "Umufotozi w'Umunyamwuga"
+  ],
+  "CANCEL": [
+    "ANNULER",
+    "CANCELAR",
+    "HAGARIKA"
+  ],
+  "NEXT": [
+    "SUIVANT",
+    "SIGUIENTE",
+    "IKURIKIRA"
+  ],
+  "Essential Package": [
+    "Forfait Essentiel",
+    "Paquete Esencial",
+    "Ipaki y'Ibanze"
+  ],
+  "3 Hours": [
+    "3 Heures",
+    "3 Horas",
+    "Amasaha 3"
+  ],
+  "Great for small events and birthdays": [
+    "Idéal pour les petits événements et anniversaires",
+    "Ideal para eventos pequeños y cumpleaños",
+    "Nziza ku birori bito n'isabukuru y'amavuko"
+  ],
+  "Custom Package": [
+    "Forfait Personnalisé",
+    "Paquete Personalizado",
+    "Ipaki Yihariye"
+  ],
+  "4 Hours": [
+    "4 Heures",
+    "4 Horas",
+    "Amasaha 4"
+  ],
+  "Great for corporate events and parties": [
+    "Idéal pour les événements d'entreprise et fêtes",
+    "Ideal para eventos corporativos y fiestas",
+    "Nziza ku birori by'ibigo n'ibirori bisanzwe"
+  ],
+  "Premium Package": [
+    "Forfait Premium",
+    "Paquete Premium",
+    "Ipaki yo Hejuru (Premium)"
+  ],
+  "5 Hours": [
+    "5 Heures",
+    "5 Horas",
+    "Amasaha 5"
+  ],
+  "Great for large events, concerts, and weddings": [
+    "Idéal pour les grands événements, concerts et mariages",
+    "Ideal para grandes eventos, conciertos y bodas",
+    "Nziza ku birori binini, ibitaramo, n'ubukwe"
+  ],
+  "3 hours coverage": [
+    "Couverture de 3 heures",
+    "Cobertura de 3 horas",
+    "Gufotora amasaha 3"
+  ],
+  "4 hours coverage": [
+    "Couverture de 4 heures",
+    "Cobertura de 4 horas",
+    "Gufotora amasaha 4"
+  ],
+  "5 hours coverage": [
+    "Couverture de 5 heures",
+    "Cobertura de 5 horas",
+    "Gufotora amasaha 5"
+  ],
+  "Unlimited photos & videos": [
+    "Photos et vidéos illimitées",
+    "Fotos y videos ilimitados",
+    "Amafoto n'amashusho bitagira ingano"
+  ],
+  "Online gallery storage": [
+    "Stockage de galerie en ligne",
+    "Almacenamiento de galería en línea",
+    "Ububiko bw'amafoto kuri interineti"
+  ],
+  "Same-day preview": [
+    "Aperçu le jour même",
+    "Vista previa el mismo día",
+    "Kureba amafoto kuri uwo munsi"
+  ],
+  "Digital Memory Sharing Experience": [
+    "Expérience de partage de souvenirs numériques",
+    "Experiencia de compartir recuerdos digitales",
+    "Gusangira urwibutso hakoreshejwe ikoranabuhanga"
+  ],
+  "Printed photo album": [
+    "Album photo imprimé",
+    "Álbum de fotos impreso",
+    "Alubumu y'amafoto icapye"
+  ],
+  "Live-streaming": [
+    "Diffusion en direct",
+    "Transmisión en vivo",
+    "Kwerekanwa imbonankubone"
+  ],
+  "Drone photography": [
+    "Photographie par drone",
+    "Fotografía con dron",
+    "Gufotora hakoreshejwe Drone"
+  ],
+  "Event Details": [
+    "Détails de l'Événement",
+    "Detalles del Evento",
+    "Amakuru y'Ibirori"
+  ],
+  "Any Special Requests:": [
+    "Demandes Spéciales:",
+    "Solicitudes Especiales:",
+    "Ibyifuzo Byihariye:"
+  ],
+  "Any specific shots, requirements or preferences...": [
+    "Des prises de vue spécifiques, exigences ou préférences...",
+    "Tomas específicas, requisitos o preferencias...",
+    "Amafoto yihariye, ibisabwa cyangwa ibyo ukunda..."
+  ],
+  "PREVIOUS": [
+    "PRÉCÉDENT",
+    "ANTERIOR",
+    "IBANZIRIZA"
+  ],
+  "Contact Information": [
+    "Informations de Contact",
+    "Información de Contacto",
+    "Amakuru yo Kuvugana"
+  ],
+  "Email Address (Required)": [
+    "Adresse E-mail (Requis)",
+    "Dirección de Correo Electrónico (Requerido)",
+    "Imeyili (Irakenewe)"
+  ],
+  "Phone Number (Required)": [
+    "Numéro de Téléphone (Requis)",
+    "Número de Teléfono (Requerido)",
+    "Nimero ya Telefoni (Irakenewe)"
+  ],
+  "Booking Summary": [
+    "Résumé de la Réservation",
+    "Resumen de Reserva",
+    "Incamake yo Gufata Igihe"
+  ],
+  "Package": [
+    "Forfait",
+    "Paquete",
+    "Ipaki"
+  ],
+  "Event Type": [
+    "Type d'Événement",
+    "Tipo de Evento",
+    "Ubwoko bw'Ibirori"
+  ],
+  "I have read and agree to the": [
+    "J'ai lu et j'accepte les",
+    "He leído y acepto los",
+    "Nasomye kandi nemeye"
+  ],
+  "Chats": [
+    "Discussions",
+    "Chats",
+    "Ibiganiro"
+  ],
+  "Search for Messages": [
+    "Rechercher des Messages",
+    "Buscar Mensajes",
+    "Shakisha Ubutumwa"
+  ],
+  "Filter Chats": [
+    "Filtrer les Discussions",
+    "Filtrar Chats",
+    "Shungura Ibiganiro"
+  ],
+  "All Chats": [
+    "Toutes les Discussions",
+    "Todos los Chats",
+    "Ibiganiro Byose"
+  ],
+  "Unread": [
+    "Non Lus",
+    "No Leídos",
+    "Ibitarasomwa"
+  ],
+  "Online": [
+    "En Ligne",
+    "En Línea",
+    "Ari kuri interineti"
+  ],
+  "Archived": [
+    "Archivés",
+    "Archivados",
+    "Ibyabitswe"
+  ],
+  "No chats found": [
+    "Aucune discussion trouvée",
+    "No se encontraron chats",
+    "Nta biganiro byabonetse"
+  ],
+  "Today": [
+    "Aujourd'hui",
+    "Hoy",
+    "Uyu munsi"
+  ],
+  "No messages yet. Start the conversation!": [
+    "Pas encore de messages. Commencez la conversation!",
+    "Aún no hay mensajes. ¡Comienza la conversación!",
+    "Nta butumwa burahari. Tangira ikiganiro!"
+  ],
+  "Type a message...": [
+    "Tapez un message...",
+    "Escribe un mensaje...",
+    "Andika ubutumwa..."
+  ],
+  "Select a chat to start messaging": [
+    "Sélectionnez une discussion pour commencer à envoyer des messages",
+    "Selecciona un chat para comenzar a enviar mensajes",
+    "Hitamo ikiganiro utangire kwandika"
+  ],
+  "Send": [
+    "Envoyer",
+    "Enviar",
+    "Ohereza"
+  ],
+  "Offline": [
+    "Hors Ligne",
+    "Desconectado",
+    "Ntabwo ari kuri interineti"
+  ],
+  "typing...": [
+    "en train d'écrire...",
+    "escribiendo...",
+    "arimo kwandika..."
+  ],
+  "Loading messages...": [
+    "Chargement des messages...",
+    "Cargando mensajes...",
+    "Kuzana ubutumwa..."
+  ],
+  "Loading...": [
+    "Chargement...",
+    "Cargando...",
+    "Birimo gufunguka..."
+  ],
+  "Error": [
+    "Erreur",
+    "Error",
+    "Ikosa"
+  ],
+  "Success": [
+    "Succès",
+    "Éxito",
+    "Byakunze"
+  ],
+  "Save": [
+    "Enregistrer",
+    "Guardar",
+    "Bika"
+  ],
+  "Cancel": [
+    "Annuler",
+    "Cancelar",
+    "Hagarika"
+  ],
+  "Delete": [
+    "Supprimer",
+    "Eliminar",
+    "Siba"
+  ],
+  "Edit": [
+    "Modifier",
+    "Editar",
+    "Hindura"
+  ],
+  "Search": [
+    "Rechercher",
+    "Buscar",
+    "Shakisha"
+  ],
+  "Filter": [
+    "Filtrer",
+    "Filtrar",
+    "Shungura"
+  ],
+  "View More": [
+    "Voir Plus",
+    "Ver Más",
+    "Reba Ibindi"
+  ],
+  "Back to Top": [
+    "Retour en Haut",
+    "Volver Arriba",
+    "Subira Hejuru"
+  ],
+  "Close": [
+    "Fermer",
+    "Cerrar",
+    "Funga"
+  ],
+  "Submit": [
+    "Soumettre",
+    "Enviar",
+    "Ohereza"
+  ],
+  "Download": [
+    "Télécharger",
+    "Descargar",
+    "Kuramo"
+  ],
+  "Upload": [
+    "Téléverser",
+    "Subir",
+    "Ohereza"
+  ],
+  "Copy": [
+    "Copier",
+    "Copiar",
+    "Koporora"
+  ],
+  "Copied!": [
+    "Copié !",
+    "¡Copiado!",
+    "Byakoporowe!"
+  ],
+  "Accept": [
+    "Accepter",
+    "Aceptar",
+    "Emeza"
+  ],
+  "Decline": [
+    "Refuser",
+    "Rechazar",
+    "Anga"
+  ],
+  "Pending": [
+    "En attente",
+    "Pendiente",
+    "Bitegereje"
+  ],
+  "Completed": [
+    "Terminé",
+    "Completado",
+    "Byarangiye"
+  ],
+  "Confirmed": [
+    "Confirmé",
+    "Confirmado",
+    "Byemejwe"
+  ],
+  "Cancelled": [
+    "Annulé",
+    "Cancelado",
+    "Byahagaritswe"
+  ],
+  "Failed": [
+    "Échoué",
+    "Fallido",
+    "Byanze"
+  ],
+  "Active": [
+    "Actif",
+    "Activo",
+    "Birakora"
+  ],
+  "All": [
+    "Tout",
+    "Todo",
+    "Byose"
+  ],
+  "Find My Photos": [
+    "Trouver mes photos",
+    "Buscar mis fotos",
+    "Shaka amafoto yanjye"
+  ],
+  "Take Selfie": [
+    "Prendre un selfie",
+    "Tomar selfie",
+    "Ifotore selfie"
+  ],
+  "Upload Photo": [
+    "Téléverser une photo",
+    "Subir foto",
+    "Ohereza ifoto"
+  ],
+  "Processing...": [
+    "Traitement en cours...",
+    "Procesando...",
+    "Birimo gukorwa..."
+  ]
+}
