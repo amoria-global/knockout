@@ -51,6 +51,16 @@ export default function LangFlag({
           <rect y="10" width="60" height="20" fill="#F1BF00" />
         </svg>
       );
+    case 'rw':
+      return (
+        <svg {...common} data-flag="rw">
+          <rect width="60" height="20" fill="#00A1DE" />
+          <rect y="20" width="60" height="10" fill="#E5BE01" />
+          <rect y="30" width="60" height="10" fill="#20603D" />
+          {/* Golden sun with rays in top right */}
+          <circle cx="48" cy="8" r="3.5" fill="#E5BE01" />
+        </svg>
+      );
     default:
       return null;
   }
