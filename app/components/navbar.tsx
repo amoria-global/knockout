@@ -121,7 +121,13 @@ const AmoriaKNavbar = () => {
   const [isGetAppOpen, setIsGetAppOpen] = useState(false);
   const [isGetAppModalOpen, setIsGetAppModalOpen] = useState(false);
   const [userPlatform, setUserPlatform] = useState<'android' | 'ios' | null>(null);
-  const [selectedLang, setSelectedLang] = useState(languageNames[locale as Locale]);
+  const [selectedLang, setSelectedLang] = useState(languageNames[locale as Locale] || 'English');
+
+  useEffect(() => {
+    if (locale && languageNames[locale as Locale]) {
+      setSelectedLang(languageNames[locale as Locale]);
+    }
+  }, [locale]);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isPhotographersDropdownOpen, setIsPhotographersDropdownOpen] = useState(false);
   const [isFindMyPhotosDropdownOpen, setIsFindMyPhotosDropdownOpen] = useState(false);
@@ -417,6 +423,9 @@ const AmoriaKNavbar = () => {
 
     // Update locale using our context
     setLocale(langCode as Locale);
+    try {
+      router.refresh();
+    } catch {}
   };
 
   // Kept as a no-op so existing `onClick={handleLinkClick}` references in
