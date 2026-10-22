@@ -1,0 +1,516 @@
+{
+  "nav": {
+    "photographers": "Abafotora",
+    "events": "Ibirori",
+    "about": "Ibyerekeye Twebwe",
+    "login": "Injira",
+    "signup": "Iyandikishe",
+    "getApp": "Shaka Porogaramu",
+    "getAppTitle": "Shaka Porogaramu ya Connekyt",
+    "getAppDescription": "Kubona amafoto yawe ako kanya, imyidagaduro imbonankubone n'amakuru kuri telefoni yawe.",
+    "downloadOnAppStore": "Yikure kuri App Store",
+    "getItOnGooglePlay": "Yikure kuri Google Play",
+    "language": "Ururimi",
+    "location": "Ahantu",
+    "detectingLocation": "Gushaka aho uherereye...",
+    "selectCountry": "Hitamo Igihugu",
+    "selectDistrict": "Hitamo Akarere",
+    "allDistricts": "Uturere Twose",
+    "changeLocation": "Hindura Ahantu",
+    "searchLocation": "Shakisha ahantu...",
+    "noResults": "Nta bisubizo byabonetse",
+    "photographerCategories": {
+      "wedding": "Ubukwe",
+      "portrait": "Amafoto y'umuntu (Portrait)",
+      "event": "Ibirori",
+      "commercial": "Ubucuruzi",
+      "fashion": "Imideri",
+      "product": "Ibicuruzwa",
+      "browseTitle": "Shakisha Abafotora",
+      "browseSubtitle": "Shaka umufotozi ukwiye ibihe byawe by'ingenzi"
+    },
+    "eventCategories": {
+      "sports": "Imikino",
+      "wedding": "Ubukwe",
+      "academic": "Amashuri",
+      "gathering": "Ihura ry'abantu",
+      "concert": "Igitaramo",
+      "fashion": "Imideri",
+      "religious": "Iyobokamana",
+      "cultural": "Umuco",
+      "corporate": "Ibigo n'Ubucuruzi",
+      "conference": "Inama",
+      "entertainment": "Imyidagaduro",
+      "birthday": "Isabukuru y'amavuko",
+      "babyShower": "Baby Shower",
+      "graduation": "Kurangiza amashuri",
+      "anniversary": "Isabukuru",
+      "other": "Ibindi",
+      "browseTitle": "Shakisha Ibirori",
+      "browseSubtitle": "Vumbura ibirori bidasanzwe bibera hafi yawe"
+    }
+  },
+  "hero": {
+    "twitter": "@AmoriaConnekyt",
+    "title1": "Connekyt",
+    "title2": "N'Abafotora",
+    "title3": "b'Abanyamwuga",
+    "description": "Urubuga rwuzuye rwo gufotora ruhuza abafotora n'abakiriya babo mu birori by'imbonankubone kandi rukabika amafoto n'amashusho yabo mu mutekano usesuye.",
+    "findPhotographer": "Shaka Umufotozi",
+    "joinPhotographer": "Injira nk'Umufotozi",
+    "ohWow": "Yego we! Byiza cyane! 😍",
+    "smilePlease": "Sekamo gato 🤩"
+  },
+  "howItWorks": {
+    "title": "Uko bikora",
+    "getStarted": {
+      "title": "Tangira",
+      "description": "Sobanura ibirori byawe n'amakuru arambuye. Menyekana hose ku isi. Fata ibihe by'ingenzi. Reka abantu bose bakugane"
+    },
+    "photography": {
+      "title": "Gufotora",
+      "description": "Hura n'abafotora, fata urwibutso kandi ubike inkuru z'amashusho mu bubiko bw'ikoranabuhanga burinzwe"
+    },
+    "goLive": {
+      "title": "Tangiza Imbonankubone",
+      "description": "Erekana ibirori byawe imbonankubone, huza n'abari kure, musangire ibihe byiza n'urwibutso"
+    },
+    "forPhotographers": {
+      "title": "Abafotora n'Abafata Amashusho",
+      "description": "Waba uri umufotozi ushaka kwagura ubucuruzi bwawe cyangwa umukiriya ushaka gufata ibihe by'ingenzi mu buzima, urubuga rwacu rwubakiwe wowe",
+      "cta": "Tangira Nonaha"
+    }
+  },
+  "devices": {
+    "phone": "Telefoni",
+    "tablet": "Tabuleti",
+    "laptop": "Mudasobwa",
+    "concerts": "Ibitaramo",
+    "weddings": "Ubukwe",
+    "mockupHeadings": {
+      "phone": {
+        "line1": "Intashyo.",
+        "line2": "Isabukuru!"
+      },
+      "tablet": {
+        "line1": "Urukundo.",
+        "line2": "Ubukwe!"
+      },
+      "laptop": {
+        "line1": "Ibyishimo.",
+        "line2": "Ibitaramo!"
+      }
+    }
+  },
+  "whyAmoria": {
+    "title": "Kuki Ari Amoria Connekyt Gusa?",
+    "subtitle": "Porogaramu y'Ubufatanye bw'Abafotora ya Amoria Connekyt yashyiriweho kubaka urusobe rukomeye rw'abafotora b'abanyamwuga bagira uruhare mu guhanga inkuru z'amashusho zitazibagirana.",
+    "ratedPhotographers": {
+      "title": "Abafotora Bizewe",
+      "description": "Korana n'abafotora bizewe bahawe amanota n'abakiriya kandi bagenzuwe n'urubuga"
+    },
+    "liveStreaming": {
+      "title": "Kwerekanwa Imbonankubone",
+      "description": "Renga urwibutso rusanzwe, tegura kandi usangize ibirori byawe imbonankubone hamwe n'ibitekerezo by'ako kanya!"
+    },
+    "securePayments": {
+      "title": "Kwishyura mu Mutekano",
+      "description": "Gena igiciro cyawe, yakire ubusabe bw'akazi, kandi wishyurwe mu mutekano binyuze ku rubuga rwacu rurinzwe. Amafaranga yawe arinzwe neza kugeza unyuzwe."
+    },
+    "fullEventGallery": {
+      "title": "Ububiko Bwuzuye bw'Ibirori",
+      "description": "Akira ububiko bw'amafoto atunganyije neza uturutse ku mufotozi wawe kandi wongere ube muri ibyo bihe igihe cyose"
+    }
+  },
+  "globalNetwork": {
+    "title": "Guhuza Abafotora n'Abafata Amashusho n'Abakiriya ku Isi Hose",
+    "description": "Amoria Connekyt ihuza abafotora n'abakiriya ku migabane yose. Kuva mu birori by'imbonankubone kugeza ku bubiko bw'amafoto burinzwe, turimo kubaka umuryango mugari ufata kandi ukabika ibihe by'agaciro mu buzima.",
+    "connectNow": "Ihuze Nonaha",
+    "findEvents": "Shaka Ibirori"
+  },
+  "footer": {
+    "emailPlaceholder": "Andika Imeyili Yawe",
+    "subscribe": "IYANDIKISHE",
+    "description": "Guhuza ibihe, kurema urwibutso. Urubuga rwawe rwizewe rwo gufotora ibirori by'umwuga no kwerekana imbonankubone.",
+    "getApp": "Shaka Porogaramu",
+    "getAppDescription": "Gerageza kubona amafoto yawe ukoresheje isura, ibirori by'imbonankubone n'amakuru y'ako kanya kuri telefoni yawe.",
+    "downloadOnAppStore": "Yikure kuri App Store",
+    "getItOnGooglePlay": "Yikure kuri Google Play",
+    "appStore": "App Store",
+    "googlePlay": "Google Play",
+    "downloadOn": "Yikure kuri",
+    "getItOn": "YIKURE KURI",
+    "followUs": "Dukurikire kuri:",
+    "forClients": "Ku Bakiriya",
+    "forPhotographers": "Ku Bafotora",
+    "company": "Ikigo",
+    "support": "Ubufasha",
+    "links": {
+      "findPhotographer": "Shaka Umufotozi",
+      "howItWorks": "Uko Bikora",
+      "browseEvents": "Shakisha Ibirori",
+      "joinPhotographer": "Injira nk'Umufotozi",
+      "photographerGuide": "Amabwiriza ya Gafotozi",
+      "portfolioTips": "Inama za Portfolio",
+      "aboutUs": "Ibyerekeye Twebwe",
+      "contact": "Twandikire",
+      "blog": "Inkuru (Blog)",
+      "helpCenter": "Ikigo cy'Ubufasha",
+      "privacyPolicy": "Politiki y'Ibanga",
+      "termsOfService": "Amategeko n'Amabwiriza",
+      "trustSafety": "Icyizere n'Umutekano",
+      "donations": "Gutanga Inkunga",
+      "deleteAccount": "Siba Konti Yawe"
+    },
+    "copyright": "© {year} Amoria Connekyt. Uburenganzira bwose burabitswe."
+  },
+  "auth": {
+    "email": "Imeyili",
+    "password": "Ijambo ry'ibanga",
+    "confirmPassword": "Emeza Ijambo ry'ibanga",
+    "fullName": "Amazina Yombi",
+    "phoneNumber": "Nimero ya Telefoni",
+    "login": "Injira",
+    "signup": "Iyandikishe",
+    "forgotPassword": "Wibagiwe Ijambo ry'ibanga?",
+    "resetPassword": "Subiramo Ijambo ry'ibanga",
+    "dontHaveAccount": "Nta konti ufite?",
+    "alreadyHaveAccount": "Usanzwe ufite konti?",
+    "signupType": {
+      "title": "Ushaka gukoresha Connekyt ute?",
+      "subtitle": "Hitamo icyiciro kikuranga neza",
+      "photographerTitle": "Ndi Umufotozi ushaka akazi",
+      "photographerDescription": "Erekana ibikorwa byawe, ubona akazi kandi wagure ubucuruzi bwawe bwo gufotora",
+      "clientTitle": "Ndi Umukiriya ushaka gufotora ibirori",
+      "clientDescription": "Shaka kandi ukodeshe abafotozi b'abanyamwuga mu birori byawe",
+      "coordinatorTitle": "Ndi Umuhuzabikorwa w'Ibirori",
+      "coordinatorDescription": "Tegura ibirori by'imbonankubone kandi ucunge amatike yo kubireba",
+      "continue": "Komeza",
+      "alreadyHaveAccount": "Usanzwe ufite konti?",
+      "login": "Injira"
+    },
+    "loginPage": {
+      "title": "Injira muri konti yawe isanzwe",
+      "connectWith": "Hura n'umufotozi cyangwa umufata-mashusho",
+      "orContinueWith": "Cyangwa ukomeze na",
+      "yourEmail": "Imeyili Yawe",
+      "emailPlaceholder": "urugero@gmail.com",
+      "emailHelper": "Andika imeyili ihuye na konti yawe",
+      "passwordPlaceholder": "Andika ijambo ry'ibanga ryawe",
+      "loginButton": "Injira",
+      "forgotPasswordLink": "Wibagiwe ijambo ry'ibanga?",
+      "notRegistered": "Nturiyandikisha?",
+      "createAccount": "Fungura konti"
+    },
+    "signupPage": {
+      "title": "Fungura konti yawe ya mbere",
+      "orSignUpWith": "Cyangwa wiyandikishe na",
+      "firstName": "Izina rya mbere",
+      "firstNamePlaceholder": "Andika izina ryawe rya mbere",
+      "lastName": "Izina ry'umuryango",
+      "lastNamePlaceholder": "Andika izina ryawe ry'umuryango",
+      "yourEmail": "Imeyili Yawe",
+      "emailPlaceholder": "urugero@gmail.com",
+      "phone": "Telefoni",
+      "passwordPlaceholder": "Andika ijambo ry'ibanga ryawe",
+      "confirmPasswordLabel": "Emeza Ijambo ry'ibanga",
+      "confirmPasswordPlaceholder": "Subiramo ijambo ry'ibanga ryawe",
+      "passwordHelper": "Rigomba kugira nibura inyuguti 8, umubare 1, inyuguti nkuru n'into, n'ikimenyetso cyihariye (@!#$%^&*=+).",
+      "termsText": "Mu gufungura konti, wemera ko wasomye kandi ukemera",
+      "termsOfService": "Amategeko ya Serivisi",
+      "and": "na",
+      "privacyPolicy": "Politiki y'Ibanga",
+      "createAccountButton": "Fungura konti",
+      "alreadyHaveAccountText": "Usanzwe ufite konti?",
+      "loginLink": "Injira",
+      "launchEvent": "Tangiza ibirori byawe kandi ushimishe abatumirwa bari kure!",
+      "firstNameRequired": "Izina rya mbere rirakenewe",
+      "lastNameRequired": "Izina ry'umuryango rirakenewe",
+      "phoneRequired": "Nimero ya telefoni irakenewe",
+      "emailRequired": "Imeyili irakenewe",
+      "passwordInvalid": "Ijambo ry'ibanga rigomba kugira nibura inyuguti 8, umubare 1, inyuguti nkuru n'into, n'ikimenyetso cyihariye (@!#$%^&*=+).",
+      "passwordsNotMatch": "Amagambo y'ibanga ntabwo ahuye"
+    }
+  },
+  "events": {
+    "title": "Vumbura Ibirori Bidasanzwe Hafi Yawe",
+    "subtitle": "Reba ibirori biri imbere, ibitaramo, ubukwe, n'inama",
+    "searchPlaceholder": "Shakisha ibirori ku izina, icyiciro, cyangwa ahantu...",
+    "allCategories": "Ibyiciro Byose",
+    "allLocations": "Ahantu Hose",
+    "allDates": "Amatariki Yose",
+    "allStatuses": "Imiterere Yose",
+    "categories": {
+      "sports": "Imikino",
+      "wedding": "Ubukwe",
+      "academic": "Amashuri",
+      "gathering": "Ihura ry'abantu",
+      "concert": "Igitaramo",
+      "fashion": "Imideri",
+      "religious": "Iyobokamana",
+      "cultural": "Umuco",
+      "corporate": "Ibigo n'Ubucuruzi",
+      "conference": "Inama",
+      "entertainment": "Imyidagaduro",
+      "birthday": "Isabukuru y'amavuko",
+      "babyShower": "Baby Shower",
+      "graduation": "Kurangiza amashuri"
+    },
+    "status": {
+      "upcoming": "BITEGANYIJWE",
+      "live": "IMBONANKUBONE",
+      "ended": "BYARANGIYE",
+      "completed": "BYARANGIYE",
+      "cancelled": "BYAHAGARITSWE"
+    },
+    "liveNow": "Imbonankubone Nonaha",
+    "trending": "Ibirori Bikunzwe",
+    "viewDetails": "Reba Birambuye",
+    "joinEvent": "Injira mu Birori",
+    "noEvents": "Nta birori byabonetse",
+    "pagination": {
+      "page": "Urupapuro",
+      "of": "kuri",
+      "previous": "Ibanziriza",
+      "next": "Ikurikira"
+    },
+    "joinEventPage": {
+      "title": "Injira mu Birori by'Imbonankubone",
+      "mainTitle": "Ibihe by'Imbonankubone, Bisangirwa Ako Kanya",
+      "subtitle1": "Erekana Ibirori Byawe mu Gihe Nyacyo Kandi Ureke Abatumirwa Bari Kure Mwishimane",
+      "subtitle2": "Binyuze mu Bitekerezo, Intashyo, n'Impano, Aho Baba Bari Hose.",
+      "enterCode": "Andika Kode y'Ibirori",
+      "codePlaceholder": "Andika ihuza ry'ibirori cyangwa ID y'uwateguye ibirori",
+      "join": "Injira",
+      "invalidCode": "Kode y'ibirori si yo",
+      "loading": "Kwinjira mu birori..."
+    },
+    "hotLiveTrends": "Ibigezweho Imbonankubone 🔥",
+    "liveStream": {
+      "title": "Imbonankubone",
+      "viewers": "Abareba",
+      "chat": "Ikiganiro Imbonankubone",
+      "sendMessage": "Ohereza ubutumwa",
+      "share": "Sangiza",
+      "fullscreen": "Mugaragaza Yuzuye",
+      "settings": "Igenamiterere",
+      "leave": "Sohoka mu Mbonankubone",
+      "connecting": "Kwihuza n'imbonankubone...",
+      "error": "Ntibyakunze gufungura imbonankubone"
+    },
+    "multiStream": {
+      "title": "Kureba Imbonankubone Nyinshi",
+      "selectStreams": "Hitamo Imbonankubone Ureba",
+      "layout": "Imiterere",
+      "grid": "Urutonde",
+      "sideBySide": "Uruhande ku Rundi",
+      "picInPic": "Ishusho mu Yindi",
+      "noStreams": "Nta mbonankubone zirimo gukora"
+    },
+    "record": {
+      "title": "Fata Amashusho y'Ibirori",
+      "startRecording": "Tangira Gufata",
+      "stopRecording": "Hagarika Gufata",
+      "pauseRecording": "Subika Gato",
+      "resumeRecording": "Komeza Gufata",
+      "recording": "Birimo Gufatwa",
+      "paused": "Byasubitswe",
+      "duration": "Igihe Bimaze",
+      "save": "Bika Amashusho",
+      "discard": "Siba",
+      "settings": "Igenamiterere ryo Gufata",
+      "quality": "Ireme ry'amashusho",
+      "format": "Ubwoko"
+    },
+    "viewEvent": {
+      "viewFull": "Reba Byose",
+      "eventDate": "Itariki y'Ibirori",
+      "eventTime": "Isaha y'Ibirori",
+      "location": "Ahantu",
+      "entryFee": "Ikiguzi cyo Kureba Imbonankubone",
+      "expectedAttendees": "Abantu Biteze Kwitabira",
+      "people": "Abantu",
+      "organizedBy": "Byateguwe na",
+      "aboutThisEvent": "Ibyerekeye Ibi Birori",
+      "eventTags": "Ibimenyetso by'Ibirori",
+      "joinLiveStream": "Injira mu Mbonankubone",
+      "eventBanner": "Ifoto y'Ibirori",
+      "closeInstructions": "Kanda ESC cyangwa hanze kugira ngo ufunge",
+      "loadingEventDetails": "Gutegura amakuru y'ibirori..."
+    }
+  },
+  "photographers": {
+    "title": "Shaka Umufotozi Ukwiye",
+    "subtitle": "Shakisha mu bafotora n'abafata amashusho b'abanyamwuga",
+    "searchPlaceholder": "Shakisha ku izina, umwuga, cyangwa ahantu...",
+    "allCategories": "Ibyiciro Byose",
+    "allLocations": "Ahantu Hose",
+    "allPrices": "Ibiciro Byose",
+    "allRatings": "Amanota Yose",
+    "categories": {
+      "weddings": "Ubukwe",
+      "events": "Ibirori",
+      "portraits": "Amafoto y'umuntu",
+      "commercial": "Ubucuruzi",
+      "fashion": "Imideri",
+      "product": "Ibicuruzwa"
+    },
+    "priceRanges": {
+      "budget": "Icya make (< 50,000 RWF)",
+      "standard": "Iringaniye (50,000 - 100,000 RWF)",
+      "premium": "Icyo hejuru (> 100,000 RWF)"
+    },
+    "verified": "Yemejwe",
+    "rating": "Amanota",
+    "reviews": "Ibitekerezo",
+    "completedJobs": "Imirimo yarangiye",
+    "accuracy": "Ukuri",
+    "responseTime": "Igihe cyo Gusubiza",
+    "getInTouch": "Twandikire",
+    "bookNow": "Fata Igihe Nonaha",
+    "noPhotographers": "Nta bafotora babonetse",
+    "loading": "Gushakisha abafotora..."
+  },
+  "viewProfile": {
+    "events": "Ibirori",
+    "bookNow": "FATA IGIHE NONAHA",
+    "startChat": "TANGIRA IKIGANIRO",
+    "viewFull": "Reba Byose",
+    "tabs": {
+      "overview": "Incamake",
+      "portfolio": "Ibikorwa (Portfolio)",
+      "reviews": "Ibitekerezo",
+      "workingExperience": "Uburambe mu Kazi"
+    },
+    "overview": {
+      "about": "Ibyerekeye",
+      "specialties": "Imyuga Yihariye",
+      "equipment": "Ibikoresho",
+      "noEquipment": "Nta bikoresho byanditse",
+      "availability": "Kuboneka",
+      "workingHours": "Amasaha y'Akazi",
+      "startingPrice": "Igiciro gitangirirwaho"
+    },
+    "portfolio": {
+      "professionalSkills": "Ubumenyi bw'Umwuga",
+      "education": "Amashuri",
+      "qualifications": "Impamyabumenyi n'Ibyemezo"
+    },
+    "reviews": {
+      "reviewsCount": "ibitekerezo",
+      "writeReview": "Andika Igitekerezo"
+    },
+    "workingExperience": {
+      "title": "Uburambe bw'Umwuga"
+    },
+    "loadingProfile": "Gutegura umwirondoro..."
+  },
+  "booking": {
+    "step1": {
+      "title": "Hitamo Ipaki Ushaka",
+      "back": "Subira Inyuma",
+      "professionalPhotographer": "Umufotozi w'Umunyamwuga",
+      "availability": "Kuboneka",
+      "workingHours": "Amasaha y'Akazi",
+      "location": "Ahantu",
+      "startingPrice": "Igiciro gitangirirwaho",
+      "cancel": "HAGARIKA",
+      "next": "IKURIKIRA",
+      "packages": {
+        "essential": {
+          "name": "Ipaki y'Ibanze",
+          "hours": "Amasaha 3",
+          "description": "Nziza ku birori bito n'isabukuru y'amavuko"
+        },
+        "custom": {
+          "name": "Ipaki Yihariye",
+          "hours": "Amasaha 4",
+          "description": "Nziza ku birori by'ibigo n'ibirori bisanzwe"
+        },
+        "premium": {
+          "name": "Ipaki yo Hejuru (Premium)",
+          "hours": "Amasaha 5",
+          "description": "Nziza ku birori binini, ibitaramo, n'ubukwe"
+        },
+        "features": {
+          "coverage3h": "Gufotora amasaha 3",
+          "coverage4h": "Gufotora amasaha 4",
+          "coverage5h": "Gufotora amasaha 5",
+          "unlimitedPhotos": "Amafoto n'amashusho bitagira ingano",
+          "onlineGallery": "Ububiko bw'amafoto kuri interineti",
+          "sameDayPreview": "Kureba amafoto kuri uwo munsi",
+          "digitalMemorySharing": "Gusangira urwibutso hakoreshejwe ikoranabuhanga",
+          "printedAlbum": "Alubumu y'amafoto icapye",
+          "liveStreaming": "Kwerekanwa imbonankubone",
+          "dronePhotography": "Gufotora hakoreshejwe Drone"
+        }
+      }
+    },
+    "step2": {
+      "title": "Amakuru y'Ibirori",
+      "back": "Subira Inyuma",
+      "professionalPhotographer": "Umufotozi w'Umunyamwuga",
+      "availability": "Kuboneka",
+      "workingHours": "Amasaha y'Akazi",
+      "location": "Ahantu",
+      "startingPrice": "Igiciro gitangirirwaho",
+      "specialRequestsLabel": "Ibyifuzo Byihariye:",
+      "specialRequestsPlaceholder": "Amafoto yihariye, ibisabwa cyangwa ibyo ukunda...",
+      "previous": "IBANZIRIZA",
+      "cancel": "HAGARIKA",
+      "next": "IKURIKIRA"
+    },
+    "step3": {
+      "title": "Amakuru yo Kuvugana",
+      "back": "Subira Inyuma",
+      "professionalPhotographer": "Umufotozi w'Umunyamwuga",
+      "availability": "Kuboneka",
+      "workingHours": "Amasaha y'Akazi",
+      "location": "Ahantu",
+      "startingPrice": "Igiciro gitangirirwaho",
+      "emailLabel": "Imeyili (Irakenewe)",
+      "phoneLabel": "Nimero ya Telefoni (Irakenewe)",
+      "bookingSummary": "Incamake yo Gufata Igihe",
+      "package": "Ipaki",
+      "eventDate": "Itariki y'Ibirori",
+      "eventTime": "Isaha y'Ibirori",
+      "eventType": "Ubwoko bw'Ibirori",
+      "termsText": "Nasomye kandi nemeye",
+      "previous": "IBANZIRIZA",
+      "cancel": "HAGARIKA",
+      "bookNow": "FATA IGIHE NONAHA"
+    }
+  },
+  "chat": {
+    "title": "Ibiganiro",
+    "searchPlaceholder": "Shakisha Ubutumwa",
+    "filterChats": "Shungura Ibiganiro",
+    "allChats": "Ibiganiro Byose",
+    "unreadChats": "Ibitarasomwa",
+    "onlineChats": "Abari ku Murongo",
+    "archivedChats": "Ibyabitswe",
+    "noChatsFound": "Nta biganiro byabonetse",
+    "today": "Uyu munsi",
+    "noMessagesYet": "Nta butumwa burahari. Tangira ikiganiro!",
+    "typeMessage": "Andika ubutumwa...",
+    "selectChat": "Hitamo ikiganiro utangire kwandika",
+    "send": "Ohereza",
+    "online": "Ari kuri interineti",
+    "offline": "Ntabwo ari kuri interineti",
+    "typing": "arimo kwandika...",
+    "loadingMessages": "Kuzana ubutumwa..."
+  },
+  "common": {
+    "loading": "Birimo gutunganywa...",
+    "error": "Ikosa",
+    "success": "Byakunze",
+    "save": "Bika",
+    "cancel": "Hagarika",
+    "delete": "Siba",
+    "edit": "Hindura",
+    "search": "Shakisha",
+    "filter": "Shungura",
+    "viewMore": "Reba Ibindi",
+    "backToTop": "Subira Hejuru"
+  }
+}
