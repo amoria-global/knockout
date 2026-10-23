@@ -143,6 +143,7 @@ const AmoriaKNavbar = () => {
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
   const langMenuRef = useRef<HTMLDivElement>(null);
+  const mobileLangMenuRef = useRef<HTMLDivElement>(null);
   const getAppDropdownRef = useRef<HTMLDivElement>(null);
   const navPillRef = useRef<HTMLDivElement>(null);
   const photographersDropdownRef = useRef<HTMLDivElement>(null);
@@ -353,7 +354,9 @@ const AmoriaKNavbar = () => {
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       // Close language dropdown
-      if (langMenuRef.current && !langMenuRef.current.contains(event.target as Node)) {
+      const inDesktopLang = langMenuRef.current && langMenuRef.current.contains(event.target as Node);
+      const inMobileLang = mobileLangMenuRef.current && mobileLangMenuRef.current.contains(event.target as Node);
+      if (!inDesktopLang && !inMobileLang) {
         setIsLangMenuOpen(false);
       }
       // Close get app dropdown
@@ -423,9 +426,6 @@ const AmoriaKNavbar = () => {
 
     // Update locale using our context
     setLocale(langCode as Locale);
-    try {
-      router.refresh();
-    } catch {}
   };
 
   // Kept as a no-op so existing `onClick={handleLinkClick}` references in
@@ -1643,11 +1643,12 @@ const AmoriaKNavbar = () => {
                   className="absolute right-0 w-44"
                   style={{
                     top: 'calc(100% + 12px)',
+                    zIndex: 10000,
                     background: 'rgba(255, 255, 255, 0.98)',
                     backdropFilter: 'blur(12px)',
                     WebkitBackdropFilter: 'blur(12px)',
                     borderRadius: '12px',
-                    right: '-4rem',
+                    right: 0,
                     boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08)',
                     border: '1px solid rgba(255, 255, 255, 0.3)',
                     padding: '8px',
@@ -2149,7 +2150,7 @@ const AmoriaKNavbar = () => {
 
             {/* Language Dropdown (Mobile) */}
             <div className="border-t border-gray-200" style={{ marginTop: isMobile ? '0.5rem' : '0.75rem', marginBottom: isMobile ? '0.5rem' : '0.75rem' }}></div>
-             <div ref={langMenuRef} className="relative">
+             <div ref={mobileLangMenuRef} className="relative">
               <button
                 onClick={toggleLangMenu}
                 className="w-full text-left rounded-md text-gray-700 hover:bg-gray-50 font-medium flex items-center justify-between cursor-pointer"

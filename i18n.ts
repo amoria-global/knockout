@@ -14,7 +14,8 @@ export const languageNames: Record<Locale, string> = {
   es: 'Español',
   rw: 'Kinyarwanda',
 };
-export default getRequestConfig(async ({locale}) => {
+
+export default getRequestConfig(async ({ locale }) => {
   // Ensure the locale is valid and exists
   const validLocale: string = (locale && locales.includes(locale as Locale)) ? locale : defaultLocale;
 
