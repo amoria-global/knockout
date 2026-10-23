@@ -18,7 +18,10 @@ import QrCodeSvg from './QrCodeSvg';
 import GetAppModal from './GetAppModal';
 import { StoreBadges } from './StoreBadges';
 import LangFlag from './LangFlag';
+import domTranslationsData from '@/lib/domTranslations.json';
 import 'bootstrap-icons/font/bootstrap-icons.css';
+
+const domTranslations = domTranslationsData as unknown as Record<string, [string, string, string, string]>;
 
 // Map category names to icons
 const categoryIcons: Record<string, string> = {
@@ -83,26 +86,64 @@ const AmoriaKNavbar = () => {
   const router = useRouter();
   const pathname = usePathname();
 
+  const getLangIdx = (l: string | null | undefined): 0 | 1 | 2 | 3 | null => {
+    if (l === 'fr') return 0;
+    if (l === 'es') return 1;
+    if (l === 'rw') return 2;
+    if (l === 'sw') return 3;
+    return null;
+  };
+
+  const tl = (text: string): string => {
+    if (!text || !locale || locale === 'en') return text;
+    const idx = getLangIdx(locale);
+    if (idx === null) return text;
+    const direct = domTranslations[text]?.[idx];
+    if (direct) return direct;
+    const lower = text.toLowerCase().trim();
+    for (const [k, v] of Object.entries(domTranslations)) {
+      if (k.toLowerCase().trim() === lower && v[idx]) {
+        return v[idx];
+      }
+    }
+    return text;
+  };
+
   /**
-   * Safe category label resolver. The i18n `nav.eventCategories.*` and
-   * `nav.photographerCategories.*` namespaces only carry entries for the
-   * curated default categories. Backend-provided categories (e.g. "baby
-   * shower") don't have a corresponding translation, which makes `t()`
-   * throw `MISSING_MESSAGE` and crash the page. This wrapper:
-   *   1. Prefers a `displayName` if the category provides one
-   *   2. Tries the i18n key, swallowing missing-message errors
-   *   3. Falls back to a Title-Cased humanized version of the raw value
+   * Safe category label resolver.
+   * 1. Tries the i18n key (nav.eventCategories.* or nav.photographerCategories.*)
+   * 2. Checks domTranslations for localized match across fr/es/rw/sw
+   * 3. Falls back to displayName if provided
+   * 4. Falls back to Title-Cased humanized version of raw value
    */
   const safeCatLabel = (
     cat: { translationKey: string; displayName?: string; value?: string },
     scope: 'eventCategories' | 'photographerCategories'
   ): string => {
-    if (cat.displayName) return cat.displayName;
-    try {
-      return t(`${scope}.${cat.translationKey}` as never);
-    } catch {
-      return humanizeCategory(cat.value || cat.translationKey || '');
+    if (cat.translationKey) {
+      try {
+        const translated = t(`${scope}.${cat.translationKey}` as never);
+        if (translated && !translated.startsWith(`${scope}.`)) {
+          return translated;
+        }
+      } catch { /* proceed to domTranslations */ }
     }
+    const idx = getLangIdx(locale);
+    if (idx !== null) {
+      const probes = [cat.displayName, cat.value, cat.translationKey, humanizeCategory(cat.value || cat.translationKey || '')].filter(Boolean) as string[];
+      for (const probe of probes) {
+        const direct = domTranslations[probe]?.[idx];
+        if (direct) return direct;
+        const lower = probe.toLowerCase().trim();
+        for (const [k, v] of Object.entries(domTranslations)) {
+          if (k.toLowerCase().trim() === lower && v[idx]) {
+            return v[idx];
+          }
+        }
+      }
+    }
+    if (cat.displayName) return cat.displayName;
+    return humanizeCategory(cat.value || cat.translationKey || '');
   };
 
   // Pages with a full-bleed dark cinematic hero - the navbar should sit
@@ -1424,8 +1465,8 @@ const AmoriaKNavbar = () => {
             </div>
 
             <Link href={getLocalePath('/user/about')} className="nav-link-hover text-gray-700 hover:text-[#083A85] text-[11.5px] xl:text-[13px] 2xl:text-sm font-semibold transition-colors duration-200 whitespace-nowrap cursor-pointer px-1.5 xl:px-2.5 2xl:px-3 py-1">{t('about')}</Link>
-            <Link href={getLocalePath('/user/hall-of-fame')} className="nav-link-hover text-gray-700 hover:text-[#083A85] text-[11.5px] xl:text-[13px] 2xl:text-sm font-semibold transition-colors duration-200 whitespace-nowrap cursor-pointer px-1.5 xl:px-2.5 2xl:px-3 py-1">Hall of fame</Link>
-            <Link href={getLocalePath('/user/donations')} className="nav-link-hover text-gray-700 hover:text-[#083A85] text-[11.5px] xl:text-[13px] 2xl:text-sm font-semibold transition-colors duration-200 whitespace-nowrap cursor-pointer px-1.5 xl:px-2.5 2xl:px-3 py-1">Donate</Link>
+            <Link href={getLocalePath('/user/hall-of-fame')} className="nav-link-hover text-gray-700 hover:text-[#083A85] text-[11.5px] xl:text-[13px] 2xl:text-sm font-semibold transition-colors duration-200 whitespace-nowrap cursor-pointer px-1.5 xl:px-2.5 2xl:px-3 py-1">{tl('Hall of fame')}</Link>
+            <Link href={getLocalePath('/user/donations')} className="nav-link-hover text-gray-700 hover:text-[#083A85] text-[11.5px] xl:text-[13px] 2xl:text-sm font-semibold transition-colors duration-200 whitespace-nowrap cursor-pointer px-1.5 xl:px-2.5 2xl:px-3 py-1">{tl('Donate')}</Link>
             {/* Find My Photos - dropdown with two paths:
                   • Get Your Photos  → existing face-recognition lookup
                   • Browse Photos   → new stock-style content album browse */}
@@ -1439,7 +1480,7 @@ const AmoriaKNavbar = () => {
                 onClick={() => setIsFindMyPhotosDropdownOpen(v => !v)}
                 className={`nav-link-hover ${isFindMyPhotosDropdownOpen ? 'nav-link-active' : ''} flex items-center gap-1 text-gray-700 hover:text-[#083A85] text-[11.5px] xl:text-[13px] 2xl:text-sm font-semibold transition-colors duration-200 whitespace-nowrap cursor-pointer bg-transparent border-0 px-1.5 xl:px-2.5 2xl:px-3 py-1`}
               >
-                <span>Find My Photos</span>
+                <span>{tl('Find My Photos')}</span>
                 <i className={`bi bi-chevron-down transition-transform duration-200 ${isFindMyPhotosDropdownOpen ? 'rotate-180' : ''}`}></i>
               </button>
               {isFindMyPhotosDropdownOpen && (
@@ -1467,8 +1508,8 @@ const AmoriaKNavbar = () => {
                     >
                       <i className="bi bi-person-bounding-box" style={{ fontSize: 18, color: '#083A85', marginTop: 2 }} />
                       <span>
-                        <span style={{ display: 'block', fontSize: 13.5, fontWeight: 700 }}>Get Your Photos</span>
-                        <span style={{ display: 'block', fontSize: 11.5, color: '#6b7280' }}>AI face scan from your events</span>
+                        <span style={{ display: 'block', fontSize: 13.5, fontWeight: 700 }}>{tl('Get Your Photos')}</span>
+                        <span style={{ display: 'block', fontSize: 11.5, color: '#6b7280' }}>{tl('AI face scan from your events')}</span>
                       </span>
                     </Link>
                     <div style={{ height: 1, background: '#f0f2f5' }} />
@@ -1479,8 +1520,8 @@ const AmoriaKNavbar = () => {
                     >
                       <i className="bi bi-grid-3x3-gap-fill" style={{ fontSize: 18, color: '#F20C8F', marginTop: 2 }} />
                       <span>
-                        <span style={{ display: 'block', fontSize: 13.5, fontWeight: 700 }}>Browse Photos</span>
-                        <span style={{ display: 'block', fontSize: 11.5, color: '#6b7280' }}>Stock photos by category, paid per photo</span>
+                        <span style={{ display: 'block', fontSize: 13.5, fontWeight: 700 }}>{tl('Browse Photos')}</span>
+                        <span style={{ display: 'block', fontSize: 11.5, color: '#6b7280' }}>{tl('Stock photos by category, paid per photo')}</span>
                       </span>
                     </Link>
                   </div>
@@ -1505,10 +1546,10 @@ const AmoriaKNavbar = () => {
                 data-mobile-getapp-pill
                 className="nav-app-pill"
                 aria-expanded={isGetAppOpen}
-                aria-label="Get the mobile app"
+                aria-label={tl('Get the mobile app')}
               >
                 <i className="bi bi-download" />
-                <span>App</span>
+                <span>{tl('App')}</span>
               </button>
 
               {isGetAppOpen && (
@@ -1561,7 +1602,7 @@ const AmoriaKNavbar = () => {
                           background: 'rgba(8, 58, 133, 0.08)',
                           color: '#083A85',
                         }}>
-                          Free
+                          {tl('Free')}
                         </span>
                       </div>
                       <p style={{ margin: 0, fontSize: '12px', color: '#64748B', lineHeight: 1.4 }}>
@@ -1583,7 +1624,7 @@ const AmoriaKNavbar = () => {
                       <QrCodeSvg value={GET_APP_PAGE_URL} size={118} fgColor="#083A85" />
                       <span style={{ fontSize: '11px', fontWeight: 600, color: '#083A85', marginTop: '6px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                         <i className="bi bi-camera" style={{ fontSize: '11.5px', color: '#F20C8F' }} />
-                        Scan with phone camera
+                        {tl('Scan with phone camera')}
                       </span>
                     </div>
 
@@ -1616,7 +1657,7 @@ const AmoriaKNavbar = () => {
                       onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(8, 58, 133, 0.1)'; }}
                       onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'rgba(8, 58, 133, 0.05)'; }}
                     >
-                      <span>View app features & details</span>
+                      <span>{tl('View app features & details')}</span>
                       <i className="bi bi-arrow-right" style={{ fontSize: '10px' }} />
                     </button>
                   </div>
@@ -2133,17 +2174,17 @@ const AmoriaKNavbar = () => {
             </div>
 
             <Link href={getLocalePath('/user/about')} onClick={handleLinkClick} className="block rounded-md text-gray-700 hover:bg-gray-50 hover:text-gray-900 font-medium transition-colors cursor-pointer" style={{ padding: isMobile ? '0.5rem 0.75rem' : '0.5rem 0.75rem', fontSize: isMobile ? '0.9375rem' : '1rem' }}>{t('about')}</Link>
-            <Link href={getLocalePath('/user/hall-of-fame')} onClick={handleLinkClick} className="block rounded-md text-gray-700 hover:bg-gray-50 hover:text-gray-900 font-medium transition-colors cursor-pointer" style={{ padding: isMobile ? '0.5rem 0.75rem' : '0.5rem 0.75rem', fontSize: isMobile ? '0.9375rem' : '1rem' }}>Hall of fame</Link>
-            <Link href={getLocalePath('/user/donations')} onClick={handleLinkClick} className="block rounded-md text-gray-700 hover:bg-gray-50 hover:text-gray-900 font-medium transition-colors cursor-pointer" style={{ padding: isMobile ? '0.5rem 0.75rem' : '0.5rem 0.75rem', fontSize: isMobile ? '0.9375rem' : '1rem' }}>Donate</Link>
+            <Link href={getLocalePath('/user/hall-of-fame')} onClick={handleLinkClick} className="block rounded-md text-gray-700 hover:bg-gray-50 hover:text-gray-900 font-medium transition-colors cursor-pointer" style={{ padding: isMobile ? '0.5rem 0.75rem' : '0.5rem 0.75rem', fontSize: isMobile ? '0.9375rem' : '1rem' }}>{tl('Hall of fame')}</Link>
+            <Link href={getLocalePath('/user/donations')} onClick={handleLinkClick} className="block rounded-md text-gray-700 hover:bg-gray-50 hover:text-gray-900 font-medium transition-colors cursor-pointer" style={{ padding: isMobile ? '0.5rem 0.75rem' : '0.5rem 0.75rem', fontSize: isMobile ? '0.9375rem' : '1rem' }}>{tl('Donate')}</Link>
             {/* Mobile: two-row dropdown content (no JS state needed -
                 always visible in the slide-out so the buyer never has to
                 tap-to-expand inside an already-open mobile menu). */}
-            <div style={{ padding: '0.4rem 0.75rem', fontSize: '0.78rem', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 0.6 }}>Find My Photos</div>
+            <div style={{ padding: '0.4rem 0.75rem', fontSize: '0.78rem', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 0.6 }}>{tl('Find My Photos')}</div>
             <Link href={getLocalePath('/user/find-my-photos')} onClick={handleLinkClick} className="block rounded-md text-gray-700 hover:bg-gray-50 hover:text-gray-900 font-medium transition-colors cursor-pointer" style={{ padding: '0.5rem 1.25rem', fontSize: isMobile ? '0.9375rem' : '1rem' }}>
-              <i className="bi bi-person-bounding-box mr-2" /> Get Your Photos
+              <i className="bi bi-person-bounding-box mr-2" /> {tl('Get Your Photos')}
             </Link>
             <Link href={getLocalePath('/user/browse-photos')} onClick={handleLinkClick} className="block rounded-md text-gray-700 hover:bg-gray-50 hover:text-gray-900 font-medium transition-colors cursor-pointer" style={{ padding: '0.5rem 1.25rem', fontSize: isMobile ? '0.9375rem' : '1rem' }}>
-              <i className="bi bi-grid-3x3-gap-fill mr-2" /> Browse Photos
+              <i className="bi bi-grid-3x3-gap-fill mr-2" /> {tl('Browse Photos')}
             </Link>
 
             {/* Location Section (Mobile) - Hidden but location detection still active */}

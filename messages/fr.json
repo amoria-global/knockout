@@ -48,7 +48,18 @@
       "other": "Autre",
       "browseTitle": "Parcourir les Événements",
       "browseSubtitle": "Découvrez des événements incroyables près de chez vous"
-    }
+    },
+    "hallOfFame": "Panthéon",
+    "donate": "Faire un don",
+    "findMyPhotos": "Trouver Mes Photos",
+    "getYourPhotos": "Obtenez Vos Photos",
+    "aiFaceScan": "Scan facial IA de vos événements",
+    "browsePhotos": "Parcourir les Photos",
+    "stockPhotosSubtitle": "Photos de stock par catégorie, payées par photo",
+    "app": "Application",
+    "free": "Gratuit",
+    "scanWithPhoneCamera": "Scanner avec l'appareil photo du téléphone",
+    "viewAppFeatures": "Voir les fonctionnalités & détails de l'app"
   },
   "hero": {
     "twitter": "@AmoriaConnekyt",

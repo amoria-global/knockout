@@ -48,7 +48,18 @@
       "other": "Other",
       "browseTitle": "Browse Events",
       "browseSubtitle": "Discover amazing events happening near you"
-    }
+    },
+    "hallOfFame": "Hall of fame",
+    "donate": "Donate",
+    "findMyPhotos": "Find My Photos",
+    "getYourPhotos": "Get Your Photos",
+    "aiFaceScan": "AI face scan from your events",
+    "browsePhotos": "Browse Photos",
+    "stockPhotosSubtitle": "Stock photos by category, paid per photo",
+    "app": "App",
+    "free": "Free",
+    "scanWithPhoneCamera": "Scan with phone camera",
+    "viewAppFeatures": "View app features & details"
   },
   "hero": {
     "twitter": "@AmoriaConnekyt",

@@ -48,7 +48,18 @@
       "other": "Otro",
       "browseTitle": "Explorar Eventos",
       "browseSubtitle": "Descubre eventos increíbles cerca de ti"
-    }
+    },
+    "hallOfFame": "Salón de la fama",
+    "donate": "Donar",
+    "findMyPhotos": "Buscar Mis Fotos",
+    "getYourPhotos": "Obtén Tus Fotos",
+    "aiFaceScan": "Escaneo facial IA de tus eventos",
+    "browsePhotos": "Explorar Fotos",
+    "stockPhotosSubtitle": "Fotos de stock por categoría, pagadas por foto",
+    "app": "Aplicación",
+    "free": "Gratis",
+    "scanWithPhoneCamera": "Escanear con la cámara del teléfono",
+    "viewAppFeatures": "Ver funciones y detalles de la aplicación"
   },
   "hero": {
     "twitter": "@AmoriaConnekyt",
